@@ -5,7 +5,7 @@
 # $Id: Makefile 27 2007-07-24 16:52:51Z cpb $
 #
 #----------------------------------------------------------------------------------------------------------------------------------
-# Makefile for compiling OpenCMISS
+# Makefile for compiling openCMISS
 #
 # Original by Chris Bradley adapted from the CMISS Makefile by Karl Tomlinson 
 # Changes:
@@ -59,6 +59,13 @@ ifndef OPENCMISS_ROOT
   GLOBAL_ROOT := $(CURDIR)
 else
   GLOBAL_ROOT := ${OPENCMISS_ROOT}
+endif
+
+ifndef OPENCMISSEXTRAS_ROOT
+  OPENCMISSEXTRAS_ROOT := ..
+  EXTERNAL_ROOT := $(CURDIR)/../opencmissextras/cm/external
+else
+  EXTERNAL_ROOT := ${OPENCMISSEXTRAS_ROOT}/cm/external
 endif
 
 include $(GLOBAL_ROOT)/utils/Makefile.inc
@@ -364,10 +371,10 @@ PARMETIS_LIBRARIES = -lparmetis -lmetis
 PARMETIS_LIB_PATH =#
 PARMETIS_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  PARMETIS_LIB_PATH += $(addprefix -L, $(GLOBAL_ROOT)/external/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/ )
+  PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    PARMETIS_LIB_PATH += $(addprefix -L, $(GLOBAL_ROOT)/external/ParMetis-3.1/ )
+    PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/ )
   else# windows
     PARMETIS_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
   endif
@@ -379,11 +386,11 @@ PETSC_LIB_PATH =#
 PETSC_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   ifeq ($(DEBUG),false)
-    PETSC_LIB_PATH +=  $(addprefix -L, $(GLOBAL_ROOT)/external/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/linux-gnu-c-opt/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_ROOT)/external/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/bmake/linux-gnu-c-opt/ )
+    PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/linux-gnu-c-opt/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/bmake/linux-gnu-c-opt/ )
   else
-    PETSC_LIB_PATH += $(addprefix -L, $(GLOBAL_ROOT)/external/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/linux-gnu-c-debug/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_ROOT)/external/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/bmake/linux-gnu-c-debug/ )
+    PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/linux-gnu-c-debug/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/bmake/linux-gnu-c-debug/ )
   endif
   ifeq ($(ABI),64)
     PETSC_LIB_PATH +=  $(addprefix -L, /usr/X11R6/lib64/ )
@@ -392,8 +399,8 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
     PETSC_LIB_PATH +=  $(addprefix -L, /usr/X11R6/lib/ )
     PETSC_LIB_PATH +=  $(addprefix -L, /usr/lib/ )
   endif
-  PETSC_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_ROOT)/external/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/ )
-  PETSC_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_ROOT)/external/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/include/ )
+  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/ )
+  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     PETSC_LIB_PATH += $(addprefix -L, $(GLOBAL_ROOT)/external/petsc-2.3.2-p8/lib/aix5.1.0.0/ )
@@ -412,7 +419,7 @@ MPI_LIBRARIES =#
 MPI_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   MPI_LIBRARIES = -lmpichf90 -lmpich -lpthread -lrt
-  MPI_LIB_PATH += $(addprefix -L, $(GLOBAL_ROOT)/external/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/ )
+  MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     MPI_LIBRARIES = -lmpi
@@ -795,7 +802,7 @@ clobber: clean
 	rm -f $(EXECUTABLE)
 
 externallibs:
-	$(MAKE) --no-print-directory -f $(GLOBAL_ROOT)/external/packages/Makefile DEBUG=$(DEBUG) ABI=$(ABI) 
+	$(MAKE) --no-print-directory -f $(EXTERNAL_ROOT)/packages/Makefile DEBUG=$(DEBUG) ABI=$(ABI) 
 
 debug opt debug64 opt64:
 	$(MAKE) --no-print-directory DEBUG=$(DEBUG) ABI=$(ABI)
@@ -815,7 +822,7 @@ all64: debug64 opt64
 #-----------------------------------------------------------------------------
 
 help:
-	@echo "			Compile a version of OpenCMISS"
+	@echo "			Compile a version of openCMISS"
 	@echo "			=============================="
 	@echo
 	@echo "Examples of usage:   "
