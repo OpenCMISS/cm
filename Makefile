@@ -63,7 +63,7 @@ endif
 
 ifndef OPENCMISSEXTRAS_ROOT
   OPENCMISSEXTRAS_ROOT := ..
-  EXTERNAL_ROOT := $(CURDIR)/../opencmissextras/cm/external
+  EXTERNAL_ROOT := $(CURDIR)/../../opencmissextras/cm/external
 else
   EXTERNAL_ROOT := ${OPENCMISSEXTRAS_ROOT}/cm/external
 endif
@@ -403,10 +403,16 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
   PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    PETSC_LIB_PATH += $(addprefix -L, $(GLOBAL_ROOT)/external/petsc-2.3.2-p8/lib/aix5.1.0.0/ )
+    ifeq ($(DEBUG),false)
+      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/aix5.3.0.0-c-opt/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/bmake/aix5.3.0.0-c-opt/ )
+    else
+      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/aix5.3.0.0-c-debug/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/bmake/aix5.3.0.0-c-debug/ )
+    endif
     PETSC_LIB_PATH +=  $(addprefix -L, /usr/X11R6/lib/ )
-    PETSC_INCLUDE_PATH = $(addprefix -I, $(GLOBAL_ROOT)/external/petsc-2.3.2-p8/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_ROOT)/external/petsc-2.3.2-p8/bmake/aix5.1.0.0/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/include/ )
   else# windows
     PETSC_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     PETSC_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -537,7 +543,7 @@ ifeq ($(OPERATING_SYSTEM),aix)
 
    #Need to disable argument list checking for MPI calls which may have multiple types for the same parameters
    $(OBJECT_DIR)/computational_environment.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
-   $(OBJECT_DIR)/distributed_data.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
+   $(OBJECT_DIR)/distributed_matrix_vector.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
 
    #Need to disable argument list checking for c interface modules to allow for the c->fortran char->integer string conversion
    $(OBJECT_DIR)/timer_c.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
@@ -565,10 +571,15 @@ $(OBJECT_DIR)/blas.o		:	$(SOURCE_DIR)/blas.f90 \
 
 $(OBJECT_DIR)/cmiss.o		:	$(SOURCE_DIR)/cmiss.f90 \
 	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/computational_environment.o \
 	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/strings.o
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/region_routines.o \
+	$(OBJECT_DIR)/types.o \
+	$(MACHINE_OBJECTS)
 
 $(OBJECT_DIR)/cmiss_mpi.o		:	$(SOURCE_DIR)/cmiss_mpi.f90 \
 	$(OBJECT_DIR)/base_routines.o \
