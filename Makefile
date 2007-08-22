@@ -62,7 +62,7 @@ else
 endif
 
 ifndef OPENCMISSEXTRAS_ROOT
-  OPENCMISSEXTRAS_ROOT := ..
+  OPENCMISSEXTRAS_ROOT := ../../opencmissextras
   EXTERNAL_ROOT := $(CURDIR)/../../opencmissextras/cm/external
 else
   EXTERNAL_ROOT := ${OPENCMISSEXTRAS_ROOT}/cm/external
@@ -72,7 +72,7 @@ include $(GLOBAL_ROOT)/utils/Makefile.inc
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
-BASE_EXE_NAME = OpenCMISSTest
+BASE_EXE_NAME = openCMISS
 
 SOURCE_DIR = $(GLOBAL_ROOT)/src
 OBJECT_DIR := $(GLOBAL_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
@@ -143,18 +143,25 @@ olist_args = `cat $1`
 
 #----------------------------------------------------------------------------------------------------------------------------------
 ifeq ($(OPERATING_SYSTEM),linux)
-  CC = gcc
-  FC = gfortran
   OPTCF_FLGS =# Use separate flags for fortran and c
   olist_args = $1
 
-  # Use Intel compilers if available (icc -V sends output to STDERR and exits with error).
+  CC = gcc
+  FC = gfortran 
+
+  #Use g95 compiler if availabl
+  #ifneq (,$(shell g95 -v 2>&1 | grep -i gcc))
+  #  FC = g95
+  #endif
+
+  #Use Intel compilers if available (icc -V sends output to STDERR and exits with error).
   ifneq (,$(shell icc -V 2>&1 | grep -i intel))
     CC = icc
   endif
   ifneq (,$(shell ifort -V 2>&1 | grep -i intel))
     FC = ifort
   endif
+
 
   # Set the flags for the various different CC compilers
   ifeq ($(CC),gcc)# gcc
@@ -210,12 +217,13 @@ ifeq ($(OPERATING_SYSTEM),linux)
 
   # Set the flags for the various different Fortran compilers
   ifeq ($(FC),gfortran)
+    #FC = /home/users/local/packages/gfortran/irun/bin/gfortran
     # -fstatck-check
-    F_FLGS += -pipe -fno-second-underscore -Wall
+    F_FLGS += -pipe -fno-second-underscore -Wall -x f95-cpp-input 
     # Position independent code is actually only required for objects
     # in shared libraries but debug version may be built as shared libraries.
     DBGF_FLGS += -fPIC
-    ifeq ($(filter $(INSTRUCTION),i686 ia64),)# not i686 nor ia64
+    ifeq ($(filter $(INSTRUCTION),i686 ia64),)# i686 nor ia64
       F_FLGS += -m$(ABI)
       ELFLAGS += -m$(ABI)
     endif
@@ -236,7 +244,15 @@ ifeq ($(OPERATING_SYSTEM),linux)
     endif
   endif
   ifeq ($(FC),g95)
-    $(error g95 not implemented)
+    F_FLAGS += -fno-second-underscore -Wall -std=f2003
+    DBGF_FLGS += -fPIC
+    ifeq ($(filter $(INSTRUCTION),i686 ia64),)# i686 nor ia64
+      F_FLGS += -m$(ABI)
+      ELFLAGS += -m$(ABI)
+    endif
+    DBGF_FLGS += -O0 -fbounds-check
+    OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
+    #$(error g95 not implemented)
   endif
   ifeq ($(FC),ifort)
     # turn on preprocessing,
@@ -787,6 +803,7 @@ $(OBJECT_DIR)/timer_c.o		:	$(SOURCE_DIR)/timer_c.c
 
 $(OBJECT_DIR)/timer_f.o		:	$(SOURCE_DIR)/timer_f.f90 \
 	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/f90c_f.o \
 	$(OBJECT_DIR)/iso_varying_string.o
@@ -846,7 +863,7 @@ help:
 	@echo
 	@echo "	(DEBUG=|OPT=)"
 	@echo "	ABI=(32|64)"
-	@echo
+	@echo 
 	@echo "Available targets:                            "
 	@echo
 	@echo "	clean"

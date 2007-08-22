@@ -35,7 +35,7 @@
 !> under the terms of either the GPL or the LGPL, and not to allow others to
 !> use your version of this file under the terms of the MPL, indicate your
 !> decision by deleting the provisions above and replace them with the notice
-!> and other provisions required by the GPL or the LGPL. If you do not delete
+!> and other provisions required by the GPL or the LGPL. If you :do not delete
 !> the provisions above, a recipient may use your version of this file under
 !> the terms of any one of the MPL, the GPL or the LGPL.
 !>
@@ -120,7 +120,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
     !Local Variables
-    INTEGER(INTG) :: I, INTCHAR, LENGTH 
+    INTEGER(INTG) :: I, INTCHAR, LENGTH
+    INTRINSIC :: ACHAR
     
     CALL ENTERS("C2FSTRING",ERR,ERROR,*999)
 
@@ -129,7 +130,7 @@ CONTAINS
       FSTRING=" "
       DO I=1,LENGTH
         CALL UNPACKCHARACTERS(INTCHAR,I-1,CSTRING)
-        FSTRING(I:I)=CHAR(INTCHAR)
+        FSTRING(I:I)=ACHAR(INTCHAR)
       ENDDO!I
     ELSE
       CALL FLAG_ERROR("Fortran string not big enough to hold c string",&

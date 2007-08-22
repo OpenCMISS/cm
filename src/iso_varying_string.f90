@@ -256,7 +256,7 @@ MODULE ISO_VARYING_STRING
      module procedure split_CH
   end interface split
 
-! Access specifiers
+  ! Access specifiers
 
   public :: assignment(=)
   public :: operator(//)
