@@ -5,7 +5,7 @@
 # $Id: Makefile 27 2007-07-24 16:52:51Z cpb $
 #
 #----------------------------------------------------------------------------------------------------------------------------------
-# Makefile for compiling OpenCMISS
+# Makefile for compiling openCMISS
 #
 # Original by Chris Bradley adapted from the CMISS Makefile by Karl Tomlinson 
 # Changes:
@@ -58,14 +58,21 @@ ifndef OPENCMISS_ROOT
   OPENCMISS_ROOT := ..
   GLOBAL_ROOT := $(CURDIR)
 else
-  GLOBAL_ROOT := ${OPENCMISS_ROOT}
+  GLOBAL_ROOT := ${OPENCMISS_ROOT}/cm
+endif
+
+ifndef OPENCMISSEXTRAS_ROOT
+  OPENCMISSEXTRAS_ROOT := ../../opencmissextras
+  EXTERNAL_ROOT := $(CURDIR)/../../opencmissextras/cm/external
+else
+  EXTERNAL_ROOT := ${OPENCMISSEXTRAS_ROOT}/cm/external
 endif
 
 include $(GLOBAL_ROOT)/utils/Makefile.inc
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
-BASE_EXE_NAME = OpenCMISSTest
+BASE_EXE_NAME = openCMISS
 
 SOURCE_DIR = $(GLOBAL_ROOT)/src
 OBJECT_DIR := $(GLOBAL_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
@@ -136,18 +143,25 @@ olist_args = `cat $1`
 
 #----------------------------------------------------------------------------------------------------------------------------------
 ifeq ($(OPERATING_SYSTEM),linux)
-  CC = gcc
-  FC = gfortran
   OPTCF_FLGS =# Use separate flags for fortran and c
   olist_args = $1
 
-  # Use Intel compilers if available (icc -V sends output to STDERR and exits with error).
+  CC = gcc
+  FC = gfortran 
+
+  #Use g95 compiler if availabl
+  #ifneq (,$(shell g95 -v 2>&1 | grep -i gcc))
+  #  FC = g95
+  #endif
+
+  #Use Intel compilers if available (icc -V sends output to STDERR and exits with error).
   ifneq (,$(shell icc -V 2>&1 | grep -i intel))
     CC = icc
   endif
   ifneq (,$(shell ifort -V 2>&1 | grep -i intel))
     FC = ifort
   endif
+
 
   # Set the flags for the various different CC compilers
   ifeq ($(CC),gcc)# gcc
@@ -203,12 +217,13 @@ ifeq ($(OPERATING_SYSTEM),linux)
 
   # Set the flags for the various different Fortran compilers
   ifeq ($(FC),gfortran)
+    #FC = /home/users/local/packages/gfortran/irun/bin/gfortran
     # -fstatck-check
-    F_FLGS += -pipe -fno-second-underscore -Wall
+    F_FLGS += -pipe -fno-second-underscore -Wall -x f95-cpp-input 
     # Position independent code is actually only required for objects
     # in shared libraries but debug version may be built as shared libraries.
     DBGF_FLGS += -fPIC
-    ifeq ($(filter $(INSTRUCTION),i686 ia64),)# not i686 nor ia64
+    ifeq ($(filter $(INSTRUCTION),i686 ia64),)# i686 nor ia64
       F_FLGS += -m$(ABI)
       ELFLAGS += -m$(ABI)
     endif
@@ -229,7 +244,15 @@ ifeq ($(OPERATING_SYSTEM),linux)
     endif
   endif
   ifeq ($(FC),g95)
-    $(error g95 not implemented)
+    F_FLAGS += -fno-second-underscore -Wall -std=f2003
+    DBGF_FLGS += -fPIC
+    ifeq ($(filter $(INSTRUCTION),i686 ia64),)# i686 nor ia64
+      F_FLGS += -m$(ABI)
+      ELFLAGS += -m$(ABI)
+    endif
+    DBGF_FLGS += -O0 -fbounds-check
+    OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
+    #$(error g95 not implemented)
   endif
   ifeq ($(FC),ifort)
     # turn on preprocessing,
@@ -364,10 +387,10 @@ PARMETIS_LIBRARIES = -lparmetis -lmetis
 PARMETIS_LIB_PATH =#
 PARMETIS_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  PARMETIS_LIB_PATH += $(addprefix -L, $(GLOBAL_ROOT)/external/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/ )
+  PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    PARMETIS_LIB_PATH += $(addprefix -L, $(GLOBAL_ROOT)/external/ParMetis-3.1/ )
+    PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/ )
   else# windows
     PARMETIS_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
   endif
@@ -379,11 +402,11 @@ PETSC_LIB_PATH =#
 PETSC_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   ifeq ($(DEBUG),false)
-    PETSC_LIB_PATH +=  $(addprefix -L, $(GLOBAL_ROOT)/external/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/linux-gnu-c-opt/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_ROOT)/external/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/bmake/linux-gnu-c-opt/ )
+    PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/linux-gnu-c-opt/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/bmake/linux-gnu-c-opt/ )
   else
-    PETSC_LIB_PATH += $(addprefix -L, $(GLOBAL_ROOT)/external/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/linux-gnu-c-debug/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_ROOT)/external/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/bmake/linux-gnu-c-debug/ )
+    PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/linux-gnu-c-debug/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/bmake/linux-gnu-c-debug/ )
   endif
   ifeq ($(ABI),64)
     PETSC_LIB_PATH +=  $(addprefix -L, /usr/X11R6/lib64/ )
@@ -392,14 +415,20 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
     PETSC_LIB_PATH +=  $(addprefix -L, /usr/X11R6/lib/ )
     PETSC_LIB_PATH +=  $(addprefix -L, /usr/lib/ )
   endif
-  PETSC_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_ROOT)/external/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/ )
-  PETSC_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_ROOT)/external/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/include/ )
+  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/ )
+  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    PETSC_LIB_PATH += $(addprefix -L, $(GLOBAL_ROOT)/external/petsc-2.3.2-p8/lib/aix5.1.0.0/ )
+    ifeq ($(DEBUG),false)
+      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/aix5.3.0.0-c-opt/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/bmake/aix5.3.0.0-c-opt/ )
+    else
+      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/aix5.3.0.0-c-debug/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/bmake/aix5.3.0.0-c-debug/ )
+    endif
     PETSC_LIB_PATH +=  $(addprefix -L, /usr/X11R6/lib/ )
-    PETSC_INCLUDE_PATH = $(addprefix -I, $(GLOBAL_ROOT)/external/petsc-2.3.2-p8/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_ROOT)/external/petsc-2.3.2-p8/bmake/aix5.1.0.0/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/include/ )
   else# windows
     PETSC_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     PETSC_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -412,7 +441,7 @@ MPI_LIBRARIES =#
 MPI_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   MPI_LIBRARIES = -lmpichf90 -lmpich -lpthread -lrt
-  MPI_LIB_PATH += $(addprefix -L, $(GLOBAL_ROOT)/external/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/ )
+  MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     MPI_LIBRARIES = -lmpi
@@ -530,7 +559,7 @@ ifeq ($(OPERATING_SYSTEM),aix)
 
    #Need to disable argument list checking for MPI calls which may have multiple types for the same parameters
    $(OBJECT_DIR)/computational_environment.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
-   $(OBJECT_DIR)/distributed_data.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
+   $(OBJECT_DIR)/distributed_matrix_vector.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
 
    #Need to disable argument list checking for c interface modules to allow for the c->fortran char->integer string conversion
    $(OBJECT_DIR)/timer_c.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
@@ -558,10 +587,15 @@ $(OBJECT_DIR)/blas.o		:	$(SOURCE_DIR)/blas.f90 \
 
 $(OBJECT_DIR)/cmiss.o		:	$(SOURCE_DIR)/cmiss.f90 \
 	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/computational_environment.o \
 	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/strings.o
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/region_routines.o \
+	$(OBJECT_DIR)/types.o \
+	$(MACHINE_OBJECTS)
 
 $(OBJECT_DIR)/cmiss_mpi.o		:	$(SOURCE_DIR)/cmiss_mpi.f90 \
 	$(OBJECT_DIR)/base_routines.o \
@@ -769,6 +803,7 @@ $(OBJECT_DIR)/timer_c.o		:	$(SOURCE_DIR)/timer_c.c
 
 $(OBJECT_DIR)/timer_f.o		:	$(SOURCE_DIR)/timer_f.f90 \
 	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/f90c_f.o \
 	$(OBJECT_DIR)/iso_varying_string.o
@@ -795,7 +830,7 @@ clobber: clean
 	rm -f $(EXECUTABLE)
 
 externallibs:
-	$(MAKE) --no-print-directory -f $(GLOBAL_ROOT)/external/packages/Makefile DEBUG=$(DEBUG) ABI=$(ABI) 
+	$(MAKE) --no-print-directory -f $(EXTERNAL_ROOT)/packages/Makefile DEBUG=$(DEBUG) ABI=$(ABI) 
 
 debug opt debug64 opt64:
 	$(MAKE) --no-print-directory DEBUG=$(DEBUG) ABI=$(ABI)
@@ -815,7 +850,7 @@ all64: debug64 opt64
 #-----------------------------------------------------------------------------
 
 help:
-	@echo "			Compile a version of OpenCMISS"
+	@echo "			Compile a version of openCMISS"
 	@echo "			=============================="
 	@echo
 	@echo "Examples of usage:   "
@@ -828,7 +863,7 @@ help:
 	@echo
 	@echo "	(DEBUG=|OPT=)"
 	@echo "	ABI=(32|64)"
-	@echo
+	@echo 
 	@echo "Available targets:                            "
 	@echo
 	@echo "	clean"
