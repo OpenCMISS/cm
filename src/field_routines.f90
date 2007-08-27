@@ -2294,6 +2294,7 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Calculates the mappings for a field.
   SUBROUTINE FIELD_MAPPINGS_CALCULATE(FIELD,ERR,ERROR,*)
 
     !#### Subroutine: FIELD_MAPPINGS_CALCULATE
@@ -2306,8 +2307,8 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
     !Local Variables
     INTEGER(INTG) :: variable_idx,component_idx,GLOBAL_DOFS_OFFSET,NUMBER_OF_GLOBAL_DOFS,NUMBER_OF_LOCAL_DOFS, &
-      & NUMBER_OF_CONSTANT_DOFS,NUMBER_OF_ELEMENT_DOFS,NUMBER_OF_NODE_DOFS,NUMBER_OF_POINT_DOFS,NUMBER_OF_DOMAINS, &
-      & mesh_component_idx,global_ny,local_ny,domain_idx,domain_no,constant_nyy,element_nyy,node_nyy,point_nyy, &
+      & NUMBER_OF_CONSTANT_DOFS,NUMBER_OF_ELEMENT_DOFS,NUMBER_OF_NODE_DOFS,NUMBER_OF_POINT_DOFS,NUMBER_OF_VARIABLE_DOFS, &
+      & NUMBER_OF_DOMAINS,mesh_component_idx,global_ny,local_ny,domain_idx,domain_no,constant_nyy,element_nyy,node_nyy,point_nyy, &
       & MAX_NUMBER_OF_DERIVATIVES,ne,nk,np,ny,NUMBER_OF_COMPUTATIONAL_NODES,my_computational_node_number
     INTEGER(INTG), ALLOCATABLE :: LOCAL_DOFS_OFFSETS(:)
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
@@ -2334,6 +2335,7 @@ CONTAINS
       NUMBER_OF_NODE_DOFS=0
       NUMBER_OF_POINT_DOFS=0
       DO variable_idx=1,FIELD%NUMBER_OF_VARIABLES
+        NUMBER_OF_VARIABLE_DOFS=0
         DO component_idx=1,FIELD%VARIABLES(variable_idx)%NUMBER_OF_COMPONENTS
           FIELD_COMPONENT=>FIELD%VARIABLES(variable_idx)%COMPONENTS(component_idx)
           SELECT CASE(FIELD_COMPONENT%INTERPOLATION_TYPE)
@@ -2341,6 +2343,7 @@ CONTAINS
             NUMBER_OF_GLOBAL_DOFS=NUMBER_OF_GLOBAL_DOFS+1
             NUMBER_OF_LOCAL_DOFS=NUMBER_OF_LOCAL_DOFS+1
             NUMBER_OF_CONSTANT_DOFS=NUMBER_OF_CONSTANT_DOFS+1
+            NUMBER_OF_VARIABLE_DOFS=NUMBER_OF_VARIABLE_DOFS+1
           CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
             DOMAIN=>FIELD_COMPONENT%DOMAIN
             mesh_component_idx=DOMAIN%MESH_COMPONENT_NUMBER
@@ -2350,6 +2353,7 @@ CONTAINS
             NUMBER_OF_GLOBAL_DOFS=NUMBER_OF_GLOBAL_DOFS+MESH_TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS
             NUMBER_OF_LOCAL_DOFS=NUMBER_OF_LOCAL_DOFS+DOMAIN_TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
             NUMBER_OF_ELEMENT_DOFS=NUMBER_OF_ELEMENT_DOFS+DOMAIN_TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+            NUMBER_OF_VARIABLE_DOFS=NUMBER_OF_VARIABLE_DOFS+DOMAIN_TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
           CASE(FIELD_NODE_BASED_INTERPOLATION)
             DOMAIN=>FIELD_COMPONENT%DOMAIN
             mesh_component_idx=DOMAIN%MESH_COMPONENT_NUMBER
@@ -2359,6 +2363,7 @@ CONTAINS
             NUMBER_OF_GLOBAL_DOFS=NUMBER_OF_GLOBAL_DOFS+MESH_TOPOLOGY%DOFS%NUMBER_OF_DOFS
             NUMBER_OF_LOCAL_DOFS=NUMBER_OF_LOCAL_DOFS+DOMAIN_TOPOLOGY%DOFS%TOTAL_NUMBER_OF_DOFS
             NUMBER_OF_NODE_DOFS=NUMBER_OF_NODE_DOFS+DOMAIN_TOPOLOGY%DOFS%TOTAL_NUMBER_OF_DOFS
+            NUMBER_OF_VARIABLE_DOFS=NUMBER_OF_VARIABLE_DOFS+DOMAIN_TOPOLOGY%DOFS%TOTAL_NUMBER_OF_DOFS
           CASE(FIELD_POINT_BASED_INTERPOLATION)
             CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
           CASE DEFAULT
@@ -2369,6 +2374,9 @@ CONTAINS
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ENDDO !component_idx
+        ALLOCATE(FIELD%VARIABLES(variable_idx)%DOF_LIST(NUMBER_OF_VARIABLE_DOFS),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field variable dof list",ERR,ERROR,*999)
+        FIELD%VARIABLES(variable_idx)%NUMBER_OF_DOFS=NUMBER_OF_VARIABLE_DOFS
       ENDDO !variable_idx
       !Allocate the mapping arrays
       ALLOCATE(FIELD%MAPPINGS%DOF_TO_PARAM_MAP%DOF_TYPE(2,NUMBER_OF_LOCAL_DOFS),STAT=ERR)
@@ -2409,6 +2417,7 @@ CONTAINS
       point_nyy=0
       !Calculate the local and global numbers and set up the mappings
       DO variable_idx=1,FIELD%NUMBER_OF_VARIABLES
+        NUMBER_OF_VARIABLE_DOFS=0
         DO component_idx=1,FIELD%VARIABLES(variable_idx)%NUMBER_OF_COMPONENTS
           FIELD_COMPONENT=>FIELD%VARIABLES(variable_idx)%COMPONENTS(component_idx)
           SELECT CASE(FIELD_COMPONENT%INTERPOLATION_TYPE)
@@ -2432,6 +2441,8 @@ CONTAINS
               FIELD_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_ny)%LOCAL_TYPE(domain_idx)=DOMAIN_LOCAL_INTERNAL
             ENDDO !domain_idx
             local_ny=1+LOCAL_DOFS_OFFSETS(my_computational_node_number)
+            NUMBER_OF_VARIABLE_DOFS=NUMBER_OF_VARIABLE_DOFS+1
+            FIELD%VARIABLES(variable_idx)%DOF_LIST(NUMBER_OF_VARIABLE_DOFS)=local_ny
             constant_nyy=constant_nyy+1
             !Allocate and setup dof to parameter map
             FIELD%MAPPINGS%DOF_TO_PARAM_MAP%DOF_TYPE(1,local_ny)=FIELD_CONSTANT_DOF_TYPE
@@ -2483,6 +2494,8 @@ CONTAINS
             !Handle local dofs domain mapping
             DO ne=1,ELEMENTS_MAPPING%TOTAL_NUMBER_OF_LOCAL
               local_ny=ne+LOCAL_DOFS_OFFSETS(my_computational_node_number)
+              NUMBER_OF_VARIABLE_DOFS=NUMBER_OF_VARIABLE_DOFS+1
+              FIELD%VARIABLES(variable_idx)%DOF_LIST(NUMBER_OF_VARIABLE_DOFS)=local_ny
               element_nyy=element_nyy+1
               !Allocate and setup dof to parameter map
               FIELD%MAPPINGS%DOF_TO_PARAM_MAP%DOF_TYPE(1,local_ny)=FIELD_ELEMENT_DOF_TYPE
@@ -2541,6 +2554,8 @@ CONTAINS
             !Handle local dofs domain mapping
             DO ny=1,DOFS_MAPPING%TOTAL_NUMBER_OF_LOCAL
               local_ny=ny+LOCAL_DOFS_OFFSETS(my_computational_node_number)
+              NUMBER_OF_VARIABLE_DOFS=NUMBER_OF_VARIABLE_DOFS+1
+              FIELD%VARIABLES(variable_idx)%DOF_LIST(NUMBER_OF_VARIABLE_DOFS)=local_ny
               node_nyy=node_nyy+1
               nk=DOMAIN%TOPOLOGY%DOFS%DOF_INDEX(1,ny)
               np=DOMAIN%TOPOLOGY%DOFS%DOF_INDEX(2,ny)
@@ -2620,7 +2635,6 @@ CONTAINS
     CALL EXITS("FIELD_MAPPINGS_DOF_TO_PARAM_FMAP_INALISE")
     RETURN 1
   END SUBROUTINE FIELD_MAPPINGS_DOF_TO_PARAM_MAP_FINALISE
- 
 
   !
   !================================================================================================================================
@@ -5269,6 +5283,7 @@ CONTAINS
     CALL ENTERS("FIELD_VARIABLE_FINALISE",ERR,ERROR,*999)
 
     CALL FIELD_VARIABLE_COMPONENTS_FINALISE(FIELD_VARIABLE,ERR,ERROR,*999)
+    IF(ALLOCATED(FIELD_VARIABLE%DOF_LIST)) DEALLOCATE(FIELD_VARIABLE%DOF_LIST)
     
     CALL EXITS("FIELD_VARIABLE_FINALISE")
     RETURN

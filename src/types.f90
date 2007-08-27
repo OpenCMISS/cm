@@ -829,118 +829,157 @@ MODULE TYPES
     TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD !<A pointer to the source field for the problem if one is defined. If no source is defined the pointer is NULL.
   END TYPE PROBLEM_SOURCE_TYPE
 
-  TYPE PROBLEM_INTERPOLATION_TYPE
-    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION
-    TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD
-    TYPE(FIELD_TYPE), POINTER :: FIBRE_FIELD
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
-    TYPE(FIELD_TYPE), POINTER :: MATERIAL_FIELD
-    TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: GEOMETRIC_INTERP_PARAMETERS
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: FIBRE_INTERP_PARAMETERS
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: DEPENDENT_INTERP_PARAMETERS
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: MATERIAL_INTERP_PARAMETERS
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: SOURCE_INTERP_PARAMETERS
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: GEOMETRIC_INTERP_POINT
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: FIBRE_INTERP_POINT
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: DEPENDENT_INTERP_POINT
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: MATERIAL_INTERP_POINT
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: SOURCE_INTERP_POINT
-  END TYPE PROBLEM_INTERPOLATION_TYPE
-
-  TYPE PROBLEM_LINEAR_DATA_TYPE
-    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION
-  END TYPE PROBLEM_LINEAR_DATA_TYPE
-  
-  TYPE PROBLEM_NONLINEAR_DATA_TYPE
-    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION
-  END TYPE PROBLEM_NONLINEAR_DATA_TYPE
-  
-  TYPE PROBLEM_TIME_DATA_TYPE
-    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION
-  END TYPE PROBLEM_TIME_DATA_TYPE
-
-  TYPE PROBLEM_GLOBAL_MATRIX_TYPE
-    INTEGER(INTG) :: GLOBAL_MATRIX_NUMBER
-    INTEGER(INTG) :: GLOBAL_MATRIX_TYPE
-    LOGICAL :: UPDATE_MATRIX
-    TYPE(DOF_TO_SOLUTION_MAP_TYPE), POINTER :: DOF_TO_SOLUTION_MAP
-    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: MATRIX
-  END TYPE PROBLEM_GLOBAL_MATRIX_TYPE
-
-  TYPE PROBLEM_GLOBAL_MATRIX_PTR_TYPE
-    TYPE(PROBLEM_GLOBAL_MATRIX_TYPE), POINTER :: PTR
-  END TYPE PROBLEM_GLOBAL_MATRIX_PTR_TYPE
-  
-  TYPE PROBLEM_GLOBAL_MATRICES_TYPE
-    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION
-    LOGICAL :: SPARSE_GLOBAL_MATRICES
-    INTEGER(INTG) :: NUMBER_OF_MATRICES
-    TYPE(PROBLEM_GLOBAL_MATRIX_PTR_TYPE), ALLOCATABLE :: MATRIX_TYPE_MAP(:)
-    TYPE(PROBLEM_GLOBAL_MATRIX_TYPE), ALLOCATABLE :: MATRICES(:)
-    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RHS
-  END TYPE PROBLEM_GLOBAL_MATRICES_TYPE
-  
-  TYPE PROBLEM_SOLVER_MATRICES_TYPE
-    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION
-  END TYPE PROBLEM_SOLVER_MATRICES_TYPE
-  
-  TYPE PROBLEM_SOLVER_TYPE
-    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION
-    LOGICAL :: SOLVER_FINISHED
-   END TYPE PROBLEM_SOLVER_TYPE
-
-  TYPE PROBLEM_SOLUTION_TYPE
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
-    LOGICAL :: SOLUTION_FINISHED
-    TYPE(PROBLEM_INTERPOLATION_TYPE),   POINTER :: INTERPOLATION
-    TYPE(PROBLEM_LINEAR_DATA_TYPE),     POINTER :: LINEAR_DATA
-    TYPE(PROBLEM_NONLINEAR_DATA_TYPE),  POINTER :: NONLINEAR_DATA
-    TYPE(PROBLEM_TIME_DATA_TYPE),       POINTER :: TIME_DATA
-    TYPE(PROBLEM_GLOBAL_MATRICES_TYPE), POINTER :: GLOBAL_MATRICES
-    TYPE(PROBLEM_SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
-    TYPE(PROBLEM_MAPPINGS_TYPE),        POINTER :: MAPPINGS
-  END TYPE PROBLEM_SOLUTION_TYPE
-
-  TYPE DOF_TO_SOLUTION_MAP_TYPE
-    INTEGER(INTG) :: NUMBER_OF_SOLUTION_DOFS
-    INTEGER(INTG), ALLOCATABLE :: SOLUTION_ROW(:)
-    INTEGER(INTG), ALLOCATABLE :: SOLUTION_COLUMN(:)
-    REAL(DP) :: OFFSET
-    REAL(DP), ALLOCATABLE :: ROW_COUPLING(:)
-    REAL(DP), ALLOCATABLE :: COLUMN_COUPLING(:)
-  END TYPE DOF_TO_SOLUTION_MAP_TYPE
-
-  TYPE SOLUTION_TO_DOF_MAP_TYPE
-    INTEGER(INTG) :: NUMBER_OF_DOFS
-    INTEGER(INTG), ALLOCATABLE :: DOF_ROW(:)
-    INTEGER(INTG), ALLOCATABLE :: DOF_COLUMN(:)
-    REAL(DP) :: OFFSET
-    REAL(DP), ALLOCATABLE :: ROW_COUPLING(:)
-    REAL(DP), ALLOCATABLE :: COLUMN_COUPLING(:)
-  END TYPE SOLUTION_TO_DOF_MAP_TYPE
-
-  !TYPE PROBLEM_MATRIX_MAPPINGS_TYPE
-  !  
-  !END TYPE PROBLEM_MATRIX_MAPPINGS_TYPE
-  
-  TYPE PROBLEM_MAPPINGS_TYPE
-    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION
-    INTEGER(INTG) :: NUMBER_OF_MATRICES
-    
-    INTEGER(INTG) :: NUMBER_OF_ROWS
-    INTEGER(INTG) :: NUMBER_OF_COLUMNS
-    TYPE(DOF_TO_SOLUTION_MAP_TYPE), ALLOCATABLE :: DOF_TO_SOLUTION_MAP(:)
-    TYPE(SOLUTION_TO_DOF_MAP_TYPE), ALLOCATABLE :: SOLUTION_TO_DOF_MAP(:)
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING
-  END TYPE PROBLEM_MAPPINGS_TYPE
-
   !>Contains information on the analytic setup for the problem.
   TYPE PROBLEM_ANALYTIC_TYPE
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem.
     LOGICAL :: ANALYTIC_FINISHED !<Is .TRUE. if the analytic setup for the problem has finished being created, .FALSE. if not.
   END TYPE PROBLEM_ANALYTIC_TYPE
+
+  !>Contains information on the interpolation for the problem solution
+  TYPE PROBLEM_INTERPOLATION_TYPE
+    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION !<A pointer to the problem solution
+    TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<A pointer to the geometric field for the problem.
+    TYPE(FIELD_TYPE), POINTER :: FIBRE_FIELD !<A pointer to the fibre field for the problem (if one is defined).
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD !<A pointer to the dependent field for the problem 
+    TYPE(FIELD_TYPE), POINTER :: MATERIAL_FIELD !<A pointer to the material field for the problem (if one is defined).
+    TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD !<A pointer to the source field for the problem (if one is defined).
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: GEOMETRIC_INTERP_PARAMETERS !<A pointer to the geometric interpolation parameters for the problem.
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: FIBRE_INTERP_PARAMETERS !<A pointer to the fibre interpolation parameters for the problem (if a fibre field is defined). 
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: DEPENDENT_INTERP_PARAMETERS !<A pointer to the dependent interpolation parameters for the problem. 
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: MATERIAL_INTERP_PARAMETERS !<A pointer to the material interpolation parameters for the problem (if a material field is defined). 
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: SOURCE_INTERP_PARAMETERS !<A pointer to the source interpolation parameters for the problem (if a source field is defined). 
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: GEOMETRIC_INTERP_POINT !<A pointer to the geometric interpolated point information for the problem. 
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: FIBRE_INTERP_POINT !<A pointer to the fibre interpolated point information for the problem (if a fibre field is defined). 
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: DEPENDENT_INTERP_POINT !<A pointer to the dependent interpolated point information for the problem. 
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: MATERIAL_INTERP_POINT !<A pointer to the material interpolated point information for the problem (if a material field is defined). 
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: SOURCE_INTERP_POINT !<A pointer to the source interpolated point information for the problem (if a source field is defined). 
+  END TYPE PROBLEM_INTERPOLATION_TYPE
+
+  !>Contains information on any data required for a linear solution
+  TYPE PROBLEM_LINEAR_DATA_TYPE
+    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION !<A pointer to the problem solution.
+  END TYPE PROBLEM_LINEAR_DATA_TYPE
+
+  !>Contains information on any data required for a non-linear solution
+  TYPE PROBLEM_NONLINEAR_DATA_TYPE
+    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION !<A pointer to the problem solution.
+    INTEGER(INTG) :: NUMBER_OF_ITERATIONS
+  END TYPE PROBLEM_NONLINEAR_DATA_TYPE
+
+  !>Contains information on any data required for a time-dependent solution
+  TYPE PROBLEM_TIME_DATA_TYPE
+    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION !<A pointer to the problem solution.
+  END TYPE PROBLEM_TIME_DATA_TYPE
+
+  !>Contains information for an element matrix
+  TYPE ELEMENT_MATRIX_TYPE
+    INTEGER(INTG) :: GLOBAL_MATRIX_NUMBER
+    INTEGER(INTG) :: NUMBER_OF_ROWS
+    INTEGER(INTG) :: NUMBER_OF_COLUMNS
+    INTEGER(INTG) :: MAX_NUMBER_OF_ROWS
+    INTEGER(INTG) :: MAX_NUMBER_OF_COLUMNS
+    INTEGER(INTG), ALLOCATABLE :: ROW_DOFS(:)
+    INTEGER(INTG), ALLOCATABLE :: COLUMN_DOFS(:)
+    REAL(DP), ALLOCATABLE :: MATRIX(:,:)
+  END TYPE ELEMENT_MATRIX_TYPE
+
+  !>Contains information for an element vector
+  TYPE ELEMENT_VECTOR_TYPE
+    INTEGER(INTG) :: NUMBER_OF_ROWS
+    INTEGER(INTG) :: MAX_NUMBER_OF_ROWS
+    INTEGER(INTG), ALLOCATABLE :: ROW_DOFS(:)
+    REAL(DP), ALLOCATABLE :: VECTOR(:)
+  END TYPE ELEMENT_VECTOR_TYPE
+
+  
+  !>Contains information on the mapping from a global matrix row/column to a solver matrix row/column.
+  TYPE GLOBAL_TO_SOLVER_MAP_TYPE
+    INTEGER(INTG) :: NUMBER_OF_SOLUTION_DOFS !<Number of solver matrix row/column dofs the global matrix row/column dof is mapped to
+    INTEGER(INTG), ALLOCATABLE :: SOLUTION_DOFS(:) !<SOLUTION_DOFS(i). Contains the i'th solution row/column dof that this global matrix row/column dof is mapped to.
+    REAL(DP), ALLOCATABLE :: COUPLING_COEFFICIENTS(:) !<COUPLING_COEFFICIENTS(i). Contains the i'th coupling coefficient
+  END TYPE GLOBAL_TO_SOLVER_MAP_TYPE
+
+  !>Contains information about a global matrix
+  TYPE PROBLEM_GLOBAL_MATRIX_TYPE
+    INTEGER(INTG) :: GLOBAL_MATRIX_NUMBER !<The number of the global matrix
+    INTEGER(INTG) :: GLOBAL_MATRIX_TYPE !<The variable type for this matrix
+    LOGICAL :: UPDATE_MATRIX !<Is .TRUE. if this global matrix is to be updated
+    INTEGER(ITNG) :: NUMBER_OF_ROWS !<The number of rows in this global matrix
+    INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in this global matrix
+    INTEGER(INTG), ALLOCATABLE :: DOF_ROW_MAP(:) !<DOF_ROW_MAP(row_idx). The DOF that the row_idx'th row of this global matrix is mapped to.
+    INTEGER(INTG), ALLOCATABLE :: DOF_COLUMN_MAP(:) !<DOF_COLUMN_MAP(column_idx). The DOF that the column_idx'th column of this global matrix is mapped to. 
+    TYPE(GLOBAL_TO_SOLVER_MAP_TYPE), ALLOCATABLE :: SOLVER_ROW_MAP(:) !<SOLVER_ROW_MAP(row_idx). The mapping from the row_idx'th row of this global matrix to the solver matrix rows. 
+    TYPE(GLOBAL_TO_SOLVER_MAP_TYPE), ALLOCATABLE :: SOLVER_COLUMN_MAP(:) !<SOLVER_COLUMN_MAP(column_idx). The mapping from the column_idx'th column of this global matrix to the solver matrix columns.
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the distributed global matrix data
+    TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_MATRIX !<The element matrix for this glboal matrix
+  END TYPE PROBLEM_GLOBAL_MATRIX_TYPE
+
+  !>A buffer type to allow for an array of pointers to a GLOBAL_MATRIX_TYPE.
+  TYPE PROBLEM_GLOBAL_MATRIX_PTR_TYPE    
+    TYPE(PROBLEM_GLOBAL_MATRIX_TYPE), POINTER :: PTR !<The pointer to the global matrix
+  END TYPE PROBLEM_GLOBAL_MATRIX_PTR_TYPE
+
+  !>Contains information on the global matrices and rhs vector
+  TYPE PROBLEM_GLOBAL_MATRICES_TYPE
+    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION !<A pointer back to the problem soluion
+    LOGICAL :: SPARSE_GLOBAL_MATRICES !<Is .TRUE. if the global matrices are stored sparsley.
+    INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of rows in the distributed global matrices
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_ROWS !<The total number of rows in the distributed global matrices
+    INTEGER(INTG) :: NUMBER_OF_MATRICES !<The number of global matrices defined for the problem.
+    TYPE(PROBLEM_GLOBAL_MATRIX_PTR_TYPE), ALLOCATABLE :: MATRIX_TYPE_MAP(:) !<The matrix type map. 
+    TYPE(PROBLEM_GLOBAL_MATRIX_TYPE), ALLOCATABLE :: MATRICES(:) !<MATRICES(matrix_idx) contains the information on the matrix_idx'th global matrix
+    LOGICAL :: UPDATE_VECTOR !<Is .TRUE. if the global rhs vector is to be updated
+    INTEGER(INTG), ALLOCATABLE :: GLOBAL_ROW_TO_DOF_MAP(:) !<GLOBAL_ROW_TO_DOF_MAP(ny). The global DOF corresponding to the ny'th row of the global rhs vector. 
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the distributed global rhs vector data
+    TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_VECTOR !<The element rhs information
+  END TYPE PROBLEM_GLOBAL_MATRICES_TYPE
+
+  !>Contains the information on what global matrix rows contributed to this solver matrix row.
+  TYPE SOLVER_TO_GLOBAL_MAP_TYPE
+    INTEGER(INTG) :: NUMBER_OF_MATRICES !<The number of global matrices that contributed to this solution row.
     
+    INTEGER(INTG), ALLOCATABLE :: COLUMNS(:) !<COLUMNS(matrix_idx) is the column number in the matrix_idx'th global matrix that this solution column/variable maps to
+    REAL(DP), ALLOCATABLE :: COUPLING_COEFFICENTS(:) !<COUPLING_COEFFICIENTS(matrix_idx) is the coupling coefficient for the matrix_idth'th global 
+  END TYPE SOLVER_TO_GLOBAL_MAP_TYPE
+
+  !>Contains information on the solver matrices and rhs vector
+  TYPE PROBLEM_SOLVER_MATRICES_TYPE
+    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION !<A pointer to the problem solution
+    INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of rows in the distributed solution matrix for this computational node
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_ROWS !<The total number of rows in the distributed solution matrix
+    INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in the distributed solution matrix
+    LOGICAL :: UPDATE_MATRIX !<Is .TRUE. if the solution matrix is to be updated
+    TYPE(SOLVER_TO_GLOBAL_MAP_TYPE), ALLOCATABLE :: SOLVER_TO_GLOBAL_MAP(:) !<SOLVER_TO_GLOBAL_MAP(no) is the solver to global mappings for the no'th solver column.
+  END TYPE PROBLEM_SOLVER_MATRICES_TYPE
+
+  !>Contains information on the type of solver to be used
+  TYPE PROBLEM_SOLVER_TYPE
+    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION !<A pointer to the problem solution
+    LOGICAL :: SOLVER_FINISHED !<Is .TRUE. if the problem solver has finished being created, .FALSE. if not.
+  END TYPE PROBLEM_SOLVER_TYPE
+
+  !>Contains the information about the mapping of a DOF to global matrices
+  TYPE DOF_TO_GLOBAL_MAPPING_TYPE
+    INTEGER(INTG) :: ROW_MAPPING !<The global row number the DOF is mapped to.
+    INTEGER(INTG) :: NUMBER_OF_MATRICES !<The number of global matrices the DOF is mapped to. Note that if the number of matrices is zero then the DOF is mapped to the global rhs vector. 
+    INTEGER(INTG), ALLOCATABLE :: MATRIX_MAPPINGS(:) !<MATRIX_MAPPINGS(i). The i'th global matrix the DOF is mapped to
+    INTEGER(INTG), ALLOCATABLE :: COLUMN_MAPPINGS(:) !<COLUMN_MAPPINGS(i). The global column number in the i'th global matrix that the DOF is mapped to.  
+  END TYPE DOF_TO_GLOBAL_MAPPING_TYPE
+
+  !>Contains information regarding the solution of a problem
+  TYPE PROBLEM_SOLUTION_TYPE
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem
+    LOGICAL :: SOLUTION_FINISHED !<Is .TRUE. if the problem solution has finished being created, .FALSE. if not.
+    TYPE(PROBLEM_INTERPOLATION_TYPE), POINTER :: INTERPOLATION !<A pointer to the interpolation information used in the problem solution
+    TYPE(PROBLEM_LINEAR_DATA_TYPE), POINTER :: LINEAR_DATA !<A pointer to the data for linear problems.
+    TYPE(PROBLEM_NONLINEAR_DATA_TYPE), POINTER :: NONLINEAR_DATA !<A pointer to the data for non-linear problems.
+    TYPE(PROBLEM_TIME_DATA_TYPE), POINTER :: TIME_DATA !<A pointer to the data for non-static problems
+    TYPE(PROBLEM_SOLVER_TYPE), POINTER :: PROBLEM_SOLVER !<A pointer to the solver used for the problem solution
+    TYPE(PROBLEM_GLOBAL_MATRICES_TYPE), POINTER :: GLOBAL_MATRICES !<A pointer to the global matrices and vectors used for the problem solution.
+    TYPE(PROBLEM_SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES !<A pointer to the solver matrices and vectors used for the problem solution.
+    TYPE(DOF_TO_GLOBAL_MAPPING_TYPE), ALLOCATABLE :: DOF_TO_GLOBAL_MAPPING(:) !<DOF_TO_GLOBAL_MAPPING(ny). The mappings to the global matrices for the ny'th dependent DOF.
+  END TYPE PROBLEM_SOLUTION_TYPE
+
   !>Contains information for a problem defined on a region.
   TYPE PROBLEM_TYPE
     INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the problem. The user number must be unique.
@@ -963,7 +1002,7 @@ MODULE TYPES
     TYPE(PROBLEM_SOURCE_TYPE), POINTER :: SOURCE !<A pointer to the source information for the problem.
     TYPE(PROBLEM_DEPENDENT_TYPE), POINTER :: DEPENDENT !<A pointer to the depedent variable information for the problem.
     TYPE(PROBLEM_ANALYTIC_TYPE), POINTER :: ANALYTIC !<A pointer to the analytic setup information for the problem.
-    TYPE(PROBLEM_FIXED_CONDITIONS_TYPE), POINTER :: FIXED_CONDITIONS !A pointer to the fixed condition information for the problem. \todo Change name to BOUNDARY_CONDITIONS???
+    TYPE(PROBLEM_FIXED_CONDITIONS_TYPE), POINTER :: FIXED_CONDITIONS !<A pointer to the fixed condition information for the problem. \todo Change name to BOUNDARY_CONDITIONS???
     TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the solution information for the problem.
   END TYPE PROBLEM_TYPE
   
