@@ -124,7 +124,7 @@
 !>
 !>      \endverbatim
 
-!> This module contains all routines dealing with (non-distributed) matrix and vectors types.
+!>This module contains all routines dealing with (non-distributed) matrix and vectors types.
 MODULE MATRIX_VECTOR
 
   USE BASE_ROUTINES
@@ -146,10 +146,10 @@ MODULE MATRIX_VECTOR
   !> \brief Matrix vector data types
   !> \see MATRIX_VECTOR
   !>@{
-  INTEGER(INTG), PARAMETER :: MATRIX_VECTOR_INTG_TYPE=INTEGER_TYPE !<Integer matrix-vector data type \see  MATRIX_VECTOR_DataTypes,MATRIX_VECTOR
-  INTEGER(INTG), PARAMETER :: MATRIX_VECTOR_SP_TYPE=SINGLE_REAL_TYPE !<Single precision real matrix-vector data type \see  MATRIX_VECTOR_DataTypes,MATRIX_VECTOR
-  INTEGER(INTG), PARAMETER :: MATRIX_VECTOR_DP_TYPE=DOUBLE_REAL_TYPE !<Double precision real matrix-vector data type \see  MATRIX_VECTOR_DataTypes,MATRIX_VECTOR
-  INTEGER(INTG), PARAMETER :: MATRIX_VECTOR_L_TYPE=LOGICAL_TYPE !<Logical matrix-vector data type \see  MATRIX_VECTOR_DataTypes,MATRIX_VECTOR
+  INTEGER(INTG), PARAMETER :: MATRIX_VECTOR_INTG_TYPE=INTEGER_TYPE !<Integer matrix-vector data type \see MATRIX_VECTOR_DataTypes,MATRIX_VECTOR
+  INTEGER(INTG), PARAMETER :: MATRIX_VECTOR_SP_TYPE=SINGLE_REAL_TYPE !<Single precision real matrix-vector data type \see MATRIX_VECTOR_DataTypes,MATRIX_VECTOR
+  INTEGER(INTG), PARAMETER :: MATRIX_VECTOR_DP_TYPE=DOUBLE_REAL_TYPE !<Double precision real matrix-vector data type \see MATRIX_VECTOR_DataTypes,MATRIX_VECTOR
+  INTEGER(INTG), PARAMETER :: MATRIX_VECTOR_L_TYPE=LOGICAL_TYPE !<Logical matrix-vector data type \see MATRIX_VECTOR_DataTypes,MATRIX_VECTOR
   !>@}
   
   !> \addtogroup MATRIX_VECTOR_StorageTypes MATRIX_VECTOR::StorageTypes
@@ -168,7 +168,6 @@ MODULE MATRIX_VECTOR
   !Module types
 
   !Matrix types
-  
   
   !Module variables
 
@@ -193,34 +192,46 @@ MODULE MATRIX_VECTOR
   INTERFACE MATRIX_VALUES_ADD
     MODULE PROCEDURE MATRIX_VALUES_ADD_INTG
     MODULE PROCEDURE MATRIX_VALUES_ADD_INTG1
+    MODULE PROCEDURE MATRIX_VALUES_ADD_INTG2
     MODULE PROCEDURE MATRIX_VALUES_ADD_SP
     MODULE PROCEDURE MATRIX_VALUES_ADD_SP1
+    MODULE PROCEDURE MATRIX_VALUES_ADD_SP2
     MODULE PROCEDURE MATRIX_VALUES_ADD_DP
     MODULE PROCEDURE MATRIX_VALUES_ADD_DP1
+    MODULE PROCEDURE MATRIX_VALUES_ADD_DP2
     MODULE PROCEDURE MATRIX_VALUES_ADD_L
     MODULE PROCEDURE MATRIX_VALUES_ADD_L1
+    MODULE PROCEDURE MATRIX_VALUES_ADD_L2
   END INTERFACE !MATRIX_VALUES_ADD
 
   INTERFACE MATRIX_VALUES_GET
     MODULE PROCEDURE MATRIX_VALUES_GET_INTG
     MODULE PROCEDURE MATRIX_VALUES_GET_INTG1
+    MODULE PROCEDURE MATRIX_VALUES_GET_INTG2
     MODULE PROCEDURE MATRIX_VALUES_GET_SP
     MODULE PROCEDURE MATRIX_VALUES_GET_SP1
+    MODULE PROCEDURE MATRIX_VALUES_GET_SP2
     MODULE PROCEDURE MATRIX_VALUES_GET_DP
     MODULE PROCEDURE MATRIX_VALUES_GET_DP1
+    MODULE PROCEDURE MATRIX_VALUES_GET_DP2
     MODULE PROCEDURE MATRIX_VALUES_GET_L
     MODULE PROCEDURE MATRIX_VALUES_GET_L1
+    MODULE PROCEDURE MATRIX_VALUES_GET_L2
   END INTERFACE !MATRIX_VALUES_GET
   
   INTERFACE MATRIX_VALUES_SET
     MODULE PROCEDURE MATRIX_VALUES_SET_INTG
     MODULE PROCEDURE MATRIX_VALUES_SET_INTG1
+    MODULE PROCEDURE MATRIX_VALUES_SET_INTG2
     MODULE PROCEDURE MATRIX_VALUES_SET_SP
     MODULE PROCEDURE MATRIX_VALUES_SET_SP1
+    MODULE PROCEDURE MATRIX_VALUES_SET_SP2
     MODULE PROCEDURE MATRIX_VALUES_SET_DP
     MODULE PROCEDURE MATRIX_VALUES_SET_DP1
+    MODULE PROCEDURE MATRIX_VALUES_SET_DP2
     MODULE PROCEDURE MATRIX_VALUES_SET_L
     MODULE PROCEDURE MATRIX_VALUES_SET_L1
+    MODULE PROCEDURE MATRIX_VALUES_SET_L2
   END INTERFACE !MATRIX_VALUES_SET
 
   INTERFACE VECTOR_ALL_VALUES_SET
@@ -265,8 +276,9 @@ MODULE MATRIX_VECTOR
     & MATRIX_COMPRESSED_ROW_STORAGE_TYPE,MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE,MATRIX_ROW_COLUMN_STORAGE_TYPE
 
   PUBLIC MATRIX_CREATE_FINISH,MATRIX_CREATE_START,MATRIX_DATA_GET,MATRIX_DATA_TYPE_SET,MATRIX_DESTROY, &
-    & MATRIX_DUPLICATE,MATRIX_NUMBER_NON_ZEROS_SET,MATRIX_MAX_SIZE_SET,MATRIX_SIZE_SET,MATRIX_STORAGE_LOCATION_FIND, &
-    & MATRIX_STORAGE_LOCATIONS_SET,MATRIX_STORAGE_TYPE_SET,MATRIX_VALUES_ADD,MATRIX_VALUES_GET,MATRIX_VALUES_SET
+    & MATRIX_DUPLICATE,MATRIX_NUMBER_NON_ZEROS_SET,MATRIX_MAX_SIZE_SET,MATRIX_OUTPUT,MATRIX_SIZE_SET, &
+    & MATRIX_STORAGE_LOCATION_FIND,MATRIX_STORAGE_LOCATIONS_SET,MATRIX_STORAGE_TYPE_SET,MATRIX_VALUES_ADD, &
+    & MATRIX_VALUES_GET,MATRIX_VALUES_SET
 
   PUBLIC VECTOR_ALL_VALUES_SET,VECTOR_CREATE_FINISH,VECTOR_CREATE_START,VECTOR_DATA_GET,VECTOR_DATA_TYPE_SET,VECTOR_DESTROY, &
     & VECTOR_DUPLICATE,VECTOR_SIZE_SET,VECTOR_VALUES_GET,VECTOR_VALUES_SET
@@ -276,27 +288,15 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Subroutine: MATRIX_ALL_VALUES_SET
-  !###  Description:
-  !###    Sets the all values in a matrix to the specified value.
-  !###  Child-subroutines: MATRIX_ALL_VALUES_SET_INTG,MATRIX_ALL_VALUES_SET_SP,MATRIX_ALL_VALUES_SET_DP,MATRIX_ALL_VALUES_SET_L
 
-  !
-  !================================================================================================================================
-  !
-
+  !>Sets all values in an integer matrix to the specified value.
   SUBROUTINE MATRIX_ALL_VALUES_SET_INTG(MATRIX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_ALL_VALUES_SET
-    !###     Sets all values in an integer matrix to the specified value.
-    !###  Parent-subroutine: MATRIX_ALL_VALUES_SET
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: VALUE !<The value to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -329,18 +329,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets all values in a single precision matrix to the specified value.
   SUBROUTINE MATRIX_ALL_VALUES_SET_SP(MATRIX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_ALL_VALUES_SET_SP
-    !###  Description:
-    !###     Sets all values in a single precision matrix to the specified value.
-    !###  Parent-subroutine: MATRIX_ALL_VALUES_SET
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    REAL(SP), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    REAL(SP), INTENT(IN) :: VALUE !<The value to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -373,18 +369,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets all values in a double precision matrix to the specified value.
   SUBROUTINE MATRIX_ALL_VALUES_SET_DP(MATRIX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_ALL_VALUES_SET_DP
-    !###  Description:
-    !###     Sets all values in a double precision matrix to the specified value.
-    !###  Parent-subroutine: MATRIX_ALL_VALUES_SET
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    REAL(DP), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    REAL(DP), INTENT(IN) :: VALUE !<The value to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -417,18 +409,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets all values in a logical matrix to the specified value.
   SUBROUTINE MATRIX_ALL_VALUES_SET_L(MATRIX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_ALL_VALUES_SET_L
-    !###  Description:
-    !###     Sets all values in a logical matrix to the specified value.
-    !###  Parent-subroutine: MATRIX_ALL_VALUES_SET
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    LOGICAL, INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    LOGICAL, INTENT(IN) :: VALUE !<The value to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -460,17 +448,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Finishes the creation a matrix.
   SUBROUTINE MATRIX_CREATE_FINISH(MATRIX,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_CREATE_FINISH
-    !###  Description:
-    !###    Finishes the creation a matrix.
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix to finish
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -580,17 +565,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Starts the creation a matrix.
   SUBROUTINE MATRIX_CREATE_START(MATRIX,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_CREATE_START
-    !###  Description:
-    !###    Starts the creation a matrix.
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("MATRIX_CREATE_START",ERR,ERROR,*999)
@@ -618,46 +600,35 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !#### Generic-Subroutine: MATRIX_DATA_GET
-  !###  Description:
-  !###    Gets the data from a matrix by returning a pointer to the matrix data. Note: the values can be used for read operations
-  !###    but a MATRIX_VALUES_SET call must be used to change any values.
-  !###  Child-subroutines: MATRIX_DATA_GET_INTG,MATRIX_DATA_GET_SP,MATRIX_DATA_GET_DP,MATRIX_DATA_GET_L
-
-  !
-  !================================================================================================================================
-  !
-
+  !>Returns a pointer to the data of an integer matrix. Note: the values can be used for read operations but a MATRIX_VALUES_SET call must be used to change any values. The pointer should not be deallocated.
   SUBROUTINE MATRIX_DATA_GET_INTG(MATRIX,DATA,ERR,ERROR,*)
 
-    !#### Child-subroutine: MATRIX_DATA_GET_INTG
-    !###    Returns a pointer to the data of an integer matrix. Note: the values can be used for read operations but a
-    !###    MATRIX_VALUES_SET call must be used to change any values. The pointer should not be deallocated.
-    !###  Parent-subroutine: MATRIX_DATA_GET
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), POINTER :: DATA(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), POINTER :: DATA(:) !<On return a pointer to the matrix data
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("MATRIX_DATA_GET_INTG",ERR,ERROR,*999)
 
-    NULLIFY(DATA)    
-
     IF(ASSOCIATED(MATRIX)) THEN
-      IF(MATRIX%MATRIX_FINISHED) THEN
-        IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_INTG_TYPE) THEN
-          DATA=>MATRIX%DATA_INTG
-        ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the integer data type of the requested values"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        ENDIF
+      IF(ASSOCIATED(DATA)) THEN
+        CALL FLAG_ERROR("Data is already associated",ERR,ERROR,*999)
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        NULLIFY(DATA)    
+        IF(MATRIX%MATRIX_FINISHED) THEN
+          IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_INTG_TYPE) THEN
+            DATA=>MATRIX%DATA_INTG
+          ELSE
+            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              & " does not correspond to the integer data type of the requested values"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        ENDIF
       ENDIF
     ELSE
       CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
@@ -674,36 +645,35 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns a pointer to the data of a single precision matrix. Note: the values can be used for read operations but aMATRIX_VALUES_SET call must be used to change any values. The pointer should not be deallocated.
   SUBROUTINE MATRIX_DATA_GET_SP(MATRIX,DATA,ERR,ERROR,*)
 
-    !#### Child-subroutine: MATRIX_DATA_GET_SP
-    !###    Returns a pointer to the data of a single precision matrix. Note: the values can be used for read operations but a
-    !###    MATRIX_VALUES_SET call must be used to change any values. The pointer should not be deallocated.
-    !###  Parent-subroutine: MATRIX_DATA_GET
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    REAL(SP), POINTER :: DATA(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    REAL(SP), POINTER :: DATA(:) !<On return a pointer to the matrix data
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("MATRIX_DATA_GET_SP",ERR,ERROR,*999)
 
-    NULLIFY(DATA)    
-
-    IF(ASSOCIATED(MATRIX)) THEN
-      IF(MATRIX%MATRIX_FINISHED) THEN
-        IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_SP_TYPE) THEN
-          DATA=>MATRIX%DATA_SP
-        ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the single precision data type of the requested values"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        ENDIF
+     IF(ASSOCIATED(MATRIX)) THEN
+      IF(ASSOCIATED(DATA)) THEN
+        CALL FLAG_ERROR("Data is already associated",ERR,ERROR,*999)
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        NULLIFY(DATA)
+        IF(MATRIX%MATRIX_FINISHED) THEN
+          IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_SP_TYPE) THEN
+            DATA=>MATRIX%DATA_SP
+          ELSE
+            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              & " does not correspond to the single precision data type of the requested values"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        ENDIF
       ENDIF
     ELSE
       CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
@@ -720,36 +690,35 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns a pointer to the data of a double precision matrix. Note: the values can be used for read operations but a MATRIX_VALUES_SET call must be used to change any values. The pointer should not be deallocated.
   SUBROUTINE MATRIX_DATA_GET_DP(MATRIX,DATA,ERR,ERROR,*)
 
-    !#### Child-subroutine: MATRIX_DATA_GET_DP
-    !###    Returns a pointer to the data of a double precision matrix. Note: the values can be used for read operations but a
-    !###    MATRIX_VALUES_SET call must be used to change any values. The pointer should not be deallocated.
-    !###  Parent-subroutine: MATRIX_DATA_GET
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    REAL(DP), POINTER :: DATA(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    REAL(DP), POINTER :: DATA(:) !<On return a pointer to the matrix data
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("MATRIX_DATA_GET_DP",ERR,ERROR,*999)
 
-    NULLIFY(DATA)    
-
     IF(ASSOCIATED(MATRIX)) THEN
-      IF(MATRIX%MATRIX_FINISHED) THEN
-        IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_DP_TYPE) THEN
-          DATA=>MATRIX%DATA_DP
-        ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the double precision data type of the requested values"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        ENDIF
+      IF(ASSOCIATED(DATA)) THEN
+        CALL FLAG_ERROR("Data is already associated",ERR,ERROR,*999)
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        NULLIFY(DATA)
+        IF(MATRIX%MATRIX_FINISHED) THEN
+          IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_DP_TYPE) THEN
+            DATA=>MATRIX%DATA_DP
+          ELSE
+            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              & " does not correspond to the double precision data type of the requested values"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        ENDIF
       ENDIF
     ELSE
       CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
@@ -766,36 +735,35 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns a pointer to the data of a logical matrix. Note: the values can be used for read operations but a MATRIX_VALUES_SET call must be used to change any values. The pointer should not be deallocated.
   SUBROUTINE MATRIX_DATA_GET_L(MATRIX,DATA,ERR,ERROR,*)
 
-    !#### Child-subroutine: MATRIX_DATA_GET_L
-    !###    Returns a pointer to the data of a logical matrix. Note: the values can be used for read operations but a
-    !###    MATRIX_VALUES_SET call must be used to change any values. The pointer should not be deallocated.
-    !###  Parent-subroutine: MATRIX_DATA_GET
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    LOGICAL, POINTER :: DATA(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    LOGICAL, POINTER :: DATA(:) !<On return a pointer to the matrix data
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("MATRIX_DATA_GET_L",ERR,ERROR,*999)
 
-    NULLIFY(DATA)    
-
     IF(ASSOCIATED(MATRIX)) THEN
-      IF(MATRIX%MATRIX_FINISHED) THEN
-        IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_L_TYPE) THEN
-          DATA=>MATRIX%DATA_L
-        ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the logical data type of the requested values"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        ENDIF
+      IF(ASSOCIATED(DATA)) THEN
+        CALL FLAG_ERROR("Data is already associated",ERR,ERROR,*999)
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        NULLIFY(DATA)
+        IF(MATRIX%MATRIX_FINISHED) THEN
+          IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_L_TYPE) THEN
+            DATA=>MATRIX%DATA_L
+          ELSE
+            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              & " does not correspond to the logical data type of the requested values"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        ENDIF
       ENDIF
     ELSE
       CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
@@ -812,23 +780,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets/changes the data type of a matrix.
   SUBROUTINE MATRIX_DATA_TYPE_SET(MATRIX,DATA_TYPE,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_DATA_TYPE_SET
-    !###  Description:
-    !###    Sets/changes the data type of a matrix.
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: DATA_TYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix 
+    INTEGER(INTG), INTENT(IN) :: DATA_TYPE !<The data type to set for the matrix. \see MATRIX_VECTOR_DataTypes,MATRIX_VECTOR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("MATRIX_DATA_TYPE_SET",ERR,ERROR,*999)
 
-    IF(ASSOCIATED(MATRIX)) THEN
+    IF(ASSOCIATED(MATRIX)) THEN      
       IF(MATRIX%MATRIX_FINISHED) THEN
         CALL FLAG_ERROR("The matrix has been finished",ERR,ERROR,*999)
       ELSE
@@ -860,17 +825,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Destroys a matrix 
   SUBROUTINE MATRIX_DESTROY(MATRIX,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_DESTROY
-    !###  Description:
-    !###    Destroys a matrix 
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix to destroy
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 
     CALL ENTERS("MATRIX_DESTROY",ERR,ERROR,*999)
 
@@ -890,18 +852,15 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Duplicates the matrix and returns a pointer to the duplicated matrix in NEWMATRIX.
   SUBROUTINE MATRIX_DUPLICATE(MATRIX,NEW_MATRIX,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_DUPLICATE
-    !###  Description:
-    !###    Duplicates the matrix and returns a pointer to the duplicated matrix in NEWMATRIX.
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    TYPE(MATRIX_TYPE), POINTER :: NEW_MATRIX
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix to duplicate
+    TYPE(MATRIX_TYPE), POINTER :: NEW_MATRIX !<On return a pointer to a new duplicated matrix
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
@@ -945,16 +904,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises a matrix and deallocates all memory.
   SUBROUTINE MATRIX_FINALISE(MATRIX,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_FINALISE
-    !###  Description:
-    !###    Finalises a matrix and deallocates all memory.
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("MATRIX_INITIALISE",ERR,ERROR,*999)
@@ -980,16 +936,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises a matrix.
   SUBROUTINE MATRIX_INITIALISE(MATRIX,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_INITIALISE
-    !###  Description:
-    !###    Initialises a matrix.
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("MATRIX_INITIALISE",ERR,ERROR,*999)
@@ -1021,17 +974,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets/changes the number of non zeros for a matrix.
   SUBROUTINE MATRIX_NUMBER_NON_ZEROS_SET(MATRIX,NUMBER_NON_ZEROS,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_NUMBER_NON_ZEROS_SET
-    !###  Description:
-    !###    Sets/changes the number of non zeros for a matrix.
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: NUMBER_NON_ZEROS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: NUMBER_NON_ZEROS !<The number of non zeros in the matrix to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -1078,18 +1028,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets/changes the maximum size of a matrix.
   SUBROUTINE MATRIX_MAX_SIZE_SET(MATRIX,MAX_M,MAX_N,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_SIZE_SET
-    !###  Description:
-    !###    Sets/changes the size of a matrix.
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: MAX_M
-    INTEGER(INTG), INTENT(IN) :: MAX_N
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: MAX_M !<The maximum number of rows to set
+    INTEGER(INTG), INTENT(IN) :: MAX_N !<The maximum number of columns to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -1117,12 +1064,12 @@ CONTAINS
             ENDIF
           ELSE
             LOCAL_ERROR="The maximum number of matrix columns of "//TRIM(NUMBER_TO_VSTRING(MAX_N,"*",ERR,ERROR))// &
-              & " is invalid. The number must be >0"
+              & " is invalid. The number must be > 0"
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The maximum number of matrix rows of "//TRIM(NUMBER_TO_VSTRING(MAX_M,"*",ERR,ERROR))// &
-            & " is invalid. The number must be >0"
+            & " is invalid. The number must be > 0"
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDIF
@@ -1141,18 +1088,136 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE MATRIX_SIZE_SET(MATRIX,M,N,ERR,ERROR,*)
-
-    !#### Subroutine: MATRIX_SIZE_SET
-    !###  Description:
-    !###    Sets/changes the size of a matrix.
+  !>Sets/changes the size of a matrix.
+  SUBROUTINE MATRIX_OUTPUT(ID,MATRIX,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: M
-    INTEGER(INTG), INTENT(IN) :: N
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID to output to
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: i,j
+    CHARACTER(LEN=9) :: ROW_STRING,COL_STRING
+    CHARACTER(LEN=39) :: INITIAL_STRING
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MATRIX_OUTPUT",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(MATRIX)) THEN
+      IF(MATRIX%MATRIX_FINISHED) THEN
+        SELECT CASE(MATRIX%STORAGE_TYPE)
+        CASE(MATRIX_BLOCK_STORAGE_TYPE)
+          SELECT CASE(MATRIX%DATA_TYPE)
+          CASE(MATRIX_VECTOR_INTG_TYPE)
+            CALL WRITE_STRING_MATRIX(ID,1,1,MATRIX%M,1,1,MATRIX%N,8,8,RESHAPE(MATRIX%DATA_INTG,(/MATRIX%MAX_M,MATRIX%MAX_N/)), &
+              & WRITE_STRING_MATRIX_NAME_AND_INDICIES,'("Matrix','(",I9,",:)',':",8(X,I13))','(20X,8(X,I13))', &
+              & ERR,ERROR,*999)
+          CASE(MATRIX_VECTOR_SP_TYPE)
+            CALL WRITE_STRING_MATRIX(ID,1,1,MATRIX%M,1,1,MATRIX%N,8,8,RESHAPE(MATRIX%DATA_SP,(/MATRIX%MAX_M,MATRIX%MAX_N/)), &
+              & WRITE_STRING_MATRIX_NAME_AND_INDICIES,'("Matrix','(",I9,",:)',':",8(X,E13.6))','(20X,8(X,E13.6))', &
+              & ERR,ERROR,*999)
+          CASE(MATRIX_VECTOR_DP_TYPE)
+            CALL WRITE_STRING_MATRIX(ID,1,1,MATRIX%M,1,1,MATRIX%N,8,8,RESHAPE(MATRIX%DATA_DP,(/MATRIX%MAX_M,MATRIX%MAX_N/)), &
+              & WRITE_STRING_MATRIX_NAME_AND_INDICIES,'("Matrix','(",I9,",:)',':",8(X,E13.6))','(20X,8(X,E13.6))', &
+              & ERR,ERROR,*999)
+          CASE(MATRIX_VECTOR_L_TYPE)            
+            CALL WRITE_STRING_MATRIX(ID,1,1,MATRIX%M,1,1,MATRIX%N,8,8,RESHAPE(MATRIX%DATA_L,(/MATRIX%MAX_M,MATRIX%MAX_N/)), &
+              & WRITE_STRING_MATRIX_NAME_AND_INDICIES,'("Matrix','(",I9,",:)',':",8(X,L13))','(20X,8(X,L13))', &
+              & ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The matrix data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE(MATRIX_DIAGONAL_STORAGE_TYPE)
+          CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+        CASE(MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+          CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+        CASE(MATRIX_ROW_MAJOR_STORAGE_TYPE)
+          CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+        CASE(MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+          DO i=1,MATRIX%M
+            ROW_STRING=NUMBER_TO_CHARACTER(i,"I9",ERR,ERROR)
+            SELECT CASE(MATRIX%DATA_TYPE)              
+            CASE(MATRIX_VECTOR_INTG_TYPE)
+              INITIAL_STRING='("Matrix('//ROW_STRING//',:):",8(X,I13))'
+              CALL WRITE_STRING_VECTOR(ID,MATRIX%ROW_INDICES(i),1,MATRIX%ROW_INDICES(i+1),8,8,MATRIX%DATA_INTG,INITIAL_STRING, &
+                & '(20X,8(X,I13))',ERR,ERROR,*999)
+            CASE(MATRIX_VECTOR_SP_TYPE)
+              INITIAL_STRING='("Matrix('//ROW_STRING//',:):",8(X,E13.6))'
+              CALL WRITE_STRING_VECTOR(ID,MATRIX%ROW_INDICES(i),1,MATRIX%ROW_INDICES(i+1),8,8,MATRIX%DATA_SP,INITIAL_STRING, &
+                & '(20X,8(X,E13.6))',ERR,ERROR,*999)
+            CASE(MATRIX_VECTOR_DP_TYPE)
+              INITIAL_STRING='("Matrix('//ROW_STRING//',:):",8(X,E13.6))'
+              CALL WRITE_STRING_VECTOR(ID,MATRIX%ROW_INDICES(i),1,MATRIX%ROW_INDICES(i+1),8,8,MATRIX%DATA_DP,INITIAL_STRING, &
+                & '(20X,8(X,E13.6))',ERR,ERROR,*999)
+            CASE(MATRIX_VECTOR_L_TYPE)            
+              INITIAL_STRING='("Matrix('//ROW_STRING//',:):",8(X,L13))'
+              CALL WRITE_STRING_VECTOR(ID,MATRIX%ROW_INDICES(i),1,MATRIX%ROW_INDICES(i+1),8,8,MATRIX%DATA_L,INITIAL_STRING, &
+                & '(20X,8(X,L13))',ERR,ERROR,*999)
+            CASE DEFAULT
+              LOCAL_ERROR="The matrix data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid"
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+          ENDDO !i
+        CASE(MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+          DO j=1,MATRIX%N
+            COL_STRING=NUMBER_TO_CHARACTER(j,"I9",ERR,ERROR)
+            SELECT CASE(MATRIX%DATA_TYPE)              
+            CASE(MATRIX_VECTOR_INTG_TYPE)
+              INITIAL_STRING='("Matrix(:,'//COL_STRING//'):",8(X,I13))'
+              CALL WRITE_STRING_VECTOR(ID,MATRIX%COLUMN_INDICES(j),1,MATRIX%COLUMN_INDICES(j+1),8,8,MATRIX%DATA_INTG, &
+                & INITIAL_STRING,'(20X,8(X,I13))',ERR,ERROR,*999)
+            CASE(MATRIX_VECTOR_SP_TYPE)
+              INITIAL_STRING='("Matrix(:,'//COL_STRING//'):",8(X,E13.6))'
+              CALL WRITE_STRING_VECTOR(ID,MATRIX%COLUMN_INDICES(j),1,MATRIX%COLUMN_INDICES(j+1),8,8,MATRIX%DATA_SP, &
+                & INITIAL_STRING,'(20X,8(X,E13.6))',ERR,ERROR,*999)
+            CASE(MATRIX_VECTOR_DP_TYPE)
+              INITIAL_STRING='("Matrix(:,'//COL_STRING//'):",8(X,E13.6))'
+              CALL WRITE_STRING_VECTOR(ID,MATRIX%COLUMN_INDICES(j),1,MATRIX%COLUMN_INDICES(j+1),8,8,MATRIX%DATA_DP, &
+                & INITIAL_STRING,'(20X,8(X,E13.6))',ERR,ERROR,*999)
+            CASE(MATRIX_VECTOR_L_TYPE)            
+              INITIAL_STRING='("Matrix(:,'//COL_STRING//'):",8(X,L13))'
+              CALL WRITE_STRING_VECTOR(ID,MATRIX%COLUMN_INDICES(j),1,MATRIX%COLUMN_INDICES(j+1),8,8,MATRIX%DATA_L, &
+                & INITIAL_STRING,'(20X,8(X,L13))',ERR,ERROR,*999)
+            CASE DEFAULT
+              LOCAL_ERROR="The matrix data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid"
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+          ENDDO !j
+        CASE(MATRIX_ROW_COLUMN_STORAGE_TYPE)
+          CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+        CASE DEFAULT
+          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+      ENDIF      
+    ELSE
+      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("MATRIX_OUTPUT")
+    RETURN
+999 CALL ERRORS("MATRIX_OUTPUT",ERR,ERROR)
+    CALL EXITS("MATRIX_OUTPUT")
+    RETURN 1
+  END SUBROUTINE MATRIX_OUTPUT
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the size of a matrix.
+  SUBROUTINE MATRIX_SIZE_SET(MATRIX,M,N,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: M !<The number of rows to set
+    INTEGER(INTG), INTENT(IN) :: N !<The number of columns to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -1191,21 +1256,17 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Returns the storage location in the data array of a matrix that correponds to location I,J. If the location does not exist the routine returns zero.
   SUBROUTINE MATRIX_STORAGE_LOCATION_FIND(MATRIX,I,J,LOCATION,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_STORAGE_LOCATION_FIND
-    !###  Description:
-    !###     Returns the storage location in the data array of a matrix that correponds to location I,J. If the location does not
-    !###     exist the routine returns zero.
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: I
-    INTEGER(INTG), INTENT(IN) :: J
-    INTEGER(INTG), INTENT(OUT) :: LOCATION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: I !<The row number of the location to find
+    INTEGER(INTG), INTENT(IN) :: J !<The column number of the location to find
+    INTEGER(INTG), INTENT(OUT) :: LOCATION !<On return the location of the specified row and column in the matrix data. If the row and column does not exist in the matrix then zero is returned.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: LOWLIMIT,MIDPOINT,UPLIMIT
     LOGICAL :: FOUNDCOLUMN, FOUNDROW
@@ -1315,19 +1376,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Sets the storage locations (sparsity pattern) in a matrix to that specified by the row and column indices.
   SUBROUTINE MATRIX_STORAGE_LOCATIONS_SET(MATRIX,ROW_INDICES,COLUMN_INDICES,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_STORAGE_LOCATIONS_SET
-    !###  Description:
-    !###     Sets the storage locations (sparsity pattern) in a matrix to that specified by the row and column indices.
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:)
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index values for the sparisty pattern.
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INDICES(i). The column index values for the sparsity pattern.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: i,j,k
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -1336,6 +1394,8 @@ CONTAINS
 
     IF(ASSOCIATED(MATRIX)) THEN
       IF(MATRIX%MATRIX_FINISHED) THEN
+        CALL FLAG_ERROR("Matrix has been finished",ERR,ERROR,*999)
+      ELSE
         SELECT CASE(MATRIX%STORAGE_TYPE)
         CASE(MATRIX_BLOCK_STORAGE_TYPE)
           CALL FLAG_ERROR("Can not set matrix locations for a block storage matrix",ERR,ERROR,*999)
@@ -1507,8 +1567,6 @@ CONTAINS
           LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid"
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
-      ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
@@ -1525,17 +1583,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets/changes the storage type for a matrix.
   SUBROUTINE MATRIX_STORAGE_TYPE_SET(MATRIX,STORAGE_TYPE,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_STORAGE_TYPE_SET
-    !###  Description:
-    !###    Sets/changes the storage type for a matrix.
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: STORAGE_TYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: STORAGE_TYPE !<The storage type to set. \see MATRIX_VECTOR_StorageTypes,MATRIX_VECTOR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -1579,32 +1634,17 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Subroutine: MATRIX_VALUES_ADD
-  !###  Description:
-  !###    Adds values to elements in a matrix.
-  !###  Child-subroutines: MATRIX_VALUES_ADD_INTG,MATRIX_VALUES_ADD_INTG1,MATRIX_VALUES_ADD_SP,MATRIX_VALUES_ADD_SP1,
-  !###    MATRIX_VALUES_ADD_DP,MATRIX_VALUES_ADD_DP1,MATRIX_VALUES_ADD_L,MATRIX_VALUES_ADD_L1
 
-  !
-  !================================================================================================================================
-  !
-  
+  !>Adds values to an integer matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=MATRIX(I,J)+VALUE
   SUBROUTINE MATRIX_VALUES_ADD_INTG(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_ADD_INTG
-    !###  Description:
-    !###     Adds values to an integer matrix at the location specified by the row and column indicies i.e.,
-    !###     MATRIX(I,J)=MATRIX(I,J)+VALUE
-    !###  Parent-subroutine: MATRIX_VALUES_ADD
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:)
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:)
-    INTEGER(INTG), INTENT(IN) :: VALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the i'th value to add
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(i). The column index for the i'th value to add
+    INTEGER(INTG), INTENT(IN) :: VALUES(:) !<VALUES(i). The value of the i'th value to add
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: k,LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -1661,21 +1701,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Adds a value to an integer matrix at the location specified by the row and column index i.e., MATRIX(I,J)=MATRIX(I,J)+VALUE
   SUBROUTINE MATRIX_VALUES_ADD_INTG1(MATRIX,ROW_INDEX,COLUMN_INDEX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_ADD_INTG1
-    !###  Description:
-    !###     Adds a value to an integer matrix at the location specified by the row and column index i.e.,
-    !###     MATRIX(I,J)=MATRIX(I,J)+VALUE
-    !###  Parent-subroutine: MATRIX_VALUES_ADD
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDEX
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX
-    INTEGER(INTG), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDEX !<The row index for the value to add
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX !<The column index for the value to add
+    INTEGER(INTG), INTENT(IN) :: VALUE !<The value to add
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -1715,22 +1750,87 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  SUBROUTINE MATRIX_VALUES_ADD_SP(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_ADD_SP
-    !###  Description:
-    !###     Adds values to a single precision real matrix at the location specified by the row and column indicies i.e.,
-    !###     MATRIX(I,J)=MATRIX(I,J)+VALUE
-    !###  Parent-subroutine: MATRIX_VALUES_ADD
+  !>Adds a matrix of values to an integer matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=MATRIX(I,J)+VALUE
+  SUBROUTINE MATRIX_VALUES_ADD_INTG2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:)
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:)
-    REAL(SP), INTENT(IN) :: VALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the ij'th value to add
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(j). The column index for the ij'th value to add
+    INTEGER(INTG), INTENT(IN) :: VALUES(:,:) !<VALUES(i,j). The value of the ij'th value to add
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    INTEGER(INTG) :: i,j,LOCATION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MATRIX_VALUES_ADD_INTG2",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(MATRIX)) THEN
+      IF(MATRIX%MATRIX_FINISHED) THEN
+        IF(SIZE(ROW_INDICES,1)==SIZE(VALUES,1)) THEN
+          IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,2)) THEN
+            IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_INTG_TYPE) THEN
+              DO i=1,SIZE(ROW_INDICES,1)
+                DO j=1,SIZE(COLUMN_INDICES,1)
+                  CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
+                  IF(LOCATION==0) THEN
+                    LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ELSE
+                    MATRIX%DATA_INTG(LOCATION)=MATRIX%DATA_INTG(LOCATION)+VALUES(i,j)
+                  ENDIF
+                ENDDO !j
+              ENDDO !i
+            ELSE
+              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+                & " does not correspond to the integer data type of the given values"
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The size of the column indices array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the number of columns in the values array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The size of the row indices array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the number of rows in the values array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("MATRIX_VALUES_ADD_INTG2")
+    RETURN
+999 CALL ERRORS("MATRIX_VALUES_ADD_INTG2",ERR,ERROR)
+    CALL EXITS("MATRIX_VALUES_ADD_INTG2")
+    RETURN 1
+  END SUBROUTINE MATRIX_VALUES_ADD_INTG2
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Adds values to a single precision real matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=MATRIX(I,J)+VALUE
+  SUBROUTINE MATRIX_VALUES_ADD_SP(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the i'th value to add
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(i). The column index for the i'th value to add
+    REAL(SP), INTENT(IN) :: VALUES(:) !<VALUES(i). The value of the i'th value to add
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: k,LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -1787,21 +1887,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Adds a value to a single precision real matrix at the location specified by the row and column index i.e., MATRIX(I,J)=MATRIX(I,J)+VALUE
   SUBROUTINE MATRIX_VALUES_ADD_SP1(MATRIX,ROW_INDEX,COLUMN_INDEX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_ADD_SP1
-    !###  Description:
-    !###     Adds a value to a single precision real matrix at the location specified by the row and column index i.e.,
-    !###     MATRIX(I,J)=MATRIX(I,J)+VALUE
-    !###  Parent-subroutine: MATRIX_VALUES_ADD
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDEX
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX
-    REAL(SP), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDEX !<The row index for the value to add
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX !<The column index for the value to add
+    REAL(SP), INTENT(IN) :: VALUE !<The value to add
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -1841,22 +1936,87 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  SUBROUTINE MATRIX_VALUES_ADD_DP(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_ADD_DP
-    !###  Description:
-    !###     Adds values to a double precision real matrix at the location specified by the row and column indicies i.e.,
-    !###     MATRIX(I,J)=MATRIX(I,J)+VALUE
-    !###  Parent-subroutine: MATRIX_VALUES_ADD
+  !>Adds a matrix of values to a single precision real matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=MATRIX(I,J)+VALUE
+  SUBROUTINE MATRIX_VALUES_ADD_SP2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:)
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:)
-    REAL(DP), INTENT(IN) :: VALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the ij'th value to add
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(j). The column index for the ij'th value to add
+    REAL(SP), INTENT(IN) :: VALUES(:,:) !<VALUES(i,j). The value of the ij'th value to add
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    INTEGER(INTG) :: i,j,LOCATION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MATRIX_VALUES_ADD_SP2",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(MATRIX)) THEN
+      IF(MATRIX%MATRIX_FINISHED) THEN
+        IF(SIZE(ROW_INDICES,1)==SIZE(VALUES,1)) THEN
+          IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,2)) THEN
+            IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_SP_TYPE) THEN
+              DO i=1,SIZE(ROW_INDICES,1)
+                DO j=1,SIZE(COLUMN_INDICES,1)
+                  CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
+                  IF(LOCATION==0) THEN
+                    LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ELSE
+                    MATRIX%DATA_SP(LOCATION)=MATRIX%DATA_SP(LOCATION)+VALUES(i,j)
+                  ENDIF
+                ENDDO !j
+              ENDDO !i
+            ELSE
+              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+                & " does not correspond to the single precision data type of the given values"
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The size of the column indices array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the number of columns in the values array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The size of the row indices array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the number of rows in the values array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("MATRIX_VALUES_ADD_SP2")
+    RETURN
+999 CALL ERRORS("MATRIX_VALUES_ADD_SP2",ERR,ERROR)
+    CALL EXITS("MATRIX_VALUES_ADD_SP2")
+    RETURN 1
+  END SUBROUTINE MATRIX_VALUES_ADD_SP2
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Adds values to a double precision real matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=MATRIX(I,J)+VALUE
+  SUBROUTINE MATRIX_VALUES_ADD_DP(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the i'th value to add
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(i). The column index for the i'th value to add
+    REAL(DP), INTENT(IN) :: VALUES(:) !<VALUES(i). The value of the i'th value to add
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: k,LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -1913,21 +2073,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Adds a value to a double precision real matrix at the location specified by the row and column index i.e., MATRIX(I,J)=MATRIX(I,J)+VALUE
   SUBROUTINE MATRIX_VALUES_ADD_DP1(MATRIX,ROW_INDEX,COLUMN_INDEX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_ADD_DP1
-    !###  Description:
-    !###     Adds a value to a double precision real matrix at the location specified by the row and column index i.e.,
-    !###     MATRIX(I,J)=MATRIX(I,J)+VALUE
-    !###  Parent-subroutine: MATRIX_VALUES_ADD
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDEX
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX
-    REAL(DP), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDEX !<The row index for the value to add
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX !<The column index for the value to add
+    REAL(DP), INTENT(IN) :: VALUE !<The value to add
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -1967,22 +2122,87 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  SUBROUTINE MATRIX_VALUES_ADD_L(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_ADD_L
-    !###  Description:
-    !###     Adds values to a logical matrix at the location specified by the row and column indicies i.e.,
-    !###     MATRIX(I,J)=MATRIX(I,J).OR.VALUE
-    !###  Parent-subroutine: MATRIX_VALUES_ADD
+  !>Adds a matrix of values to a double precision real matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=MATRIX(I,J)+VALUE
+  SUBROUTINE MATRIX_VALUES_ADD_DP2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:)
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:)
-    LOGICAL, INTENT(IN) :: VALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the ij'th value to add
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(j). The column index for the ij'th value to add
+    REAL(DP), INTENT(IN) :: VALUES(:,:) !<VALUES(i,j). The value of the ij'th value to add
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    INTEGER(INTG) :: i,j,LOCATION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MATRIX_VALUES_ADD_DP2",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(MATRIX)) THEN
+      IF(MATRIX%MATRIX_FINISHED) THEN
+        IF(SIZE(ROW_INDICES,1)==SIZE(VALUES,1)) THEN
+          IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,2)) THEN
+            IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_DP_TYPE) THEN
+              DO i=1,SIZE(ROW_INDICES,1)
+                DO j=1,SIZE(COLUMN_INDICES,1)
+                  CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
+                  IF(LOCATION==0) THEN
+                    LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ELSE
+                    MATRIX%DATA_DP(LOCATION)=MATRIX%DATA_DP(LOCATION)+VALUES(i,j)
+                  ENDIF
+                ENDDO !j
+              ENDDO !i
+            ELSE
+              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+                & " does not correspond to the double precision data type of the given values"
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The size of the column indicies array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the number of columns in the values array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The size of the row indicies array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the number of rows the values array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("MATRIX_VALUES_ADD_DP2")
+    RETURN
+999 CALL ERRORS("MATRIX_VALUES_ADD_DP2",ERR,ERROR)
+    CALL EXITS("MATRIX_VALUES_ADD_DP2")
+    RETURN 1
+  END SUBROUTINE MATRIX_VALUES_ADD_DP2
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Adds values to a logical matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=MATRIX(I,J).OR.VALUE
+  SUBROUTINE MATRIX_VALUES_ADD_L(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the i'th value to add
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(i). The column index for the i'th value to add
+    LOGICAL, INTENT(IN) :: VALUES(:) !<VALUES(i). The value of the i'th value to add
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: k,LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -2039,21 +2259,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Adds a value to a logical matrix at the location specified by the row and column index i.e., MATRIX(I,J)=MATRIX(I,J).OR.VALUE
   SUBROUTINE MATRIX_VALUES_ADD_L1(MATRIX,ROW_INDEX,COLUMN_INDEX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_ADD_L1
-    !###  Description:
-    !###     Adds a value to a logical matrix at the location specified by the row and column index i.e.,
-    !###     MATRIX(I,J)=MATRIX(I,J).OR.VALUE
-    !###  Parent-subroutine: MATRIX_VALUES_ADD
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDEX
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX
-    LOGICAL, INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDEX !<The row index for the value to add
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX !<The column index for the value to add
+    LOGICAL, INTENT(IN) :: VALUE !<The value to add
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -2093,31 +2308,87 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Subroutine: MATRIX_VALUES_GET
-  !###  Description:
-  !###    Gets the elements in a matrix and returns them in values.
-  !###  Child-subroutines: MATRIX_VALUES_GET_INTG,MATRIX_VALUES_GET_INTG1,MATRIX_VALUES_GET_SP,MATRIX_VALUES_GET_SP1,
-  !###    MATRIX_VALUES_GET_DP,MATRIX_VALUES_GET_DP1,MATRIX_VALUES_GET_L,MATRIX_VALUES_GET_L1
+
+  !>Adds a matrix of values to a logical matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=MATRIX(I,J).OR.VALUE
+  SUBROUTINE MATRIX_VALUES_ADD_L2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the ij'th value to add
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(j). The column index for the ij'th value to add
+    LOGICAL, INTENT(IN) :: VALUES(:,:) !<VALUES(i,j). The value of the ij'th value to add
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    INTEGER(INTG) :: i,j,LOCATION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MATRIX_VALUES_ADD_L2",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(MATRIX)) THEN
+      IF(MATRIX%MATRIX_FINISHED) THEN
+        IF(SIZE(ROW_INDICES,1)==SIZE(VALUES,1)) THEN
+          IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,2)) THEN
+            IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_L_TYPE) THEN
+              DO i=1,SIZE(ROW_INDICES,1)
+                DO j=1,SIZE(COLUMN_INDICES,1)
+                  CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
+                  IF(LOCATION==0) THEN
+                    LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ELSE
+                    MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION).OR.VALUES(i,j)
+                  ENDIF
+                ENDDO !j
+              ENDDO !i
+            ELSE
+              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+                & " does not correspond to the logical data type of the given values"
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The size of the column indicies array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the number of columns in the values array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The size of the row indicies array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the number of rows in the values array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("MATRIX_VALUES_ADD_L2")
+    RETURN
+999 CALL ERRORS("MATRIX_VALUES_ADD_L2",ERR,ERROR)
+    CALL EXITS("MATRIX_VALUES_ADD_L2")
+    RETURN 1
+  END SUBROUTINE MATRIX_VALUES_ADD_L2
 
   !
   !================================================================================================================================
   !
-  
+
+  !>Gets the values in an integer matrix at the location specified by the row and column indicies i.e., VALUE=MATRIX(I,J)
   SUBROUTINE MATRIX_VALUES_GET_INTG(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_GET_INTG
-    !###  Description:
-    !###    Gets the values in an integer matrix at the location specified by the row and column indicies i.e., VALUE=MATRIX(I,J)
-    !###  Parent-subroutine: MATRIX_VALUES_GET
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:)
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:)
-    INTEGER(INTG), INTENT(OUT) :: VALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the i'th value to get
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(i). The column index for the i'th value to get
+    INTEGER(INTG), INTENT(OUT) :: VALUES(:) !<VALUES(i). On return the value of the i'th value to get
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: k,LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -2174,20 +2445,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Gets a value in an integer matrix at the location specified by the row and column index i.e., VALUE=MATRIX(I,J)
   SUBROUTINE MATRIX_VALUES_GET_INTG1(MATRIX,ROW_INDEX,COLUMN_INDEX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_GET_INTG1
-    !###  Description:
-    !###     Gets a value in an integer matrix at the location specified by the row and column index i.e., VALUE=MATRIX(I,J)
-    !###  Parent-subroutine: MATRIX_VALUES_GET
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDEX
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX
-    INTEGER(INTG), INTENT(OUT) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDEX !<The row index of the value to get
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX !<The column index of the value to get
+    INTEGER(INTG), INTENT(OUT) :: VALUE !<On return the value in the matrix at the specified row and column
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -2227,22 +2494,87 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  SUBROUTINE MATRIX_VALUES_GET_SP(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_GET_SP
-    !###  Description:
-    !###     Gets values in a single precision real matrix at the location specified by the row and column indicies i.e.,
-    !###     VALUE=MATRIX(I,J)
-    !###  Parent-subroutine: MATRIX_VALUES_GET
+  !>Gets the matrix of values in an integer matrix at the location specified by the row and column indicies i.e., VALUE=MATRIX(I,J)
+  SUBROUTINE MATRIX_VALUES_GET_INTG2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:)
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:)
-    REAL(SP), INTENT(OUT) :: VALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the ij'th value to get
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(j). The column index for the ij'th value to get
+    INTEGER(INTG), INTENT(OUT) :: VALUES(:,:) !<VALUES(i,j). On return the value of the ij'th value to get
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    INTEGER(INTG) :: i,j,LOCATION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MATRIX_VALUES_GET_INTG2",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(MATRIX)) THEN
+      IF(MATRIX%MATRIX_FINISHED) THEN
+        IF(SIZE(ROW_INDICES,1)==SIZE(VALUES,1)) THEN
+          IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,2)) THEN
+            IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_INTG_TYPE) THEN
+              DO i=1,SIZE(ROW_INDICES,1)
+                DO j=1,SIZE(COLUMN_INDICES,1)
+                  CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
+                  IF(LOCATION==0) THEN
+                    LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ELSE
+                    VALUES(i,j)=MATRIX%DATA_INTG(LOCATION)
+                  ENDIF
+                ENDDO !j
+              ENDDO !i
+            ELSE
+              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+                & " does not correspond to the integer data type of the given values"
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The size of the column indices array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the number of columns in the values array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The size of the row indices array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the number of rows in the values array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("MATRIX_VALUES_GET_INTG2")
+    RETURN
+999 CALL ERRORS("MATRIX_VALUES_GET_INTG2",ERR,ERROR)
+    CALL EXITS("MATRIX_VALUES_GET_INTG2")
+    RETURN 1
+  END SUBROUTINE MATRIX_VALUES_GET_INTG2
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets values in a single precision real matrix at the location specified by the row and column indicies i.e., VALUE=MATRIX(I,J)
+  SUBROUTINE MATRIX_VALUES_GET_SP(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the i'th value to get
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(i). The column index for the i'th value to get
+    REAL(SP), INTENT(OUT) :: VALUES(:) !<VALUES(i). On return the value of the i'th value to get
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: k,LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -2299,21 +2631,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Gets a value in a single precision real matrix at the location specified by the row and column index i.e., VALUE=MATRIX(I,J)
   SUBROUTINE MATRIX_VALUES_GET_SP1(MATRIX,ROW_INDEX,COLUMN_INDEX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_GET_SP1
-    !###  Description:
-    !###     Gets a value in a single precision real matrix at the location specified by the row and column index i.e.,
-    !###     VALUE=MATRIX(I,J)
-    !###  Parent-subroutine: MATRIX_VALUES_GET
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDEX
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX
-    REAL(SP), INTENT(OUT) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDEX !<The row index of the value to get
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX !<The column index of the value to get
+    REAL(SP), INTENT(OUT) :: VALUE !<On return the value in the matrix at the specified row and column
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -2353,22 +2680,87 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  SUBROUTINE MATRIX_VALUES_GET_DP(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_GET_DP
-    !###  Description:
-    !###     Gets values in a double precision real matrix at the location specified by the row and column indicies i.e.,
-    !###     VALUE=MATRIX(I,J)
-    !###  Parent-subroutine: MATRIX_VALUES_GET
+  !>Gets a matrix of values in a single precision real matrix at the location specified by the row and column indicies i.e., VALUE=MATRIX(I,J)
+  SUBROUTINE MATRIX_VALUES_GET_SP2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:)
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:)
-    REAL(DP), INTENT(OUT) :: VALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the ij'th value to get
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(j). The column index for the ij'th value to get
+    REAL(SP), INTENT(OUT) :: VALUES(:,:) !<VALUES(i,j). On return the value of the ij'th value to get
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    INTEGER(INTG) :: i,j,LOCATION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MATRIX_VALUES_GET_SP2",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(MATRIX)) THEN
+      IF(MATRIX%MATRIX_FINISHED) THEN
+        IF(SIZE(ROW_INDICES,1)==SIZE(VALUES,1)) THEN
+          IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,2)) THEN
+            IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_SP_TYPE) THEN
+              DO i=1,SIZE(ROW_INDICES,1)
+                DO j=1,SIZE(COLUMN_INDICES,1)
+                  CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
+                  IF(LOCATION==0) THEN
+                    LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ELSE
+                    VALUES(i,j)=MATRIX%DATA_SP(LOCATION)
+                  ENDIF
+                ENDDO !j
+              ENDDO !i
+            ELSE
+              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+                & " does not correspond to the single precision data type of the given values"
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The size of the column indices array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the number of columns in the values array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The size of the row indices array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the number of rows in the values array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("MATRIX_VALUES_GET_SP2")
+    RETURN
+999 CALL ERRORS("MATRIX_VALUES_GET_SP2",ERR,ERROR)
+    CALL EXITS("MATRIX_VALUES_GET_SP2")
+    RETURN 1
+  END SUBROUTINE MATRIX_VALUES_GET_SP2
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets values in a double precision real matrix at the location specified by the row and column indicies i.e., VALUE=MATRIX(I,J)
+  SUBROUTINE MATRIX_VALUES_GET_DP(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the i'th value to get
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(i). The column index for the i'th value to get
+    REAL(DP), INTENT(OUT) :: VALUES(:) !<VALUES(i). On return the value of the i'th value to get
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: k,LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -2425,21 +2817,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Gets a value in a double precision real matrix at the location specified by the row and column index i.e., VALUE=MATRIX(I,J)
   SUBROUTINE MATRIX_VALUES_GET_DP1(MATRIX,ROW_INDEX,COLUMN_INDEX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_GET_DP1
-    !###  Description:
-    !###     Gets a value in a double precision real matrix at the location specified by the row and column index i.e.,
-    !###     VALUE=MATRIX(I,J)
-    !###  Parent-subroutine: MATRIX_VALUES_GET
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDEX
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX
-    REAL(DP), INTENT(OUT) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDEX !<The row index of the value to get
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX !<The column index of the value to get
+    REAL(DP), INTENT(OUT) :: VALUE !<On return the value in the matrix at the specified row and column
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -2479,21 +2866,87 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  SUBROUTINE MATRIX_VALUES_GET_L(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_GET_L
-    !###  Description:
-    !###     Gets values in a logical matrix at the location specified by the row and column indicies i.e., VALUE=MATRIX(I,J)
-    !###  Parent-subroutine: MATRIX_VALUES_SET
+  !>Gets a matrix of values in a double precision real matrix at the location specified by the row and column indicies i.e., VALUE=MATRIX(I,J)
+  SUBROUTINE MATRIX_VALUES_GET_DP2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:)
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:)
-    LOGICAL, INTENT(OUT) :: VALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the ij'th value to get
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(j). The column index for the ij'th value to get
+    REAL(DP), INTENT(OUT) :: VALUES(:,:) !<VALUES(i,j). On return the value of the ij'th value to get
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    INTEGER(INTG) :: i,j,LOCATION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MATRIX_VALUES_GET_DP2",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(MATRIX)) THEN
+      IF(MATRIX%MATRIX_FINISHED) THEN
+        IF(SIZE(ROW_INDICES,1)==SIZE(VALUES,1)) THEN
+          IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,2)) THEN
+            IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_DP_TYPE) THEN
+              DO i=1,SIZE(ROW_INDICES,1)
+                DO j=1,SIZE(COLUMN_INDICES,1)
+                  CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
+                  IF(LOCATION==0) THEN
+                    LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ELSE
+                    VALUES(i,j)=MATRIX%DATA_DP(LOCATION)
+                  ENDIF
+                ENDDO !j
+              ENDDO !i
+            ELSE
+              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+                & " does not correspond to the double precision data type of the given values"
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The size of the column indicies array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the number of columns in the values array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The size of the row indicies array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the number of rows in the values array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("MATRIX_VALUES_GET_DP2")
+    RETURN
+999 CALL ERRORS("MATRIX_VALUES_GET_DP2",ERR,ERROR)
+    CALL EXITS("MATRIX_VALUES_GET_DP2")
+    RETURN 1
+  END SUBROUTINE MATRIX_VALUES_GET_DP2
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets values in a logical matrix at the location specified by the row and column indicies i.e., VALUE=MATRIX(I,J)
+  SUBROUTINE MATRIX_VALUES_GET_L(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the i'th value to get
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(i). The column index for the i'th value to get
+    LOGICAL, INTENT(OUT) :: VALUES(:) !<VALUES(i). On return the value of the i'th value to get
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: k,LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -2550,20 +3003,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Gets a value in a logical matrix at the location specified by the row and column index i.e., VALUE=MATRIX(I,J)
   SUBROUTINE MATRIX_VALUES_GET_L1(MATRIX,ROW_INDEX,COLUMN_INDEX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_GET_L1
-    !###  Description:
-    !###    Gets a value in a logical matrix at the location specified by the row and column index i.e., VALUE=MATRIX(I,J)
-    !###  Parent-subroutine: MATRIX_VALUES_GET
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDEX
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX
-    LOGICAL, INTENT(OUT) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDEX !<The row index of the value to get
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX !<The column index of the value to get
+    LOGICAL, INTENT(OUT) :: VALUE !<On return the value in the matrix at the specified row and column
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -2603,31 +3052,87 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Subroutine: MATRIX_VALUES_SET
-  !###  Description:
-  !###    Sets the elements in a matrix to the given values.
-  !###  Child-subroutines: MATRIX_VALUES_SET_INTG,MATRIX_VALUES_SET_INTG1,MATRIX_VALUES_SET_SP,MATRIX_VALUES_SET_SP1,
-  !###    MATRIX_VALUES_SET_DP,MATRIX_VALUES_SET_DP1,MATRIX_VALUES_SET_L,MATRIX_VALUES_SET_L1
+
+  !>Gets a matrix of values in a logical matrix at the location specified by the row and column indicies i.e., VALUE=MATRIX(I,J)
+  SUBROUTINE MATRIX_VALUES_GET_L2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the ij'th value to get
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(j). The column index for the ij'th value to get
+    LOGICAL, INTENT(OUT) :: VALUES(:,:) !<VALUES(i,j). On return the value of the ij'th value to get
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    INTEGER(INTG) :: i,j,LOCATION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MATRIX_VALUES_GET_L2",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(MATRIX)) THEN
+      IF(MATRIX%MATRIX_FINISHED) THEN
+        IF(SIZE(ROW_INDICES,1)==SIZE(VALUES,1)) THEN
+          IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,2)) THEN
+            IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_L_TYPE) THEN
+              DO i=1,SIZE(ROW_INDICES,1)
+                DO j=1,SIZE(COLUMN_INDICES,1)
+                  CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
+                  IF(LOCATION==0) THEN
+                    LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ELSE
+                    VALUES(i,j)=MATRIX%DATA_L(LOCATION)
+                  ENDIF
+                ENDDO !j
+              ENDDO !i
+            ELSE
+              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+                & " does not correspond to the logical data type of the given values"
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The size of the column indicies array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the number of columns in the values array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The size of the row indicies array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the number of rows in the values array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("MATRIX_VALUES_GET_L2")
+    RETURN
+999 CALL ERRORS("MATRIX_VALUES_GET_L2",ERR,ERROR)
+    CALL EXITS("MATRIX_VALUES_GET_L2")
+    RETURN 1
+  END SUBROUTINE MATRIX_VALUES_GET_L2
 
   !
   !================================================================================================================================
   !
-  
+
+  !>Sets the values in an integer matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=VALUE
   SUBROUTINE MATRIX_VALUES_SET_INTG(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_SET_INTG
-    !###  Description:
-    !###     Sets the values in an integer matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=VALUE
-    !###  Parent-subroutine: MATRIX_VALUES_SET
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:)
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:)
-    INTEGER(INTG), INTENT(IN) :: VALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the i'th value to set
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(i). The column index for the i'th value to set
+    INTEGER(INTG), INTENT(IN) :: VALUES(:) !<VALUES(i). The value of the i'th value to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: k,LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -2684,20 +3189,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets a value in an integer matrix at the location specified by the row and column index i.e., MATRIX(I,J)=VALUE
   SUBROUTINE MATRIX_VALUES_SET_INTG1(MATRIX,ROW_INDEX,COLUMN_INDEX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_SET_INTG1
-    !###  Description:
-    !###     Sets a value in an integer matrix at the location specified by the row and column index i.e., MATRIX(I,J)=VALUE
-    !###  Parent-subroutine: MATRIX_VALUES_SET
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDEX
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX
-    INTEGER(INTG), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDEX !<The row index of the value to set
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX !<The column index of the value to set
+    INTEGER(INTG), INTENT(IN) :: VALUE !<The value to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -2737,22 +3238,87 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  SUBROUTINE MATRIX_VALUES_SET_SP(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_SET_SP
-    !###  Description:
-    !###     Sets the values in a single precision real matrix at the location specified by the row and column indicies i.e.,
-    !###     MATRIX(I,J)=VALUE
-    !###  Parent-subroutine: MATRIX_VALUES_SET
+  !>Sets the matrix of values in an integer matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=VALUE
+  SUBROUTINE MATRIX_VALUES_SET_INTG2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:)
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:)
-    REAL(SP), INTENT(IN) :: VALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the ij'th value to set
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(j). The column index for the ij'th value to set
+    INTEGER(INTG), INTENT(IN) :: VALUES(:,:) !<VALUES(i,j). The value of the i,j'th value to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    INTEGER(INTG) :: i,j,LOCATION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MATRIX_VALUES_SET_INTG2",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(MATRIX)) THEN
+      IF(MATRIX%MATRIX_FINISHED) THEN
+        IF(SIZE(ROW_INDICES,1)==SIZE(VALUES,1)) THEN
+          IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,2)) THEN
+            IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_INTG_TYPE) THEN
+              DO i=1,SIZE(ROW_INDICES,1)
+                DO j=1,SIZE(COLUMN_INDICES,1)
+                  CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
+                  IF(LOCATION==0) THEN
+                    LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ELSE
+                    MATRIX%DATA_INTG(LOCATION)=VALUES(i,j)
+                  ENDIF
+                ENDDO !j
+              ENDDO !i
+            ELSE
+              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+                & " does not correspond to the integer data type of the given values"
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The size of the column indices array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the number of columns in the values array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The size of the row indices array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the number of rows in the values array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("MATRIX_VALUES_SET_INTG2")
+    RETURN
+999 CALL ERRORS("MATRIX_VALUES_SET_INTG2",ERR,ERROR)
+    CALL EXITS("MATRIX_VALUES_SET_INTG2")
+    RETURN 1
+  END SUBROUTINE MATRIX_VALUES_SET_INTG2
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the values in a single precision real matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=VALUE
+  SUBROUTINE MATRIX_VALUES_SET_SP(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix to set
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index of the i'th value to set
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INDICES(i). The column index of the i'th value to set
+    REAL(SP), INTENT(IN) :: VALUES(:) !<VALUES(i). The value of the i'th value to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: k,LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -2809,21 +3375,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets the value in a single precision real matrix at the location specified by the row and column index i.e., MATRIX(I,J)=VALUE
   SUBROUTINE MATRIX_VALUES_SET_SP1(MATRIX,ROW_INDEX,COLUMN_INDEX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_SET_SP1
-    !###  Description:
-    !###     Sets the value in a single precision real matrix at the location specified by the row and column index i.e.,
-    !###     MATRIX(I,J)=VALUE
-    !###  Parent-subroutine: MATRIX_VALUES_SET
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDEX
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX
-    REAL(SP), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDEX !<The row index of the value to set
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX !<The column index of the value to set
+    REAL(SP), INTENT(IN) :: VALUE !<The value to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -2863,22 +3424,87 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  SUBROUTINE MATRIX_VALUES_SET_DP(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_SET_DP
-    !###  Description:
-    !###     Sets the values in a double precision real matrix at the location specified by the row and column indicies i.e.,
-    !###     MATRIX(I,J)=VALUE
-    !###  Parent-subroutine: MATRIX_VALUES_SET
+  !>Sets the matrix of values in a single precision real matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=VALUE
+  SUBROUTINE MATRIX_VALUES_SET_SP2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:)
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:)
-    REAL(DP), INTENT(IN) :: VALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix to set
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index of the ij'th value to set
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INDICES(j). The column index of the ij'th value to set
+    REAL(SP), INTENT(IN) :: VALUES(:,:) !<VALUES(i,j). The value of the ij'th value to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    INTEGER(INTG) :: i,j,LOCATION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MATRIX_VALUES_SET_SP2",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(MATRIX)) THEN
+      IF(MATRIX%MATRIX_FINISHED) THEN
+        IF(SIZE(ROW_INDICES,1)==SIZE(VALUES,1)) THEN
+          IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,2)) THEN
+            IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_SP_TYPE) THEN
+              DO i=1,SIZE(ROW_INDICES,1)
+                DO j=1,SIZE(COLUMN_INDICES,1)
+                  CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
+                  IF(LOCATION==0) THEN
+                    LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ELSE
+                    MATRIX%DATA_SP(LOCATION)=VALUES(i,j)
+                  ENDIF
+                ENDDO !j
+              ENDDO !i
+            ELSE
+              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+                & " does not correspond to the single precision data type of the given values"
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The size of the column indices array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the number of columns in the values array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The size of the row indices array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the number of rows in the values array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("MATRIX_VALUES_SET_SP2")
+    RETURN
+999 CALL ERRORS("MATRIX_VALUES_SET_SP2",ERR,ERROR)
+    CALL EXITS("MATRIX_VALUES_SET_SP2")
+    RETURN 1
+  END SUBROUTINE MATRIX_VALUES_SET_SP2
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the values in a double precision real matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=VALUE
+  SUBROUTINE MATRIX_VALUES_SET_DP(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix to set.
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index of the i'th value to set
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INDICES(i). The column index of the i'th value to set
+    REAL(DP), INTENT(IN) :: VALUES(:) !<VALUES(i). The value of the i'th value to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: k,LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -2935,21 +3561,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets a value in a double precision real matrix at the location specified by the row and column index i.e., MATRIX(I,J)=VALUE
   SUBROUTINE MATRIX_VALUES_SET_DP1(MATRIX,ROW_INDEX,COLUMN_INDEX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_SET_DP1
-    !###  Description:
-    !###     Sets a value in a double precision real matrix at the location specified by the row and column index i.e.,
-    !###     MATRIX(I,J)=VALUE
-    !###  Parent-subroutine: MATRIX_VALUES_SET
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDEX
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX
-    REAL(DP), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDEX !<The row index of the value to set
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX !<The column index of the value to set
+    REAL(DP), INTENT(IN) :: VALUE !<The value to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -2989,21 +3610,87 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  SUBROUTINE MATRIX_VALUES_SET_L(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_SET_L
-    !###  Description:
-    !###     Sets the values in a logical matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=VALUE
-    !###  Parent-subroutine: MATRIX_VALUES_SET
+  !>Sets the matrix of values in a double precision real matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=VALUE
+  SUBROUTINE MATRIX_VALUES_SET_DP2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:)
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:)
-    LOGICAL, INTENT(IN) :: VALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix to set.
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index of the ij'th value to set
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INDICES(j). The column index of the ij'th value to set
+    REAL(DP), INTENT(IN) :: VALUES(:,:) !<VALUES(i,j). The value of the ij'th value to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    INTEGER(INTG) :: i,j,LOCATION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MATRIX_VALUES_SET_DP2",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(MATRIX)) THEN
+      IF(MATRIX%MATRIX_FINISHED) THEN
+        IF(SIZE(ROW_INDICES,1)==SIZE(VALUES,1)) THEN
+          IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,2)) THEN
+            IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_DP_TYPE) THEN
+              DO i=1,SIZE(ROW_INDICES,1)
+                DO j=1,SIZE(COLUMN_INDICES,1)
+                  CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
+                  IF(LOCATION==0) THEN
+                    LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ELSE
+                    MATRIX%DATA_DP(LOCATION)=VALUES(i,j)
+                  ENDIF
+                ENDDO !j
+              ENDDO !i
+            ELSE
+              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+                & " does not correspond to the double precision data type of the given values"
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The size of the column indicies array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the number of columns in the values array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The size of the row indicies array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the number of rows in the values array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("MATRIX_VALUES_SET_DP2")
+    RETURN
+999 CALL ERRORS("MATRIX_VALUES_SET_DP2",ERR,ERROR)
+    CALL EXITS("MATRIX_VALUES_SET_DP2")
+    RETURN 1
+  END SUBROUTINE MATRIX_VALUES_SET_DP2
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the values in a logical matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=VALUE
+  SUBROUTINE MATRIX_VALUES_SET_L(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix to set
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index of the i'th value to set
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INDICES(i). The column index of the i'th value to set
+    LOGICAL, INTENT(IN) :: VALUES(:) !<VALUES(i). The value of the i'th value to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: k,LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -3060,20 +3747,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets a value in a logical matrix at the location specified by the row and column index i.e., MATRIX(I,J)=VALUE
   SUBROUTINE MATRIX_VALUES_SET_L1(MATRIX,ROW_INDEX,COLUMN_INDEX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: MATRIX_VALUES_SET_L1
-    !###  Description:
-    !###     Sets a value in a logical matrix at the location specified by the row and column index i.e., MATRIX(I,J)=VALUE
-    !###  Parent-subroutine: MATRIX_VALUES_SET
-
     !Argument variables
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    INTEGER(INTG), INTENT(IN) :: ROW_INDEX
-    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX
-    LOGICAL, INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(IN) :: ROW_INDEX !<The row index of the value to set
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDEX !<The column index of the value to set
+    LOGICAL, INTENT(IN) :: VALUE !<The value to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: LOCATION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -3113,27 +3796,85 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Subroutine: VECTOR_ALL_VALUES_SET
-  !###  Description:
-  !###    Sets the all values in a vector to the specified value.
-  !###  Child-subroutines: VECTOR_ALL_VALUES_SET_INTG,VECTOR_ALL_VALUES_SET_SP,VECTOR_ALL_VALUES_SET_DP,VECTOR_ALL_VALUES_SET_L
+
+  !>Sets the matrix of values in a logical matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=VALUE
+  SUBROUTINE MATRIX_VALUES_SET_L2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix to set
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index of the ij'th value to set
+    INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INDICES(j). The column index of the ij'th value to set
+    LOGICAL, INTENT(IN) :: VALUES(:,:) !<VALUES(i,j). The value of the ij'th value to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    INTEGER(INTG) :: i,j,LOCATION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MATRIX_VALUES_SET_L2",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(MATRIX)) THEN
+      IF(MATRIX%MATRIX_FINISHED) THEN
+        IF(SIZE(ROW_INDICES,1)==SIZE(VALUES,1)) THEN
+          IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,2)) THEN
+            IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_L_TYPE) THEN
+              DO i=1,SIZE(ROW_INDICES,1)
+                DO j=1,SIZE(ROW_INDICES,1)
+                  CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
+                  IF(LOCATION==0) THEN
+                    LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ELSE
+                    MATRIX%DATA_L(LOCATION)=VALUES(i,j)
+                  ENDIF
+                ENDDO !j
+              ENDDO !i
+            ELSE
+              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+                & " does not correspond to the logical data type of the given values"
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The size of the column indicies array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the number of columns in the values array ("// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The size of the row indicies array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the number of rows in the values array ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("MATRIX_VALUES_SET_L2")
+    RETURN
+999 CALL ERRORS("MATRIX_VALUES_SET_L2",ERR,ERROR)
+    CALL EXITS("MATRIX_VALUES_SET_L2")
+    RETURN 1
+  END SUBROUTINE MATRIX_VALUES_SET_L2
 
   !
   !================================================================================================================================
   !
 
+  !>Sets all values in an integer vector to the specified value.
   SUBROUTINE VECTOR_ALL_VALUES_SET_INTG(VECTOR,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_ALL_VALUES_SET
-    !###     Sets all values in an integer vector to the specified value.
-    !###  Parent-subroutine: VECTOR_ALL_VALUES_SET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector to set
+    INTEGER(INTG), INTENT(IN) :: VALUE !<The value to set the vector to
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -3166,18 +3907,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets all values in a single precision vector to the specified value.
   SUBROUTINE VECTOR_ALL_VALUES_SET_SP(VECTOR,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_ALL_VALUES_SET_SP
-    !###  Description:
-    !###     Sets all values in a single precision vector to the specified value.
-    !###  Parent-subroutine: VECTOR_ALL_VALUES_SET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    REAL(SP), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector to set
+    REAL(SP), INTENT(IN) :: VALUE !<The value to set the vector to
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -3210,18 +3947,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets all values in a double precision vector to the specified value.
   SUBROUTINE VECTOR_ALL_VALUES_SET_DP(VECTOR,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_ALL_VALUES_SET_DP
-    !###  Description:
-    !###     Sets all values in a double precision vector to the specified value.
-    !###  Parent-subroutine: VECTOR_ALL_VALUES_SET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    REAL(DP), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector to set
+    REAL(DP), INTENT(IN) :: VALUE !<The value to set the vector to
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -3254,18 +3987,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !> Sets all values in a logical vector to the specified value.
   SUBROUTINE VECTOR_ALL_VALUES_SET_L(VECTOR,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_ALL_VALUES_SET_L
-    !###  Description:
-    !###     Sets all values in a logical vector to the specified value.
-    !###  Parent-subroutine: VECTOR_ALL_VALUES_SET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    LOGICAL, INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector to set
+    LOGICAL, INTENT(IN) :: VALUE !<The value to set the vector to
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -3298,16 +4027,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finihses the creation of a vector. 
   SUBROUTINE VECTOR_CREATE_FINISH(VECTOR,ERR,ERROR,*)
 
-    !#### Subroutine: CREATE_VECTOR_FINISH
-    !###  Description:
-    !###    Finihses the creation of a new double precision real vector. 
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -3354,17 +4080,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Starts the creation a vector. 
   SUBROUTINE VECTOR_CREATE_START(VECTOR,ERR,ERROR,*)
 
-    !#### Subroutine: CREATE_VECTOR_START
-    !###  Description:
-    !###    Starts the creation a vector. 
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("VECTOR_CREATE_START",ERR,ERROR,*999)
@@ -3391,46 +4114,35 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !#### Generic-Subroutine: VECTOR_DATA_GET
-  !###  Description:
-  !###    Gets the data from a vector by returning a pointer to the vector data. Note: the values can be used for read operations
-  !###    but a VECTOR_VALUES_SET call must be used to change any values.
-  !###  Child-subroutines: VECTOR_DATA_GET_INTG,VECTOR_DATA_GET_SP,VECTOR_DATA_GET_DP,VECTOR_DATA_GET_L
-
-  !
-  !================================================================================================================================
-  !
-
+  !>Returns a pointer to the data of an integer vector. Note: the values can be used for read operations but a VECTOR_VALUES_SET call must be used to change any values. The pointer should not be deallocated.
   SUBROUTINE VECTOR_DATA_GET_INTG(VECTOR,DATA,ERR,ERROR,*)
 
-    !#### Child-subroutine: VECTOR_DATA_GET_INTG
-    !###    Returns a pointer to the data of an integer vector. Note: the values can be used for read operations but a
-    !###    VECTOR_VALUES_SET call must be used to change any values. The pointer should not be deallocated.
-    !###  Parent-subroutine: VECTOR_DATA_GET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), POINTER :: DATA(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    INTEGER(INTG), POINTER :: DATA(:) !<On return a pointer to the vector data
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("VECTOR_DATA_GET_INTG",ERR,ERROR,*999)
 
-    NULLIFY(DATA)    
-
     IF(ASSOCIATED(VECTOR)) THEN
-      IF(VECTOR%VECTOR_FINISHED) THEN
-        IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_INTG_TYPE) THEN
-          DATA=>VECTOR%DATA_INTG
-        ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the integer data type of the requested values"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        ENDIF
+      IF(ASSOCIATED(DATA)) THEN
+        CALL FLAG_ERROR("Data is already associated",ERR,ERROR,*999)
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        NULLIFY(DATA)
+        IF(VECTOR%VECTOR_FINISHED) THEN
+          IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_INTG_TYPE) THEN
+            DATA=>VECTOR%DATA_INTG
+          ELSE
+            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+              & " does not correspond to the integer data type of the requested values"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        ENDIF
       ENDIF
     ELSE
       CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
@@ -3447,36 +4159,35 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns a pointer to the data of a single precision vector. Note: the values can be used for read operations but a VECTOR_VALUES_SET call must be used to change any values. The pointer should not be deallocated.
   SUBROUTINE VECTOR_DATA_GET_SP(VECTOR,DATA,ERR,ERROR,*)
 
-    !#### Child-subroutine: VECTOR_DATA_GET_SP
-    !###    Returns a pointer to the data of a single precision vector. Note: the values can be used for read operations but a
-    !###    VECTOR_VALUES_SET call must be used to change any values. The pointer should not be deallocated.
-    !###  Parent-subroutine: VECTOR_DATA_GET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    REAL(SP), POINTER :: DATA(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    REAL(SP), POINTER :: DATA(:) !<On return a pointer to the vector data
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("VECTOR_DATA_GET_SP",ERR,ERROR,*999)
 
-    NULLIFY(DATA)    
-
     IF(ASSOCIATED(VECTOR)) THEN
-      IF(VECTOR%VECTOR_FINISHED) THEN
-        IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_SP_TYPE) THEN
-          DATA=>VECTOR%DATA_SP
-        ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the single precision data type of the requested values"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        ENDIF
+      IF(ASSOCIATED(DATA)) THEN
+        CALL FLAG_ERROR("Data is already associated",ERR,ERROR,*999)
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        NULLIFY(DATA)
+        IF(VECTOR%VECTOR_FINISHED) THEN
+          IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_SP_TYPE) THEN
+            DATA=>VECTOR%DATA_SP
+          ELSE
+            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+              & " does not correspond to the single precision data type of the requested values"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        ENDIF
       ENDIF
     ELSE
       CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
@@ -3493,36 +4204,35 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns a pointer to the data of a double precision vector. Note: the values can be used for read operations but a VECTOR_VALUES_SET call must be used to change any values. The pointer should not be deallocated.
   SUBROUTINE VECTOR_DATA_GET_DP(VECTOR,DATA,ERR,ERROR,*)
 
-    !#### Child-subroutine: VECTOR_DATA_GET_DP
-    !###    Returns a pointer to the data of a double precision vector. Note: the values can be used for read operations but a
-    !###    VECTOR_VALUES_SET call must be used to change any values. The pointer should not be deallocated.
-    !###  Parent-subroutine: VECTOR_DATA_GET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    REAL(DP), POINTER :: DATA(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    REAL(DP), POINTER :: DATA(:) !<On return a pointer to the vector data
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("VECTOR_DATA_GET_DP",ERR,ERROR,*999)
 
-    NULLIFY(DATA)    
-
     IF(ASSOCIATED(VECTOR)) THEN
-      IF(VECTOR%VECTOR_FINISHED) THEN
-        IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_DP_TYPE) THEN
-          DATA=>VECTOR%DATA_DP
-        ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the double precision data type of the requested values"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        ENDIF
+      IF(ASSOCIATED(DATA)) THEN
+        CALL FLAG_ERROR("Data is already associated",ERR,ERROR,*999)
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        NULLIFY(DATA)
+        IF(VECTOR%VECTOR_FINISHED) THEN
+          IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_DP_TYPE) THEN
+            DATA=>VECTOR%DATA_DP
+          ELSE
+            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+              & " does not correspond to the double precision data type of the requested values"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        ENDIF
       ENDIF
     ELSE
       CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
@@ -3539,36 +4249,35 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns a pointer to the data of a logical vector. Note: the values can be used for read operations but a VECTOR_VALUES_SET call must be used to change any values. The pointer should not be deallocated.
   SUBROUTINE VECTOR_DATA_GET_L(VECTOR,DATA,ERR,ERROR,*)
 
-    !#### Child-subroutine: VECTOR_DATA_GET_L
-    !###    Returns a pointer to the data of a logical vector. Note: the values can be used for read operations but a
-    !###    VECTOR_VALUES_SET call must be used to change any values. The pointer should not be deallocated.
-    !###  Parent-subroutine: VECTOR_DATA_GET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    LOGICAL, POINTER :: DATA(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    LOGICAL, POINTER :: DATA(:) !<On return a pointer to the vector data
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("VECTOR_DATA_GET_L",ERR,ERROR,*999)
 
-    NULLIFY(DATA)    
-
     IF(ASSOCIATED(VECTOR)) THEN
-      IF(VECTOR%VECTOR_FINISHED) THEN
-        IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_L_TYPE) THEN
-          DATA=>VECTOR%DATA_L
-        ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the logical data type of the requested values"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        ENDIF
+      IF(ASSOCIATED(DATA)) THEN
+        CALL FLAG_ERROR("Data is already associated",ERR,ERROR,*999)
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        NULLIFY(DATA)
+        IF(VECTOR%VECTOR_FINISHED) THEN
+          IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_L_TYPE) THEN
+            DATA=>VECTOR%DATA_L
+          ELSE
+            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+              & " does not correspond to the logical data type of the requested values"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        ENDIF
       ENDIF
     ELSE
       CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
@@ -3585,17 +4294,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets/changes the data type of a vector.
   SUBROUTINE VECTOR_DATA_TYPE_SET(VECTOR,DATA_TYPE,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_DATA_TYPE_SET
-    !###  Description:
-    !###    Sets/changes the data type of a vector.
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(IN) :: DATA_TYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector.
+    INTEGER(INTG), INTENT(IN) :: DATA_TYPE !<The data type to set. \see MATRIX_VECTOR_DataTypes,MATRIX_VECTOR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -3633,17 +4339,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Destroys a vector
   SUBROUTINE VECTOR_DESTROY(VECTOR,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_DESTROY
-    !###  Description:
-    !###    Destroys a vector.
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("VECTOR_DESTROY",ERR,ERROR,*999)
@@ -3664,18 +4367,15 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Duplicates a vector structure and returns a pointer to the new vector in NEW_VECTOR.
   SUBROUTINE VECTOR_DUPLICATE(VECTOR,NEW_VECTOR,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_DUPLICATE
-    !###  Description:
-    !###    Duplicates a vector structure and returns a pointer to the new vector in NEW_VECTOR.
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    TYPE(VECTOR_TYPE), POINTER :: NEW_VECTOR
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector to duplicate
+    TYPE(VECTOR_TYPE), POINTER :: NEW_VECTOR !<On return a pointer to the new duplicated vector
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("VECTOR_DUPLICATE",ERR,ERROR,*998)
@@ -3705,19 +4405,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises a vector and deallocates all memory
   SUBROUTINE VECTOR_FINALISE(VECTOR,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_FINALISE
-    !###  Description:
-    !###    Finalises a vector and deallocates all memory.
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("VECTOR_INITIALISE",ERR,ERROR,*999)
+    CALL ENTERS("VECTOR_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(VECTOR)) THEN
       IF(ALLOCATED(VECTOR%DATA_INTG)) DEALLOCATE(VECTOR%DATA_INTG)
@@ -3738,16 +4435,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises a vector
   SUBROUTINE VECTOR_INITIALISE(VECTOR,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_INITIALISE
-    !###  Description:
-    !###    Initialises a vector.
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("VECTOR_INITIALISE",ERR,ERROR,*999)
@@ -3774,17 +4468,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets/changes the size of a vector
   SUBROUTINE VECTOR_SIZE_SET(VECTOR,N,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_SIZE_SET
-    !###  Description:
-    !###    Sets/changes the size of a vector.
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(IN) :: N
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    INTEGER(INTG), INTENT(IN) :: N !<The size of the vector to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -3816,30 +4507,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Subroutine: VECTOR_VALUES_GET
-  !###  Description:
-  !###    Gets the elements in a vector and returns them in values.
-  !###  Child-subroutines: VECTOR_VALUES_GET_INTG,VECTOR_VALUES_GET_INTG1,VECTOR_VALUES_GET_SP,VECTOR_VALUES_GET_SP1,
-  !###    VECTOR_VALUES_GET_DP,VECTOR_VALUES_GET_DP1,VECTOR_VALUES_GET_L,VECTOR_VALUES_GET_L1
 
-  !
-  !================================================================================================================================
-  !
-  
+  !>Gets the values in an integer vector at the indicies specified.
   SUBROUTINE VECTOR_VALUES_GET_INTG(VECTOR,INDICES,VALUES,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_VALUES_GET_INTG
-    !###  Description:
-    !###    Gets the values in an integer vector at the indicies specified.
-    !###  Parent-subroutine: VECTOR_VALUES_GET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(IN) :: INDICES(:)
-    INTEGER(INTG), INTENT(OUT) :: VALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    INTEGER(INTG), INTENT(IN) :: INDICES(:) !<INDICES(i). The i'th index to get
+    INTEGER(INTG), INTENT(OUT) :: VALUES(:) !<VALUES(i). On return the i'th value to get
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: i,k
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -3889,19 +4566,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Gets a value in an integer vector at the location specified by the index
   SUBROUTINE VECTOR_VALUES_GET_INTG1(VECTOR,INDEX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_VALUES_GET_INTG1
-    !###  Description:
-    !###     Gets a value in an integer vector at the location specified by the index
-    !###  Parent-subroutine: VECTOR_VALUES_GET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(IN) :: INDEX
-    INTEGER(INTG), INTENT(OUT) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    INTEGER(INTG), INTENT(IN) :: INDEX !<The index of the vector to get
+    INTEGER(INTG), INTENT(OUT) :: VALUE !<On return the value of the vector at the specified index
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -3939,20 +4612,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Gets the values in a single precision real vector at the indicies specified
   SUBROUTINE VECTOR_VALUES_GET_SP(VECTOR,INDICES,VALUES,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_VALUES_GET_SP
-    !###  Description:
-    !###    Gets the values in a single precision real vector at the indicies specified.
-    !###  Parent-subroutine: VECTOR_VALUES_GET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(IN) :: INDICES(:)
-    REAL(SP), INTENT(OUT) :: VALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    INTEGER(INTG), INTENT(IN) :: INDICES(:) !<INDICES(i). The i'th index to get
+    REAL(SP), INTENT(OUT) :: VALUES(:) !<VALUES(i). On return the i'th value to get
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: i,k
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -4002,19 +4671,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Gets a value in a single precision vector at the location specified by the index
   SUBROUTINE VECTOR_VALUES_GET_SP1(VECTOR,INDEX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_VALUES_GET_SP1
-    !###  Description:
-    !###     Gets a value in a single precision vector at the location specified by the index
-    !###  Parent-subroutine: VECTOR_VALUES_GET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(IN) :: INDEX
-    REAL(SP), INTENT(OUT) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    INTEGER(INTG), INTENT(IN) :: INDEX !<The index of the vector to get
+    REAL(SP), INTENT(OUT) :: VALUE !<On return the value of the vector at the specified index
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -4052,20 +4717,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Gets the values in a double precision real vector at the indicies specified.
   SUBROUTINE VECTOR_VALUES_GET_DP(VECTOR,INDICES,VALUES,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_VALUES_GET_DP
-    !###  Description:
-    !###    Gets the values in a double precision real vector at the indicies specified.
-    !###  Parent-subroutine: VECTOR_VALUES_GET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(IN) :: INDICES(:)
-    REAL(DP), INTENT(OUT) :: VALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    INTEGER(INTG), INTENT(IN) :: INDICES(:) !<INDICES(i). The i'th index to get
+    REAL(DP), INTENT(OUT) :: VALUES(:) !<VALUES(i). On return the i'th value to get
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: i,k
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -4115,19 +4776,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Gets a value in a double precision vector at the location specified by the index
   SUBROUTINE VECTOR_VALUES_GET_DP1(VECTOR,INDEX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_VALUES_GET_DP1
-    !###  Description:
-    !###     Gets a value in a double precision vector at the location specified by the index
-    !###  Parent-subroutine: VECTOR_VALUES_GET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(IN) :: INDEX
-    REAL(DP), INTENT(OUT) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    INTEGER(INTG), INTENT(IN) :: INDEX !<The index of the vector to get
+    REAL(DP), INTENT(OUT) :: VALUE !<On return the value of the vector at the specified index
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -4165,20 +4822,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Gets the values in a logical real vector at the indicies specified.
   SUBROUTINE VECTOR_VALUES_GET_L(VECTOR,INDICES,VALUES,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_VALUES_GET_L
-    !###  Description:
-    !###    Gets the values in a logical real vector at the indicies specified.
-    !###  Parent-subroutine: VECTOR_VALUES_GET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(IN) :: INDICES(:)
-    LOGICAL, INTENT(OUT) :: VALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    INTEGER(INTG), INTENT(IN) :: INDICES(:) !<INDICES(i). The i'th index to get
+    LOGICAL, INTENT(OUT) :: VALUES(:) !<VALUES(i). On return the i'th value to get
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: i,k
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -4228,19 +4881,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Gets a value in a logical vector at the location specified by the index
   SUBROUTINE VECTOR_VALUES_GET_L1(VECTOR,INDEX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_VALUES_GET_L1
-    !###  Description:
-    !###     Gets a value in a logical vector at the location specified by the index
-    !###  Parent-subroutine: VECTOR_VALUES_GET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(IN) :: INDEX
-    LOGICAL, INTENT(OUT) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    INTEGER(INTG), INTENT(IN) :: INDEX !<The index of the vector to get
+    LOGICAL, INTENT(OUT) :: VALUE !<On return the value of the vector at the specified index
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -4278,30 +4927,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Subroutine: VECTOR_VALUES_SET
-  !###  Description:
-  !###    Sets the values in a vector at the specified indices.
-  !###  Child-subroutines: VECTOR_VALUES_SET_INTG,VECTOR_VALUES_SET_INTG1,VECTOR_VALUES_SET_SP,VECTOR_VALUES_SET_SP1,
-  !###    VECTOR_VALUES_SET_DP,VECTOR_VALUES_SET_DP1,VECTOR_VALUES_SET_L,VECTOR_VALUES_SET_L1
 
-  !
-  !================================================================================================================================
-  !
-  
+  !>Sets the values in an integer vector at the specified indices.
   SUBROUTINE VECTOR_VALUES_SET_INTG(VECTOR,INDICES,VALUES,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_VALUES_SET_INTG
-    !###  Description:
-    !###    Sets the values in an integer vector at the specified indices.
-    !###  Parent-subroutine: VECTOR_VALUES_SET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(IN) :: INDICES(:)
-    INTEGER(INTG), INTENT(IN) :: VALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    INTEGER(INTG), INTENT(IN) :: INDICES(:) !<INDICES(i). The i'th index to set
+    INTEGER(INTG), INTENT(IN) :: VALUES(:) !<VALUES(i). The i'th value to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: i,k
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -4350,20 +4985,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
+  
+  !>Sets a value in an integer vector at the specified index.
   SUBROUTINE VECTOR_VALUES_SET_INTG1(VECTOR,INDEX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_VALUES_SET_INTG1
-    !###  Description:
-    !###     Sets a value in an integer vector at the specified index.
-    !###  Parent-subroutine: VECTOR_VALUES_SET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(IN) :: INDEX
-    INTEGER(INTG), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    INTEGER(INTG), INTENT(IN) :: INDEX !<The index to set
+    INTEGER(INTG), INTENT(IN) :: VALUE !<The value to set at the specified index
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -4401,20 +5032,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Sets the values in a single precision vector at the specified indices.
   SUBROUTINE VECTOR_VALUES_SET_SP(VECTOR,INDICES,VALUES,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_VALUES_SET_SP
-    !###  Description:
-    !###    Sets the values in a single precision vector at the specified indices.
-    !###  Parent-subroutine: VECTOR_VALUES_SET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(IN) :: INDICES(:)
-    REAL(SP), INTENT(IN) :: VALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    INTEGER(INTG), INTENT(IN) :: INDICES(:) !<INDICES(i). The i'th index to set
+    REAL(SP), INTENT(IN) :: VALUES(:) !<VALUES(i). The i'th value to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: i,k
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -4464,19 +5091,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets a value in a single precision vector at the specified index.
   SUBROUTINE VECTOR_VALUES_SET_SP1(VECTOR,INDEX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_VALUES_SET_SP1
-    !###  Description:
-    !###     Sets a value in a single precision vector at the specified index.
-    !###  Parent-subroutine: VECTOR_VALUES_SET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(IN) :: INDEX
-    REAL(SP), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    INTEGER(INTG), INTENT(IN) :: INDEX !<The index to set
+    REAL(SP), INTENT(IN) :: VALUE !<The value to set at the specified index
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -4514,20 +5137,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Sets the values in a double precision vector at the specified indices.
   SUBROUTINE VECTOR_VALUES_SET_DP(VECTOR,INDICES,VALUES,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_VALUES_SET_DP
-    !###  Description:
-    !###    Sets the values in a double precision vector at the specified indices.
-    !###  Parent-subroutine: VECTOR_VALUES_SET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(IN) :: INDICES(:)
-    REAL(DP), INTENT(IN) :: VALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    INTEGER(INTG), INTENT(IN) :: INDICES(:) !<INDICES(i). The i'th index to set
+    REAL(DP), INTENT(IN) :: VALUES(:) !<VALUES(i). The i'th value to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: i,k
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -4577,19 +5196,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets a value in a double precision vector at the specified index.
   SUBROUTINE VECTOR_VALUES_SET_DP1(VECTOR,INDEX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_VALUES_SET_DP1
-    !###  Description:
-    !###     Sets a value in a double precision vector at the specified index.
-    !###  Parent-subroutine: VECTOR_VALUES_SET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(IN) :: INDEX
-    REAL(DP), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    INTEGER(INTG), INTENT(IN) :: INDEX !<The index to set
+    REAL(DP), INTENT(IN) :: VALUE !<The value to set at the specified index
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -4627,20 +5242,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Sets the values in a logical vector at the specified indices.
   SUBROUTINE VECTOR_VALUES_SET_L(VECTOR,INDICES,VALUES,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_VALUES_SET_L
-    !###  Description:
-    !###    Sets the values in a logical vector at the specified indices.
-    !###  Parent-subroutine: VECTOR_VALUES_SET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(IN) :: INDICES(:)
-    LOGICAL, INTENT(IN) :: VALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    INTEGER(INTG), INTENT(IN) :: INDICES(:) !<INDICES(i). The i'th index to set
+    LOGICAL, INTENT(IN) :: VALUES(:) !<VALUES(i). The i'th value to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: i,k
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -4690,19 +5301,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets a value in a logical vector at the specified index.
   SUBROUTINE VECTOR_VALUES_SET_L1(VECTOR,INDEX,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: VECTOR_VALUES_SET_L1
-    !###  Description:
-    !###     Sets a value in a logical vector at the specified index.
-    !###  Parent-subroutine: VECTOR_VALUES_SET
-
     !Argument variables
-    TYPE(VECTOR_TYPE), POINTER :: VECTOR
-    INTEGER(INTG), INTENT(IN) :: INDEX
-    LOGICAL, INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the vector
+    INTEGER(INTG), INTENT(IN) :: INDEX !<The index to set
+    LOGICAL, INTENT(IN) :: VALUE !<The value to set at the specified index
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
