@@ -4,23 +4,23 @@
 		<Platform Name="Win32"/></Platforms>
 	<Configurations>
 		<Configuration Name="Debug|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
-				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
-				<Tool Name="VFPreBuildEventTool"/>
-				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFFortranCompilerTool" AdditionalOptions="/nolink" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32-debug;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32-debug\include;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32-debug\include\finclude;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32-debug\bmake\cygwin-c-debug;C:\Program Files\MPICH2\include" PreprocessorDefinitions="PETSC_AVOID_MPIF_H" Diagnostics="diagnosticsShowAll" ModulePath="$(SolutionDir)..\object\i386-win32-debug\" ObjectFile="$(SolutionDir)..\object\i386-win32-debug\" Traceback="true" RuntimeChecks="rtChecksAll" BoundsCheck="true" RuntimeLibrary="rtQuickWinDebug"/>
-				<Tool Name="VFCustomBuildTool"/>
 				<Tool Name="VFLinkerTool" OutputFile="$(SolutionDir)..\bin\i386-win32\OpenCMISSTest-debug.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(SolutionDir)..\object\i386-win32-debug\;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32-debug\lib;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32-debug\lib\cygwin-c-debug\;C:\Program Files\MPICH2\lib\" IgnoreDefaultLibraryNames="LIBCMT" GenerateDebugInformation="true" ProgramDatabaseFile="$(OUTDIR)/Fortran.pdb" SubSystem="subSystemWindows" AdditionalDependencies="C.lib ParMETISlib.lib METISlib.lib libpetscts.lib libpetscsnes.lib libpetscksp.lib libpetscdm.lib libpetscmat.lib libpetscvec.lib libpetsc.lib libflapack.lib libfblas.lib mpich2.lib fmpich2.lib Advapi32.lib"/>
-				<Tool Name="VFPreLinkEventTool"/>
-				<Tool Name="VFResourceCompilerTool"/></Configuration>
-		<Configuration Name="Release|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
+				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
-				<Tool Name="VFPreBuildEventTool"/>
-				<Tool Name="VFPostBuildEventTool"/>
-				<Tool Name="VFFortranCompilerTool" AdditionalOptions="/nolink" SuppressStartupBanner="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32\include;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32\include\finclude;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32\bmake\cygwin-c-opt;C:\Program Files\MPICH2\include" PreprocessorDefinitions="PETSC_AVOID_MPIF_H" ModulePath="$(SolutionDir)..\object\i386-win32\" ObjectFile="$(SolutionDir)..\object\i386-win32\" RuntimeLibrary="rtQuickWin"/>
 				<Tool Name="VFCustomBuildTool"/>
-				<Tool Name="VFLinkerTool" OutputFile="$(SolutionDir)..\bin\i386-win32\OpenCMISSTest.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(SolutionDir)..\object\i386-win32\;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32\lib;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32\lib\cygwin-c-opt\;C:\Program Files\MPICH2\lib\" SubSystem="subSystemWindows" AdditionalDependencies="C.lib ParMETISlib.lib METISlib.lib libpetscts.lib libpetscsnes.lib libpetscksp.lib libpetscdm.lib libpetscmat.lib libpetscvec.lib libpetsc.lib libflapack.lib libfblas.lib mpich2.lib fmpich2.lib Advapi32.lib"/>
 				<Tool Name="VFPreLinkEventTool"/>
-				<Tool Name="VFResourceCompilerTool"/></Configuration></Configurations>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/></Configuration>
+		<Configuration Name="Release|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
+				<Tool Name="VFFortranCompilerTool" AdditionalOptions="/nolink" SuppressStartupBanner="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32\include;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32\include\finclude;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32\bmake\cygwin-c-opt;C:\Program Files\MPICH2\include" PreprocessorDefinitions="PETSC_AVOID_MPIF_H" ModulePath="$(SolutionDir)..\object\i386-win32\" ObjectFile="$(SolutionDir)..\object\i386-win32\" RuntimeLibrary="rtQuickWin"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(SolutionDir)..\bin\i386-win32\OpenCMISSTest.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(SolutionDir)..\object\i386-win32\;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32\lib;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32\lib\cygwin-c-opt\;C:\Program Files\MPICH2\lib\" SubSystem="subSystemWindows" AdditionalDependencies="C.lib ParMETISlib.lib METISlib.lib libpetscts.lib libpetscsnes.lib libpetscksp.lib libpetscdm.lib libpetscmat.lib libpetscvec.lib libpetsc.lib libflapack.lib libfblas.lib mpich2.lib fmpich2.lib Advapi32.lib"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/></Configuration></Configurations>
 	<Files>
 		<Filter Name="Header Files" Filter="fi;fd"/>
 		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"/>
@@ -54,5 +54,6 @@
 		<File RelativePath="..\..\src\solver_routines.f90"/>
 		<File RelativePath="..\..\src\strings.f90"/>
 		<File RelativePath="..\..\src\timer_f.f90"/>
+		<File RelativePath="..\..\src\trees.f90"/>
 		<File RelativePath="..\..\src\types.f90"/></Filter></Files>
 	<Globals/></VisualStudioProject>

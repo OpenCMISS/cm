@@ -71,6 +71,7 @@ MODULE TYPES
   USE CONSTANTS
   USE KINDS
   USE ISO_VARYING_STRING
+  USE TREES
 
   IMPLICIT NONE
   
@@ -371,6 +372,7 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_OF_NODES !<The number of nodes defined on the region.
     LOGICAL :: NODES_FINISHED !<Is .TRUE. if the nodes have finished being created, .FALSE. if not.
     TYPE(NODE_TYPE), POINTER :: NODES(:) !<NODES(nodes_idx). A pointer to the nodes. \todo Should this be allocatable?
+    TYPE(TREE_TYPE), POINTER :: NODE_TREE !<The tree for user to global node mapping
   END TYPE NODES_TYPE
 
   !>Contains information on the dofs for a mesh.

@@ -121,12 +121,12 @@ MODULE LISTS
     MODULE PROCEDURE LIST_ITEM_IN_LIST_DP1
   END INTERFACE !LIST_ITEM_IN_LIST
 
-  !>Detaches the list values from a list and returns them as a pointer to a array of base type \see LISTS.
-  INTERFACE LIST_DETACH
-    MODULE PROCEDURE LIST_DETACH_INTG
-    MODULE PROCEDURE LIST_DETACH_SP
-    MODULE PROCEDURE LIST_DETACH_DP
-  END INTERFACE !LIST_DETACH
+  !>Detaches the list values from a list and returns them as a pointer to a array of base type before destroying the list \see LISTS.
+  INTERFACE LIST_DETACH_AND_DESTROY
+    MODULE PROCEDURE LIST_DETACH_AND_DESTROY_INTG
+    MODULE PROCEDURE LIST_DETACH_AND_DESTROY_SP
+    MODULE PROCEDURE LIST_DETACH_AND_DESTROY_DP
+  END INTERFACE !LIST_DETACH_AND_DESTROY
 
   !>Searches a list for a given value and returns the position in the list if the value exists \see LISTS.
   INTERFACE LIST_SEARCH
@@ -170,7 +170,7 @@ MODULE LISTS
   PUBLIC LIST_INTG_TYPE,LIST_SP_TYPE,LIST_DP_TYPE
 
   PUBLIC LIST_CREATE_FINISH,LIST_CREATE_START,LIST_DATA_TYPE_SET,LIST_DESTROY,LIST_INITIAL_SIZE_SET,LIST_ITEM_ADD, &
-    & LIST_ITEM_DELETE,LIST_DETACH,LIST_REMOVE_DUPLICATES
+    & LIST_ITEM_DELETE,LIST_DETACH_AND_DESTROY,LIST_REMOVE_DUPLICATES
 
   PUBLIC LIST_SEARCH,LIST_SEARCH_LINEAR
   
@@ -184,10 +184,6 @@ CONTAINS
 
   !>Finishes the creation of a list created with LIST_CREATE_START \see{LISTS::LIST_CREATE_START}.
   SUBROUTINE LIST_CREATE_FINISH(LIST,ERR,ERROR,*)
-
-    !#### Subroutine: LIST_CREATE_FINISH
-    !###  Description:
-    !###    Finishes the creation of a list.
 
     !Argument Variables
     TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list to finish
@@ -280,10 +276,6 @@ CONTAINS
   !>Sets/changes the data type for a list.
   SUBROUTINE LIST_DATA_TYPE_SET(LIST,DATA_TYPE,ERR,ERROR,*)
 
-    !#### Subroutine: LIST_DATA_TYPE_SET
-    !###  Description:
-    !###    Sets/changes the data type for a list.
-
     !Argument Variables
     TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list 
     INTEGER(INTG), INTENT(IN) :: DATA_TYPE !<The data type of the list to set. \see{LISTSDataType}
@@ -328,10 +320,6 @@ CONTAINS
   !>Destroys a list.
   SUBROUTINE LIST_DESTROY(LIST,ERR,ERROR,*)
 
-    !#### Subroutine: LIST_DESTROY
-    !###  Description:
-    !###    Destroys a list.
-
     !Argument Variables
     TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list to destroy
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -359,10 +347,6 @@ CONTAINS
 
   !>Finalises a list and deallocates all memory.
   SUBROUTINE LIST_FINALISE(LIST,ERR,ERROR,*)    
-
-    !#### Subroutine: LIST_FINALISE
-    !###  Description:
-    !###    Finalises a list and deallocates all memory.
 
     !Argument Variables
     TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list to finalise
@@ -392,10 +376,6 @@ CONTAINS
 
   !>Initialises a list and all its components
   SUBROUTINE LIST_INITIALISE(LIST,ERR,ERROR,*)
-
-    !#### Subroutine: LIST_INITIALISE
-    !###  Description:
-    !###    Initialises a list.
 
     !Argument Variables
     TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list to initialise
@@ -868,26 +848,10 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-subroutine: LIST_DETACH
-  !###  Description:
-  !###    Detaches the list values from a list and returns them as a pointer to a array of base type. The LIST_VALUES pointer
-  !###    must be NULL on entry. It is up to the user to then deallocate the returned list memory.
-  !###  Child-subroutines: LIST_DETACH_INTG,LIST_DETACH_SP,LIST_DETACH_DP
 
-  !
-  !================================================================================================================================
-  !
-
-  !>Detaches the list values from an integer list and returns them as a pointer to a array of base type.
+  !>Detaches the list values from an integer list and returns them as a pointer to a array of base type before destroying the list.
   !>The LIST_VALUES pointer must not be associated on entry. It is up to the user to then deallocate the returned list memory.
-  SUBROUTINE LIST_DETACH_INTG(LIST,NUMBER_IN_LIST,LIST_VALUES,ERR,ERROR,*)
-
-    !#### Subroutine: LIST_DETACH_INTG
-    !###  Description:
-    !###    Detaches the list values from a integer list and returns them as a pointer to a array of base type.
-    !###    The LIST_VALUES pointer must be NULL on entry. It is up to the user to then deallocate the returned list memory.
-    !###  Parent-routine: LIST_DETACH
+  SUBROUTINE LIST_DETACH_AND_DESTROY_INTG(LIST,NUMBER_IN_LIST,LIST_VALUES,ERR,ERROR,*)
 
     !Argument Variables
     TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
@@ -898,7 +862,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("LIST_DETACH_INTG",ERR,ERROR,*999)
+    CALL ENTERS("LIST_DETACH_AND_DESTROY_INTG",ERR,ERROR,*999)
 
     IF(ASSOCIATED(LIST)) THEN
       IF(LIST%LIST_FINISHED) THEN
@@ -911,6 +875,7 @@ CONTAINS
             LIST_VALUES=>LIST%LIST_INTG
             LIST%NUMBER_IN_LIST=0
             NULLIFY(LIST%LIST_INTG)
+            CALL LIST_FINALISE(LIST,ERR,ERROR,*999)
           ELSE
             LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not match the integer type of the supplied list values item"
@@ -924,26 +889,20 @@ CONTAINS
       CALL FLAG_ERROR("List is not associated",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("LIST_DETACH_INTG")
+    CALL EXITS("LIST_DETACH_AND_DESTROY_INTG")
     RETURN
-999 CALL ERRORS("LIST_DETACH_INTG",ERR,ERROR)
-    CALL EXITS("LIST_DETACH_INTG")
+999 CALL ERRORS("LIST_DETACH_AND_DESTROY_INTG",ERR,ERROR)
+    CALL EXITS("LIST_DETACH_AND_DESTROY_INTG")
     RETURN 1
-  END SUBROUTINE LIST_DETACH_INTG
+  END SUBROUTINE LIST_DETACH_AND_DESTROY_INTG
 
   !
   !================================================================================================================================
   !
   
-  !>Detaches the list values from a single precision real list and returns them as a pointer to a array of base type.
+  !>Detaches the list values from a single precision real list and returns them as a pointer to a array of base type before destroying the list.
   !>The LIST_VALUES pointer must not be associated on entry. It is up to the user to then deallocate the returned list memory.
-  SUBROUTINE LIST_DETACH_SP(LIST,NUMBER_IN_LIST,LIST_VALUES,ERR,ERROR,*)
-
-    !#### Subroutine: LIST_DETACH_SP
-    !###  Description:
-    !###    Detaches the list values from a single precision list and returns them as a pointer to a array of base type.
-    !###    The LIST_VALUES pointer must be NULL on entry. It is up to the user to then deallocate the returned list memory.
-    !###  Parent-routine: LIST_DETACH
+  SUBROUTINE LIST_DETACH_AND_DESTROY_SP(LIST,NUMBER_IN_LIST,LIST_VALUES,ERR,ERROR,*)
 
     !Argument Variables
     TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
@@ -954,7 +913,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("LIST_DETACH_SP",ERR,ERROR,*999)
+    CALL ENTERS("LIST_DETACH_AND_DESTROY_SP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(LIST)) THEN
       IF(LIST%LIST_FINISHED) THEN
@@ -967,6 +926,7 @@ CONTAINS
             LIST_VALUES=>LIST%LIST_SP
             LIST%NUMBER_IN_LIST=0
             NULLIFY(LIST%LIST_SP)
+            CALL LIST_FINALISE(LIST,ERR,ERROR,*999)
           ELSE
             LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not match the single precision type of the supplied list values item"
@@ -980,25 +940,19 @@ CONTAINS
       CALL FLAG_ERROR("List is not associated",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("LIST_DETACH_SP")
+    CALL EXITS("LIST_DETACH_AND_DESTROY_SP")
     RETURN
-999 CALL ERRORS("LIST_DETACH_SP",ERR,ERROR)
-    CALL EXITS("LIST_DETACH_SP")
+999 CALL ERRORS("LIST_DETACH_AND_DESTROY_SP",ERR,ERROR)
+    CALL EXITS("LIST_DETACH_AND_DESTROY_SP")
     RETURN 1
-  END SUBROUTINE LIST_DETACH_SP
+  END SUBROUTINE LIST_DETACH_AND_DESTROY_SP
   !
   !================================================================================================================================
   !
   
-  !>Detaches the list values from a double precision real list and returns them as a pointer to a array of base type.
+  !>Detaches the list values from a double precision real list and returns them as a pointer to a array of base type before destroying the list.
   !>The LIST_VALUES pointer must not be associated on entry. It is up to the user to then deallocate the returned list memory.
-  SUBROUTINE LIST_DETACH_DP(LIST,NUMBER_IN_LIST,LIST_VALUES,ERR,ERROR,*)
-
-    !#### Subroutine: LIST_DETACH_DP
-    !###  Description:
-    !###    Detaches the list values from a double precision list and returns them as a pointer to a array of base type.
-    !###    The LIST_VALUES pointer must be NULL on entry. It is up to the user to then deallocate the returned list memory.
-    !###  Parent-routine: LIST_DETACH
+  SUBROUTINE LIST_DETACH_AND_DESTROY_DP(LIST,NUMBER_IN_LIST,LIST_VALUES,ERR,ERROR,*)
 
     !Argument Variables
     TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
@@ -1009,7 +963,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("LIST_DETACH_DP",ERR,ERROR,*999)
+    CALL ENTERS("LIST_DETACH_AND_DESTROY_DP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(LIST)) THEN
       IF(LIST%LIST_FINISHED) THEN
@@ -1022,6 +976,7 @@ CONTAINS
             LIST_VALUES=>LIST%LIST_DP
             LIST%NUMBER_IN_LIST=0
             NULLIFY(LIST%LIST_DP)
+            CALL LIST_FINALISE(LIST,ERR,ERROR,*999)
           ELSE
             LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not match the double precision type of the supplied list values item"
@@ -1035,12 +990,12 @@ CONTAINS
       CALL FLAG_ERROR("List is not associated",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("LIST_DETACH_DP")
+    CALL EXITS("LIST_DETACH_AND_DESTROY_DP")
     RETURN
-999 CALL ERRORS("LIST_DETACH_DP",ERR,ERROR)
-    CALL EXITS("LIST_DETACH_DP")
+999 CALL ERRORS("LIST_DETACH_AND_DESTROY_DP",ERR,ERROR)
+    CALL EXITS("LIST_DETACH_AND_DESTROY_DP")
     RETURN 1
-  END SUBROUTINE LIST_DETACH_DP
+  END SUBROUTINE LIST_DETACH_AND_DESTROY_DP
 
   !
   !================================================================================================================================
