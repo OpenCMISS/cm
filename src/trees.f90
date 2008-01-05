@@ -326,7 +326,7 @@ CONTAINS
 
     IF(ASSOCIATED(TREE)) THEN
       CALL TREE_NODE_FINALISE(TREE,TREE%ROOT,ERR,ERROR,*999)
-      CALL TREE_NODE_FINALISE(TREE,TREE%NIL,ERR,ERROR,*999)
+      IF(ASSOCIATED(TREE%NIL)) DEALLOCATE(TREE%NIL)
       DEALLOCATE(TREE)
     ENDIF
 
@@ -415,65 +415,236 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Deletes a tree node from a red-black tree 
-  SUBROUTINE TREE_ITEM_DELETE(TREE,Z,ERR,ERROR,*)
+  !>Deletes a tree node specified by a key from a tree 
+  SUBROUTINE TREE_ITEM_DELETE(TREE,KEY,ERR,ERROR,*)
 
     !Argument Variables
     TYPE(TREE_TYPE), POINTER :: TREE !<A pointer to the Red-Black tree to delete from
-    TYPE(TREE_NODE_TYPE), POINTER :: Z !<A pointer to the tree node to delete
+    INTEGER(INTG), INTENT(IN) :: KEY !<A pointer to the tree node to delete
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     !Local Variables
-    TYPE(TREE_NODE_TYPE), POINTER :: X,Y
+    INTEGER(INTG) :: COMPARE_VALUE
+    TYPE(TREE_NODE_TYPE), POINTER :: U,V,W,X,Y,Z
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("TREE_ITEM_DELETE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(TREE)) THEN
       IF(TREE%TREE_FINISHED) THEN
-        IF(ASSOCIATED(Z)) THEN
-          IF(ASSOCIATED(Z%LEFT,TREE%NIL).OR.ASSOCIATED(Z%RIGHT,TREE%NIL)) THEN
-            Y=>Z
-          ELSE
-            Y=>TREE_SUCCESSOR(TREE,Z,ERR,ERROR)
-            IF(ERR/=0) GOTO 999
-          ENDIF
-          IF(.NOT.ASSOCIATED(Y%LEFT,TREE%NIL)) THEN
-            X=>Y%LEFT
-          ELSE
-            X=>Y%RIGHT
-          ENDIF
-          X%PARENT=>Y%PARENT
-          IF(ASSOCIATED(Y%PARENT,TREE%NIL)) THEN
-            TREE%ROOT=>X
-          ELSE
-            IF(ASSOCIATED(Y,Y%PARENT%LEFT)) THEN
-              Y%PARENT%LEFT=>X
-            ELSE
-              Y%PARENT%RIGHT=>X
+        !Try and find the key to delete
+        Z=>TREE%ROOT
+        IF(.NOT.ASSOCIATED(Z,TREE%NIL)) THEN
+          COMPARE_VALUE=Z%KEY-KEY
+          DO WHILE(COMPARE_VALUE/=0)
+            IF(COMPARE_VALUE>0) THEN !Z%KEY > KEY
+              Z=>Z%LEFT
+            ELSE !Z%KEY < KEY
+              Z=>Z%RIGHT
             ENDIF
-          ENDIF
-          IF(ASSOCIATED(Y,Z)) THEN
-            IF(Y%COLOUR==TREE_BLACK_NODE) CALL TREE_RB_DELETE_FIXUP(TREE,X,ERR,ERROR,*999)
-            DEALLOCATE(Y)
-          ELSE
-            !Y is the node to delete. X is the child of Y.
-            IF(Y%COLOUR==TREE_BLACK_NODE) CALL TREE_RB_DELETE_FIXUP(TREE,X,ERR,ERROR,*999)
-            Y%LEFT=>Z%LEFT
-            Y%RIGHT=>Z%RIGHT
-            Y%PARENT=>Z%PARENT
-            Y%COLOUR=Z%COLOUR
-            Z%LEFT%PARENT=>Y
-            Z%RIGHT%PARENT=>Y
-            IF(ASSOCIATED(Z,Z%PARENT%LEFT)) THEN
-              Z%PARENT%LEFT=>Y              
+            IF(ASSOCIATED(Z,TREE%NIL)) THEN
+              EXIT
             ELSE
-              Z%PARENT%RIGHT=>Y
+              COMPARE_VALUE=Z%KEY-KEY
+            ENDIF
+          ENDDO
+          IF(COMPARE_VALUE==0) THEN
+            !Found the key so delete it
+            IF(ASSOCIATED(Z%LEFT,TREE%NIL).OR.ASSOCIATED(Z%RIGHT,TREE%NIL)) THEN
+              Y=>Z
+            ELSE
+              Y=>TREE_SUCCESSOR(TREE,Z,ERR,ERROR)
+              IF(ERR/=0) GOTO 999
+            ENDIF
+            IF(.NOT.ASSOCIATED(Y%LEFT,TREE%NIL)) THEN
+              X=>Y%LEFT
+            ELSE
+              X=>Y%RIGHT
+            ENDIF
+            X%PARENT=>Y%PARENT
+            IF(ASSOCIATED(Y%PARENT,TREE%NIL)) THEN
+              TREE%ROOT=>X
+            ELSE
+              IF(ASSOCIATED(Y,Y%PARENT%LEFT)) THEN
+                Y%PARENT%LEFT=>X
+              ELSE
+                Y%PARENT%RIGHT=>X
+              ENDIF
+            ENDIF
+            IF(Y%COLOUR==TREE_BLACK_NODE) THEN
+              !Fixup the delete to ensure the tree has red black properties
+              !Note: Due to Fortran restrictions on aliasing pointers in dummy arguments we need to do the fixup and rotations
+              !inside this routine rather than call fixup and rotate left and rotate right subroutines.
+              DO WHILE(.NOT.ASSOCIATED(X,TREE%ROOT).AND.X%COLOUR==TREE_BLACK_NODE)
+                IF(ASSOCIATED(X,X%PARENT%LEFT)) THEN
+                  W=>X%PARENT%RIGHT
+                  IF(W%COLOUR==TREE_RED_NODE) THEN
+                    W%COLOUR=TREE_BLACK_NODE
+                    X%PARENT%COLOUR=TREE_RED_NODE
+                    !Rotate left on X->Parent
+                    U=>X%PARENT
+                    V=>U%RIGHT
+                    U%RIGHT=>V%LEFT
+                    IF(.NOT.ASSOCIATED(V%LEFT,TREE%NIL)) V%LEFT%PARENT=>U
+                    V%PARENT=>U%PARENT
+                    IF(ASSOCIATED(U%PARENT,TREE%NIL)) THEN
+                      TREE%ROOT=>V
+                    ELSE
+                      IF(ASSOCIATED(U,U%PARENT%LEFT)) THEN
+                        U%PARENT%LEFT=>V
+                      ELSE
+                        U%PARENT%RIGHT=>V
+                      ENDIF
+                    ENDIF
+                    V%LEFT=>U
+                    U%PARENT=>V
+                    W=>X%PARENT%RIGHT
+                  ENDIF
+                  IF(W%LEFT%COLOUR==TREE_BLACK_NODE.AND.W%RIGHT%COLOUR==TREE_BLACK_NODE) THEN
+                    W%COLOUR=TREE_RED_NODE
+                    X=>X%PARENT
+                  ELSE
+                    IF(W%RIGHT%COLOUR==TREE_BLACK_NODE) THEN
+                      W%LEFT%COLOUR=TREE_BLACK_NODE
+                      W%COLOUR=TREE_RED_NODE
+                      !Rotate right on W
+                      U=>W
+                      V=>U%LEFT
+                      U%LEFT=>V%RIGHT
+                      IF(.NOT.ASSOCIATED(V%RIGHT,TREE%NIL)) V%RIGHT%PARENT=>U
+                      V%PARENT=>U%PARENT
+                      IF(ASSOCIATED(V%PARENT,TREE%NIL)) THEN
+                        TREE%ROOT=>V
+                      ELSE
+                        IF(ASSOCIATED(U,U%PARENT%RIGHT)) THEN
+                          U%PARENT%RIGHT=>V
+                        ELSE
+                          U%PARENT%LEFT=>V
+                        ENDIF
+                      ENDIF
+                      V%RIGHT=>U
+                      U%PARENT=>V
+                      W=>X%PARENT%RIGHT
+                    ENDIF
+                    W%COLOUR=X%PARENT%COLOUR
+                    X%PARENT%COLOUR=TREE_BLACK_NODE
+                    W%RIGHT%COLOUR=TREE_BLACK_NODE
+                    !Rotate left on X->Parent
+                    U=>X%PARENT
+                    V=>U%RIGHT
+                    U%RIGHT=>V%LEFT
+                    IF(.NOT.ASSOCIATED(V%LEFT,TREE%NIL)) V%LEFT%PARENT=>U
+                    V%PARENT=>U%PARENT
+                    IF(ASSOCIATED(U%PARENT,TREE%NIL)) THEN
+                      TREE%ROOT=>V
+                    ELSE
+                      IF(ASSOCIATED(U,U%PARENT%LEFT)) THEN
+                        U%PARENT%LEFT=>V
+                      ELSE
+                        U%PARENT%RIGHT=>V
+                      ENDIF
+                    ENDIF
+                    V%LEFT=>U
+                    U%PARENT=>V
+                    X=>TREE%ROOT
+                  ENDIF
+                ELSE
+                  W=>X%PARENT%LEFT
+                  IF(W%COLOUR==TREE_RED_NODE) THEN
+                    W%COLOUR=TREE_BLACK_NODE
+                    X%PARENT%COLOUR=TREE_RED_NODE
+                    !Rotate right on X->Parent
+                    U=>X%PARENT
+                    V=>U%LEFT
+                    U%LEFT=>V%RIGHT
+                    IF(.NOT.ASSOCIATED(V%RIGHT,TREE%NIL)) V%RIGHT%PARENT=>U
+                    V%PARENT=>U%PARENT
+                    IF(ASSOCIATED(V%PARENT,TREE%NIL)) THEN
+                      TREE%ROOT=>V
+                    ELSE
+                      IF(ASSOCIATED(U,U%PARENT%RIGHT)) THEN
+                        U%PARENT%RIGHT=>V
+                      ELSE
+                        U%PARENT%LEFT=>V
+                      ENDIF
+                    ENDIF
+                    V%RIGHT=>U
+                    U%PARENT=>V
+                    W=>X%PARENT%LEFT
+                  ENDIF
+                  IF(W%RIGHT%COLOUR==TREE_BLACK_NODE.AND.W%LEFT%COLOUR==TREE_BLACK_NODE) THEN
+                    W%COLOUR=TREE_RED_NODE
+                    X=>X%PARENT
+                  ELSE
+                    IF(W%LEFT%COLOUR==TREE_BLACK_NODE) THEN
+                      W%RIGHT%COLOUR=TREE_BLACK_NODE
+                      W%COLOUR=TREE_RED_NODE
+                      !Rotate left on W
+                      U=>W
+                      V=>U%RIGHT
+                      U%RIGHT=>V%LEFT
+                      IF(.NOT.ASSOCIATED(V%LEFT,TREE%NIL)) V%LEFT%PARENT=>U
+                      V%PARENT=>U%PARENT
+                      IF(ASSOCIATED(U%PARENT,TREE%NIL)) THEN
+                        TREE%ROOT=>V
+                      ELSE
+                        IF(ASSOCIATED(U,U%PARENT%LEFT)) THEN
+                          U%PARENT%LEFT=>V
+                        ELSE
+                          U%PARENT%RIGHT=>V
+                        ENDIF
+                      ENDIF
+                      V%LEFT=>U
+                      U%PARENT=>V
+                      W=>X%PARENT%LEFT
+                    ENDIF
+                    W%COLOUR=X%PARENT%COLOUR
+                    X%PARENT%COLOUR=TREE_BLACK_NODE
+                    W%LEFT%COLOUR=TREE_BLACK_NODE
+                    !Rotate right on X->Parent
+                    U=>X%PARENT
+                    V=>U%LEFT
+                    U%LEFT=>V%RIGHT
+                    IF(.NOT.ASSOCIATED(V%RIGHT,TREE%NIL)) V%RIGHT%PARENT=>U
+                    V%PARENT=>U%PARENT
+                    IF(ASSOCIATED(V%PARENT,TREE%NIL)) THEN
+                      TREE%ROOT=>V
+                    ELSE
+                      IF(ASSOCIATED(U,U%PARENT%RIGHT)) THEN
+                        U%PARENT%RIGHT=>V
+                      ELSE
+                        U%PARENT%LEFT=>V
+                      ENDIF
+                    ENDIF
+                    V%RIGHT=>U
+                    U%PARENT=>V
+                    X=>TREE%ROOT
+                  ENDIF
+                ENDIF
+              ENDDO
+              X%COLOUR=TREE_BLACK_NODE
+            ENDIF
+            IF(.NOT.ASSOCIATED(Y,Z)) THEN
+              Y%LEFT=>Z%LEFT
+              Y%RIGHT=>Z%RIGHT
+              Y%PARENT=>Z%PARENT
+              Y%COLOUR=Z%COLOUR
+              Z%LEFT%PARENT=>Y
+              Z%RIGHT%PARENT=>Y
+              IF(ASSOCIATED(Z,Z%PARENT%LEFT)) THEN
+                Z%PARENT%LEFT=>Y              
+              ELSE
+                Z%PARENT%RIGHT=>Y
+              ENDIF
             ENDIF
             DEALLOCATE(Z)
+            TREE%NUMBER_IN_TREE=TREE%NUMBER_IN_TREE-1
+          ELSE
+            LOCAL_ERROR="Could not find the key "//TRIM(NUMBER_TO_VSTRING(KEY,"*",ERR,ERROR))//" in the tree"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
-          TREE%NUMBER_IN_TREE=TREE%NUMBER_IN_TREE-1
         ELSE
-          CALL FLAG_ERROR("Tree node Z is not associated",ERR,ERROR,*999)
+          CALL FLAG_ERROR("The tree root is NIL. Can not delete the key",ERR,ERROR,*999)
         ENDIF
       ELSE
         CALL FLAG_ERROR("The tree has not been finished",ERR,ERROR,*999)
@@ -481,7 +652,7 @@ CONTAINS
     ELSE
       CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*999)
     ENDIF
-
+    
     CALL EXITS("TREE_ITEM_DELETE")
     RETURN
 999 CALL ERRORS("TREE_ITEM_DELETE",ERR,ERROR)
@@ -505,7 +676,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     !Local Variables
     LOGICAL :: DUPLICATE_KEY
-    TYPE(TREE_NODE_TYPE), POINTER :: NEW_TREE_NODE,X,Y
+    TYPE(TREE_NODE_TYPE), POINTER :: NEW_TREE_NODE,X,Y,Z
 
     NULLIFY(NEW_TREE_NODE)
     
@@ -552,7 +723,108 @@ CONTAINS
             ENDIF
           ENDIF
           !Fix up the tree to keep red-black properties
-          CALL TREE_RB_INSERT_FIXUP(TREE,NEW_TREE_NODE,ERR,ERROR,*999)
+          !Note: Due to Fortran restrictions on aliasing pointers in dummy arguments we need to do the fixup and rotations
+          !inside this routine rather than call fixup and rotate left and rotate right subroutines.
+          Z=>NEW_TREE_NODE
+          DO WHILE(Z%PARENT%COLOUR==TREE_RED_NODE)
+            IF(ASSOCIATED(Z%PARENT,Z%PARENT%PARENT%LEFT)) THEN
+              Y=>Z%PARENT%PARENT%RIGHT
+              IF(Y%COLOUR==TREE_RED_NODE) THEN
+                Z%PARENT%COLOUR=TREE_BLACK_NODE
+                Y%COLOUR=TREE_BLACK_NODE
+                Z%PARENT%PARENT%COLOUR=TREE_RED_NODE
+                Z=>Z%PARENT%PARENT
+              ELSE
+                IF(ASSOCIATED(Z,Z%PARENT%RIGHT)) THEN
+                  Z=>Z%PARENT
+                  !Rotate the tree left at Z
+                  X=>Z                  
+                  Y=>X%RIGHT
+                  X%RIGHT=>Y%LEFT
+                  IF(.NOT.ASSOCIATED(Y%LEFT,TREE%NIL)) Y%LEFT%PARENT=>X
+                  Y%PARENT=>X%PARENT
+                  IF(ASSOCIATED(X%PARENT,TREE%NIL)) THEN
+                    TREE%ROOT=>Y
+                  ELSE
+                    IF(ASSOCIATED(X,X%PARENT%LEFT)) THEN
+                      X%PARENT%LEFT=>Y
+                    ELSE
+                      X%PARENT%RIGHT=>Y
+                    ENDIF
+                  ENDIF
+                  Y%LEFT=>X
+                  X%PARENT=>Y
+                ENDIF
+                Z%PARENT%COLOUR=TREE_BLACK_NODE
+                Z%PARENT%PARENT%COLOUR=TREE_RED_NODE
+                !Rotate the tree right at Z->Parent->Parent
+                X=>Z%PARENT%PARENT
+                Y=>X%LEFT
+                X%LEFT=>Y%RIGHT
+                IF(.NOT.ASSOCIATED(Y%RIGHT,TREE%NIL)) Y%RIGHT%PARENT=>X
+                Y%PARENT=>X%PARENT
+                IF(ASSOCIATED(X%PARENT,TREE%NIL)) THEN
+                  TREE%ROOT=>Y
+                ELSE
+                  IF(ASSOCIATED(X,X%PARENT%RIGHT)) THEN
+                    X%PARENT%RIGHT=>Y
+                  ELSE
+                    X%PARENT%LEFT=>Y
+                  ENDIF
+                ENDIF
+                Y%RIGHT=>X
+                X%PARENT=>Y
+             ENDIF
+            ELSE
+              Y=>Z%PARENT%PARENT%LEFT
+              IF(Y%COLOUR==TREE_RED_NODE) THEN
+                Z%PARENT%COLOUR=TREE_BLACK_NODE
+                Y%COLOUR=TREE_BLACK_NODE
+                Z%PARENT%PARENT%COLOUR=TREE_RED_NODE
+                Z=>Z%PARENT%PARENT
+              ELSE
+                IF(ASSOCIATED(Z,Z%PARENT%LEFT)) THEN
+                  Z=>Z%PARENT
+                  !Rotate the tree right at Z
+                  Y=>X%LEFT
+                  X%LEFT=>Y%RIGHT
+                  IF(.NOT.ASSOCIATED(Y%RIGHT,TREE%NIL)) Y%RIGHT%PARENT=>X
+                  Y%PARENT=>X%PARENT
+                  IF(ASSOCIATED(X%PARENT,TREE%NIL)) THEN
+                    TREE%ROOT=>Y
+                  ELSE
+                    IF(ASSOCIATED(X,X%PARENT%RIGHT)) THEN
+                      X%PARENT%RIGHT=>Y
+                    ELSE
+                      X%PARENT%LEFT=>Y
+                    ENDIF
+                  ENDIF
+                  Y%RIGHT=>X
+                  X%PARENT=>Y
+                ENDIF
+                Z%PARENT%COLOUR=TREE_BLACK_NODE
+                Z%PARENT%PARENT%COLOUR=TREE_RED_NODE
+                !Rotate the tree left at Z->Parent->Parent
+                X=>Z%PARENT%PARENT
+                Y=>X%RIGHT
+                X%RIGHT=>Y%LEFT
+                IF(.NOT.ASSOCIATED(Y%LEFT,TREE%NIL)) Y%LEFT%PARENT=>X
+                Y%PARENT=>X%PARENT
+                IF(ASSOCIATED(X%PARENT,TREE%NIL)) THEN
+                  TREE%ROOT=>Y
+                ELSE
+                  IF(ASSOCIATED(X,X%PARENT%LEFT)) THEN
+                    X%PARENT%LEFT=>Y
+                  ELSE
+                    X%PARENT%RIGHT=>Y
+                  ENDIF
+                ENDIF
+                Y%LEFT=>X
+                X%PARENT=>Y
+              ENDIF
+            ENDIF
+          ENDDO
+          TREE%ROOT%COLOUR=TREE_BLACK_NODE
           !Increment the number in the tree and indicate a successful insertion
           TREE%NUMBER_IN_TREE=TREE%NUMBER_IN_TREE+1
           INSERT_STATUS=TREE_NODE_INSERT_SUCESSFUL
@@ -594,7 +866,6 @@ CONTAINS
         CALL TREE_NODE_FINALISE(TREE,TREE_NODE%RIGHT,ERR,ERROR,*999)
         DEALLOCATE(TREE_NODE)
       ENDIF
-      IF(ASSOCIATED(TREE_NODE)) DEALLOCATE(TREE_NODE)
     ELSE
       CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*999)
     ENDIF
@@ -909,258 +1180,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Fixes up a red-black tree after a node has been deleted to ensure the tree maintains red-black properties
-  SUBROUTINE TREE_RB_DELETE_FIXUP(TREE,X,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(TREE_TYPE), POINTER :: TREE !<A pointer to the Red-Black tree to delete from
-    TYPE(TREE_NODE_TYPE), POINTER :: X !<A pointer to the tree node to delete
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
-    !Local Variables
-    TYPE(TREE_NODE_TYPE), POINTER :: W
-    
-    CALL ENTERS("TREE_RB_DELETE_FIXUP",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(TREE)) THEN
-      IF(ASSOCIATED(X)) THEN
-        DO WHILE(.NOT.ASSOCIATED(X,TREE%ROOT).AND.X%COLOUR==TREE_BLACK_NODE)
-          IF(ASSOCIATED(X,X%PARENT%LEFT)) THEN
-            W=>X%PARENT%RIGHT
-            IF(W%COLOUR==TREE_RED_NODE) THEN
-              W%COLOUR=TREE_BLACK_NODE
-              X%PARENT%COLOUR=TREE_RED_NODE
-              CALL TREE_RB_ROTATE_LEFT(TREE,X%PARENT,ERR,ERROR,*999)
-              W=>X%PARENT%RIGHT
-            ENDIF
-            IF(W%LEFT%COLOUR==TREE_BLACK_NODE.AND.W%RIGHT%COLOUR==TREE_BLACK_NODE) THEN
-              W%COLOUR=TREE_RED_NODE
-              X=>X%PARENT
-            ELSE
-              IF(W%RIGHT%COLOUR==TREE_BLACK_NODE) THEN
-                W%LEFT%COLOUR=TREE_BLACK_NODE
-                W%COLOUR=TREE_RED_NODE
-                CALL TREE_RB_ROTATE_RIGHT(TREE,W,ERR,ERROR,*999)
-                W=>X%PARENT%RIGHT
-              ENDIF
-              W%COLOUR=X%PARENT%COLOUR
-              X%PARENT%COLOUR=TREE_BLACK_NODE
-              W%RIGHT%COLOUR=TREE_BLACK_NODE
-              CALL TREE_RB_ROTATE_LEFT(TREE,X%PARENT,ERR,ERROR,*999)
-              X=>TREE%ROOT
-            ENDIF
-          ELSE
-            W=>X%PARENT%LEFT
-            IF(W%COLOUR==TREE_RED_NODE) THEN
-              W%COLOUR=TREE_BLACK_NODE
-              X%PARENT%COLOUR=TREE_RED_NODE
-              CALL TREE_RB_ROTATE_RIGHT(TREE,X%PARENT,ERR,ERROR,*999)
-              W=>X%PARENT%LEFT
-            ENDIF
-            IF(W%RIGHT%COLOUR==TREE_BLACK_NODE.AND.W%LEFT%COLOUR==TREE_BLACK_NODE) THEN
-              W%COLOUR=TREE_RED_NODE
-              X=>X%PARENT
-            ELSE
-              IF(W%LEFT%COLOUR==TREE_BLACK_NODE) THEN
-                W%RIGHT%COLOUR=TREE_BLACK_NODE
-                W%COLOUR=TREE_RED_NODE
-                CALL TREE_RB_ROTATE_LEFT(TREE,W,ERR,ERROR,*999)
-                W=>X%PARENT%LEFT
-              ENDIF
-              W%COLOUR=X%PARENT%COLOUR
-              X%PARENT%COLOUR=TREE_BLACK_NODE
-              W%LEFT%COLOUR=TREE_BLACK_NODE
-              CALL TREE_RB_ROTATE_RIGHT(TREE,X%PARENT,ERR,ERROR,*999)
-              X=>TREE%ROOT
-            ENDIF
-          ENDIF
-        ENDDO
-        X%COLOUR=TREE_BLACK_NODE
-      ELSE
-        CALL FLAG_ERROR("Tree node X is not associated",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("TREE_RB_DELETE_FIXUP")
-    RETURN
-999 CALL ERRORS("TREE_RB_DELETE_FIXUP",ERR,ERROR)
-    CALL EXITS("TREE_RB_DELETE_FIXUP")
-    RETURN 1
-  END SUBROUTINE TREE_RB_DELETE_FIXUP
-
-  !
-  !================================================================================================================================
-  !
-
-
-  !>Fixes up an insert into a red-black tree to ensure the tree still has red-black properties
-  SUBROUTINE TREE_RB_INSERT_FIXUP(TREE,Z,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(TREE_TYPE), POINTER :: TREE !<A pointer to the Red-Black tree to rotate left
-    TYPE(TREE_NODE_TYPE), POINTER :: Z !<A pointer to the node to fixup
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
-    !Local Variables
-    TYPE(TREE_NODE_TYPE), POINTER :: Y
-    
-    CALL ENTERS("TREE_RB_INSERT_FIXUP",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(TREE)) THEN
-      IF(ASSOCIATED(Z)) THEN
-        !Fix up the insert
-        DO WHILE(Z%PARENT%COLOUR==TREE_RED_NODE)
-          IF(ASSOCIATED(Z%PARENT,Z%PARENT%PARENT%LEFT)) THEN
-            Y=>Z%PARENT%PARENT%RIGHT
-            IF(Y%COLOUR==TREE_RED_NODE) THEN
-              Z%PARENT%COLOUR=TREE_BLACK_NODE
-              Y%COLOUR=TREE_BLACK_NODE
-              Z%PARENT%PARENT%COLOUR=TREE_RED_NODE
-              Z=>Z%PARENT%PARENT
-            ELSE
-              IF(ASSOCIATED(Z,Z%PARENT%RIGHT)) THEN
-                Z=>Z%PARENT
-                CALL TREE_RB_ROTATE_LEFT(TREE,Z,ERR,ERROR,*999)
-              ENDIF
-              Z%PARENT%COLOUR=TREE_BLACK_NODE
-              Z%PARENT%PARENT%COLOUR=TREE_RED_NODE
-              CALL TREE_RB_ROTATE_RIGHT(TREE,Z%PARENT%PARENT,ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            Y=>Z%PARENT%PARENT%LEFT
-            IF(Y%COLOUR==TREE_RED_NODE) THEN
-              Z%PARENT%COLOUR=TREE_BLACK_NODE
-              Y%COLOUR=TREE_BLACK_NODE
-              Z%PARENT%PARENT%COLOUR=TREE_RED_NODE
-              Z=>Z%PARENT%PARENT
-            ELSE
-              IF(ASSOCIATED(Z,Z%PARENT%LEFT)) THEN
-                Z=>Z%PARENT
-                CALL TREE_RB_ROTATE_RIGHT(TREE,Z,ERR,ERROR,*999)
-              ENDIF
-              Z%PARENT%COLOUR=TREE_BLACK_NODE
-              Z%PARENT%PARENT%COLOUR=TREE_RED_NODE
-              CALL TREE_RB_ROTATE_LEFT(TREE,Z%PARENT%PARENT,ERR,ERROR,*999)
-            ENDIF
-          ENDIF
-        ENDDO
-        TREE%ROOT%COLOUR=TREE_BLACK_NODE
-      ELSE
-        CALL FLAG_ERROR("Tree node Z is not associated",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("TREE_RB_INSERT_FIXUP")
-    RETURN
-999 CALL ERRORS("TREE_RB_INSERT_FIXUP",ERR,ERROR)
-    CALL EXITS("TREE_RB_INSERT_FIXUP")
-    RETURN 1
-  END SUBROUTINE TREE_RB_INSERT_FIXUP
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Performs a left rotation on a red-black tree at the given pivot
-  SUBROUTINE TREE_RB_ROTATE_LEFT(TREE,X,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(TREE_TYPE), POINTER :: TREE !<A pointer to the Red-Black tree to rotate right
-    TYPE(TREE_NODE_TYPE), POINTER :: X !<A pointer to the tree node pivot
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
-    !Local Variables
-    TYPE(TREE_NODE_TYPE), POINTER :: Y
-    
-    CALL ENTERS("TREE_RB_ROTATE_LEFT",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(TREE)) THEN
-      IF(ASSOCIATED(X)) THEN
-        Y=>X%RIGHT
-        X%RIGHT=>Y%LEFT
-        IF(.NOT.ASSOCIATED(Y%LEFT,TREE%NIL)) Y%LEFT%PARENT=>X
-        Y%PARENT=>X%PARENT
-        IF(ASSOCIATED(X%PARENT,TREE%NIL)) THEN
-          TREE%ROOT=>Y
-        ELSE
-          IF(ASSOCIATED(X,X%PARENT%LEFT)) THEN
-            X%PARENT%LEFT=>Y
-          ELSE
-            X%PARENT%RIGHT=>Y
-          ENDIF
-        ENDIF
-        Y%LEFT=>X
-        X%PARENT=>Y
-      ELSE
-        CALL FLAG_ERROR("Tree node X is not associated",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("TREE_RB_ROTATE_LEFT")
-    RETURN
-999 CALL ERRORS("TREE_RB_ROTATE_LEFT",ERR,ERROR)
-    CALL EXITS("TREE_RB_ROTATE_LEFT")
-    RETURN 1
-  END SUBROUTINE TREE_RB_ROTATE_LEFT
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Performs a right rotation on a red-black tree at the given pivot
-  SUBROUTINE TREE_RB_ROTATE_RIGHT(TREE,X,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(TREE_TYPE), POINTER :: TREE !<A pointer to the Red-Black tree to rotate right
-    TYPE(TREE_NODE_TYPE), POINTER :: X !<A pointer to the tree node pivot
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
-    !Local Variables
-    TYPE(TREE_NODE_TYPE), POINTER :: Y
-    
-    CALL ENTERS("TREE_RB_ROTATE_RIGHT",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(TREE)) THEN
-      IF(ASSOCIATED(X)) THEN
-        Y=>X%LEFT
-        X%LEFT=>Y%RIGHT
-        IF(.NOT.ASSOCIATED(Y%RIGHT,TREE%NIL)) Y%RIGHT%PARENT=>X
-        Y%PARENT=>X%PARENT
-        IF(ASSOCIATED(X%PARENT,TREE%NIL)) THEN
-          TREE%ROOT=>Y
-        ELSE
-          IF(ASSOCIATED(X,X%PARENT%RIGHT)) THEN
-            X%PARENT%RIGHT=>Y
-          ELSE
-            X%PARENT%LEFT=>Y
-          ENDIF
-        ENDIF
-        Y%RIGHT=>X
-        X%PARENT=>Y
-      ELSE
-        CALL FLAG_ERROR("Tree node X is not associated",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("TREE_RB_ROTATE_RIGHT")
-    RETURN
-999 CALL ERRORS("TREE_RB_ROTATE_RIGHT",ERR,ERROR)
-    CALL EXITS("TREE_RB_ROTATE_RIGHT")
-    RETURN 1
-  END SUBROUTINE TREE_RB_ROTATE_RIGHT
-
-  !
-  !================================================================================================================================
-  !
-
   !>Searches a tree to see if it contains a key
   SUBROUTINE TREE_SEARCH(TREE,KEY,X,ERR,ERROR,*)
 
@@ -1182,7 +1201,7 @@ CONTAINS
           CALL FLAG_ERROR("The tree node X is already associated",ERR,ERROR,*999)
         ELSE
           NULLIFY(X)
-          Y=TREE%ROOT
+          Y=>TREE%ROOT
           IF(.NOT.ASSOCIATED(Y,TREE%NIL)) THEN
             COMPARE_VALUE=Y%KEY-KEY
             DO WHILE(COMPARE_VALUE/=0)

@@ -49,6 +49,7 @@ MODULE LISTS
   USE ISO_VARYING_STRING
   USE KINDS
   USE STRINGS
+  
   IMPLICIT NONE
 
   PRIVATE
@@ -169,8 +170,8 @@ MODULE LISTS
 
   PUBLIC LIST_INTG_TYPE,LIST_SP_TYPE,LIST_DP_TYPE
 
-  PUBLIC LIST_CREATE_FINISH,LIST_CREATE_START,LIST_DATA_TYPE_SET,LIST_DESTROY,LIST_INITIAL_SIZE_SET,LIST_ITEM_ADD, &
-    & LIST_ITEM_DELETE,LIST_DETACH_AND_DESTROY,LIST_REMOVE_DUPLICATES
+  PUBLIC LIST_CREATE_FINISH,LIST_CREATE_START,LIST_DATA_TYPE_SET,LIST_DESTROY,LIST_DETACH_AND_DESTROY,LIST_INITIAL_SIZE_SET, &
+    & LIST_ITEM_ADD,LIST_ITEM_DELETE,LIST_NUMBER_OF_ITEMS_GET,LIST_REMOVE_DUPLICATES
 
   PUBLIC LIST_SEARCH,LIST_SEARCH_LINEAR
   
@@ -704,12 +705,6 @@ CONTAINS
   !> LIST_ITEM is 0.
   SUBROUTINE LIST_ITEM_IN_LIST_SP1(LIST,ITEM,LIST_ITEM,ERR,ERROR,*)
 
-    !#### Subroutine: LIST_ITEM_IN_LIST_SP1
-    !###  Description:
-    !###    Determines if ITEM is in the given single precision LIST. If it is LIST_ITEM is the index in the list. If not
-    !###    LIST_ITEM is 0.
-    !###  Parent-routine: LIST_ITEM_IN_LIST
-
     !Argument Variables    
     TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
     REAL(SP), INTENT(IN) :: ITEM !<The item to find.
@@ -753,12 +748,6 @@ CONTAINS
   !> LIST_ITEM is 0.
   SUBROUTINE LIST_ITEM_IN_LIST_DP1(LIST,ITEM,LIST_ITEM,ERR,ERROR,*)
 
-    !#### Subroutine: LIST_ITEM_IN_LIST_DP1
-    !###  Description:
-    !###    Determines if ITEM is in the given double precision LIST. If it is LIST_ITEM is the index in the list. If not
-    !###    LIST_ITEM is 0.
-    !###  Parent-routine: LIST_ITEM_IN_LIST
-
     !Argument Variables
     TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
     REAL(DP), INTENT(IN) :: ITEM  !<The item to find.
@@ -801,10 +790,6 @@ CONTAINS
   !>Deletes the item given by the LIST_ITEM index from the given list.
   SUBROUTINE LIST_ITEM_DELETE(LIST,LIST_ITEM,ERR,ERROR,*)
 
-    !#### Subroutine: LIST_ITEM_DELETE
-    !###  Description:
-    !###    Deletes the list item given by the list index (or pointer) from the list.
-
     !Argument Variables
     TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
     INTEGER(INTG), INTENT(IN) :: LIST_ITEM !<The position in the list to delete.
@@ -844,6 +829,39 @@ CONTAINS
     CALL EXITS("LIST_ITEM_DELETE")
     RETURN 1
   END SUBROUTINE LIST_ITEM_DELETE
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the current number of items in a list
+  SUBROUTINE LIST_NUMBER_OF_ITEMS_GET(LIST,NUMBER_OF_ITEMS,ERR,ERROR,*)
+      
+    !Argument variables
+    TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list 
+    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_ITEMS !<On exit, the current number of items in the list
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    
+    CALL ENTERS("LIST_NUMBER_OF_ITEMS_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(LIST)) THEN
+      IF(LIST%LIST_FINISHED) THEN
+        NUMBER_OF_ITEMS=LIST%NUMBER_IN_LIST
+      ELSE
+        CALL FLAG_ERROR("List has not been finished",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("List is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("LIST_NUMBER_OF_ITEMS_GET")
+    RETURN
+999 CALL ERRORS("LIST_NUMBER_OF_ITEMS_GET",ERR,ERROR)
+    CALL EXITS("LIST_NUMBER_OF_ITEMS_GET")
+    RETURN 1
+  END SUBROUTINE LIST_NUMBER_OF_ITEMS_GET
   
   !
   !================================================================================================================================

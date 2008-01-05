@@ -5997,28 +5997,28 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Calculates the nodes used the mesh identified by a given mesh topology.
   SUBROUTINE MESH_TOPOLOGY_NODES_CALCULATE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_NODES_CALCULATE
-    !###  Description:
-    !###    Calculates the nodes used the mesh identified by MESH. NODES is the pointer to the MESH_NODES data structure.
-
     !Argument variables
-    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the mesh topology
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: NUMBER_OF_MESH_NODES,ne,nn,np,node_no
-    INTEGER(INTG), ALLOCATABLE :: MESH_NODES(:)
-    LOGICAL :: FOUND
+    INTEGER(INTG) :: DUMMY_ERR,NUMBER_OF_MESH_NODES,ne,nn,np  
+    INTEGER(INTG), POINTER :: MESH_NODES(:)
     TYPE(BASIS_TYPE), POINTER :: BASIS
+    TYPE(LIST_TYPE), POINTER :: MESH_NODES_LIST
     TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS
     TYPE(MESH_NODES_TYPE), POINTER :: NODES
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
+
+    NULLIFY(MESH_NODES)
+    NULLIFY(MESH_NODES_LIST)
     
-    CALL ENTERS("MESH_TOPOLOGY_NODES_CALCULATE",ERR,ERROR,*999)
+    CALL ENTERS("MESH_TOPOLOGY_NODES_CALCULATE",ERR,ERROR,*998)
 
     IF(ASSOCIATED(TOPOLOGY)) THEN
       IF(ASSOCIATED(TOPOLOGY%ELEMENTS)) THEN
@@ -6033,32 +6033,21 @@ CONTAINS
                 IF(ASSOCIATED(TOPOLOGY%NODES%NODES)) THEN
                   LOCAL_ERROR="Mesh number "//TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))// &
                     & " already has associated mesh topology nodes"
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
                 ELSE
-                  ALLOCATE(MESH_NODES(REGION%NODES%NUMBER_OF_NODES), STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary mesh nodes",ERR,ERROR,*999)
-                  NUMBER_OF_MESH_NODES=0
+                  CALL LIST_CREATE_START(MESH_NODES_LIST,ERR,ERROR,*999)
+                  CALL LIST_DATA_TYPE_SET(MESH_NODES_LIST,LIST_INTG_TYPE,ERR,ERROR,*999)
+                  CALL LIST_INITIAL_SIZE_SET(MESH_NODES_LIST,8*REGION%NODES%NUMBER_OF_NODES,ERR,ERROR,*999)
+                  CALL LIST_CREATE_FINISH(MESH_NODES_LIST,ERR,ERROR,*999)
                   DO ne=1,ELEMENTS%NUMBER_OF_ELEMENTS
                     BASIS=>ELEMENTS%ELEMENTS(ne)%BASIS
                     DO nn=1,BASIS%NUMBER_OF_NODES
                       np=ELEMENTS%ELEMENTS(ne)%GLOBAL_ELEMENT_NODES(nn)
-!!TODO: need to be more efficient here
-                      FOUND=.FALSE.
-                      node_no=1
-                      DO WHILE(node_no<=NUMBER_OF_MESH_NODES.AND..NOT.FOUND)
-                        IF(MESH_NODES(node_no)==np) THEN
-                          FOUND=.TRUE.
-                        ELSE
-                          node_no=node_no+1
-                        ENDIF
-                      ENDDO
-                      IF(.NOT.FOUND) THEN
-                        NUMBER_OF_MESH_NODES=NUMBER_OF_MESH_NODES+1
-                        MESH_NODES(NUMBER_OF_MESH_NODES)=np
-                      ENDIF
+                      CALL LIST_ITEM_ADD(MESH_NODES_LIST,np,ERR,ERROR,*999)
                     ENDDO !nn
                   ENDDO !ne
-                  CALL LIST_SORT(MESH_NODES(1:NUMBER_OF_MESH_NODES),ERR,ERROR,*999)
+                  CALL LIST_REMOVE_DUPLICATES(MESH_NODES_LIST,ERR,ERROR,*999)
+                  CALL LIST_DETACH_AND_DESTROY(MESH_NODES_LIST,NUMBER_OF_MESH_NODES,MESH_NODES,ERR,ERROR,*999)
                   ALLOCATE(NODES%NODES(NUMBER_OF_MESH_NODES),STAT=ERR)
                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate mesh topology nodes nodes",ERR,ERROR,*999)
                   DO np=1,NUMBER_OF_MESH_NODES
@@ -6071,24 +6060,24 @@ CONTAINS
               ELSE
                 LOCAL_ERROR="Mesh number "//TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))// &
                 & " does not have any nodes associated with the mesh region"
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
               ENDIF
             ELSE
               LOCAL_ERROR="Mesh number "//TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))// &
                 & " does not have an associated region"
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Mesh topology mesh is not associated",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Mesh topology mesh is not associated",ERR,ERROR,*998)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Mesh topology nodes is not associated",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Mesh topology nodes is not associated",ERR,ERROR,*998)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Mesh topology elements is not associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Mesh topology elements is not associated",ERR,ERROR,*998)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Mesh topology is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Mesh topology is not associated",ERR,ERROR,*998)
     ENDIF
     
     IF(DIAGNOSTICS1) THEN
@@ -6102,7 +6091,9 @@ CONTAINS
     
     CALL EXITS("MESH_TOPOLOGY_NODES_CALCULATE")
     RETURN
-999 CALL ERRORS("MESH_TOPOLOGY_NODES_CALCULATE",ERR,ERROR)
+999 IF(ASSOCIATED(MESH_NODES)) DEALLOCATE(MESH_NODES)
+    IF(ASSOCIATED(MESH_NODES_LIST)) CALL LIST_DESTROY(MESH_NODES_LIST,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("MESH_TOPOLOGY_NODES_CALCULATE",ERR,ERROR)
     CALL EXITS("MESH_TOPOLOGY_NODES_CALCULATE")
     RETURN 1
    
