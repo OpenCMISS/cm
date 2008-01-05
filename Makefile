@@ -204,6 +204,10 @@ ifeq ($(OPERATING_SYSTEM),linux)
     endif
     DBGC_FLGS += -O0
     OPTC_FLGS = -O3 -ansi_alias
+    ifeq ($(PROF),true)
+      F_FLGS += -g -pg
+      ELFLAGS += -pg
+    endif
   endif
   ifeq ($(filter-out xlc%,$(CC)),)# xlc* C compiler
     CFLAGS += -qinfo=gen:ini:por:pro:trd:tru:use
@@ -273,6 +277,10 @@ ifeq ($(OPERATING_SYSTEM),linux)
     endif
     DBGF_FLGS += -O0 -check all -traceback -debug all
     OPTF_FLGS = -O3
+    ifeq ($(PROF),true)
+      F_FLGS += -g -pg
+      ELFLAGS += -pg
+    endif
 #    MP_FLGS = -openmp
     ELFLAGS += -nofor_main -traceback
   endif
