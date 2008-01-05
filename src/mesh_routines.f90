@@ -57,6 +57,7 @@ MODULE MESH_ROUTINES
   USE MPI
   USE NODE_ROUTINES
   USE STRINGS
+  USE TREES
   USE TYPES
 
   IMPLICIT NONE
@@ -403,95 +404,100 @@ CONTAINS
             
           CASE(DECOMPOSITION_CALCULATED_TYPE)
             !Calculate the general decomposition
-            
-            number_computational_nodes=COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)
-            IF(ERR/=0) GOTO 999
-            
-            NUMBER_ELEMENTS_PER_NODE=REAL(MESH%NUMBER_OF_ELEMENTS,DP)/REAL(number_computational_nodes,DP)
-            ELEMENT_START=1
-            ELEMENT_STOP=0
-            MAX_NUMBER_ELEMENTS_PER_NODE=-1
-            ALLOCATE(RECEIVE_COUNTS(0:number_computational_nodes-1),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate recieve counts",ERR,ERROR,*999)
-            ALLOCATE(DISPLACEMENTS(0:number_computational_nodes-1),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate displacements",ERR,ERROR,*999)
-            ALLOCATE(ELEMENT_DISTANCE(0:number_computational_nodes),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element distance",ERR,ERROR,*999)
-            ELEMENT_DISTANCE(0)=0
-            DO no_computational_node=0,number_computational_nodes-1
-              ELEMENT_START=ELEMENT_STOP+1
-              IF(no_computational_node==number_computational_nodes-1) THEN
-                ELEMENT_STOP=MESH%NUMBER_OF_ELEMENTS
-              ELSE
-                ELEMENT_STOP=ELEMENT_START+NINT(NUMBER_ELEMENTS_PER_NODE,INTG)-1
-              ENDIF
-              DISPLACEMENTS(no_computational_node)=ELEMENT_START-1
-              ELEMENT_DISTANCE(no_computational_node+1)=ELEMENT_STOP !C numbering
-              NUMBER_OF_ELEMENTS=ELEMENT_STOP-ELEMENT_START+1
-              RECEIVE_COUNTS(no_computational_node)=NUMBER_OF_ELEMENTS
-              IF(NUMBER_OF_ELEMENTS>MAX_NUMBER_ELEMENTS_PER_NODE) MAX_NUMBER_ELEMENTS_PER_NODE=NUMBER_OF_ELEMENTS
-              IF(no_computational_node==my_computational_node_number) THEN
-                MY_ELEMENT_START=ELEMENT_START
-                MY_ELEMENT_STOP=ELEMENT_STOP
-                MY_NUMBER_OF_ELEMENTS=ELEMENT_STOP-ELEMENT_START+1
-                number_elem_indicies=0
-                DO ne=MY_ELEMENT_START,MY_ELEMENT_STOP
-                  BASIS=>MESH%TOPOLOGY(component_idx)%PTR%ELEMENTS%ELEMENTS(ne)%BASIS
-                  number_elem_indicies=number_elem_indicies+BASIS%NUMBER_OF_NODES
-                ENDDO !ne
-              ENDIF
-            ENDDO !no_computational_node
-            
-            ALLOCATE(ELEMENT_PTR(0:MY_NUMBER_OF_ELEMENTS),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element pointer list",ERR,ERROR,*999)
-            ALLOCATE(ELEMENT_INDICIES(0:number_elem_indicies-1),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element indicies list",ERR,ERROR,*999)
-            ALLOCATE(TPWGTS(1:DECOMPOSITION%NUMBER_OF_DOMAINS),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate tpwgts",ERR,ERROR,*999)
-            elem_index=0
-            elem_count=0
-            ELEMENT_PTR(0)=0
-            DO ne=MY_ELEMENT_START,MY_ELEMENT_STOP
-              elem_count=elem_count+1
-              BASIS=>MESH%TOPOLOGY(component_idx)%PTR%ELEMENTS%ELEMENTS(ne)%BASIS
-              DO nn=1,BASIS%NUMBER_OF_NODES
-                ELEMENT_INDICIES(elem_index)=MESH%TOPOLOGY(component_idx)%PTR%ELEMENTS%ELEMENTS(ne)% &
-                  & GLOBAL_ELEMENT_NODES(nn)-1 !C numbering
-                elem_index=elem_index+1
-              ENDDO !nn
-              ELEMENT_PTR(elem_count)=elem_index !C numbering
-            ENDDO !ne
-            
-            !Set up ParMETIS variables
-            WEIGHT_FLAG=0 !No weights
-            NUMBER_FLAG=0 !C Numbering as there is a bug with Fortran numbering
-            NUMBER_OF_CONSTRAINTS=1
-            NUMBER_OF_COMMON_NODES=2
-            TPWGTS=1.0_SP/REAL(DECOMPOSITION%NUMBER_OF_DOMAINS,SP)
-            UBVEC=1.05_SP
-            PARMETIS_OPTIONS(0)=1
-            PARMETIS_OPTIONS(1)=7
-            
-            !Call ParMETIS to calculate the partitioning of the mesh graph.
-            CALL PARMETIS_PARTMESHKWAY(ELEMENT_DISTANCE,ELEMENT_PTR,ELEMENT_INDICIES,ELEMENT_WEIGHT,WEIGHT_FLAG,NUMBER_FLAG, &
-              & NUMBER_OF_CONSTRAINTS,NUMBER_OF_COMMON_NODES,DECOMPOSITION%NUMBER_OF_DOMAINS,TPWGTS,UBVEC,PARMETIS_OPTIONS, &
-              & DECOMPOSITION%NUMBER_OF_EDGES_CUT,DECOMPOSITION%ELEMENT_DOMAIN(DISPLACEMENTS(my_computational_node_number)+1:), &
-              & MPI_COMM_WORLD,ERR,ERROR,*999)
 
-            !Transfer all the element domain information to the other computational nodes so that each rank has all the information
-            IF(number_computational_nodes>1) THEN
-              !This should work on a single processor but doesn't for mpich2 under windows. Maybe a bug? Avoid for now.
-              CALL MPI_ALLGATHERV(MPI_IN_PLACE,MAX_NUMBER_ELEMENTS_PER_NODE,MPI_INTEGER,DECOMPOSITION%ELEMENT_DOMAIN, &
-                & RECEIVE_COUNTS,DISPLACEMENTS,MPI_INTEGER,MPI_COMM_WORLD,MPI_IERROR)
-              CALL MPI_ERROR_CHECK("MPI_ALLGATHERV",MPI_IERROR,ERR,ERROR,*999)
+            IF(DECOMPOSITION%NUMBER_OF_DOMAINS==1) THEN
+              DECOMPOSITION%ELEMENT_DOMAIN=0
+            ELSE
+              number_computational_nodes=COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)
+              IF(ERR/=0) GOTO 999
+              
+              NUMBER_ELEMENTS_PER_NODE=REAL(MESH%NUMBER_OF_ELEMENTS,DP)/REAL(number_computational_nodes,DP)
+              ELEMENT_START=1
+              ELEMENT_STOP=0
+              MAX_NUMBER_ELEMENTS_PER_NODE=-1
+              ALLOCATE(RECEIVE_COUNTS(0:number_computational_nodes-1),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate recieve counts",ERR,ERROR,*999)
+              ALLOCATE(DISPLACEMENTS(0:number_computational_nodes-1),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate displacements",ERR,ERROR,*999)
+              ALLOCATE(ELEMENT_DISTANCE(0:number_computational_nodes),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element distance",ERR,ERROR,*999)
+              ELEMENT_DISTANCE(0)=0
+              DO no_computational_node=0,number_computational_nodes-1
+                ELEMENT_START=ELEMENT_STOP+1
+                IF(no_computational_node==number_computational_nodes-1) THEN
+                  ELEMENT_STOP=MESH%NUMBER_OF_ELEMENTS
+                ELSE
+                  ELEMENT_STOP=ELEMENT_START+NINT(NUMBER_ELEMENTS_PER_NODE,INTG)-1
+                ENDIF
+                DISPLACEMENTS(no_computational_node)=ELEMENT_START-1
+                ELEMENT_DISTANCE(no_computational_node+1)=ELEMENT_STOP !C numbering
+                NUMBER_OF_ELEMENTS=ELEMENT_STOP-ELEMENT_START+1
+                RECEIVE_COUNTS(no_computational_node)=NUMBER_OF_ELEMENTS
+                IF(NUMBER_OF_ELEMENTS>MAX_NUMBER_ELEMENTS_PER_NODE) MAX_NUMBER_ELEMENTS_PER_NODE=NUMBER_OF_ELEMENTS
+                IF(no_computational_node==my_computational_node_number) THEN
+                  MY_ELEMENT_START=ELEMENT_START
+                  MY_ELEMENT_STOP=ELEMENT_STOP
+                  MY_NUMBER_OF_ELEMENTS=ELEMENT_STOP-ELEMENT_START+1
+                  number_elem_indicies=0
+                  DO ne=MY_ELEMENT_START,MY_ELEMENT_STOP
+                    BASIS=>MESH%TOPOLOGY(component_idx)%PTR%ELEMENTS%ELEMENTS(ne)%BASIS
+                    number_elem_indicies=number_elem_indicies+BASIS%NUMBER_OF_NODES
+                  ENDDO !ne
+                ENDIF
+              ENDDO !no_computational_node
+              
+              ALLOCATE(ELEMENT_PTR(0:MY_NUMBER_OF_ELEMENTS),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element pointer list",ERR,ERROR,*999)
+              ALLOCATE(ELEMENT_INDICIES(0:number_elem_indicies-1),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element indicies list",ERR,ERROR,*999)
+              ALLOCATE(TPWGTS(1:DECOMPOSITION%NUMBER_OF_DOMAINS),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate tpwgts",ERR,ERROR,*999)
+              elem_index=0
+              elem_count=0
+              ELEMENT_PTR(0)=0
+              DO ne=MY_ELEMENT_START,MY_ELEMENT_STOP
+                elem_count=elem_count+1
+                BASIS=>MESH%TOPOLOGY(component_idx)%PTR%ELEMENTS%ELEMENTS(ne)%BASIS
+                DO nn=1,BASIS%NUMBER_OF_NODES
+                  ELEMENT_INDICIES(elem_index)=MESH%TOPOLOGY(component_idx)%PTR%ELEMENTS%ELEMENTS(ne)% &
+                    & GLOBAL_ELEMENT_NODES(nn)-1 !C numbering
+                  elem_index=elem_index+1
+                ENDDO !nn
+                ELEMENT_PTR(elem_count)=elem_index !C numbering
+              ENDDO !ne
+              
+              !Set up ParMETIS variables
+              WEIGHT_FLAG=0 !No weights
+              NUMBER_FLAG=0 !C Numbering as there is a bug with Fortran numbering
+              NUMBER_OF_CONSTRAINTS=1
+              NUMBER_OF_COMMON_NODES=2
+              TPWGTS=1.0_SP/REAL(DECOMPOSITION%NUMBER_OF_DOMAINS,SP)
+              UBVEC=1.05_SP
+              PARMETIS_OPTIONS(0)=1
+              PARMETIS_OPTIONS(1)=7
+              
+              !Call ParMETIS to calculate the partitioning of the mesh graph.
+              CALL PARMETIS_PARTMESHKWAY(ELEMENT_DISTANCE,ELEMENT_PTR,ELEMENT_INDICIES,ELEMENT_WEIGHT,WEIGHT_FLAG,NUMBER_FLAG, &
+                & NUMBER_OF_CONSTRAINTS,NUMBER_OF_COMMON_NODES,DECOMPOSITION%NUMBER_OF_DOMAINS,TPWGTS,UBVEC,PARMETIS_OPTIONS, &
+                & DECOMPOSITION%NUMBER_OF_EDGES_CUT,DECOMPOSITION%ELEMENT_DOMAIN(DISPLACEMENTS(my_computational_node_number)+1:), &
+                & MPI_COMM_WORLD,ERR,ERROR,*999)
+              
+              !Transfer all the element domain information to the other computational nodes so that each rank has all the info
+              IF(number_computational_nodes>1) THEN
+                !This should work on a single processor but doesn't for mpich2 under windows. Maybe a bug? Avoid for now.
+                CALL MPI_ALLGATHERV(MPI_IN_PLACE,MAX_NUMBER_ELEMENTS_PER_NODE,MPI_INTEGER,DECOMPOSITION%ELEMENT_DOMAIN, &
+                  & RECEIVE_COUNTS,DISPLACEMENTS,MPI_INTEGER,MPI_COMM_WORLD,MPI_IERROR)
+                CALL MPI_ERROR_CHECK("MPI_ALLGATHERV",MPI_IERROR,ERR,ERROR,*999)
+              ENDIF
+              
+              DEALLOCATE(DISPLACEMENTS)
+              DEALLOCATE(RECEIVE_COUNTS)
+              DEALLOCATE(ELEMENT_DISTANCE)
+              DEALLOCATE(ELEMENT_PTR)
+              DEALLOCATE(ELEMENT_INDICIES)
+              DEALLOCATE(TPWGTS)
+
             ENDIF
-            
-            DEALLOCATE(DISPLACEMENTS)
-            DEALLOCATE(RECEIVE_COUNTS)
-            DEALLOCATE(ELEMENT_DISTANCE)
-            DEALLOCATE(ELEMENT_PTR)
-            DEALLOCATE(ELEMENT_INDICIES)
-            DEALLOCATE(TPWGTS)
             
           CASE(DECOMPOSITION_USER_DEFINED_TYPE)
 !!TODO: Check decomposition setup.
@@ -6005,18 +6011,18 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR,NUMBER_OF_MESH_NODES,ne,nn,np  
+    INTEGER(INTG) :: DUMMY_ERR,INSERT_STATUS,NUMBER_OF_MESH_NODES,ne,nn,np  
     INTEGER(INTG), POINTER :: MESH_NODES(:)
     TYPE(BASIS_TYPE), POINTER :: BASIS
-    TYPE(LIST_TYPE), POINTER :: MESH_NODES_LIST
     TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS
     TYPE(MESH_NODES_TYPE), POINTER :: NODES
     TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(TREE_TYPE), POINTER :: MESH_NODES_TREE
     TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
 
     NULLIFY(MESH_NODES)
-    NULLIFY(MESH_NODES_LIST)
+    NULLIFY(MESH_NODES_TREE)
     
     CALL ENTERS("MESH_TOPOLOGY_NODES_CALCULATE",ERR,ERROR,*998)
 
@@ -6035,19 +6041,17 @@ CONTAINS
                     & " already has associated mesh topology nodes"
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
                 ELSE
-                  CALL LIST_CREATE_START(MESH_NODES_LIST,ERR,ERROR,*999)
-                  CALL LIST_DATA_TYPE_SET(MESH_NODES_LIST,LIST_INTG_TYPE,ERR,ERROR,*999)
-                  CALL LIST_INITIAL_SIZE_SET(MESH_NODES_LIST,8*REGION%NODES%NUMBER_OF_NODES,ERR,ERROR,*999)
-                  CALL LIST_CREATE_FINISH(MESH_NODES_LIST,ERR,ERROR,*999)
+                  CALL TREE_CREATE_START(MESH_NODES_TREE,ERR,ERROR,*999)
+                  CALL TREE_INSERT_TYPE_SET(MESH_NODES_TREE,TREE_NO_DUPLICATES_ALLOWED,ERR,ERROR,*999)
+                  CALL TREE_CREATE_FINISH(MESH_NODES_TREE,ERR,ERROR,*999)
                   DO ne=1,ELEMENTS%NUMBER_OF_ELEMENTS
                     BASIS=>ELEMENTS%ELEMENTS(ne)%BASIS
                     DO nn=1,BASIS%NUMBER_OF_NODES
                       np=ELEMENTS%ELEMENTS(ne)%GLOBAL_ELEMENT_NODES(nn)
-                      CALL LIST_ITEM_ADD(MESH_NODES_LIST,np,ERR,ERROR,*999)
+                      CALL TREE_ITEM_INSERT(MESH_NODES_TREE,np,np,INSERT_STATUS,ERR,ERROR,*999)
                     ENDDO !nn
                   ENDDO !ne
-                  CALL LIST_REMOVE_DUPLICATES(MESH_NODES_LIST,ERR,ERROR,*999)
-                  CALL LIST_DETACH_AND_DESTROY(MESH_NODES_LIST,NUMBER_OF_MESH_NODES,MESH_NODES,ERR,ERROR,*999)
+                  CALL TREE_DETACH_AND_DESTROY(MESH_NODES_TREE,NUMBER_OF_MESH_NODES,MESH_NODES,ERR,ERROR,*999)
                   ALLOCATE(NODES%NODES(NUMBER_OF_MESH_NODES),STAT=ERR)
                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate mesh topology nodes nodes",ERR,ERROR,*999)
                   DO np=1,NUMBER_OF_MESH_NODES
@@ -6092,7 +6096,7 @@ CONTAINS
     CALL EXITS("MESH_TOPOLOGY_NODES_CALCULATE")
     RETURN
 999 IF(ASSOCIATED(MESH_NODES)) DEALLOCATE(MESH_NODES)
-    IF(ASSOCIATED(MESH_NODES_LIST)) CALL LIST_DESTROY(MESH_NODES_LIST,DUMMY_ERR,DUMMY_ERROR,*998)
+    IF(ASSOCIATED(MESH_NODES_TREE)) CALL TREE_DESTROY(MESH_NODES_TREE,DUMMY_ERR,DUMMY_ERROR,*998)
 998 CALL ERRORS("MESH_TOPOLOGY_NODES_CALCULATE",ERR,ERROR)
     CALL EXITS("MESH_TOPOLOGY_NODES_CALCULATE")
     RETURN 1

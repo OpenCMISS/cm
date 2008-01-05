@@ -265,9 +265,9 @@ ifeq ($(OPERATING_SYSTEM),linux)
     F_FLGS += -cpp -warn all 
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
-        #F_FLGS += -xP# for sse3 (90nm Pentium 4 series)
+        F_FLGS += -xP# for sse3 (90nm Pentium 4 series)
       else
-        #F_FLGS += -xW# Pentium4 compatible (?sse2)
+        F_FLGS += -xW# Pentium4 compatible (?sse2)
       endif
     endif
     ifeq ($(filter-out i%86,$(MACHNAME)),)
@@ -747,6 +747,7 @@ $(OBJECT_DIR)/mesh_routines.o		:	$(SOURCE_DIR)/mesh_routines.f90 \
 	$(OBJECT_DIR)/lists.o \
 	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/trees.o \
 	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/node_routines.o		:	$(SOURCE_DIR)/node_routines.f90 \
@@ -887,11 +888,13 @@ help:
 	@echo
 	@echo "	gmake"
 	@echo "	gmake OPT= ABI=32"
+	@echo "	gmake PROF="
 	@echo "	gmake debug64"
 	@echo
 	@echo "Options: (The former is the default unless specified.)"
 	@echo
 	@echo "	(DEBUG=|OPT=)"
+	@echo "	PROF=(true|)"
 	@echo "	ABI=(32|64)"
 	@echo 
 	@echo "Available targets:                            "

@@ -94,7 +94,7 @@ CPUTimer      Returns the CPU time
 #define CPUTimer cputimer
 #endif
 #if defined linux
-#define CPUTimer cputimer_
+#define CPUTimer _cputimer
 #endif 
 #if defined _AIX
 #define CPUTimer cputimer

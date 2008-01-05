@@ -81,9 +81,9 @@ UnpackCharacters     Unpacks characters from a c string
 #define UnPackCharacters unpackcharacters
 #endif
 #ifdef linux
-#define CStringLen cstringlen_
-#define PackCharacters packcharacters_
-#define UnPackCharacters unpackcharacters_
+#define CStringLen cstringlen
+#define PackCharacters packcharacters
+#define UnPackCharacters unpackcharacters
 #endif
 #ifdef _AIX
 #define CStringLen cstringlen
