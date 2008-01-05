@@ -204,7 +204,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
     endif
     DBGC_FLGS += -O0
     OPTC_FLGS = -O3 -ansi_alias
-    ifeq ($(PROF),true)
+    ifneq ($(PROF),false)
       F_FLGS += -g -pg
       ELFLAGS += -pg
     endif
@@ -265,9 +265,9 @@ ifeq ($(OPERATING_SYSTEM),linux)
     F_FLGS += -cpp -warn all 
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
-        F_FLGS += -xP# for sse3 (90nm Pentium 4 series)
+        #F_FLGS += -xP# for sse3 (90nm Pentium 4 series)
       else
-        F_FLGS += -xW# Pentium4 compatible (?sse2)
+        #F_FLGS += -xW# Pentium4 compatible (?sse2)
       endif
     endif
     ifeq ($(filter-out i%86,$(MACHNAME)),)
@@ -277,7 +277,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
     endif
     DBGF_FLGS += -O0 -check all -traceback -debug all
     OPTF_FLGS = -O3
-    ifeq ($(PROF),true)
+    ifneq ($(PROF),false)
       F_FLGS += -g -pg
       ELFLAGS += -pg
     endif
