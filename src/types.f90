@@ -69,6 +69,7 @@
 MODULE TYPES
 
   USE CONSTANTS
+  USE CMISS_PETSC
   USE KINDS
   USE ISO_VARYING_STRING
   USE TREES
@@ -553,10 +554,29 @@ MODULE TYPES
     LOGICAL, ALLOCATABLE :: RECEIVE_BUFFER_L(:) !<The logical buffer for receiving the distributed logical vector data from the adjacent domain to the current domain.  
   END TYPE DISTRIBUTED_VECTOR_TRANSFER_TYPE
 
+  !>Contains information for a CMISS distributed vector
+  TYPE DISTRIBUTED_VECTOR_CMISS_TYPE
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: DISTRIBUTED_VECTOR !<A pointer to the distributed vector
+    INTEGER(INTG) :: BASE_TAG_NUMBER !<The base number for the MPI tag numbers that will be used to communicate the distributed vector data amongst the domains. The base tag number can be thought of as the identification number for the distributed vector object.
+    INTEGER(INTG), ALLOCATABLE :: DATA_INTG(:) !<DATA_INTG(i). The integer data for an integer distributed vector. The i'th component contains the data for the i'th local number of distributed vector data on the domain. 
+    REAL(DP), ALLOCATABLE :: DATA_DP(:) !<DATA_DP(i). The real data for a double precision real distributed vector. The i'th component contains the data for the i'th local number of distributed vector data on the domain. 
+    REAL(SP), ALLOCATABLE :: DATA_SP(:) !<DATA_SP(i). The real data for a single precision real distributed vector. The i'th component contains the data for the i'th local number of distributed vector data on the domain. 
+    LOGICAL, ALLOCATABLE :: DATA_L(:) !<DATA_L(i). The logical data for a logical distributed vector. The i'th component contains the data for the i'th local number of distributed vector data on the domain.  
+    TYPE(DISTRIBUTED_VECTOR_TRANSFER_TYPE), ALLOCATABLE :: TRANSFERS(:) !<TRANSFERS(adjacent_domain_idx). The transfer information for the adjacent_domain_idx'th adjacent domain to this domain. 
+  END TYPE DISTRIBUTED_VECTOR_CMISS_TYPE
+
+  !>Contains information for a PETSc distributed vector
+  TYPE DISTRIBUTED_VECTOR_PETSC_TYPE
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: DISTRIBUTED_VECTOR !<A pointer to the distributed vector
+    TYPE(PETSC_VEC_TYPE) :: VEC !<The PETSc vector
+  END TYPE DISTRIBUTED_VECTOR_PETSC_TYPE
+  
   !>Contains the information for a vector that is distributed across a number of domains.
   TYPE DISTRIBUTED_VECTOR_TYPE
     INTEGER(INTG) :: BASE_TAG_NUMBER !<The base number for the MPI tag numbers that will be used to communicate the distributed vector data amongst the domains. The base tag number can be thought of as the identification number for the distributed vector object.
     LOGICAL :: VECTOR_FINISHED !<!<Is .TRUE. if the distributed vector has finished being created, .FALSE. if not.
+    INTEGER(INTG) :: LIBRARY_TYPE !<The format of the distributed vector \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
+    INTEGER(INTG) :: GHOSTING_TYPE !<The ghosting type \see DISTRIBUTED_MATRIX_VECTOR_GhostingTypes,DISTRIBUTED_MATRIX_VECTOR
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING !<The pointer for the domain mapping that identifies how the vector is distributed amongst the domains.
     INTEGER(INTG) :: N !<The size of the distributed vector
     INTEGER(INTG) :: DATA_TYPE !<The type of data for the distributed vector \see DISTRIBUTED_MATRIX_VECTOR_DataTypes 
@@ -566,13 +586,33 @@ MODULE TYPES
     REAL(SP), ALLOCATABLE :: DATA_SP(:) !<DATA_SP(i). The real data for a single precision real distributed vector. The i'th component contains the data for the i'th local number of distributed vector data on the domain. 
     LOGICAL, ALLOCATABLE :: DATA_L(:) !<DATA_L(i). The logical data for a logical distributed vector. The i'th component contains the data for the i'th local number of distributed vector data on the domain.  
     TYPE(DISTRIBUTED_VECTOR_TRANSFER_TYPE), ALLOCATABLE :: TRANSFERS(:) !<TRANSFERS(adjacent_domain_idx). The transfer information for the adjacent_domain_idx'th adjacent domain to this domain. 
+    TYPE(DISTRIBUTED_VECTOR_CMISS_TYPE), POINTER :: CMISS !<A pointer to the CMISS distributed vector information
+    TYPE(DISTRIBUTED_VECTOR_PETSC_TYPE), POINTER :: PETSC !<A pointer to the PETSc distributed vector information
   END TYPE DISTRIBUTED_VECTOR_TYPE
 
+  !>Contains information for a CMISS distributed matrix
+  TYPE DISTRIBUTED_MATRIX_CMISS_TYPE
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: DISTRIBUTED_MATRIX !<A pointer to the distributed matrix
+    INTEGER(INTG) :: BASE_TAG_NUMBER !<The base number for the MPI tag numbers that will be used to communicate the distributed matrix data amongst the domains. The base tag number can be thought of as the identification number for the distributed matrix object.
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix to store the rows corresponding to this domain.
+  END TYPE DISTRIBUTED_MATRIX_CMISS_TYPE
+
+  !>Contains information for a PETSc distributed matrix
+  TYPE DISTRIBUTED_MATRIX_PETSC_TYPE
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: DISTRIBUTED_MATRIX !<A pointer to the distributed matrix
+    TYPE(PETSC_MAT_TYPE) :: MAT !<The PETSc matrix
+  END TYPE DISTRIBUTED_MATRIX_PETSC_TYPE
+  
   !>Contains the information for a matrix that is distributed across a number of domains.
   TYPE DISTRIBUTED_MATRIX_TYPE
     INTEGER(INTG) :: BASE_TAG_NUMBER !<The base number for the MPI tag numbers that will be used to communicate the distributed matrix data amongst the domains. The base tag number can be thought of as the identification number for the distributed matrix object.
     LOGICAL :: MATRIX_FINISHED !<Is .TRUE. if the distributed matrix has finished being created, .FALSE. if not.
+    INTEGER(INTG) :: LIBRARY_TYPE !<The library of the distributed matrix \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
+    INTEGER(INTG) :: GHOSTING_TYPE !<The ghosting type \see DISTRIBUTED_MATRIX_VECTOR_GhostingTypes,DISTRIBUTED_MATRIX_VECTOR
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING !<The pointer for the domain mapping that identifies how the matrix is distributed amongst the domains.
+    INTEGER(INTG) :: DATA_TYPE !<The type of data for the distributed matrix \see DISTRIBUTED_MATRIX_VECTOR_DataTypes
+    TYPE(DISTRIBUTED_MATRIX_CMISS_TYPE), POINTER :: CMISS !<A pointer to the CMISS distributed matrix information
+    TYPE(DISTRIBUTED_MATRIX_PETSC_TYPE), POINTER :: PETSC !<A pointer to the PETSc distributed matrix information
     TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix to store the rows corresponding to this domain.
   END TYPE DISTRIBUTED_MATRIX_TYPE
 
@@ -977,10 +1017,55 @@ MODULE TYPES
     TYPE(SOLVER_TO_GLOBAL_MAP_TYPE), ALLOCATABLE :: SOLVER_TO_GLOBAL_MAP(:) !<SOLVER_TO_GLOBAL_MAP(no) is the solver to global mappings for the no'th solver column.
   END TYPE PROBLEM_SOLVER_MATRICES_TYPE
 
+  !>Contains information for a direct linear solver
+  TYPE LINEAR_DIRECT_SOLVER_TYPE
+    TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linear solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the linear solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG) :: DIRECT_SOLVER_TYPE !<The type of direct linear solver
+  END TYPE LINEAR_DIRECT_SOLVER_TYPE
+
+  !>Contains information for a direct linear solver
+  TYPE LINEAR_ITERATIVE_SOLVER_TYPE
+    TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linear solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the linear solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG) :: ITERATIVE_SOLVER_TYPE !<The type of iterative solver
+    INTEGER(INTG) :: ITERATIVE_PRECONDITIONER_TYPE !<The type of iterative preconditioner
+    INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ITERATIONS !<The maximum number of iterations
+    REAL(DP) :: RELATIVE_TOLERANCE !<The relative tolerance between the rhs and residual norm
+    REAL(DP) :: ABSOLUTE_TOLERANCE !<The absolute tolerance of the residual norm
+    REAL(DP) :: DIVERGENCE_TOLERANCE !<The absolute tolerance of the residual norm
+    TYPE(PETSC_KSP_TYPE) :: KSP !<The PETSc solver object
+    TYPE(PETSC_PC_TYPE) :: PC !<The PETSc preconditioner object
+  END TYPE LINEAR_ITERATIVE_SOLVER_TYPE
+  
+  !>Contains information for a linear solver
+  TYPE LINEAR_SOLVER_TYPE
+    TYPE(PROBLEM_SOLVER_TYPE), POINTER :: PROBLEM_SOLVER !<A pointer to the problem_solver
+    INTEGER(INTG) :: LINEAR_SOLVER_TYPE !<The type of linear solver \see SOLVER_ROUTINES_LinearSolverTypes,SOLVER_ROUTINES
+    TYPE(LINEAR_DIRECT_SOLVER_TYPE), POINTER :: DIRECT_SOLVER !<A pointer to the direct solver information
+    TYPE(LINEAR_ITERATIVE_SOLVER_TYPE), POINTER :: ITERATIVE_SOLVER !<A pointer to the iterative solver information
+  END TYPE LINEAR_SOLVER_TYPE
+  
+  !>Contains information for a nonlinear solver
+  TYPE NONLINEAR_SOLVER_TYPE
+    TYPE(PROBLEM_SOLVER_TYPE), POINTER :: PROBLEM_SOLVER !<A pointer to the problem_solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the nonlinear solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  END TYPE NONLINEAR_SOLVER_TYPE
+  
+  !>Contains information for a time integration solver
+  TYPE TIME_INTEGRATION_SOLVER_TYPE
+    TYPE(PROBLEM_SOLVER_TYPE), POINTER :: PROBLEM_SOLVER !<A pointer to the problem_solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the time integration solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  END TYPE TIME_INTEGRATION_SOLVER_TYPE
+  
   !>Contains information on the type of solver to be used
   TYPE PROBLEM_SOLVER_TYPE
     TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION !<A pointer to the problem solution
     LOGICAL :: SOLVER_FINISHED !<Is .TRUE. if the problem solver has finished being created, .FALSE. if not.
+    INTEGER(INTG) :: SOLVER_TYPE !<The type of the problem solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
+    TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER
+    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
+    TYPE(TIME_INTEGRATION_SOLVER_TYPE), POINTER :: TIME_INTEGRATION_SOLVER
   END TYPE PROBLEM_SOLVER_TYPE
 
   !>Contains information regarding the solution of a problem
@@ -988,6 +1073,7 @@ MODULE TYPES
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem
     LOGICAL :: SOLUTION_FINISHED !<Is .TRUE. if the problem solution has finished being created, .FALSE. if not.
     INTEGER(INTG) :: OUTPUT_TYPE !<The output type for the problem solution \see PROBLEM_ROUTINES_SolutionOutputTypes,PROBLEM_ROUTINES
+    INTEGER(INTG) :: GLOBAL_SPARSITY_TYPE !<The sparsity type for the global matrices of the problem solution \see PROBLEM_ROUTINES_SolutionGlobalSparsityTypes,PROBLEM_ROUTINES
     TYPE(PROBLEM_INTERPOLATION_TYPE), POINTER :: INTERPOLATION !<A pointer to the interpolation information used in the problem solution
     TYPE(PROBLEM_LINEAR_DATA_TYPE), POINTER :: LINEAR_DATA !<A pointer to the data for linear problems.
     TYPE(PROBLEM_NONLINEAR_DATA_TYPE), POINTER :: NONLINEAR_DATA !<A pointer to the data for non-linear problems.
@@ -1021,6 +1107,7 @@ MODULE TYPES
     TYPE(PROBLEM_ANALYTIC_TYPE), POINTER :: ANALYTIC !<A pointer to the analytic setup information for the problem.
     TYPE(PROBLEM_FIXED_CONDITIONS_TYPE), POINTER :: FIXED_CONDITIONS !<A pointer to the fixed condition information for the problem. \todo Change name to BOUNDARY_CONDITIONS???
     TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the solution information for the problem.
+    TYPE(PROBLEM_SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver for the problem.
   END TYPE PROBLEM_TYPE
   
   !>A buffer type to allow for an array of pointers to a PROBLEM_TYPE.

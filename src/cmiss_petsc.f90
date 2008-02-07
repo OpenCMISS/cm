@@ -53,21 +53,94 @@ MODULE CMISS_PETSC
 
 #include "include/finclude/petsc.h"
 #include "include/finclude/petscis.h"
+#include "include/finclude/petscksp.h"
 #include "include/finclude/petscmat.h"
+#include "include/finclude/petscpc.h"
 #include "include/finclude/petscvec.h"
 #include "include/finclude/petscviewer.h"
 
   !Module parameters
 
+  !KSP types
+  KSPType, PARAMETER :: KSPRICHARDSON_ = KSPRICHARDSON
+  KSPType, PARAMETER :: KSPCHEBYCHEV_ = KSPCHEBYCHEV
+  KSPType, PARAMETER :: KSPCG_ = KSPCG
+  KSPType, PARAMETER :: KSPCGNE_ = KSPCGNE
+  KSPType, PARAMETER :: KSPSTCG_ = KSPSTCG
+  KSPType, PARAMETER :: KSPGMRES_ = KSPGMRES
+  KSPType, PARAMETER :: KSPFGMRES_ = KSPFGMRES
+  KSPType, PARAMETER :: KSPLGMRES_ = KSPLGMRES
+  KSPType, PARAMETER :: KSPTCQMR_ = KSPTCQMR
+  KSPType, PARAMETER :: KSPBCGS_ = KSPBCGS
+  KSPType, PARAMETER :: KSPBCGSL_ = KSPBCGSL
+  KSPType, PARAMETER :: KSPCGS_ = KSPCGS
+  KSPType, PARAMETER :: KSPTFQMR_ = KSPTFQMR
+  KSPType, PARAMETER :: KSPCR_ = KSPCR
+  KSPType, PARAMETER :: KSPLSQR_ = KSPLSQR
+  KSPType, PARAMETER :: KSPPREONLY_ = KSPPREONLY
+  KSPType, PARAMETER :: KSPQCG_ = KSPQCG
+  KSPType, PARAMETER :: KSPBICG_ = KSPBICG
+  KSPType, PARAMETER :: KSPMINRES_ = KSPMINRES
+  KSPType, PARAMETER :: KSPSYMMLQ_ = KSPSYMMLQ
+  KSPType, PARAMETER :: KSPLCD_ = KSPLCD
+
+  !PC types
+  PCType, PARAMETER ::  PCNONE_ = PCNONE
+  PCType, PARAMETER ::  PCJACOBI_ = PCJACOBI
+  PCType, PARAMETER ::  PCSOR_ = PCSOR
+  PCType, PARAMETER ::  PCLU_ = PCLU
+  PCType, PARAMETER ::  PCSHELL_ = PCSHELL
+  PCType, PARAMETER ::  PCBJACOBI_ = PCBJACOBI
+  PCType, PARAMETER ::  PCMG_ = PCMG
+  PCType, PARAMETER ::  PCEISENSTAT_ = PCEISENSTAT
+  PCType, PARAMETER ::  PCILU_ = PCILU
+  PCType, PARAMETER ::  PCICC_ = PCICC
+  PCType, PARAMETER ::  PCASM_ = PCASM
+  PCType, PARAMETER ::  PCKSP_ = PCKSP
+  PCType, PARAMETER ::  PCCOMPOSITE_ = PCCOMPOSITE
+  PCType, PARAMETER ::  PCREDUNDANT_ = PCREDUNDANT
+  PCType, PARAMETER ::  PCSPAI_ = PCSPAI
+  PCType, PARAMETER ::  PCMILU_ = PCMILU
+  PCType, PARAMETER ::  PCNN_ = PCNN
+  PCType, PARAMETER ::  PCCHOLESKY_ = PCCHOLESKY
+  PCType, PARAMETER ::  PCSAMG_ = PCSAMG
+  PCType, PARAMETER ::  PCPBJACOBI_ = PCPBJACOBI
+  PCType, PARAMETER ::  PCMAT_ = PCMAT
+  PCType, PARAMETER ::  PCHYPRE_ = PCHYPRE
+  PCType, PARAMETER ::  PCFIELDSPLIT_ = PCFIELDSPLIT
+  PCType, PARAMETER ::  PCML_ = PCML
+  
   !Module types
 
-  TYPE PETSC_VEC_TYPE
-    Vec :: VEC
-  END TYPE PETSC_VEC_TYPE
+  TYPE PETSC_IS_TYPE
+    PRIVATE
+    IS :: IS_
+  END TYPE PETSC_IS_TYPE
+
+  TYPE PETSC_ISLOCALTOGLOBALMAPPING_TYPE
+    PRIVATE
+    ISLocalToGlobalMapping :: ISLOCALTOGLOBALMAPPING_
+  END TYPE PETSC_ISLOCALTOGLOBALMAPPING_TYPE
+
+  TYPE PETSC_KSP_TYPE
+    PRIVATE
+    KSP :: KSP_
+  END TYPE PETSC_KSP_TYPE
 
   TYPE PETSC_MAT_TYPE
+    PRIVATE
     Mat :: MAT
   END TYPE PETSC_MAT_TYPE
+
+  TYPE PETSC_PC_TYPE
+    PRIVATE
+    PC :: PC_
+  END TYPE PETSC_PC_TYPE
+
+  TYPE PETSC_VEC_TYPE
+    PRIVATE
+    Vec :: VEC
+  END TYPE PETSC_VEC_TYPE
 
   !Module variables
 
@@ -77,11 +150,13 @@ MODULE CMISS_PETSC
 
   INTERFACE
 
-    SUBROUTINE ISLocalToGlobalMappingApply(ctx,n,in,out,ierr)
+    SUBROUTINE ISLocalToGlobalMappingApply(ctx,type,nin,idxin,nout,idxout,ierr)
       ISLocalToGlobalMapping ctx
-      PetscInt n
-      PetscInt in
-      PetscInt out
+      ISGlobalToLocalMappingType type
+      PetscInt nin
+      PetscInt idxin(*)
+      PetscInt nout
+      PetscInt idxout(*)
       PetscInt ierr
     END SUBROUTINE ISLocalToGlobalMappingApply
     
@@ -104,6 +179,69 @@ MODULE CMISS_PETSC
       ISLocalToGlobalMapping ctx
       PetscInt ierr
     END SUBROUTINE ISLocalToGlobalMappingDestroy
+    
+    SUBROUTINE KSPCreate(comm,ksp,ierr)
+      MPI_Comm comm
+      KSP ksp
+      PetscInt ierr
+    END SUBROUTINE KSPCreate
+    
+    SUBROUTINE KSPDestroy(ksp,ierr)
+      KSP ksp
+      PetscInt ierr
+    END SUBROUTINE KSPDestroy
+    
+    SUBROUTINE KSPGetIterationNumber(ksp,its,ierr)
+      KSP ksp
+      PetscInt its
+      PetscInt ierr
+    END SUBROUTINE KSPGetIterationNumber
+    
+    SUBROUTINE KSPGetPC(ksp,pc,ierr)
+      KSP ksp
+      PC pc
+      PetscInt ierr
+    END SUBROUTINE KSPGetPC
+    
+    SUBROUTINE KSPSetFromOptions(ksp,ierr)
+      KSP ksp
+      PetscInt ierr
+    END SUBROUTINE KSPSetFromOptions
+    
+    SUBROUTINE KSPSetOperators(ksp,Amat,Pmat,flag,ierr)
+      KSP ksp
+      Mat Amat
+      Mat Pmat
+      MatStructure flag
+      PetscInt ierr
+    END SUBROUTINE KSPSetOperators
+    
+    SUBROUTINE KSPSetTolerances(ksp,rtol,atol,dtol,maxits,ierr)
+      KSP ksp
+      PetscReal rtol
+      PetscReal atol
+      PetscReal dtol
+      PetscInt maxits
+      PetscInt ierr
+    END SUBROUTINE KSPSetTolerances
+    
+    SUBROUTINE KSPSetType(ksp,method,ierr)
+      KSP ksp
+      KSPType method
+      PetscInt ierr
+    END SUBROUTINE KSPSetType
+    
+    SUBROUTINE KSPSetUp(ksp,ierr)
+      KSP ksp
+      PetscInt ierr
+    END SUBROUTINE KSPSetUp
+    
+    SUBROUTINE KSPSolve(ksp,b,x,ierr)
+      KSP ksp
+      Vec b
+      Vec x
+      PetscInt ierr
+    END SUBROUTINE KSPSolve
     
     SUBROUTINE MatAssemblyBegin(A,assemblytype,ierr)
       Mat A
@@ -200,6 +338,12 @@ MODULE CMISS_PETSC
       InsertMode insertmode
       PetscInt ierr
     END SUBROUTINE MatSetValues
+    
+    SUBROUTINE PCSetType(pc,method,ierr)
+      PC pc
+      PCType method
+      PetscInt ierr
+    END SUBROUTINE PCSetType
     
     SUBROUTINE PetscFinalize(ierr)
       PetscInt ierr
@@ -389,17 +533,28 @@ MODULE CMISS_PETSC
 
   END INTERFACE
 
-  PUBLIC PETSC_VEC_TYPE
+  PUBLIC PETSC_IS_TYPE,PETSC_ISLOCALTOGLOBALMAPPING_TYPE,PETSC_KSP_TYPE,PETSC_MAT_TYPE,PETSC_PC_TYPE,PETSC_VEC_TYPE
   
   PUBLIC ADD_VALUES,INSERT_VALUES,PETSC_COMM_WORLD,PETSC_COMM_SELF,PETSC_DECIDE,PETSC_NULL,PETSC_NULL_CHARACTER, &
     & SCATTER_FORWARD,SCATTER_REVERSE,PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_STDOUT_SELF,PETSC_VIEWER_DRAW_WORLD, &
     & PETSC_VIEWER_DRAW_SELF
+
+  PUBLIC KSPRICHARDSON_,KSPCHEBYCHEV_,KSPCG_,KSPCGNE_,KSPSTCG_,KSPGMRES_,KSPFGMRES_,KSPLGMRES_,KSPTCQMR_,KSPBCGS_,KSPBCGSL_, &
+    & KSPCGS_,KSPTFQMR_,KSPCR_,KSPLSQR_,KSPPREONLY_,KSPQCG_,KSPBICG_,KSPMINRES_,KSPSYMMLQ_,KSPLCD_
+  
+  PUBLIC PCNONE_,PCJACOBI_,PCSOR_,PCLU_,PCSHELL_,PCBJACOBI_,PCMG_,PCEISENSTAT_,PCILU_,PCICC_,PCASM_,PCKSP_,PCCOMPOSITE_, &
+    & PCREDUNDANT_,PCSPAI_,PCMILU_,PCNN_,PCCHOLESKY_,PCSAMG_,PCPBJACOBI_,PCMAT_,PCHYPRE_,PCFIELDSPLIT_,PCML_
   
   PUBLIC PETSC_FINALIZE,PETSC_INITIALIZE,PETSC_LOGPRINTSUMMARY
 
   PUBLIC PETSC_ISLOCALTOGLOBALMAPPINGAPPLY,PETSC_ISLOCALTOGLOBALMAPPINGAPPLYIS,PETSC_ISLOCALTOGLOBALMAPPINGCREATE, &
     & PETSC_ISLOCALTOGLOBALMAPPINGDESTROY
 
+  PUBLIC PETSC_KSPCREATE,PETSC_KSPDESTROY,PETSC_KSPGETITERATIONNUMBER,PETSC_KSPGETPC,PETSC_KSPSETFROMOPTIONS,PETSC_KSPSETTYPE, &
+    & PETSC_KSPSETUP,PETSC_KSPSETTOLERANCES,PETSC_KSPSOLVE
+
+  PUBLIC PETSC_PCSETTYPE
+  
   PUBLIC PETSC_VECASSEMBLYBEGIN,PETSC_VECASSEMBLYEND,PETSC_VECCREATE,PETSC_VECCREATEGHOST,PETSC_VECCREATEGHOSTWITHARRAY, &
     & PETSC_VECCREATEMPI,PETSC_VECCREATEMPIWITHARRAY,PETSC_VECCREATESEQ,PETSC_VECCREATESEQWITHARRAY,PETSC_VECDESTROY, &
     & PETSC_VECDUPLICATE,PETSC_VECGETLOCALSIZE,PETSC_VECGETOWNERSHIPRANGE,PETSC_VECGETSIZE,PETSC_VECGHOSTGETLOCALFORM, &
@@ -412,15 +567,12 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc PetscFinalize routine
   SUBROUTINE PETSC_FINALIZE(ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_FINALIZE
-    !###  Description:
-    !###    Buffer routine to the PETSc PetscFinalize routine.
-
     !Argument Variables
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_FINALIZE",ERR,ERROR,*999)
@@ -444,16 +596,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc PetscInitialize routine.
   SUBROUTINE PETSC_INITIALIZE(FILE,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_INITIALIZE
-    !###  Description:
-    !###    Buffer routine to the PETSc PetscInitialize routine.
-
     !Argument Variables
-    CHARACTER(LEN=*), INTENT(IN) :: FILE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    CHARACTER(LEN=*), INTENT(IN) :: FILE !<Filename for PETSc options file
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_INITIALIZE",ERR,ERROR,*999)
@@ -477,24 +626,23 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGAPPLY(CTX,N,IN,OUT,ERR,ERROR,*)
-
-    !#### Subroutine: PETSC_ISLOCALTOGLOBALMAPPINGAPPLY
-    !###  Description:
-    !###    Buffer routine to the PETSc ISLocalToGlobalMappingApply routine.
+  !>Buffer routine to the PETSc ISLocalToGlobalMappingApply routine.
+  SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGAPPLY(CTX,TYPE,NIN,IDXIN,NOUT,IDXOUT,ERR,ERROR,*)
 
     !Argument Variables
-    INTEGER(INTG), INTENT(IN) :: CTX
-    INTEGER(INTG), INTENT(IN) :: N
-    INTEGER(INTG), INTENT(IN) :: IN
-    INTEGER(INTG), INTENT(OUT) :: OUT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE), INTENT(IN) :: CTX !<The local to global mapping context
+    INTEGER(INTG), INTENT(IN) :: TYPE !<The type of local to global mapping
+    INTEGER(INTG), INTENT(IN) :: NIN !<The number of local indicies
+    INTEGER(INTG), INTENT(IN) :: IDXIN(*)
+    INTEGER(INTG), INTENT(OUT) :: NOUT
+    INTEGER(INTG), INTENT(OUT) :: IDXOUT(*)
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_ISLOCALTOGLOBALMAPPINGAPPLY",ERR,ERROR,*999)
 
-    CALL ISLocalToGlobalMappingApply(CTX,N,IN,OUT,ERR)
+    CALL ISLocalToGlobalMappingApply(CTX%ISLOCALTOGLOBALMAPPING_,TYPE,NIN,IDXIN,NOUT,IDXOUT,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
@@ -513,23 +661,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc ISLocalToGlobalMappingApplyIS routine.
   SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGAPPLYIS(CTX,ISIN,ISOUT,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_ISLOCALTOGLOBALMAPPINGAPPLYIS
-    !###  Description:
-    !###    Buffer routine to the PETSc ISLocalToGlobalMappingApplyIS routine.
-
     !Argument Variables
-    INTEGER(INTG), INTENT(IN) :: CTX
+    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE), INTENT(IN), INTENT(IN) :: CTX !<The local to global mapping context
     INTEGER(INTG), INTENT(IN) :: ISIN
     INTEGER(INTG), INTENT(OUT) :: ISOUT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_ISLOCALTOGLOBALMAPPINGAPPLYIS",ERR,ERROR,*999)
 
-    CALL ISLocalToGlobalMappingApplyIS(CTX,ISIN,ISOUT,ERR)
+    CALL ISLocalToGlobalMappingApplyIS(CTX%ISLOCALTOGLOBALMAPPING_,ISIN,ISOUT,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
@@ -548,24 +693,21 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc ISLocalToGlobalMappingCreate routine.
   SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGCREATE(COMMUNICATOR,N,GLOBALNUM,CTX,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_ISLOCALTOGLOBALMAPPINGCREATE
-    !###  Description:
-    !###    Buffer routine to the PETSc ISLocalToGlobalMappingCreate routine.
-
     !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR
-    INTEGER(INTG), INTENT(IN) :: N
-    INTEGER(INTG), INTENT(IN) :: GLOBALNUM(*)
-    INTEGER(INTG), INTENT(INOUT) :: CTX
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
+    INTEGER(INTG), INTENT(IN) :: N !<The number of local indices
+    INTEGER(INTG), INTENT(IN) :: GLOBALNUM(*) !<The global number for each local index
+    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE), INTENT(INOUT) :: CTX !<The local to global mapping context
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_ISLOCALTOGLOBALMAPPINGCREATE",ERR,ERROR,*999)
 
-    CALL ISLocalToGlobalMappingCreate(COMMUNICATOR,N,GLOBALNUM,CTX,ERR)
+    CALL ISLocalToGlobalMappingCreate(COMMUNICATOR,N,GLOBALNUM,CTX%ISLOCALTOGLOBALMAPPING_,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
@@ -584,21 +726,18 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc ISLocalToGlobalMappingDestroy routine.
   SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGDESTROY(CTX,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_ISLOCALTOGLOBALMAPPINGDESTROY
-    !###  Description:
-    !###    Buffer routine to the PETSc ISLocalToGlobalMappingDestroy routine.
-
     !Argument Variables
-    INTEGER(INTG), INTENT(INOUT) :: CTX
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE), INTENT(INOUT) :: CTX !<The local to global mapping context
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_ISLOCALTOGLOBALMAPPINGDESTROY",ERR,ERROR,*999)
 
-    CALL ISLocalToGlobalMappingDestroy(CTX,ERR)
+    CALL ISLocalToGlobalMappingDestroy(CTX%ISLOCALTOGLOBALMAPPING_,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
@@ -617,17 +756,294 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE PETSC_LOGPRINTSUMMARY(COMMUNICATOR,FILE,ERR,ERROR,*)
-
-    !#### Subroutine: PETSC_LOGPRINTSUMMARY
-    !###  Description:
-    !###    Buffer routine to the PETSc PetscLogPrintSummary routine.
+  !>Buffer routine to the PETSc KSPCreate routine
+  SUBROUTINE PETSC_KSPCREATE(COMMUNICATOR,KSP_,ERR,ERROR,*)
 
     !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR
-    CHARACTER(LEN=*), INTENT(IN) :: FILE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator for the KSP creation
+    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<On exit, the Ksp information
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_KSPCREATE",ERR,ERROR,*999)
+
+    CALL KSPCreate(COMMUNICATOR,KSP_%KSP_,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in KSPCreate",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_KSPCREATE")
+    RETURN
+999 CALL ERRORS("PETSC_KSPCREATE",ERR,ERROR)
+    CALL EXITS("PETSC_KSPCREATE")
+    RETURN 1
+  END SUBROUTINE PETSC_KSPCREATE
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc KSPDestroy routine
+  SUBROUTINE PETSC_KSPDESTROY(KSP_,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to destroy
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_KSPDESTROY",ERR,ERROR,*999)
+
+    CALL KSPDestroy(KSP_%KSP_,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in KSPDestroy",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_KSPDESTROY")
+    RETURN
+999 CALL ERRORS("PETSC_KSPDESTROY",ERR,ERROR)
+    CALL EXITS("PETSC_KSPDESTROY")
+    RETURN 1
+  END SUBROUTINE PETSC_KSPDESTROY
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc KSPGetIterationNumber routine
+  SUBROUTINE PETSC_KSPGETITERATIONNUMBER(KSP_,ITERATION_NUMBER,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The KSP information
+    INTEGER(INTG), INTENT(OUT) :: ITERATION_NUMBER !<On exit, the number of iterations
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_KSPGETITERATIONNUMBER",ERR,ERROR,*999)
+
+    CALL KSPGetIterationNumber(KSP_%KSP_,ITERATION_NUMBER,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in KSPGetIterationNumber",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_KSPGETITERATIONNUMBER")
+    RETURN
+999 CALL ERRORS("PETSC_KSPGETITERATIONNUMBER",ERR,ERROR)
+    CALL EXITS("PETSC_KSPGETITERATIONNUMBER")
+    RETURN 1
+  END SUBROUTINE PETSC_KSPGETITERATIONNUMBER
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc KSPGetPC routine
+  SUBROUTINE PETSC_KSPGETPC(KSP_,PC_,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to get the PC for
+    TYPE(PETSC_PC_TYPE), INTENT(INOUT) :: PC_ !<On exit, the PC associated with the Ksp
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_KSPGETPC",ERR,ERROR,*999)
+
+    CALL KSPGetPC(KSP_%KSP_,PC_%PC_,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in KSPGetPC",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_KSPGETPC")
+    RETURN
+999 CALL ERRORS("PETSC_KSPGETPC",ERR,ERROR)
+    CALL EXITS("PETSC_KSPGETPC")
+    RETURN 1
+  END SUBROUTINE PETSC_KSPGETPC
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc KSPSetFromOptions routine
+  SUBROUTINE PETSC_KSPSETFROMOPTIONS(KSP_,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to set the options for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_KSPSETFROMOPTIONS",ERR,ERROR,*999)
+
+    CALL KSPSetFromOptions(KSP_%KSP_,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in KSPSetFromOptions",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_KSPSETFROMOPTIONS")
+    RETURN
+999 CALL ERRORS("PETSC_KSPSETFROMOPTIONS",ERR,ERROR)
+    CALL EXITS("PETSC_KSPSETFROMOPTIONS")
+    RETURN 1
+  END SUBROUTINE PETSC_KSPSETFROMOPTIONS
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc KSPSetTolerances routine
+  SUBROUTINE PETSC_KSPSETTOLERANCES(KSP_,RTOL,ATOL,DTOL,MAXITS,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to set the tolerances for
+    REAL(DP), INTENT(IN) :: RTOL !<The relative tolerance to set
+    REAL(DP), INTENT(IN) :: ATOL !<The absolution tolerance to set
+    REAL(DP), INTENT(IN) :: DTOL !<The divergence tolerance to set
+    INTEGER(INTG), INTENT(IN) :: MAXITS !<The maximum number of iterations
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_KSPSETTOLERANCES",ERR,ERROR,*999)
+
+    CALL KSPSetTolerances(KSP_%KSP_,RTOL,ATOL,DTOL,MAXITS,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in KSPSetTolerances",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_KSPSETTOLERANCES")
+    RETURN
+999 CALL ERRORS("PETSC_KSPSETTOLERANCES",ERR,ERROR)
+    CALL EXITS("PETSC_KSPSETTOLERANCES")
+    RETURN 1
+  END SUBROUTINE PETSC_KSPSETTOLERANCES
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc KSPSetType routine
+  SUBROUTINE PETSC_KSPSETTYPE(KSP_,METHOD,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to set the type for
+    KSPType, INTENT(IN) :: METHOD !<The Ksp method
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_KSPSETTYPE",ERR,ERROR,*999)
+
+    CALL KSPSetType(KSP_%KSP_,METHOD,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in KSPSetType",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_KSPSETTYPE")
+    RETURN
+999 CALL ERRORS("PETSC_KSPSETTYPE",ERR,ERROR)
+    CALL EXITS("PETSC_KSPSETTYPE")
+    RETURN 1
+  END SUBROUTINE PETSC_KSPSETTYPE
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc KSPSetUp routine
+  SUBROUTINE PETSC_KSPSETUP(KSP_,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to set up
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_KSPSETUP",ERR,ERROR,*999)
+
+    CALL KSPSetUp(KSP_%KSP_,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in KSPSetUp",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_KSPSETUP")
+    RETURN
+999 CALL ERRORS("PETSC_KSPSETUP",ERR,ERROR)
+    CALL EXITS("PETSC_KSPSETUP")
+    RETURN 1
+  END SUBROUTINE PETSC_KSPSETUP
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc KSPSolve routine
+  SUBROUTINE PETSC_KSPSOLVE(KSP_,B,X,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to set up
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: B !<The RHS vector
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT)  :: X !<The solution vector
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_KSPSOLVE",ERR,ERROR,*999)
+
+    CALL KSPSolve(KSP_%KSP_,B%VEC,X%VEC,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in KSPSolve",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_KSPSOLVE")
+    RETURN
+999 CALL ERRORS("PETSC_KSPSOLVE",ERR,ERROR)
+    CALL EXITS("PETSC_KSPSOLVE")
+    RETURN 1
+  END SUBROUTINE PETSC_KSPSOLVE
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc PetscLogPrintSummary routine.
+  SUBROUTINE PETSC_LOGPRINTSUMMARY(COMMUNICATOR,FILE,ERR,ERROR,*)
+
+    !Argument Variables
+    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
+    CHARACTER(LEN=*), INTENT(IN) :: FILE !<Filename for the log summary
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_LOGPRINTSUMMARY",ERR,ERROR,*999)
@@ -651,17 +1067,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc MatAssemblyBegin routine.
   SUBROUTINE PETSC_MATASSEMBLYBEGIN(A,ASSEMBLY_TYPE,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_MATASSEMBLYBEGIN
-    !###  Description:
-    !###    Buffer routine to the PETSc MatAssemblyBegin routine.
-
     !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A
-    INTEGER(INTG), INTENT(IN) :: ASSEMBLY_TYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !The matrix to assemble
+    MatAssemblyType, INTENT(IN) :: ASSEMBLY_TYPE !<The assembly type 
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_MATASSEMBLYBEGIN",ERR,ERROR,*999)
@@ -685,17 +1098,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc MatAssemblyEnd routine.
   SUBROUTINE PETSC_MATASSEMBLYEND(A,ASSEMBLY_TYPE,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_MATASSEMBLYEND
-    !###  Description:
-    !###    Buffer routine to the PETSc MatAssemblyEnd routine.
-
     !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A
-    INTEGER(INTG), INTENT(IN) :: ASSEMBLY_TYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to assemble
+    MatAssemblyType, INTENT(IN) :: ASSEMBLY_TYPE !<The assembly type
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_MATASSEMBLYEND",ERR,ERROR,*999)
@@ -719,17 +1129,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc MatCreate routine.
   SUBROUTINE PETSC_MATCREATE(COMMUNICATOR,A,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_MATCREATE
-    !###  Description:
-    !###    Buffer routine to the PETSc MatCreate routine.
-
     !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI Communicator
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<On exit, the created matrix
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_MATCREATE",ERR,ERROR,*999)
@@ -753,26 +1160,23 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc MatCreateMPIAIJ routine.
   SUBROUTINE PETSC_MATCREATEMPIAIJ(COMMUNICATOR,LOCAL_M,LOCAL_N,GLOBAL_M,GLOBAL_N,DIAG_NUMBER_NZ_PERROW,DIAG_NUMBER_NZ_EACHROW, &
     & OFFDIAG_NUMBER_NZ_PERROW,OFFDIAG_NUMBER_NZ_EACHROW,A,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_MATCREATEMPIAIJ
-    !###  Description:
-    !###    Buffer routine to the PETSc MatCreateMPIAIJ routine.
-
     !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR
-    INTEGER(INTG), INTENT(IN) :: LOCAL_M
-    INTEGER(INTG), INTENT(IN) :: LOCAL_N
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_M
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_N
-    INTEGER(INTG), INTENT(IN) :: DIAG_NUMBER_NZ_PERROW
-    INTEGER(INTG), INTENT(IN) :: DIAG_NUMBER_NZ_EACHROW(*)
-    INTEGER(INTG), INTENT(IN) :: OFFDIAG_NUMBER_NZ_PERROW
-    INTEGER(INTG), INTENT(IN) :: OFFDIAG_NUMBER_NZ_EACHROW(*)
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
+    INTEGER(INTG), INTENT(IN) :: LOCAL_M !<The number of local rows
+    INTEGER(INTG), INTENT(IN) :: LOCAL_N !<The number of local columns
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_M !<The number of global rows
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_N !<The number of global columns
+    INTEGER(INTG), INTENT(IN) :: DIAG_NUMBER_NZ_PERROW !<The maximum number of non-zeros per row in the diagonal part of the matrix
+    INTEGER(INTG), INTENT(IN) :: DIAG_NUMBER_NZ_EACHROW(*) !<The number of non-zeros per row in the diagonal part of the matrix
+    INTEGER(INTG), INTENT(IN) :: OFFDIAG_NUMBER_NZ_PERROW !<The maximum number of non-zeros per row in the off-diagonal part of the matrix
+    INTEGER(INTG), INTENT(IN) :: OFFDIAG_NUMBER_NZ_EACHROW(*) !<The number of non-zeros per row in the off-diagonal part of the matrix
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<On exit, the matrix to create
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_MATCREATEMPIAIJ",ERR,ERROR,*999)
@@ -797,22 +1201,19 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc MatCreateMPIDense routine.
   SUBROUTINE PETSC_MATCREATEMPIDENSE(COMMUNICATOR,LOCAL_M,LOCAL_N,GLOBAL_M,GLOBAL_N,MATRIX_DATA,A,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_MATCREATEMPIDENSE
-    !###  Description:
-    !###    Buffer routine to the PETSc MatCreateMPIDense routine.
-
     !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR
-    INTEGER(INTG), INTENT(IN) :: LOCAL_M
-    INTEGER(INTG), INTENT(IN) :: LOCAL_N
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_M
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_N
-    REAL(DP), INTENT(IN) :: MATRIX_DATA(*)
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
+    INTEGER(INTG), INTENT(IN) :: LOCAL_M !<The number of local rows
+    INTEGER(INTG), INTENT(IN) :: LOCAL_N !<The number of local columns
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_M !<The number of global columns
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_N !<The number of global rows
+    REAL(DP), INTENT(IN) :: MATRIX_DATA(*) !<Optional, the allocated matrix data.
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<On exit, the matrix to create
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_MATCREATEMPIDENSE",ERR,ERROR,*999)
@@ -836,21 +1237,18 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc MatCreateSeqAIJ routine.
   SUBROUTINE PETSC_MATCREATESEQAIJ(COMMUNICATOR,M,N,NUMBER_NZ_PERROW,NUMBER_NZ_EACHROW,A,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_MATCREATESEQAIJ
-    !###  Description:
-    !###    Buffer routine to the PETSc MatCreateSeqAIJ routine.
-
     !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR
-    INTEGER(INTG), INTENT(IN) :: M
-    INTEGER(INTG), INTENT(IN) :: N
-    INTEGER(INTG), INTENT(IN) :: NUMBER_NZ_PERROW
-    INTEGER(INTG), INTENT(IN) :: NUMBER_NZ_EACHROW(*)
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
+    INTEGER(INTG), INTENT(IN) :: M !<The number of rows
+    INTEGER(INTG), INTENT(IN) :: N !<The number of columns
+    INTEGER(INTG), INTENT(IN) :: NUMBER_NZ_PERROW !<The maximum number of non-zeros per row
+    INTEGER(INTG), INTENT(IN) :: NUMBER_NZ_EACHROW(*) !<The number of non-zeros in each row
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<On exit, the created matrix
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_MATCREATESEQAIJ",ERR,ERROR,*999)
@@ -874,20 +1272,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc MatCreateSeqDense routine.
   SUBROUTINE PETSC_MATCREATESEQDENSE(COMMUNICATOR,M,N,MATRIX_DATA,A,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_MATCREATESEQDENSE
-    !###  Description:
-    !###    Buffer routine to the PETSc MatCreateSeqDense routine.
-
     !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR
-    INTEGER(INTG), INTENT(IN) :: M
-    INTEGER(INTG), INTENT(IN) :: N
-    REAL(DP), INTENT(IN) :: MATRIX_DATA(*)
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI Communicator
+    INTEGER(INTG), INTENT(IN) :: M !<The number of rows
+    INTEGER(INTG), INTENT(IN) :: N !<The number of columns
+    REAL(DP), INTENT(IN) :: MATRIX_DATA(*) !<Optional, the allocated matrix data
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<On exit, the created matrix
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_MATCREATESEQDENSE",ERR,ERROR,*999)
@@ -911,18 +1306,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc MatGetOwnershipRange routine.
   SUBROUTINE PETSC_MATGETOWNERSHIPRANGE(A,FIRST_ROW,LAST_ROW,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_MATGETOWNERSHIPRANGE
-    !###  Description:
-    !###    Buffer routine to the PETSc MatGetOwnershipRange routine.
-
     !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A
-    INTEGER(INTG), INTENT(OUT) :: FIRST_ROW
-    INTEGER(INTG), INTENT(OUT) :: LAST_ROW
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to get the ownership range of
+    INTEGER(INTG), INTENT(OUT) :: FIRST_ROW !<On exit, the first row for the matrix
+    INTEGER(INTG), INTENT(OUT) :: LAST_ROW !<On exit, the last row for the matrix
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_MATGETOWNERSHIPRANGE",ERR,ERROR,*999)
@@ -946,17 +1338,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc MatSetOption routine.
   SUBROUTINE PETSC_MATSETOPTION(A,OPTION,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_MATSETOPTION
-    !###  Description:
-    !###    Buffer routine to the PETSc MatSetOption routine.
-
     !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A
-    MatOption, INTENT(IN) :: OPTION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to set the option for
+    MatOption, INTENT(IN) :: OPTION !<The option to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_MATSETOPTION",ERR,ERROR,*999)
@@ -980,20 +1369,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc MatSetSizes routine.
   SUBROUTINE PETSC_MATSETSIZES(A,LOCAL_M,LOCAL_N,GLOBAL_M,GLOBAL_N,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_MATSETSIZES
-    !###  Description:
-    !###    Buffer routine to the PETSc MatSetSizes routine.
-
     !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A
-    INTEGER(INTG), INTENT(IN) :: LOCAL_M
-    INTEGER(INTG), INTENT(IN) :: LOCAL_N
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_M
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_N
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to set the size of
+    INTEGER(INTG), INTENT(IN) :: LOCAL_M !<Number of local rows
+    INTEGER(INTG), INTENT(IN) :: LOCAL_N !<Number of local columns
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_M !<Number of global rows
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_N !<Number of global columns
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_MATSETSIZES",ERR,ERROR,*999)
@@ -1017,22 +1403,19 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc MatSetValues routine.
   SUBROUTINE PETSC_MATSETVALUES(A,M,M_INDICES,N,N_INDICES,VALUES,INSERT_MODE,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_MATSETVALUES
-    !###  Description:
-    !###    Buffer routine to the PETSc MatSetValues routine.
-
     !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A
-    INTEGER(INTG), INTENT(IN) :: M
-    INTEGER(INTG), INTENT(IN) :: M_INDICES(*)
-    INTEGER(INTG), INTENT(IN) :: N
-    INTEGER(INTG), INTENT(IN) :: N_INDICES(*)
-    REAL(DP), INTENT(IN) :: VALUES(*)
-    InsertMode, INTENT(IN) :: INSERT_MODE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to set the values of
+    INTEGER(INTG), INTENT(IN) :: M !<The number of row indices
+    INTEGER(INTG), INTENT(IN) :: M_INDICES(*) !<The row indices
+    INTEGER(INTG), INTENT(IN) :: N !<The number of column indices
+    INTEGER(INTG), INTENT(IN) :: N_INDICES(*) !<The column indices
+    REAL(DP), INTENT(IN) :: VALUES(*) !<The values to set
+    InsertMode, INTENT(IN) :: INSERT_MODE !<The insert mode
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_MATSETVALUES",ERR,ERROR,*999)
@@ -1056,16 +1439,44 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE PETSC_VECASSEMBLYBEGIN(X,ERR,ERROR,*)
-
-    !#### Subroutine: PETSC_VECASSEMBLYBEGIN
-    !###  Description:
-    !###    Buffer routine to the PETSc VecAssemblyBegin routine.
+  !>Buffer routine to the PETSc PCSetType routine.
+  SUBROUTINE PETSC_PCSETTYPE(PC_,METHOD,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_PC_TYPE), INTENT(INOUT) :: PC_ !<The preconditioner to set the type of
+    PCType, INTENT(IN) :: METHOD !<The preconditioning method to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_PCSETTYPE",ERR,ERROR,*999)
+
+    CALL PCSetType(PC_%PC_,METHOD,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in PCSetType",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_PCSETTYPE")
+    RETURN
+999 CALL ERRORS("PETSC_PCSETTYPE",ERR,ERROR)
+    CALL EXITS("PETSC_PCSETTYPE")
+    RETURN 1
+  END SUBROUTINE PETSC_PCSETTYPE
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc VecAssemblyBegin routine.
+  SUBROUTINE PETSC_VECASSEMBLYBEGIN(X,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to begin the assembly of
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECASSEMBLYBEGIN",ERR,ERROR,*999)
@@ -1089,16 +1500,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecAssemblyEnd routine.
   SUBROUTINE PETSC_VECASSEMBLYEND(X,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECASSEMBLYEND
-    !###  Description:
-    !###    Buffer routine to the PETSc VecAssemblyEnd routine.
-
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to end the assembly of
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECASSEMBLYEND",ERR,ERROR,*999)
@@ -1122,17 +1530,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecCreate routine.
   SUBROUTINE PETSC_VECCREATE(COMMUNICATOR,X,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECCREATE
-    !###  Description:
-    !###    Buffer routine to the PETSc VecCreate routine.
-
     !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<On exit, the created vector
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECCREATE",ERR,ERROR,*999)
@@ -1156,21 +1561,18 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecCreateGhost routine.
   SUBROUTINE PETSC_VECCREATEGHOST(COMMUNICATOR,LOCAL_SIZE,GLOBAL_SIZE,NUMBER_GHOST,GHOSTS,X,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECCREATEGHOST
-    !###  Description:
-    !###    Buffer routine to the PETSc VecCreateGhost routine.
-
     !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR
-    INTEGER(INTG), INTENT(IN) :: LOCAL_SIZE
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_SIZE
-    INTEGER(INTG), INTENT(IN) :: NUMBER_GHOST
-    INTEGER(INTG), INTENT(IN) :: GHOSTS(*)
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
+    INTEGER(INTG), INTENT(IN) :: LOCAL_SIZE !<The number of local elements
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_SIZE !<The number of global elements
+    INTEGER(INTG), INTENT(IN) :: NUMBER_GHOST !<The number of ghost elements
+    INTEGER(INTG), INTENT(IN) :: GHOSTS(*) !<The global location of the each ghost element
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<On exit, the created vector
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECCREATEGHOST",ERR,ERROR,*999)
@@ -1194,22 +1596,19 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecCreateGhostWithArray routine.
   SUBROUTINE PETSC_VECCREATEGHOSTWITHARRAY(COMMUNICATOR,LOCAL_SIZE,GLOBAL_SIZE,NUMBER_GHOST,GHOSTS,ARRAY,X,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECCREATEGHOSTWITHARRAY
-    !###  Description:
-    !###    Buffer routine to the PETSc VecCreateGhostWithArray routine.
-
-    !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR
-    INTEGER(INTG), INTENT(IN) :: LOCAL_SIZE
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_SIZE
-    INTEGER(INTG), INTENT(IN) :: NUMBER_GHOST
-    INTEGER(INTG), INTENT(IN) :: GHOSTS(*)
-    REAL(DP), INTENT(OUT) :: ARRAY(*)
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+   !Argument Variables
+    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
+    INTEGER(INTG), INTENT(IN) :: LOCAL_SIZE !<The number of local elements
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_SIZE !<The number of global elements
+    INTEGER(INTG), INTENT(IN) :: NUMBER_GHOST !<The number of ghost elements
+    INTEGER(INTG), INTENT(IN) :: GHOSTS(*) !<The global location of the each ghost element
+    REAL(DP), INTENT(OUT) :: ARRAY(*) !<The preallocated array of matrix data
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<On exit, the created vector
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECCREATEGHOSTWITHARRAY",ERR,ERROR,*999)
@@ -1233,19 +1632,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecCreateMPI routine.
   SUBROUTINE PETSC_VECCREATEMPI(COMMUNICATOR,LOCAL_SIZE,GLOBAL_SIZE,X,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECCREATEMPI
-    !###  Description:
-    !###    Buffer routine to the PETSc VecCreateMPI routine.
-
     !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR
-    INTEGER(INTG), INTENT(IN) :: LOCAL_SIZE
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_SIZE
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
+    INTEGER(INTG), INTENT(IN) :: LOCAL_SIZE !<The number of local elements
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_SIZE !<The number of global elements
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<On exit, the created vector
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECCREATEMPI",ERR,ERROR,*999)
@@ -1269,20 +1665,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecCreateMPIWithArray routine.
   SUBROUTINE PETSC_VECCREATEMPIWITHARRAY(COMMUNICATOR,LOCAL_SIZE,GLOBAL_SIZE,ARRAY,X,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECCREATEMPIWITHARRAY
-    !###  Description:
-    !###    Buffer routine to the PETSc VecCreateMPIWithArray routine.
-
     !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR
-    INTEGER(INTG), INTENT(IN) :: LOCAL_SIZE
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_SIZE
-    REAL(DP), INTENT(OUT) :: ARRAY(*)
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
+    INTEGER(INTG), INTENT(IN) :: LOCAL_SIZE !<The number of local elements
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_SIZE !<The number of global elements
+    REAL(DP), INTENT(OUT) :: ARRAY(*) !<The preallocated array for the vector data
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<On exit, the created vector
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECCREATEMPIWITHARRAY",ERR,ERROR,*999)
@@ -1306,18 +1699,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecCreateSeq routine.
   SUBROUTINE PETSC_VECCREATESEQ(COMMUNICATOR,SIZE,X,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECCREATESEQ
-    !###  Description:
-    !###    Buffer routine to the PETSc VecCreateSeq routine.
-
     !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR
-    INTEGER(INTG), INTENT(IN) :: SIZE
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
+    INTEGER(INTG), INTENT(IN) :: SIZE !<The size of the vector
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<On exit, the created vector
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECCREATESEQ",ERR,ERROR,*999)
@@ -1341,19 +1731,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecCreateSeqWithArray routine.
   SUBROUTINE PETSC_VECCREATESEQWITHARRAY(COMMUNICATOR,SIZE,ARRAY,X,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECCREATESEQWITHARRAY
-    !###  Description:
-    !###    Buffer routine to the PETSc VecCreateSeqWithArray routine.
-
     !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR
-    INTEGER(INTG), INTENT(IN) :: SIZE
-    REAL(DP), INTENT(OUT) :: ARRAY(*)
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
+    INTEGER(INTG), INTENT(IN) :: SIZE !<The size of the vector
+    REAL(DP), INTENT(OUT) :: ARRAY(*) !<The preallocated array for the vector data
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<On exit, the created vector
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECCREATESEQWITHARRAY",ERR,ERROR,*999)
@@ -1377,16 +1764,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecDestroy routine.
   SUBROUTINE PETSC_VECDESTROY(X,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECDESTROY
-    !###  Description:
-    !###    Buffer routine to the PETSc VecDestroy routine.
-
-    !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+   !Argument Variables
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to destroy
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECDESTROY",ERR,ERROR,*999)
@@ -1410,16 +1794,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecDuplicate routine.
   SUBROUTINE PETSC_VECDUPLICATE(OLD,NEW,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECDUPLICATE
-    !###  Description:
-    !###    Buffer routine to the PETSc VecDuplicate routine.
-
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: OLD,NEW
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: OLD !<The vector to duplicate
+    TYPE(PETSC_VEC_TYPE), INTENT(OUT) :: NEW !<On exit, the new duplicated vector
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECDUPLICATE",ERR,ERROR,*999)
@@ -1443,17 +1825,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecGetLocalSize routine.
   SUBROUTINE PETSC_VECGETLOCALSIZE(X,SIZE,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECGETLOCALSIZE
-    !###  Description:
-    !###    Buffer routine to the PETSc VecGetLocalSize routine.
-
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X
-    INTEGER(INTG), INTENT(OUT) :: SIZE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to get the local size of
+    INTEGER(INTG), INTENT(OUT) :: SIZE !<On exit, the local size of the vector
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECGETLOCALSIZE",ERR,ERROR,*999)
@@ -1477,18 +1856,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecGetOwnershipRange routine.
   SUBROUTINE PETSC_VECGETOWNERSHIPRANGE(X,LOW,HIGH,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECGETOWNERSHIPRANGE
-    !###  Description:
-    !###    Buffer routine to the PETSc VecGetOwnershipRange routine.
-
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X
-    INTEGER(INTG), INTENT(OUT) :: LOW
-    INTEGER(INTG), INTENT(OUT) :: HIGH
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to get the ownership range of 
+    INTEGER(INTG), INTENT(OUT) :: LOW !<On exit, the low end of the range
+    INTEGER(INTG), INTENT(OUT) :: HIGH !<On exit, the high end of the range
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECGETOWNERSHIPRANGE",ERR,ERROR,*999)
@@ -1512,17 +1888,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecGetSize routine.
   SUBROUTINE PETSC_VECGETSIZE(X,SIZE,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECGETSIZE
-    !###  Description:
-    !###    Buffer routine to the PETSc VecGetSize routine.
-
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X
-    INTEGER(INTG), INTENT(OUT) :: SIZE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to get the size of
+    INTEGER(INTG), INTENT(OUT) :: SIZE !<On exit, the size of the vector
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECGETSIZE",ERR,ERROR,*999)
@@ -1546,17 +1919,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecGhostGetLocalForm routine.
   SUBROUTINE PETSC_VECGHOSTGETLOCALFORM(G,L,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECGHOSTGETLOCALFORM
-    !###  Description:
-    !###    Buffer routine to the PETSc VecGhostGetLocalForm routine.
-
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: G
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: L
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: G !<The global form of the vector
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: L !<On exit, the local form of the vector with ghosts
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECGHOSTGETLOCALFORM",ERR,ERROR,*999)
@@ -1580,17 +1950,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecGhostRestoreLocalForm routine.
   SUBROUTINE PETSC_VECGHOSTRESTORELOCALFORM(G,L,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECGHOSTRESTORELOCALFORM
-    !###  Description:
-    !###    Buffer routine to the PETSc VecGhostRestoreLocalForm routine.
-
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: G
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: L
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: G !<The global form of the vector
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: L !<The local form of the vector
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECGHOSTRESTORELOCALFORM",ERR,ERROR,*999)
@@ -1614,18 +1981,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecGhostUpdateBegin routine.
   SUBROUTINE PETSC_VECGHOSTUPDATEBEGIN(X,INSERT_MODE,SCATTER_MODE,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECGHOSTUPDATEBEGIN
-    !###  Description:
-    !###    Buffer routine to the PETSc VecGhostUpdateBegin routine.
-
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X
-    InsertMode, INTENT(IN) :: INSERT_MODE
-    ScatterMode, INTENT(IN) :: SCATTER_MODE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to begin the ghost update for
+    InsertMode, INTENT(IN) :: INSERT_MODE !<The insert mode
+    ScatterMode, INTENT(IN) :: SCATTER_MODE !<The scatter mode
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECGHOSTUPDATEBEGIN",ERR,ERROR,*999)
@@ -1649,18 +2013,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecGhostUpdateEnd routine.
   SUBROUTINE PETSC_VECGHOSTUPDATEEND(X,INSERT_MODE,SCATTER_MODE,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECGHOSTUPDATEEND
-    !###  Description:
-    !###    Buffer routine to the PETSc VecGhostUpdateEnd routine.
-
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X
-    InsertMode, INTENT(IN) :: INSERT_MODE
-    ScatterMode, INTENT(IN) :: SCATTER_MODE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to end the ghost update for
+    InsertMode, INTENT(IN) :: INSERT_MODE !<The insert mode
+    ScatterMode, INTENT(IN) :: SCATTER_MODE !<The scatter mode
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECGHOSTUPDATEEND",ERR,ERROR,*999)
@@ -1684,17 +2045,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecSet routine.
   SUBROUTINE PETSC_VECSET(X,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECSET
-    !###  Description:
-    !###    Buffer routine to the PETSc VecSet routine.
-
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X
-    REAL(DP), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to set the value of
+    REAL(DP), INTENT(IN) :: VALUE !<The value to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECSET",ERR,ERROR,*999)
@@ -1718,16 +2076,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecSetFromOptions routine.
   SUBROUTINE PETSC_VECSETFROMOPTIONS(X,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECSETFROMOPTIONS
-    !###  Description:
-    !###    Buffer routine to the PETSc VecSetFromOptions routine.
-
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to set the options for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECSETFROMOPTIONS",ERR,ERROR,*999)
@@ -1751,22 +2106,19 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecSetLocalToGlobalMapping routine.
   SUBROUTINE PETSC_VECSETLOCALTOGLOBALMAPPING(X,CTX,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECSETLOCALTOGLOBALMAPPING
-    !###  Description:
-    !###    Buffer routine to the PETSc VecSetLocalToGlobalMapping routine.
-
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X
-    INTEGER(INTG), INTENT(IN) :: CTX
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to set the local to global mapping for
+    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE), INTENT(IN) :: CTX !<The local to global mapping context
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECSETLOCALTOGLOBALMAPPING",ERR,ERROR,*999)
 
-    CALL VecSetLocalToGlobalMapping(X%VEC,CTX,ERR)
+    CALL VecSetLocalToGlobalMapping(X%VEC,CTX%ISLOCALTOGLOBALMAPPING_,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
@@ -1785,20 +2137,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecSetValues routine.
   SUBROUTINE PETSC_VECSETVALUES(X,N,INDICES,VALUES,INSERT_MODE,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECSETVALUES
-    !###  Description:
-    !###    Buffer routine to the PETSc VecSetValues routine.
-
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X
-    INTEGER(INTG), INTENT(IN) :: N
-    INTEGER(INTG), INTENT(IN) :: INDICES(*)
-    REAL(DP), INTENT(IN) :: VALUES(*)
-    InsertMode, INTENT(IN) :: INSERT_MODE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to set the values for
+    INTEGER(INTG), INTENT(IN) :: N !<The number of indicies
+    INTEGER(INTG), INTENT(IN) :: INDICES(*) !<The indices
+    REAL(DP), INTENT(IN) :: VALUES(*) !<The values to set
+    InsertMode, INTENT(IN) :: INSERT_MODE !<The insert mode
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECSETVALUES",ERR,ERROR,*999)
@@ -1822,20 +2171,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecSetValuesLocal routine.
   SUBROUTINE PETSC_VECSETVALUESLOCAL(X,N,INDICES,VALUES,INSERT_MODE,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECSETVALUESLOCAL
-    !###  Description:
-    !###    Buffer routine to the PETSc VecSetValuesLocal routine.
-
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X
-    INTEGER(INTG), INTENT(IN) :: N
-    INTEGER(INTG), INTENT(IN) :: INDICES(*)
-    REAL(DP), INTENT(IN) :: VALUES(*)
-    InsertMode :: INSERT_MODE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to set the values of
+    INTEGER(INTG), INTENT(IN) :: N !<The number of indices
+    INTEGER(INTG), INTENT(IN) :: INDICES(*) !<The local indices
+    REAL(DP), INTENT(IN) :: VALUES(*) !<The values to set
+    InsertMode :: INSERT_MODE !<The insert mode
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECSETVALUESLOCAL",ERR,ERROR,*999)
@@ -1859,17 +2205,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecSetSizes routine.
   SUBROUTINE PETSC_VECSETSIZES(X,LOCAL_SIZE,GLOBAL_SIZE,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECSETSIZES
-    !###  Description:
-    !###    Buffer routine to the PETSc VecSetSizes routine.
-
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X
-    INTEGER(INTG), INTENT(IN) :: LOCAL_SIZE,GLOBAL_SIZE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to set the sizes of
+    INTEGER(INTG), INTENT(IN) :: LOCAL_SIZE !<The number of local elements
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_SIZE !<The number of global elements
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECSETSIZES",ERR,ERROR,*999)
@@ -1893,17 +2237,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecView routine.
   SUBROUTINE PETSC_VECVIEW(X,V,ERR,ERROR,*)
 
-    !#### Subroutine: PETSC_VECVIEW
-    !###  Description:
-    !###    Buffer routine to the PETSc VecView routine.
-
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X
-    INTEGER(PTR), INTENT(IN) :: V
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to view
+    PetscViewer, INTENT(IN) :: V !<The viewer
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_VECVIEW",ERR,ERROR,*999)

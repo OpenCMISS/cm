@@ -1069,7 +1069,7 @@ CONTAINS
               i=i+1
             ENDDO !i
           CASE(LIST_SP_TYPE)
-           CALL LIST_SORT(LIST%LIST_SP(1:LIST%NUMBER_IN_LIST),ERR,ERROR,*999)
+            CALL LIST_SORT(LIST%LIST_SP(1:LIST%NUMBER_IN_LIST),ERR,ERROR,*999)
             i=1
             DO WHILE(i<=LIST%NUMBER_IN_LIST)
               !Find the extent of duplicate values if any
