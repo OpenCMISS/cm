@@ -3932,7 +3932,7 @@ CONTAINS
             DO i=1,SIZE(INDICES,1)
               !Allow all values to be added until dof mappings fixed. Ghost values that are added will not be propogated
               IF(INDICES(i)>0.AND.INDICES(i)<=DISTRIBUTED_VECTOR%DATA_SIZE) THEN
-                DISTRIBUTED_VECTOR%DATA_L(INDICES(i))=DISTRIBUTED_VECTOR%DATA_L(INDICES(i))+VALUES(i)
+                DISTRIBUTED_VECTOR%DATA_L(INDICES(i))=DISTRIBUTED_VECTOR%DATA_L(INDICES(i)).OR.VALUES(i)
               ELSE
                 LOCAL_ERROR="Index "//TRIM(NUMBER_TO_VSTRING(INDICES(i),"*",ERR,ERROR))// &
                   & " is invalid. The index must be between 1 and "// &
@@ -3988,7 +3988,7 @@ CONTAINS
         IF(DISTRIBUTED_VECTOR%DATA_TYPE==MATRIX_VECTOR_L_TYPE) THEN
           !Allow all values to be added until dof mappings fixed. Ghost values that are added will not be propogated
           IF(INDEX>0.AND.INDEX<=DISTRIBUTED_VECTOR%DATA_SIZE) THEN
-            DISTRIBUTED_VECTOR%DATA_L(INDEX)=DISTRIBUTED_VECTOR%DATA_L(INDEX)+VALUE
+            DISTRIBUTED_VECTOR%DATA_L(INDEX)=DISTRIBUTED_VECTOR%DATA_L(INDEX).OR.VALUE
           ELSE
             LOCAL_ERROR="Index "//TRIM(NUMBER_TO_VSTRING(INDEX,"*",ERR,ERROR))// &
               & " is invalid. The index must be between 1 and "// &
