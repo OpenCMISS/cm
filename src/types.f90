@@ -536,7 +536,7 @@ MODULE TYPES
   !>Contains the information for an adjacent domain for transfering the ghost data of a distributed vector to/from the
   !>current domain.
   TYPE DISTRIBUTED_VECTOR_TRANSFER_TYPE
-    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: DISTRIBUTED_VECTOR !<The pointer to the distributed vector object for this transfer information.
+    TYPE(DISTRIBUTED_VECTOR_CMISS_TYPE), POINTER :: CMISS_VECTOR !<The pointer to the CMISS distributed vector object for this transfer information.
     INTEGER(INTG) :: DATA_TYPE !<The data type of the distributed vector. This is "inherited" from the distributed vector.
     INTEGER(INTG) :: SEND_BUFFER_SIZE !<The size of the buffer to send distributed vector data from the current domain to the adjacent domain.
     INTEGER(INTG) :: RECEIVE_BUFFER_SIZE !<The size of the buffer to receive distributed vector data from the adjacent domain to the current domain.
@@ -558,6 +558,8 @@ MODULE TYPES
   TYPE DISTRIBUTED_VECTOR_CMISS_TYPE
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: DISTRIBUTED_VECTOR !<A pointer to the distributed vector
     INTEGER(INTG) :: BASE_TAG_NUMBER !<The base number for the MPI tag numbers that will be used to communicate the distributed vector data amongst the domains. The base tag number can be thought of as the identification number for the distributed vector object.
+    INTEGER(INTG) :: N !<The size of the distributed vector
+    INTEGER(INTG) :: DATA_SIZE !<The size of the distributed vector that is held locally by the domain.
     INTEGER(INTG), ALLOCATABLE :: DATA_INTG(:) !<DATA_INTG(i). The integer data for an integer distributed vector. The i'th component contains the data for the i'th local number of distributed vector data on the domain. 
     REAL(DP), ALLOCATABLE :: DATA_DP(:) !<DATA_DP(i). The real data for a double precision real distributed vector. The i'th component contains the data for the i'th local number of distributed vector data on the domain. 
     REAL(SP), ALLOCATABLE :: DATA_SP(:) !<DATA_SP(i). The real data for a single precision real distributed vector. The i'th component contains the data for the i'th local number of distributed vector data on the domain. 
@@ -568,24 +570,16 @@ MODULE TYPES
   !>Contains information for a PETSc distributed vector
   TYPE DISTRIBUTED_VECTOR_PETSC_TYPE
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: DISTRIBUTED_VECTOR !<A pointer to the distributed vector
-    TYPE(PETSC_VEC_TYPE) :: VEC !<The PETSc vector
+    TYPE(PETSC_VEC_TYPE) :: VECTOR !<The PETSc vector
   END TYPE DISTRIBUTED_VECTOR_PETSC_TYPE
   
   !>Contains the information for a vector that is distributed across a number of domains.
   TYPE DISTRIBUTED_VECTOR_TYPE
-    INTEGER(INTG) :: BASE_TAG_NUMBER !<The base number for the MPI tag numbers that will be used to communicate the distributed vector data amongst the domains. The base tag number can be thought of as the identification number for the distributed vector object.
     LOGICAL :: VECTOR_FINISHED !<!<Is .TRUE. if the distributed vector has finished being created, .FALSE. if not.
     INTEGER(INTG) :: LIBRARY_TYPE !<The format of the distributed vector \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
     INTEGER(INTG) :: GHOSTING_TYPE !<The ghosting type \see DISTRIBUTED_MATRIX_VECTOR_GhostingTypes,DISTRIBUTED_MATRIX_VECTOR
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING !<The pointer for the domain mapping that identifies how the vector is distributed amongst the domains.
-    INTEGER(INTG) :: N !<The size of the distributed vector
     INTEGER(INTG) :: DATA_TYPE !<The type of data for the distributed vector \see DISTRIBUTED_MATRIX_VECTOR_DataTypes 
-    INTEGER(INTG) :: DATA_SIZE !<The size of the distributed vector that is held locally by the domain.
-    INTEGER(INTG), ALLOCATABLE :: DATA_INTG(:) !<DATA_INTG(i). The integer data for an integer distributed vector. The i'th component contains the data for the i'th local number of distributed vector data on the domain. 
-    REAL(DP), ALLOCATABLE :: DATA_DP(:) !<DATA_DP(i). The real data for a double precision real distributed vector. The i'th component contains the data for the i'th local number of distributed vector data on the domain. 
-    REAL(SP), ALLOCATABLE :: DATA_SP(:) !<DATA_SP(i). The real data for a single precision real distributed vector. The i'th component contains the data for the i'th local number of distributed vector data on the domain. 
-    LOGICAL, ALLOCATABLE :: DATA_L(:) !<DATA_L(i). The logical data for a logical distributed vector. The i'th component contains the data for the i'th local number of distributed vector data on the domain.  
-    TYPE(DISTRIBUTED_VECTOR_TRANSFER_TYPE), ALLOCATABLE :: TRANSFERS(:) !<TRANSFERS(adjacent_domain_idx). The transfer information for the adjacent_domain_idx'th adjacent domain to this domain. 
     TYPE(DISTRIBUTED_VECTOR_CMISS_TYPE), POINTER :: CMISS !<A pointer to the CMISS distributed vector information
     TYPE(DISTRIBUTED_VECTOR_PETSC_TYPE), POINTER :: PETSC !<A pointer to the PETSc distributed vector information
   END TYPE DISTRIBUTED_VECTOR_TYPE
@@ -600,12 +594,21 @@ MODULE TYPES
   !>Contains information for a PETSc distributed matrix
   TYPE DISTRIBUTED_MATRIX_PETSC_TYPE
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: DISTRIBUTED_MATRIX !<A pointer to the distributed matrix
-    TYPE(PETSC_MAT_TYPE) :: MAT !<The PETSc matrix
+    INTEGER(INTG) :: NUMBER_LOCAL_ROWS !<The number of local rows in the PETSc matrix
+    INTEGER(INTG) :: NUMBER_LOCAL_COLUMNS !<The number of local columns in the PETSc matrix
+    INTEGER(INTG) :: NUMBER_GLOBAL_ROWS !<The number of global rows in the PETSc matrix
+    INTEGER(INTG) :: NUMBER_GLOBAL_COLUMNS !<The number of global columsn in the PETSc matrix
+    INTEGER(INTG) :: STORAGE_TYPE !<The storage type (sparsity) of the PETSc matrix
+    INTEGER(INTG) :: NUMBER_NON_ZEROS !<The number of non-zeros in the PETSc matrix
+    INTEGER(INTG) :: DATA_SIZE !<The size of the allocated data in the PETSc matrix
+    INTEGER(INTG), POINTER :: DIAGONAL_NUMBER_NON_ZEROS(:) !<DIAGONAL_NUMBER_NON_ZEROS(i). The number of non-zeros in the diagonal part of the the i'th row
+    INTEGER(INTG), POINTER :: OFFDIAGONAL_NUMBER_NON_ZEROS(:) !<OFFDIAGONAL_NUMBER_NON_ZEROS(i). The number of non-zeros in the off diagonal part of the the i'th row
+    REAL(DP), ALLOCATABLE :: DATA_DP(:) !<The real data for the matrix
+    TYPE(PETSC_MAT_TYPE) :: MATRIX !<The PETSc matrix
   END TYPE DISTRIBUTED_MATRIX_PETSC_TYPE
   
   !>Contains the information for a matrix that is distributed across a number of domains.
   TYPE DISTRIBUTED_MATRIX_TYPE
-    INTEGER(INTG) :: BASE_TAG_NUMBER !<The base number for the MPI tag numbers that will be used to communicate the distributed matrix data amongst the domains. The base tag number can be thought of as the identification number for the distributed matrix object.
     LOGICAL :: MATRIX_FINISHED !<Is .TRUE. if the distributed matrix has finished being created, .FALSE. if not.
     INTEGER(INTG) :: LIBRARY_TYPE !<The library of the distributed matrix \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
     INTEGER(INTG) :: GHOSTING_TYPE !<The ghosting type \see DISTRIBUTED_MATRIX_VECTOR_GhostingTypes,DISTRIBUTED_MATRIX_VECTOR
@@ -613,7 +616,6 @@ MODULE TYPES
     INTEGER(INTG) :: DATA_TYPE !<The type of data for the distributed matrix \see DISTRIBUTED_MATRIX_VECTOR_DataTypes
     TYPE(DISTRIBUTED_MATRIX_CMISS_TYPE), POINTER :: CMISS !<A pointer to the CMISS distributed matrix information
     TYPE(DISTRIBUTED_MATRIX_PETSC_TYPE), POINTER :: PETSC !<A pointer to the PETSc distributed matrix information
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix to store the rows corresponding to this domain.
   END TYPE DISTRIBUTED_MATRIX_TYPE
 
   !>Contains information for a vector

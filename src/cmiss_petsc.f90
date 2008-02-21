@@ -129,6 +129,8 @@ MODULE CMISS_PETSC
 
   TYPE PETSC_MAT_TYPE
     PRIVATE
+    PetscScalar :: MAT_DATA(1)
+    PetscOffset :: MAT_OFFSET
     Mat :: MAT
   END TYPE PETSC_MAT_TYPE
 
@@ -139,6 +141,8 @@ MODULE CMISS_PETSC
 
   TYPE PETSC_VEC_TYPE
     PRIVATE
+    PetscScalar :: VEC_DATA(1)
+    PetscOffset :: VEC_OFFSET
     Vec :: VEC
   END TYPE PETSC_VEC_TYPE
 
@@ -306,12 +310,41 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE MatCreateSeqDense
 
+    SUBROUTINE MatDestroy(A,ierr)
+      Mat A
+      PetscInt ierr
+    END SUBROUTINE MatDestroy
+    
+    SUBROUTINE MatGetArray(A,mat_data,mat_offset,ierr)
+      Mat A
+      PetscScalar mat_data(1)
+      PetscOffset mat_offset
+      PetscInt ierr
+    END SUBROUTINE MatGetArray
+    
     SUBROUTINE MatGetOwnershipRange(A,firstrow,lastrow,ierr)
       Mat A
       PetscInt firstrow
       PetscInt lastrow
       PetscInt ierr
     END SUBROUTINE MatGetOwnershipRange
+    
+    SUBROUTINE MatGetValues(A,m,idxm,n,idxn,values,ierr)
+      Mat A
+      PetscInt m
+      PetscInt idxm(*)
+      PetscInt n
+      PetscInt idxn(*)
+      PetscScalar values(*)
+      PetscInt ierr
+    END SUBROUTINE MatGetValues
+    
+   SUBROUTINE MatRestoreArray(A,mat_data,mat_offset,ierr)
+      Mat A
+      PetscScalar mat_data(1)
+      PetscOffset mat_offset
+      PetscInt ierr
+    END SUBROUTINE MatRestoreArray
     
     SUBROUTINE MatSetOption(A,option,ierr)
       Mat A
@@ -338,6 +371,17 @@ MODULE CMISS_PETSC
       InsertMode insertmode
       PetscInt ierr
     END SUBROUTINE MatSetValues
+    
+    SUBROUTINE MatView(A,v,ierr)
+      Mat A
+      PetscViewer v
+      PetscInt ierr
+    END SUBROUTINE MatView
+
+    SUBROUTINE MatZeroEntries(A,ierr)
+      Mat A
+      PetscInt ierr
+    END SUBROUTINE MatZeroEntries
     
     SUBROUTINE PCSetType(pc,method,ierr)
       PC pc
@@ -439,6 +483,13 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE VecDuplicate
 
+    SUBROUTINE VecGetArray(x,vec_data,vec_offset,ierr)
+      Vec x
+      PetscScalar vec_data(1)
+      PetscOffset vec_offset
+      PetscInt ierr
+    END SUBROUTINE VecGetArray
+
     SUBROUTINE VecGetLocalSize(x,size,ierr)
       Vec x
       PetscInt size
@@ -483,6 +534,13 @@ MODULE CMISS_PETSC
       ScatterMode scattermode
       PetscInt ierr
     END SUBROUTINE VecGhostUpdateEnd
+
+    SUBROUTINE VecRestoreArray(x,vec_data,vec_offset,ierr)
+      Vec x
+      PetscScalar vec_data(1)
+      PetscOffset vec_offset
+      PetscInt ierr
+    END SUBROUTINE VecRestoreArray
 
     SUBROUTINE VecSet(x,value,ierr)
       Vec x
@@ -535,9 +593,8 @@ MODULE CMISS_PETSC
 
   PUBLIC PETSC_IS_TYPE,PETSC_ISLOCALTOGLOBALMAPPING_TYPE,PETSC_KSP_TYPE,PETSC_MAT_TYPE,PETSC_PC_TYPE,PETSC_VEC_TYPE
   
-  PUBLIC ADD_VALUES,INSERT_VALUES,PETSC_COMM_WORLD,PETSC_COMM_SELF,PETSC_DECIDE,PETSC_NULL,PETSC_NULL_CHARACTER, &
-    & SCATTER_FORWARD,SCATTER_REVERSE,PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_STDOUT_SELF,PETSC_VIEWER_DRAW_WORLD, &
-    & PETSC_VIEWER_DRAW_SELF
+  PUBLIC ADD_VALUES,INSERT_VALUES,PETSC_COMM_WORLD,PETSC_COMM_SELF,PETSC_DECIDE,PETSC_NULL_CHARACTER,PETSC_NULL_DOUBLE, &
+    & PETSC_NULL_INTEGER,PETSC_NULL_SCALAR,SCATTER_FORWARD,SCATTER_REVERSE
 
   PUBLIC KSPRICHARDSON_,KSPCHEBYCHEV_,KSPCG_,KSPCGNE_,KSPSTCG_,KSPGMRES_,KSPFGMRES_,KSPLGMRES_,KSPTCQMR_,KSPBCGS_,KSPBCGSL_, &
     & KSPCGS_,KSPTFQMR_,KSPCR_,KSPLSQR_,KSPPREONLY_,KSPQCG_,KSPBICG_,KSPMINRES_,KSPSYMMLQ_,KSPLCD_
@@ -545,21 +602,32 @@ MODULE CMISS_PETSC
   PUBLIC PCNONE_,PCJACOBI_,PCSOR_,PCLU_,PCSHELL_,PCBJACOBI_,PCMG_,PCEISENSTAT_,PCILU_,PCICC_,PCASM_,PCKSP_,PCCOMPOSITE_, &
     & PCREDUNDANT_,PCSPAI_,PCMILU_,PCNN_,PCCHOLESKY_,PCSAMG_,PCPBJACOBI_,PCMAT_,PCHYPRE_,PCFIELDSPLIT_,PCML_
   
-  PUBLIC PETSC_FINALIZE,PETSC_INITIALIZE,PETSC_LOGPRINTSUMMARY
-
   PUBLIC PETSC_ISLOCALTOGLOBALMAPPINGAPPLY,PETSC_ISLOCALTOGLOBALMAPPINGAPPLYIS,PETSC_ISLOCALTOGLOBALMAPPINGCREATE, &
     & PETSC_ISLOCALTOGLOBALMAPPINGDESTROY
 
   PUBLIC PETSC_KSPCREATE,PETSC_KSPDESTROY,PETSC_KSPGETITERATIONNUMBER,PETSC_KSPGETPC,PETSC_KSPSETFROMOPTIONS,PETSC_KSPSETTYPE, &
     & PETSC_KSPSETUP,PETSC_KSPSETTOLERANCES,PETSC_KSPSOLVE
 
+  PUBLIC MAT_COLUMN_ORIENTED,MAT_COLUMNS_SORTED,MAT_ROWS_SORTED,MAT_FINAL_ASSEMBLY,MAT_FLUSH_ASSEMBLY, &
+    & MAT_NO_NEW_NONZERO_LOCATIONS
+
+  PUBLIC PETSC_MATASSEMBLYBEGIN,PETSC_MATASSEMBLYEND,PETSC_MATCREATE,PETSC_MATCREATEMPIAIJ,PETSC_MATCREATEMPIDENSE, &
+    & PETSC_MATCREATESEQAIJ,PETSC_MATCREATESEQDENSE,PETSC_MATDESTROY,PETSC_MATGETARRAY,PETSC_MATGETOWNERSHIPRANGE, &
+    & PETSC_MATGETVALUES,PETSC_MATRESTOREARRAY,PETSC_MATSETOPTION,PETSC_MATSETSIZES,PETSC_MATSETVALUES,PETSC_MATVIEW, &
+    & PETSC_MATZEROENTRIES
+  
   PUBLIC PETSC_PCSETTYPE
+
+  PUBLIC PETSC_FINALIZE,PETSC_INITIALIZE,PETSC_LOGPRINTSUMMARY
   
   PUBLIC PETSC_VECASSEMBLYBEGIN,PETSC_VECASSEMBLYEND,PETSC_VECCREATE,PETSC_VECCREATEGHOST,PETSC_VECCREATEGHOSTWITHARRAY, &
     & PETSC_VECCREATEMPI,PETSC_VECCREATEMPIWITHARRAY,PETSC_VECCREATESEQ,PETSC_VECCREATESEQWITHARRAY,PETSC_VECDESTROY, &
-    & PETSC_VECDUPLICATE,PETSC_VECGETLOCALSIZE,PETSC_VECGETOWNERSHIPRANGE,PETSC_VECGETSIZE,PETSC_VECGHOSTGETLOCALFORM, &
-    & PETSC_VECGHOSTRESTORELOCALFORM,PETSC_VECGHOSTUPDATEBEGIN,PETSC_VECGHOSTUPDATEEND,PETSC_VECSET,PETSC_VECSETFROMOPTIONS, &
-    & PETSC_VECSETLOCALTOGLOBALMAPPING,PETSC_VECSETSIZES,PETSC_VECSETVALUES,PETSC_VECSETVALUESLOCAL,PETSC_VECVIEW
+    & PETSC_VECDUPLICATE,PETSC_VECGETARRAY,PETSC_VECGETLOCALSIZE,PETSC_VECGETOWNERSHIPRANGE,PETSC_VECGETSIZE, &
+    & PETSC_VECGHOSTGETLOCALFORM,PETSC_VECGHOSTRESTORELOCALFORM,PETSC_VECGHOSTUPDATEBEGIN,PETSC_VECGHOSTUPDATEEND, &
+    & PETSC_VECRESTOREARRAY,PETSC_VECSET,PETSC_VECSETFROMOPTIONS,PETSC_VECSETLOCALTOGLOBALMAPPING,PETSC_VECSETSIZES, &
+    & PETSC_VECSETVALUES,PETSC_VECSETVALUESLOCAL,PETSC_VECVIEW
+
+  PUBLIC PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_STDOUT_SELF,PETSC_VIEWER_DRAW_WORLD,PETSC_VIEWER_DRAW_SELF
 
 CONTAINS
 
@@ -1306,6 +1374,72 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc MatDestroy routine.
+  SUBROUTINE PETSC_MATDESTROY(A,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to destroy
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATDESTROY",ERR,ERROR,*999)
+
+    CALL MatDestroy(A%MAT,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatDestroy",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_MATDESTROY")
+    RETURN
+999 CALL ERRORS("PETSC_MATDESTROY",ERR,ERROR)
+    CALL EXITS("PETSC_MATDESTROY")
+    RETURN 1
+  END SUBROUTINE PETSC_MATDESTROY
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatGetArray routine.
+  SUBROUTINE PETSC_MATGETARRAY(A,ARRAY,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT), TARGET :: A !<The matrix to get the array for
+    REAL(DP), POINTER :: ARRAY(:) !<On exit, a pointer to the matrix array
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATGETARRAY",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(ARRAY)) THEN
+      CALL FLAG_ERROR("Array is already associated",ERR,ERROR,*999)
+    ELSE
+      CALL MatGetArray(A%MAT,A%MAT_DATA,A%MAT_OFFSET,ERR)
+      IF(ERR/=0) THEN
+        IF(PETSC_HANDLE_ERROR) THEN
+          CHKERRQ(ERR)
+        ENDIF
+        CALL FLAG_ERROR("PETSc error in MatGetArray",ERR,ERROR,*999)
+      ENDIF
+      ARRAY=>A%MAT_DATA(A%MAT_OFFSET:)
+    ENDIF
+    
+    CALL EXITS("PETSC_MATGETARRAY")
+    RETURN
+999 CALL ERRORS("PETSC_MATGETARRAY",ERR,ERROR)
+    CALL EXITS("PETSC_MATGETARRAY")
+    RETURN 1
+  END SUBROUTINE PETSC_MATGETARRAY
+    
+  !
+  !================================================================================================================================
+  !
+
   !>Buffer routine to the PETSc MatGetOwnershipRange routine.
   SUBROUTINE PETSC_MATGETOWNERSHIPRANGE(A,FIRST_ROW,LAST_ROW,ERR,ERROR,*)
 
@@ -1333,6 +1467,71 @@ CONTAINS
     CALL EXITS("PETSC_MATGETOWNERSHIPRANGE")
     RETURN 1
   END SUBROUTINE PETSC_MATGETOWNERSHIPRANGE
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatGetValues routine.
+  SUBROUTINE PETSC_MATGETVALUES(A,M,M_INDICES,N,N_INDICES,VALUES,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to get the values of
+    INTEGER(INTG), INTENT(IN) :: M !<The number of row indices
+    INTEGER(INTG), INTENT(IN) :: M_INDICES(*) !<The row indices
+    INTEGER(INTG), INTENT(IN) :: N !<The number of column indices
+    INTEGER(INTG), INTENT(IN) :: N_INDICES(*) !<The column indices
+    REAL(DP), INTENT(OUT) :: VALUES(*) !<The values to get
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATGETVALUES",ERR,ERROR,*999)
+
+    CALL MatGetValues(A%MAT,M,M_INDICES,N,N_INDICES,VALUES,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatGetValues",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_MATGETVALUES")
+    RETURN
+999 CALL ERRORS("PETSC_MATGETVALUES",ERR,ERROR)
+    CALL EXITS("PETSC_MATGETVALUES")
+    RETURN 1
+  END SUBROUTINE PETSC_MATGETVALUES
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatRestoreArray routine.
+  SUBROUTINE PETSC_MATRESTOREARRAY(A,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to restore the array for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATRESTOREARRAY",ERR,ERROR,*999)
+
+    CALL MatRestoreArray(A%MAT,A%MAT_DATA,A%MAT_OFFSET,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatRestoreArray",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_MATRESTOREARRAY")
+    RETURN
+999 CALL ERRORS("PETSC_MATRESTOREARRAY",ERR,ERROR)
+    CALL EXITS("PETSC_MATRESTOREARRAY")
+    RETURN 1
+  END SUBROUTINE PETSC_MATRESTOREARRAY
     
   !
   !================================================================================================================================
@@ -1434,6 +1633,67 @@ CONTAINS
     CALL EXITS("PETSC_MATSETVALUES")
     RETURN 1
   END SUBROUTINE PETSC_MATSETVALUES
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatView routine.
+  SUBROUTINE PETSC_MATVIEW(A,V,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to view
+    PetscViewer, INTENT(IN) :: V !<The viewer
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATVIEW",ERR,ERROR,*999)
+
+    CALL MatView(A%MAT,V,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatView",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_MATVIEW")
+    RETURN
+999 CALL ERRORS("PETSC_MATVIEW",ERR,ERROR)
+    CALL EXITS("PETSC_MATVIEW")
+    RETURN 1
+  END SUBROUTINE PETSC_MATVIEW
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatZeroEntries routine.
+  SUBROUTINE PETSC_MATZEROENTRIES(A,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to zero the entries of
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATZEROENTRIES",ERR,ERROR,*999)
+
+    CALL MatZeroEntries(A%MAT,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatZeroEntries",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_MATZEROENTRIES")
+    RETURN
+999 CALL ERRORS("PETSC_MATZEROENTRIES",ERR,ERROR)
+    CALL EXITS("PETSC_MATZEROENTRIES")
+    RETURN 1
+  END SUBROUTINE PETSC_MATZEROENTRIES
     
   !
   !================================================================================================================================
@@ -1825,6 +2085,42 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecGetArray routine.
+  SUBROUTINE PETSC_VECGETARRAY(X,ARRAY,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT), TARGET :: X !<The vector to get the array of
+    REAL(DP), POINTER :: ARRAY(:) !<On exit, a pointer to the array of the vector
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_VECGETARRAY",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(ARRAY)) THEN
+      CALL FLAG_ERROR("Array is already associated",ERR,ERROR,*999)
+    ELSE
+      CALL VecGetArray(X%VEC,X%VEC_DATA,X%VEC_OFFSET,ERR)
+      IF(ERR/=0) THEN
+        IF(PETSC_HANDLE_ERROR) THEN
+          CHKERRQ(ERR)
+        ENDIF
+        CALL FLAG_ERROR("PETSc error in VecGetArray",ERR,ERROR,*999)
+      ENDIF
+      ARRAY=>X%VEC_DATA(X%VEC_OFFSET:)
+    ENDIF
+    
+    CALL EXITS("PETSC_VECGETARRAY")
+    RETURN
+999 CALL ERRORS("PETSC_VECGETARRAY",ERR,ERROR)
+    CALL EXITS("PETSC_VECGETARRAY")
+    RETURN 1
+  END SUBROUTINE PETSC_VECGETARRAY
+    
+  !
+  !================================================================================================================================
+  !
+
   !>Buffer routine to the PETSc VecGetLocalSize routine.
   SUBROUTINE PETSC_VECGETLOCALSIZE(X,SIZE,ERR,ERROR,*)
 
@@ -2040,6 +2336,36 @@ CONTAINS
     CALL EXITS("PETSC_VECGHOSTUPDATEEND")
     RETURN 1
   END SUBROUTINE PETSC_VECGHOSTUPDATEEND
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc VecRestoreArray routine.
+  SUBROUTINE PETSC_VECRESTOREARRAY(X,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to restore the array of
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_VECRESTOREARRAY",ERR,ERROR,*999)
+
+    CALL VecRestoreArray(X%VEC,X%VEC_DATA,X%VEC_OFFSET,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in VecRestoreArray",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_VECRESTOREARRAY")
+    RETURN
+999 CALL ERRORS("PETSC_VECRESTOREARRAY",ERR,ERROR)
+    CALL EXITS("PETSC_VECRESTOREARRAY")
+    RETURN 1
+  END SUBROUTINE PETSC_VECRESTOREARRAY
     
   !
   !================================================================================================================================
