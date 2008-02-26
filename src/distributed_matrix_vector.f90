@@ -440,8 +440,10 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
     
-    CALL ENTERS("DISTRIBUTED_MATRIX_CMISS_CREATE_FINISH",ERR,ERROR,*999)
+    CALL ENTERS("DISTRIBUTED_MATRIX_CMISS_CREATE_FINISH",ERR,ERROR,*998)
 
     IF(ASSOCIATED(CMISS_MATRIX)) THEN
       CMISS_MATRIX%BASE_TAG_NUMBER=DISTRIBUTED_DATA_ID
@@ -454,12 +456,13 @@ CONTAINS
       ENDIF
       CALL MATRIX_CREATE_FINISH(CMISS_MATRIX%MATRIX,ERR,ERROR,*999)      
     ELSE
-      CALL FLAG_ERROR("Distributed matrix CMISS is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Distributed matrix CMISS is not associated",ERR,ERROR,*998)
     ENDIF
     
     CALL EXITS("DISTRIBUTED_MATRIX_CMISS_CREATE_FINISH")
     RETURN
-999 CALL ERRORS("DISTRIBUTED_MATRIX_CMISS_CREATE_FINISH",ERR,ERROR)
+999 CALL DISTRIBUTED_MATRIX_CMISS_FINALISE(CMISS_MATRIX,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("DISTRIBUTED_MATRIX_CMISS_CREATE_FINISH",ERR,ERROR)
     CALL EXITS("DISTRIBUTED_MATRIX_CMISS_CREATE_FINISH")
     RETURN 1
   END SUBROUTINE DISTRIBUTED_MATRIX_CMISS_CREATE_FINISH
@@ -504,6 +507,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: DUMMY_ERR
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING
     TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
     
     CALL ENTERS("DISTRIBUTED_MATRIX_CMISS_INITIALISE",ERR,ERROR,*998)
@@ -512,7 +516,8 @@ CONTAINS
       IF(ASSOCIATED(DISTRIBUTED_MATRIX%CMISS)) THEN
         CALL FLAG_ERROR("CMISS is already associated for this distributed matrix",ERR,ERROR,*998)
       ELSE
-        IF(ASSOCIATED(DISTRIBUTED_MATRIX%DOMAIN_MAPPING)) THEN
+        DOMAIN_MAPPING=>DISTRIBUTED_MATRIX%DOMAIN_MAPPING
+        IF(ASSOCIATED(DOMAIN_MAPPING)) THEN
           ALLOCATE(DISTRIBUTED_MATRIX%CMISS,STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocated CMISS distributed matrix",ERR,ERROR,*999)
           DISTRIBUTED_MATRIX%CMISS%DISTRIBUTED_MATRIX=>DISTRIBUTED_MATRIX
@@ -524,11 +529,11 @@ CONTAINS
           CALL MATRIX_STORAGE_TYPE_SET(DISTRIBUTED_MATRIX%CMISS%MATRIX,MATRIX_BLOCK_STORAGE_TYPE,ERR,ERROR,*999)
           SELECT CASE(DISTRIBUTED_MATRIX%GHOSTING_TYPE)
           CASE(DISTRIBUTED_MATRIX_VECTOR_INCLUDE_GHOSTS_TYPE)
-            CALL MATRIX_SIZE_SET(DISTRIBUTED_MATRIX%CMISS%MATRIX,DISTRIBUTED_MATRIX%DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL, &
-              & DISTRIBUTED_MATRIX%DOMAIN_MAPPING%NUMBER_OF_GLOBAL,ERR,ERROR,*999)
+            CALL MATRIX_SIZE_SET(DISTRIBUTED_MATRIX%CMISS%MATRIX,DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL, &
+              & DOMAIN_MAPPING%NUMBER_OF_GLOBAL,ERR,ERROR,*999)
           CASE(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE)
-            CALL MATRIX_SIZE_SET(DISTRIBUTED_MATRIX%CMISS%MATRIX,DISTRIBUTED_MATRIX%DOMAIN_MAPPING%NUMBER_OF_LOCAL, &
-              & DISTRIBUTED_MATRIX%DOMAIN_MAPPING%NUMBER_OF_GLOBAL,ERR,ERROR,*999)
+            CALL MATRIX_SIZE_SET(DISTRIBUTED_MATRIX%CMISS%MATRIX,DOMAIN_MAPPING%NUMBER_OF_LOCAL, &
+              & DOMAIN_MAPPING%NUMBER_OF_GLOBAL,ERR,ERROR,*999)
           CASE DEFAULT
             LOCAL_ERROR="The distributed matrix ghosting type of "// &
               & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%GHOSTING_TYPE,"*",ERR,ERROR))//" is invalid"
@@ -1157,7 +1162,10 @@ CONTAINS
             CALL FLAG_ERROR("Distributed matrix CMISS is not associated",ERR,ERROR,*999)
           ENDIF          
         CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
-          CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+            CALL DISTRIBUTED_MATRIX_CREATE_START(DISTRIBUTED_MATRIX%DOMAIN_MAPPING,NEW_DISTRIBUTED_MATRIX,ERR,ERROR,*999)
+            CALL DISTRIBUTED_MATRIX_LIBRARY_TYPE_SET(NEW_DISTRIBUTED_MATRIX,DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE,ERR,ERROR,*999)
+            !TODO
+            CALL DISTRIBUTED_MATRIX_CREATE_FINISH(NEW_DISTRIBUTED_MATRIX,ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="The distributed matrix library type of "// &
             & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid"
@@ -1203,6 +1211,82 @@ CONTAINS
     CALL EXITS("DISTRIBUTED_MATRIX_FINALISE")
     RETURN 1
   END SUBROUTINE DISTRIBUTED_MATRIX_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the ghosting type for a distributed matrix
+  SUBROUTINE DISTRIBUTED_MATRIX_GHOSTING_TYPE_SET(DISTRIBUTED_MATRIX,GHOSTING_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: DISTRIBUTED_MATRIX !<A pointer to the distributed matrix
+    INTEGER(INTG), INTENT(IN) :: GHOSTING_TYPE !<The ghosting type \see DISTRIBUTED_MATRIX_VECTOR_GhostingTypes,DISTRIBUTED_MATRIX_VECTOR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("DISTRIBUTED_MATRIX_GHOSTING_TYPE_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DISTRIBUTED_MATRIX)) THEN
+      IF(DISTRIBUTED_MATRIX%MATRIX_FINISHED) THEN
+        CALL FLAG_ERROR("The distributed matrix has already been finished",ERR,ERROR,*999)
+      ELSE
+        DOMAIN_MAPPING=>DISTRIBUTED_MATRIX%DOMAIN_MAPPING
+        IF(ASSOCIATED(DOMAIN_MAPPING)) THEN
+          SELECT CASE(DISTRIBUTED_MATRIX%LIBRARY_TYPE)
+          CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
+            IF(ASSOCIATED(DISTRIBUTED_MATRIX%CMISS)) THEN
+              SELECT CASE(GHOSTING_TYPE)
+              CASE(DISTRIBUTED_MATRIX_VECTOR_INCLUDE_GHOSTS_TYPE)
+                CALL MATRIX_SIZE_SET(DISTRIBUTED_MATRIX%CMISS%MATRIX,DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL, &
+                  & DOMAIN_MAPPING%NUMBER_OF_GLOBAL,ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE)
+                CALL MATRIX_SIZE_SET(DISTRIBUTED_MATRIX%CMISS%MATRIX,DOMAIN_MAPPING%NUMBER_OF_LOCAL, &
+                  & DOMAIN_MAPPING%NUMBER_OF_GLOBAL,ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The given ghosting type of "//TRIM(NUMBER_TO_VSTRING(GHOSTING_TYPE,"*",ERR,ERROR))//" is invalid"
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+            ELSE
+              CALL FLAG_ERROR("Distributed matrix CMISS is not associated",ERR,ERROR,*999)
+            ENDIF
+          CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
+            IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
+              SELECT CASE(GHOSTING_TYPE)
+              CASE(DISTRIBUTED_MATRIX_VECTOR_INCLUDE_GHOSTS_TYPE)
+                DISTRIBUTED_MATRIX%PETSC%N=DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
+              CASE(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE)
+                DISTRIBUTED_MATRIX%PETSC%N=DOMAIN_MAPPING%NUMBER_OF_LOCAL
+              CASE DEFAULT
+                LOCAL_ERROR="The given ghosting type of "//TRIM(NUMBER_TO_VSTRING(GHOSTING_TYPE,"*",ERR,ERROR))//" is invalid"
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT              
+            ELSE
+              CALL FLAG_ERROR("Distributed matrix PETSc is not associated",ERR,ERROR,*999)
+            ENDIF
+          CASE DEFAULT
+            LOCAL_ERROR="The distributed matrix library type of "// &
+              & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+          DISTRIBUTED_MATRIX%GHOSTING_TYPE=GHOSTING_TYPE
+        ELSE
+          CALL FLAG_ERROR("Distributed matrix domain mapping is not associated",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Distributed matrix is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DISTRIBUTED_MATRIX_GHOSTING_TYPE_SET")
+    RETURN
+999 CALL ERRORS("DISTRIBUTED_MATRIX_GHOSTING_TYPE_SET",ERR,ERROR)
+    CALL EXITS("DISTRIBUTED_MATRIX_GHOSTING_TYPE_SET")
+    RETURN 1
+  END SUBROUTINE DISTRIBUTED_MATRIX_GHOSTING_TYPE_SET
 
   !
   !================================================================================================================================
@@ -1433,56 +1517,81 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: DUMMY_ERR,i
+    INTEGER(INTG), ALLOCATABLE :: GLOBAL_NUMBERS(:)
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: DISTRIBUTED_MATRIX
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING
+    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
     
-    CALL ENTERS("DISTRIBUTED_MATRIX_PETSC_FINISH",ERR,ERROR,*999)
+    CALL ENTERS("DISTRIBUTED_MATRIX_PETSC_CREATE_FINISH",ERR,ERROR,*999)
 
     IF(ASSOCIATED(PETSC_MATRIX)) THEN
-      SELECT CASE(PETSC_MATRIX%STORAGE_TYPE)
-      CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
-        PETSC_MATRIX%NUMBER_NON_ZEROS=PETSC_MATRIX%NUMBER_LOCAL_ROWS*PETSC_MATRIX%NUMBER_LOCAL_COLUMNS
-        PETSC_MATRIX%DATA_SIZE=PETSC_MATRIX%NUMBER_NON_ZEROS
-        ALLOCATE(PETSC_MATRIX%DATA_DP(PETSC_MATRIX%DATA_SIZE),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate PETSc matrix data",ERR,ERROR,*999)
-        CALL PETSC_MATCREATEMPIDENSE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_MATRIX%NUMBER_LOCAL_ROWS, &
-          & PETSC_MATRIX%NUMBER_LOCAL_COLUMNS,PETSC_MATRIX%NUMBER_GLOBAL_ROWS,PETSC_MATRIX%NUMBER_GLOBAL_COLUMNS, &
-          & PETSC_MATRIX%DATA_DP,PETSC_MATRIX%MATRIX,ERR,ERROR,*999)
-      CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
-        CALL FLAG_ERROR("Diagonal storage is not implemented for PETSc matrices",ERR,ERROR,*999)
-      CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-        CALL FLAG_ERROR("Column major storage is not implemented for PETSc matrices",ERR,ERROR,*999)
-      CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
-        CALL FLAG_ERROR("Row major storage is not implemented for PETSc matrices",ERR,ERROR,*999)
-      CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
-        IF(ASSOCIATED(PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS)) THEN
-          IF(ASSOCIATED(PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS)) THEN
-            CALL PETSC_MATCREATEMPIAIJ(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_MATRIX%NUMBER_LOCAL_ROWS, &
-              & PETSC_MATRIX%NUMBER_LOCAL_COLUMNS,PETSC_MATRIX%NUMBER_GLOBAL_ROWS,PETSC_MATRIX%NUMBER_GLOBAL_COLUMNS, &
-              & 0,PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS,0,PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS, &
-              & PETSC_MATRIX%MATRIX,ERR,ERROR,*999)
-          ELSE
-            CALL FLAG_ERROR("Matrix off diagonal storage locations have not been set",ERR,ERROR,*999)
-          ENDIF
+      DISTRIBUTED_MATRIX=>PETSC_MATRIX%DISTRIBUTED_MATRIX
+      IF(ASSOCIATED(DISTRIBUTED_MATRIX)) THEN
+        DOMAIN_MAPPING=>DISTRIBUTED_MATRIX%DOMAIN_MAPPING
+        IF(ASSOCIATED(DOMAIN_MAPPING)) THEN
+          SELECT CASE(PETSC_MATRIX%STORAGE_TYPE)
+          CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
+            PETSC_MATRIX%NUMBER_NON_ZEROS=PETSC_MATRIX%M*PETSC_MATRIX%N
+            PETSC_MATRIX%DATA_SIZE=PETSC_MATRIX%NUMBER_NON_ZEROS
+            ALLOCATE(PETSC_MATRIX%DATA_DP(PETSC_MATRIX%DATA_SIZE),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate PETSc matrix data",ERR,ERROR,*999)
+            CALL PETSC_MATCREATEMPIDENSE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_MATRIX%M,PETSC_MATRIX%N, &
+              & PETSC_MATRIX%GLOBAL_M,PETSC_MATRIX%GLOBAL_N,PETSC_MATRIX%DATA_DP,PETSC_MATRIX%MATRIX,ERR,ERROR,*999)
+          CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
+            CALL FLAG_ERROR("Diagonal storage is not implemented for PETSc matrices",ERR,ERROR,*999)
+          CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+            CALL FLAG_ERROR("Column major storage is not implemented for PETSc matrices",ERR,ERROR,*999)
+          CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
+            CALL FLAG_ERROR("Row major storage is not implemented for PETSc matrices",ERR,ERROR,*999)
+          CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+            IF(ALLOCATED(PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS)) THEN
+              IF(ALLOCATED(PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS)) THEN
+                !Create the PETsc AIJ matrix
+                CALL PETSC_MATCREATEMPIAIJ(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_MATRIX%M,PETSC_MATRIX%N, &
+                  & PETSC_MATRIX%GLOBAL_M,PETSC_MATRIX%GLOBAL_N,PETSC_NULL_INTEGER,PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS, &
+                  & PETSC_NULL_INTEGER,PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS,PETSC_MATRIX%MATRIX,ERR,ERROR,*999)
+                !Set up the Local to Global mappings
+                ALLOCATE(GLOBAL_NUMBERS(PETSC_MATRIX%M),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global numbers for PETSc distributed matrix",ERR,ERROR,*999)
+                DO i=1,PETSC_MATRIX%M
+                  GLOBAL_NUMBERS(i)=DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(i)
+                ENDDO !i
+                !Should this be the global communicator or COMM_SELF???
+                CALL PETSC_ISLOCALTOGLOBALMAPPINGCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_MATRIX%M,GLOBAL_NUMBERS, &
+                  & PETSC_MATRIX%ISLTGMAPPING,ERR,ERROR,*999)
+                CALL PETSC_MATSETLOCALTOGLOBALMAPPING(PETSC_MATRIX%MATRIX,PETSC_MATRIX%ISLTGMAPPING,ERR,ERROR,*999)
+                CALL PETSC_ISLOCALTOGLOBALMAPPINGDESTROY(PETSC_MATRIX%ISLTGMAPPING,ERR,ERROR,*999)        
+                IF(ALLOCATED(GLOBAL_NUMBERS)) DEALLOCATE(GLOBAL_NUMBERS)
+              ELSE
+                CALL FLAG_ERROR("Matrix off diagonal storage locations have not been set",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Matrix diagonal storage locations have not been set",ERR,ERROR,*999)
+            ENDIF
+          CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+            CALL FLAG_ERROR("Compressed column storage is not implemented for PETSc matrices",ERR,ERROR,*999)
+          CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
+            CALL FLAG_ERROR("Row column storage is not implemented for PETSc matrices",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The PETSc matrix storage type of "//TRIM(NUMBER_TO_VSTRING(PETSC_MATRIX%STORAGE_TYPE,"*",ERR,ERROR))// &
+              & " is invalid"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+          CALL PETSC_MATSETOPTION(PETSC_MATRIX%MATRIX,MAT_COLUMN_ORIENTED,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Matrix diagonal storage locations have not been set",ERR,ERROR,*999)
+          CALL FLAG_ERROR("PETSc matrix distributed matrix domain mapping is not associated",ERR,ERROR,*999)
         ENDIF
-      CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-        CALL FLAG_ERROR("Compressed column storage is not implemented for PETSc matrices",ERR,ERROR,*999)
-      CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
-        CALL FLAG_ERROR("Row column storage is not implemented for PETSc matrices",ERR,ERROR,*999)
-      CASE DEFAULT
-        LOCAL_ERROR="The PETSc matrix storage type of "//TRIM(NUMBER_TO_VSTRING(PETSC_MATRIX%STORAGE_TYPE,"*",ERR,ERROR))// &
-          & " is invalid"
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-      CALL PETSC_MATSETOPTION(PETSC_MATRIX%MATRIX,MAT_COLUMN_ORIENTED,ERR,ERROR,*999)
+      ENDIF
     ELSE
       CALL FLAG_ERROR("Distributed matrix PETSc is not associated",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DISTRIBUTED_MATRIX_PETSC_CREATE_FINISH")
     RETURN
-999 CALL ERRORS("DISTRIBUTED_MATRIX_PETSC_CREATE_FINISH",ERR,ERROR)
+999 IF(ALLOCATED(GLOBAL_NUMBERS)) DEALLOCATE(GLOBAL_NUMBERS)
+    CALL DISTRIBUTED_MATRIX_PETSC_FINALISE(PETSC_MATRIX,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("DISTRIBUTED_MATRIX_PETSC_CREATE_FINISH",ERR,ERROR)
     CALL EXITS("DISTRIBUTED_MATRIX_PETSC_CREATE_FINISH")
     RETURN 1
   END SUBROUTINE DISTRIBUTED_MATRIX_PETSC_CREATE_FINISH
@@ -1503,9 +1612,10 @@ CONTAINS
     CALL ENTERS("DISTRIBUTED_MATRIX_PETSC_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(PETSC_MATRIX)) THEN
-      IF(ASSOCIATED(PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS)) DEALLOCATE(PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS)
-      IF(ASSOCIATED(PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS)) DEALLOCATE(PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS)
+      IF(ALLOCATED(PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS)) DEALLOCATE(PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS)
+      IF(ALLOCATED(PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS)) DEALLOCATE(PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS)
       IF(ALLOCATED(PETSC_MATRIX%DATA_DP)) DEALLOCATE(PETSC_MATRIX%DATA_DP)
+      CALL PETSC_ISLOCALTOGLOBALMAPPINGDESTROY(PETSC_MATRIX%ISLTGMAPPING,ERR,ERROR,*999)
       CALL PETSC_MATDESTROY(PETSC_MATRIX%MATRIX,ERR,ERROR,*999)
       DEALLOCATE(PETSC_MATRIX)
     ENDIF
@@ -1530,6 +1640,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: DUMMY_ERR
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING
     TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
     
     CALL ENTERS("DISTRIBUTED_MATRIX_PETSC_INITIALISE",ERR,ERROR,*998)
@@ -1538,22 +1649,27 @@ CONTAINS
       IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
         CALL FLAG_ERROR("PETSc is already associated for this distributed matrix",ERR,ERROR,*998)
       ELSE
-        IF(ASSOCIATED(DISTRIBUTED_MATRIX%DOMAIN_MAPPING)) THEN
+        DOMAIN_MAPPING=>DISTRIBUTED_MATRIX%DOMAIN_MAPPING
+        IF(ASSOCIATED(DOMAIN_MAPPING)) THEN
           ALLOCATE(DISTRIBUTED_MATRIX%PETSC,STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocated PETSc distributed matrix",ERR,ERROR,*999)
           DISTRIBUTED_MATRIX%PETSC%DISTRIBUTED_MATRIX=>DISTRIBUTED_MATRIX
-          !Set the defaults
-          !Do nothing as PETSc matrix will be created during the CREATE_FINISH call.
+          !Set the defaults          
           SELECT CASE(DISTRIBUTED_MATRIX%GHOSTING_TYPE)
           CASE(DISTRIBUTED_MATRIX_VECTOR_INCLUDE_GHOSTS_TYPE)
-            !TODO
+            DISTRIBUTED_MATRIX%PETSC%M=DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL            
           CASE(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE)
-            !TODO
+            DISTRIBUTED_MATRIX%PETSC%M=DOMAIN_MAPPING%NUMBER_OF_LOCAL
           CASE DEFAULT
             LOCAL_ERROR="The distributed matrix ghosting type of "// &
               & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%GHOSTING_TYPE,"*",ERR,ERROR))//" is invalid"
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
+          DISTRIBUTED_MATRIX%PETSC%N=DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
+          DISTRIBUTED_MATRIX%PETSC%GLOBAL_M=DOMAIN_MAPPING%NUMBER_OF_GLOBAL
+          DISTRIBUTED_MATRIX%PETSC%GLOBAL_N=DOMAIN_MAPPING%NUMBER_OF_GLOBAL
+          DISTRIBUTED_MATRIX%PETSC%STORAGE_TYPE=DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE
+          DISTRIBUTED_MATRIX%PETSC%DATA_SIZE=0
         ELSE
           CALL FLAG_ERROR("Distributed matrix domain mapping is not associated",ERR,ERROR,*998)
         ENDIF
@@ -1655,8 +1771,14 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: i,j,k
+    INTEGER(INTG) :: i,j,k,global_row_start,global_row_finish
+    TYPE(DISTRIBUTED_MATRIX_CMISS_TYPE), POINTER :: CMISS_MATRIX
+    TYPE(DISTRIBUTED_MATRIX_PETSC_TYPE), POINTER :: PETSC_MATRIX
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    NULLIFY(CMISS_MATRIX)
+    NULLIFY(PETSC_MATRIX)
     
     CALL ENTERS("DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_SET",ERR,ERROR,*999)
 
@@ -1664,102 +1786,123 @@ CONTAINS
       IF(DISTRIBUTED_MATRIX%MATRIX_FINISHED) THEN
         CALL FLAG_ERROR("The distributed matrix has been finished",ERR,ERROR,*999)
       ELSE
-        SELECT CASE(DISTRIBUTED_MATRIX%LIBRARY_TYPE)
-        CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
-          IF(ASSOCIATED(DISTRIBUTED_MATRIX%CMISS)) THEN
-            CALL MATRIX_STORAGE_LOCATIONS_SET(DISTRIBUTED_MATRIX%CMISS%MATRIX,ROW_INDICES,COLUMN_INDICES,ERR,ERROR,*999)
-          ELSE
-            CALL FLAG_ERROR("Distributed matrix CMISS is not associated",ERR,ERROR,*999)
-          ENDIF
-        CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
-          IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
-            SELECT CASE(DISTRIBUTED_MATRIX%PETSC%STORAGE_TYPE)
-            CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
-              !Do nothing
-            CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
-              CALL FLAG_ERROR("Diagonal storage is not implemented for PETSc matrices",ERR,ERROR,*999)
-            CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-              CALL FLAG_ERROR("Column major storage is not implemented for PETSc matrices",ERR,ERROR,*999)
-            CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
-              CALL FLAG_ERROR("Row major storage is not implemented for PETSc matrices",ERR,ERROR,*999)
-            CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
-              IF(SIZE(ROW_INDICES,1)==DISTRIBUTED_MATRIX%PETSC%NUMBER_LOCAL_ROWS+1) THEN
-                IF(SIZE(COLUMN_INDICES,1)==DISTRIBUTED_MATRIX%PETSC%NUMBER_NON_ZEROS) THEN
-                  IF(ROW_INDICES(1)==1) THEN
-                    IF(ROW_INDICES(DISTRIBUTED_MATRIX%PETSC%NUMBER_LOCAL_ROWS+1)== &
-                      & DISTRIBUTED_MATRIX%PETSC%NUMBER_NON_ZEROS+1) THEN
-                      DO i=2,DISTRIBUTED_MATRIX%PETSC%NUMBER_LOCAL_ROWS+1
-                        IF(ROW_INDICES(i)<ROW_INDICES(i-1)) THEN
-                          LOCAL_ERROR="Invalid row indices. Row "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" index number ("// &
-                            & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//") is less than row "// &
-                            & TRIM(NUMBER_TO_VSTRING(i-1,"*",ERR,ERROR))//" index number ("// &
-                            & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i-1),"*",ERR,ERROR))//")"
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                        ENDIF
-                      ENDDO !i
-                      DO i=1,DISTRIBUTED_MATRIX%PETSC%NUMBER_LOCAL_ROWS
-                        DO j=ROW_INDICES(i),ROW_INDICES(i+1)-1
-                          k=COLUMN_INDICES(j)
-                          IF(k>0) THEN
-                            IF(k>DISTRIBUTED_MATRIX%PETSC%NUMBER_NON_ZEROS) THEN
-                              LOCAL_ERROR="Invalid column indices. Column index "//TRIM(NUMBER_TO_VSTRING(j,"*",ERR,ERROR))// &
-                                & " ("//TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//") is greater than the number of non-zeros ("// &
-                                & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%PETSC%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")"
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                            ENDIF
-                          ELSE
-                            LOCAL_ERROR="Invalid column indices. Column index "//TRIM(NUMBER_TO_VSTRING(j,"*",ERR,ERROR))//" ("// &
-                              & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//") is less than zero"
+        DOMAIN_MAPPING=>DISTRIBUTED_MATRIX%DOMAIN_MAPPING
+        IF(ASSOCIATED(DOMAIN_MAPPING)) THEN
+          SELECT CASE(DISTRIBUTED_MATRIX%LIBRARY_TYPE)
+          CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
+            CMISS_MATRIX=>DISTRIBUTED_MATRIX%CMISS
+            IF(ASSOCIATED(CMISS_MATRIX)) THEN
+              CALL MATRIX_STORAGE_LOCATIONS_SET(CMISS_MATRIX%MATRIX,ROW_INDICES,COLUMN_INDICES,ERR,ERROR,*999)
+            ELSE
+              CALL FLAG_ERROR("Distributed matrix CMISS is not associated",ERR,ERROR,*999)
+            ENDIF
+          CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
+            PETSC_MATRIX=>DISTRIBUTED_MATRIX%PETSC
+            IF(ASSOCIATED(PETSC_MATRIX)) THEN
+              SELECT CASE(PETSC_MATRIX%STORAGE_TYPE)
+              CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
+                !Do nothing
+              CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
+                CALL FLAG_ERROR("Diagonal storage is not implemented for PETSc matrices",ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+                CALL FLAG_ERROR("Column major storage is not implemented for PETSc matrices",ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
+                CALL FLAG_ERROR("Row major storage is not implemented for PETSc matrices",ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+                IF(SIZE(ROW_INDICES,1)==PETSC_MATRIX%M+1) THEN
+                  IF(SIZE(COLUMN_INDICES,1)==PETSC_MATRIX%NUMBER_NON_ZEROS) THEN
+                    IF(ROW_INDICES(1)==1) THEN
+                      !Check the row indicies are correct
+                      IF(ROW_INDICES(PETSC_MATRIX%M+1)==PETSC_MATRIX%NUMBER_NON_ZEROS+1) THEN
+                        DO i=2,PETSC_MATRIX%M+1
+                          IF(ROW_INDICES(i)<ROW_INDICES(i-1)) THEN
+                            LOCAL_ERROR="Invalid row indices. Row "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))// &
+                              & " index number ("//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//") is less than row "// &
+                              & TRIM(NUMBER_TO_VSTRING(i-1,"*",ERR,ERROR))//" index number ("// &
+                              & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i-1),"*",ERR,ERROR))//")"
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                           ENDIF
-                        ENDDO !j
-                      ENDDO !i
-                      !Calculate the PETSc sparsity structures
-
-                      !TODO
-                      
+                        ENDDO !i
+                        !Allocate the PETSc sparsity storage arrays
+                        ALLOCATE(PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS(PETSC_MATRIX%M),STAT=ERR)
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate PETSc matrix diagonal number of non zeros",ERR,ERROR,*999)
+                        PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS=0
+                        ALLOCATE(PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS(PETSC_MATRIX%M),STAT=ERR)
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate PETSc matrix off diagonal number of non zeros", &
+                          & ERR,ERROR,*999)
+                        PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS=0
+                        !Check the column indices are correct and calculate number of diagonal and off-diagonal columns
+                        global_row_start=DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(1)
+                        global_row_finish=DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(PETSC_MATRIX%M)
+                        DO i=1,PETSC_MATRIX%M
+                          DO j=ROW_INDICES(i),ROW_INDICES(i+1)-1
+                            k=COLUMN_INDICES(j)
+                            IF(k>0) THEN
+                              IF(k>PETSC_MATRIX%NUMBER_NON_ZEROS) THEN
+                                LOCAL_ERROR="Invalid column indices. Column index "//TRIM(NUMBER_TO_VSTRING(j,"*",ERR,ERROR))// &
+                                  & " ("//TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))// &
+                                  & ") is greater than the number of non-zeros ("// &
+                                  & TRIM(NUMBER_TO_VSTRING(PETSC_MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")"
+                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              ENDIF
+                              IF(k>=global_row_start.AND.k<=global_row_finish) THEN
+                                PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS(i)=PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS(i)+1
+                              ELSE
+                                PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS(i)=PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS(i)+1
+                              ENDIF
+                            ELSE
+                              LOCAL_ERROR="Invalid column indices. Column index "//TRIM(NUMBER_TO_VSTRING(j,"*",ERR,ERROR))// &
+                                & " ("//TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//") is less than zero"
+                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            ENDIF
+                          ENDDO !j
+                        ENDDO !i
+                      ELSE
+                        LOCAL_ERROR="Invalid row indices. The last row index ("// &
+                          & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(PETSC_MATRIX%M+1),"*",ERR,ERROR))// &
+                          & ") does not equal the number of non-zeros + 1 ("// &
+                          & TRIM(NUMBER_TO_VSTRING(PETSC_MATRIX%NUMBER_NON_ZEROS+1,"*",ERR,ERROR))//")"
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
                     ELSE
-                      LOCAL_ERROR="Invalid row indices. The last row index ("// &
-                        & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(DISTRIBUTED_MATRIX%PETSC%NUMBER_LOCAL_ROWS+1),"*",ERR,ERROR))// &
-                        & ") does not equal the number of non-zeros + 1 ("// &
-                        & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%PETSC%NUMBER_NON_ZEROS+1,"*",ERR,ERROR))//")"
+                      LOCAL_ERROR="Invalid row indices. The first row index ("// &
+                        & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(1),"*",ERR,ERROR))//") does not equal 1"
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    LOCAL_ERROR="Invalid row indices. The first row index ("// &
-                      & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(1),"*",ERR,ERROR))//") does not equal 1"
+                    LOCAL_ERROR="The supplied number of column indices ("// &
+                      & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+                      & ") does not match the number of non-zeros in the matrix ("// &
+                      & TRIM(NUMBER_TO_VSTRING(PETSC_MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")"
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  LOCAL_ERROR="The supplied number of column indices ("// &
-                    & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-                    & ") does not match the number of non-zeros in the matrix ("// &
-                    & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%PETSC%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")"
+                  LOCAL_ERROR="The supplied number of row indices ("// &
+                    & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+                    & ") does not match the number of rows in the matrix + 1 ("// &
+                    & TRIM(NUMBER_TO_VSTRING(PETSC_MATRIX%M+1,"*",ERR,ERROR))//")"
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
-              ELSE
-                LOCAL_ERROR="The supplied number of row indices ("//TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-                  & ") does not match the number of rows in the matrix + 1 ("// &
-                  & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%PETSC%NUMBER_LOCAL_ROWS+1,"*",ERR,ERROR))//")"
+              CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+                CALL FLAG_ERROR("Compressed column storage is not implemented for PETSc matrices",ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
+                CALL FLAG_ERROR("Row column storage is not implemented for PETSc matrices",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The specified matrix storage type of "// &
+                  & TRIM(NUMBER_TO_VSTRING(PETSC_MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid"
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              ENDIF                            
-            CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-              CALL FLAG_ERROR("Compressed column storage is not implemented for PETSc matrices",ERR,ERROR,*999)
-            CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
-              CALL FLAG_ERROR("Row column storage is not implemented for PETSc matrices",ERR,ERROR,*999)
-            CASE DEFAULT
-              LOCAL_ERROR="The specified matrix storage type of "// &
-                & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%PETSC%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid"
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT
-          ELSE
-            CALL FLAG_ERROR("Distributed matrix PETSc is not associated",ERR,ERROR,*999)
-          ENDIF
-        CASE DEFAULT
-          LOCAL_ERROR="The distributed matrix library type of "// &
-            & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        END SELECT
+              END SELECT
+            ELSE
+              CALL FLAG_ERROR("Distributed matrix PETSc is not associated",ERR,ERROR,*999)
+            ENDIF
+          CASE DEFAULT
+            LOCAL_ERROR="The distributed matrix library type of "// &
+              & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Distributed matrix domain mapping is not associated",ERR,ERROR,*999)
+        ENDIF
       ENDIF
     ELSE
       CALL FLAG_ERROR("Distributed matrix is not associated",ERR,ERROR,*999)
@@ -1767,7 +1910,11 @@ CONTAINS
     
     CALL EXITS("DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_SET")
     RETURN
-999 CALL ERRORS("DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_SET",ERR,ERROR)
+999 IF(ASSOCIATED(PETSC_MATRIX)) THEN
+      IF(ALLOCATED(PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS)) DEALLOCATE(PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS)
+      IF(ALLOCATED(PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS)) DEALLOCATE(PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS)
+    ENDIF
+    CALL ERRORS("DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_SET",ERR,ERROR)
     CALL EXITS("DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_SET")
     RETURN 1
   END SUBROUTINE DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_SET
@@ -2259,8 +2406,8 @@ CONTAINS
             IF(SIZE(ROW_INDICES,1)==SIZE(VALUES,1)) THEN
               IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,1)) THEN
                 DO i=1,SIZE(ROW_INDICES,1)
-                  CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,1,ROW_INDICES(i:i),1,COLUMN_INDICES(i:i),VALUES(i:i), &
-                    & ADD_VALUES,ERR,ERROR,*999)
+                  CALL PETSC_MATSETVALUESLOCAL(DISTRIBUTED_MATRIX%PETSC%MATRIX,1,ROW_INDICES(i:i),1,COLUMN_INDICES(i:i), &
+                    & VALUES(i:i),ADD_VALUES,ERR,ERROR,*999)
                 ENDDO !i
               ELSE
                 LOCAL_ERROR="The size of the column indices array ("// &
@@ -2328,7 +2475,7 @@ CONTAINS
           ENDIF
         CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
           IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
-            CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,1,(/ROW_INDEX/),1,(/COLUMN_INDEX/),(/VALUE/),ADD_VALUES, &
+            CALL PETSC_MATSETVALUESLOCAL(DISTRIBUTED_MATRIX%PETSC%MATRIX,1,(/ROW_INDEX/),1,(/COLUMN_INDEX/),(/VALUE/),ADD_VALUES, &
               & ERR,ERROR,*999)
           ELSE
             CALL FLAG_ERROR("Distributed matrix PETSc is not associated",ERR,ERROR,*999)
@@ -2384,8 +2531,8 @@ CONTAINS
           IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
             IF(SIZE(ROW_INDICES,1)==SIZE(VALUES,1)) THEN
               IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,2)) THEN
-                CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,SIZE(ROW_INDICES,1),ROW_INDICES,SIZE(COLUMN_INDICES,1), &
-                  & COLUMN_INDICES,VALUES,ADD_VALUES,ERR,ERROR,*999)
+                CALL PETSC_MATSETVALUESLOCAL(DISTRIBUTED_MATRIX%PETSC%MATRIX,SIZE(ROW_INDICES,1),ROW_INDICES, &
+                  & SIZE(COLUMN_INDICES,1),COLUMN_INDICES,VALUES,ADD_VALUES,ERR,ERROR,*999)
               ELSE
                 LOCAL_ERROR="The size of the column indices array ("// &
                   & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
@@ -3542,8 +3689,8 @@ CONTAINS
             IF(SIZE(ROW_INDICES,1)==SIZE(VALUES,1)) THEN
               IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,1)) THEN
                 DO i=1,SIZE(ROW_INDICES,1)
-                  CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,1,ROW_INDICES(i:i),1,COLUMN_INDICES(i:i),VALUES(i:i), &
-                    & INSERT_VALUES,ERR,ERROR,*999)
+                  CALL PETSC_MATSETVALUESLOCAL(DISTRIBUTED_MATRIX%PETSC%MATRIX,1,ROW_INDICES(i:i),1,COLUMN_INDICES(i:i), &
+                    & VALUES(i:i),INSERT_VALUES,ERR,ERROR,*999)
                 ENDDO !i
               ELSE
                 LOCAL_ERROR="The size of the column indices array ("// &
@@ -3611,8 +3758,8 @@ CONTAINS
           ENDIF
         CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
           IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
-            CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,1,(/ROW_INDEX/),1,(/COLUMN_INDEX/),(/VALUE/),INSERT_VALUES, &
-              & ERR,ERROR,*999)
+            CALL PETSC_MATSETVALUESLOCAL(DISTRIBUTED_MATRIX%PETSC%MATRIX,1,(/ROW_INDEX/),1,(/COLUMN_INDEX/),(/VALUE/), &
+              & INSERT_VALUES,ERR,ERROR,*999)
           ELSE
             CALL FLAG_ERROR("Distributed matrix PETSc is not associated",ERR,ERROR,*999)
           ENDIF
@@ -3667,8 +3814,8 @@ CONTAINS
           IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
             IF(SIZE(ROW_INDICES,1)==SIZE(VALUES,1)) THEN
               IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,2)) THEN
-                CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,SIZE(ROW_INDICES,1),ROW_INDICES,SIZE(COLUMN_INDICES,1), &
-                  & COLUMN_INDICES,VALUES,INSERT_VALUES,ERR,ERROR,*999)
+                CALL PETSC_MATSETVALUESLOCAL(DISTRIBUTED_MATRIX%PETSC%MATRIX,SIZE(ROW_INDICES,1),ROW_INDICES, &
+                  & SIZE(COLUMN_INDICES,1),COLUMN_INDICES,VALUES,INSERT_VALUES,ERR,ERROR,*999)
               ELSE
                 LOCAL_ERROR="The size of the column indices array ("// &
                   & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
@@ -4138,7 +4285,6 @@ CONTAINS
             DISTRIBUTED_VECTOR%CMISS%N=DISTRIBUTED_VECTOR%DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
           CASE(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE)
             DISTRIBUTED_VECTOR%CMISS%N=DISTRIBUTED_VECTOR%DOMAIN_MAPPING%NUMBER_OF_LOCAL
-            DISTRIBUTED_VECTOR%CMISS%DATA_SIZE=DISTRIBUTED_VECTOR%DOMAIN_MAPPING%NUMBER_OF_LOCAL
           CASE DEFAULT
             LOCAL_ERROR="The distributed vector ghosting type of "// &
               & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_VECTOR%GHOSTING_TYPE,"*",ERR,ERROR))//" is invalid"
@@ -4176,108 +4322,113 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: domain_idx,domain_idx2,domain_no,DUMMY_ERR,my_computational_node_number
     LOGICAL :: FOUND
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: DISTRIBUTED_VECTOR
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING
     TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
     
     CALL ENTERS("DISTRIBUTED_VECTOR_CMISS_CREATE_FINISH",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CMISS_VECTOR)) THEN
-      IF(ASSOCIATED(CMISS_VECTOR%DISTRIBUTED_VECTOR)) THEN
-        my_computational_node_number=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
-        IF(ERR/=0) GOTO 999
-        CMISS_VECTOR%BASE_TAG_NUMBER=DISTRIBUTED_DATA_ID
-        IF(CMISS_VECTOR%DISTRIBUTED_VECTOR%DOMAIN_MAPPING%NUMBER_OF_DOMAINS==1) THEN
-          DISTRIBUTED_DATA_ID=DISTRIBUTED_DATA_ID+1
-        ELSE
-          DISTRIBUTED_DATA_ID=DISTRIBUTED_DATA_ID+CMISS_VECTOR%DISTRIBUTED_VECTOR%DOMAIN_MAPPING%ADJACENT_DOMAINS_LIST( &
-            & CMISS_VECTOR%DISTRIBUTED_VECTOR%DOMAIN_MAPPING%NUMBER_OF_DOMAINS)-1
-        ENDIF
-        CMISS_VECTOR%DATA_SIZE=CMISS_VECTOR%DISTRIBUTED_VECTOR%DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
-        CMISS_VECTOR%N=CMISS_VECTOR%DISTRIBUTED_VECTOR%DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
-        SELECT CASE(CMISS_VECTOR%DISTRIBUTED_VECTOR%DATA_TYPE)
-        CASE(MATRIX_VECTOR_INTG_TYPE)
-          ALLOCATE(CMISS_VECTOR%DATA_INTG(CMISS_VECTOR%DATA_SIZE),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate CMISS distributed vector integer data",ERR,ERROR,*999)
-        CASE(MATRIX_VECTOR_SP_TYPE)
-          ALLOCATE(CMISS_VECTOR%DATA_SP(CMISS_VECTOR%DATA_SIZE),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate CMISS distributed vector single precsion data",ERR,ERROR,*999)
-        CASE(MATRIX_VECTOR_DP_TYPE)
-          ALLOCATE(CMISS_VECTOR%DATA_DP(CMISS_VECTOR%DATA_SIZE),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate CMISS distributed vector double precsion data",ERR,ERROR,*999)
-        CASE(MATRIX_VECTOR_L_TYPE)
-          ALLOCATE(CMISS_VECTOR%DATA_L(CMISS_VECTOR%DATA_SIZE),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate CMISS distributed vector logical data",ERR,ERROR,*999)
-        CASE DEFAULT
-          LOCAL_ERROR="The distributed vector data type of "// &
-            & TRIM(NUMBER_TO_VSTRING(CMISS_VECTOR%DISTRIBUTED_VECTOR%DATA_TYPE,"*",ERR,ERROR))//" is invalid"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        END SELECT
-        ALLOCATE(CMISS_VECTOR%TRANSFERS(CMISS_VECTOR%DISTRIBUTED_VECTOR%DOMAIN_MAPPING%NUMBER_OF_ADJACENT_DOMAINS),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate CMISS distributed vector transfer buffers",ERR,ERROR,*999)
-        DO domain_idx=1,CMISS_VECTOR%DISTRIBUTED_VECTOR%DOMAIN_MAPPING%NUMBER_OF_ADJACENT_DOMAINS
-          CALL DISTRIBUTED_VECTOR_CMISS_TRANSFER_INITIALISE(CMISS_VECTOR,domain_idx,ERR,ERROR,*999)
-          CMISS_VECTOR%TRANSFERS(domain_idx)%SEND_BUFFER_SIZE= &
-            & CMISS_VECTOR%DISTRIBUTED_VECTOR%DOMAIN_MAPPING%ADJACENT_DOMAINS(domain_idx)%NUMBER_OF_SEND_GHOSTS
-          CMISS_VECTOR%TRANSFERS(domain_idx)%RECEIVE_BUFFER_SIZE= &
-            & CMISS_VECTOR%DISTRIBUTED_VECTOR%DOMAIN_MAPPING%ADJACENT_DOMAINS(domain_idx)%NUMBER_OF_RECEIVE_GHOSTS
-          CMISS_VECTOR%TRANSFERS(domain_idx)%DATA_TYPE=CMISS_VECTOR%DISTRIBUTED_VECTOR%DATA_TYPE
-          CMISS_VECTOR%TRANSFERS(domain_idx)%SEND_TAG_NUMBER=CMISS_VECTOR%BASE_TAG_NUMBER + &
-            & CMISS_VECTOR%DISTRIBUTED_VECTOR%DOMAIN_MAPPING%ADJACENT_DOMAINS_PTR(my_computational_node_number)+domain_idx-1
-          domain_no=CMISS_VECTOR%DISTRIBUTED_VECTOR%DOMAIN_MAPPING%ADJACENT_DOMAINS(domain_idx)%DOMAIN_NUMBER
-          FOUND=.FALSE.
-          DO domain_idx2=CMISS_VECTOR%DISTRIBUTED_VECTOR%DOMAIN_MAPPING%ADJACENT_DOMAINS_PTR(domain_no), &
-            & CMISS_VECTOR%DISTRIBUTED_VECTOR%DOMAIN_MAPPING%ADJACENT_DOMAINS_PTR(domain_no+1)-1
-            IF(CMISS_VECTOR%DISTRIBUTED_VECTOR%DOMAIN_MAPPING%ADJACENT_DOMAINS_LIST(domain_idx2)== &
-              & my_computational_node_number) THEN
-              FOUND=.TRUE.
-              EXIT
-            ENDIF
-          ENDDO !domain_idx2
-          IF(FOUND) THEN
-            domain_idx2=domain_idx2-CMISS_VECTOR%DISTRIBUTED_VECTOR%DOMAIN_MAPPING%ADJACENT_DOMAINS_PTR(domain_no)+1
-            CMISS_VECTOR%TRANSFERS(domain_idx)%RECEIVE_TAG_NUMBER=CMISS_VECTOR%BASE_TAG_NUMBER + &
-              & CMISS_VECTOR%DISTRIBUTED_VECTOR%DOMAIN_MAPPING%ADJACENT_DOMAINS_PTR(domain_no)+domain_idx2-1
+      DISTRIBUTED_VECTOR=>CMISS_VECTOR%DISTRIBUTED_VECTOR
+      IF(ASSOCIATED(DISTRIBUTED_VECTOR)) THEN
+        DOMAIN_MAPPING=>DISTRIBUTED_VECTOR%DOMAIN_MAPPING
+        IF(ASSOCIATED(DOMAIN_MAPPING)) THEN
+          my_computational_node_number=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
+          IF(ERR/=0) GOTO 999
+          CMISS_VECTOR%BASE_TAG_NUMBER=DISTRIBUTED_DATA_ID
+          IF(DOMAIN_MAPPING%NUMBER_OF_DOMAINS==1) THEN
+            DISTRIBUTED_DATA_ID=DISTRIBUTED_DATA_ID+1
           ELSE
-            CALL FLAG_ERROR("Could not find domain to set the receive tag number",ERR,ERROR,*999)
+            DISTRIBUTED_DATA_ID=DISTRIBUTED_DATA_ID+DOMAIN_MAPPING%ADJACENT_DOMAINS_LIST(DOMAIN_MAPPING%NUMBER_OF_DOMAINS)-1
           ENDIF
-          SELECT CASE(CMISS_VECTOR%DISTRIBUTED_VECTOR%DATA_TYPE)
-          CASE(DISTRIBUTED_MATRIX_VECTOR_INTG_TYPE)
-            ALLOCATE(CMISS_VECTOR%TRANSFERS(domain_idx)%SEND_BUFFER_INTG(CMISS_VECTOR%TRANSFERS(domain_idx)%SEND_BUFFER_SIZE), &
-              & STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate distributed vector send integer transfer buffer",ERR,ERROR,*999)
-            ALLOCATE(CMISS_VECTOR%TRANSFERS(domain_idx)%RECEIVE_BUFFER_INTG(CMISS_VECTOR%TRANSFERS(domain_idx)% &
-              & RECEIVE_BUFFER_SIZE),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate distributed vector receive integer transfer buffer",ERR,ERROR,*999)
-          CASE(DISTRIBUTED_MATRIX_VECTOR_SP_TYPE)
-            ALLOCATE(CMISS_VECTOR%TRANSFERS(domain_idx)%SEND_BUFFER_SP(CMISS_VECTOR%TRANSFERS(domain_idx)%SEND_BUFFER_SIZE), &
-              & STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate distributed vector send single precision transfer buffer", &
-              & ERR,ERROR,*999)
-            ALLOCATE(CMISS_VECTOR%TRANSFERS(domain_idx)%RECEIVE_BUFFER_SP(CMISS_VECTOR%TRANSFERS(domain_idx)% &
-              & RECEIVE_BUFFER_SIZE),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate distributed vector receive single precision transfer buffer", &
-              & ERR,ERROR,*999)
-          CASE(DISTRIBUTED_MATRIX_VECTOR_DP_TYPE)
-            ALLOCATE(CMISS_VECTOR%TRANSFERS(domain_idx)%SEND_BUFFER_DP(CMISS_VECTOR%TRANSFERS(domain_idx)%SEND_BUFFER_SIZE), &
-              & STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate distributed vector send double precision transfer buffer", &
-              & ERR,ERROR,*999)
-            ALLOCATE(CMISS_VECTOR%TRANSFERS(domain_idx)%RECEIVE_BUFFER_DP(CMISS_VECTOR%TRANSFERS(domain_idx)% &
-              & RECEIVE_BUFFER_SIZE),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate distributed vector receive double precision transfer buffer", &
-              & ERR,ERROR,*999)
-          CASE(DISTRIBUTED_MATRIX_VECTOR_L_TYPE)
-            ALLOCATE(CMISS_VECTOR%TRANSFERS(domain_idx)%SEND_BUFFER_L(CMISS_VECTOR%TRANSFERS(domain_idx)%SEND_BUFFER_SIZE), &
-              & STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate distributed vector send logical transfer buffer",ERR,ERROR,*999)
-            ALLOCATE(CMISS_VECTOR%TRANSFERS(domain_idx)%RECEIVE_BUFFER_L(CMISS_VECTOR%TRANSFERS(domain_idx)%RECEIVE_BUFFER_SIZE), &
-              & STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate distributed vector receive logical transfer buffer",ERR,ERROR,*999)
+          CMISS_VECTOR%DATA_SIZE=CMISS_VECTOR%N
+          SELECT CASE(DISTRIBUTED_VECTOR%DATA_TYPE)
+          CASE(MATRIX_VECTOR_INTG_TYPE)
+            ALLOCATE(CMISS_VECTOR%DATA_INTG(CMISS_VECTOR%DATA_SIZE),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate CMISS distributed vector integer data",ERR,ERROR,*999)
+          CASE(MATRIX_VECTOR_SP_TYPE)
+            ALLOCATE(CMISS_VECTOR%DATA_SP(CMISS_VECTOR%DATA_SIZE),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate CMISS distributed vector single precsion data",ERR,ERROR,*999)
+          CASE(MATRIX_VECTOR_DP_TYPE)
+            ALLOCATE(CMISS_VECTOR%DATA_DP(CMISS_VECTOR%DATA_SIZE),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate CMISS distributed vector double precsion data",ERR,ERROR,*999)
+          CASE(MATRIX_VECTOR_L_TYPE)
+            ALLOCATE(CMISS_VECTOR%DATA_L(CMISS_VECTOR%DATA_SIZE),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate CMISS distributed vector logical data",ERR,ERROR,*999)
           CASE DEFAULT
             LOCAL_ERROR="The distributed vector data type of "// &
-              & TRIM(NUMBER_TO_VSTRING(CMISS_VECTOR%DISTRIBUTED_VECTOR%DATA_TYPE,"*",ERR,ERROR))//" is invalid"
+              & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_VECTOR%DATA_TYPE,"*",ERR,ERROR))//" is invalid"
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
-        ENDDO !domain_idx
+          IF(DISTRIBUTED_VECTOR%GHOSTING_TYPE==DISTRIBUTED_MATRIX_VECTOR_INCLUDE_GHOSTS_TYPE) THEN
+            ALLOCATE(CMISS_VECTOR%TRANSFERS(DOMAIN_MAPPING%NUMBER_OF_ADJACENT_DOMAINS),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate CMISS distributed vector transfer buffers",ERR,ERROR,*999)
+            DO domain_idx=1,DOMAIN_MAPPING%NUMBER_OF_ADJACENT_DOMAINS
+              CALL DISTRIBUTED_VECTOR_CMISS_TRANSFER_INITIALISE(CMISS_VECTOR,domain_idx,ERR,ERROR,*999)
+              CMISS_VECTOR%TRANSFERS(domain_idx)%SEND_BUFFER_SIZE=DOMAIN_MAPPING%ADJACENT_DOMAINS(domain_idx)%NUMBER_OF_SEND_GHOSTS
+              CMISS_VECTOR%TRANSFERS(domain_idx)%RECEIVE_BUFFER_SIZE= &
+                & DOMAIN_MAPPING%ADJACENT_DOMAINS(domain_idx)%NUMBER_OF_RECEIVE_GHOSTS
+              CMISS_VECTOR%TRANSFERS(domain_idx)%DATA_TYPE=DISTRIBUTED_VECTOR%DATA_TYPE
+              CMISS_VECTOR%TRANSFERS(domain_idx)%SEND_TAG_NUMBER=CMISS_VECTOR%BASE_TAG_NUMBER + &
+                & DOMAIN_MAPPING%ADJACENT_DOMAINS_PTR(my_computational_node_number)+domain_idx-1
+              domain_no=DOMAIN_MAPPING%ADJACENT_DOMAINS(domain_idx)%DOMAIN_NUMBER
+              FOUND=.FALSE.
+              DO domain_idx2=DOMAIN_MAPPING%ADJACENT_DOMAINS_PTR(domain_no),DOMAIN_MAPPING%ADJACENT_DOMAINS_PTR(domain_no+1)-1
+                IF(DOMAIN_MAPPING%ADJACENT_DOMAINS_LIST(domain_idx2)==my_computational_node_number) THEN
+                  FOUND=.TRUE.
+                  EXIT
+                ENDIF
+              ENDDO !domain_idx2
+              IF(FOUND) THEN
+                domain_idx2=domain_idx2-DOMAIN_MAPPING%ADJACENT_DOMAINS_PTR(domain_no)+1
+                CMISS_VECTOR%TRANSFERS(domain_idx)%RECEIVE_TAG_NUMBER=CMISS_VECTOR%BASE_TAG_NUMBER + &
+                  & DOMAIN_MAPPING%ADJACENT_DOMAINS_PTR(domain_no)+domain_idx2-1
+              ELSE
+                CALL FLAG_ERROR("Could not find domain to set the receive tag number",ERR,ERROR,*999)
+              ENDIF
+              SELECT CASE(DISTRIBUTED_VECTOR%DATA_TYPE)
+              CASE(DISTRIBUTED_MATRIX_VECTOR_INTG_TYPE)
+                ALLOCATE(CMISS_VECTOR%TRANSFERS(domain_idx)%SEND_BUFFER_INTG(CMISS_VECTOR%TRANSFERS(domain_idx)% &
+                  & SEND_BUFFER_SIZE),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate distributed vector send integer transfer buffer",ERR,ERROR,*999)
+                ALLOCATE(CMISS_VECTOR%TRANSFERS(domain_idx)%RECEIVE_BUFFER_INTG(CMISS_VECTOR%TRANSFERS(domain_idx)% &
+                  & RECEIVE_BUFFER_SIZE),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate distributed vector receive integer transfer buffer",ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_VECTOR_SP_TYPE)
+                ALLOCATE(CMISS_VECTOR%TRANSFERS(domain_idx)%SEND_BUFFER_SP(CMISS_VECTOR%TRANSFERS(domain_idx)%SEND_BUFFER_SIZE), &
+                  & STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate distributed vector send single precision transfer buffer", &
+                  & ERR,ERROR,*999)
+                ALLOCATE(CMISS_VECTOR%TRANSFERS(domain_idx)%RECEIVE_BUFFER_SP(CMISS_VECTOR%TRANSFERS(domain_idx)% &
+                  & RECEIVE_BUFFER_SIZE),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate distributed vector receive single precision transfer buffer", &
+                  & ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_VECTOR_DP_TYPE)
+                ALLOCATE(CMISS_VECTOR%TRANSFERS(domain_idx)%SEND_BUFFER_DP(CMISS_VECTOR%TRANSFERS(domain_idx)%SEND_BUFFER_SIZE), &
+                  & STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate distributed vector send double precision transfer buffer", &
+                  & ERR,ERROR,*999)
+                ALLOCATE(CMISS_VECTOR%TRANSFERS(domain_idx)%RECEIVE_BUFFER_DP(CMISS_VECTOR%TRANSFERS(domain_idx)% &
+                  & RECEIVE_BUFFER_SIZE),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate distributed vector receive double precision transfer buffer", &
+                  & ERR,ERROR,*999)
+              CASE(DISTRIBUTED_MATRIX_VECTOR_L_TYPE)
+                ALLOCATE(CMISS_VECTOR%TRANSFERS(domain_idx)%SEND_BUFFER_L(CMISS_VECTOR%TRANSFERS(domain_idx)%SEND_BUFFER_SIZE), &
+                  & STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate distributed vector send logical transfer buffer",ERR,ERROR,*999)
+                ALLOCATE(CMISS_VECTOR%TRANSFERS(domain_idx)%RECEIVE_BUFFER_L(CMISS_VECTOR%TRANSFERS(domain_idx)% &
+                  & RECEIVE_BUFFER_SIZE),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate distributed vector receive logical transfer buffer",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The distributed vector data type of "// &
+                  & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_VECTOR%DATA_TYPE,"*",ERR,ERROR))//" is invalid"
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+            ENDDO !domain_idx
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("CMISS vector distributed vector domain mapping is not associated",ERR,ERROR,*999)
+        ENDIF
       ELSE
         CALL FLAG_ERROR("CMISS vector distributed vector is not associated",ERR,ERROR,*999)
       ENDIF
@@ -5024,6 +5175,78 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets/changes the ghosting type for a distributed vector
+  SUBROUTINE DISTRIBUTED_VECTOR_GHOSTING_TYPE_SET(DISTRIBUTED_VECTOR,GHOSTING_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: DISTRIBUTED_VECTOR !<A pointer to the distributed vector 
+    INTEGER(INTG), INTENT(IN) :: GHOSTING_TYPE !<The ghosting type \see DISTRIBUTED_MATRIX_VECTOR_GhostingTypes,DISTRIBUTED_MATRIX_VECTOR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("DISTRIBUTED_VECTOR_GHOSTING_TYPE_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DISTRIBUTED_VECTOR)) THEN
+      IF(DISTRIBUTED_VECTOR%VECTOR_FINISHED) THEN
+        CALL FLAG_ERROR("The distributed vector has already been finished",ERR,ERROR,*999)
+      ELSE
+        IF(ASSOCIATED(DISTRIBUTED_VECTOR%DOMAIN_MAPPING)) THEN
+          SELECT CASE(DISTRIBUTED_VECTOR%LIBRARY_TYPE)
+          CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
+            IF(ASSOCIATED(DISTRIBUTED_VECTOR%CMISS)) THEN
+              SELECT CASE(GHOSTING_TYPE)
+              CASE(DISTRIBUTED_MATRIX_VECTOR_INCLUDE_GHOSTS_TYPE)
+                DISTRIBUTED_VECTOR%CMISS%N=DISTRIBUTED_VECTOR%DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
+              CASE(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE)
+                DISTRIBUTED_VECTOR%CMISS%N=DISTRIBUTED_VECTOR%DOMAIN_MAPPING%NUMBER_OF_LOCAL
+              CASE DEFAULT
+                LOCAL_ERROR="The given ghosting type of "//TRIM(NUMBER_TO_VSTRING(GHOSTING_TYPE,"*",ERR,ERROR))//" is invalid"
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+            ELSE
+              CALL FLAG_ERROR("Distributed vector CMISS is not associated",ERR,ERROR,*999)
+            ENDIF
+          CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
+            IF(ASSOCIATED(DISTRIBUTED_VECTOR%PETSC)) THEN
+              SELECT CASE(GHOSTING_TYPE)
+              CASE(DISTRIBUTED_MATRIX_VECTOR_INCLUDE_GHOSTS_TYPE)
+                DISTRIBUTED_VECTOR%PETSC%N=DISTRIBUTED_VECTOR%DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
+              CASE(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE)
+                DISTRIBUTED_VECTOR%PETSC%N=DISTRIBUTED_VECTOR%DOMAIN_MAPPING%NUMBER_OF_LOCAL
+              CASE DEFAULT
+                LOCAL_ERROR="The given ghosting type of "//TRIM(NUMBER_TO_VSTRING(GHOSTING_TYPE,"*",ERR,ERROR))//" is invalid"
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT              
+            ELSE
+              CALL FLAG_ERROR("Distributed vector PETSc is not associated",ERR,ERROR,*999)
+            ENDIF
+          CASE DEFAULT
+            LOCAL_ERROR="The distributed vector library type of "// &
+              & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_VECTOR%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+          DISTRIBUTED_VECTOR%GHOSTING_TYPE=GHOSTING_TYPE
+        ELSE
+          CALL FLAG_ERROR("Distributed vector domain mapping is not associated",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Distributed vector is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DISTRIBUTED_VECTOR_GHOSTING_TYPE_SET")
+    RETURN
+999 CALL ERRORS("DISTRIBUTED_VECTOR_GHOSTING_TYPE_SET",ERR,ERROR)
+    CALL EXITS("DISTRIBUTED_VECTOR_GHOSTING_TYPE_SET")
+    RETURN 1
+  END SUBROUTINE DISTRIBUTED_VECTOR_GHOSTING_TYPE_SET
+
+  !
+  !================================================================================================================================
+  !
+
   !>Sets/changes the library type for a distributed vector
   SUBROUTINE DISTRIBUTED_VECTOR_LIBRARY_TYPE_SET(DISTRIBUTED_VECTOR,LIBRARY_TYPE,ERR,ERROR,*)
 
@@ -5159,14 +5382,38 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR
+    INTEGER(INTG) :: DUMMY_ERR,i
+    INTEGER(INTG), ALLOCATABLE :: GLOBAL_NUMBERS(:)
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: DISTRIBUTED_VECTOR
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING
     TYPE(VARYING_STRING) :: DUMMY_ERROR
     
     CALL ENTERS("DISTRIBUTED_VECTOR_PETSC_CREATE_FINISH",ERR,ERROR,*998)
 
     IF(ASSOCIATED(PETSC_VECTOR)) THEN
-      IF(ASSOCIATED(PETSC_VECTOR%DISTRIBUTED_VECTOR)) THEN
-        !TODO
+      DISTRIBUTED_VECTOR=>PETSC_VECTOR%DISTRIBUTED_VECTOR
+      IF(ASSOCIATED(DISTRIBUTED_VECTOR)) THEN
+        DOMAIN_MAPPING=>DISTRIBUTED_VECTOR%DOMAIN_MAPPING
+        IF(ASSOCIATED(DOMAIN_MAPPING)) THEN
+          !Create the PETSc vector
+          PETSC_VECTOR%DATA_SIZE=PETSC_VECTOR%N
+          CALL PETSC_VECCREATEMPI(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_VECTOR%N,PETSC_VECTOR%GLOBAL_N,PETSC_VECTOR%VECTOR, &
+            & ERR,ERROR,*999)
+          !Set up the Local to Global Mappings
+          ALLOCATE(GLOBAL_NUMBERS(PETSC_VECTOR%DATA_SIZE),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global numbers for PETSc distributed vector",ERR,ERROR,*999)
+          DO i=1,PETSC_VECTOR%N
+            GLOBAL_NUMBERS(i)=DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(i)
+          ENDDO !i
+          !Should this be the global communicator or COMM_SELF???
+          CALL PETSC_ISLOCALTOGLOBALMAPPINGCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_VECTOR%N,GLOBAL_NUMBERS, &
+            & PETSC_VECTOR%ISLTGMAPPING,ERR,ERROR,*999)
+          CALL PETSC_VECSETLOCALTOGLOBALMAPPING(PETSC_VECTOR%VECTOR,PETSC_VECTOR%ISLTGMAPPING,ERR,ERROR,*999)
+          CALL PETSC_ISLOCALTOGLOBALMAPPINGDESTROY(PETSC_VECTOR%ISLTGMAPPING,ERR,ERROR,*999)
+          IF(ALLOCATED(GLOBAL_NUMBERS)) DEALLOCATE(GLOBAL_NUMBERS)
+        ELSE
+          CALL FLAG_ERROR("PETSc vector distributed vector domain mapping is not associated",ERR,ERROR,*999)
+        ENDIF
       ENDIF
     ELSE
       CALL FLAG_ERROR("PETSc vector is not associated",ERR,ERROR,*998)
@@ -5174,7 +5421,8 @@ CONTAINS
     
     CALL EXITS("DISTRIBUTED_VECTOR_PETSC_CREATE_FINISH")
     RETURN
-999 CALL DISTRIBUTED_VECTOR_PETSC_FINALISE(PETSC_VECTOR,DUMMY_ERR,DUMMY_ERROR,*998)
+999 IF(ALLOCATED(GLOBAL_NUMBERS)) DEALLOCATE(GLOBAL_NUMBERS)
+    CALL DISTRIBUTED_VECTOR_PETSC_FINALISE(PETSC_VECTOR,DUMMY_ERR,DUMMY_ERROR,*998)
 998 CALL ERRORS("DISTRIBUTED_VECTOR_PETSC_CREATE_FINISH",ERR,ERROR)
     CALL EXITS("DISTRIBUTED_VECTOR_PETSC_CREATE_FINISH")
     RETURN 1
@@ -5196,6 +5444,7 @@ CONTAINS
     CALL ENTERS("DISTRIBUTED_VECTOR_PETSC_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(PETSC_VECTOR)) THEN
+      CALL PETSC_ISLOCALTOGLOBALMAPPINGDESTROY(PETSC_VECTOR%ISLTGMAPPING,ERR,ERROR,*999)
       CALL PETSC_VECDESTROY(PETSC_VECTOR%VECTOR,ERR,ERROR,*999)
       DEALLOCATE(PETSC_VECTOR)
     ENDIF
@@ -5220,7 +5469,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: DUMMY_ERR
-    TYPE(VARYING_STRING) :: DUMMY_ERROR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
     
     CALL ENTERS("DISTRIBUTED_VECTOR_PETSC_INITIALISE",ERR,ERROR,*998)
 
@@ -5234,6 +5483,17 @@ CONTAINS
           DISTRIBUTED_VECTOR%PETSC%DISTRIBUTED_VECTOR=>DISTRIBUTED_VECTOR
           DISTRIBUTED_VECTOR%LIBRARY_TYPE=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
           !Set the defaults
+          SELECT CASE(DISTRIBUTED_VECTOR%GHOSTING_TYPE)
+          CASE(DISTRIBUTED_MATRIX_VECTOR_INCLUDE_GHOSTS_TYPE)
+            DISTRIBUTED_VECTOR%PETSC%N=DISTRIBUTED_VECTOR%DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
+          CASE(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE)
+            DISTRIBUTED_VECTOR%PETSC%N=DISTRIBUTED_VECTOR%DOMAIN_MAPPING%NUMBER_OF_LOCAL
+          CASE DEFAULT
+            LOCAL_ERROR="The distributed vector ghosting type of "// &
+              & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_VECTOR%GHOSTING_TYPE,"*",ERR,ERROR))//" is invalid"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+          DISTRIBUTED_VECTOR%PETSC%GLOBAL_N=DISTRIBUTED_VECTOR%DOMAIN_MAPPING%NUMBER_OF_GLOBAL
         ELSE
           CALL FLAG_ERROR("Distributed vector domain mapping is not associated",ERR,ERROR,*998)
         ENDIF
@@ -6263,7 +6523,8 @@ CONTAINS
               ENDIF
             CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
               IF(ASSOCIATED(DISTRIBUTED_VECTOR%PETSC)) THEN
-                CALL PETSC_VECSETVALUES(DISTRIBUTED_VECTOR%PETSC%VECTOR,SIZE(INDICES,1),INDICES,VALUES,ADD_VALUES,ERR,ERROR,*999)
+                CALL PETSC_VECSETVALUESLOCAL(DISTRIBUTED_VECTOR%PETSC%VECTOR,SIZE(INDICES,1),INDICES,VALUES,ADD_VALUES, &
+                  & ERR,ERROR,*999)
               ELSE
                 CALL FLAG_ERROR("Distributed vector PETSc is not associated",ERR,ERROR,*999)
               ENDIF
@@ -6335,7 +6596,7 @@ CONTAINS
             ENDIF
           CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
             IF(ASSOCIATED(DISTRIBUTED_VECTOR%PETSC)) THEN
-              CALL PETSC_VECSETVALUES(DISTRIBUTED_VECTOR%PETSC%VECTOR,1,(/INDEX/),(/VALUE/),ADD_VALUES,ERR,ERROR,*999)
+              CALL PETSC_VECSETVALUESLOCAL(DISTRIBUTED_VECTOR%PETSC%VECTOR,1,(/INDEX/),(/VALUE/),ADD_VALUES,ERR,ERROR,*999)
             ELSE
               CALL FLAG_ERROR("Distributed vector PETSc is not associated",ERR,ERROR,*999)
             ENDIF
@@ -6811,7 +7072,7 @@ CONTAINS
               ENDIF
             CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
               IF(ASSOCIATED(DISTRIBUTED_VECTOR%PETSC)) THEN
-                CALL PETSC_VECSETVALUES(DISTRIBUTED_VECTOR%PETSC%VECTOR,SIZE(INDICES,1),INDICES,VALUES,INSERT_VALUES, &
+                CALL PETSC_VECSETVALUESLOCAL(DISTRIBUTED_VECTOR%PETSC%VECTOR,SIZE(INDICES,1),INDICES,VALUES,INSERT_VALUES, &
                   & ERR,ERROR,*999)
               ELSE
                 CALL FLAG_ERROR("Distributed vector PETSc is not associated",ERR,ERROR,*999)
@@ -6884,7 +7145,7 @@ CONTAINS
             ENDIF
           CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
             IF(ASSOCIATED(DISTRIBUTED_VECTOR%PETSC)) THEN
-              CALL PETSC_VECSETVALUES(DISTRIBUTED_VECTOR%PETSC%VECTOR,1,(/INDEX/),(/VALUE/),INSERT_VALUES,ERR,ERROR,*999)
+              CALL PETSC_VECSETVALUESLOCAL(DISTRIBUTED_VECTOR%PETSC%VECTOR,1,(/INDEX/),(/VALUE/),INSERT_VALUES,ERR,ERROR,*999)
             ELSE
               CALL FLAG_ERROR("Distributed vector PETSc is not associated",ERR,ERROR,*999)
             ENDIF

@@ -346,6 +346,12 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE MatRestoreArray
     
+    SUBROUTINE MatSetLocalToGlobalMapping(A,ctx,ierr)
+      Mat A
+      ISLocalToGlobalMapping ctx
+      PetscInt ierr
+    END SUBROUTINE MatSetLocalToGlobalMapping
+
     SUBROUTINE MatSetOption(A,option,ierr)
       Mat A
       MatOption option
@@ -371,6 +377,17 @@ MODULE CMISS_PETSC
       InsertMode insertmode
       PetscInt ierr
     END SUBROUTINE MatSetValues
+    
+    SUBROUTINE MatSetValuesLocal(A,m,mindices,n,nindices,values,insertmode,ierr)
+      Mat A
+      PetscInt m
+      PetscInt mindices(*)
+      PetscInt n
+      PetscInt nindices(*)
+      PetscScalar values(*)
+      InsertMode insertmode
+      PetscInt ierr
+    END SUBROUTINE MatSetValuesLocal
     
     SUBROUTINE MatView(A,v,ierr)
       Mat A
@@ -613,8 +630,8 @@ MODULE CMISS_PETSC
 
   PUBLIC PETSC_MATASSEMBLYBEGIN,PETSC_MATASSEMBLYEND,PETSC_MATCREATE,PETSC_MATCREATEMPIAIJ,PETSC_MATCREATEMPIDENSE, &
     & PETSC_MATCREATESEQAIJ,PETSC_MATCREATESEQDENSE,PETSC_MATDESTROY,PETSC_MATGETARRAY,PETSC_MATGETOWNERSHIPRANGE, &
-    & PETSC_MATGETVALUES,PETSC_MATRESTOREARRAY,PETSC_MATSETOPTION,PETSC_MATSETSIZES,PETSC_MATSETVALUES,PETSC_MATVIEW, &
-    & PETSC_MATZEROENTRIES
+    & PETSC_MATGETVALUES,PETSC_MATRESTOREARRAY,PETSC_MATSETLOCALTOGLOBALMAPPING,PETSC_MATSETOPTION,PETSC_MATSETSIZES, &
+    & PETSC_MATSETVALUES,PETSC_MATSETVALUESLOCAL,PETSC_MATVIEW,PETSC_MATZEROENTRIES
   
   PUBLIC PETSC_PCSETTYPE
 
@@ -1537,6 +1554,37 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc MatSetLocalToGlobalMapping routine.
+  SUBROUTINE PETSC_MATSETLOCALTOGLOBALMAPPING(A,CTX,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to set the local to global mapping for
+    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE), INTENT(IN) :: CTX !<The local to global mapping context
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATSETLOCALTOGLOBALMAPPING",ERR,ERROR,*999)
+
+    CALL MatSetLocalToGlobalMapping(A%MAT,CTX%ISLOCALTOGLOBALMAPPING_,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatSetLocalToGlobalMapping",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_MATSETLOCALTOGLOBALMAPPING")
+    RETURN
+999 CALL ERRORS("PETSC_MATSETLOCALTOGLOBALMAPPING",ERR,ERROR)
+    CALL EXITS("PETSC_MATSETLOCALTOGLOBALMAPPING")
+    RETURN 1
+  END SUBROUTINE PETSC_MATSETLOCALTOGLOBALMAPPING
+    
+  !
+  !================================================================================================================================
+  !
+
   !>Buffer routine to the PETSc MatSetOption routine.
   SUBROUTINE PETSC_MATSETOPTION(A,OPTION,ERR,ERROR,*)
 
@@ -1634,6 +1682,42 @@ CONTAINS
     RETURN 1
   END SUBROUTINE PETSC_MATSETVALUES
     
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatSetValuesLocal routine.
+  SUBROUTINE PETSC_MATSETVALUESLOCAL(A,M,M_INDICES,N,N_INDICES,VALUES,INSERT_MODE,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to set the values of
+    INTEGER(INTG), INTENT(IN) :: M !<The number of row indices
+    INTEGER(INTG), INTENT(IN) :: M_INDICES(*) !<The row indices
+    INTEGER(INTG), INTENT(IN) :: N !<The number of column indices
+    INTEGER(INTG), INTENT(IN) :: N_INDICES(*) !<The column indices
+    REAL(DP), INTENT(IN) :: VALUES(*) !<The values to set
+    InsertMode, INTENT(IN) :: INSERT_MODE !<The insert mode
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATSETVALUESLOCAL",ERR,ERROR,*999)
+
+    CALL MatSetValuesLocal(A%MAT,M,M_INDICES,N,N_INDICES,VALUES,INSERT_MODE,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatSetValuesLocal",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_MATSETVALUESLOCAL")
+    RETURN
+999 CALL ERRORS("PETSC_MATSETVALUESLOCAL",ERR,ERROR)
+    CALL EXITS("PETSC_MATSETVALUESLOCAL")
+    RETURN 1
+  END SUBROUTINE PETSC_MATSETVALUESLOCAL
+  
   !
   !================================================================================================================================
   !

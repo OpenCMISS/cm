@@ -1104,7 +1104,7 @@ CONTAINS
             & '("  Column dofs  :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
           CALL WRITE_STRING_MATRIX(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_ROWS,1,1,ELEMENT_MATRIX%NUMBER_OF_COLUMNS, &
             & 8,8,ELEMENT_MATRIX%MATRIX(1:ELEMENT_MATRIX%NUMBER_OF_ROWS,1:ELEMENT_MATRIX%NUMBER_OF_COLUMNS), &
-            & WRITE_STRING_MATRIX_NAME_AND_INDICIES,'("  Matrix','(",I2,",:)',' :",8(X,E13.6))','(16X,8(X,E13.6))', &
+            & WRITE_STRING_MATRIX_NAME_AND_INDICES,'("  Matrix','(",I2,",:)',' :",8(X,E13.6))','(16X,8(X,E13.6))', &
             & ERR,ERROR,*999)        
         ENDDO !matrix_idx
         CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Element RHS vector :",ERR,ERROR,*999)
@@ -1762,6 +1762,10 @@ CONTAINS
                   ENDIF
                   CALL PROBLEM_GLOBAL_MATRICES_CREATE_FINISH(GLOBAL_MATRICES,ERR,ERROR,*999)
                   !Create the solution matrices
+                  !CALL PROBLEM_SOLVER_MATRICES_CREATE_START(PROBLEM%SOLUTION,SOLVER_MATRICES,ERR,ERROR,*999)
+                  !CALL PROBLEM_SOLVER_MATRICES_NUMBER_SET(SOLVER_MATRICES,1,ERR,ERROR,*999)
+                  !CALL PROBLEM_SOLVER_MATRICES_GLOBAL_MATRICES_SET(SOLVER_MATRICES,(/1/),ERR,ERROR,*999)
+                  !CALL PROBLEM_SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
                 CASE(PROBLEM_BEM_SOLUTION_METHOD)
                   CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
                 CASE(PROBLEM_FD_SOLUTION_METHOD)
@@ -4639,7 +4643,7 @@ CONTAINS
     TYPE(PROBLEM_GLOBAL_MATRICES_TYPE), POINTER :: GLOBAL_MATRICES !<A pointer to the global matrices
     INTEGER(INTG), INTENT(IN) :: matrix_idx !<The matrix number to calculate the structure of
     INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_NON_ZEROS !<On return the number of non-zeros in the matrix
-    INTEGER(INTG), POINTER :: ROW_INDICES(:) !<On return a pointer to row location indicies. The calling routine is responsible for deallocation.
+    INTEGER(INTG), POINTER :: ROW_INDICES(:) !<On return a pointer to row location indices. The calling routine is responsible for deallocation.
     INTEGER(INTG), POINTER :: COLUMN_INDICES(:) !<On return a pointer to the column location indices. The calling routine is responsible for deallocation.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string

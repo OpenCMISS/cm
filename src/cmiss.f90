@@ -86,15 +86,12 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises CMISS.
   SUBROUTINE CMISS_FINALISE(ERR,ERROR,*)
   
-    !#### Subroutine: CMISS_FINALISE
-    !###  Description:
-    !###    Finalises CMISS.
-      
     !Argument variables
-    INTEGER(INTG), INTENT(INOUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(INOUT) :: ERROR
+    INTEGER(INTG), INTENT(INOUT) :: ERR !<The error string
+    TYPE(VARYING_STRING), INTENT(INOUT) :: ERROR !<The error code
     !Local Variables
 
     !Finalise the regions
@@ -116,15 +113,12 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises CMISS.
   SUBROUTINE CMISS_INITIALISE(ERR,ERROR,*)
   
-    !#### Subroutine: CMISS_INITIALISE
-    !###  Description:
-    !###    Initialises CMISS.
-      
     !Argument variables
-    INTEGER(INTG), INTENT(INOUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(INOUT) :: ERROR
+    INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(INOUT) :: ERROR !<The error string
     !Local Variables
 
     !Initialise the base routines
@@ -146,15 +140,12 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the error string to screen.
   SUBROUTINE CMISS_WRITE_ERROR(ERR,ERROR)
   
-    !#### Subroutine: CMISS_WRITE_ERROR
-    !###  Description:
-    !###    Writes the error string to screen.
-      
     !Argument variables
-    INTEGER(INTG), INTENT(INOUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(INOUT) :: ERROR
+    INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(INOUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: INDENT,POSITION
     CHARACTER(LEN=MAXSTRLEN) :: INDENT_STRING=">>"

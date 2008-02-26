@@ -136,30 +136,35 @@ MODULE LISTS
     MODULE PROCEDURE LIST_SEARCH_DP_ARRAY
   END INTERFACE !LIST_SEARCH
 
+  !>Searches a list using the linear search method.
   INTERFACE LIST_SEARCH_LINEAR
     MODULE PROCEDURE LIST_SEARCH_LINEAR_INTG_ARRAY
     MODULE PROCEDURE LIST_SEARCH_LINEAR_SP_ARRAY
     MODULE PROCEDURE LIST_SEARCH_LINEAR_DP_ARRAY
   END INTERFACE !LIST_SEARCH_LINEAR
 
+  !>Sorts a list into ascending order.
   INTERFACE LIST_SORT
     MODULE PROCEDURE LIST_SORT_INTG_ARRAY
     MODULE PROCEDURE LIST_SORT_SP_ARRAY
     MODULE PROCEDURE LIST_SORT_DP_ARRAY
   END INTERFACE !LIST_SORT
 
+  !>Sorts a list into assending order using the bubble sort method.
   INTERFACE LIST_SORT_BUBBLE
     MODULE PROCEDURE LIST_SORT_BUBBLE_INTG_ARRAY
     MODULE PROCEDURE LIST_SORT_BUBBLE_SP_ARRAY
     MODULE PROCEDURE LIST_SORT_BUBBLE_DP_ARRAY
   END INTERFACE !LIST_SORT_BUBBLE
 
+  !>Sorts a list into assending order using the heap sort method.
   INTERFACE LIST_SORT_HEAP
     MODULE PROCEDURE LIST_SORT_HEAP_INTG_ARRAY
     MODULE PROCEDURE LIST_SORT_HEAP_SP_ARRAY
     MODULE PROCEDURE LIST_SORT_HEAP_DP_ARRAY
   END INTERFACE !LIST_SORT_HEAP
 
+  !>Sorts a list into either assending or descending order using the shell sort method.
   INTERFACE LIST_SORT_SHELL
     MODULE PROCEDURE LIST_SORT_SHELL_INTG_ARRAY
     MODULE PROCEDURE LIST_SORT_SHELL_SP_ARRAY
@@ -183,7 +188,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finishes the creation of a list created with LIST_CREATE_START \see{LISTS::LIST_CREATE_START}.
+  !>Finishes the creation of a list created with LIST_CREATE_START \see LISTS::LIST_CREATE_START.
   SUBROUTINE LIST_CREATE_FINISH(LIST,ERR,ERROR,*)
 
     !Argument Variables
@@ -234,15 +239,11 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Starts the creation of a list and returns a pointer to the created list \see{LISTS::LIST_CREATE_FINISH}.
+  !>Starts the creation of a list and returns a pointer to the created list \see LISTS::LIST_CREATE_FINISH.
   SUBROUTINE LIST_CREATE_START(LIST,ERR,ERROR,*)
 
-    !#### Subroutine: LIST_CREATE_START
-    !###  Description:
-    !###    Starts the creation of a list.
-
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list to create. Must not be associated on entry.
+    TYPE(LIST_TYPE), POINTER :: LIST !<On exit, pointer to the list to create. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     !Local Variables
@@ -279,7 +280,7 @@ CONTAINS
 
     !Argument Variables
     TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list 
-    INTEGER(INTG), INTENT(IN) :: DATA_TYPE !<The data type of the list to set. \see{LISTSDataType}
+    INTEGER(INTG), INTENT(IN) :: DATA_TYPE !<The data type of the list to set \see LISTS_DataType,LISTS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -415,10 +416,6 @@ CONTAINS
   !>Sets/changes the initial size for a list
   SUBROUTINE LIST_INITIAL_SIZE_SET(LIST,INITIAL_SIZE,ERR,ERROR,*)
 
-    !#### Subroutine: LIST_INITIAL_SIZE_SET
-    !###  Description:
-    !###    Sets/changes the initial size for a list.
-
     !Argument Variables
     TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list
     INTEGER(INTG), INTENT(IN) :: INITIAL_SIZE !<The initial size of the list to set. Must be greater than zero.
@@ -455,25 +452,10 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-subroutine: LIST_ITEM_ADD
-  !###  Description:
-  !###    Adds an item to a list.
-  !###  Child-subroutines: LIST_ITEM_ADD_INTG1,LIST_ITEM_ADD_SP1,LIST_ITEM_ADD_DP1
-
-  !
-  !================================================================================================================================
-  !
 
   !>Adds an item to the end of an integer list. 
   SUBROUTINE LIST_ITEM_ADD_INTG1(LIST,ITEM,ERR,ERROR,*)
-
-    !#### Subroutine: LIST_ITEM_ADD_INTG1
-    !###  Description:
-    !###    Adds the item ITEM to an integer list.
-    !###  Parent-routine: LIST_ITEM_ADD
-
-    !Argument Variables
+   !Argument Variables
     TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list
     INTEGER(INTG), INTENT(IN) :: ITEM !<The item to add
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -527,11 +509,6 @@ CONTAINS
 
   !>Adds an item to the end of a single precision real list. 
   SUBROUTINE LIST_ITEM_ADD_SP1(LIST,ITEM,ERR,ERROR,*)
-
-    !#### Subroutine: LIST_ITEM_ADD_SP1
-    !###  Description:
-    !###    Adds the item ITEM to a single precision list.
-    !###  Parent-routine: LIST_ITEM_ADD
 
     !Argument Variables
     TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list
@@ -588,11 +565,6 @@ CONTAINS
   !>Adds an item to the end of a double precision real list.
   SUBROUTINE LIST_ITEM_ADD_DP1(LIST,ITEM,ERR,ERROR,*)
 
-    !#### Subroutine: LIST_ITEM_ADD_DP1
-    !###  Description:
-    !###    Adds the item ITEM to a double precision list.
-    !###  Parent-routine: LIST_ITEM_ADD
-
     !Argument Variables
     TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list
     REAL(DP), INTENT(IN) :: ITEM !<The item to add
@@ -644,23 +616,9 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-subroutine: LIST_ITEM_IN_LIST
-  !###  Description:
-  !###    Determines if an item is in a list and returns the position of the item.
-  !###  Child-subroutines: LIST_ITEM_IN_LIST_INTG1,LIST_ITEM_IN_LIST_SP1,LIST_ITEM_IN_LIST_DP1
-
-  !
-  !================================================================================================================================
-  !
 
   !>Determines if ITEM is in the given integer LIST. If it is LIST_ITEM is the index in the list. If not LIST_ITEM is 0.
   SUBROUTINE LIST_ITEM_IN_LIST_INTG1(LIST,ITEM,LIST_ITEM,ERR,ERROR,*)
-
-    !#### Subroutine: LIST_ITEM_IN_LIST_INTG1
-    !###  Description:
-    !###    Determines if ITEM is in the given integer LIST. If it is LIST_ITEM is the index in the list. If not LIST_ITEM is 0.
-    !###  Parent-routine: LIST_ITEM_IN_LIST
 
     !Argument Variables
     TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
@@ -1022,10 +980,6 @@ CONTAINS
   !>Removes duplicate entries from a list. A side effect of this is that the list is sorted.
   SUBROUTINE LIST_REMOVE_DUPLICATES(LIST,ERR,ERROR,*)
 
-    !#### Subroutine: LIST_REMOVE_DUPLICATES
-    !###  Description:
-    !###    Removes duplicate entries from a list. A side effect of this is that the list is sorted.
-
     !Argument Variables
     TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -1144,28 +1098,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-subroutine: LIST_SEARCH
-  !###  Description:
-  !###    Searches a list.
-  !###  Child-subroutines: LIST_SEARCH_INTG,LIST_SEARCH_SP,LIST_SEARCH_DP
 
-  !
-  !================================================================================================================================
-  !
-  
+  !>Searches an integer array list A for VALUE. If the search is successful POSITION contains the index of the position of VALUE in the list otherwise POSITION is zero.
   SUBROUTINE LIST_SEARCH_INTG_ARRAY(A,VALUE,POSITION,ERR,ERROR,*)
   
-    !#### Subroutine: LIST_SEARCH_INTG_ARRAY
-    !###  Description:
-    !###    Searches an integer array list A for VALUE. If the search is successful POSITION contains the index of the position
-    !###    of VALUE in the list otherwise POSITION is zero.
-    !###  Parent-function: LIST_SEARCH
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: A(:)
-    INTEGER(INTG), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: POSITION
+    INTEGER(INTG), INTENT(IN) :: A(:) !<The list to search
+    INTEGER(INTG), INTENT(IN) :: VALUE !<The value to search for
+    INTEGER(INTG), INTENT(OUT) :: POSITION !<On exit, the position of value in the list. If value does not exist in the list the returned position is zero. 
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
@@ -1185,19 +1125,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Searches a single precision real array list A for VALUE. If the search is successful POSITION contains the index of the position of VALUE in the list otherwise POSITION is zero.
   SUBROUTINE LIST_SEARCH_SP_ARRAY(A,VALUE,POSITION,ERR,ERROR,*)
   
-    !#### Subroutine: LIST_SEARCH_SP_ARRAY
-    !###  Description:
-    !###    Searches a single precision real array list A for VALUE. If the search is successful POSITION contains the index of
-    !###    the position of VALUE in the list otherwise POSITION is zero.
-    !###  Parent-function: LIST_SEARCH
-    
-    !Argument variables
-    REAL(SP), INTENT(IN) :: A(:)
-    REAL(SP), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: POSITION
+   !Argument variables
+    REAL(SP), INTENT(IN) :: A(:) !<The list to search
+    REAL(SP), INTENT(IN) :: VALUE !<The value to search for
+    INTEGER(INTG), INTENT(OUT) :: POSITION !<On exit, the position of value in the list. If value does not exist in the list the returned position is zero. 
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
@@ -1217,19 +1152,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Searches a double precision real array list A for VALUE. If the search is successful POSITION contains the index of the position of VALUE in the list otherwise POSITION is zero.
   SUBROUTINE LIST_SEARCH_DP_ARRAY(A,VALUE,POSITION,ERR,ERROR,*)
   
-    !#### Subroutine: LIST_SEARCH_DP_ARRAY
-    !###  Description:
-    !###    Searches a double precision real array list A for VALUE. If the search is successful POSITION contains the index of
-    !###    the position of VALUE in the list otherwise POSITION is zero.
-    !###  Parent-function: LIST_SEARCH
-    
     !Argument variables
-    REAL(DP), INTENT(IN) :: A(:)
-    REAL(DP), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: POSITION
+    REAL(DP), INTENT(IN) :: A(:) !<The list to search
+    REAL(DP), INTENT(IN) :: VALUE !<The value to search for
+    INTEGER(INTG), INTENT(OUT) :: POSITION !<On exit, the position of value in the list. If value does not exist in the list the returned position is zero. 
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
@@ -1249,28 +1179,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-subroutine: LIST_SEARCH_LINEAR
-  !###  Description:
-  !###    Searches a list using the linear search method.
-  !###  Child-subroutines: LIST_SEARCH_LINEAR_INTG,LIST_SEARCH_LINEAR_SP,LIST_SEARCH_LINEAR_DP
 
-  !
-  !================================================================================================================================
-  !
-  
+  !>Searches an integer array list A for VALUE using the linear search method. If the search is successful POSITION contains the index of the position of VALUE in the list otherwise POSITION is zero.
   SUBROUTINE LIST_SEARCH_LINEAR_INTG_ARRAY(A,VALUE,POSITION,ERR,ERROR,*)
   
-    !#### Subroutine: LIST_SEARCH_LINEAR_INTG_ARRAY
-    !###  Description:
-    !###    Searches an integer array list A for VALUE using the linear search method. If the search is successful POSITION
-    !###    contains the index of the position of VALUE in the list otherwise POSITION is zero.
-    !###  Parent-function: LIST_SEARCH_LINEAR
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: A(:)
-    INTEGER(INTG), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: POSITION
+    INTEGER(INTG), INTENT(IN) :: A(:) !<The list to search
+    INTEGER(INTG), INTENT(IN) :: VALUE !<The value to search for
+    INTEGER(INTG), INTENT(OUT) :: POSITION !<On exit, the position of value in the list. If value does not exist in the list the returned position is zero. 
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
@@ -1304,19 +1220,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Searches a single precision real array list A for VALUE using the linear search method. If the search is successful POSITION contains the index of the position of VALUE in the list otherwise POSITION is zero.
   SUBROUTINE LIST_SEARCH_LINEAR_SP_ARRAY(A,VALUE,POSITION,ERR,ERROR,*)
   
-    !#### Subroutine: LIST_SEARCH_LINEAR_SP_ARRAY
-    !###  Description:
-    !###    Searches a single precision real array list A for VALUE using the linear search method. If the search is successful
-    !###    POSITION contains the index of the position of VALUE in the list otherwise POSITION is zero.
-    !###  Parent-function: LIST_SEARCH_LINEAR
-    
     !Argument variables
-    REAL(SP), INTENT(IN) :: A(:)
-    REAL(SP), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: POSITION
+    REAL(SP), INTENT(IN) :: A(:) !<The list to search
+    REAL(SP), INTENT(IN) :: VALUE !<The value to search for
+    INTEGER(INTG), INTENT(OUT) :: POSITION !<On exit, the position of value in the list. If value does not exist in the list the returned position is zero. 
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
@@ -1350,19 +1261,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Searches a double precision real array list A for VALUE using the linear search method. If the search is successful POSITION contains the index of the position of VALUE in the list otherwise POSITION is zero.
   SUBROUTINE LIST_SEARCH_LINEAR_DP_ARRAY(A,VALUE,POSITION,ERR,ERROR,*)
   
-    !#### Subroutine: LIST_SEARCH_LINEAR_DP_ARRAY
-    !###  Description:
-    !###    Searches a double precision real array list A for VALUE using the linear search method. If the search is successful
-    !###    POSITION contains the index of the position of VALUE in the list otherwise POSITION is zero.
-    !###  Parent-function: LIST_SEARCH_LINEAR
-    
     !Argument variables
-    REAL(DP), INTENT(IN) :: A(:)
-    REAL(DP), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: POSITION
+    REAL(DP), INTENT(IN) :: A(:) !<The list to search
+    REAL(DP), INTENT(IN) :: VALUE !<The value to search for
+    INTEGER(INTG), INTENT(OUT) :: POSITION !<On exit, the position of value in the list. If value does not exist in the list the returned position is zero. 
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
@@ -1396,25 +1302,12 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-subroutine: LIST_SORT
-  !###  Description:
-  !###    Sorts a list into ascending order.
-  !###  Child-subroutines: LIST_SORT_INTG,LIST_SORT_SP,LIST_SORT_DP
 
-  !
-  !================================================================================================================================
-  !
-  
+  !>Sorts an integer array list into ascending order.
   SUBROUTINE LIST_SORT_INTG_ARRAY(A,ERR,ERROR,*)
   
-    !#### Subroutine: LIST_SORT_INTG_ARRAY
-    !###  Description:
-    !###    Sorts an integer array list into ascending order.
-    !###  Parent-function: LIST_SORT
-    
     !Argument variables
-    INTEGER(INTG), INTENT(INOUT) :: A(:)
+    INTEGER(INTG), INTENT(INOUT) :: A(:) !<The list to sort
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
@@ -1434,16 +1327,12 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Sorts an single precision array list into ascending order.
   SUBROUTINE LIST_SORT_SP_ARRAY(A,ERR,ERROR,*)
-  
-    !#### Subroutine: LIST_SORT_SP_ARRAY
-    !###  Description:
-    !###    Sorts an single precision array list into ascending order.
-    !###  Parent-function: LIST_SORT
-    
+      
     !Argument variables
-    REAL(SP), INTENT(INOUT) :: A(:)
+    REAL(SP), INTENT(INOUT) :: A(:) !<The list to sort
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
@@ -1463,16 +1352,12 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Sorts an double precision array list into ascending order.
   SUBROUTINE LIST_SORT_DP_ARRAY(A,ERR,ERROR,*)
   
-    !#### Subroutine: LIST_SORT_DP_ARRAY
-    !###  Description:
-    !###    Sorts an double precision array list into ascending order.
-    !###  Parent-function: LIST_SORT
-    
     !Argument variables
-    REAL(DP), INTENT(INOUT) :: A(:)
+    REAL(DP), INTENT(INOUT) :: A(:) !<The list to sort
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
@@ -1492,25 +1377,12 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-subroutine: LIST_SORT_BUBBLE
-  !###  Description:
-  !###    Sorts a list into assending order using the bubble sort method.
-  !###  Child-subroutines: LIST_SORT_BUBBLE_INTG,LIST_SORT_BUBBLE_SP,LIST_SORT_BUBBLE_DP
 
-  !
-  !================================================================================================================================
-  !
-  
+  !>BUBBLE_SORT_INTG performs a bubble sort on an integer array list
   SUBROUTINE LIST_SORT_BUBBLE_INTG_ARRAY(A,ERR,ERROR,*)
   
-    !#### Subroutine: LIST_SORT_BUBBLE_INTG_ARRAY
-    !###  Description:
-    !###    BUBBLE_SORT_INTG performs a bubble sort on an integer array list
-    !###  Parent-function: LIST_SORT_BUBBLE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(INOUT) :: A(:)
+    INTEGER(INTG), INTENT(INOUT) :: A(:) !<The list to sort
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
@@ -1545,16 +1417,12 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>BUBBLE_SORT_SP performs a bubble sort on a single precision array list
   SUBROUTINE LIST_SORT_BUBBLE_SP_ARRAY(A,ERR,ERROR,*)
   
-    !#### Subroutine: LIST_SORT_BUBBLE_SP_ARRAY
-    !###  Description:
-    !###    BUBBLE_SORT_SP performs a bubble sort on a single precision array list
-    !###  Parent-function: LIST_SORT_BUBBLE
-    
     !Argument variables
-    REAL(SP), INTENT(INOUT) :: A(:)
+    REAL(SP), INTENT(INOUT) :: A(:) !<The list to sort
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
@@ -1590,16 +1458,12 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>BUBBLE_SORT_DP performs a bubble sort on a double precision list
   SUBROUTINE LIST_SORT_BUBBLE_DP_ARRAY(A,ERR,ERROR,*)
   
-    !#### Subroutine: LIST_SORT_BUBBLE_DP_ARRAY
-    !###  Description:
-    !###    BUBBLE_SORT_DP performs a bubble sort on a double precision list
-    !###  Parent-function: LIST_SORT_BUBBLE
-    
     !Argument variables
-    REAL(DP), INTENT(INOUT) :: A(:)
+    REAL(DP), INTENT(INOUT) :: A(:) !<The list to sort
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
@@ -1635,25 +1499,12 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-subroutine: LIST_SORT_HEAP
-  !###  Description:
-  !###    Sorts a list into assending order using the heap sort method.
-  !###  Child-subroutines: LIST_SORT_HEAP_INTG_ARRAY,LIST_SORT_HEAP_SP_ARRAY,LIST_SORT_HEAP_DP_ARRAY
 
-  !
-  !================================================================================================================================
-  !
-  
+  !>Sorts an integer array list into assending order using the heap sort method.
   SUBROUTINE LIST_SORT_HEAP_INTG_ARRAY(A,ERR,ERROR,*)
   
-    !#### Subroutine: LIST_SORT_HEAP_INTG_ARRAY
-    !###  Description:
-    !###    Sorts an integer array list into assending order using the heap sort method.
-    !###  Parent-function: LIST_SORT_HEAP
-    
     !Argument variables
-    INTEGER(INTG), INTENT(INOUT) :: A(:)
+    INTEGER(INTG), INTENT(INOUT) :: A(:) !<The list to sort
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
@@ -1705,16 +1556,12 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Sorts a real single precision array list into assending order using the heap sort method.
   SUBROUTINE LIST_SORT_HEAP_SP_ARRAY(A,ERR,ERROR,*)
   
-    !#### Subroutine: LIST_SORT_HEAP_SP_ARRAY
-    !###  Description:
-    !###    Sorts a real single precision array list into assending order using the heap sort method.
-    !###  Parent-function: LIST_SORT_HEAP
-    
     !Argument variables
-    REAL(SP), INTENT(INOUT) :: A(:)
+    REAL(SP), INTENT(INOUT) :: A(:) !<The list to sort
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
@@ -1768,15 +1615,11 @@ CONTAINS
   !================================================================================================================================
   !
   
+  !>Sorts a real double precision array list into assending order using the heap sort method.
   SUBROUTINE LIST_SORT_HEAP_DP_ARRAY(A,ERR,ERROR,*)
   
-    !#### Subroutine: LIST_SORT_HEAP_DP_ARRAY
-    !###  Description:
-    !###    Sorts a real double precision array list into assending order using the heap sort method.
-    !###  Parent-function: HEAP_SORT
-    
     !Argument variables
-    REAL(DP), INTENT(INOUT) :: A(:)
+    REAL(DP), INTENT(INOUT) :: A(:) !<The list to sort
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
@@ -1829,25 +1672,12 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-subroutine: LIST_SORT_SHELL
-  !###  Description:
-  !###    Sorts a list into either assending or descending order using the shell sort method.
-  !###  Child-subroutines: LIST_SORT_SHELL_INTG_ARRAY,LIST_SORT_SHELL_SP_ARRAY,LIST_SORT_SHELL_DP_ARRAY
 
-  !
-  !================================================================================================================================
-  !
-  
+  !>Sorts an integer array list into either assending or descending order using the shell sort method.
   SUBROUTINE LIST_SORT_SHELL_INTG_ARRAY(A,ERR,ERROR,*)
   
-    !#### Subroutine: LIST_SORT_SHELL_INTG_ARRAY
-    !###  Description:
-    !###    Sorts an integer array list into either assending or descending order using the shell sort method.
-    !###  Parent-function: LIST_SORT_SHELL
-    
     !Argument variables
-    INTEGER(INTG), INTENT(INOUT) :: A(:)
+    INTEGER(INTG), INTENT(INOUT) :: A(:) !<The list to sort
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
@@ -1883,16 +1713,12 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Sorts a real single precision array list into either assending or descending order using the shell sort method.
   SUBROUTINE LIST_SORT_SHELL_SP_ARRAY(A,ERR,ERROR,*)
   
-    !#### Subroutine: LIST_SORT_SHELL_SP_ARRAY
-    !###  Description:
-    !###    Sorts a real single precision array list into either assending or descending order using the shell sort method.
-    !###  Parent-function: LIST_SORT_SHELL
-    
     !Argument variables
-    REAL(SP), INTENT(INOUT) :: A(:)
+    REAL(SP), INTENT(INOUT) :: A(:) !<The list to sort
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
@@ -1929,14 +1755,10 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Sorts a real double precision array list into either assending or descending order using the shell sort method.
   SUBROUTINE LIST_SORT_SHELL_DP_ARRAY(A,ERR,ERROR,*)
   
-    !#### Subroutine: LIST_SORT_SHELL_DP_ARRAY
-    !###  Description:
-    !###    Sorts a real double precision array list into either assending or descending order using the shell sort method.
-    !###  Parent-function: LIST_SORT_SHELL
-    
     !Argument variables
     REAL(DP), INTENT(INOUT) :: A(:)
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code

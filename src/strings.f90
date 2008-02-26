@@ -40,7 +40,7 @@
 !> the terms of any one of the MPL, the GPL or the LGPL.
 !>
 
-!> This module contains all string manipulation and transformation routines.
+!>This module contains all string manipulation and transformation routines.
 MODULE STRINGS
 
   USE BASE_ROUTINES
@@ -58,6 +58,7 @@ MODULE STRINGS
 
   !Interfaces
 
+  !>Returns .TRUE. if a supplied string is a valid abbreviation of a second supplied string.
   INTERFACE IS_ABBREVIATION
     MODULE PROCEDURE IS_ABBREVIATION_C_C
     MODULE PROCEDURE IS_ABBREVIATION_C_VS
@@ -65,6 +66,7 @@ MODULE STRINGS
     MODULE PROCEDURE IS_ABBREVIATION_VS_VS
   END INTERFACE !IS_ABBREVIATION
 
+  !>Converts a list to its equivalent character string representation.
   INTERFACE LIST_TO_CHARACTER
     MODULE PROCEDURE LIST_TO_CHARACTER_C
     MODULE PROCEDURE LIST_TO_CHARACTER_INTG
@@ -74,6 +76,7 @@ MODULE STRINGS
     MODULE PROCEDURE LIST_TO_CHARACTER_DP
   END INTERFACE !LIST_TO_CHARACTER
 
+  !>Converts a number to its equivalent character string representation.
   INTERFACE NUMBER_TO_CHARACTER
     MODULE PROCEDURE NUMBER_TO_CHARACTER_INTG
     MODULE PROCEDURE NUMBER_TO_CHARACTER_LINTG
@@ -81,6 +84,7 @@ MODULE STRINGS
     MODULE PROCEDURE NUMBER_TO_CHARACTER_DP
   END INTERFACE !NUMBER_TO_CHARACTER
 
+  !>Converts a number to its equivalent varying string representation.
   INTERFACE NUMBER_TO_VSTRING
     MODULE PROCEDURE NUMBER_TO_VSTRING_INTG
     MODULE PROCEDURE NUMBER_TO_VSTRING_LINTG
@@ -88,46 +92,55 @@ MODULE STRINGS
     MODULE PROCEDURE NUMBER_TO_VSTRING_DP
   END INTERFACE !NUMBER_TO_VSTRING
 
+  !>Converts a string representation of a number to a double precision number.
   INTERFACE STRING_TO_DOUBLE
     MODULE PROCEDURE STRING_TO_DOUBLE_C
     MODULE PROCEDURE STRING_TO_DOUBLE_VS
   END INTERFACE !STRING_TO_DOUBLE
 
+  !>Converts a string representation of a number to an integer.
   INTERFACE STRING_TO_INTEGER
     MODULE PROCEDURE STRING_TO_INTEGER_C
     MODULE PROCEDURE STRING_TO_INTEGER_VS
   END INTERFACE !STRING_TO_INTEGER
 
+  !>Converts a string representation of a number to a long integer.
   INTERFACE STRING_TO_LONG_INTEGER
     MODULE PROCEDURE STRING_TO_LONG_INTEGER_C
     MODULE PROCEDURE STRING_TO_LONG_INTEGER_VS
   END INTERFACE !STRING_TO_LONG_INTEGER
 
+  !>Converts a string representation of a boolean value (TRUE or FALSE) to a logical.
   INTERFACE STRING_TO_LOGICAL
     MODULE PROCEDURE STRING_TO_LOGICAL_C
     MODULE PROCEDURE STRING_TO_LOGICAL_VS
   END INTERFACE !STRING_TO_LOGICAL
 
+  !>Converts a string representation of a number to a single precision number.
   INTERFACE STRING_TO_SINGLE
     MODULE PROCEDURE STRING_TO_SINGLE_C
     MODULE PROCEDURE STRING_TO_SINGLE_VS
   END INTERFACE !STRING_TO_SINGLE
 
+  !>Returns a character string which is the lowercase equivalent of the supplied string.
   INTERFACE CHARACTER_TO_LOWERCASE
     MODULE PROCEDURE CHARACTER_TO_LOWERCASE_C
     MODULE PROCEDURE CHARACTER_TO_LOWERCASE_VS
   END INTERFACE !CHARACTER_TO_LOWERCASE
 
+  !>Returns a varying string which is the lowercase equivalent of the supplied string.
   INTERFACE VSTRING_TO_LOWERCASE
     MODULE PROCEDURE VSTRING_TO_LOWERCASE_C
     MODULE PROCEDURE VSTRING_TO_LOWERCASE_VS
   END INTERFACE !VSTRING_TO_LOWERCASE
 
+  !>Returns a character string which is the uppercase equivalent of the supplied string.
   INTERFACE CHARACTER_TO_UPPERCASE
     MODULE PROCEDURE CHARACTER_TO_UPPERCASE_C
     MODULE PROCEDURE CHARACTER_TO_UPPERCASE_VS
   END INTERFACE !CHARACTER_TO_UPPERCASE
 
+  !>Returns a varying string which is the uppercase equivalent of the supplied string.
   INTERFACE VSTRING_TO_UPPERCASE
     MODULE PROCEDURE VSTRING_TO_UPPERCASE_C
     MODULE PROCEDURE VSTRING_TO_UPPERCASE_VS
@@ -142,31 +155,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
- 
-  !#### Generic-Function: IS_ABBREVIATION
-  !###  Type: LOGICAL
-  !###  Description:
-  !###    Returns .TRUE. if a supplied string is a valid abbreviation of a second supplied string.
-  !###  Child-functions: IS_ABBREVIATION_C_C,IS_ABBREVIATION_C_VS,IS_ABBREVIATION_VS_C,IS_ABBREVIATION_VS_VS
 
-  !
-  !================================================================================================================================
-  !
-  
+  !>IS_ABBREVIATION returns .TRUE. if the character string SHORT is an abbreviation of the character string LONG. SHORT must be at least MIN_NUM_CHARACTERS long.
   FUNCTION IS_ABBREVIATION_C_C(SHORT,LONG,MIN_NUM_CHARACTERS)
 
-    !#### Function: IS_ABBREVIATION_C_C
-    !###  Type: LOGICAL
-    !###  Description:
-    !###    IS_ABBREVIATION returns .TRUE. if the character string SHORT is an abbreviation of the character string LONG.
-    !###    SHORT must be at least MIN_NUM_CHARACTERS long.
-    !###  Parent-function: IS_ABBREVIATION
-
     !Argument variables
-    CHARACTER(LEN=*), INTENT(IN) :: SHORT, LONG
-    INTEGER(INTG), INTENT(IN) :: MIN_NUM_CHARACTERS
+    CHARACTER(LEN=*), INTENT(IN) :: SHORT !<The short form of the string
+    CHARACTER(LEN=*), INTENT(IN) :: LONG !<The long form of the string
+    INTEGER(INTG), INTENT(IN) :: MIN_NUM_CHARACTERS !<The minimum number of characters to match
     !Function variable
-    LOGICAL :: IS_ABBREVIATION_C_C
+    LOGICAL :: IS_ABBREVIATION_C_C !<On exit, .TRUE. if the short string is an abbreviation
     !Local Variables
     INTEGER(INTG) :: noch,NUM_CHARACTERS
     CHARACTER(LEN=LEN(SHORT)) :: UPPER_SHORT
@@ -189,22 +187,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>IS_ABBREVIATION returns .TRUE. if the character string SHORT is an abbreviation of the varying string LONG. SHORT must be at least MIN_NUM_CHARACTERS long.
   FUNCTION IS_ABBREVIATION_C_VS(SHORT,LONG,MIN_NUM_CHARACTERS)
 
-    !#### Function: IS_ABBREVIATION_C_VS
-    !###  Type: LOGICAL
-    !###  Description:
-    !###    IS_ABBREVIATION returns .TRUE. if the character string SHORT is an abbreviation of the varying string LONG.
-    !###    SHORT must be at least MIN_NUM_CHARACTERS long.
-    !###  Parent-function: IS_ABBREVIATION
-
     !Argument variables
-    CHARACTER(LEN=*), INTENT(IN) :: SHORT
-    TYPE(VARYING_STRING), INTENT(IN) :: LONG
-    INTEGER(INTG), INTENT(IN) :: MIN_NUM_CHARACTERS
+    CHARACTER(LEN=*), INTENT(IN) :: SHORT !<The short form of the string
+    TYPE(VARYING_STRING), INTENT(IN) :: LONG !<The long form of the string
+    INTEGER(INTG), INTENT(IN) :: MIN_NUM_CHARACTERS !<The minimum number of characters to match
     !Function variable
-    LOGICAL :: IS_ABBREVIATION_C_VS
+    LOGICAL :: IS_ABBREVIATION_C_VS !<On exit, .TRUE. if the short string is an abbreviation
     !Local Variables
     INTEGER(INTG) :: noch,NUM_CHARACTERS
     CHARACTER(LEN=LEN(SHORT)) :: UPPER_SHORT
@@ -227,22 +219,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>IS_ABBREVIATION returns .TRUE. if the varying string SHORT is an abbreviation of the character string LONG. SHORT must be at least MIN_NUM_CHARACTERS long.
   FUNCTION IS_ABBREVIATION_VS_C(SHORT,LONG,MIN_NUM_CHARACTERS)
 
-    !#### Function: IS_ABBREVIATION_VS_C
-    !###  Type: LOGICAL
-    !###  Description:
-    !###    IS_ABBREVIATION returns .TRUE. if the varying string SHORT is an abbreviation of the character string LONG.
-    !###    SHORT must be at least MIN_NUM_CHARACTERS long.
-    !###  Parent-function: IS_ABBREVIATION
-
     !Argument variables
-    TYPE(VARYING_STRING), INTENT(IN) :: SHORT
-    CHARACTER(LEN=*), INTENT(IN) :: LONG
-    INTEGER(INTG), INTENT(IN) :: MIN_NUM_CHARACTERS
+    TYPE(VARYING_STRING), INTENT(IN) :: SHORT !<The short form of the string
+    CHARACTER(LEN=*), INTENT(IN) :: LONG !<The long form of the string
+    INTEGER(INTG), INTENT(IN) :: MIN_NUM_CHARACTERS !<The minimum number of characters to match
     !Function variable
-    LOGICAL :: IS_ABBREVIATION_VS_C
+    LOGICAL :: IS_ABBREVIATION_VS_C !<On exit, .TRUE. if the short string is an abbreviation
     !Local Variables
     INTEGER(INTG) :: noch,NUM_CHARACTERS
     TYPE(VARYING_STRING) :: UPPER_SHORT
@@ -265,21 +251,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>IS_ABBREVIATION returns .TRUE. if the varying string SHORT is an abbreviation of the varying string LONG. SHORT must be at least MIN_NUM_CHARACTERS long.
   FUNCTION IS_ABBREVIATION_VS_VS(SHORT,LONG,MIN_NUM_CHARACTERS)
 
-    !#### Function: IS_ABBREVIATION_VS_VS
-    !###  Type: LOGICAL
-    !###  Description:
-    !###    IS_ABBREVIATION returns .TRUE. if the varying string SHORT is an abbreviation of the varying string LONG.
-    !###    SHORT must be at least MIN_NUM_CHARACTERS long.
-    !###  Parent-function: IS_ABBREVIATION
-
     !Argument variables
-    TYPE(VARYING_STRING), INTENT(IN) :: SHORT,LONG
-    INTEGER(INTG), INTENT(IN) :: MIN_NUM_CHARACTERS
+    TYPE(VARYING_STRING), INTENT(IN) :: SHORT !<The short form of the string
+    TYPE(VARYING_STRING), INTENT(IN) :: LONG !<The long form of the string
+    INTEGER(INTG), INTENT(IN) :: MIN_NUM_CHARACTERS !<The minimum number of characters to match
     !Function variable
-    LOGICAL :: IS_ABBREVIATION_VS_VS
+    LOGICAL :: IS_ABBREVIATION_VS_VS !<On exit, .TRUE. if the short string is an abbreviation
     !Local Variables
     INTEGER(INTG) :: noch,NUM_CHARACTERS
     TYPE(VARYING_STRING) :: UPPER_SHORT,UPPER_LONG
@@ -302,17 +283,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>IS_DIGIT returns .TRUE. if the character CHARAC is a digit character (i.e. 0..9)
   FUNCTION IS_DIGIT(CHARAC)
 
-    !#### Function: IS_DIGIT
-    !###  Type: LOGICAL
-    !###  Description:
-    !###    IS_DIGIT returns .TRUE. if the character CHARAC is a digit character (i.e. 0..9)
-
     !Argument variables
-    CHARACTER(LEN=1), INTENT(IN) :: CHARAC
+    CHARACTER(LEN=1), INTENT(IN) :: CHARAC !<The character to test if it is a digit
     !Function variable
-    LOGICAL :: IS_DIGIT
+    LOGICAL :: IS_DIGIT !<On exit, .TRUE. if the character is a digit
     !Local Variables
 
     IS_DIGIT=(ICHAR(CHARAC)>=ICHAR("0").AND.ICHAR(CHARAC)<=ICHAR("9"))
@@ -324,17 +301,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>IS_LETTER returns .TRUE. if the character CHARAC is a letter character (i.e. A..Z or a..z)
   FUNCTION IS_LETTER(CHARAC)
 
-    !#### Function: IS_LETTER
-    !###  Type: LOGICAL
-    !###  Description:
-    !###    IS_LETTER returns .TRUE. if the character CHARAC is a letter character (i.e. A..Z or a..z)
-
     !Argument variables
-    CHARACTER(LEN=1), INTENT(IN) :: CHARAC
+    CHARACTER(LEN=1), INTENT(IN) :: CHARAC !<The character to test if it is a letter
     !Function variable
-    LOGICAL :: IS_LETTER
+    LOGICAL :: IS_LETTER !<On exit, .TRUE. if the character is a letter
     !Local Variables
 
     IS_LETTER=((ICHAR(CHARAC)>=ICHAR("A").AND.ICHAR(CHARAC)<=ICHAR("Z")).OR.&
@@ -347,17 +320,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns .TRUE. if the supplied character is a lowercase character.
   FUNCTION IS_LOWERCASE(CHARC)
 
-    !#### Function: IS_LOWERCASE
-    !###  Type: LOGICAL
-    !###  Description:
-    !###    Returns .TRUE. if the supplied character is a lowercase character.
-
     !Argument variables
-    CHARACTER(LEN=1), INTENT(IN) :: CHARC
+    CHARACTER(LEN=1), INTENT(IN) :: CHARC !<The character to test if it is lowercase
     !Function variable
-    LOGICAL :: IS_LOWERCASE
+    LOGICAL :: IS_LOWERCASE !<On exit, .TRUE. if the character is lowercase
     !Local Variables
 
     IF(LGE(CHARC,"a").AND.LLE(CHARC,"z")) THEN
@@ -373,17 +342,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns .TRUE. if the supplied character is an uppercase character.
   FUNCTION IS_UPPERCASE(CHARC)
 
-    !#### Function: IS_UPPERCASE
-    !###  Type: LOGICAL
-    !###  Description:
-    !###    Returns .TRUE. if the supplied character is an uppercase character.
-
     !Argument variables
-    CHARACTER(LEN=1), INTENT(IN) :: CHARC
+    CHARACTER(LEN=1), INTENT(IN) :: CHARC !<The character to test if it is uppercase
     !Function variable
-    LOGICAL :: IS_UPPERCASE
+    LOGICAL :: IS_UPPERCASE !<On exit, .TRUE. if the character is uppercase
     !Local Variables
 
     IF(LGE(CHARC,"A").AND.LLE(CHARC,"Z")) THEN
@@ -399,17 +364,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>IS_WHITESPACE returns .TRUE. if the character CHARAC is a whitespace character (i.e. space, tabs, etc.)
   FUNCTION IS_WHITESPACE(CHARAC)
 
-    !#### Function: IS_WHITESPACE
-    !###  Type: LOGICAL
-    !###  Description:
-    !###    IS_WHITESPACE returns .TRUE. if the character CHARAC is a whitespace character (i.e. space, tabs, etc.)
-
     !Argument variables
-    CHARACTER(LEN=1), INTENT(IN) :: CHARAC
+    CHARACTER(LEN=1), INTENT(IN) :: CHARAC !<The character to test if it is whitespace
     !Function variable
-    LOGICAL :: IS_WHITESPACE
+    LOGICAL :: IS_WHITESPACE !<On exit, .TRUE. if the character is whitespace
     !Local Variables
     
     !!WARNING: Assumes ASCII encoding
@@ -421,36 +382,19 @@ CONTAINS
   !
   !================================================================================================================================
   !
- 
-  !#### Generic-Function: LIST_TO_CHARACTER
-  !###  Type: CHARACTER(LEN=MAXSTRLEN)
-  !###  Description:
-  !###    Converts a list to its equivalent character string representation.
-  !###  Child-functions: LIST_TO_CHARACTER_C,LIST_TO_CHARACTER_INTG,LIST_TO_CHARACTER_LINTG,LIST_TO_CHARACTER_L, &
-  !###    LIST_TO_CHARACTER_SP,LIST_TO_CHARACTER_DP
 
-  !
-  !================================================================================================================================
-  !
-  
+  !>Converts a character list to its equivalent character string representation as determined by the supplied format. If present, the optional argument LIST_LENGTHS is used for the lengths of each list elements length otherwise the trimmed length is used. NOTE: The FORMAT is ignored for this child FUNCTION.
   FUNCTION LIST_TO_CHARACTER_C(NUMBER_IN_LIST,LIST,FORMAT,ERR,ERROR,LIST_LENGTHS)
-  
-    !#### Function: LIST_TO_CHARACTER_C
-    !###  Type: CHARACTER(LEN=MAXSTRLEN)
-    !###  Description:
-    !###    Converts a character list to its equivalent character string representation as determined by the supplied format.
-    !###    If present, the optional argument LIST_LENGTHS is used for the lengths of each list elements length otherwise the
-    !###    trimmed length is used. NOTE: The FORMAT is ignored for this child FUNCTION.
-    !###  Parent-function: LIST_TO_CHARACTER
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: NUMBER_IN_LIST
-    CHARACTER(LEN=*), INTENT(IN) :: LIST(NUMBER_IN_LIST),FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
-    INTEGER(INTG), OPTIONAL, INTENT(IN) :: LIST_LENGTHS(NUMBER_IN_LIST)
+    INTEGER(INTG), INTENT(IN) :: NUMBER_IN_LIST !<The number of items in the list
+    CHARACTER(LEN=*), INTENT(IN) :: LIST(NUMBER_IN_LIST) !<LIST(i). The i'th item in the list
+    CHARACTER(LEN=*), INTENT(IN) :: FORMAT !<The format to use. Ignored for character lists.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    INTEGER(INTG), OPTIONAL, INTENT(IN) :: LIST_LENGTHS(NUMBER_IN_LIST) !<LIST_LENGTHS(i). Optional, The length of the i'th list item.
     !Function variable
-    CHARACTER(LEN=MAXSTRLEN) :: LIST_TO_CHARACTER_C
+    CHARACTER(LEN=MAXSTRLEN) :: LIST_TO_CHARACTER_C !<On exit, the character equivalent of the list
     !Local variables
     INTEGER(INTG) :: i,POSITION,LENGTH
     
@@ -510,21 +454,17 @@ CONTAINS
   !================================================================================================================================
   !
   
+  !>Converts an integer list to its equivalent character string representation as determined by the supplied format. 
   FUNCTION LIST_TO_CHARACTER_INTG(NUMBER_IN_LIST,LIST,FORMAT,ERR,ERROR)
   
-    !#### Function: LIST_TO_CHARACTER_INTG
-    !###  Type: CHARACTER(LEN=MAXSTRLEN)
-    !###  Description:
-    !###    Converts an integer list to its equivalent character string representation as determined by the supplied format. 
-    !###  Parent-function: LIST_TO_CHARACTER
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: NUMBER_IN_LIST,LIST(NUMBER_IN_LIST)
-    CHARACTER(LEN=*), INTENT(IN) :: FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: NUMBER_IN_LIST !<The number of items in the list
+    INTEGER(INTG), INTENT(IN) :: LIST(NUMBER_IN_LIST) !<LIST(i). The i'th item in the list
+    CHARACTER(LEN=*), INTENT(IN) :: FORMAT !<The format to use for the conversion
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    CHARACTER(LEN=MAXSTRLEN) :: LIST_TO_CHARACTER_INTG
+    CHARACTER(LEN=MAXSTRLEN) :: LIST_TO_CHARACTER_INTG !<On exit, the character equivalent of the list
     !Local variables
     INTEGER(INTG) :: i,POSITION
     CHARACTER(LEN=MAXSTRLEN) :: LIST_VALUE
@@ -566,23 +506,18 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Converts an long integer list to its equivalent character string representation as determined by the supplied format. 
   FUNCTION LIST_TO_CHARACTER_LINTG(NUMBER_IN_LIST,LIST,FORMAT,ERR,ERROR)
   
-    !#### Function: LIST_TO_CHARACTER_LINTG
-    !###  Type: CHARACTER(LEN=MAXSTRLEN)
-    !###  Description:
-    !###    Converts an long integer list to its equivalent character string representation as determined by the supplied format. 
-    !###  Parent-function: LIST_TO_CHARACTER
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: NUMBER_IN_LIST
-    INTEGER(LINTG), INTENT(IN) :: LIST(NUMBER_IN_LIST)
-    CHARACTER(LEN=*), INTENT(IN) :: FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: NUMBER_IN_LIST !<The number of items in the list
+    INTEGER(LINTG), INTENT(IN) :: LIST(NUMBER_IN_LIST) !<LIST(i). The i'th item in the list
+    CHARACTER(LEN=*), INTENT(IN) :: FORMAT !<The format to use for the conversion
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    CHARACTER(LEN=MAXSTRLEN) :: LIST_TO_CHARACTER_LINTG
+    CHARACTER(LEN=MAXSTRLEN) :: LIST_TO_CHARACTER_LINTG !<On exit, the character equivalent of the list
     !Local variables
     INTEGER(INTG) :: i,POSITION
     CHARACTER(LEN=MAXSTRLEN) :: LIST_VALUE
@@ -624,24 +559,18 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Converts a logical list to its equivalent character string representation as determined by the supplied format string. The FORMAT is ignored for this child FUNCTION.
   FUNCTION LIST_TO_CHARACTER_L(NUMBER_IN_LIST,LIST,FORMAT,ERR,ERROR)
   
-    !#### Function: LIST_TO_CHARACTER_L
-    !###  Type: CHARACTER(LEN=MAXSTRLEN)
-    !###  Description:
-    !###    Converts a logical list to its equivalent character string representation as determined by the supplied format string. 
-    !###    NOTE: The FORMAT is ignored for this child FUNCTION.
-    !###  Parent-function: LIST_TO_CHARACTER
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: NUMBER_IN_LIST
-    LOGICAL, INTENT(IN) :: LIST(NUMBER_IN_LIST)    
-    CHARACTER(LEN=*), INTENT(IN) :: FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: NUMBER_IN_LIST !<The number of items in the list
+    LOGICAL, INTENT(IN) :: LIST(NUMBER_IN_LIST) !<LIST(i). The i'th item in the list
+    CHARACTER(LEN=*), INTENT(IN) :: FORMAT !<The format to use. Ignored for logical lists.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    CHARACTER(LEN=MAXSTRLEN) :: LIST_TO_CHARACTER_L
+    CHARACTER(LEN=MAXSTRLEN) :: LIST_TO_CHARACTER_L !<On exit, the character equivalent of the list
     !Local variables
     INTEGER(INTG) :: i,POSITION
     CHARACTER(LEN=MAXSTRLEN) :: LIST_VALUE
@@ -682,24 +611,18 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Converts a single precision list to its equivalent character string representation as determined by the supplied format string.
   FUNCTION LIST_TO_CHARACTER_SP(NUMBER_IN_LIST,LIST,FORMAT,ERR,ERROR)
   
-    !#### Function: LIST_TO_CHARACTER_SP
-    !###  Type: CHARACTER(LEN=MAXSTRLEN)
-    !###  Description:
-    !###    Converts a single precision list to its equivalent character string representation as determined by the supplied
-    !###    format string.
-    !###  Parent-function: LIST_TO_CHARACTER
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: NUMBER_IN_LIST
-    REAL(SP), INTENT(IN) :: LIST(NUMBER_IN_LIST)    
-    CHARACTER(LEN=*), INTENT(IN) :: FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: NUMBER_IN_LIST !<The number of items in the list
+    REAL(SP), INTENT(IN) :: LIST(NUMBER_IN_LIST) !<LIST(i). The i'th item in the list 
+    CHARACTER(LEN=*), INTENT(IN) :: FORMAT !<The format to use for the conversion
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    CHARACTER(LEN=MAXSTRLEN) :: LIST_TO_CHARACTER_SP
+    CHARACTER(LEN=MAXSTRLEN) :: LIST_TO_CHARACTER_SP !<On exit, the character equivalent of the list
     !Local variables
     INTEGER(INTG) :: i,POSITION
     CHARACTER(LEN=MAXSTRLEN) :: LIST_VALUE
@@ -740,24 +663,18 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Converts a double precision list to its equivalent character string representation as determined by the supplied format string.
   FUNCTION LIST_TO_CHARACTER_DP(NUMBER_IN_LIST,LIST,FORMAT,ERR,ERROR)
   
-    !#### Function: LIST_TO_CHARACTER_DP
-    !###  Type: CHARACTER(LEN=MAXSTRLEN)
-    !###  Description:
-    !###    Converts a double precision list to its equivalent character string representation as determined by the supplied
-    !###    format string.
-    !###  Parent-function: LIST_TO_CHARACTER
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: NUMBER_IN_LIST
-    REAL(DP), INTENT(IN) :: LIST(NUMBER_IN_LIST)    
-    CHARACTER(LEN=*), INTENT(IN) :: FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: NUMBER_IN_LIST !<The number of items in the list
+    REAL(DP), INTENT(IN) :: LIST(NUMBER_IN_LIST) !<LIST(i). The i'th item in the list
+    CHARACTER(LEN=*), INTENT(IN) :: FORMAT !<The format to use for the conversion
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    CHARACTER(LEN=MAXSTRLEN) :: LIST_TO_CHARACTER_DP
+    CHARACTER(LEN=MAXSTRLEN) :: LIST_TO_CHARACTER_DP !<On exit, the character equivalent of the list
     !Local variables
     INTEGER(INTG) :: i,POSITION
     CHARACTER(LEN=MAXSTRLEN) :: LIST_VALUE
@@ -798,20 +715,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Converts a logical value to either a "TRUE" or "FALSE" character string.
   FUNCTION LOGICAL_TO_CHARACTER(LOGICALVALUE,ERR,ERROR)
   
-    !#### Function: LOGICAL_TO_CHARACTER
-    !###  Type: CHARACTER(LEN=MAXSTRLEN)
-    !###  Description:
-    !###    Converts a logical value to either a "TRUE" or "FALSE" character string.
-    
     !Argument variables
-    LOGICAL, INTENT(IN) :: LOGICALVALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    LOGICAL, INTENT(IN) :: LOGICALVALUE !<The logical value to convert
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    CHARACTER(LEN=MAXSTRLEN) :: LOGICAL_TO_CHARACTER
+    CHARACTER(LEN=MAXSTRLEN) :: LOGICAL_TO_CHARACTER !<On exit, the character equivalent value
     !Local variables
     
     CALL ENTERS("LOGICAL_TO_CHARACTER",ERR,ERROR,*999)
@@ -832,20 +745,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Converts a logical value to either a "TRUE" or "FALSE" varying string.
   FUNCTION LOGICAL_TO_VSTRING(LOGICALVALUE,ERR,ERROR)
-  
-    !#### Function: LOGICAL_TO_CHARACTER
-    !###  Type: TYPE(VARYING_STRING)
-    !###  Description:
-    !###    Converts a logical value to either a "TRUE" or "FALSE" varying string.
     
     !Argument variables
-    LOGICAL, INTENT(IN) :: LOGICALVALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    LOGICAL, INTENT(IN) :: LOGICALVALUE !<The logical value to convert
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    TYPE(VARYING_STRING) :: LOGICAL_TO_VSTRING
+    TYPE(VARYING_STRING) :: LOGICAL_TO_VSTRING !<On exit, the varying string equivalent value
     !Local variables
     
     CALL ENTERS("LOGICAL_TO_VSTRING",ERR,ERROR,*999)
@@ -866,33 +775,17 @@ CONTAINS
   !
   !================================================================================================================================
   !
- 
-  !#### Generic-Function: NUMBER_TO_CHARACTER
-  !###  Type: CHARACTER(LEN=MAXSTRLEN)
-  !###  Description:
-  !###    Converts a number to its equivalent character string representation.
-  !###  Child-functions: NUMBER_TO_CHARACTER_INTG,NUMBER_TO_CHARACTER_LINTG,NUMBER_TO_CHARACTER_SP,NUMBER_TO_CHARACTER_DP
 
-  !
-  !================================================================================================================================
-  !
-  
+  !>Converts an integer number to its equivalent character string representation as determined by the supplied format. The format is of the form of a standard Fortran integer format e.g. "I3".
   FUNCTION NUMBER_TO_CHARACTER_INTG(NUMBER,FORMAT,ERR,ERROR)
   
-    !#### Function: NUMBER_TO_CHARACTER_INTG
-    !###  Type: CHARACTER(LEN=MAXSTRLEN)
-    !###  Description:
-    !###    Converts an integer number to its equivalent character string representation as determined by the supplied format.
-    !###    The format is of the form of a standard Fortran integer format e.g. "I3".
-    !###  Parent-function: NUMBER_TO_CHARACTER
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: NUMBER
-    CHARACTER(LEN=*), INTENT(IN) :: FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: NUMBER !<The number to convert
+    CHARACTER(LEN=*), INTENT(IN) :: FORMAT !<The format to use in the conversion
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    CHARACTER(LEN=MAXSTRLEN) :: NUMBER_TO_CHARACTER_INTG
+    CHARACTER(LEN=MAXSTRLEN) :: NUMBER_TO_CHARACTER_INTG !<On exit, the character equivalent of the number
     !Local variables
     CHARACTER(LEN=MAXSTRLEN) :: LOCAL_FORMAT
     
@@ -919,23 +812,17 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Converts a long integer number to its equivalent character string representation as determined by the supplied format. The format is of the form of a standard Fortran integer format e.g. "I3".
   FUNCTION NUMBER_TO_CHARACTER_LINTG(NUMBER,FORMAT,ERR,ERROR)
   
-    !#### Function: NUMBER_TO_CHARACTER_LINTG
-    !###  Type: CHARACTER(LEN=MAXSTRLEN)
-    !###  Description:
-    !###    Converts a long integer number to its equivalent character string representation as determined by the supplied format.
-    !###    The format is of the form of a standard Fortran integer format e.g. "I3".
-    !###  Parent-function: NUMBER_TO_CHARACTER
-    
     !Argument variables
-    INTEGER(LINTG), INTENT(IN) :: NUMBER
-    CHARACTER(LEN=*), INTENT(IN) :: FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(LINTG), INTENT(IN) :: NUMBER !<The number to convert
+    CHARACTER(LEN=*), INTENT(IN) :: FORMAT !<The format to use in the conversion
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    CHARACTER(LEN=MAXSTRLEN) :: NUMBER_TO_CHARACTER_LINTG
+    CHARACTER(LEN=MAXSTRLEN) :: NUMBER_TO_CHARACTER_LINTG !<On exit, the character equivalent of the number
     !Local variables
     CHARACTER(LEN=MAXSTRLEN) :: LOCAL_FORMAT
     
@@ -962,25 +849,17 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Converts a single precision number to its equivalent character string representation as determined by the supplied format string. NOTE: If FORMAT is an asterisk followed by a number between 1 and 32 the format will be chosen to maximise the number of significant digits, e.g., FORMAT="*8" will return a string of 8 characters representing the supplied number in either F8.? or E8.? format depending on its magnitude.
   FUNCTION NUMBER_TO_CHARACTER_SP(NUMBER, FORMAT, ERR, ERROR)
   
-    !#### Function: NUMBER_TO_CHARACTER_SP
-    !###  Type: CHARACTER(LEN=MAXSTRLEN)
-    !###  Description:
-    !###    Converts a single precision number to its equivalent character string representation as determined by the supplied
-    !###    format string. NOTE: If FORMAT is an asterisk followed by a number between 1 and 32 the format will be chosen to
-    !###    maximise the number of significant digits, e.g., FORMAT="*8" will return a string of 8 characters representing the
-    !###    supplied number in either F8.? or E8.? format depending on its magnitude.
-    !###  Parent-function: NUMBER_TO_CHARACTER
-    
     !Argument variables
-    REAL(SP), INTENT(IN) :: NUMBER
-    CHARACTER(LEN=*), INTENT(IN) :: FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(SP), INTENT(IN) :: NUMBER !<The number to convert
+    CHARACTER(LEN=*), INTENT(IN) :: FORMAT !<The format to use in the conversion
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    CHARACTER(LEN=MAXSTRLEN) :: NUMBER_TO_CHARACTER_SP
+    CHARACTER(LEN=MAXSTRLEN) :: NUMBER_TO_CHARACTER_SP !<On exit, the character equivalent of the number
     !Local variables
     INTEGER(INTG) :: ASTERISK_POS,i0,i1,LENGTH
     CHARACTER(LEN=MAXSTRLEN) :: CI0,CI1
@@ -1063,25 +942,17 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Converts a double precision number to its equivalent character string representation as determined by the supplied format string. Note If FORMAT is an asterisk followed by a number between 1 and 32 the format will be chosen to maximise the number of significant digits, e.g., FORMAT="*8" will return a string of 8 characters representing the supplied number in either F8.? or E8.? format depending on its magnitude.
   FUNCTION NUMBER_TO_CHARACTER_DP(NUMBER, FORMAT, ERR, ERROR)
   
-    !#### Function: NUMBER_TO_CHARACTER_DP
-    !###  Type: CHARACTER(LEN=MAXSTRLEN)
-    !###  Description:
-    !###    Converts a double precision number to its equivalent character string representation as determined by the supplied
-    !###    format string. Note If FORMAT is an asterisk followed by a number between 1 and 32 the format will be chosen to
-    !###    maximise the number of significant digits, e.g., FORMAT="*8" will return a string of 8 characters representing the
-    !###    supplied number in either F8.? or E8.? format depending on its magnitude.
-    !###  Parent-function: NUMBER_TO_CHARACTER
-    
     !Argument variables
-    REAL(DP), INTENT(IN) :: NUMBER
-    CHARACTER(LEN=*), INTENT(IN) :: FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(DP), INTENT(IN) :: NUMBER !<The number to convert
+    CHARACTER(LEN=*), INTENT(IN) :: FORMAT !<The format to use in the conversion
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    CHARACTER(LEN=MAXSTRLEN) :: NUMBER_TO_CHARACTER_DP
+    CHARACTER(LEN=MAXSTRLEN) :: NUMBER_TO_CHARACTER_DP !<On exit, the character equivalent of the number
     !Local variables
     INTEGER(INTG) :: ASTERISK_POS,i0,i1,LENGTH
     CHARACTER(LEN=2) :: CI0,CI1
@@ -1163,33 +1034,17 @@ CONTAINS
   !
   !================================================================================================================================
   !
- 
-  !#### Generic-Function: NUMBER_TO_VSTRING
-  !###  Type: TYPE(VARYING_STRING)
-  !###  Description:
-  !###    Converts a number to its equivalent varying string representation.
-  !###  Child-functions: NUMBER_TO_VSTRING_INTG,NUMBER_TO_VSTRING_LINTG,NUMBER_TO_VSTRING_SP,NUMBER_TO_VSTRING_DP
 
-  !
-  !================================================================================================================================
-  !
-  
+  !>Converts an integer number to its equivalent varying string representation as determined by the supplied format. The format is of the form of a standard Fortran integer format e.g. "I3".
   FUNCTION NUMBER_TO_VSTRING_INTG(NUMBER,FORMAT,ERR,ERROR)
   
-    !#### Function: NUMBER_TO_VSTRING_INTG
-    !###  Type: TYPE(VARYING_STRING)
-    !###  Description:
-    !###    Converts an integer number to its equivalent varying string representation as determined by the supplied format. The
-    !###    format is of the form of a standard Fortran integer format e.g. "I3".
-    !###  Parent-function: NUMBER_TO_VSTRING
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: NUMBER
-    CHARACTER(LEN=*), INTENT(IN) :: FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: NUMBER !<The number to convert
+    CHARACTER(LEN=*), INTENT(IN) :: FORMAT !<The format to use in the conversion
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    TYPE(VARYING_STRING) :: NUMBER_TO_VSTRING_INTG
+    TYPE(VARYING_STRING) :: NUMBER_TO_VSTRING_INTG !<On exit, the varying string equivalent of the number
     !Local variables
     CHARACTER(LEN=MAXSTRLEN) :: LOCAL_FORMAT,LOCAL_STRING
     
@@ -1222,23 +1077,17 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Converts a long integer number to its equivalent varying string representation as determined by the supplied format. The format is of the form of a standard Fortran integer format e.g., "I3".
   FUNCTION NUMBER_TO_VSTRING_LINTG(NUMBER,FORMAT,ERR,ERROR)
   
-    !#### Function: NUMBER_TO_VSTRING_LINTG
-    !###  Type: TYPE(VARYING_STRING)
-    !###  Description:
-    !###    Converts a long integer number to its equivalent varying string representation as determined by the supplied format.
-    !###    The format is of the form of a standard Fortran integer format e.g., "I3".
-    !###  Parent-function: NUMBER_TO_VSTRING
-    
     !Argument variables
-    INTEGER(LINTG), INTENT(IN) :: NUMBER
-    CHARACTER(LEN=*), INTENT(IN) :: FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(LINTG), INTENT(IN) :: NUMBER !<The number to convert
+    CHARACTER(LEN=*), INTENT(IN) :: FORMAT !<The format to use in the conversion
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    TYPE(VARYING_STRING) :: NUMBER_TO_VSTRING_LINTG
+    TYPE(VARYING_STRING) :: NUMBER_TO_VSTRING_LINTG !<On exit, the varying string equivalent of the number
     !Local variables
     CHARACTER(LEN=MAXSTRLEN) :: LOCAL_FORMAT,LOCAL_STRING
     
@@ -1271,25 +1120,17 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Converts a single precision number to its equivalent varying string representation as determined by the supplied format string. Note If FORMAT is an asterisk followed by a number between 1 and 32 the format will be chosen to maximise the number of significant digits, e.g., FORMAT="*8" will return a string of 8 characters representing the supplied number in either F8.? or E8.? format depending on its magnitude.
   FUNCTION NUMBER_TO_VSTRING_SP(NUMBER, FORMAT, ERR, ERROR)
   
-    !#### Function: NUMBER_TO_VSTRING_SP
-    !###  Type: TYPE(VARYING_STRING)
-    !###  Description:
-    !###    Converts a single precision number to its equivalent varying string representation as determined by the supplied
-    !###    format string. Note If FORMAT is an asterisk followed by a number between 1 and 32 the format will be chosen to
-    !###    maximise the number of significant digits, e.g., FORMAT="*8" will return a string of 8 characters representing the
-    !###    supplied number in either F8.? or E8.? format depending on its magnitude.
-    !###  Parent-function: NUMBER_TO_VSTRING
-    
     !Argument variables
-    REAL(SP), INTENT(IN) :: NUMBER
-    CHARACTER(LEN=*), INTENT(IN) :: FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(SP), INTENT(IN) :: NUMBER !<The number to convert
+    CHARACTER(LEN=*), INTENT(IN) :: FORMAT !<The format to use in the conversion
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    TYPE(VARYING_STRING) :: NUMBER_TO_VSTRING_SP
+    TYPE(VARYING_STRING) :: NUMBER_TO_VSTRING_SP !<On exit, the varying string equivalent of the number
     !Local variables
     INTEGER(INTG) :: ASTERISK_POS,i0,i1,LENGTH
     CHARACTER(LEN=MAXSTRLEN) :: CI0,CI1
@@ -1376,25 +1217,17 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Converts a double precision number to its equivalent varying string representation as determined by the supplied format string. Note If FORMAT is an asterisk followed by a number between 1 and 32 the format will be chosen to maximise the number of significant digits, e.g., FORMAT="*8" will return a string of 8 characters representing the supplied number in either F8.? or E8.? format depending on its magnitude.
   FUNCTION NUMBER_TO_VSTRING_DP(NUMBER, FORMAT, ERR, ERROR)
-  
-    !#### Function: NUMBER_TO_VSTRING_DP
-    !###  Type: TYPE(VARYING_STRING)
-    !###  Description:
-    !###    Converts a double precision number to its equivalent varying string representation as determined by the supplied
-    !###    format string. Note If FORMAT is an asterisk followed by a number between 1 and 32 the format will be chosen to
-    !###    maximise the number of significant digits, e.g., FORMAT="*8" will return a string of 8 characters representing the
-    !###    supplied number in either F8.? or E8.? format depending on its magnitude.
-    !###  Parent-function: NUMBER_TO_VSTRING
-    
+      
     !Argument variables
-    REAL(DP), INTENT(IN) :: NUMBER
-    CHARACTER(LEN=*), INTENT(IN) :: FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(DP), INTENT(IN) :: NUMBER !<The number to convert
+    CHARACTER(LEN=*), INTENT(IN) :: FORMAT !<The format to use in the conversion
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    TYPE(VARYING_STRING) :: NUMBER_TO_VSTRING_DP
+    TYPE(VARYING_STRING) :: NUMBER_TO_VSTRING_DP !<On exit, the varying string equivalent of the number
     !Local variables
     INTEGER(INTG) :: ASTERISK_POS,i0,i1,LENGTH
     CHARACTER(LEN=2) :: CI0,CI1
@@ -1485,31 +1318,15 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !#### Generic-Function: STRING_TO_DOUBLE
-  !###  Type: REAL(DP)
-  !###  Description:
-  !###    Converts a string representation of a number to a double precision number.
-  !###  Child-functions: STRING_TO_DOUBLE_C,STRING_TO_DOUBLE_VS
-  
-  !
-  !================================================================================================================================
-  !
-
-  !> Converts a character string representation of a number to a double precision number.
+  !>Converts a character string representation of a number to a double precision number.
   FUNCTION STRING_TO_DOUBLE_C(STRING, ERR, ERROR)
   
-    !#### Function: STRING_TO_DOUBLE_C
-    !###  Type: REAL(DP)      
-    !###  Description:
-    !###    Converts a character string representation of a number to a double precision number.
-    !###  Parent-function: STRING_TO_DOUBLE
-    
     !Argument variables
     CHARACTER(LEN=*), INTENT(IN) :: STRING !<The string to convert
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string !<The error string
     !Function variable
-    REAL(DP) :: STRING_TO_DOUBLE_C
+    REAL(DP) :: STRING_TO_DOUBLE_C !<On exit, the double precision equivalent of the string
     !Local variables
     
     CALL ENTERS("STRING_TO_DOUBLE_C",ERR,ERROR,*999)
@@ -1527,21 +1344,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Converts a varying string representation of a number to a double precision number.
   FUNCTION STRING_TO_DOUBLE_VS(STRING, ERR, ERROR)
   
-    !#### Function: STRING_TO_DOUBLE_vs
-    !###  Type: REAL(DP)
-    !###  Description:
-    !###    Converts a varying string representation of a number to a double precision number.
-    !###  Parent-function: STRING_TO_DOUBLE
-    
     !Argument variables
-    TYPE(VARYING_STRING), INTENT(IN) :: STRING
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VARYING_STRING), INTENT(IN) :: STRING !<The string to convert
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    REAL(DP) :: STRING_TO_DOUBLE_VS
+    REAL(DP) :: STRING_TO_DOUBLE_VS !<On exit, the double precision equivalent of the string
     !Local variables
     CHARACTER(LEN=MAXSTRLEN) :: LOCAL_STRING
     
@@ -1564,30 +1376,15 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !#### Generic-Function: STRING_TO_INTEGER
-  !###  Type: INTEGER(INTG)
-  !###  Description:
-  !###    Converts a string representation of a number to an integer.
-  !###  Child-functions: STRING_TO_INTEGER_C,STRING_TO_INTEGER_VS
-  
-  !
-  !================================================================================================================================
-  !
-
+  !>Converts a character string representation of a number to an integer.
   FUNCTION STRING_TO_INTEGER_C(STRING, ERR, ERROR)
   
-    !#### Function: STRING_TO_INTEGER_C
-    !###  Type: INTEGER(INTG)
-    !###  Description:
-    !###    Converts a character string representation of a number to an integer.
-    !###  Parent-function: STRING_TO_INTEGER
-    
     !Argument variables
-    CHARACTER(LEN=*), INTENT(IN) :: STRING
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    CHARACTER(LEN=*), INTENT(IN) :: STRING !<The string to convert
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    INTEGER(INTG) :: STRING_TO_INTEGER_C
+    INTEGER(INTG) :: STRING_TO_INTEGER_C !<On exit, the integer equivalent of the string
     !Local variables
     
     CALL ENTERS("STRING_TO_INTEGER_C",ERR,ERROR,*999)
@@ -1606,20 +1403,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Converts a varying string representation of a number to an integer.
   FUNCTION STRING_TO_INTEGER_VS(STRING, ERR, ERROR)
   
-    !#### Function: STRING_TO_INTEGER_VS
-    !###  Type: INTEGER(INTG)
-    !###  Description:
-    !###    Converts a varying string representation of a number to an integer.
-    !###  Parent-function: STRING_TO_INTEGER
-    
     !Argument variables
-    TYPE(VARYING_STRING), INTENT(IN) :: STRING
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VARYING_STRING), INTENT(IN) :: STRING !<The string to convert
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    INTEGER(INTG) :: STRING_TO_INTEGER_VS
+    INTEGER(INTG) :: STRING_TO_INTEGER_VS !<On exit, the integer equivalent of the string
     !Local variables
     CHARACTER(LEN=MAXSTRLEN) :: LOCAL_STRING
     
@@ -1642,30 +1434,15 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !#### Generic-Function: STRING_TO_LONG_INTEGER
-  !###  Type: INTEGER(INTG)
-  !###  Description:
-  !###    Converts a string representation of a number to a long integer.
-  !###  Child-functions: STRING_TO_LONG_INTEGER_C,STRING_TO_LONG_INTEGER_VS
-  
-  !
-  !================================================================================================================================
-  !
-
+  !>Converts a character string representation of a number to a long integer.
   FUNCTION STRING_TO_LONG_INTEGER_C(STRING, ERR, ERROR)
   
-    !#### Function: STRING_TO_LONG_INTEGER_C
-    !###  Type: INTEGER(LINTG)
-    !###  Description:
-    !###    Converts a character string representation of a number to a long integer.
-    !###  Parent-function: STRING_TO_LONG_INTEGER
-    
     !Argument variables
-    CHARACTER(LEN=*), INTENT(IN) :: STRING
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    CHARACTER(LEN=*), INTENT(IN) :: STRING !<The string to convert
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    INTEGER(LINTG) :: STRING_TO_LONG_INTEGER_C
+    INTEGER(LINTG) :: STRING_TO_LONG_INTEGER_C !<On exit, the long integer equivalent of the string
     !Local variables
     
     CALL ENTERS("STRING_TO_LONG_INTEGER_C",ERR,ERROR,*999)
@@ -1684,20 +1461,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Converts a varying string representation of a number to a long integer.
   FUNCTION STRING_TO_LONG_INTEGER_VS(STRING, ERR, ERROR)
   
-    !#### Function: STRING_TO_LONG_INTEGER_VS
-    !###  Type: INTEGER(LINTG)
-    !###  Description:
-    !###    Converts a varying string representation of a number to a long integer.
-    !###  Parent-function: STRING_TO_INTEGER
-    
     !Argument variables
-    TYPE(VARYING_STRING), INTENT(IN) :: STRING
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VARYING_STRING), INTENT(IN) :: STRING !<The string to convert
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    INTEGER(LINTG) :: STRING_TO_LONG_INTEGER_VS
+    INTEGER(LINTG) :: STRING_TO_LONG_INTEGER_VS !<On exit, the long integer equivalent of the string
     !Local variables
     CHARACTER(LEN=MAXSTRLEN) :: LOCAL_STRING
     
@@ -1720,30 +1492,15 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !#### Generic-Function: STRING_TO_LOGICAL
-  !###  Type: LOGICAL
-  !###  Description:
-  !###    Converts a string representation of a boolean value (TRUE or FALSE) to a logical.
-  !###  Child-functions: STRING_TO_LOGICAL_C,STRING_TO_LOGICAL_VS
-  
-  !
-  !================================================================================================================================
-  !
-  
+  !>Converts a character string representation of a boolean (TRUE or FALSE) to a logical.
   FUNCTION STRING_TO_LOGICAL_C(STRING,ERR,ERROR)
   
-    !#### Function: STRING_TO_LOGICAL_C
-    !###  Type: LOGICAL
-    !###  Description:
-    !###    Converts a character string representation of a boolean (TRUE or FALSE) to a logical.
-    !###  Parent-function: STRING_TO_LOGICAL
-    
     !Argument variables
-    CHARACTER(LEN=*), INTENT(IN) :: STRING
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    CHARACTER(LEN=*), INTENT(IN) :: STRING !<The string to convert
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    LOGICAL :: STRING_TO_LOGICAL_C
+    LOGICAL :: STRING_TO_LOGICAL_C !<On exit, the logical equivalent of the string
     !Local variables
     
     CALL ENTERS("STRING_TO_LOGICAL_C",ERR,ERROR,*999)
@@ -1761,21 +1518,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Converts a varying string representation of a boolean (TRUE or FALSE) to a logical.
   FUNCTION STRING_TO_LOGICAL_VS(STRING,ERR,ERROR)
   
-    !#### Function: STRING_TO_LOGICAL_VS
-    !###  Type: LOGICAL
-    !###  Description:
-    !###    Converts a varying string representation of a boolean (TRUE or FALSE) to a logical.
-    !###  Parent-function: STRING_TO_LOGICAL
-    
     !Argument variables
-    TYPE(VARYING_STRING), INTENT(IN) :: STRING
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VARYING_STRING), INTENT(IN) :: STRING !<The string to convert
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    LOGICAL :: STRING_TO_LOGICAL_VS
+    LOGICAL :: STRING_TO_LOGICAL_VS !<On exit, the logical equivalent of the string
     !Local variables
     CHARACTER(LEN=MAXSTRLEN) :: LOCAL_STRING
     
@@ -1796,30 +1548,15 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !#### Generic-Function: STRING_TO_SINGLE
-  !###  Type: REAL(SP)
-  !###  Description:
-  !###    Converts a string representation of a number to a single precision number.
-  !###  Child-functions: STRING_TO_SINGLE_C,STRING_TO_SINGLE_VS
-  
-  !
-  !================================================================================================================================
-  !
-
+  !>Converts a character string representation of a number to a single precision number.
   FUNCTION STRING_TO_SINGLE_C(STRING, ERR, ERROR)
   
-    !#### Function: STRING_TO_SINGLE_C
-    !###  Type: REAL(SP)
-    !###  Description:
-    !###    Converts a character string representation of a number to a single precision number.
-    !###  Parent-function: STRING_TO_SINGLE
-    
     !Argument variables
-    CHARACTER(LEN=*), INTENT(IN) :: STRING
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    CHARACTER(LEN=*), INTENT(IN) :: STRING !<The string to convert
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    REAL(SP) :: STRING_TO_SINGLE_C
+    REAL(SP) :: STRING_TO_SINGLE_C !<On exit, the single precision equivalent of the string
     !Local variables
     
     CALL ENTERS("STRING_TO_SINGLE_C",ERR,ERROR,*999)
@@ -1838,20 +1575,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Converts a varying string representation of a number to a single precision number.
   FUNCTION STRING_TO_SINGLE_VS(STRING, ERR, ERROR)
   
-    !#### Function: STRING_TO_SINGLE_VS
-    !###  Type: REAL(SP)
-    !###  Description:
-    !###    Converts a varying string representation of a number to a single precision number.
-    !###  Parent-function: STRING_TO_SINGLE
-    
     !Argument variables
-    TYPE(VARYING_STRING), INTENT(IN) :: STRING
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(VARYING_STRING), INTENT(IN) :: STRING !<The string to convert
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
-    REAL(SP) :: STRING_TO_SINGLE_VS
+    REAL(SP) :: STRING_TO_SINGLE_VS !<On exit, the single precision equivalent of the string
     !Local variables
     CHARACTER(LEN=MAXSTRLEN) :: LOCAL_STRING
     
@@ -1873,29 +1605,13 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
-  !#### Generic-Function: CHARACTER_TO_LOWERCASE
-  !###  Type: CHARACTER(LEN=LEN(STRING))
-  !###  Description:
-  !###    Returns a character string which is the lowercase equivalent of the supplied string.
-  !###  Child-functions: CHARACTER_TO_LOWERCASE_C,CHARACTER_TO_LOWERCASE_VS
-
-  !
-  !================================================================================================================================
-  !
     
   FUNCTION CHARACTER_TO_LOWERCASE_C(STRING)
 
-    !#### Function: CHARACTER_TO_LOWERCASE_C
-    !###  Type: CHARACTER(LEN=LEN(STRING))
-    !###  Description:
-    !###    Returns a character string that is the lowercase equivalent of the supplied character string.
-    !###  Parent-function: CHARACTER_TO_LOWERCASE
-
     !Argument variables
-    CHARACTER(LEN=*), INTENT(IN) :: STRING
+    CHARACTER(LEN=*), INTENT(IN) :: STRING !<The string to convert to lowercase
     !Function variable
-    CHARACTER(LEN=LEN(STRING)) :: CHARACTER_TO_LOWERCASE_C
+    CHARACTER(LEN=LEN(STRING)) :: CHARACTER_TO_LOWERCASE_C !<On exit, the lowercase equivalent of the string
     !Local Variables
     INTEGER(INTG), PARAMETER :: OFFSET=(ICHAR("a")-ICHAR("A"))
     INTEGER(INTG) :: i
@@ -1913,19 +1629,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-    
+
+  !>Returns a character string that is the lowercase equivalent of the supplied varying string.
   FUNCTION CHARACTER_TO_LOWERCASE_VS(STRING)
 
-    !#### Function: CHARACTER_TO_LOWERCASE_VS
-    !###  Type: CHARACTER(LEN=LEN(STRING))
-    !###  Description:
-    !###    Returns a character string that is the lowercase equivalent of the supplied varying string.
-    !###  Parent-function: CHARACTER_TO_LOWERCASE
-
     !Argument variables
-    TYPE(VARYING_STRING), INTENT(IN) :: STRING
+    TYPE(VARYING_STRING), INTENT(IN) :: STRING !<The string to convert
     !Function variable
-    CHARACTER(LEN=LEN(STRING)) :: CHARACTER_TO_LOWERCASE_VS
+    CHARACTER(LEN=LEN(STRING)) :: CHARACTER_TO_LOWERCASE_VS !<On exit, the lowercase equivalent of the string
     !Local Variables
     INTEGER(INTG), PARAMETER :: OFFSET=(ICHAR("a")-ICHAR("A"))
     INTEGER(INTG) :: i
@@ -1944,28 +1655,13 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !#### Generic-Function: VSTRING_TO_LOWERCASE
-  !###  Type: TYPE(VARYING_STRING)
-  !###  Description:
-  !###    Returns a varying string which is the lowercase equivalent of the supplied string.
-  !###  Child-functions: VSTRING_TO_LOWERCASE_C,VSTRING_TO_LOWERCASE_VS
-
-  !
-  !================================================================================================================================
-  !
-    
+  !>Returns a varying string that is the lowercase equivalent of the supplied character string.
   FUNCTION VSTRING_TO_LOWERCASE_C(STRING)
 
-    !#### Function: VSTRING_TO_LOWERCASE_C
-    !###  Type: TYPE(VARYING_STRING)
-    !###  Description:
-    !###    Returns a varying string that is the lowercase equivalent of the supplied character string.
-    !###  Parent-function: VSTRING_TO_LOWERCASE
-
     !Argument variables
-    CHARACTER(LEN=*), INTENT(IN) :: STRING
+    CHARACTER(LEN=*), INTENT(IN) :: STRING !<The string to convert
     !Function variable
-    TYPE(VARYING_STRING) :: VSTRING_TO_LOWERCASE_C
+    TYPE(VARYING_STRING) :: VSTRING_TO_LOWERCASE_C !<On exit, the lowercase equivalent of the string
     !Local Variables
     INTEGER(INTG), PARAMETER :: OFFSET=(ICHAR("a")-ICHAR("A"))
     INTEGER(INTG) :: i
@@ -1983,19 +1679,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-    
+
+  !>Returns a varying string that is the lowercase equivalent of the supplied varying string.
   FUNCTION VSTRING_TO_LOWERCASE_VS(STRING)
 
-    !#### Function: VSTRING_TO_LOWERCASE_VS
-    !###  Type: TYPE(VARYING_STRING)
-    !###  Description:
-    !###    Returns a varying string that is the lowercase equivalent of the supplied varying string.
-    !###  Parent-function: VSTRING_TO_LOWERCASE
-
     !Argument variables
-    TYPE(VARYING_STRING), INTENT(IN) :: STRING
+    TYPE(VARYING_STRING), INTENT(IN) :: STRING !<The string to convert
     !Function variable
-    TYPE(VARYING_STRING) :: VSTRING_TO_LOWERCASE_VS
+    TYPE(VARYING_STRING) :: VSTRING_TO_LOWERCASE_VS !<On exit, the lowercase equivalent of the string
     !Local Variables
     INTEGER(INTG), PARAMETER :: OFFSET=(ICHAR("a")-ICHAR("A"))
     INTEGER(INTG) :: i
@@ -2014,28 +1705,13 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !#### Generic-Function: CHARACTER_TO_UPPERCASE
-  !###  Type: CHARACTER(LEN=LEN(STRING))
-  !###  Description:
-  !###    Returns a character string which is the uppercase equivalent of the supplied string.
-  !###  Child-functions: CHARACTER_TO_UPPERCASE_C,CHARACTER_TO_UPPERCASE_VS
-
-  !
-  !================================================================================================================================
-  !
-  
+  !>Returns a character string which is uppercase equivalent of the supplied character string.
   FUNCTION CHARACTER_TO_UPPERCASE_C(STRING)
 
-    !#### Function: CHARACTER_TO_UPPERCASE_C
-    !###  Type: CHARACTER(LEN=LEN(STRING))
-    !###  Description:
-    !###    Returns a character string which is uppercase equivalent of the supplied character string.
-    !###  Parent-function: CHARACTER_TO_UPPERCASE
-
-    !Argument variables
-    CHARACTER(LEN=*), INTENT(IN) :: STRING
+    !Argument variables 
+    CHARACTER(LEN=*), INTENT(IN) :: STRING !<The string to convert
     !Function variable
-    CHARACTER(LEN=LEN(STRING)) :: CHARACTER_TO_UPPERCASE_C
+    CHARACTER(LEN=LEN(STRING)) :: CHARACTER_TO_UPPERCASE_C !<On exit, the uppercase equivalent of the string
     !Local Variables
     INTEGER(INTG), PARAMETER :: OFFSET=(ICHAR("A")-ICHAR("a"))
     INTEGER(INTG) :: i
@@ -2053,19 +1729,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Returns a character string which is uppercase equivalent of the supplied varying string.
   FUNCTION CHARACTER_TO_UPPERCASE_VS(STRING)
 
-    !#### Function: CHARACTER_TO_UPPERCASE_VS
-    !###  Type: CHARACTER(LEN=LEN(STRING))
-    !###  Description:
-    !###    Returns a character string which is uppercase equivalent of the supplied varying string.
-    !###  Parent-function: CHARACTER_TO_UPPERCASE
-
     !Argument variables
-    TYPE(VARYING_STRING), INTENT(IN) :: STRING
+    TYPE(VARYING_STRING), INTENT(IN) :: STRING !<The string to convert
     !Function variable
-    CHARACTER(LEN=LEN(STRING)) :: CHARACTER_TO_UPPERCASE_VS
+    CHARACTER(LEN=LEN(STRING)) :: CHARACTER_TO_UPPERCASE_VS !<On exit, the uppercase equivalent of the string
     !Local Variables
     INTEGER(INTG), PARAMETER :: OFFSET=(ICHAR("A")-ICHAR("a"))
     INTEGER(INTG) :: i
@@ -2084,28 +1755,13 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !#### Generic-Function: VSTRING_TO_UPPERCASE
-  !###  Type: TYPE(VARYING_STRING)
-  !###  Description:
-  !###    Returns a varying string which is the uppercase equivalent of the supplied string.
-  !###  Child-functions: VSTRING_TO_UPPERCASE_C,VSTRING_TO_UPPERCASE_VS
-
-  !
-  !================================================================================================================================
-  !
-  
+  !>Returns a varying string which is uppercase equivalent of the supplied character string.
   FUNCTION VSTRING_TO_UPPERCASE_C(STRING)
 
-    !#### Function: VSTRING_TO_UPPERCASE_C
-    !###  Type: TYPE(VARYING_STRING)
-    !###  Description:
-    !###    Returns a varying string which is uppercase equivalent of the supplied character string.
-    !###  Parent-function: VSTRING_TO_UPPERCASE
-
     !Argument variables
-    CHARACTER(LEN=*), INTENT(IN) :: STRING
+    CHARACTER(LEN=*), INTENT(IN) :: STRING !<The string to convert
     !Function variable
-    TYPE(VARYING_STRING) :: VSTRING_TO_UPPERCASE_C
+    TYPE(VARYING_STRING) :: VSTRING_TO_UPPERCASE_C !<On exit, the uppercase equivalent of the string
     !Local Variables
     INTEGER(INTG), PARAMETER :: OFFSET=(ICHAR("A")-ICHAR("a"))
     INTEGER(INTG) :: i
@@ -2123,19 +1779,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Returns a varying string which is uppercase equivalent of the supplied varying string.
   FUNCTION VSTRING_TO_UPPERCASE_VS(STRING)
 
-    !#### Function: VSTRING_TO_UPPERCASE_VS
-    !###  Type: TYPE(VARYING_STRING)
-    !###  Description:
-    !###    Returns a varying string which is uppercase equivalent of the supplied varying string.
-    !###  Parent-function: VSTRING_TO_UPPERCASE
-
     !Argument variables
-    TYPE(VARYING_STRING), INTENT(IN) :: STRING
+    TYPE(VARYING_STRING), INTENT(IN) :: STRING !<The string to convert
     !Function variable
-    TYPE(VARYING_STRING) :: VSTRING_TO_UPPERCASE_VS
+    TYPE(VARYING_STRING) :: VSTRING_TO_UPPERCASE_VS !<On exit, the uppercase equivalent of the string
     !Local Variables
     INTEGER(INTG), PARAMETER :: OFFSET=(ICHAR("A")-ICHAR("a"))
     INTEGER(INTG) :: i

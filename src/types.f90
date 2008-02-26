@@ -570,6 +570,10 @@ MODULE TYPES
   !>Contains information for a PETSc distributed vector
   TYPE DISTRIBUTED_VECTOR_PETSC_TYPE
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: DISTRIBUTED_VECTOR !<A pointer to the distributed vector
+    INTEGER(INTG) :: N !<The number of local components in the vector
+    INTEGER(INTG) :: GLOBAL_N !<The number of global components in the vector
+    INTEGER(INTG) :: DATA_SIZE  !<The size of the distributed vector that is held locally by the domain.
+    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE) :: ISLTGMAPPING !<The local to global mapping for the vector
     TYPE(PETSC_VEC_TYPE) :: VECTOR !<The PETSc vector
   END TYPE DISTRIBUTED_VECTOR_PETSC_TYPE
   
@@ -594,16 +598,17 @@ MODULE TYPES
   !>Contains information for a PETSc distributed matrix
   TYPE DISTRIBUTED_MATRIX_PETSC_TYPE
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: DISTRIBUTED_MATRIX !<A pointer to the distributed matrix
-    INTEGER(INTG) :: NUMBER_LOCAL_ROWS !<The number of local rows in the PETSc matrix
-    INTEGER(INTG) :: NUMBER_LOCAL_COLUMNS !<The number of local columns in the PETSc matrix
-    INTEGER(INTG) :: NUMBER_GLOBAL_ROWS !<The number of global rows in the PETSc matrix
-    INTEGER(INTG) :: NUMBER_GLOBAL_COLUMNS !<The number of global columsn in the PETSc matrix
+    INTEGER(INTG) :: M !<The number of local rows in the PETSc matrix
+    INTEGER(INTG) :: N !<The number of local columns in the PETSc matrix
+    INTEGER(INTG) :: GLOBAL_M !<The number of global rows in the PETSc matrix
+    INTEGER(INTG) :: GLOBAL_N !<The number of global columns in the PETSc matrix
     INTEGER(INTG) :: STORAGE_TYPE !<The storage type (sparsity) of the PETSc matrix
     INTEGER(INTG) :: NUMBER_NON_ZEROS !<The number of non-zeros in the PETSc matrix
     INTEGER(INTG) :: DATA_SIZE !<The size of the allocated data in the PETSc matrix
-    INTEGER(INTG), POINTER :: DIAGONAL_NUMBER_NON_ZEROS(:) !<DIAGONAL_NUMBER_NON_ZEROS(i). The number of non-zeros in the diagonal part of the the i'th row
-    INTEGER(INTG), POINTER :: OFFDIAGONAL_NUMBER_NON_ZEROS(:) !<OFFDIAGONAL_NUMBER_NON_ZEROS(i). The number of non-zeros in the off diagonal part of the the i'th row
-    REAL(DP), ALLOCATABLE :: DATA_DP(:) !<The real data for the matrix
+    INTEGER(INTG), ALLOCATABLE :: DIAGONAL_NUMBER_NON_ZEROS(:) !<DIAGONAL_NUMBER_NON_ZEROS(i). The number of non-zeros in the diagonal part of the the i'th row
+    INTEGER(INTG), ALLOCATABLE :: OFFDIAGONAL_NUMBER_NON_ZEROS(:) !<OFFDIAGONAL_NUMBER_NON_ZEROS(i). The number of non-zeros in the off diagonal part of the the i'th row
+    REAL(DP), ALLOCATABLE :: DATA_DP(:) !<DATA_DP(i). The real data for the matrix
+    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE) :: ISLTGMAPPING !<The local to global mapping for the vector
     TYPE(PETSC_MAT_TYPE) :: MATRIX !<The PETSc matrix
   END TYPE DISTRIBUTED_MATRIX_PETSC_TYPE
   
