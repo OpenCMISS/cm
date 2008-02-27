@@ -4839,7 +4839,7 @@ CONTAINS
             END SELECT
           ELSE
             LOCAL_ERROR="The distributed data type of "// &
-              && TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+              & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not correspond to the single precision data type of the requested values"
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF

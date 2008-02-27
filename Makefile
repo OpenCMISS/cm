@@ -405,7 +405,7 @@ else
 endif
 
 #PETSc
-PETSC_LIBRARIES = -lpetscmat -lpetscvec -lpetsc -lMrm -lXmu -lXm -lXt -lX11
+PETSC_LIBRARIES = -lpetscksp -lpetscmat -lpetscvec -lpetsc -lMrm -lXmu -lXm -lXt -lX11
 PETSC_LIB_PATH =#
 PETSC_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
@@ -840,6 +840,7 @@ $(OBJECT_DIR)/trees.o		:	$(SOURCE_DIR)/trees.f90 \
 	$(OBJECT_DIR)/strings.o
 
 $(OBJECT_DIR)/types.o		:	$(SOURCE_DIR)/types.f90 \
+	$(OBJECT_DIR)/cmiss_petsc.o \
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
