@@ -94,7 +94,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(INOUT) :: ERROR !<The error code
     !Local Variables
 
-    !Finalise the regions
+    !Finalise the regions peter
     CALL REGIONS_FINALISE(ERR,ERROR,*999)
     !Finalise the coordinate systems
     CALL COORDINATE_SYSTEMS_FINALISE(ERR,ERROR,*999)
