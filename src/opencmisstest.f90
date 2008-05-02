@@ -52,6 +52,7 @@ PROGRAM OPENCMISSTEST
   USE COORDINATE_ROUTINES
   USE DISTRIBUTED_MATRIX_VECTOR
   USE FIELD_ROUTINES
+  USE FIELD_IO_ROUTINES
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
   USE KINDS
@@ -99,6 +100,8 @@ PROGRAM OPENCMISSTEST
   TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
   !TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: SCHEME
   TYPE(REGION_TYPE), POINTER :: REGION
+  !TYPE(NODAL_INFO_SET_FOR_IO), POINTER :: PROCESS_NODAL_INFO_SET
+  TYPE(VARYING_STRING) :: FILE_NAME
 
   REAL(SP) :: START_USER_TIME(1),STOP_USER_TIME(1),START_SYSTEM_TIME(1),STOP_SYSTEM_TIME(1)
   REAL(SP) :: UPDATE_START_USER_TIME(1),UPDATE_STOP_USER_TIME(1),UPDATE_START_SYSTEM_TIME(1),UPDATE_STOP_SYSTEM_TIME(1)
@@ -161,12 +164,12 @@ PROGRAM OPENCMISSTEST
   !DIAG_ROUTINE_LIST(5)="FINISH_CREATE_DOMAIN_DECOMPOSITION"
   !DIAG_ROUTINE_LIST(6)="FINISH_CREATE_FIELD"
   !CALL DIAGNOSTICS_SET_ON(ALL_DIAG_TYPE,DIAG_LEVEL_LIST,"OpenCMISSTest",DIAG_ROUTINE_LIST,ERR,ERROR,*999)
-  !CALL DIAGNOSTICS_SET_ON(IN_DIAG_TYPE,DIAG_LEVEL_LIST,"",DIAG_ROUTINE_LIST,ERR,ERROR,*999)
+  CALL DIAGNOSTICS_SET_ON(IN_DIAG_TYPE,DIAG_LEVEL_LIST,"",DIAG_ROUTINE_LIST,ERR,ERROR,*999)
 
   TIMING_ROUTINE_LIST(1)="PROBLEM_FINITE_ELEMENT_CALCULATE"
   !TIMING_ROUTINE_LIST(2)="DECOMPOSITION_ELEMENT_DOMAIN_CALCULATE"
   !TIMING_ROUTINE_LIST(3)="MESH_CREATE_REGULAR"
-  !CALL TIMING_SET_ON(IN_TIMING_TYPE,.TRUE.,"",TIMING_ROUTINE_LIST,ERR,ERROR,*999)
+  CALL TIMING_SET_ON(IN_TIMING_TYPE,.TRUE.,"",TIMING_ROUTINE_LIST,ERR,ERROR,*999)
   
   !Calculate the start times
   CALL CPU_TIMER(USER_CPU,START_USER_TIME,ERR,ERROR,*999)
@@ -184,12 +187,15 @@ PROGRAM OPENCMISSTEST
   
   !Read in the number of elements in the X & Y directions, and the number of partitions on the master node (number 0)
   IF(MY_COMPUTATIONAL_NODE_NUMBER==0) THEN
-    WRITE(*,'("Enter the number of elements in the X direction :")')
-    READ(*,*) NUMBER_GLOBAL_X_ELEMENTS
-    WRITE(*,'("Enter the number of elements in the Y direction :")')
-    READ(*,*) NUMBER_GLOBAL_Y_ELEMENTS
-    WRITE(*,'("Enter the number of domains :")')
-    READ(*,*) NUMBER_OF_DOMAINS
+    !WRITE(*,'("Enter the number of elements in the X direction :")')
+    !READ(*,*) NUMBER_GLOBAL_X_ELEMENTS
+    NUMBER_GLOBAL_X_ELEMENTS = 8
+    !WRITE(*,'("Enter the number of elements in the Y direction :")')
+    !READ(*,*) NUMBER_GLOBAL_Y_ELEMENTS
+    NUMBER_GLOBAL_Y_ELEMENTS = 8
+    !WRITE(*,'("Enter the number of domains :")')
+    !READ(*,*) NUMBER_OF_DOMAINS
+    NUMBER_OF_DOMAINS = 4
   ENDIF
   !Broadcast the number of elements in the X & Y directions and the number of partitions to the other computational nodes
   CALL MPI_BCAST(NUMBER_GLOBAL_X_ELEMENTS,1,MPI_INTEGER,0,MPI_COMM_WORLD,MPI_IERROR)
@@ -223,9 +229,14 @@ PROGRAM OPENCMISSTEST
   !Finish the creation of the region
   CALL REGION_CREATE_FINISH(REGION,ERR,ERROR,*999)
   !Intialise the bases
-  CALL BASES_INITIALISE(ERR,ERROR,*999)
+  !CALL BASES_INITIALISE(ERR,ERROR,*999) !heye--do not need to call since CMISS_initalize has called the it
   !Start the creation of a basis (default is trilinear lagrange)
-  CALL BASIS_CREATE_START(1,BASIS,ERR,ERROR,*999)
+  CALL BASIS_CREATE_START(1,BASIS,ERR,ERROR,*999)  !create basis NO.1 and set it has bilinear largrange basis
+                                                   !but create basis No.2 and set it has two different basis
+                                                   !for the problem, we may have more than one field variables.
+                                                   !we may use different meshes(it means mesh with different bases) to
+                                                   !interpolate the different field variables. that is why we create two kinds of
+                                                   !bases here. refer to the sample in chris PPT 
   !Set the basis to be a bilinear Lagrange basis
   CALL BASIS_NUMBER_OF_XI_SET(BASIS,2,ERR,ERROR,*999)
   !
@@ -343,6 +354,12 @@ PROGRAM OPENCMISSTEST
 
   !Solve the problem
   CALL PROBLEM_SOLVE(PROBLEM,ERR,ERROR,*999)
+
+  FILE_NAME="HEYE"
+  !REGION%FIELDS%NUMBER_OF_FIELDS=2
+  CALL EXNODE_INTO_MULTIPLE_FILES(REGION%FIELDS, FILE_NAME, MY_COMPUTATIONAL_NODE_NUMBER, &
+  & NUMBER_COMPUTATIONAL_NODES ,ERR,ERROR,*999)
+  !REGION%FIELDS%NUMBER_OF_FIELDS=2
   
   !!Finalise bases
   !CALL BASES_FINALISE(ERR,ERROR,*999)

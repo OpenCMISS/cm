@@ -110,13 +110,15 @@ MODULE TYPES
   TYPE BASIS_TYPE
 !!TODO: Add in different sub types for the different types of bases???
     INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the basis. The user number must be unique.
+	!wolfye:still can not understand it 
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global number for the basis i.e., the position indentifier for the list of bases defined.
     INTEGER(INTG) :: FAMILY_NUMBER !<The family number for the basis. A basis has a number of sub-bases attached which make a basis family. The main parent basis is the basis defined by the user and it will have a family number of 0. The sub-bases of the parent basis will be the line and face bases that make up the basis. These will have different family numbers.
     LOGICAL :: BASIS_FINISHED !<Is .TRUE. if the basis has finished being created, .FALSE. if not.
     LOGICAL :: HERMITE !<Is .TRUE. if the basis is a hermite basis, .FALSE. if not.
     INTEGER(INTG) :: TYPE !< The type of basis \see BASIS_ROUTINES_BasisTypes 
     INTEGER(INTG) :: NUMBER_OF_XI !<The number of xi directions for the basis.
-    INTEGER(INTG) :: NUMBER_OF_XI_COORDINATES !<The number of xi coordinate directions for the basis. For Lagrange Hermite tensor product basis functions this is equal to the number of Xi directions. For simplex basis functions this is equal to the number of Xi directions + 1
+    INTEGER(INTG) :: NUMBER_OF_XI_COORDINATES !<The number of xi coordinate directions for the basis. For Lagrange Hermite tensor product basis functions this is equal to the number of Xi directions.
+    !For simplex basis functions this is equal to the number of Xi directions + 1---heye for area coordinator in triangle in 2D, it is three, but
     INTEGER(INTG), ALLOCATABLE :: INTERPOLATION_XI(:) !<INTERPOLATION_XI(ni). The interpolation specification used in the ni'th Xi direction \see BASIS_ROUTINES_InterpolationSpecifications
     INTEGER(INTG), ALLOCATABLE :: INTERPOLATION_TYPE(:) !<INTERPOLATION_TYPE(ni). The interpolation type in the nic'th Xi coordinate direction. Old CMISS name IBT(1,ni,nb) \see BASIS_ROUTINES_InterpolationTypes
     INTEGER(INTG), ALLOCATABLE :: INTERPOLATION_ORDER(:)!<INTERPOLATION_ORDER(ni). The interpolation order in the nic'th Xi coordinate direction. Old CMISS name IBT(2,ni,nb) \see BASIS_ROUTINES_InterpolationOrder 
@@ -228,6 +230,7 @@ MODULE TYPES
   !> A type to hold the mapping from field dof numbers to field parameters (nodes, elements, etc)
   TYPE FIELD_DOF_TO_PARAM_MAP_TYPE
     INTEGER(INTG) :: NUMBER_OF_DOFS !<The number of degrees-of-freedom for the field.
+    !heye:DOF_TYPE is parameter type of the ny'th dof, such first deravative or no deravative
     INTEGER(INTG), ALLOCATABLE :: DOF_TYPE(:,:) !<DOF_TYPE(i=1..2,ny). The parameter type of the ny'th dof. When i=1 the DOF_TYPE is the type of the dof, i.e., 1=constant field dof, 2=element based field dof, 3=node based field dof, 4=point based field dof. When i=2 the DOF_TYPE gives the nyy'th number of the different field types and is used to index the XXX_DOF2PARAM_MAP arrays.
     INTEGER(INTG), ALLOCATABLE :: VARIABLE_DOF(:) !<VARIABLE_DOF(ny). The variable dof number for the field ny.
     INTEGER(INTG) :: NUMBER_OF_CONSTANT_DOFS !<The number of constant degrees-of-freedom in the field dofs.
@@ -241,6 +244,7 @@ MODULE TYPES
   END TYPE FIELD_DOF_TO_PARAM_MAP_TYPE
 
   !>A type to hold the mapping from field parameters (nodes, elements, etc) to field dof numbers for a particular field variable component.
+  !heye:the whole mapping between field variable and DOF
   TYPE FIELD_PARAM_TO_DOF_MAP_TYPE
     INTEGER(INTG) :: NUMBER_OF_CONSTANT_PARAMETERS !<The number of constant field parameters for this field variable component. Note: this is currently always 1 but is
   !###      included for completness and to allow for multiple constants per field variable component in the future.
@@ -339,7 +343,7 @@ MODULE TYPES
     TYPE(FIELD_VARIABLE_PTR_TYPE), ALLOCATABLE :: VARIABLE_TYPE_MAP(:) !<VARIABLE_TYPE_MAP(variable_idx). The map from the available field variable types to the field variable types that are defined for the field. variable_idx varies from 1 to FIELD_ROUTINES::FIELD_NUMBER_OF_VARIABLE_TYPES. If the particular field variable type has not been defined on the field then the VARIABLE_TYPE_MAP will be NULL. \see FIELD_ROUTINES_VariableTypes
     TYPE(FIELD_VARIABLE_TYPE), ALLOCATABLE :: VARIABLES(:) !<VARIABLES(variable_idx) .The array of field variables. 
     TYPE(FIELD_SCALINGS_TYPE) :: SCALINGS !<The scaling parameters for the field
-    TYPE(FIELD_MAPPINGS_TYPE) :: MAPPINGS !<The mappings for the field
+    TYPE(FIELD_MAPPINGS_TYPE) :: MAPPINGS !<The mappings for the field --FIELD_DOFS_MAPPING
     TYPE(FIELD_PARAMETER_SETS_TYPE) :: PARAMETER_SETS !<The parameter sets for the field
     TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<A pointer to the geometric field that this field uses. If the field itself is a geometric field then this will be a pointer back to itself.
     TYPE(FIELD_GEOMETRIC_PARAMETERS_TYPE), POINTER :: GEOMETRIC_FIELD_PARAMETERS !<
@@ -491,6 +495,7 @@ MODULE TYPES
   END TYPE DOMAIN_ELEMENT_TYPE
   
   !>Contains the topology information for the elements of a domain.
+  !wolfye--how can i tell which is ghost and which is local
   TYPE DOMAIN_ELEMENTS_TYPE
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<The pointer to the domain for this elements topology information.
     INTEGER(INTG) :: NUMBER_OF_ELEMENTS !<The number of elements (excluding ghost elements) in this domain topology.
@@ -500,20 +505,26 @@ MODULE TYPES
   END TYPE DOMAIN_ELEMENTS_TYPE
 
   !>Contains the topology information for a local node of a domain.
+  !those domain nodal informations are constructed from mesh nodes, which are decided
+  !by their basis function. so we can know the field variable's derivative 
   TYPE DOMAIN_NODE_TYPE
     INTEGER(INTG) :: LOCAL_NUMBER !<The local node number in the domain.
     INTEGER(INTG) :: GLOBAL_NUMBER !<The corresponding global node number in the mesh of the local node number in the domain.
     INTEGER(INTG) :: USER_NUMBER !<The corresponding user number for the node.
     INTEGER(INTG) :: NUMBER_OF_DERIVATIVES !<The number of global derivatives at the node for the domain. Old CMISS name NKT(nj,np)
-    INTEGER(INTG), ALLOCATABLE :: PARTIAL_DERIVATIVE_INDEX(:) !<PARTIAL_DERIVATIVE_INDEX(nk). The partial derivative index (nu) of the nk'th global derivative for the node. Old CMISS name NUNK(nk,nj,np).
-    INTEGER(INTG), ALLOCATABLE :: DOF_INDEX(:) !<DOF_INDEX(nk). The local dof derivative index (ny) in the domain of the nk'th global derivative for the node.
+    INTEGER(INTG), ALLOCATABLE :: PARTIAL_DERIVATIVE_INDEX(:) 
+    !<PARTIAL_DERIVATIVE_INDEX(nk). The partial derivative index (nu) of the 
+    !nk'th global derivative for the node. Old CMISS name NUNK(nk,nj,np).
+    INTEGER(INTG), ALLOCATABLE :: DOF_INDEX(:) 
+    !<DOF_INDEX(nk). The local dof derivative index (ny) in 
+    !the domain of the nk'th global derivative for the node.
     INTEGER(INTG) :: NUMBER_OF_SURROUNDING_ELEMENTS !<The number of elements surrounding the node in the domain. Old CMISS name NENP(np,0,0:nr).
     INTEGER(INTG), POINTER :: SURROUNDING_ELEMENTS(:) !<SURROUNDING_ELEMENTS(nep). The local element number of the nep'th element that is surrounding the node. Old CMISS name NENP(np,nep,0:nr). \todo Change this to allocatable.
     INTEGER(INTG) :: NUMBER_OF_NODE_LINES !<The number of lines surrounding the node in the domain.
     INTEGER(INTG), ALLOCATABLE :: NODE_LINES(:) !<NODE_LINES(nlp). The local line number of the nlp'th line that is surrounding the node.
   END TYPE DOMAIN_NODE_TYPE
 
-  !>Contains the topology information for the nodes of a domain
+  !>Contains the topology information for the nodes of a domain  
   TYPE DOMAIN_NODES_TYPE
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<The pointer to the domain for this nodes topology information.
     INTEGER(INTG) :: NUMBER_OF_NODES !<The number of nodes (excluding ghost nodes) in this domain topology.
@@ -653,7 +664,8 @@ MODULE TYPES
   TYPE DOMAIN_MAPPINGS_TYPE
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<A pointer to the domain decomposition.
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS !<Pointer to the element mappings for the domain decomposition.
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES !<Pointer to the node mappings for the domain decomposition.
+    !in the domain type--local node number <=> global node number
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES !<Pointer to the node mappings for the domain decomposition. 
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOFS !<Pointer to the dof mappings for the domain decomposition.
   END TYPE DOMAIN_MAPPINGS_TYPE
   
@@ -664,6 +676,7 @@ MODULE TYPES
     INTEGER(INTG) :: MESH_COMPONENT_NUMBER !<The mesh component number of the mesh which this domain was decomposed from.
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region that this domain is in. This is "inherited" from the mesh region. 
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS !<The number of dimensions for this domain. This is "inherited" from the mesh.
+    !heye: node domain is the rank of process who own this node(global index), should be the same in each process
     INTEGER(INTG), ALLOCATABLE :: NODE_DOMAIN(:) !<NODE_DOMAIN(np). The domain number that the np'th global node is in for the domain decomposition. Note: the domain numbers start at 0 and go up to the NUMBER_OF_DOMAINS-1.
     TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: MAPPINGS !<Pointer to the mappings for the domain  e.g., global to local and local to global maps
     TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<Pointer to the topology for the domain.
@@ -716,6 +729,7 @@ MODULE TYPES
   END TYPE DECOMPOSITION_TOPOLOGY_TYPE
 
   !>Contains information on the domain decomposition.
+  !!wolfye --attention
   TYPE DECOMPOSITION_TYPE
     INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the domain decomposition. The user number must be unique.
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the domain decomposition in the list of domain decompositions for a particular mesh.
@@ -763,6 +777,9 @@ MODULE TYPES
   END TYPE GENERATED_MESH_TYPE
   
   !>Contains information on a mesh defined on a region.
+  !heye: it seems that mesh components are components of mesh type. but those mesh
+  !components should be conformed. and the mesh also contain DECOMPOSITIONS_TYPE.
+  !it means one mesh may have different decomposition
   TYPE MESH_TYPE
     INTEGER(INTG) :: USER_NUMBER !<The user number of the mesh. The user number must be unique.
     INTEGER(INTG) :: GLOBAL_NUMBER !<The corresponding global number for the mesh.
@@ -778,6 +795,9 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_OF_ELEMENTS !<The number of elements in the mesh.
     INTEGER(INTG) :: NUMBER_OF_FACES !<The number of faces in the mesh.
     INTEGER(INTG) :: NUMBER_OF_LINES !<The number of lines in the mesh.
+    !heye: MESH_TOPOLOGY_PTR_TYPE is another structure, which a list of topology, not a member of mesh structure.
+    !so if you want to access one mesh's topology, you have to mesh component to find corresponding
+    !topology in the list of topology
     TYPE(MESH_TOPOLOGY_PTR_TYPE), POINTER :: TOPOLOGY(:) !<TOPOLOGY(mesh_component_idx). A pointer to the topology mesh_component_idx'th mesh component.
     TYPE(DECOMPOSITIONS_TYPE), POINTER :: DECOMPOSITIONS !<A pointer to the decompositions for this mesh.
   END TYPE MESH_TYPE
@@ -1053,6 +1073,5 @@ MODULE TYPES
     TYPE(REGION_TYPE), POINTER :: PARENT_REGION !<A pointer to the parent region for the region. If the region has no parent region then it is the global (world) region and PARENT_REGION is NULL.
     INTEGER(INTG) :: NUMBER_OF_SUB_REGIONS !<The number of sub-regions defined for the region.
     TYPE(REGION_PTR_TYPE), POINTER :: SUB_REGIONS(:) !<An array of pointers to the sub-regions defined on the region.
-  END TYPE REGION_TYPE
-
+  END TYPE REGION_TYPE  
 END MODULE TYPES

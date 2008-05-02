@@ -132,10 +132,11 @@ CONTAINS
     !Intialise the computational environment
     CALL COMPUTATIONAL_ENVIRONMENT_INITIALISE(ERR,ERROR,*999)
     !Intialise the bases
-    CALL BASES_INITIALISE(ERR,ERROR,*999)
+    CALL BASES_INITIALISE(ERR,ERROR,*999) !BASES is the pl of basis
     !Initialise the coordinate systems
     CALL COORDINATE_SYSTEMS_INITIALISE(ERR,ERROR,*999)
-    !Initialise the regions
+    !Initialise the regions //This is the geometrical region, such as heart region, 
+    !lung region, even heart region can be devided into blood insinde heart, ventrical and artrial, 
     CALL REGIONS_INITIALISE(ERR,ERROR,*999)
     
     RETURN

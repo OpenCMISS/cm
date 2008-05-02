@@ -74,7 +74,7 @@ include $(GLOBAL_ROOT)/utils/Makefile.inc
 
 BASE_EXE_NAME = openCMISS
 
-SOURCE_DIR = $(GLOBAL_ROOT)/src
+SOURCE_DIR = $(GLOBAL_ROOT)/heye/openCMISS
 OBJECT_DIR := $(GLOBAL_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
 MODULE_DIR := $(OBJECT_DIR)
 EXE_DIR := $(GLOBAL_ROOT)/bin/$(BIN_ARCH_DIR)
@@ -96,7 +96,7 @@ AR = ar
 EXE_LINK = $(FC)
 DSO_LINK = ld
 
-DBGCF_FLGS = -g#OPT=false flags for C and fortran
+DBGCF_FLGS = -g #OPT=false flags for C and fortran
 # Option lists
 # (suboption lists become more specific so that later ones overrule previous)
 CFLAGS = $(strip $(CFL_FLGS) $(CFE_FLGS) $(CF_FLGS) $(C_FLGS))
@@ -513,6 +513,7 @@ OBJECTS = $(OBJECT_DIR)/opencmisstest.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/domain_mappings.o \
 	$(OBJECT_DIR)/field_routines.o \
+        $(OBJECT_DIR)/field_IO_routines.o\
 	$(OBJECT_DIR)/f90c_f.o \
 	$(OBJECT_DIR)/f90c_c.o \
 	$(OBJECT_DIR)/input_output.o \
@@ -769,6 +770,7 @@ $(OBJECT_DIR)/opencmisstest.o		:	$(SOURCE_DIR)/opencmisstest.f90 \
 	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/field_routines.o \
+        $(OBJECT_DIR)/field_IO_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -845,6 +847,15 @@ $(OBJECT_DIR)/types.o		:	$(SOURCE_DIR)/types.f90 \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/trees.o
 
+$(OBJECT_DIR)/field_IO_routines.o   :	  $(SOURCE_DIR)/field_IO_routines.f90 \
+	$(OBJECT_DIR)/lists.o \
+        $(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/types.o \
+	$(OBJECT_DIR)/constants.o 
 # ----------------------------------------------------------------------------
 #
 # clean and clobber for removing objects and executable.

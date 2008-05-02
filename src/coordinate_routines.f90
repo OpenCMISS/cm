@@ -3943,6 +3943,7 @@ CONTAINS
   !================================================================================================================================
   !
 
+ !!heye: what is the number of coordinate system?--the different type of coordinate system
   SUBROUTINE COORDINATE_SYSTEM_USER_NUMBER_FIND(USER_NUMBER,COORDINATE_SYSTEM,ERR,ERROR,*)
 
     !#### Subroutine: COORDINATE_SYSTEM_USER_NUMBER_FIND
