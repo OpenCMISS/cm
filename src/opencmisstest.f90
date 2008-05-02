@@ -189,13 +189,13 @@ PROGRAM OPENCMISSTEST
   IF(MY_COMPUTATIONAL_NODE_NUMBER==0) THEN
     !WRITE(*,'("Enter the number of elements in the X direction :")')
     !READ(*,*) NUMBER_GLOBAL_X_ELEMENTS
-    NUMBER_GLOBAL_X_ELEMENTS = 8
+    NUMBER_GLOBAL_X_ELEMENTS = 2
     !WRITE(*,'("Enter the number of elements in the Y direction :")')
     !READ(*,*) NUMBER_GLOBAL_Y_ELEMENTS
-    NUMBER_GLOBAL_Y_ELEMENTS = 8
+    NUMBER_GLOBAL_Y_ELEMENTS = 2
     !WRITE(*,'("Enter the number of domains :")')
     !READ(*,*) NUMBER_OF_DOMAINS
-    NUMBER_OF_DOMAINS = 4
+    NUMBER_OF_DOMAINS = 2
   ENDIF
   !Broadcast the number of elements in the X & Y directions and the number of partitions to the other computational nodes
   CALL MPI_BCAST(NUMBER_GLOBAL_X_ELEMENTS,1,MPI_INTEGER,0,MPI_COMM_WORLD,MPI_IERROR)

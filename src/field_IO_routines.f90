@@ -133,9 +133,9 @@ MODULE FIELD_IO_ROUTINES
   ! write out all the nodal values of the field:                       !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
   !Interfaces for writing the nodal values in this field 		
-  INTERFACE FIELDS_ELEM_EXPORT
-    MODULE PROCEDURE EXELEM_INTO_MULTIPLE_FILES 
-  END INTERFACE
+  !INTERFACE FIELDS_ELEM_EXPORT
+  !  MODULE PROCEDURE EXELEM_INTO_MULTIPLE_FILES 
+  !END INTERFACE
   !********************************************************************!
 
   !********************************************************************!
@@ -245,7 +245,7 @@ MODULE FIELD_IO_ROUTINES
   !********************************************************************!
 
   !external entries for IO (fortran base, multiple commands)
-  PUBLIC :: EXNODE_INTO_MULTIPLE_FILES EXELEM_INTO_MULTIPLE_FILES
+  PUBLIC :: EXNODE_INTO_MULTIPLE_FILES!, EXELEM_INTO_MULTIPLE_FILES
  
 
 CONTAINS  
