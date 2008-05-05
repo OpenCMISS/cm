@@ -900,7 +900,7 @@ CONTAINS
 		      CASE(PART_DERIV_S1_S2_S3_S4)
 		        LABEL_DERIVATIVE_INFO_GET=LABEL_DERIVATIVE_INFO_GET//", d^4u/ds1ds2ds3ds4"
 		      CASE DEFAULT
-	    	    LABEL_DERIVATIVE_INFO_GET="unknown field variable type, add more details later, #components="!&
+	    	    LABEL_DERIVATIVE_INFO_GET="unknown field variable type, add more details later, #Components="!&
 	        	!&//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_COMPONENTS,"*",ERR,ERROR))
 	      END SELECT
        ENDDO! dev_idx
@@ -970,25 +970,25 @@ CONTAINS
               END SELECT
             CASE(FIELD_NORMAL_VARIABLE_TYPE)
 	          IF(LABEL_TYPE==VARIABLE_LABEL) THEN
-	             LABEL_FIELD_INFO_GET="Normal_derivative,  normal derivative of variable"
+	             LABEL_FIELD_INFO_GET="Normal_derivative,  field,  normal derivative of variable"
 	          ELSE IF (LABEL_TYPE==COMPONENT_LABEL) THEN
 	             LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
 	          ENDIF	   
             CASE(FIELD_TIME_DERIV1_VARIABLE_TYPE)
 	          IF(LABEL_TYPE==VARIABLE_LABEL) THEN
-	             LABEL_FIELD_INFO_GET="first_time_derivative,  firt time derivative of variable"
+	             LABEL_FIELD_INFO_GET="first_time_derivative,  field,  firt time derivative of variable"
 	          ELSE IF (LABEL_TYPE==COMPONENT_LABEL) THEN
 	             LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
 	          ENDIF	   
             CASE(FIELD_TIME_DERIV2_VARIABLE_TYPE)      
 	          IF(LABEL_TYPE==VARIABLE_LABEL) THEN
-	             LABEL_FIELD_INFO_GET="second_time_derivative,  second time derivative of variable"
+	             LABEL_FIELD_INFO_GET="second_time_derivative,  field,  second time derivative of variable"
 	          ELSE IF (LABEL_TYPE==COMPONENT_LABEL) THEN
 	             LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
 	          ENDIF	   
             CASE DEFAULT
 	          IF(LABEL_TYPE==VARIABLE_LABEL) THEN
-	             LABEL_FIELD_INFO_GET="unknown_geometry,  unknown field variable type"
+	             LABEL_FIELD_INFO_GET="unknown_geometry,  field,  unknown field variable type"
 	          ELSE IF (LABEL_TYPE==COMPONENT_LABEL) THEN
 	             LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
 	          ENDIF	   
@@ -1038,31 +1038,31 @@ CONTAINS
           SELECT CASE(VARIABLE%VARIABLE_TYPE)
             CASE(FIELD_STANDARD_VARIABLE_TYPE)
 	          IF(LABEL_TYPE==VARIABLE_LABEL) THEN
-	             LABEL_FIELD_INFO_GET="general_variabe,  standand variable type"
+	             LABEL_FIELD_INFO_GET="general_variabe,  field,  string"
 	          ELSE IF (LABEL_TYPE==COMPONENT_LABEL) THEN
 	             LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
 	          ENDIF	   
             CASE(FIELD_NORMAL_VARIABLE_TYPE)
 	          IF(LABEL_TYPE==VARIABLE_LABEL) THEN
-	             LABEL_FIELD_INFO_GET="norm_dev_variable,  normal derivative of variable"
+	             LABEL_FIELD_INFO_GET="norm_dev_variable,  field,  string"
 	          ELSE IF (LABEL_TYPE==COMPONENT_LABEL) THEN
 	             LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
 	          ENDIF	   
             CASE(FIELD_TIME_DERIV1_VARIABLE_TYPE)
 	          IF(LABEL_TYPE==VARIABLE_LABEL) THEN
-	             LABEL_FIELD_INFO_GET="first_time_variable,  firt time derivative of variable"
+	             LABEL_FIELD_INFO_GET="first_time_variable,  field,  firt time derivative of variable"
 	          ELSE IF (LABEL_TYPE==COMPONENT_LABEL) THEN
 	             LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
 	          ENDIF	   
             CASE(FIELD_TIME_DERIV2_VARIABLE_TYPE)      
 	          IF(LABEL_TYPE==VARIABLE_LABEL) THEN
-	             LABEL_FIELD_INFO_GET="second_time_variable,  second time derivative of variable"
+	             LABEL_FIELD_INFO_GET="second_time_variable,  field,  second time derivative of variable"
 	          ELSE IF (LABEL_TYPE==COMPONENT_LABEL) THEN
 	             LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
 	          ENDIF	   
             CASE DEFAULT
 	          IF(LABEL_TYPE==VARIABLE_LABEL) THEN
-	             LABEL_FIELD_INFO_GET="unknown_general,  unknown field variable type"
+	             LABEL_FIELD_INFO_GET="unknown_general,  field,  unknown field variable type"
 	          ELSE IF (LABEL_TYPE==COMPONENT_LABEL) THEN
 	             LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
 	          ENDIF	   
@@ -1075,31 +1075,31 @@ CONTAINS
           SELECT CASE(VARIABLE%VARIABLE_TYPE)
             CASE(FIELD_STANDARD_VARIABLE_TYPE)
 	          IF(LABEL_TYPE==VARIABLE_LABEL) THEN
-	             LABEL_FIELD_INFO_GET="material,  standand variable type"
+	             LABEL_FIELD_INFO_GET="material,  field,  standand variable type"
 	          ELSE IF (LABEL_TYPE==COMPONENT_LABEL) THEN
 	             LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
 	          ENDIF	   
             CASE(FIELD_NORMAL_VARIABLE_TYPE)
 	          IF(LABEL_TYPE==VARIABLE_LABEL) THEN
-	             LABEL_FIELD_INFO_GET="normal_material,  normal derivative of variable"
+	             LABEL_FIELD_INFO_GET="normal_material,  field,  normal derivative of variable"
 	          ELSE IF (LABEL_TYPE==COMPONENT_LABEL) THEN
 	             LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
 	          ENDIF	   
             CASE(FIELD_TIME_DERIV1_VARIABLE_TYPE)
 	          IF(LABEL_TYPE==VARIABLE_LABEL) THEN
-	             LABEL_FIELD_INFO_GET="fist_time_material,  firt time derivative of variable"
+	             LABEL_FIELD_INFO_GET="fist_time_material,  field,  firt time derivative of variable"
 	          ELSE IF (LABEL_TYPE==COMPONENT_LABEL) THEN
 	             LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
 	          ENDIF	   
             CASE(FIELD_TIME_DERIV2_VARIABLE_TYPE)      
 	          IF(LABEL_TYPE==VARIABLE_LABEL) THEN
-	             LABEL_FIELD_INFO_GET="second_time_material,  second time derivative of variable"
+	             LABEL_FIELD_INFO_GET="second_time_material,  field,  second time derivative of variable"
 	          ELSE IF (LABEL_TYPE==COMPONENT_LABEL) THEN
 	             LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
 	          ENDIF	   
             CASE DEFAULT
 	          IF(LABEL_TYPE==VARIABLE_LABEL) THEN
-	             LABEL_FIELD_INFO_GET="unknown material,  unknown field variable type"
+	             LABEL_FIELD_INFO_GET="unknown material,  field,  unknown field variable type"
 	          ELSE IF (LABEL_TYPE==COMPONENT_LABEL) THEN
 	             LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
 	          ENDIF	   
@@ -1112,31 +1112,31 @@ CONTAINS
           SELECT CASE(VARIABLE%VARIABLE_TYPE)
             CASE(FIELD_STANDARD_VARIABLE_TYPE)
 	          IF(LABEL_TYPE==VARIABLE_LABEL) THEN
-	             LABEL_FIELD_INFO_GET="unknown,  unknown standand variable type"
+	             LABEL_FIELD_INFO_GET="unknown,  field,  unknown standand variable type"
 	          ELSE IF (LABEL_TYPE==COMPONENT_LABEL) THEN
 	             LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
 	          ENDIF	   
             CASE(FIELD_NORMAL_VARIABLE_TYPE)
 	          IF(LABEL_TYPE==VARIABLE_LABEL) THEN
-	             LABEL_FIELD_INFO_GET="unknown,  unknown normal derivative of variable"
+	             LABEL_FIELD_INFO_GET="unknown,  field,  unknown normal derivative of variable"
 	          ELSE IF (LABEL_TYPE==COMPONENT_LABEL) THEN
 	             LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
 	          ENDIF	   
             CASE(FIELD_TIME_DERIV1_VARIABLE_TYPE)
 	          IF(LABEL_TYPE==VARIABLE_LABEL) THEN
-	             LABEL_FIELD_INFO_GET="unknown,  unknown firt time derivative of variable"
+	             LABEL_FIELD_INFO_GET="unknown,  field,  unknown firt time derivative of variable"
 	          ELSE IF (LABEL_TYPE==COMPONENT_LABEL) THEN
 	             LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
 	          ENDIF	   
             CASE(FIELD_TIME_DERIV2_VARIABLE_TYPE)      
 	          IF(LABEL_TYPE==VARIABLE_LABEL) THEN
-	             LABEL_FIELD_INFO_GET="unknown second time derivative of variable"
+	             LABEL_FIELD_INFO_GET="unknown, field,  unknown second time derivative of variable"
 	          ELSE IF (LABEL_TYPE==COMPONENT_LABEL) THEN
 	             LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
 	          ENDIF	   
             CASE DEFAULT
 	          IF(LABEL_TYPE==VARIABLE_LABEL) THEN
-	             LABEL_FIELD_INFO_GET="unknown,  unknown field variable type"
+	             LABEL_FIELD_INFO_GET="unknown,  field,  unknown field variable type"
 	          ELSE IF (LABEL_TYPE==COMPONENT_LABEL) THEN
 	             LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
 	          ENDIF	   
@@ -1276,11 +1276,11 @@ CONTAINS
  	CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999) 	   
     DO field_idx=1, NUM_OF_FIELDS              
        !write out the field information
-       LABEL=LABEL_FIELD_INFO_GET(tmp_components(comp_idx1)%PTR, FIELD_LABEL,ERR,ERROR)
-       IF(ERR/=0) THEN
-          CALL FLAG_ERROR("can not get field label",ERR,ERROR,*999)     
-          GOTO 999               
-       ENDIF        
+       !LABEL=LABEL_FIELD_INFO_GET(tmp_components(comp_idx1)%PTR, FIELD_LABEL,ERR,ERROR)
+       !IF(ERR/=0) THEN
+       !   CALL FLAG_ERROR("can not get field label",ERR,ERROR,*999)     
+       !   GOTO 999               
+       !ENDIF        
        !LINE=TRIM(NUMBER_TO_VSTRING(field_idx,"*",ERR,ERROR))//") "//TRIM(LABEL)&
        !&//" , #variables="//TRIM(NUMBER_TO_VSTRING(GROUP_FIELDS(field_idx),"*",ERR,ERROR))       
        !CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999) 	          
@@ -1288,23 +1288,23 @@ CONTAINS
        DO var_idx=1, GROUP_FIELDS(field_idx)
           global_var_idx=global_var_idx+1
           !write out the field information
-          LABEL=TRIM(NUMBER_TO_VSTRING(global_var_idx,"*",ERR,ERROR))//") "&
+          LABEL="  "//TRIM(NUMBER_TO_VSTRING(global_var_idx,"*",ERR,ERROR))//") "&
           &//LABEL_FIELD_INFO_GET(tmp_components(comp_idx1)%PTR, VARIABLE_LABEL,ERR,ERROR)
           IF(ERR/=0) THEN
              CALL FLAG_ERROR("can not get variable label",ERR,ERROR,*999)     
              GOTO 999               
           ENDIF        
-          LINE=TRIM(LABEL)//", #components="//TRIM(NUMBER_TO_VSTRING(GROUP_VARIABLES(global_var_idx),"*",ERR,ERROR))        
+          LINE=TRIM(LABEL)//", #Components="//TRIM(NUMBER_TO_VSTRING(GROUP_VARIABLES(global_var_idx),"*",ERR,ERROR))        
           CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999) 	          
           
           DO comp_idx=1, GROUP_VARIABLES(global_var_idx)
              !write out the component information
-             LABEL=LABEL_FIELD_INFO_GET(tmp_components(comp_idx1)%PTR, COMPONENT_LABEL,ERR,ERROR)
+             LABEL="   "//LABEL_FIELD_INFO_GET(tmp_components(comp_idx1)%PTR, COMPONENT_LABEL,ERR,ERROR)
              IF(ERR/=0) THEN
                 CALL FLAG_ERROR("can not get component label",ERR,ERROR,*999)     
                 GOTO 999               
              ENDIF        
-             LINE="   "//TRIM(LABEL)//"."                          
+             LINE=TRIM(LABEL)//"."                          
              
 	         !finding the local numbering through the global to local mapping	
              DOMAIN_MAPPING_NODES=>tmp_components(comp_idx)%PTR%DOMAIN%MAPPINGS%NODES 		
@@ -1331,8 +1331,8 @@ CONTAINS
                 GOTO 999               
              ENDIF
              !assemble the header        
-             LINE=LINE//"  value index="//TRIM(NUMBER_TO_VSTRING(value_idx,"*",ERR,ERROR))&
-             &//", #derivatives="//TRIM(NUMBER_TO_VSTRING(NUM_OF_NODAL_DEV-1,"*",ERR,ERROR))//TRIM(LABEL)
+             LINE=LINE//"  Value index= "//TRIM(NUMBER_TO_VSTRING(value_idx,"*",ERR,ERROR))&
+             &//", #Derivatives= "//TRIM(NUMBER_TO_VSTRING(NUM_OF_NODAL_DEV-1,"*",ERR,ERROR))//TRIM(LABEL)
              !write out the header             
              CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
              !increase the component index 	          
