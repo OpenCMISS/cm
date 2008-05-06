@@ -1474,7 +1474,7 @@ CONTAINS
           ENDDO !domain_idX
           local_number=DOMAIN_MAPPING_NODES%GLOBAL_TO_LOCAL_MAP(global_number)%LOCAL_NUMBER(MY_DOMAIN_INDEX)
           !use local domain information find the out the maximum number of derivatives
-          DOMAIN_NODES=>PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(local_number)%COMPONENTS(comp_idx)%PTR%DOMAIN%TOPOLOGY%NODES
+          DOMAIN_NODES=>PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%DOMAIN%TOPOLOGY%NODES
           
           !write out the user numbering of node if comp_idx ==1
           IF(comp_idx==1) THEN 
