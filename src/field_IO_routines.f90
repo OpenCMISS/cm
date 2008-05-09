@@ -405,7 +405,6 @@ CONTAINS
     CALL EXITS("BASIS_LHTP_FAMILY_LABEL")
   END FUNCTION BASIS_LHTP_FAMILY_LABEL    
 
-
 !>write the header of a group nodes
   SUBROUTINE EXPORT_ELEMENTAL_GROUP_HEADER(PROCESS_ELEMENTAL_INFO_SET, LOCAL_ELEMENTAL_NUMBER, MAX_SCALE_FACTORS, &
      &   NUM_OF_SCALING_FACTOR_SETS, LIST_COMP_SCALE, my_computational_node_number, FILE_ID, ERR,ERROR, *)
@@ -454,8 +453,10 @@ CONTAINS
   	global_number=PROCESS_ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(LOCAL_ELEMENTAL_NUMBER)
   	NULLIFY(field_ptr)  	
   	NULLIFY(variable_ptr)
+  	IF(ASSOCIATED(GROUP_LOCAL_NUMBER)) DEALLOCATE(GROUP_LOCAL_NUMBER)
     ALLOCATE(GROUP_LOCAL_NUMBER(PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(LOCAL_ELEMENTAL_NUMBER)%NUMBER_OF_COMPONENTS),STAT=ERR)
     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate GROUP_LOCAL_NUMBER in exelem header",ERR,ERROR,*999)
+    IF(ASSOCIATED(LIST_SCALE_FACTORS)) DEALLOCATE(LIST_SCALE_FACTORS)
     ALLOCATE(LIST_SCALE_FACTORS(PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(LOCAL_ELEMENTAL_NUMBER)%NUMBER_OF_COMPONENTS),STAT=ERR)
     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate LIST_SCALE_FACTORS in exelem header",ERR,ERROR,*999)
   	
@@ -517,11 +518,25 @@ CONTAINS
     !ALLOCATE(GROUP_FIELDS(NUM_OF_FIELDS),STAT=ERR)
     !IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty field buffer in IO",ERR,ERROR,*999)
     !!Allocate the momery for group of field components	
+    IF(ASSOCIATED(GROUP_VARIABLES)) DEALLOCATE(GROUP_VARIABLES)    
     ALLOCATE(GROUP_VARIABLES(NUM_OF_VARIABLES),STAT=ERR)
     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty variable buffer in IO",ERR,ERROR,*999)
+    
     !!Allocate the momery for group of maximum number of derivatives	  
-    ALLOCATE(GROUP_SCALE_FACTORS(1:NUM_OF_SCALING_FACTOR_SETS))    
-    ALLOCATE(GROUP_NODE(1:NUM_OF_SCALING_FACTOR_SETS))
+    IF(ASSOCIATED(GROUP_SCALE_FACTORS)) DEALLOCATE(GROUP_SCALE_FACTORS)    
+    ALLOCATE(GROUP_SCALE_FACTORS(NUM_OF_SCALING_FACTOR_SETS),STAT=ERR)    
+    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty variable buffer in IO",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(GROUP_NODE)) DEALLOCATE(GROUP_NODE)    
+    ALLOCATE(GROUP_NODE(NUM_OF_SCALING_FACTOR_SETS),STAT=ERR)
+    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty variable buffer in IO",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(GROUP_DERIVATIVES)) DEALLOCATE(GROUP_DERIVATIVES)            
+    ALLOCATE(GROUP_DERIVATIVES(MAX_SCALE_FACTORS),STAT=ERR)
+    !PRINT *, MAX_SCALE_FACTORS
+    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty variable buffer in IO",ERR,ERROR,*999)
+    
+    
     
     !ALLOCATE(GROUP_DERIVATIVES(MAX_NUM_OF_NODAL_DERIVATIVES),STAT=ERR)
     !IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty derivatives buffer in IO",ERR,ERROR,*999)    
@@ -633,8 +648,6 @@ CONTAINS
  	   LINE="     #NODE=     "//TRIM(NUMBER_TO_VSTRING(num_node,"*",ERR,ERROR))
  	   CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999) 	  
 
-       ALLOCATE(GROUP_DERIVATIVES(MAX_SCALE_FACTORS))
-
        IF(BASIS%DEGENERATE==.FALSE.) THEN
           IF(LIST_COMP_SCALE(comp_idx)==1) THEN
              scl_idx=1;
@@ -661,23 +674,21 @@ CONTAINS
                 scl_idx=scl_idx+1
                 LINE=LINE//TRIM(NUMBER_TO_VSTRING(scl_idx, "*",ERR,ERROR))
              ENDDO !mk
-   	         CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999) 	             
-             
-             
+   	         CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999) 	                                     
           ENDDO !nn
        ELSE
           CALL FLAG_ERROR("exporting degenerated nodes has not been implemented",ERR,ERROR,*999) 
        ENDIF  
-
     ENDDO !comp_idx         
     
     
     !release temporary memory
-    IF(ASSOCIATED(GROUP_LOCAL_NUMBER)) DEALLOCATE(GROUP_LOCAL_NUMBER)
     IF(ASSOCIATED(LIST_SCALE_FACTORS)) DEALLOCATE(LIST_SCALE_FACTORS)
-    IF(ASSOCIATED(GROUP_VARIABLES)) DEALLOCATE(GROUP_VARIABLES)    
+    IF(ASSOCIATED(GROUP_LOCAL_NUMBER)) DEALLOCATE(GROUP_LOCAL_NUMBER)
     IF(ASSOCIATED(GROUP_SCALE_FACTORS)) DEALLOCATE(GROUP_SCALE_FACTORS)    
-    IF(ASSOCIATED(GROUP_NODE)) DEALLOCATE(GROUP_NODE)
+    IF(ASSOCIATED(GROUP_NODE)) DEALLOCATE(GROUP_NODE)    
+    IF(ASSOCIATED(GROUP_VARIABLES)) DEALLOCATE(GROUP_VARIABLES)
+    IF(ASSOCIATED(GROUP_DERIVATIVES)) DEALLOCATE(GROUP_DERIVATIVES)
         
     CALL EXITS("EXPORT_ELEMENTAL_GROUP_HEADER")
     RETURN
@@ -705,7 +716,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: FILE_NAME, LINE !the prefix name of file.    
     TYPE(BASIS_TYPE), POINTER ::BASIS
     INTEGER(INTG) :: FILE_ID, domain_idx, domain_no, local_number, global_number, MY_DOMAIN_INDEX, INDEX_OF_MAX_SCALE_FACTORS
-	INTEGER(INTG), POINTER :: LIST_COMP(:), LIST_COMP_SCALE(:) !Components which will be used for export scale factors    
+	INTEGER(INTG), POINTER :: LIST_COMP_SCALE(:)!LIST_COMP(:) !Components which will be used for export scale factors    
     INTEGER(INTG) :: nk, np, nn, ns, mk, ny2, elem_num, elem_idx, comp_idx,  scal_idx, NUM_OF_SCALING_FACTOR_SETS !dev_idx	
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING_ELEMENTS !The domain mapping to calculate elemental mappings
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: DOMAIN_ELEMENTS ! domain elements
@@ -742,7 +753,7 @@ CONTAINS
     
  	NULLIFY(SCALE_FACTORS) 	
  	NULLIFY(SCALING_BUFFER)
- 	NULLIFY(LIST_COMP)
+ 	NULLIFY(LIST_COMP_SCALE)
  	NULLIFY(tmp_components)
  	
  	!open a file 
@@ -783,6 +794,7 @@ CONTAINS
 	   !   !ALLOCATE(GROUP_DERIVATIVES(MAX_NUM_OF_NODAL_DERIVATIVES),STAT=ERR)
 	   !   !IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty derivative buffer in IO writing",ERR,ERROR,*999)		     
        !ENDIF
+       IF(ASSOCIATED(LIST_COMP_SCALE)) DEALLOCATE(LIST_COMP_SCALE)         
        ALLOCATE(LIST_COMP_SCALE(PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_idx)%NUMBER_OF_COMPONENTS),STAT=ERR)
        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate LIST_COMP_SCALE in exelem io",ERR,ERROR,*999)
 
@@ -874,45 +886,40 @@ CONTAINS
              !!use local domain information find the out the maximum number of derivatives
              !DOMAIN_ELEMENTS=>PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_num)%COMPONENTS(comp_idx)%PTR%DOMAIN%TOPOLOGY%ELEMENTS
           
-             IF(ASSOCIATED(SCALING_BUFFER).AND.(SUM(BASIS%NUMBER_OF_DERIVATIVES(1:BASIS%NUMBER_OF_NODES))<=ns)) THEN
-			    ns=1          
-             ELSE
-                ns=1
-                DEALLOCATE(SCALING_BUFFER)
-                ALLOCATE(SCALING_BUFFER(SUM(BASIS%NUMBER_OF_DERIVATIVES(1:BASIS%NUMBER_OF_NODES))),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate scale buffer in IO",ERR,ERROR,*999)
-             ENDIF          
+             ns=1
+             IF(ASSOCIATED(SCALING_BUFFER)) DEALLOCATE(SCALING_BUFFER)            
+             ALLOCATE(SCALING_BUFFER(SUM(BASIS%NUMBER_OF_DERIVATIVES(1:BASIS%NUMBER_OF_NODES))),STAT=ERR)
+             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate scale buffer in IO",ERR,ERROR,*999)
           
-             BASIS=>DOMAIN_ELEMENTS%ELEMENTS(elem_num)%BASIS    
+             BASIS=>DOMAIN_ELEMENTS%ELEMENTS(local_number)%BASIS    
              IF(BASIS%DEGENERATE==.FALSE.) THEN
           	    DO nn=1,BASIS%NUMBER_OF_NODES
-                   np=DOMAIN_ELEMENTS%ELEMENTS(elem_num)%ELEMENT_NODES(nn)
+                   np=DOMAIN_ELEMENTS%ELEMENTS(local_number)%ELEMENT_NODES(nn)
                    DO mk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
-                      nk=DOMAIN_ELEMENTS%ELEMENTS(elem_num)%ELEMENT_DERIVATIVES(mk,nn)
+                      nk=DOMAIN_ELEMENTS%ELEMENTS(local_number)%ELEMENT_DERIVATIVES(mk,nn)
                       ny2=DOMAIN_NODES%NODES(np)%DOF_INDEX(nk)
-                      SCALING_BUFFER(ns)=SCALE_FACTORS(ny2)
+                      SCALING_BUFFER(ns)=1!SCALE_FACTORS(ny2)
                       ns=ns+1
                    ENDDO !mk
                 ENDDO !nn
               ELSE
                 CALL FLAG_ERROR("exporting degenerated nodes has not been implemented",ERR,ERROR,*999) 
              ENDIF  
-             CALL CMISS_FILE_WRITE(FILE_ID, SCALING_BUFFER, ns, ERR,ERROR,*999) 	          
- 	      ENDIF !(LIST_COMP_SCALE(comp_idx)==scal_idx)
- 	   ENDDO !comp_idx=1     
- 	   IF(ASSOCIATED(LIST_COMP_SCALE)) DEALLOCATE(LIST_COMP_SCALE)
+             CALL CMISS_FILE_WRITE(FILE_ID, SCALING_BUFFER, ns, ERR,ERROR,*999)
+             !IF(ASSOCIATED(SCALING_BUFFER)) DEALLOCATE(SCALING_BUFFER) 	          
+ 	      ENDIF !(LIST_COMP_SCALE(comp_idx)==scal_idx)LIST_COMP(:)
+ 	   ENDDO !comp_idx=1      	
  	ENDDO!elem_idx    
  	
  	!close a file 	
     CALL CMISS_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
 
     !release the temporary memory
-    IF(ASSOCIATED(SCALING_BUFFER)) THEN
-       DEALLOCATE(SCALING_BUFFER)
-    ENDIF
-    IF(ASSOCIATED(LIST_COMP)) THEN
-       DEALLOCATE(LIST_COMP)
-    ENDIF
+    IF(ASSOCIATED(SCALING_BUFFER)) DEALLOCATE(SCALING_BUFFER)
+    IF(ASSOCIATED(SCALE_FACTORS)) NULLIFY(SCALE_FACTORS)
+    !IF(ASSOCIATED(LIST_COMP)) DEALLOCATE(LIST_COMP)
+    IF(ASSOCIATED(LIST_COMP_SCALE)) DEALLOCATE(LIST_COMP_SCALE)
+    
  	
     CALL EXITS("EXPORT_ELEMENTS_INTO_LOCAL_FILE")
     RETURN
@@ -1294,9 +1301,7 @@ CONTAINS
       !PROCESS_NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER=>LIST_OF_GLOBAL_NUMBER
       !NULLIFY(LIST_OF_GLOBAL_NUMBER)      
 	  !release the temporary meomery      	  
-	  IF(ASSOCIATED(NEW_LIST)) THEN
-	    DEALLOCATE(NEW_LIST)
-	  ENDIF    	      
+	  IF(ASSOCIATED(NEW_LIST)) DEALLOCATE(NEW_LIST)    	      
 	ELSE
 	  CALL FLAG_ERROR("nodal information set is not initialized properly, and call start method first",ERR,ERROR,*999)
 	ENDIF
