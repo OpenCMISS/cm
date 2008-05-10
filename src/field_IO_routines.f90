@@ -647,7 +647,7 @@ CONTAINS
 
        IF(BASIS%DEGENERATE==.FALSE.) THEN
           IF(LIST_COMP_SCALE(comp_idx)==1) THEN
-             scl_idx=1;
+             scl_idx=0
           ELSE   
              scl_idx= SUM(GROUP_SCALE_FACTORS(1:LIST_COMP_SCALE(comp_idx)-1))
           ENDIF   
@@ -660,9 +660,9 @@ CONTAINS
              LINE="      Value indices:     "             
              DO mk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
                 nk=DOMAIN_ELEMENTS%ELEMENTS(LOCAL_ELEMENTAL_NUMBER)%ELEMENT_DERIVATIVES(mk,nn)
-                ny2=DOMAIN_NODES%NODES(np)%DOF_INDEX(nk)
+                !ny2=DOMAIN_NODES%NODES(np)%DOF_INDEX(nk)
                 !GROUP_DERIVATIVES(mk)=ny2
-                LINE=LINE//TRIM(NUMBER_TO_VSTRING(ny2, "*",ERR,ERROR))
+                LINE=LINE//TRIM(NUMBER_TO_VSTRING(nk, "*",ERR,ERROR))
              ENDDO !mk
  	         CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999) 	             
   
@@ -831,7 +831,7 @@ CONTAINS
        LINE="   Scale factor:"
        CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999) 	                  
        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+       scal_idx=1
        DO comp_idx=1,PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_idx)%NUMBER_OF_COMPONENTS          
 
 	      !finding the local numbering through the global to local mapping	
@@ -851,7 +851,6 @@ CONTAINS
                     
           !write out the components' values of this node in this domain
           !DO scal_idx=1, NUM_OF_SCALING_FACTOR_SETS   
-          scal_idx=1
           IF(LIST_COMP_SCALE(comp_idx)==scal_idx) THEN
              scal_idx=scal_idx+1
              !global_number=PROCESS_ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(elem_num)
