@@ -291,10 +291,9 @@ CONTAINS
   !================================================================================================================================
   !  
   
-  FUNCTION BASIS_LHTP_FAMILY_LABEL(BASIS, MAX_SCALE_FACTORS, num_scl, num_node, LABEL_TYPE, ERR, ERROR)
+  FUNCTION BASIS_LHTP_FAMILY_LABEL(BASIS, num_scl, num_node, LABEL_TYPE, ERR, ERROR)
     !Argument variables   
     TYPE(BASIS_TYPE), INTENT(IN) :: BASIS !<The error string
-    INTEGER(INTG), INTENT(INOUT) :: MAX_SCALE_FACTORS
     INTEGER(INTG), INTENT(INOUT) :: num_scl
     INTEGER(INTG), INTENT(INOUT) :: num_node
     INTEGER(INTG), INTENT(IN) ::LABEL_TYPE
@@ -397,7 +396,7 @@ CONTAINS
           CALL FLAG_ERROR("Invalid interpolation type",ERR,ERROR,*999)
     END SELECT   
     
-    MAX_SCALE_FACTORS=MAX(MAX_SCALE_FACTORS,num_scl)
+    !MAX_SCALE_FACTORS=MAX(MAX_SCALE_FACTORS,num_scl)
                   	
     CALL EXITS("BASIS_LHTP_FAMILY_LABEL")
     RETURN
@@ -405,13 +404,13 @@ CONTAINS
     CALL EXITS("BASIS_LHTP_FAMILY_LABEL")
   END FUNCTION BASIS_LHTP_FAMILY_LABEL    
 
-!>write the header of a group nodes
-  SUBROUTINE EXPORT_ELEMENTAL_GROUP_HEADER(PROCESS_ELEMENTAL_INFO_SET, LOCAL_ELEMENTAL_NUMBER, MAX_SCALE_FACTORS, &
+  !>write the header of a group nodes
+  SUBROUTINE EXPORT_ELEMENTAL_GROUP_HEADER(PROCESS_ELEMENTAL_INFO_SET, LOCAL_ELEMENTAL_NUMBER,  MAX_NODE_CPMP_INDEX, &
      &   NUM_OF_SCALING_FACTOR_SETS, LIST_COMP_SCALE, my_computational_node_number, FILE_ID, ERR,ERROR, *)
     !Argument variables  
     TYPE(ELEMENTAL_INFO_SET_FOR_IO), POINTER :: PROCESS_ELEMENTAL_INFO_SET  !<PROCESS_NODAL_INFO_SET   	     
     INTEGER(INTG), INTENT(IN) :: LOCAL_ELEMENTAL_NUMBER !<element number
-    INTEGER(INTG), INTENT(INOUT) :: MAX_SCALE_FACTORS !<MAX_SCALE_FACTORS
+    INTEGER(INTG), INTENT(INOUT) ::  MAX_NODE_CPMP_INDEX !<MAX_NODE_INDEX
     INTEGER(INTG), INTENT(INOUT) :: NUM_OF_SCALING_FACTOR_SETS !<NUM_OF_SCALING_FACTOR_SETS
     INTEGER(INTG), INTENT(INOUT) :: LIST_COMP_SCALE(:)
     INTEGER(INTG), INTENT(IN) :: my_computational_node_number !<local process number    
@@ -419,10 +418,11 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 	!Temporary variables
-	INTEGER(INTG) :: NUM_OF_VARIABLES, NUM_OF_NODES !NUM_OF_FIELDS
+    !INTEGER(INTG), INTENT(INOUT) :: MAX_SCALE_FACTORS !<MAX_SCALE_FACTORS
+	INTEGER(INTG) :: NUM_OF_VARIABLES, MAX_NUM_NODES !NUM_OF_FIELDS NUM_OF_NODES
 	INTEGER(INTG) :: domain_idx, domain_no, MY_DOMAIN_INDEX, local_number, global_number
 	INTEGER(INTG), POINTER :: LIST_SCALE_FACTORS(:),  GROUP_LOCAL_NUMBER(:), GROUP_SCALE_FACTORS(:), GROUP_NODE(:), GROUP_VARIABLES(:)
-	INTEGER(INTG), POINTER :: GROUP_DERIVATIVES(:)
+	!INTEGER(INTG), POINTER :: GROUP_DERIVATIVES(:)
 	INTEGER(INTG) ::nn, np, ny2, mk, nk, num_scl, num_node, comp_idx, comp_idx1, scl_idx, scl_idx1, var_idx!value_idx field_idx global_var_idx	
     LOGICAL :: SWITCH	
     TYPE(FIELD_TYPE), POINTER :: field_ptr
@@ -449,7 +449,8 @@ CONTAINS
   	!collect maximum number of nodal derivatives, number of fields and variables 
   	NUM_OF_SCALING_FACTOR_SETS=0
   	NUM_OF_VARIABLES=0
-  	NUM_OF_NODES=0
+  	MAX_NUM_NODES=0
+  	MAX_NODE_CPMP_INDEX=0
   	global_number=PROCESS_ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(LOCAL_ELEMENTAL_NUMBER)
   	NULLIFY(field_ptr)  	
   	NULLIFY(variable_ptr)
@@ -489,8 +490,11 @@ CONTAINS
        DOMAIN_ELEMENTS=>PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(LOCAL_ELEMENTAL_NUMBER)%COMPONENTS(comp_idx)%PTR%DOMAIN%TOPOLOGY%ELEMENTS 
        DOMAIN_NODES=>PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(LOCAL_ELEMENTAL_NUMBER)%COMPONENTS(comp_idx)%PTR%DOMAIN%TOPOLOGY%NODES
        BASIS=>DOMAIN_ELEMENTS%ELEMENTS(local_number)%BASIS
-       NUM_OF_NODES=MAX(BASIS%NUMBER_OF_NODES,NUM_OF_NODES)
-       !IF(BASIS%DEGENERATE=.FALSE.)  THEN
+       IF(BASIS%NUMBER_OF_NODES>MAX_NUM_NODES) THEN
+          MAX_NODE_CPMP_INDEX=comp_idx
+          MAX_NUM_NODES=BASIS%NUMBER_OF_NODES
+       ENDIF   
+       IF(BASIS%DEGENERATE==.FALSE.)  THEN
           IF(comp_idx==1) THEN
              NUM_OF_SCALING_FACTOR_SETS=NUM_OF_SCALING_FACTOR_SETS+1
              LIST_SCALE_FACTORS(NUM_OF_SCALING_FACTOR_SETS)=comp_idx
@@ -512,7 +516,7 @@ CONTAINS
              ENDIF                 
           ENDIF
           LIST_COMP_SCALE(comp_idx)=NUM_OF_SCALING_FACTOR_SETS
-       !ENDIF!BASIS%DEGENERATE=.FALSE.
+       ENDIF!BASIS%DEGENERATE=.FALSE.
     ENDDO !comp_idx         
     !!Allocate the momery for group of field variables
     !ALLOCATE(GROUP_FIELDS(NUM_OF_FIELDS),STAT=ERR)
@@ -529,18 +533,8 @@ CONTAINS
     
     IF(ASSOCIATED(GROUP_NODE)) DEALLOCATE(GROUP_NODE)    
     ALLOCATE(GROUP_NODE(NUM_OF_SCALING_FACTOR_SETS),STAT=ERR)
-    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty variable buffer in IO",ERR,ERROR,*999)
-    
-    IF(ASSOCIATED(GROUP_DERIVATIVES)) DEALLOCATE(GROUP_DERIVATIVES)            
-    ALLOCATE(GROUP_DERIVATIVES(MAX_SCALE_FACTORS),STAT=ERR)
-    !PRINT *, MAX_SCALE_FACTORS
-    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty variable buffer in IO",ERR,ERROR,*999)
-    
-    
-    
-    !ALLOCATE(GROUP_DERIVATIVES(MAX_NUM_OF_NODAL_DERIVATIVES),STAT=ERR)
-    !IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty derivatives buffer in IO",ERR,ERROR,*999)    
-    
+    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty variable buffer in IO",ERR,ERROR,*999)            
+        
     !fill information into the group of fields and variables
   	NULLIFY(variable_ptr) 
   	GROUP_VARIABLES(:)=0 	  	
@@ -559,7 +553,7 @@ CONTAINS
     !write out the scale factor set information
  	LINE="Scale factor sets ="//TRIM(NUMBER_TO_VSTRING(NUM_OF_SCALING_FACTOR_SETS,"*",ERR,ERROR))
  	CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999) 	   
- 	MAX_SCALE_FACTORS=0
+ 	!MAX_SCALE_FACTORS=0
  	GROUP_SCALE_FACTORS(:)=0
  	DO scl_idx=1,NUM_OF_SCALING_FACTOR_SETS          	          
        BASIS=>tmp_components(LIST_SCALE_FACTORS(scl_idx))%PTR%DOMAIN%TOPOLOGY%ELEMENTS% &
@@ -568,7 +562,7 @@ CONTAINS
        IF(ASSOCIATED(BASIS)) THEN
           SELECT CASE(BASIS%TYPE)
             CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
-             LABEL=BASIS_LHTP_FAMILY_LABEL(BASIS,MAX_SCALE_FACTORS, num_scl, num_node, SCALE_FACTORS_NUMBER_TYPE, ERR,ERROR)
+             LABEL=BASIS_LHTP_FAMILY_LABEL(BASIS, num_scl, num_node, SCALE_FACTORS_NUMBER_TYPE, ERR,ERROR)
              IF(ERR/=0) THEN
                 CALL FLAG_ERROR("can not get basis type of lagrange_hermite label",ERR,ERROR,*999)     
                 GOTO 999               
@@ -584,16 +578,18 @@ CONTAINS
        ENDIF
        GROUP_SCALE_FACTORS(scl_idx)=num_scl!numer of scale factors in scale factor set
        GROUP_NODE(scl_idx)=num_node!numer of nodes in scale factor set
+       LINE=LABEL
  	   CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999) 	   	    	                   
  	ENDDO!scl_idx
 
- 	LINE="#NODE=     "//TRIM(NUMBER_TO_VSTRING(NUM_OF_NODES,"*",ERR,ERROR))
+ 	LINE="#NODE=     "//TRIM(NUMBER_TO_VSTRING(MAX_NUM_NODES,"*",ERR,ERROR))
  	CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999) 	  
  	LINE="#FIELD="//TRIM(NUMBER_TO_VSTRING(NUM_OF_VARIABLES,"*",ERR,ERROR))
  	CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999) 	  
  	    
     !write out the nodal header
     var_idx=0
+    NULLIFY(variable_ptr) 
     !comp_idx=1
     !field_idx=1
     !value_idx=1
@@ -611,6 +607,7 @@ CONTAINS
        !grouping field variables and components together
        IF(.NOT.ASSOCIATED(variable_ptr,TARGET=tmp_components(comp_idx)%PTR%FIELD_VARIABLE)) THEN !different variables            
           var_idx=var_idx+1
+          variable_ptr=>tmp_components(comp_idx)%PTR%FIELD_VARIABLE          
           !write out the field information
           LABEL="  "//TRIM(NUMBER_TO_VSTRING(var_idx,"*",ERR,ERROR))//") "&
           &//LABEL_FIELD_INFO_GET(tmp_components(comp_idx)%PTR, VARIABLE_LABEL,ERR,ERROR)
@@ -632,7 +629,7 @@ CONTAINS
        BASIS=>tmp_components(comp_idx)%PTR%DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(comp_idx)%BASIS
        SELECT CASE(BASIS%TYPE)
          CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
-            LABEL=BASIS_LHTP_FAMILY_LABEL(BASIS,MAX_SCALE_FACTORS, num_scl, num_node, SCALE_FACTORS_PROPERTY_TYPE, ERR,ERROR)
+            LABEL=BASIS_LHTP_FAMILY_LABEL(BASIS, num_scl, num_node, SCALE_FACTORS_PROPERTY_TYPE, ERR,ERROR)
              IF(ERR/=0) THEN
                 CALL FLAG_ERROR("can not get basis type of lagrange_hermite label",ERR,ERROR,*999)     
                 GOTO 999               
@@ -656,16 +653,16 @@ CONTAINS
           ENDIF   
           BASIS=>DOMAIN_ELEMENTS%ELEMENTS(LOCAL_ELEMENTAL_NUMBER)%BASIS    
           DO nn=1,BASIS%NUMBER_OF_NODES
- 	         LINE=TRIM(NUMBER_TO_VSTRING(nn,"*",ERR,ERROR))//". #Values=     "//&
+ 	         LINE="     "//TRIM(NUMBER_TO_VSTRING(nn,"*",ERR,ERROR))//". #Values=     "//&
  	             &TRIM(NUMBER_TO_VSTRING(BASIS%NUMBER_OF_DERIVATIVES(nn),"*",ERR,ERROR))
  	         CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999) 	                 
              np=DOMAIN_ELEMENTS%ELEMENTS(LOCAL_ELEMENTAL_NUMBER)%ELEMENT_NODES(nn)               
-             LINE="     Value indices:     "             
+             LINE="      Value indices:     "             
              DO mk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
                 nk=DOMAIN_ELEMENTS%ELEMENTS(LOCAL_ELEMENTAL_NUMBER)%ELEMENT_DERIVATIVES(mk,nn)
                 ny2=DOMAIN_NODES%NODES(np)%DOF_INDEX(nk)
-                GROUP_DERIVATIVES(mk)=ny2
-                LINE=LINE//TRIM(NUMBER_TO_VSTRING(GROUP_DERIVATIVES(mk), "*",ERR,ERROR))
+                !GROUP_DERIVATIVES(mk)=ny2
+                LINE=LINE//TRIM(NUMBER_TO_VSTRING(ny2, "*",ERR,ERROR))
              ENDDO !mk
  	         CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999) 	             
   
@@ -688,7 +685,7 @@ CONTAINS
     IF(ASSOCIATED(GROUP_SCALE_FACTORS)) DEALLOCATE(GROUP_SCALE_FACTORS)    
     IF(ASSOCIATED(GROUP_NODE)) DEALLOCATE(GROUP_NODE)    
     IF(ASSOCIATED(GROUP_VARIABLES)) DEALLOCATE(GROUP_VARIABLES)
-    IF(ASSOCIATED(GROUP_DERIVATIVES)) DEALLOCATE(GROUP_DERIVATIVES)
+    !IF(ASSOCIATED(GROUP_DERIVATIVES)) DEALLOCATE(GROUP_DERIVATIVES)
         
     CALL EXITS("EXPORT_ELEMENTAL_GROUP_HEADER")
     RETURN
@@ -715,7 +712,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: FILE_NAME, LINE !the prefix name of file.    
     TYPE(BASIS_TYPE), POINTER ::BASIS
-    INTEGER(INTG) :: FILE_ID, domain_idx, domain_no, local_number, global_number, MY_DOMAIN_INDEX, INDEX_OF_MAX_SCALE_FACTORS
+    INTEGER(INTG) :: FILE_ID, domain_idx, domain_no, local_number, global_number, MY_DOMAIN_INDEX, MAX_NODE_CPMP_INDEX
 	INTEGER(INTG), POINTER :: LIST_COMP_SCALE(:)!LIST_COMP(:) !Components which will be used for export scale factors    
     INTEGER(INTG) :: nk, np, nn, ns, mk, ny2, elem_num, elem_idx, comp_idx,  scal_idx, NUM_OF_SCALING_FACTOR_SETS !dev_idx	
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING_ELEMENTS !The domain mapping to calculate elemental mappings
@@ -772,12 +769,28 @@ CONTAINS
        CALL FLAG_ERROR("can not get multiple file information in IO",ERR,ERROR,*999)     
        GOTO 999               
     ENDIF         	 
- 	CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999) 	   
+ 	!CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999) 	   
 
     ns=1!
  	DO elem_idx=1, PROCESS_ELEMENTAL_INFO_SET%NUMBER_OF_ELEMENTS
 	   
 	   tmp_components=>PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_idx)%COMPONENTS   	   
+       global_number=PROCESS_ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(elem_idx)
+       
+
+       IF(ASSOCIATED(LIST_COMP_SCALE)) DEALLOCATE(LIST_COMP_SCALE)         
+       ALLOCATE(LIST_COMP_SCALE(PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_idx)%NUMBER_OF_COMPONENTS),STAT=ERR)
+       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate LIST_COMP_SCALE in exelem io",ERR,ERROR,*999)
+
+ 	   !check whether need to write out the nodal information header  
+ 	   IF(PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_idx)%SAME_HEADER==.FALSE.) THEN
+ 	      !print * ,"elem_idx:", elem_idx, "in", my_computational_node_number
+		     !write out the nodal header
+  	      CALL EXPORT_ELEMENTAL_GROUP_HEADER(PROCESS_ELEMENTAL_INFO_SET, elem_idx, MAX_NODE_CPMP_INDEX, NUM_OF_SCALING_FACTOR_SETS, &
+    	       &LIST_COMP_SCALE ,my_computational_node_number, FILE_ID, ERR,ERROR,*999) 
+  	      !value_idx=value_idx-1 !the len of NODAL_BUFFER	          		   
+          !checking: whether need to allocate temporary memory for Io writing
+ 	   ENDIF !PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(elem_idx)%SAME_HEADER==.FALSE.
 
        !IF(ASSOCIATED(SCALING_BUFFER)) THEN
 	   !   IF(SIZE(SCALING_BUFFER)<MAX_NUM_OF_SCALING_INDICES) THEN 
@@ -794,24 +807,32 @@ CONTAINS
 	   !   !ALLOCATE(GROUP_DERIVATIVES(MAX_NUM_OF_NODAL_DERIVATIVES),STAT=ERR)
 	   !   !IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty derivative buffer in IO writing",ERR,ERROR,*999)		     
        !ENDIF
-       IF(ASSOCIATED(LIST_COMP_SCALE)) DEALLOCATE(LIST_COMP_SCALE)         
-       ALLOCATE(LIST_COMP_SCALE(PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_idx)%NUMBER_OF_COMPONENTS),STAT=ERR)
-       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate LIST_COMP_SCALE in exelem io",ERR,ERROR,*999)
+       
+       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+       !write out elemental information		  
+       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+       !element info              
+       LINE="   Element:     "//TRIM(NUMBER_TO_VSTRING(tmp_components(MAX_NODE_CPMP_INDEX)%PTR%DOMAIN%MESH%TOPOLOGY(tmp_components(MAX_NODE_CPMP_INDEX)%PTR%MESH_COMPONENT_NUMBER)%PTR%ELEMENTS%ELEMENTS(global_number)%USER_NUMBER,"*",ERR,ERROR))//" 0 0"
+       CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999) 	                  
+       !node info
+       LINE="   Nodes:" !NEED TO LIST ALL THE NODES(SUCH CUBIC CASE)
+       BASIS=>tmp_components(MAX_NODE_CPMP_INDEX)%PTR%DOMAIN%MESH%TOPOLOGY(tmp_components(MAX_NODE_CPMP_INDEX)%PTR%MESH_COMPONENT_NUMBER)%PTR%ELEMENTS%ELEMENTS(global_number)%BASIS
+       IF(BASIS%DEGENERATE==.FALSE.) THEN
+          DO nn=1,BASIS%NUMBER_OF_NODES
+             LINE=LINE//" "//TRIM(NUMBER_TO_VSTRING(tmp_components(MAX_NODE_CPMP_INDEX)%PTR%DOMAIN%MESH%TOPOLOGY(tmp_components(MAX_NODE_CPMP_INDEX)%PTR%MESH_COMPONENT_NUMBER)%PTR%ELEMENTS%ELEMENTS(global_number)%USER_ELEMENT_NODES(nn),"*",ERR,ERROR))	 
+          ENDDO !nn
+       ELSE
+          CALL FLAG_ERROR("exporting degenerated nodes has not been implemented",ERR,ERROR,*999) 
+       ENDIF  	   
+       CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+	                      
+       !write out scale factors information		  
+       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+       LINE="   Scale factor:"
+       CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999) 	                  
+       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-       DO comp_idx=1,PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_idx)%NUMBER_OF_COMPONENTS
-          
-          global_number=PROCESS_ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(elem_idx)
-
- 	      !check whether need to write out the nodal information header  
- 	      IF(PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_idx)%SAME_HEADER==.FALSE.) THEN
-		     !write out the nodal header
-  	      
-  	         CALL EXPORT_ELEMENTAL_GROUP_HEADER(PROCESS_ELEMENTAL_INFO_SET, elem_idx, INDEX_OF_MAX_SCALE_FACTORS, NUM_OF_SCALING_FACTOR_SETS, &
-  	         &LIST_COMP_SCALE ,my_computational_node_number, FILE_ID, ERR,ERROR,*999) 
-  	         !value_idx=value_idx-1 !the len of NODAL_BUFFER	          		   
-             !checking: whether need to allocate temporary memory for Io writing
- 	      ENDIF !PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(elem_idx)%SAME_HEADER==.FALSE.
-
+       DO comp_idx=1,PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_idx)%NUMBER_OF_COMPONENTS          
 
 	      !finding the local numbering through the global to local mapping	
           DOMAIN_MAPPING_ELEMENTS=>tmp_components(comp_idx)%PTR%DOMAIN%MAPPINGS%ELEMENTS 		
@@ -827,44 +848,7 @@ CONTAINS
           !use local domain information find the out the maximum number of derivatives
           DOMAIN_ELEMENTS=>tmp_components(comp_idx)%PTR%DOMAIN%TOPOLOGY%ELEMENTS
 	      DOMAIN_NODES=>tmp_components(comp_idx)%PTR%DOMAIN%TOPOLOGY%NODES	   
-          
-          
-          !write out the user numbering of node if comp_idx ==1
-          IF(comp_idx==1) THEN 
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             !write out elemental information		  
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             !element info       
-             LINE="Element:     "//TRIM(NUMBER_TO_VSTRING(tmp_components(comp_idx)%PTR%DOMAIN%MESH%TOPOLOGY(tmp_components(comp_idx)%PTR%MESH_COMPONENT_NUMBER)%PTR%ELEMENTS%ELEMENTS(elem_idx)%USER_NUMBER,"*",ERR,ERROR))//" 0 0"
-	         CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999) 	                  
-             !node info
-             LINE="Nodes:" !NEED TO LIST ALL THE NODES(SUCH CUBIC CASE)
-	         CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)		
-             LINE="   "
-             BASIS=>DOMAIN_ELEMENTS%ELEMENTS(local_number)%BASIS
-             IF(BASIS%DEGENERATE==.FALSE.) THEN
-                DO nn=1,BASIS%NUMBER_OF_NODES
-                   np=DOMAIN_ELEMENTS%ELEMENTS(local_number)%ELEMENT_NODES(nn)                   
-                   LINE=LINE//TRIM(NUMBER_TO_VSTRING(tmp_components(comp_idx)%PTR%DOMAIN%TOPOLOGY%NODES%NODES(np)%USER_NUMBER,"*",ERR,ERROR))	 
-                ENDDO !nn
-             ELSE
-                CALL FLAG_ERROR("exporting degenerated nodes has not been implemented",ERR,ERROR,*999) 
-             ENDIF  	   
-	         CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
-	         
-	         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!	          	                          
-             !!LINE="Node:     "//TRIM(NUMBER_TO_VSTRING(DOMAIN_NODES%NODES(local_number)%USER_NUMBER,"*",ERR,ERROR))
- 	         !!CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999) 	 
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             
-             !write out scale factors information		  
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             LINE="Scale factor:"
-	         CALL CMISS_FILE_WRITE(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999) 	                  
-	         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          ENDIF
- 	   
-                                   
+                    
           !write out the components' values of this node in this domain
           !DO scal_idx=1, NUM_OF_SCALING_FACTOR_SETS   
           scal_idx=1
@@ -886,20 +870,23 @@ CONTAINS
              !!use local domain information find the out the maximum number of derivatives
              !DOMAIN_ELEMENTS=>PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_num)%COMPONENTS(comp_idx)%PTR%DOMAIN%TOPOLOGY%ELEMENTS
           
-             ns=1
+             ns=0
              IF(ASSOCIATED(SCALING_BUFFER)) DEALLOCATE(SCALING_BUFFER)            
              ALLOCATE(SCALING_BUFFER(SUM(BASIS%NUMBER_OF_DERIVATIVES(1:BASIS%NUMBER_OF_NODES))),STAT=ERR)
              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate scale buffer in IO",ERR,ERROR,*999)
           
-             BASIS=>DOMAIN_ELEMENTS%ELEMENTS(local_number)%BASIS    
+             BASIS=>DOMAIN_ELEMENTS%ELEMENTS(local_number)%BASIS   
+                           
+             !CALL DISTRIBUTED_VECTOR_DATA_GET(tmp_components(comp_idx)%PTR%FIELD%SCALINGS%SCALINGS(tmp_components(comp_idx)%PTR% &
+             !&SCALING_INDEX)%SCALE_FACTORS,SCALE_FACTORS,ERR,ERROR,*999)                         
              IF(BASIS%DEGENERATE==.FALSE.) THEN
           	    DO nn=1,BASIS%NUMBER_OF_NODES
                    np=DOMAIN_ELEMENTS%ELEMENTS(local_number)%ELEMENT_NODES(nn)
                    DO mk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
                       nk=DOMAIN_ELEMENTS%ELEMENTS(local_number)%ELEMENT_DERIVATIVES(mk,nn)
                       ny2=DOMAIN_NODES%NODES(np)%DOF_INDEX(nk)
-                      SCALING_BUFFER(ns)=1!SCALE_FACTORS(ny2)
                       ns=ns+1
+                      SCALING_BUFFER(ns)=1!SCALE_FACTORS(ny2)                      
                    ENDDO !mk
                 ENDDO !nn
               ELSE
@@ -2624,6 +2611,7 @@ CONTAINS
  	DO nn=1, PROCESS_NODAL_INFO_SET%NUMBER_OF_NODES
 	   
 	   tmp_components=>PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS   	   
+       global_number=PROCESS_NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn)
  	   
  	   !check whether need to write out the nodal information header  
  	   IF(PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%SAME_HEADER==.FALSE.) THEN
@@ -2652,7 +2640,6 @@ CONTAINS
                                    
        !write out the components' values of this node in this domain
        DO comp_idx=1,PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%NUMBER_OF_COMPONENTS   
-          global_number=PROCESS_NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn)
 
 	      !finding the local numbering through the global to local mapping	
           DOMAIN_MAPPING_NODES=>tmp_components(comp_idx)%PTR%DOMAIN%MAPPINGS%NODES 		
