@@ -279,7 +279,8 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_OF_DOFS !<Number of degress of freedom for this field variable. Old CMISS name NYNR(0,0,nc,nr,nx).
     INTEGER(INTG) :: TOTAL_NUMBER_OF_DOFS !<Total number (global) of degrees of freedom for this field variable. Old CMISS name NYNR(0,0,nc,nr,nx).
     INTEGER(INTG) :: GLOBAL_DOF_OFFSET !<The offset of the start of the global dofs for this variable in the list of global field dofs.
-    INTEGER(INTG), ALLOCATABLE :: DOF_LIST(:) !<DOF_LIST(i). The list of field dofs in this field variable. Old CMISS name NYNR(1..,0,nc,nr,nx).
+    INTEGER(INTG), ALLOCATABLE :: DOF_LIST(:) !<DOF_LIST(i). The list of (local) field dofs in this field variable. Old CMISS name NYNR(1..,0,nc,nr,nx).
+    INTEGER(INTG), ALLOCATABLE :: GLOBAL_DOF_LIST(:) !<gLOBAL_DOF_LIST(i). The list of global field dofs in this field variable. Old CMISS name NYNR(1..,0,nc,nr,nx).
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING !<Domain mapping for this variable. Only allocated if the field is a dependent field. May have to reconsider this as we now have a domain mapping for the field as a whole and for each variable of the field. The variable domain mapping to is allow a global matrix/vector mapping to be obtained from the field variable.
     INTEGER(INTG) :: NUMBER_OF_COMPONENTS !<The number of components in the field variable.
     TYPE(FIELD_VARIABLE_COMPONENT_TYPE), ALLOCATABLE :: COMPONENTS(:) !<COMPONENTS(component_idx). The array of field variable components.
@@ -607,6 +608,8 @@ MODULE TYPES
     INTEGER(INTG) :: DATA_SIZE !<The size of the allocated data in the PETSc matrix
     INTEGER(INTG), ALLOCATABLE :: DIAGONAL_NUMBER_NON_ZEROS(:) !<DIAGONAL_NUMBER_NON_ZEROS(i). The number of non-zeros in the diagonal part of the the i'th row
     INTEGER(INTG), ALLOCATABLE :: OFFDIAGONAL_NUMBER_NON_ZEROS(:) !<OFFDIAGONAL_NUMBER_NON_ZEROS(i). The number of non-zeros in the off diagonal part of the the i'th row
+    INTEGER(INTG), ALLOCATABLE :: ROW_INDICES(:) !<ROW_INDICES(i). The row indices for the matrix.
+    INTEGER(INTG), ALLOCATABLE :: COLUMN_INDICES(:) !<COLUMN_INDICES(i). The column indices for the matrix.
     REAL(DP), ALLOCATABLE :: DATA_DP(:) !<DATA_DP(i). The real data for the matrix
     TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE) :: ISLTGMAPPING !<The local to global mapping for the vector
     TYPE(PETSC_MAT_TYPE) :: MATRIX !<The PETSc matrix
@@ -940,89 +943,107 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: ROW_DOFS(:)
     REAL(DP), ALLOCATABLE :: VECTOR(:)
   END TYPE ELEMENT_VECTOR_TYPE
-  
-  !>Contains information on the mapping from a global matrix row/column to a solver matrix row/column.
-  TYPE GLOBAL_TO_SOLVER_MAP_TYPE
-    INTEGER(INTG) :: NUMBER_OF_SOLUTION_DOFS !<Number of solver matrix row/column dofs the global matrix row/column dof is mapped to
-    INTEGER(INTG), ALLOCATABLE :: SOLUTION_DOFS(:) !<SOLUTION_DOFS(i). Contains the i'th solution row/column dof that this global matrix row/column dof is mapped to.
-    REAL(DP), ALLOCATABLE :: COUPLING_COEFFICIENTS(:) !<COUPLING_COEFFICIENTS(i). Contains the i'th coupling coefficient
-  END TYPE GLOBAL_TO_SOLVER_MAP_TYPE
 
+
+!!TODO: move row mappings to global matrices
   !>Contains information about a global matrix
-  TYPE PROBLEM_GLOBAL_MATRIX_TYPE
+  TYPE GLOBAL_MATRIX_TYPE
     INTEGER(INTG) :: MATRIX_NUMBER !<The number of the global matrix
+    TYPE(GLOBAL_MATRICES_TYPE), POINTER :: GLOBAL_MATRICES !<A pointer to the global matrices for the global matrix
     INTEGER(INTG) :: VARIABLE_TYPE !<The variable type for this matrix
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE !<A pointer to the dependent field variable for this matrix
+    REAL(DP) :: MATRIX_COEFFICIENT !<The multiplicative coefficent for the matrix in the equation set
     INTEGER(INTG) :: STORAGE_TYPE !<The storage (sparsity) type for this matrix
     INTEGER(INTG) :: STRUCTURE_TYPE !<The structure (sparsity) type for this matrix
     LOGICAL :: UPDATE_MATRIX !<Is .TRUE. if this global matrix is to be updated
-    INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of rows in this global matrix
+    INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of rows in this global matrix \todo remove this
     INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in this global matrix
-    INTEGER(INTG), ALLOCATABLE :: DOF_ROW_MAP(:) !<DOF_ROW_MAP(row_idx). The DOF that the row_idx'th row of this global matrix is mapped to.
+    INTEGER(INTG), ALLOCATABLE :: DOF_ROW_MAP(:) !<DOF_ROW_MAP(row_idx). The DOF that the row_idx'th row of this global matrix is mapped to. \todo Move this to global matrices
     INTEGER(INTG), ALLOCATABLE :: DOF_COLUMN_MAP(:) !<DOF_COLUMN_MAP(column_idx). The DOF that the column_idx'th column of this global matrix is mapped to. 
-    TYPE(GLOBAL_TO_SOLVER_MAP_TYPE), ALLOCATABLE :: SOLVER_ROW_MAP(:) !<SOLVER_ROW_MAP(row_idx). The mapping from the row_idx'th row of this global matrix to the solver matrix rows. 
-    TYPE(GLOBAL_TO_SOLVER_MAP_TYPE), ALLOCATABLE :: SOLVER_COLUMN_MAP(:) !<SOLVER_COLUMN_MAP(column_idx). The mapping from the column_idx'th column of this global matrix to the solver matrix columns.
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the distributed global matrix data
     TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_MATRIX !<The element matrix for this glboal matrix
-  END TYPE PROBLEM_GLOBAL_MATRIX_TYPE
+  END TYPE GLOBAL_MATRIX_TYPE
 
   !>A buffer type to allow for an array of pointers to a GLOBAL_MATRIX_TYPE.
-  TYPE PROBLEM_GLOBAL_MATRIX_PTR_TYPE    
-    TYPE(PROBLEM_GLOBAL_MATRIX_TYPE), POINTER :: PTR !<The pointer to the global matrix
-  END TYPE PROBLEM_GLOBAL_MATRIX_PTR_TYPE
+  TYPE GLOBAL_MATRIX_PTR_TYPE    
+    TYPE(GLOBAL_MATRIX_TYPE), POINTER :: PTR !<The pointer to the global matrix
+  END TYPE GLOBAL_MATRIX_PTR_TYPE
 
   !>A type to temporarily hold (cache) the user modifiable values that are used to create a field.
-  TYPE PROBLEM_GLOBAL_MATRICES_CREATE_VALUES_CACHE_TYPE
+  TYPE GLOBAL_MATRICES_CREATE_VALUES_CACHE_TYPE
     INTEGER(INTG), ALLOCATABLE :: MATRIX_VARIABLE_TYPES(:) !<MATRIX_VARIABLE_TYPES(matrix_idx). The dependent variable type mapped to the matrix_idx'th global matrix
-    INTEGER(INTG), ALLOCATABLE :: MATRIX_STORAGE_TYPE(:) !<MATRIX_STORAGE_TYPE(matrix_idx). The storage type (sparsity) for the matrix_idx'th global matrix.
+INTEGER(INTG), ALLOCATABLE :: MATRIX_STORAGE_TYPE(:) !<MATRIX_STORAGE_TYPE(matrix_idx). The storage type (sparsity) for the matrix_idx'th global matrix.
     INTEGER(INTG), ALLOCATABLE :: MATRIX_STRUCTURE_TYPE(:) !<MATRIX_STRUCTURE_TYPE(matrix_idx). The structure type (sparsity) for the matrix_idx'th global matrix.
-  END TYPE PROBLEM_GLOBAL_MATRICES_CREATE_VALUES_CACHE_TYPE
+    REAL(DP), ALLOCATABLE :: MATRIX_COEFFICIENTS(:) !<MATRIX_COEFFICIENTS(matrix_idx). The matrix coefficient in the equation set for the matrix_idx'th global matrix.
+  END TYPE GLOBAL_MATRICES_CREATE_VALUES_CACHE_TYPE
   
   !>Contains the information about the mapping of a DOF to global matrices
-  TYPE DOF_TO_GLOBAL_MAPPING_TYPE
+  TYPE DOF_TO_GLOBAL_MAP_TYPE
     INTEGER(INTG) :: ROW_MAPPING !<The global row number the DOF is mapped to.
     INTEGER(INTG) :: NUMBER_OF_MATRICES !<The number of global matrices the DOF is mapped to. Note that if the number of matrices is zero then the DOF is mapped to the global rhs vector. 
     INTEGER(INTG), ALLOCATABLE :: MATRIX_MAPPINGS(:) !<MATRIX_MAPPINGS(i). The i'th global matrix the DOF is mapped to
     INTEGER(INTG), ALLOCATABLE :: COLUMN_MAPPINGS(:) !<COLUMN_MAPPINGS(i). The global column number in the i'th global matrix that the DOF is mapped to.  
-  END TYPE DOF_TO_GLOBAL_MAPPING_TYPE
+  END TYPE DOF_TO_GLOBAL_MAP_TYPE
 
+  !>Contains the mapping for a dependent variable type to the global matrices
+  TYPE GLOBAL_MATRICES_VARIABLE_MAP_TYPE
+    INTEGER(INTG) :: NUMBER_OF_GLOBAL_MATRICES !<The number of global matrices this variable type is mapped to.
+    TYPE(GLOBAL_MATRIX_PTR_TYPE), ALLOCATABLE :: MATRIX_MAP(:) !<MATRIX_MAP(i). MATRIX_MAP(i)%PTR is the pointer to the i'th global matrix that this variable type is mapped to.
+  END TYPE GLOBAL_MATRICES_VARIABLE_MAP_TYPE
+  
   !>Contains information on the global matrices and rhs vector
-  TYPE PROBLEM_GLOBAL_MATRICES_TYPE
+  TYPE GLOBAL_MATRICES_TYPE
     TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION !<A pointer back to the problem soluion
     LOGICAL :: GLOBAL_MATRICES_FINISHED !<Is .TRUE. if the global matrices have finished being created, .FALSE. if not.
+    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING !<A pointer to the solution mapping for the global matrices
     INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of rows in the distributed global matrices
     INTEGER(INTG) :: TOTAL_NUMBER_OF_ROWS !<The total number of rows in the distributed global matrices
     INTEGER(INTG) :: NUMBER_OF_MATRICES !<The number of global matrices defined for the problem.
     INTEGER(INTG) :: RHS_VARIABLE_TYPE !<The dependent variable type mapped to the global RHS vector. If the problem has no global RHS vector then the RHS_VARIABLE_TYPE is 0.
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: RHS_VARIABLE !<A pointer to the dependent variable  mapped to the global RHS vector. If the problem has no global RHS vector then the RHS_VARIABLE is NULL.
-    TYPE(PROBLEM_GLOBAL_MATRIX_PTR_TYPE), ALLOCATABLE :: MATRIX_TYPE_MAP(:) !<The matrix type map. 
-    TYPE(PROBLEM_GLOBAL_MATRIX_TYPE), ALLOCATABLE :: MATRICES(:) !<MATRICES(matrix_idx) contains the information on the matrix_idx'th global matrix
-    LOGICAL :: UPDATE_VECTOR !<Is .TRUE. if the global rhs vector is to be updated
-    TYPE(DOF_TO_GLOBAL_MAPPING_TYPE), ALLOCATABLE :: DOF_TO_GLOBAL_MAPPING(:) !<DOF_TO_GLOBAL_MAPPING(ny). The mappings to the global matrices for the ny'th dependent DOF.
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: RHS_VARIABLE !<A pointer to the dependent variable mapped to the global RHS vector. If the problem has no global RHS vector then the RHS_VARIABLE is NULL.
+    TYPE(GLOBAL_MATRICES_VARIABLE_MAP_TYPE), ALLOCATABLE :: VARIABLE_TYPE_MAPS(:) !<VARIABLE_TYPE_MAPS(variable_type_idx) is the mapping from the variable_type_idx'th variable type to the global matrices
+    !INTEGER(INTG), ALLOCATABLE :: VARIABLE_NUMBER_OF_MATRICES(:) !<VARIABLE_NUMBER_OF_MATRICES(variable_type_idx). The number of global matrices the variable_type_idx dependent field variable is mapped to.
+    !TYPE(GLOBAL_MATRIX_PTR_TYPE), ALLOCATABLE :: MATRIX_TYPE_MAP(:,:) !<MATRIX_TYPE_MAP(i,variable_type_idx). The matrix type map for the dependent field variables. MATRIX_TYPE_MAP(i= 
+    TYPE(DOF_TO_GLOBAL_MAP_TYPE), ALLOCATABLE :: DOF_TO_GLOBAL_MAPS(:) !<DOF_TO_GLOBAL_MAP(ny). The mappings to the global matrices for the ny'th dependent DOF.
     INTEGER(INTG), ALLOCATABLE :: GLOBAL_ROW_TO_DOF_MAP(:) !<GLOBAL_ROW_TO_DOF_MAP(ny). The global DOF corresponding to the ny'th row of the global rhs vector. 
+    TYPE(GLOBAL_MATRIX_TYPE), ALLOCATABLE :: MATRICES(:) !<MATRICES(matrix_idx) contains the information on the matrix_idx'th global matrix
+    LOGICAL :: UPDATE_VECTOR !<Is .TRUE. if the global rhs vector is to be updated
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the distributed global rhs vector data
     TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_VECTOR !<The element rhs information
-    TYPE(PROBLEM_GLOBAL_MATRICES_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE !<The create values cache for the global matrices
-  END TYPE PROBLEM_GLOBAL_MATRICES_TYPE
+    TYPE(GLOBAL_MATRICES_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE !<The create values cache for the global matrices
+  END TYPE GLOBAL_MATRICES_TYPE
+  
+  !>Contains information on the solver matrix
+  TYPE SOLVER_MATRIX_TYPE
+    INTEGER(INTG) :: MATRIX_NUMBER !<The number of the solver matrix
+    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES !<A pointer to the solver matrices for this solver matrix
+    TYPE(SOLVER_MATRIX_MAPPING_TYPE), POINTER :: SOLVER_MATRIX_MAP !<A pointer to the solver matrix map for this solver matrix
+    LOGICAL :: UPDATE_MATRIX !<Is .TRUE. if the solver matrix is to be updated
+    INTEGER(INTG) :: STORAGE_TYPE !<The storage type for the solver matrix.
+    INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of rows in the distributed solver matrix \todo remove this???
+    INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in the distributed solver matrix
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: SOLVER_VECTOR !<A pointer to the distributed solver vector associated with the matrix
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the distributed solver matrix data
+  END TYPE SOLVER_MATRIX_TYPE
 
-  !>Contains the information on what global matrix rows contributed to this solver matrix row.
-  TYPE SOLVER_TO_GLOBAL_MAP_TYPE
-    INTEGER(INTG) :: NUMBER_OF_MATRICES !<The number of global matrices that contributed to this solution row.
-    
-    INTEGER(INTG), ALLOCATABLE :: COLUMNS(:) !<COLUMNS(matrix_idx) is the column number in the matrix_idx'th global matrix that this solution column/variable maps to
-    REAL(DP), ALLOCATABLE :: COUPLING_COEFFICIENTS(:) !<COUPLING_COEFFICIENTS(matrix_idx) is the coupling coefficient for the matrix_idth'th global 
-  END TYPE SOLVER_TO_GLOBAL_MAP_TYPE
-
+  TYPE SOLVER_MATRICES_CREATE_VALUES_CACHE_TYPE
+    INTEGER(INTG), ALLOCATABLE :: MATRIX_STORAGE_TYPE(:)
+  END TYPE SOLVER_MATRICES_CREATE_VALUES_CACHE_TYPE
+  
   !>Contains information on the solver matrices and rhs vector
-  TYPE PROBLEM_SOLVER_MATRICES_TYPE
-    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION !<A pointer to the problem solution
+  TYPE SOLVER_MATRICES_TYPE
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the problem solver
+    LOGICAL :: SOLVER_MATRICES_FINISHED !<Is .TRUE. if the solver matrices have finished being created, .FALSE. if not.
+    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING !<A pointer to the solution mapping for these solver matrices
     INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of rows in the distributed solution matrix for this computational node
     INTEGER(INTG) :: TOTAL_NUMBER_OF_ROWS !<The total number of rows in the distributed solution matrix
-    INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in the distributed solution matrix
-    LOGICAL :: UPDATE_MATRIX !<Is .TRUE. if the solution matrix is to be updated
-    LOGICAL :: UPDATE_VECTOR !<Is .TRUE. if the solution vector is to be updated
-    TYPE(SOLVER_TO_GLOBAL_MAP_TYPE), ALLOCATABLE :: SOLVER_TO_GLOBAL_MAP(:) !<SOLVER_TO_GLOBAL_MAP(no) is the solver to global mappings for the no'th solver column.
-  END TYPE PROBLEM_SOLVER_MATRICES_TYPE
+    INTEGER(INTG) :: LIBRARY_TYPE !<The library type for the solver matrices
+    INTEGER(INTG) :: NUMBER_OF_MATRICES !<The number of solver matrices defined for the problem
+    TYPE(SOLVER_MATRIX_TYPE), ALLOCATABLE :: MATRICES(:) !<MATRICES(matrix_idx) contains the information on the matrix_idx'th solver matrix
+    LOGICAL :: UPDATE_RHS_VECTOR !<Is .TRUE. if the RHS vector is to be updated
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RHS_VECTOR
+    TYPE(SOLVER_MATRICES_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE !<The create values cache for the solver matrices
+  END TYPE SOLVER_MATRICES_TYPE
 
   !>Contains information for a direct linear solver
   TYPE LINEAR_DIRECT_SOLVER_TYPE
@@ -1041,13 +1062,13 @@ MODULE TYPES
     REAL(DP) :: RELATIVE_TOLERANCE !<The relative tolerance between the rhs and residual norm
     REAL(DP) :: ABSOLUTE_TOLERANCE !<The absolute tolerance of the residual norm
     REAL(DP) :: DIVERGENCE_TOLERANCE !<The absolute tolerance of the residual norm
-    TYPE(PETSC_KSP_TYPE) :: KSP !<The PETSc solver object
     TYPE(PETSC_PC_TYPE) :: PC !<The PETSc preconditioner object
+    TYPE(PETSC_KSP_TYPE) :: KSP !<The PETSc solver object
   END TYPE LINEAR_ITERATIVE_SOLVER_TYPE
   
   !>Contains information for a linear solver
   TYPE LINEAR_SOLVER_TYPE
-    TYPE(PROBLEM_SOLVER_TYPE), POINTER :: PROBLEM_SOLVER !<A pointer to the problem_solver
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the problem_solver
     INTEGER(INTG) :: LINEAR_SOLVER_TYPE !<The type of linear solver \see SOLVER_ROUTINES_LinearSolverTypes,SOLVER_ROUTINES
     TYPE(LINEAR_DIRECT_SOLVER_TYPE), POINTER :: DIRECT_SOLVER !<A pointer to the direct solver information
     TYPE(LINEAR_ITERATIVE_SOLVER_TYPE), POINTER :: ITERATIVE_SOLVER !<A pointer to the iterative solver information
@@ -1055,26 +1076,96 @@ MODULE TYPES
   
   !>Contains information for a nonlinear solver
   TYPE NONLINEAR_SOLVER_TYPE
-    TYPE(PROBLEM_SOLVER_TYPE), POINTER :: PROBLEM_SOLVER !<A pointer to the problem_solver
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the problem_solver
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the nonlinear solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
   END TYPE NONLINEAR_SOLVER_TYPE
   
   !>Contains information for a time integration solver
   TYPE TIME_INTEGRATION_SOLVER_TYPE
-    TYPE(PROBLEM_SOLVER_TYPE), POINTER :: PROBLEM_SOLVER !<A pointer to the problem_solver
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the problem_solver
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the time integration solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
   END TYPE TIME_INTEGRATION_SOLVER_TYPE
   
+  !>Contains information for a time integration solver
+  TYPE EIGENPROBLEM_SOLVER_TYPE
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the problem_solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the eigenproblem solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  END TYPE EIGENPROBLEM_SOLVER_TYPE
+  
   !>Contains information on the type of solver to be used
-  TYPE PROBLEM_SOLVER_TYPE
+  TYPE SOLVER_TYPE
     TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION !<A pointer to the problem solution
     LOGICAL :: SOLVER_FINISHED !<Is .TRUE. if the problem solver has finished being created, .FALSE. if not.
-    INTEGER(INTG) :: SOLVER_TYPE !<The type of the problem solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
-    TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(TIME_INTEGRATION_SOLVER_TYPE), POINTER :: TIME_INTEGRATION_SOLVER
-  END TYPE PROBLEM_SOLVER_TYPE
+    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING !<A pointer to the problem solution
+    INTEGER(INTG) :: SOLVERTYPE !<The type of the problem solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
+    TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linear solver information
+    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer to the nonlinear solver information
+    TYPE(TIME_INTEGRATION_SOLVER_TYPE), POINTER :: TIME_INTEGRATION_SOLVER !<A pointer to the time integration solver information
+    TYPE(EIGENPROBLEM_SOLVER_TYPE), POINTER :: EIGENPROBLEM_SOLVER !<A pointer to the eigenproblem solver information
+    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES !<A pointer to the solver matrices for the problem
+  END TYPE SOLVER_TYPE
 
+  !>Contains information on the mapping from a global matrix row/column to a solver matrix row/column.
+  TYPE GLOBAL_TO_SOLVER_MAP_TYPE
+    INTEGER(INTG) :: SOLUTION_DOF !<SOLUTION_DOF. Contains the solution row/column dof that this global matrix row/column dof is mapped to.
+    REAL(DP) :: COUPLING_COEFFICIENT !<COUPLING_COEFFICIENT. Contains the coupling coefficient for this global matrix row/column dof
+  END TYPE GLOBAL_TO_SOLVER_MAP_TYPE
+  
+  !>Contains information on the mapping from a global matrix row/column to a solver matrix row/column.
+  TYPE SOLVER_TO_GLOBAL_MAP_TYPE
+    INTEGER(INTG) :: NUMBER_OF_GLOBAL_DOFS !<Number of global matrix row/column dofs the solver matrix row/column dof is mapped to
+    INTEGER(INTG), ALLOCATABLE :: GLOBAL_MATRIX_NUMBERS(:) !<GLOBAL_MATRIX_NUMBERS(i). Contains the global matrix number that contains the i'th global dof row/column dof.
+    INTEGER(INTG), ALLOCATABLE :: GLOBAL_DOFS(:) !<GLOBAL_DOFS(i). Contains the i'th global matrix row/column dof that this solver matrix row/column dof is mapped to.
+    REAL(DP), ALLOCATABLE :: COUPLING_COEFFICIENTS(:) !<COUPLING_COEFFICIENTS(i). Contains the i'th coupling coefficient. The i=0 coupling coefficient is the additive coefficient.
+  END TYPE SOLVER_TO_GLOBAL_MAP_TYPE
+
+  TYPE GLOBAL_TO_SOLVER_MAPS_TYPE
+    INTEGER(INTG) :: MATRIX_NUMBER !<The matrix number being mapped.
+    INTEGER(INTG) :: GLOBAL_MATRIX_NUMBER !<The global matrix number being mapped.
+    TYPE(GLOBAL_MATRIX_TYPE), POINTER :: GLOBAL_MATRIX !<A pointer to the global matrix being mapped.
+    TYPE(GLOBAL_TO_SOLVER_MAP_TYPE), ALLOCATABLE :: GLOBAL_ROW_MAP(:) !<GLOBAL_ROW_MAP(row_idx). The mapping from the row_idx'th row of this solver matrix to the global matrices rows. 
+    TYPE(GLOBAL_TO_SOLVER_MAP_TYPE), ALLOCATABLE :: GLOBAL_COLUMN_MAP(:) !<GLOBAL_COLUMN_MAP(column_idx). The mapping from the column_idx'th column of this solver matrix to the global matrices columns.
+    !Have GLOBAL_ROW_CONSTANTS???
+    REAL(DP), ALLOCATABLE :: GLOBAL_COLUMN_CONSTANTS(:) !<GLOBAL_COLUMN_CONSTANTS(column_idx). The additive constant for the column_idx'th 
+  END TYPE GLOBAL_TO_SOLVER_MAPS_TYPE
+  
+  TYPE SOLVER_TO_GLOBALS_MAP_TYPE
+    TYPE(SOLVER_TO_GLOBAL_MAP_TYPE), ALLOCATABLE :: SOLVER_ROW_MAP(:) !<SOLVER_COLUMN_MAP(row_idx). The mapping from the row_idx'th row of this solver matrix to the global matrices rows.
+    TYPE(SOLVER_TO_GLOBAL_MAP_TYPE), ALLOCATABLE :: SOLVER_COLUMN_MAP(:) !<SOLVER_COLUMN_MAP(column_idx). The mapping from the column_idx'th column of this solver matrix to the global matrices columns.
+  END TYPE SOLVER_TO_GLOBALS_MAP_TYPE
+
+
+!!TODO: move row mappings to solver matrices
+  TYPE SOLVER_MATRIX_MAPPING_TYPE
+    INTEGER(INTG) :: SOLVER_MATRIX_NUMBER !<The number of this solver matrix.
+    TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX !<A pointer to the solver matrix being mapped.
+    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING !<A pointer to the solution mapping for this solver matrix mapping
+    INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of (local) rows in this distributed solver matrix \todo remove this
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_ROWS !<The total number of rows in this distributed solver matrix \todo remove this
+    INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in this distributed solver matrix
+    INTEGER(INTG) :: NUMBER_OF_VARIABLES !<The number of variables mapped to this solver matrix
+    TYPE(FIELD_VARIABLE_PTR_TYPE), ALLOCATABLE :: VARIABLES(:) !<VARIABLES(variable_idx). VARIABLES(variable_idx)%PTR points to the variable_idx'th variable that is mapped to the solver matrix.
+    INTEGER(INTG) :: NUMBER_OF_GLOBAL_MATRICES !<The number of global matrices this solver matrix is mapped to
+    TYPE(GLOBAL_TO_SOLVER_MAPS_TYPE), ALLOCATABLE :: GLOBAL_TO_SOLVER_MAPS(:) !<SOLVER_GLOBAL_MAPS(matrix_idx). The solver global matrix maps for the matrix_idx'th global matrix
+    TYPE(SOLVER_TO_GLOBALS_MAP_TYPE) :: SOLVER_TO_GLOBALS_MAP
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: COLUMN_DOFS_MAPPING !<The domain mapping for solver matrix colum dofs.
+  END TYPE SOLVER_MATRIX_MAPPING_TYPE
+
+  TYPE SOLUTION_MAPPING_CREATE_VALUES_CACHE_TYPE
+    INTEGER(INTG), ALLOCATABLE :: MATRIX_VARIABLE_TYPES(:,:) !<MATRIX_VARIABLE_TYPES(0:..,matrix_idx). The list of matrix variable types for the matrix_idx'th solver matrix. MATRIX_VARIABLE_TYPES(0,matrix_idx) is the number of variable types mapped to the matrix_idx'th solver matrix and MATRIX_VARIABLE_TYPES(1..,matrix_idx) is the list of the variable types.
+  END TYPE SOLUTION_MAPPING_CREATE_VALUES_CACHE_TYPE
+  
+  TYPE SOLUTION_MAPPING_TYPE
+    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION !<A pointer to the problem solution for this mapping.
+    LOGICAL :: SOLUTION_MAPPING_FINISHED !<Is .TRUE. if the solution mapping has finished being created, .FALSE. if not.
+    INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of (local) rows in the solver matrices
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_ROWS !<The total number of rows in the solver matrices
+    INTEGER(INTG) :: NUMBER_OF_SOLVER_MATRICES !<The number of solution matrices in this mapping.
+    TYPE(SOLVER_MATRIX_MAPPING_TYPE), ALLOCATABLE :: SOLVER_MATRIX_MAPS(:) !<SOLVER_MATRIX_MAPS(matrix_idx'th). The mappings for the matrix_idx'th solver matrix.
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ROW_DOFS_MAPPING !<The domain mapping for the solver rows.
+    TYPE(SOLUTION_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE !<The create values cache for the solution mapping
+  END TYPE SOLUTION_MAPPING_TYPE
+  
   !>Contains information regarding the solution of a problem
   TYPE PROBLEM_SOLUTION_TYPE
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem
@@ -1085,9 +1176,9 @@ MODULE TYPES
     TYPE(PROBLEM_LINEAR_DATA_TYPE), POINTER :: LINEAR_DATA !<A pointer to the data for linear problems.
     TYPE(PROBLEM_NONLINEAR_DATA_TYPE), POINTER :: NONLINEAR_DATA !<A pointer to the data for non-linear problems.
     TYPE(PROBLEM_TIME_DATA_TYPE), POINTER :: TIME_DATA !<A pointer to the data for non-static problems
-    TYPE(PROBLEM_SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver used for the problem solution
-    TYPE(PROBLEM_GLOBAL_MATRICES_TYPE), POINTER :: GLOBAL_MATRICES !<A pointer to the global matrices and vectors used for the problem solution.
-    TYPE(PROBLEM_SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES !<A pointer to the solver matrices and vectors used for the problem solution.    
+    TYPE(GLOBAL_MATRICES_TYPE), POINTER :: GLOBAL_MATRICES !<A pointer to the global matrices and vectors used for the problem solution.
+    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING !<A pointer to the solution mapping for the problem solution.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver for the problem.
   END TYPE PROBLEM_SOLUTION_TYPE
 
   !>Contains information for a problem defined on a region.
@@ -1114,7 +1205,6 @@ MODULE TYPES
     TYPE(PROBLEM_ANALYTIC_TYPE), POINTER :: ANALYTIC !<A pointer to the analytic setup information for the problem.
     TYPE(PROBLEM_FIXED_CONDITIONS_TYPE), POINTER :: FIXED_CONDITIONS !<A pointer to the fixed condition information for the problem. \todo Change name to BOUNDARY_CONDITIONS???
     TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the solution information for the problem.
-    TYPE(PROBLEM_SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver for the problem.
   END TYPE PROBLEM_TYPE
   
   !>A buffer type to allow for an array of pointers to a PROBLEM_TYPE.

@@ -39,6 +39,7 @@
 		<File RelativePath="..\..\src\domain_mappings.f90"/>
 		<File RelativePath="..\..\src\f90c_f.f90"/>
 		<File RelativePath="..\..\src\field_routines.f90"/>
+		<File RelativePath="..\..\src\global_matrices_routines.f90"/>
 		<File RelativePath="..\..\src\input_output.f90"/>
 		<File RelativePath="..\..\src\iso_varying_string.f90"/>
 		<File RelativePath="..\..\src\kinds.f90"/>
@@ -51,6 +52,8 @@
 		<File RelativePath="..\..\src\opencmisstest.f90"/>
 		<File RelativePath="..\..\src\problem_routines.f90"/>
 		<File RelativePath="..\..\src\region_routines.f90"/>
+		<File RelativePath="..\..\src\solution_mapping_routines.f90"/>
+		<File RelativePath="..\..\src\solver_matrices_routines.f90"/>
 		<File RelativePath="..\..\src\solver_routines.f90"/>
 		<File RelativePath="..\..\src\strings.f90"/>
 		<File RelativePath="..\..\src\timer_f.f90"/>

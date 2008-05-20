@@ -155,9 +155,9 @@ ifeq ($(OPERATING_SYSTEM),linux)
   #endif
 
   #Use Intel compilers if available (icc -V sends output to STDERR and exits with error).
-  ifneq (,$(shell icc -V 2>&1 | grep -i intel))
-    CC = icc
-  endif
+  #ifneq (,$(shell icc -V 2>&1 | grep -i intel))
+  #  CC = icc
+  #endif
   ifneq (,$(shell ifort -V 2>&1 | grep -i intel))
     FC = ifort
   endif
@@ -515,6 +515,7 @@ OBJECTS = $(OBJECT_DIR)/opencmisstest.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/f90c_f.o \
 	$(OBJECT_DIR)/f90c_c.o \
+	$(OBJECT_DIR)/global_matrices_routines.o \
 	$(OBJECT_DIR)/input_output.o \
         $(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -524,6 +525,8 @@ OBJECTS = $(OBJECT_DIR)/opencmisstest.o \
 	$(OBJECT_DIR)/mesh_routines.o \
 	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/problem_routines.o \
+	$(OBJECT_DIR)/solution_mapping_routines.o \
+	$(OBJECT_DIR)/solver_matrices_routines.o \
 	$(OBJECT_DIR)/solver_routines.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/region_routines.o \
@@ -688,6 +691,17 @@ $(OBJECT_DIR)/f90c_f.o	:	$(SOURCE_DIR)/f90c_f.f90 \
 	$(MACHINE_OBJECTS) \
 	$(OBJECT_DIR)/iso_varying_string.o
 
+$(OBJECT_DIR)/global_matrices_routines.o	:	$(SOURCE_DIR)/global_matrices_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/distributed_matrix_vector.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o	\
+	$(OBJECT_DIR)/lists.o	\
+	$(OBJECT_DIR)/matrix_vector.o	\
+	$(OBJECT_DIR)/strings.o	\
+	$(OBJECT_DIR)/types.o
+
 $(OBJECT_DIR)/input_output.o	:	$(SOURCE_DIR)/input_output.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/kinds.o	\
@@ -788,20 +802,46 @@ $(OBJECT_DIR)/problem_routines.o	:	$(SOURCE_DIR)/problem_routines.f90 \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/domain_mappings.o \
 	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/global_matrices_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/lists.o \
 	$(OBJECT_DIR)/matrix_vector.o \
+	$(OBJECT_DIR)/solution_mapping_routines.o \
+	$(OBJECT_DIR)/solver_routines.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/timer_f.o \
 	$(OBJECT_DIR)/types.o
 
-(OBJECT_DIR)/solver_routines.o	:	$(SOURCE_DIR)/solver_routines.f90 \
+$(OBJECT_DIR)/solution_mapping_routines.o	:	$(SOURCE_DIR)/solution_mapping_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/computational_environment.o \
+	$(OBJECT_DIR)/distributed_matrix_vector.o \
+	$(OBJECT_DIR)/domain_mappings.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o	\
+	$(OBJECT_DIR)/matrix_vector.o	\
+	$(OBJECT_DIR)/strings.o	\
+	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/solver_matrices_routines.o	:	$(SOURCE_DIR)/solver_matrices_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/distributed_matrix_vector.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o	\
+	$(OBJECT_DIR)/matrix_vector.o	\
+	$(OBJECT_DIR)/strings.o	\
+	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/solver_routines.o	:	$(SOURCE_DIR)/solver_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/solver_matrices_routines.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 

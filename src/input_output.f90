@@ -3785,6 +3785,7 @@ CONTAINS
   !
   !================================================================================================================================
   !
+  
 
   !>Writes the given long integer MATRIX to the given output stream specified by ID. The basic output is determined by the flag INDEX_FORMAT_TYPE. If INDEX_FORMAT_TYPE is WRITE_STRING_MATRIX_NAME_ONLY then the first line of output for each row is MATRIX_NAME_FORMAT concatenated named with the FIRST_FORMAT. If INDEX_FORMAT_TYPE is WRITE_STRING_MATRIX_NAME_AND_INDICES then the first line of output for each row is MATRIX_NAME_FORMAT concatenated with ROW_INDEX_FORMAT and concatenated with FIRST_FORMAT. Note that with a WRITE_STRING_MATRIX_NAME_AND_INDICES index format type the row number will be supplied to the format before the matrix data. The FIRST_FORMAT is the format initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. FIRST_ROW/FIRST_COLUMN and LAST_ROW/LAST_COLUMN are the extents of the row/column and DELTA_ROW/DELTA_COLUMN is the NUMBER of indices to skip for each row/column index.
   SUBROUTINE WRITE_STRING_MATRIX_LINTG(ID,FIRST_ROW,DELTA_ROW,LAST_ROW,FIRST_COLUMN,DELTA_COLUMN,LAST_COLUMN,NUMBER_FIRST, &

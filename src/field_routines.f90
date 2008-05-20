@@ -2277,6 +2277,8 @@ CONTAINS
         ALLOCATE(FIELD%VARIABLES(variable_idx)%DOF_LIST(NUMBER_OF_VARIABLE_DOFS),STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field variable dof list",ERR,ERROR,*999)
         FIELD%VARIABLES(variable_idx)%NUMBER_OF_DOFS=NUMBER_OF_VARIABLE_DOFS
+        ALLOCATE(FIELD%VARIABLES(variable_idx)%GLOBAL_DOF_LIST(TOTAL_NUMBER_OF_VARIABLE_DOFS),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field variable global dof list",ERR,ERROR,*999)
         FIELD%VARIABLES(variable_idx)%TOTAL_NUMBER_OF_DOFS=TOTAL_NUMBER_OF_VARIABLE_DOFS
       ENDDO !variable_idx
       !Allocate the mapping arrays
@@ -2323,6 +2325,7 @@ CONTAINS
       !Calculate the local and global numbers and set up the mappings
       DO variable_idx=1,FIELD%NUMBER_OF_VARIABLES
         NUMBER_OF_VARIABLE_DOFS=0
+        TOTAL_NUMBER_OF_VARIABLE_DOFS=0
         VARIABLE_GLOBAL_DOFS_OFFSET=0
         VARIABLE_LOCAL_DOFS_OFFSETS=0
         FIELD_VARIABLE_DOFS_MAPPING=>FIELD%VARIABLES(variable_idx)%DOMAIN_MAPPING
@@ -2357,6 +2360,8 @@ CONTAINS
             variable_local_ny=1+VARIABLE_LOCAL_DOFS_OFFSETS(my_computational_node_number)
             NUMBER_OF_VARIABLE_DOFS=NUMBER_OF_VARIABLE_DOFS+1
             FIELD%VARIABLES(variable_idx)%DOF_LIST(NUMBER_OF_VARIABLE_DOFS)=local_ny
+            TOTAL_NUMBER_OF_VARIABLE_DOFS=TOTAL_NUMBER_OF_VARIABLE_DOFS+1
+            FIELD%VARIABLES(variable_idx)%GLOBAL_DOF_LIST(TOTAL_NUMBER_OF_VARIABLE_DOFS)=global_ny
             !Allocate and set up global to local domain map for variable mapping
             IF(ASSOCIATED(FIELD_VARIABLE_DOFS_MAPPING)) THEN
               variable_global_ny=1+VARIABLE_GLOBAL_DOFS_OFFSET
@@ -2416,6 +2421,8 @@ CONTAINS
             DO ny=1,ELEMENTS_MAPPING%NUMBER_OF_GLOBAL
               !Handle field mappings
               global_ny=ny+GLOBAL_DOFS_OFFSET
+              TOTAL_NUMBER_OF_VARIABLE_DOFS=TOTAL_NUMBER_OF_VARIABLE_DOFS+1
+              FIELD%VARIABLES(variable_idx)%GLOBAL_DOF_LIST(TOTAL_NUMBER_OF_VARIABLE_DOFS)=global_ny
               CALL DOMAIN_MAPPINGS_MAPPING_GLOBAL_INITIALISE(FIELD_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_ny),ERR,ERROR,*999)
               NUMBER_OF_DOMAINS=DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS
               ALLOCATE(FIELD_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_ny)%LOCAL_NUMBER(NUMBER_OF_DOMAINS),STAT=ERR)
@@ -2511,6 +2518,8 @@ CONTAINS
             DO ny=1,DOFS_MAPPING%NUMBER_OF_GLOBAL
               !Handle field mapping
               global_ny=ny+GLOBAL_DOFS_OFFSET
+              TOTAL_NUMBER_OF_VARIABLE_DOFS=TOTAL_NUMBER_OF_VARIABLE_DOFS+1
+              FIELD%VARIABLES(variable_idx)%GLOBAL_DOF_LIST(TOTAL_NUMBER_OF_VARIABLE_DOFS)=global_ny
               CALL DOMAIN_MAPPINGS_MAPPING_GLOBAL_INITIALISE(FIELD_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_ny),ERR,ERROR,*999)
               NUMBER_OF_DOMAINS=DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS
               ALLOCATE(FIELD_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_ny)%LOCAL_NUMBER(NUMBER_OF_DOMAINS),STAT=ERR)
@@ -2710,17 +2719,13 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Sets/changes the geometric field for a field identified by a pointer.
   SUBROUTINE FIELD_GEOMETRIC_FIELD_SET_PTR(FIELD,GEOMETRIC_FIELD,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_GEOMETRIC_FIELD_SET_PTR
-    !###  Description:
-    !###    Sets/changes the geometric field for a field identified by a pointer.
-    !###  Parent-subroutine: FIELD_GEOMETRIC_FIELD_SET
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to set the geometric field for
+    TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<A pointer to the geometric field
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -3320,16 +3325,12 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets/changes the mesh decomposition for a field indentified by a pointer.
   SUBROUTINE FIELD_MESH_DECOMPOSITION_SET_PTR(FIELD,MESH_DECOMPOSITION,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_MESH_DECOMPOSITION_SET_PTR
-    !###  Description:
-    !###    Sets/changes the mesh decomposition for a field indentified by a pointer.
-    !###  Parent-subroutine: FIELD_MESH_DECOMPOSITION_SET
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    TYPE(DECOMPOSITION_TYPE), POINTER :: MESH_DECOMPOSITION
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to set the decomposition for
+    TYPE(DECOMPOSITION_TYPE), POINTER :: MESH_DECOMPOSITION !<A pointer to the mesh decomposition to set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -3463,16 +3464,12 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets/changes the number of field components for a field identified by a pointer.
   SUBROUTINE FIELD_NUMBER_OF_COMPONENTS_SET_PTR(FIELD,NUMBER_OF_COMPONENTS,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_SET_NUMBER_OF_COMPONENTS_PTR
-    !###  Description:
-    !###    Sets/changes the number of field components for a field identified by a pointer.
-    !###  Parent-subroutine: FIELD_NUMBER_OF_COMPONENTS_SET
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_COMPONENTS
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to set the number of components
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_COMPONENTS !<The number of components to be set.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -5121,6 +5118,7 @@ CONTAINS
 
     CALL FIELD_VARIABLE_COMPONENTS_FINALISE(FIELD_VARIABLE,ERR,ERROR,*999)
     IF(ALLOCATED(FIELD_VARIABLE%DOF_LIST)) DEALLOCATE(FIELD_VARIABLE%DOF_LIST)
+    IF(ALLOCATED(FIELD_VARIABLE%GLOBAL_DOF_LIST)) DEALLOCATE(FIELD_VARIABLE%GLOBAL_DOF_LIST)
     IF(ASSOCIATED(FIELD_VARIABLE%DOMAIN_MAPPING)) THEN
       CALL DOMAIN_MAPPINGS_MAPPING_FINALISE(FIELD_VARIABLE%DOMAIN_MAPPING,ERR,ERROR,*999)
       DEALLOCATE(FIELD_VARIABLE%DOMAIN_MAPPING)

@@ -232,6 +232,8 @@ CONTAINS
             NEW_DECOMPOSITION%ELEMENT_DOMAIN=0          
             !Nullify the domain
             NULLIFY(NEW_DECOMPOSITION%DOMAIN)
+            !Nullify the topology
+            NULLIFY(NEW_DECOMPOSITION%TOPOLOGY)
             !Add new decomposition into list of decompositions on the mesh
             ALLOCATE(NEW_DECOMPOSITIONS(MESH%DECOMPOSITIONS%NUMBER_OF_DECOMPOSITIONS+1),STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new decompositions",ERR,ERROR,*999)
