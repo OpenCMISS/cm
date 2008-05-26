@@ -606,10 +606,12 @@ MODULE TYPES
     INTEGER(INTG) :: STORAGE_TYPE !<The storage type (sparsity) of the PETSc matrix
     INTEGER(INTG) :: NUMBER_NON_ZEROS !<The number of non-zeros in the PETSc matrix
     INTEGER(INTG) :: DATA_SIZE !<The size of the allocated data in the PETSc matrix
+    INTEGER(INTG) :: MAXIMUM_COLUMN_INDICES_PER_ROW !<The maximum number of column indicies for the rows.
     INTEGER(INTG), ALLOCATABLE :: DIAGONAL_NUMBER_NON_ZEROS(:) !<DIAGONAL_NUMBER_NON_ZEROS(i). The number of non-zeros in the diagonal part of the the i'th row
     INTEGER(INTG), ALLOCATABLE :: OFFDIAGONAL_NUMBER_NON_ZEROS(:) !<OFFDIAGONAL_NUMBER_NON_ZEROS(i). The number of non-zeros in the off diagonal part of the the i'th row
     INTEGER(INTG), ALLOCATABLE :: ROW_INDICES(:) !<ROW_INDICES(i). The row indices for the matrix.
     INTEGER(INTG), ALLOCATABLE :: COLUMN_INDICES(:) !<COLUMN_INDICES(i). The column indices for the matrix.
+    INTEGER(INTG), ALLOCATABLE :: GLOBAL_ROW_NUMBERS(:) !<GLOBAL_ROW_NUMBERS(i). The PETSc global row number corresponding to the i'th local row number.
     REAL(DP), ALLOCATABLE :: DATA_DP(:) !<DATA_DP(i). The real data for the matrix
     TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE) :: ISLTGMAPPING !<The local to global mapping for the vector
     TYPE(PETSC_MAT_TYPE) :: MATRIX !<The PETSc matrix
@@ -651,6 +653,7 @@ MODULE TYPES
     INTEGER(INTG) :: STORAGE_TYPE !<The storage type of the matrix \see MATRIX_VECTOR_StorageTypes 
     INTEGER(INTG) :: NUMBER_NON_ZEROS !<The number of non-zero elements in the matrix 
     INTEGER(INTG) :: SIZE !<The size of the data arrays
+    INTEGER(INTG) :: MAXIMUM_COLUMN_INDICES_PER_ROW !<The maximum number of column indicies for the rows.
     INTEGER(INTG), ALLOCATABLE :: ROW_INDICES(:) !<ROW_INDICES(i). The row indices for the matrix storage scheme. \see MATRIX_VECTOR_MatrixStorageStructures
     INTEGER(INTG), ALLOCATABLE :: COLUMN_INDICES(:) !<COLUMN_INDICES(i). The column indices for the matrix storage scheme. \see MATRIX_VECTOR_MatrixStorageStructures
     INTEGER(INTG), ALLOCATABLE :: DATA_INTG(:) !<DATA_INTG(i). The integer data for an integer matrix. The i'th component contains the data for the i'th matrix data stored on the domain.
@@ -1098,6 +1101,7 @@ INTEGER(INTG), ALLOCATABLE :: MATRIX_STORAGE_TYPE(:) !<MATRIX_STORAGE_TYPE(matri
     LOGICAL :: SOLVER_FINISHED !<Is .TRUE. if the problem solver has finished being created, .FALSE. if not.
     TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING !<A pointer to the problem solution
     INTEGER(INTG) :: SOLVERTYPE !<The type of the problem solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
+    INTEGER(INTG) :: OUTPUT_TYPE !<The type of output required \see SOLVER_ROUTINES_OutputTypes,SOLVER_ROUTINES
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linear solver information
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer to the nonlinear solver information
     TYPE(TIME_INTEGRATION_SOLVER_TYPE), POINTER :: TIME_INTEGRATION_SOLVER !<A pointer to the time integration solver information
@@ -1107,8 +1111,9 @@ INTEGER(INTG), ALLOCATABLE :: MATRIX_STORAGE_TYPE(:) !<MATRIX_STORAGE_TYPE(matri
 
   !>Contains information on the mapping from a global matrix row/column to a solver matrix row/column.
   TYPE GLOBAL_TO_SOLVER_MAP_TYPE
-    INTEGER(INTG) :: SOLUTION_DOF !<SOLUTION_DOF. Contains the solution row/column dof that this global matrix row/column dof is mapped to.
-    REAL(DP) :: COUPLING_COEFFICIENT !<COUPLING_COEFFICIENT. Contains the coupling coefficient for this global matrix row/column dof
+    INTEGER(INTG) :: NUMBER_OF_SOLUTION_DOFS !<The number of solution row/columns this global matrix row/column is mapped to. 
+    INTEGER(INTG), ALLOCATABLE :: SOLUTION_DOFS(:) !<SOLUTION_DOFS(i). Contains the i'th solution row/column dof that this global matrix row/column dof is mapped to.
+    REAL(DP), ALLOCATABLE :: COUPLING_COEFFICIENTS(:) !<COUPLING_COEFFICIENT(i). Contains the i'th coupling coefficient for this global matrix row/column dof
   END TYPE GLOBAL_TO_SOLVER_MAP_TYPE
   
   !>Contains information on the mapping from a global matrix row/column to a solver matrix row/column.
@@ -1171,6 +1176,7 @@ INTEGER(INTG), ALLOCATABLE :: MATRIX_STORAGE_TYPE(:) !<MATRIX_STORAGE_TYPE(matri
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem
     LOGICAL :: SOLUTION_FINISHED !<Is .TRUE. if the problem solution has finished being created, .FALSE. if not.
     INTEGER(INTG) :: OUTPUT_TYPE !<The output type for the problem solution \see PROBLEM_ROUTINES_SolutionOutputTypes,PROBLEM_ROUTINES
+    INTEGER(INTG) :: SOLVER_OUTPUT_TYPE !<The output type for the problem solver \see SOLVER_ROUTINES_OutputTypes,SOLVER_ROUTINES
     INTEGER(INTG) :: GLOBAL_SPARSITY_TYPE !<The sparsity type for the global matrices of the problem solution \see PROBLEM_ROUTINES_SolutionGlobalSparsityTypes,PROBLEM_ROUTINES
     TYPE(PROBLEM_INTERPOLATION_TYPE), POINTER :: INTERPOLATION !<A pointer to the interpolation information used in the problem solution
     TYPE(PROBLEM_LINEAR_DATA_TYPE), POINTER :: LINEAR_DATA !<A pointer to the data for linear problems.

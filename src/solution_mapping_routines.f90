@@ -663,8 +663,8 @@ CONTAINS
 
     CALL ENTERS("SOLUTION_MAPPING_GLOBAL_TO_SOLVER_MAP_FINALISE",ERR,ERROR,*999)
 
-    GLOBAL_TO_SOLVER_MAP%SOLUTION_DOF=0
-    GLOBAL_TO_SOLVER_MAP%COUPLING_COEFFICIENT=0.0_DP
+    IF(ALLOCATED(GLOBAL_TO_SOLVER_MAP%SOLUTION_DOFS)) DEALLOCATE(GLOBAL_TO_SOLVER_MAP%SOLUTION_DOFS)
+    IF(ALLOCATED(GLOBAL_TO_SOLVER_MAP%COUPLING_COEFFICIENTS)) DEALLOCATE(GLOBAL_TO_SOLVER_MAP%COUPLING_COEFFICIENTS)
         
     CALL EXITS("SOLUTION_MAPPING_GLOBAL_TO_SOLVER_MAP_FINALISE")
     RETURN
@@ -688,8 +688,7 @@ CONTAINS
 
     CALL ENTERS("SOLUTION_MAPPING_GLOBAL_TO_SOLVER_MAP_INITIALISE",ERR,ERROR,*999)
 
-    GLOBAL_TO_SOLVER_MAP%SOLUTION_DOF=0
-    GLOBAL_TO_SOLVER_MAP%COUPLING_COEFFICIENT=0.0_DP
+    GLOBAL_TO_SOLVER_MAP%NUMBER_OF_SOLUTION_DOFS=0
         
     CALL EXITS("SOLUTION_MAPPING_GLOBAL_TO_SOLVER_MAP_INITIALISE")
     RETURN
@@ -1121,7 +1120,7 @@ CONTAINS
                                   & ERR,ERROR,*999)
                                 !Allocate the solver to global column map items
                                 ALLOCATE(SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)%SOLVER_TO_GLOBALS_MAP% &
-                                  & SOLVER_COLUMN_MAP(NUMBER_OF_LOCAL_SOLVER_DOFS)%GLOBAL_MATRIX_NUMBERS( &
+                                  & SOLVER_COLUMN_MAP(NUMBER_OF_GLOBAL_SOLVER_DOFS)%GLOBAL_MATRIX_NUMBERS( &
                                   & NUMBER_OF_GLOBAL_MATRICES),STAT=ERR)
                                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global column map global matrix numbers", &
                                   & ERR,ERROR,*999)
@@ -1150,31 +1149,61 @@ CONTAINS
                                     & SOLVER_ROW_MAP(NUMBER_OF_LOCAL_SOLVER_DOFS)%COUPLING_COEFFICIENTS(matrix_idx)=1.0_DP
                                   !Set the column map
                                   SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)%SOLVER_TO_GLOBALS_MAP% &
-                                    & SOLVER_COLUMN_MAP(NUMBER_OF_LOCAL_SOLVER_DOFS)%GLOBAL_MATRIX_NUMBERS(matrix_idx)= &
+                                    & SOLVER_COLUMN_MAP(NUMBER_OF_GLOBAL_SOLVER_DOFS)%GLOBAL_MATRIX_NUMBERS(matrix_idx)= &
                                     & GLOBAL_MATRICES%VARIABLE_TYPE_MAPS(variable_type)%MATRIX_MAP(matrix_idx)%PTR% &
                                     & MATRIX_NUMBER
                                   SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)%SOLVER_TO_GLOBALS_MAP% &
-                                    & SOLVER_COLUMN_MAP(NUMBER_OF_LOCAL_SOLVER_DOFS)%GLOBAL_DOFS(matrix_idx)=global_ny
+                                    & SOLVER_COLUMN_MAP(NUMBER_OF_GLOBAL_SOLVER_DOFS)%GLOBAL_DOFS(matrix_idx)=global_ny
                                   SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)%SOLVER_TO_GLOBALS_MAP% &
-                                    & SOLVER_COLUMN_MAP(NUMBER_OF_LOCAL_SOLVER_DOFS)%COUPLING_COEFFICIENTS(matrix_idx)= &
+                                    & SOLVER_COLUMN_MAP(NUMBER_OF_GLOBAL_SOLVER_DOFS)%COUPLING_COEFFICIENTS(matrix_idx)= &
                                     & GLOBAL_MATRICES%VARIABLE_TYPE_MAPS(variable_type)%MATRIX_MAP(matrix_idx)%PTR% &
                                     & MATRIX_COEFFICIENT
                                 ENDDO !matrix idx
-                                !Secondly, set up the global -> solver mapping
+                                !Secondly, set up the global -> solver mapping                                
                                 DO matrix_idx=1,NUMBER_OF_GLOBAL_MATRICES
+                                  !Allocate the global to solver map row items
+                                  SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS( &
+                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_ROW_MAP(local_ny)%NUMBER_OF_SOLUTION_DOFS=1
+                                  ALLOCATE(SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS( &
+                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_ROW_MAP(local_ny)%SOLUTION_DOFS(SOLUTION_MAPPING% &
+                                    & SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS( &
+                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_ROW_MAP(local_ny)%NUMBER_OF_SOLUTION_DOFS),STAT=ERR)
+                                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global row map solution dofs.",ERR,ERROR,*999)
+                                  ALLOCATE(SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS( &
+                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_ROW_MAP(local_ny)%COUPLING_COEFFICIENTS( &
+                                    & SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS( &
+                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_ROW_MAP(local_ny)%NUMBER_OF_SOLUTION_DOFS),STAT=ERR)
+                                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global row map coupling coefficients.", &
+                                    & ERR,ERROR,*999)
+                                  !Allocate the global to solver map column items
+                                  SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS( &
+                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_COLUMN_MAP(global_ny)%NUMBER_OF_SOLUTION_DOFS=1
+                                  ALLOCATE(SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS( &
+                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_COLUMN_MAP(global_ny)%SOLUTION_DOFS( &
+                                    & SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS( &
+                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_COLUMN_MAP(global_ny)% &
+                                    & NUMBER_OF_SOLUTION_DOFS),STAT=ERR)
+                                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global column map solution dofs.",ERR,ERROR,*999)
+                                  ALLOCATE(SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS( &
+                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_COLUMN_MAP(global_ny)%COUPLING_COEFFICIENTS( &
+                                    & SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS( &
+                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_COLUMN_MAP(global_ny)% &
+                                    & NUMBER_OF_SOLUTION_DOFS),STAT=ERR)
+                                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global column map coupling coefficients.", &
+                                    & ERR,ERROR,*999)
                                   !Do the row mapping
                                   SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS( &
-                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_ROW_MAP(local_ny)%SOLUTION_DOF= &
+                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_ROW_MAP(local_ny)%SOLUTION_DOFS(1)= &
                                     & NUMBER_OF_LOCAL_SOLVER_DOFS
                                   SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS( &
-                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_ROW_MAP(local_ny)%COUPLING_COEFFICIENT= &
+                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_ROW_MAP(local_ny)%COUPLING_COEFFICIENTS(1)= &
                                     & 1.0_DP
                                   !Do the column mapping
                                   SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS( &
-                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_COLUMN_MAP(global_ny)%SOLUTION_DOF= &
+                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_COLUMN_MAP(global_ny)%SOLUTION_DOFS(1)= &
                                     & NUMBER_OF_GLOBAL_SOLVER_DOFS
                                   SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS( &
-                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_COLUMN_MAP(local_ny)%COUPLING_COEFFICIENT= &
+                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_COLUMN_MAP(global_ny)%COUPLING_COEFFICIENTS(1)= &
                                     & GLOBAL_MATRICES%VARIABLE_TYPE_MAPS(variable_type)%MATRIX_MAP(matrix_idx)%PTR% &
                                     & MATRIX_COEFFICIENT
                                 ENDDO !matrix_idx
@@ -1185,14 +1214,10 @@ CONTAINS
                                 DO matrix_idx=1,NUMBER_OF_GLOBAL_MATRICES
                                   !Do the row mapping
                                   SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS( &
-                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_ROW_MAP(local_ny)%SOLUTION_DOF=0
-                                  SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS( &
-                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_ROW_MAP(local_ny)%COUPLING_COEFFICIENT=0.0_DP
+                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_ROW_MAP(local_ny)%NUMBER_OF_SOLUTION_DOFS=0
                                   !Do the column mapping
                                   SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS( &
-                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_COLUMN_MAP(global_ny)%SOLUTION_DOF=0
-                                  SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS( &
-                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_COLUMN_MAP(local_ny)%COUPLING_COEFFICIENT=0.0_DP
+                                    & GLOBAL_MATRIX_OFFSET+matrix_idx)%GLOBAL_COLUMN_MAP(global_ny)%NUMBER_OF_SOLUTION_DOFS=0
                                 ENDDO !matrix_idx
                               ENDIF
                             ENDIF
@@ -1268,22 +1293,32 @@ CONTAINS
           CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"        Row maps:",ERR,ERROR,*999)
           DO row_idx=1,GLOBAL_MATRICES%NUMBER_OF_ROWS
             CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"          Row number : ",row_idx,ERR,ERROR,*999)
-            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"            Solution dof         = ",SOLUTION_MAPPING% &
+            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"            Number of solution dofs = ",SOLUTION_MAPPING% &
               & SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS(matrix_idx)%GLOBAL_ROW_MAP(row_idx)% &
-              & SOLUTION_DOF,ERR,ERROR,*999)
-            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"            Coupling coefficient = ",SOLUTION_MAPPING% &
+              & NUMBER_OF_SOLUTION_DOFS,ERR,ERROR,*999)
+            CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)% &
+              & GLOBAL_TO_SOLVER_MAPS(matrix_idx)%GLOBAL_ROW_MAP(row_idx)%NUMBER_OF_SOLUTION_DOFS,5,5,SOLUTION_MAPPING% &
+              & SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS(matrix_idx)%GLOBAL_ROW_MAP(row_idx)%SOLUTION_DOFS, &
+              & '("          Solution dof numbers  :",5(X,I13))','(31X,5(X,I13))',ERR,ERROR,*999) 
+            CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)% &
+              & GLOBAL_TO_SOLVER_MAPS(matrix_idx)%GLOBAL_ROW_MAP(row_idx)%NUMBER_OF_SOLUTION_DOFS,5,5,SOLUTION_MAPPING% &
               & SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS(matrix_idx)%GLOBAL_ROW_MAP(row_idx)% &
-              & COUPLING_COEFFICIENT,ERR,ERROR,*999)
+              & COUPLING_COEFFICIENTS,'("          Coupling coefficients :",5(X,E13.6))','(31X,5(X,E13.6))',ERR,ERROR,*999) 
           ENDDO !row_idx
           CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"        Column maps:",ERR,ERROR,*999)
           DO column_idx=1,GLOBAL_MATRICES%MATRICES(matrix_idx)%NUMBER_OF_COLUMNS           
             CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"          Column number : ",column_idx,ERR,ERROR,*999)
-            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"            Solution dof         = ",SOLUTION_MAPPING% &
+            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"            Number of solution dofs = ",SOLUTION_MAPPING% &
               & SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS(matrix_idx)%GLOBAL_COLUMN_MAP(column_idx)% &
-              & SOLUTION_DOF,ERR,ERROR,*999)
-            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"            Coupling coefficient = ",SOLUTION_MAPPING% &
+              & NUMBER_OF_SOLUTION_DOFS,ERR,ERROR,*999)
+            CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)% &
+              & GLOBAL_TO_SOLVER_MAPS(matrix_idx)%GLOBAL_COLUMN_MAP(column_idx)%NUMBER_OF_SOLUTION_DOFS,5,5,SOLUTION_MAPPING% &
               & SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS(matrix_idx)%GLOBAL_COLUMN_MAP(column_idx)% &
-              & COUPLING_COEFFICIENT,ERR,ERROR,*999)
+              & SOLUTION_DOFS,'("          Solution dof numbers  :",5(X,I13))','(31X,5(X,I13))',ERR,ERROR,*999) 
+            CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)% &
+              & GLOBAL_TO_SOLVER_MAPS(matrix_idx)%GLOBAL_COLUMN_MAP(column_idx)%NUMBER_OF_SOLUTION_DOFS,5,5,SOLUTION_MAPPING% &
+              & SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS(matrix_idx)%GLOBAL_COLUMN_MAP(column_idx)% &
+              & COUPLING_COEFFICIENTS,'("          Coupling coefficients :",5(X,E13.6))','(31X,5(X,E13.6))',ERR,ERROR,*999) 
           ENDDO !column_idx
           CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)% &
             & NUMBER_OF_COLUMNS,5,5,SOLUTION_MAPPING%SOLVER_MATRIX_MAPS(solver_matrix_idx)%GLOBAL_TO_SOLVER_MAPS(matrix_idx)% &

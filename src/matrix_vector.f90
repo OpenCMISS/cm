@@ -457,13 +457,14 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: column_idx,COUNT,row_idx,row_idx2
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("MATRIX_CREATE_FINISH",ERR,ERROR,*999)
 
     IF(ASSOCIATED(MATRIX)) THEN
       IF(MATRIX%MATRIX_FINISHED) THEN
-        CALL FLAG_ERROR("Matrix has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Matrix has been finished.",ERR,ERROR,*999)
       ELSE
         SELECT CASE(MATRIX%STORAGE_TYPE)
         CASE(MATRIX_BLOCK_STORAGE_TYPE)
@@ -471,48 +472,75 @@ CONTAINS
           IF(MATRIX%MAX_N==-1) MATRIX%MAX_N=MATRIX%N
           MATRIX%SIZE=MATRIX%M*MATRIX%N
           MATRIX%NUMBER_NON_ZEROS=MATRIX%M*MATRIX%N
+          MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW=MATRIX%N
         CASE(MATRIX_DIAGONAL_STORAGE_TYPE)
           IF(MATRIX%MAX_M==-1) MATRIX%MAX_M=MATRIX%M
           IF(MATRIX%MAX_N==-1) MATRIX%MAX_N=MATRIX%N
           MATRIX%SIZE=MATRIX%M
           MATRIX%NUMBER_NON_ZEROS=MATRIX%M
+          MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW=1
         CASE(MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-          IF(MATRIX%MAX_M==-1) CALL FLAG_ERROR("Maximum number of rows has not been set for this matrix",ERR,ERROR,*999)
-          IF(MATRIX%MAX_N==-1) CALL FLAG_ERROR("Maximum number of columns has not been set for this matrix",ERR,ERROR,*999)
+          IF(MATRIX%MAX_M==-1) CALL FLAG_ERROR("Maximum number of rows has not been set for this matrix.",ERR,ERROR,*999)
+          IF(MATRIX%MAX_N==-1) CALL FLAG_ERROR("Maximum number of columns has not been set for this matrix.",ERR,ERROR,*999)
           MATRIX%SIZE=MATRIX%MAX_M*MATRIX%N
           MATRIX%NUMBER_NON_ZEROS=MATRIX%M*MATRIX%N
+          MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW=MATRIX%N
         CASE(MATRIX_ROW_MAJOR_STORAGE_TYPE)
-          IF(MATRIX%MAX_M==-1) CALL FLAG_ERROR("Maximum number of rows has not been set for this matrix",ERR,ERROR,*999)
-          IF(MATRIX%MAX_N==-1) CALL FLAG_ERROR("Maximum number of columns has not been set for this matrix",ERR,ERROR,*999)
+          IF(MATRIX%MAX_M==-1) CALL FLAG_ERROR("Maximum number of rows has not been set for this matrix.",ERR,ERROR,*999)
+          IF(MATRIX%MAX_N==-1) CALL FLAG_ERROR("Maximum number of columns has not been set for this matrix.",ERR,ERROR,*999)
           MATRIX%SIZE=MATRIX%M*MATRIX%MAX_N
           MATRIX%NUMBER_NON_ZEROS=MATRIX%M*MATRIX%N
+          MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW=MATRIX%N
         CASE(MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
-          IF(MATRIX%NUMBER_NON_ZEROS==-1) CALL FLAG_ERROR("Number of non-zeros has not been set for this matrix",ERR,ERROR,*999)
+          IF(MATRIX%NUMBER_NON_ZEROS==-1) CALL FLAG_ERROR("Number of non-zeros has not been set for this matrix.",ERR,ERROR,*999)
           IF(MATRIX%MAX_M==-1) MATRIX%MAX_M=MATRIX%M
           IF(MATRIX%MAX_N==-1) MATRIX%MAX_N=MATRIX%N
           MATRIX%SIZE=MATRIX%NUMBER_NON_ZEROS
           IF(.NOT.ALLOCATED(MATRIX%COLUMN_INDICES))  &
-            & CALL FLAG_ERROR("Matrix storage locations column indices have not been set",ERR,ERROR,*999)
+            & CALL FLAG_ERROR("Matrix storage locations column indices have not been set.",ERR,ERROR,*999)
           IF(.NOT.ALLOCATED(MATRIX%ROW_INDICES))  &
-            & CALL FLAG_ERROR("Matrix storage locations row indices have not been set",ERR,ERROR,*999)
+            & CALL FLAG_ERROR("Matrix storage locations row indices have not been set.",ERR,ERROR,*999)
+          MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW=0
+          DO row_idx=1,MATRIX%M
+            IF((MATRIX%ROW_INDICES(row_idx+1)-MATRIX%ROW_INDICES(row_idx))>MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW) &
+              & MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW=MATRIX%ROW_INDICES(row_idx+1)-MATRIX%ROW_INDICES(row_idx)
+          ENDDO !row_idx
         CASE(MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-          IF(MATRIX%NUMBER_NON_ZEROS==-1) CALL FLAG_ERROR("Number of non-zeros has not been set for this matrix",ERR,ERROR,*999)
+          IF(MATRIX%NUMBER_NON_ZEROS==-1) CALL FLAG_ERROR("Number of non-zeros has not been set for this matrix.",ERR,ERROR,*999)
           IF(MATRIX%MAX_M==-1) MATRIX%MAX_M=MATRIX%M
           IF(MATRIX%MAX_N==-1) MATRIX%MAX_N=MATRIX%N
           MATRIX%SIZE=MATRIX%NUMBER_NON_ZEROS
           IF(.NOT.ALLOCATED(MATRIX%COLUMN_INDICES))  &
-            & CALL FLAG_ERROR("Matrix storage locations column indices have not been set",ERR,ERROR,*999)
+            & CALL FLAG_ERROR("Matrix storage locations column indices have not been set.",ERR,ERROR,*999)
           IF(.NOT.ALLOCATED(MATRIX%ROW_INDICES))  &
-            & CALL FLAG_ERROR("Matrix storage locations row indices have not been set",ERR,ERROR,*999)
+            & CALL FLAG_ERROR("Matrix storage locations row indices have not been set.",ERR,ERROR,*999)
+          MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW=0
+          DO row_idx=1,MATRIX%M
+            COUNT=0
+            DO column_idx=1,MATRIX%N
+              DO row_idx2=MATRIX%COLUMN_INDICES(column_idx),MATRIX%COLUMN_INDICES(column_idx+1)
+                IF(MATRIX%ROW_INDICES(row_idx2)==row_idx) COUNT=COUNT+1
+              ENDDO !row_idx2
+            ENDDO !column_idx
+            IF(COUNT>MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW) MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW=COUNT
+          ENDDO !row_idx
         CASE(MATRIX_ROW_COLUMN_STORAGE_TYPE)
-          IF(MATRIX%NUMBER_NON_ZEROS==-1) CALL FLAG_ERROR("Number of non-zeros has not been set for this matrix",ERR,ERROR,*999)
+          IF(MATRIX%NUMBER_NON_ZEROS==-1) CALL FLAG_ERROR("Number of non-zeros has not been set for this matrix.",ERR,ERROR,*999)
           IF(MATRIX%MAX_M==-1) MATRIX%MAX_M=MATRIX%M
           IF(MATRIX%MAX_N==-1) MATRIX%MAX_N=MATRIX%N
           MATRIX%SIZE=MATRIX%NUMBER_NON_ZEROS  
           IF(.NOT.ALLOCATED(MATRIX%COLUMN_INDICES))  &
-            & CALL FLAG_ERROR("Matrix storage locations column indices have not been set",ERR,ERROR,*999)
+            & CALL FLAG_ERROR("Matrix storage locations column indices have not been set.",ERR,ERROR,*999)
           IF(.NOT.ALLOCATED(MATRIX%ROW_INDICES))  &
-            & CALL FLAG_ERROR("Matrix storage locations row indices have not been set",ERR,ERROR,*999)
+            & CALL FLAG_ERROR("Matrix storage locations row indices have not been set.",ERR,ERROR,*999)
+          MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW=0
+          DO row_idx=1,MATRIX%M
+            COUNT=0
+            DO row_idx2=1,MATRIX%NUMBER_NON_ZEROS
+              IF(MATRIX%ROW_INDICES(row_idx2)==row_idx) COUNT=COUNT+1
+            ENDDO !row_idx2            
+            IF(COUNT>MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW) MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW=COUNT
+          ENDDO !row_idx          
         CASE DEFAULT
           LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid"
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -532,7 +560,7 @@ CONTAINS
             ALLOCATE(MATRIX%DATA_L(MATRIX%SIZE),STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix logical data",ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="The matrix data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid"
+            LOCAL_ERROR="The matrix data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ENDIF
@@ -541,7 +569,7 @@ CONTAINS
         MATRIX%MATRIX_FINISHED=.TRUE.
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("MATRIX_CREATE_FINISH")
@@ -903,7 +931,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("MATRIX_INITIALISE",ERR,ERROR,*999)
+    CALL ENTERS("MATRIX_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(MATRIX)) THEN
       IF(ALLOCATED(MATRIX%ROW_INDICES)) DEALLOCATE(MATRIX%ROW_INDICES)
@@ -949,6 +977,7 @@ CONTAINS
       MATRIX%STORAGE_TYPE=0
       MATRIX%NUMBER_NON_ZEROS=0
       MATRIX%SIZE=0      
+      MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW=0      
     ELSE
       CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
     ENDIF
@@ -1416,12 +1445,12 @@ CONTAINS
                         IF(k>MATRIX%NUMBER_NON_ZEROS) THEN
                           LOCAL_ERROR="Invalid column indices. Column index "//TRIM(NUMBER_TO_VSTRING(j,"*",ERR,ERROR))//" ("// &
                             & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//") is greater than the number of non-zeros ("// &
-                            & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")"
+                            & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")."
                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         LOCAL_ERROR="Invalid column indices. Column index "//TRIM(NUMBER_TO_VSTRING(j,"*",ERR,ERROR))//" ("// &
-                          & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//") is less than zero"
+                          & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//") is less than zero."
                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                     ENDDO !j
@@ -1429,9 +1458,9 @@ CONTAINS
                   IF(ALLOCATED(MATRIX%ROW_INDICES)) DEALLOCATE(MATRIX%ROW_INDICES)
                   IF(ALLOCATED(MATRIX%COLUMN_INDICES)) DEALLOCATE(MATRIX%COLUMN_INDICES)
                   ALLOCATE(MATRIX%ROW_INDICES(MATRIX%M+1),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix row indices",ERR,ERROR,*999)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix row indices.",ERR,ERROR,*999)
                   ALLOCATE(MATRIX%COLUMN_INDICES(MATRIX%NUMBER_NON_ZEROS),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix column indices",ERR,ERROR,*999)                  
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix column indices.",ERR,ERROR,*999)                  
                   MATRIX%ROW_INDICES=ROW_INDICES
                   MATRIX%COLUMN_INDICES=COLUMN_INDICES
                   !Don't really need this???
@@ -1442,25 +1471,25 @@ CONTAINS
                   LOCAL_ERROR="Invalid row indices. The last row index ("// &
                     & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(MATRIX%M+1),"*",ERR,ERROR))// &
                     & ") does not equal the number of non-zeros + 1 ("// &
-                    & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS+1,"*",ERR,ERROR))//")"
+                    & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS+1,"*",ERR,ERROR))//")."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
                 LOCAL_ERROR="Invalid row indices. The first row index ("// &
-                  & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(1),"*",ERR,ERROR))//") does not equal 1"
+                  & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(1),"*",ERR,ERROR))//") does not equal 1."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ELSE
               LOCAL_ERROR="The supplied number of column indices ("// &
                 & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
                 & ") does not match the number of non-zeros in the matrix ("// &
-                & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")"
+                & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The supplied number of row indices ("//TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
               & ") does not match the number of rows in the matrix + 1 ("// &
-              & TRIM(NUMBER_TO_VSTRING(MATRIX%M+1,"*",ERR,ERROR))//")"
+              & TRIM(NUMBER_TO_VSTRING(MATRIX%M+1,"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         CASE(MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
@@ -1473,7 +1502,7 @@ CONTAINS
                       LOCAL_ERROR="Invalid column indices. Column "//TRIM(NUMBER_TO_VSTRING(j,"*",ERR,ERROR))// &
                         & " index number ("//TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//") is less than column "// &
                         & TRIM(NUMBER_TO_VSTRING(j-1,"*",ERR,ERROR))//" index number ("// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j-1),"*",ERR,ERROR))//")"
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j-1),"*",ERR,ERROR))//")."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF                    
                   ENDDO !i
@@ -1484,12 +1513,12 @@ CONTAINS
                         IF(k>MATRIX%NUMBER_NON_ZEROS) THEN
                           LOCAL_ERROR="Invalid row indices. Row index "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" ("// &
                             & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//") is greater than the number of non-zeros ("// &
-                            & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")"
+                            & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")."
                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         LOCAL_ERROR="Invalid row indices. Row index "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" ("// &
-                          & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//") is less than zero"
+                          & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//") is less than zero."
                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                     ENDDO !i
@@ -1497,9 +1526,9 @@ CONTAINS
                   IF(ALLOCATED(MATRIX%ROW_INDICES)) DEALLOCATE(MATRIX%ROW_INDICES)
                   IF(ALLOCATED(MATRIX%COLUMN_INDICES)) DEALLOCATE(MATRIX%COLUMN_INDICES)
                   ALLOCATE(MATRIX%ROW_INDICES(MATRIX%NUMBER_NON_ZEROS),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix row indices",ERR,ERROR,*999)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix row indices.",ERR,ERROR,*999)
                   ALLOCATE(MATRIX%COLUMN_INDICES(MATRIX%N+1),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix column indices",ERR,ERROR,*999)                  
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix column indices.",ERR,ERROR,*999)                  
                   MATRIX%ROW_INDICES=ROW_INDICES
                   MATRIX%COLUMN_INDICES=COLUMN_INDICES
                   !Don't really need this???
@@ -1510,26 +1539,26 @@ CONTAINS
                   LOCAL_ERROR="Invalid column indices. The last column index ("// &
                     & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(MATRIX%N+1),"*",ERR,ERROR))// &
                     & ") does not equal the number of non-zeros + 1 ("// &
-                    & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS+1,"*",ERR,ERROR))//")"
+                    & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS+1,"*",ERR,ERROR))//")."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
                 LOCAL_ERROR="Invalid column indices. The first column index ("// &
-                  & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(1),"*",ERR,ERROR))//") does not equal 1"
+                  & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(1),"*",ERR,ERROR))//") does not equal 1."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ELSE
               LOCAL_ERROR="The supplied number of row indices ("// &
                 & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
                 & ") does not match the number of non-zeros in the matrix ("// &
-                & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")"
+                & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The supplied number of column indices ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not match the number of columns in the matrix + 1 ("// &
-              & TRIM(NUMBER_TO_VSTRING(MATRIX%N+1,"*",ERR,ERROR))//")"
+              & TRIM(NUMBER_TO_VSTRING(MATRIX%N+1,"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         CASE(MATRIX_ROW_COLUMN_STORAGE_TYPE)
@@ -1540,13 +1569,13 @@ CONTAINS
                   LOCAL_ERROR="Invalid row indices. Row index number "//TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//" ("// &
                     & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(k),"*",ERR,ERROR))// &
                     & ") is out of range. The row index must be between 1 and "// &
-                    & TRIM(NUMBER_TO_VSTRING(MATRIX%M,"*",ERR,ERROR))
+                    & TRIM(NUMBER_TO_VSTRING(MATRIX%M,"*",ERR,ERROR))//"."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ELSE IF(COLUMN_INDICES(k)<1.OR.COLUMN_INDICES(k)>MATRIX%N) THEN
                   LOCAL_ERROR="Invalid column indices. Column index number "//TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//" ("// &
                     & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))// &
                     & ") is out of range. The column index must be between 1 and "// &
-                    & TRIM(NUMBER_TO_VSTRING(MATRIX%N,"*",ERR,ERROR))
+                    & TRIM(NUMBER_TO_VSTRING(MATRIX%N,"*",ERR,ERROR))//"."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ENDDO !k
@@ -1557,23 +1586,23 @@ CONTAINS
               LOCAL_ERROR="The supplied number of column indices ("// &
                 & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
                 & ") does not match the number of non-zeros in the matrix ("// &
-                & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")"
+                & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The supplied number of row indices ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
               & ") does not match the number of non-zeros in the matrix ("// &
-              & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")"
+              & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         CASE DEFAULT
-          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid"
+          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_STORAGE_LOCATIONS_SET")

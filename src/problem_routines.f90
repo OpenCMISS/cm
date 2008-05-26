@@ -60,6 +60,7 @@ MODULE PROBLEM_ROUTINES
   USE MPI
   USE SOLUTION_MAPPING_ROUTINES
   USE SOLVER_ROUTINES
+  USE SOLVER_MATRICES_ROUTINES
   USE STRINGS
   USE TIMER
   USE TYPES
@@ -264,7 +265,7 @@ MODULE PROBLEM_ROUTINES
     & PROBLEM_DEPENDENT_DEPENDENT_FIELD_GET,PROBLEM_DEPENDENT_SCALING_SET
   
   PUBLIC PROBLEM_SOLUTION_CREATE_START,PROBLEM_SOLUTION_CREATE_FINISH,PROBLEM_SOLUTION_GLOBAL_SPARSITY_TYPE_SET, &
-    & PROBLEM_SOLUTION_OUTPUT_TYPE_SET
+    & PROBLEM_SOLUTION_OUTPUT_TYPE_SET,PROBLEM_SOLVER_OUTPUT_TYPE_SET
   
   PUBLIC PROBLEM_SOURCE_COMPONENT_INTERPOLATION_SET,PROBLEM_SOURCE_COMPONENT_MESH_COMPONENT_SET, &
     & PROBLEM_SOURCE_CREATE_START,PROBLEM_SOURCE_CREATE_FINISH,PROBLEM_SOURCE_SCALING_SET
@@ -588,6 +589,67 @@ CONTAINS
     CALL EXITS("PROBLEM_ASSEMBLE_LINEAR_STATIC_FEM")
     RETURN 1
   END SUBROUTINE PROBLEM_ASSEMBLE_LINEAR_STATIC_FEM
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Assembles the solver matrices and rhs from the global equations.
+  SUBROUTINE PROBLEM_ASSEMBLE_SOLVER_MATRICES(PROBLEM,ERR,ERROR,*)
+
+    !Argument variableg
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    REAL(SP) :: SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),USER_ELAPSED,USER_TIME1(1),USER_TIME2(1)
+    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
+    
+    CALL ENTERS("PROBLEM_ASSEMBLE_SOLVER_MATRICES",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(PROBLEM)) THEN
+      PROBLEM_SOLUTION=>PROBLEM%SOLUTION
+      IF(ASSOCIATED(PROBLEM_SOLUTION)) THEN
+        SOLVER=>PROBLEM_SOLUTION%SOLVER
+        IF(ASSOCIATED(SOLVER)) THEN
+          SOLVER_MATRICES=>SOLVER%SOLVER_MATRICES
+          IF(ASSOCIATED(SOLVER_MATRICES)) THEN
+            IF(SOLVER%OUTPUT_TYPE>=SOLVER_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME1,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME1,ERR,ERROR,*999)
+            ENDIF
+            CALL DISTRIBUTED_MATRIX_SOLVER_MATRICES_ASSEMBLE(SOLVER_MATRICES,ERR,ERROR,*999)
+            IF(SOLVER%OUTPUT_TYPE>=SOLVER_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME2,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME2,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME2(1)-USER_TIME1(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME2(1)-SYSTEM_TIME1(1)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for solver matrices assembly = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total System time for solver matrices assembly = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+            ENDIF            
+          ELSE
+            CALL FLAG_ERROR("Solver solver matrices is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Problem solution solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Problem problem solution is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("PROBLEM_ASSEMBLE_SOLVER_MATRICES")
+    RETURN
+999 CALL ERRORS("PROBLEM_ASSEMBLE_SOLVER_MATRICES",ERR,ERROR)
+    CALL EXITS("PROBLEM_ASSEMBLE_SOLVER_MATRICES")
+    RETURN 1
+  END SUBROUTINE PROBLEM_ASSEMBLE_SOLVER_MATRICES
 
   !
   !================================================================================================================================
@@ -1657,6 +1719,7 @@ CONTAINS
                   !Create the solver
                   CALL SOLVER_CREATE_START(SOLUTION%SOLUTION_MAPPING,SOLVER_LINEAR_TYPE,SOLVER,ERR,ERROR,*999)
                   CALL SOLVER_LIBRARY_SET(SOLVER,SOLVER_PETSC_LIBRARY,ERR,ERROR,*999)
+                  CALL SOLVER_OUTPUT_TYPE_SET(SOLVER,SOLUTION%SOLVER_OUTPUT_TYPE,ERR,ERROR,*999)
                   CALL SOLVER_CREATE_FINISH(SOLVER,ERR,ERROR,*999)
                 CASE(PROBLEM_BEM_SOLUTION_METHOD)
                   CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
@@ -3087,7 +3150,9 @@ CONTAINS
       !Assemble the finite element equations into the global stiffness matrix and rhs vector
       CALL PROBLEM_ASSEMBLE_LINEAR_STATIC_FEM(PROBLEM,ERR,ERROR,*999)
       !Calculate the solution matrix and right hand side
+      CALL PROBLEM_ASSEMBLE_SOLVER_MATRICES(PROBLEM,ERR,ERROR,*999)
       !Solve the system
+      CALL PROBLEM_SOLVE_SYSTEM(PROBLEM,ERR,ERROR,*999)
       !Back substitute to find flux values.
       !Update flux values back to the field vector.
     ELSE
@@ -3136,172 +3201,56 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Caclulates the matrix structure (sparsity) for a global matrix.
-  SUBROUTINE PROBLEM_GLOBAL_MATRIX_STRUCTURE_CALCULATE(GLOBAL_MATRICES,matrix_idx,NUMBER_OF_NON_ZEROS,ROW_INDICES,COLUMN_INDICES, &
-    & ERR,ERROR,*)
+  !>Solves the system of equations
+  SUBROUTINE PROBLEM_SOLVE_SYSTEM(PROBLEM,ERR,ERROR,*)
 
-    !Argument variables
-    TYPE(GLOBAL_MATRICES_TYPE), POINTER :: GLOBAL_MATRICES !<A pointer to the global matrices
-    INTEGER(INTG), INTENT(IN) :: matrix_idx !<The matrix number to calculate the structure of
-    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_NON_ZEROS !<On return the number of non-zeros in the matrix
-    INTEGER(INTG), POINTER :: ROW_INDICES(:) !<On return a pointer to row location indices. The calling routine is responsible for deallocation.
-    INTEGER(INTG), POINTER :: COLUMN_INDICES(:) !<On return a pointer to the column location indices. The calling routine is responsible for deallocation.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string !<The error string
+   !Argument variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to solve
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) ::  column_idx,DUMMY_ERR,elem_idx,global_column,local_column,local_ny,mk,mp,ne,nh,nn,nnk,np, &
-      & NUMBER_OF_COLUMNS,nyy
-    INTEGER(INTG), POINTER :: COLUMNS(:)
-    REAL(DP) :: SPARSITY
-    TYPE(BASIS_TYPE), POINTER :: BASIS
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DEPENDENT_DOFS_DOMAIN_MAPPING
-    TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: DOMAIN_ELEMENTS
-    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES    
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
-    TYPE(FIELD_DOF_TO_PARAM_MAP_TYPE), POINTER :: DEPENDENT_DOFS_PARAM_MAPPING
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(LIST_PTR_TYPE), ALLOCATABLE :: COLUMN_INDICES_LISTS(:)
-    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
-
-    NULLIFY(COLUMNS)
+    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("PROBLEM_GLOBAL_MATRIX_STRUCTURE_CALCULATE",ERR,ERROR,*998)
+    CALL ENTERS("PROBLEM_SOLVE_SYSTEM",ERR,ERROR,*999)
 
-    NUMBER_OF_NON_ZEROS=0
-    IF(ASSOCIATED(GLOBAL_MATRICES)) THEN
-      IF(matrix_idx>=1.AND.matrix_idx<=GLOBAL_MATRICES%NUMBER_OF_MATRICES) THEN            
-        IF(.NOT.ASSOCIATED(ROW_INDICES)) THEN
-          IF(.NOT.ASSOCIATED(COLUMN_INDICES)) THEN
-            SELECT CASE(GLOBAL_MATRICES%MATRICES(matrix_idx)%STRUCTURE_TYPE)
-            CASE(PROBLEM_GLOBAL_MATRIX_NO_STRUCTURE)
-              CALL FLAG_ERROR("Not implemented",ERR,ERROR,*998)
-            CASE(PROBLEM_GLOBAL_MATRIX_FEM_STRUCTURE)
-              SELECT CASE(GLOBAL_MATRICES%MATRICES(matrix_idx)%STORAGE_TYPE)
-              CASE(MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
-                DEPENDENT_FIELD=>GLOBAL_MATRICES%PROBLEM_SOLUTION%PROBLEM%DEPENDENT%DEPENDENT_FIELD
-                FIELD_VARIABLE=>GLOBAL_MATRICES%MATRICES(matrix_idx)%VARIABLE
-                DEPENDENT_DOFS_DOMAIN_MAPPING=>FIELD_VARIABLE%DOMAIN_MAPPING
-                DEPENDENT_DOFS_PARAM_MAPPING=>DEPENDENT_FIELD%MAPPINGS%DOF_TO_PARAM_MAP
-                !Allocate lists
-                ALLOCATE(COLUMN_INDICES_LISTS(DEPENDENT_DOFS_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column indices lists",ERR,ERROR,*999)
-                !Allocate row indices
-                ALLOCATE(ROW_INDICES(DEPENDENT_DOFS_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL+1),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate row indices",ERR,ERROR,*999)
-                ROW_INDICES(1)=1
-                !First, loop over the rows and calculate the number of non-zeros
-                NUMBER_OF_NON_ZEROS=0
-                DO local_ny=1,DEPENDENT_DOFS_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
-                  IF(DEPENDENT_DOFS_PARAM_MAPPING%DOF_TYPE(1,local_ny)==FIELD_NODE_DOF_TYPE) THEN
-                    nyy=DEPENDENT_DOFS_PARAM_MAPPING%DOF_TYPE(2,local_ny)
-                    np=DEPENDENT_DOFS_PARAM_MAPPING%NODE_DOF2PARAM_MAP(2,nyy)
-                    nh=DEPENDENT_DOFS_PARAM_MAPPING%NODE_DOF2PARAM_MAP(3,nyy)
-                    DOMAIN_NODES=>FIELD_VARIABLE%COMPONENTS(nh)%DOMAIN%TOPOLOGY%NODES
-                    DOMAIN_ELEMENTS=>FIELD_VARIABLE%COMPONENTS(nh)%DOMAIN%TOPOLOGY%ELEMENTS
-                    !Set up list
-                    NULLIFY(COLUMN_INDICES_LISTS(local_ny)%PTR)
-                    CALL LIST_CREATE_START(COLUMN_INDICES_LISTS(local_ny)%PTR,ERR,ERROR,*999)
-                    CALL LIST_DATA_TYPE_SET(COLUMN_INDICES_LISTS(local_ny)%PTR,LIST_INTG_TYPE,ERR,ERROR,*999)
-                    CALL LIST_INITIAL_SIZE_SET(COLUMN_INDICES_LISTS(local_ny)%PTR,DOMAIN_NODES%NODES(np)% &
-                      & NUMBER_OF_SURROUNDING_ELEMENTS*FIELD_VARIABLE%COMPONENTS(nh)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS, &
-                      & ERR,ERROR,*999)
-                    CALL LIST_CREATE_FINISH(COLUMN_INDICES_LISTS(local_ny)%PTR,ERR,ERROR,*999)
-                    !Loop over all elements containing the dof
-                    DO elem_idx=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_SURROUNDING_ELEMENTS
-                      ne=DOMAIN_NODES%NODES(np)%SURROUNDING_ELEMENTS(elem_idx)
-                      BASIS=>DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS
-                      DO nn=1,BASIS%NUMBER_OF_NODES
-                        mp=DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_NODES(nn)
-                        DO nnk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
-                          mk=DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_DERIVATIVES(nnk,nn)
-                          !Find the local and global column and add the global column to the indices list
-                          local_column=FIELD_VARIABLE%COMPONENTS(nh)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(mk,mp,1)
-                          global_column=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
-                          CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(local_ny)%PTR,global_column,ERR,ERROR,*999)
-                        ENDDO !mk
-                      ENDDO !nn
-                    ENDDO !elem_idx
-                    CALL LIST_REMOVE_DUPLICATES(COLUMN_INDICES_LISTS(local_ny)%PTR,ERR,ERROR,*999)
-                    CALL LIST_NUMBER_OF_ITEMS_GET(COLUMN_INDICES_LISTS(local_ny)%PTR,NUMBER_OF_COLUMNS,ERR,ERROR,*999)
-                    NUMBER_OF_NON_ZEROS=NUMBER_OF_NON_ZEROS+NUMBER_OF_COLUMNS
-                    ROW_INDICES(local_ny+1)=NUMBER_OF_NON_ZEROS+1
-                  ELSE
-                    LOCAL_ERROR="Local dof number "//TRIM(NUMBER_TO_VSTRING(local_ny,"*",ERR,ERROR))//" is not a node based dof"
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  ENDIF
-                ENDDO !local_ny
-                !Allocate and setup the column locations
-                ALLOCATE(COLUMN_INDICES(NUMBER_OF_NON_ZEROS),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column indices",ERR,ERROR,*999)
-                DO local_ny=1,DEPENDENT_DOFS_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
-                  CALL LIST_DETACH_AND_DESTROY(COLUMN_INDICES_LISTS(local_ny)%PTR,NUMBER_OF_COLUMNS,COLUMNS,ERR,ERROR,*999)
-                  DO column_idx=1,NUMBER_OF_COLUMNS
-                    COLUMN_INDICES(ROW_INDICES(local_ny)+column_idx-1)=COLUMNS(column_idx)
-                  ENDDO !column_idx
-                  DEALLOCATE(COLUMNS)
-                ENDDO !local_ny
-                IF(DIAGNOSTICS1) THEN
-                  CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Global matrix structure:",ERR,ERROR,*999)
-                  CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Global matrix number : ",matrix_idx,ERR,ERROR,*999)
-                  CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of rows = ",DEPENDENT_DOFS_DOMAIN_MAPPING% &
-                    & TOTAL_NUMBER_OF_LOCAL,ERR,ERROR,*999)
-                  CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of columns = ",DEPENDENT_DOFS_DOMAIN_MAPPING% &
-                    & NUMBER_OF_GLOBAL,ERR,ERROR,*999)
-                  CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of non zeros = ",NUMBER_OF_NON_ZEROS,ERR,ERROR,*999)
-                  IF(DEPENDENT_DOFS_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL*DEPENDENT_DOFS_DOMAIN_MAPPING%NUMBER_OF_GLOBAL/=0) THEN
-                    SPARSITY=REAL(NUMBER_OF_NON_ZEROS,DP)/REAL(DEPENDENT_DOFS_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL* &
-                      DEPENDENT_DOFS_DOMAIN_MAPPING%NUMBER_OF_GLOBAL,DP)*100.0_DP
-                    CALL WRITE_STRING_FMT_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Sparsity (%) = ",SPARSITY,"F5.2",ERR,ERROR,*999)
-                  ENDIF
-                  CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DEPENDENT_DOFS_DOMAIN_MAPPING% &
-                    & TOTAL_NUMBER_OF_LOCAL+1,8,8,ROW_INDICES,'("  Row indices    :",8(X,I13))','(18X,8(X,I13))', &
-                    & ERR,ERROR,*999)
-                  CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NUMBER_OF_NON_ZEROS,8,8,COLUMN_INDICES, &
-                    & '("  Column indices :",8(X,I13))','(18X,8(X,I13))', ERR,ERROR,*999)
-                ENDIF
-              CASE DEFAULT
-                LOCAL_ERROR="The matrix storage type of "// &
-                  & TRIM(NUMBER_TO_VSTRING(GLOBAL_MATRICES%MATRICES(matrix_idx)%STORAGE_TYPE,"*",ERR,ERROR))// &
-                  & " is invalid"
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              END SELECT
+    IF(ASSOCIATED(PROBLEM)) THEN
+      PROBLEM_SOLUTION=>PROBLEM%SOLUTION
+      IF(ASSOCIATED(PROBLEM_SOLUTION)) THEN
+        IF(PROBLEM_SOLUTION%SOLUTION_FINISHED) THEN
+          SELECT CASE(PROBLEM%LINEARITY)
+          CASE(PROBLEM_LINEAR)
+            SELECT CASE(PROBLEM%TIME_TYPE)
+            CASE(PROBLEM_STATIC)
+              CALL SOLVER_SOLVE(PROBLEM_SOLUTION%SOLVER,ERR,ERROR,*999)
+            CASE(PROBLEM_DYNAMIC,PROBLEM_QUASISTATIC)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="The matrix structure type of "// &
-                & TRIM(NUMBER_TO_VSTRING(GLOBAL_MATRICES%MATRICES(matrix_idx)%STRUCTURE_TYPE,"*",ERR,ERROR))//" is invalid"
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
+              LOCAL_ERROR="The problem time type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TIME_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
-          ELSE
-            CALL FLAG_ERROR("Column indices is already associated",ERR,ERROR,*998)
-          ENDIF
+          CASE(PROBLEM_NONLINEAR,PROBLEM_NONLINEAR_BCS)
+            CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The problem linearity of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%LINEARITY,"*",ERR,ERROR))//" is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
         ELSE
-          CALL FLAG_ERROR("Row indieces is already associated",ERR,ERROR,*998)
+          CALL FLAG_ERROR("Problem solution has not been finished.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        LOCAL_ERROR="The matrix index of "//TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))// &
-          & " is invalid. The index must be >= 1 and <= "// &
-          & TRIM(NUMBER_TO_VSTRING(GLOBAL_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
+        CALL FLAG_ERROR("Problem solution is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Global matrices is not associated",ERR,ERROR,*998)
+      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
-    
-    CALL EXITS("PROBLEM_GLOBAL_MATRIX_STRUCTURE_CALCULATE")
+       
+    CALL EXITS("PROBLEM_SOLVE_SYSTEM")
     RETURN
-999 IF(ASSOCIATED(ROW_INDICES)) DEALLOCATE(ROW_INDICES)
-    IF(ASSOCIATED(COLUMN_INDICES)) DEALLOCATE(COLUMN_INDICES)
-    IF(ASSOCIATED(COLUMNS)) DEALLOCATE(COLUMNS)
-    IF(ALLOCATED(COLUMN_INDICES_LISTS)) THEN
-      DO local_ny=1,DEPENDENT_DOFS_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
-        IF(ASSOCIATED(COLUMN_INDICES_LISTS(local_ny)%PTR)) &
-          & CALL LIST_DESTROY(COLUMN_INDICES_LISTS(local_ny)%PTR,DUMMY_ERR,DUMMY_ERROR,*998)
-      ENDDO !local_ny
-      DEALLOCATE(COLUMN_INDICES_LISTS)
-    ENDIF
-998 CALL ERRORS("PROBLEM_GLOBAL_MATRIX_STRUCTURE_CALCULATE",ERR,ERROR)
-    CALL EXITS("PROBLEM_GLOBAL_MATRIX_STRUCTURE_CALCULATE")
+999 CALL ERRORS("PROBLEM_SOLVE_SYSTEM",ERR,ERROR)
+    CALL EXITS("PROBLEM_SOLVE_SYSTEM")
     RETURN 1
-  END SUBROUTINE PROBLEM_GLOBAL_MATRIX_STRUCTURE_CALCULATE
+  END SUBROUTINE PROBLEM_SOLVE_SYSTEM
 
   !
   !================================================================================================================================
@@ -3567,125 +3516,41 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finalises the solver matrices for the problem solution and deallocates all memory.
-  SUBROUTINE PROBLEM_SOLVER_MATRICES_FINALISE(PROBLEM_SOLUTION,ERR,ERROR,*)
+  !>Sets/changes the output type for the problem solver
+  SUBROUTINE PROBLEM_SOLVER_OUTPUT_TYPE_SET(PROBLEM,OUTPUT_TYPE,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION !<A pointer to the problem solution
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string !<The error string
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the solver output for
+    INTEGER(INTG), INTENT(IN) :: OUTPUT_TYPE !<The solver output type to set \see SOLVER_ROUTINES_OutputTypes,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION
+ 
+    CALL ENTERS("PROBLEM_SOLVER_OUTPUT_TYPE_SET",ERR,ERROR,*999)
 
-    CALL ENTERS("PROBLEM_SOLVER_MATRICES_FINALISE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(PROBLEM_SOLUTION)) THEN
-      !IF(ASSOCIATED(PROBLEM_SOLUTION%SOLVER_MATRICES)) THEN
-      !  IF(ALLOCATED(PROBLEM_SOLUTION%SOLVER_MATRICES%SOLVER_TO_GLOBAL_MAP)) THEN
-      !    DO no=1,PROBLEM_SOLUTION%SOLVER_MATRICES%NUMBER_OF_COLUMNS
-      !      CALL PROBLEM_SOLVER_TO_GLOBAL_MAP_FINALISE(PROBLEM_SOLUTION%SOLVER_MATRICES%SOLVER_TO_GLOBAL_MAP(no),ERR,ERROR,*999)
-      !    ENDDO !no
-      !    DEALLOCATE(PROBLEM_SOLUTION%SOLVER_MATRICES%SOLVER_TO_GLOBAL_MAP)
-      !  ENDIF
-      !  DEALLOCATE(PROBLEM_SOLUTION%SOLVER_MATRICES)
-      !ENDIF
+    IF(ASSOCIATED(PROBLEM)) THEN
+      PROBLEM_SOLUTION=>PROBLEM%SOLUTION
+      IF(ASSOCIATED(PROBLEM_SOLUTION)) THEN
+        IF(PROBLEM%SOLUTION%SOLUTION_FINISHED) THEN
+          CALL FLAG_ERROR("Problem solution has already been finished",ERR,ERROR,*999)
+        ELSE
+          PROBLEM_SOLUTION%SOLVER_OUTPUT_TYPE=OUTPUT_TYPE
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Problem solution is not associated.",ERR,ERROR,*999)
+      ENDIF
     ELSE
-      CALL FLAG_ERROR("Problem solution is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("PROBLEM_SOLVER_MATRICES_FINALISE")
+    CALL EXITS("PROBLEM_SOLVER_OUTPUT_TYPE_SET")
     RETURN
-999 CALL ERRORS("PROBLEM_SOLVER_MATRICES_FINALISE",ERR,ERROR)
-    CALL EXITS("PROBLEM_SOLVER_MATRICES_FINALISE")
+999 CALL ERRORS("PROBLEM_SOLVER_OUTPUT_TYPE_SET",ERR,ERROR)
+    CALL EXITS("PROBLEM_SOLVER_OUTPUT_TYPE_SET")
     RETURN 1
-  END SUBROUTINE PROBLEM_SOLVER_MATRICES_FINALISE
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Initialises the solver matrices for the problem solution.
-  SUBROUTINE PROBLEM_SOLVER_MATRICES_INITALISE(PROBLEM_SOLUTION,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION !<A pointer to the problem solution
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string !<The error string
-    !Local Variables
-
-    CALL ENTERS("PROBLEM_SOLVER_MATRICES_INITALISE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(PROBLEM_SOLUTION)) THEN
-      !IF(ASSOCIATED(PROBLEM_SOLUTION%SOLVER_MATRICES)) THEN
-      !  CALL FLAG_ERROR("Solver matrices is already associated for this problem solution",ERR,ERROR,*999)
-      !ELSE
-      !  ALLOCATE(PROBLEM_SOLUTION%SOLVER_MATRICES,STAT=ERR)
-      !  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate problem solution solver matrices",ERR,ERROR,*999)
-      !  PROBLEM_SOLUTION%SOLVER_MATRICES%PROBLEM_SOLUTION=>PROBLEM_SOLUTION
-      !  PROBLEM_SOLUTION%SOLVER_MATRICES%NUMBER_OF_ROWS=0
-      !  PROBLEM_SOLUTION%SOLVER_MATRICES%TOTAL_NUMBER_OF_ROWS=0
-      !  PROBLEM_SOLUTION%SOLVER_MATRICES%NUMBER_OF_COLUMNS=0
-      !  PROBLEM_SOLUTION%SOLVER_MATRICES%UPDATE_MATRIX=.FALSE.
-      !ENDIF
-    ELSE
-      CALL FLAG_ERROR("Problem solution is not associated",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("PROBLEM_SOLVER_MATRICES_INITALISE")
-    RETURN
-999 CALL ERRORS("PROBLEM_SOLVER_MATRICES_INITALISE",ERR,ERROR)
-    CALL EXITS("PROBLEM_SOLVER_MATRICES_INITALISE")
-    RETURN 1
-  END SUBROUTINE PROBLEM_SOLVER_MATRICES_INITALISE
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Finalise a solution to global matrix variable map and deallocate all memory
-  SUBROUTINE PROBLEM_SOLVER_TO_GLOBAL_MAP_FINALISE(SOLVER_TO_GLOBAL_MAP,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TO_GLOBAL_MAP_TYPE):: SOLVER_TO_GLOBAL_MAP !<The solver to global map to finalise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string !<The error string
-    !Local Variables
-    
-    CALL ENTERS("PROBLEM_SOLVER_TO_GLOBAL_MAP_FINALISE",ERR,ERROR,*999)
-
-    !IF(ALLOCATED(SOLVER_TO_GLOBAL_MAP%COLUMNS)) DEALLOCATE(SOLVER_TO_GLOBAL_MAP%COLUMNS)
-    !IF(ALLOCATED(SOLVER_TO_GLOBAL_MAP%COUPLING_COEFFICIENTS)) DEALLOCATE(SOLVER_TO_GLOBAL_MAP%COUPLING_COEFFICIENTS)
-    
-    CALL EXITS("PROBLEM_SOLVER_TO_GLOBAL_MAP_FINALISE")
-    RETURN
-999 CALL ERRORS("PROBLEM_SOLVER_TO_GLOBAL_MAP_FINALISE",ERR,ERROR)
-    CALL EXITS("PROBLEM_SOLVER_TO_GLOBAL_MAP_FINALISE")
-    RETURN 1
-  END SUBROUTINE PROBLEM_SOLVER_TO_GLOBAL_MAP_FINALISE
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Initialise the solver to global matrix variable map.
-  SUBROUTINE PROBLEM_SOLVER_TO_GLOBAL_MAP_INITIALISE(SOLVER_TO_GLOBAL_MAP,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TO_GLOBAL_MAP_TYPE) :: SOLVER_TO_GLOBAL_MAP !<The solver to global map to initialise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string !<The error string
-    !Local Variables
-
-    CALL ENTERS("PROBLEM_SOLVER_TO_GLOBAL_MAP_INITIALISE",ERR,ERROR,*999)
-
-    !SOLVER_TO_GLOBAL_MAP%NUMBER_OF_MATRICES=0
-       
-    CALL EXITS("PROBLEM_SOLVER_TO_GLOBAL_MAP_INITIALISE")
-    RETURN
-999 CALL ERRORS("PROBLEM_SOLVER_TO_GLOBAL_MAP_INITIALISE",ERR,ERROR)
-    CALL EXITS("PROBLEM_SOLVER_TO_GLOBAL_MAP_INITIALISE")
-    RETURN 1
-  END SUBROUTINE PROBLEM_SOLVER_TO_GLOBAL_MAP_INITIALISE
-
+  END SUBROUTINE PROBLEM_SOLVER_OUTPUT_TYPE_SET
+  
   !
   !================================================================================================================================
   !
