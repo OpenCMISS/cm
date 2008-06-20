@@ -827,7 +827,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: FILE_NAME, LINE !the prefix name of file.    
+    TYPE(VARYING_STRING) :: FILE_NAME, LINE, FILE_STATUS !the prefix name of file.    
     TYPE(BASIS_TYPE), POINTER ::BASIS
     INTEGER(INTG) :: FILE_ID, domain_idx, domain_no, local_number, global_number, MY_DOMAIN_INDEX, MAX_NODE_CPMP_INDEX
     INTEGER(INTG), ALLOCATABLE :: LIST_COMP_SCALE(:)!LIST_COMP(:) !Components which will be used for export scale factors    
@@ -871,7 +871,8 @@ CONTAINS
     !NULLIFY(tmp_components)
     
     !open a file 
-    CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, ERR,ERROR,*999)
+    FILE_STATUS="REPALCE"
+    CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
     
     !write out the group name    
     LINE=FIELD_IO_FILEDS_GROUP_INFO_GET(LOCAL_PROCESS_ELEMENTAL_INFO_SET%FIELDS, ERR,ERROR)    
@@ -1580,7 +1581,58 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Export nodal information into multiple files \see{FIELD_IO::EXNODE_INTO_MULTIPLE_FILES}.                 
+  !>Import nodal information \see{FIELD_IO::FIELD_IO_NODES_IMPORT}.                 
+  SUBROUTINE FIELD_IO_NODES_IMPORT(FIELDS, FILE_NAME, METHOD, ERR,ERROR,*)
+    !Argument variables       
+    TYPE(FIELDS_TYPE), POINTER :: FIELDS !<the field object
+    TYPE(VARYING_STRING), INTENT(INOUT) :: FILE_NAME !<file name
+    TYPE(VARYING_STRING), INTENT(IN):: METHOD
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    !TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG):: my_computational_node_number !<local process number    
+    INTEGER(INTG):: computational_node_numbers   !<total process number      
+    TYPE(FIELD_IO_NODAL_INFO_SET) :: LOCAL_PROCESS_NODAL_INFO_SET !<nodal information in this process
+
+    CALL ENTERS("FIELD_IO_NODES_IMPORT", ERR,ERROR,*999)    
+
+    !Get the number of computational nodes
+    computational_node_numbers=COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)
+    IF(ERR/=0) GOTO 999
+    !Get my computational node number
+    my_computational_node_number=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
+    IF(ERR/=0) GOTO 999
+    IF(METHOD=="FORTRAN") THEN
+       CALL FIELD_IO_NODAL_INFO_SET_INITIALISE(LOCAL_PROCESS_NODAL_INFO_SET, FIELDS, ERR,ERROR,*999) 
+       CALL FIELD_IO_NODAL_INFO_SET_ATTACH_LOCAL_PROCESS(LOCAL_PROCESS_NODAL_INFO_SET, ERR,ERROR,*999)
+       CALL FIELD_IO_NODAL_INFO_SET_SORT(LOCAL_PROCESS_NODAL_INFO_SET, my_computational_node_number, ERR,ERROR,*999)    
+       CALL FIELD_IO_IMPORT_NODES_FROM_LOCAL_FILE(LOCAL_PROCESS_NODAL_INFO_SET, FILE_NAME, my_computational_node_number, &
+            &computational_node_numbers, ERR, ERROR, *999)
+       CALL FIELD_IO_NODAL_INFO_SET_FINALIZE(LOCAL_PROCESS_NODAL_INFO_SET, ERR,ERROR,*999)
+    ELSE IF(METHOD=="MPIIO") THEN
+       CALL FLAG_ERROR("what are u thinking, of course not!",ERR,ERROR,*999)
+       !CALL FIELD_IO_NODAL_INFO_SET_INITIALISE(LOCAL_PROCESS_NODAL_INFO_SET, FIELDS, ERR,ERROR,*999) 
+       !CALL FIELD_IO_NODAL_INFO_SET_ATTACH_LOCAL_PROCESS(LOCAL_PROCESS_NODAL_INFO_SET, ERR,ERROR,*999)
+       !CALL FIELD_IO_NODAL_INFO_SET_SORT(LOCAL_PROCESS_NODAL_INFO_SET, my_computational_node_number, ERR,ERROR,*999)
+       !CALL FIELD_IO_EXPORT_NODES_INTO_SINGLE_FILE(LOCAL_PROCESS_NODAL_INFO_SET, FILE_NAME, my_computational_node_number, &
+       !     &computational_node_numbers, ERR, ERROR, *999)
+       !CALL FIELD_IO_NODAL_INFO_SET_FINALIZE(LOCAL_PROCESS_NODAL_INFO_SET, ERR,ERROR,*999)           
+    ENDIF
+    
+    CALL EXITS("FIELD_IO_NODES_IMPORT")
+    RETURN
+999 CALL ERRORS("FIELD_IO_NODES_IMPORT",ERR,ERROR)
+    CALL EXITS("FIELD_IO_NODES_IMPORT")
+    RETURN 1  
+  END SUBROUTINE FIELD_IO_NODES_IMPORT
+
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Export nodal information \see{FIELD_IO::FIELD_IO_NODES_EXPORT}.                 
   SUBROUTINE FIELD_IO_NODES_EXPORT(FIELDS, FILE_NAME, METHOD, ERR,ERROR,*)
     !Argument variables       
     TYPE(FIELDS_TYPE), POINTER :: FIELDS !<the field object
@@ -2307,17 +2359,17 @@ CONTAINS
               !coordinate system              
               SELECT CASE (COMPONENT%REGION%COORDINATE_SYSTEM%TYPE)
                   CASE(COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
-                   IF(LABEL_TYPE==FIELD_IO_VARIABLE_LABEL) THEN                
+                    IF(LABEL_TYPE==FIELD_IO_VARIABLE_LABEL) THEN                
                        FIELD_IO_LABEL_FIELD_INFO_GET="coordinates,  coordinate, rectangular cartesian"
-                   ELSE IF (LABEL_TYPE==FIELD_IO_COMPONENT_LABEL) THEN
-                      IF(COMPONENT%COMPONENT_NUMBER==1) THEN
-                         FIELD_IO_LABEL_FIELD_INFO_GET="x"
-                      ELSE IF(COMPONENT%COMPONENT_NUMBER==2) THEN
-                         FIELD_IO_LABEL_FIELD_INFO_GET="y"
-                      ELSE IF(COMPONENT%COMPONENT_NUMBER==3) THEN
-                         FIELD_IO_LABEL_FIELD_INFO_GET="z"
-                  ENDIF                             
-                   ENDIF                        
+                    ELSE IF (LABEL_TYPE==FIELD_IO_COMPONENT_LABEL) THEN
+                       IF(COMPONENT%COMPONENT_NUMBER==1) THEN
+                          FIELD_IO_LABEL_FIELD_INFO_GET="x"
+                       ELSE IF(COMPONENT%COMPONENT_NUMBER==2) THEN
+                          FIELD_IO_LABEL_FIELD_INFO_GET="y"
+                       ELSE IF(COMPONENT%COMPONENT_NUMBER==3) THEN
+                          FIELD_IO_LABEL_FIELD_INFO_GET="z"
+                       ENDIF                             
+                    ENDIF                        
                   !CASE(COORDINATE_CYCLINDRICAL_POLAR_TYPE)
                   !CASE(COORDINATE_SPHERICAL_POLAR_TYPE)
                   !CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE)
@@ -2510,6 +2562,228 @@ CONTAINS
 999 CALL ERRORS("FIELD_IO_LABEL_FIELD_INFO_GET",ERR,ERROR)
     CALL EXITS("FIELD_IO_LABEL_FIELD_INFO_GET")
   END FUNCTION FIELD_IO_LABEL_FIELD_INFO_GET  
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Write the header of a group nodes using FORTRAIN  
+  SUBROUTINE FIELD_IO_IMPORT_NODAL_GROUP_HEADER_FORTRAN(LOCAL_PROCESS_NODAL_INFO_SET, LOCAL_NODAL_NUMBER, MAX_NUM_OF_NODAL_DERIVATIVES, &
+  &my_computational_node_number, FILE_ID, ERR,ERROR, *)
+    !Argument variables  
+    TYPE(FIELD_IO_NODAL_INFO_SET), INTENT(INOUT) :: LOCAL_PROCESS_NODAL_INFO_SET  !<LOCAL_PROCESS_NODAL_INFO_SET           
+    INTEGER(INTG), INTENT(IN) :: LOCAL_NODAL_NUMBER !<LOCAL_NUMBER IN THE NODAL IO LIST
+    INTEGER(INTG), INTENT(INOUT) :: MAX_NUM_OF_NODAL_DERIVATIVES !<MAX_NUM_OF_NODAL_DERIVATIVES
+    INTEGER(INTG), INTENT(IN) :: my_computational_node_number !<local process number    
+    INTEGER(INTG), INTENT(IN) :: FILE_ID !< FILE ID    
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: NUM_OF_FIELDS, NUM_OF_VARIABLES, NUM_OF_NODAL_DEV
+    INTEGER(INTG) :: domain_idx, domain_no, MY_DOMAIN_INDEX, local_number, global_number
+    INTEGER(INTG), POINTER :: GROUP_FIELDS(:), GROUP_VARIABLES(:), GROUP_DERIVATIVES(:)
+    INTEGER(INTG) :: field_idx, comp_idx, comp_idx1, value_idx, var_idx, global_var_idx !dev_idx,   
+    TYPE(FIELD_TYPE), POINTER :: field_ptr
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: variable_ptr   
+    !TYPE(FIELD_VARIABLE_COMPONENT_PTR_TYPE), POINTER :: tmp_components(:)        
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING_NODES !The domain mapping to calculate nodal mappings
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES ! domain nodes
+    TYPE(VARYING_STRING) :: LINE, LABEL
+   
+    CALL ENTERS("FIELD_IO_IMPORT_NODAL_GROUP_HEADER_FORTRAN",ERR,ERROR,*999)    
+    
+    !colllect nodal header information for IO first
+    
+    !!get the number of this computational node from mpi pool
+    !my_computational_node_number=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)     
+    !IF(ERR/=0) GOTO 999        
+    
+    !attach the temporary pointer
+    !tmp_components=>LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)%COMPONENTS    
+    
+    !collect maximum number of nodal derivatives, number of fields and variables 
+    NUM_OF_FIELDS=0
+    NUM_OF_VARIABLES=0
+    MAX_NUM_OF_NODAL_DERIVATIVES=0
+    global_number=LOCAL_PROCESS_NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(LOCAL_NODAL_NUMBER)
+    NULLIFY(field_ptr)     
+    NULLIFY(variable_ptr)
+    DO comp_idx=1,LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)%NUMBER_OF_COMPONENTS    
+       !calculate the number of fields
+       IF (.NOT.ASSOCIATED(field_ptr, target=LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)% &
+            &COMPONENTS(comp_idx)%PTR%FIELD)) THEN
+          NUM_OF_FIELDS=NUM_OF_FIELDS+1
+          field_ptr=>LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)%COMPONENTS (comp_idx)%PTR%FIELD
+       ENDIF         
+       
+       !calculate the number of variables
+       IF (.NOT.ASSOCIATED(variable_ptr, target=LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)% &
+            &COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE)) THEN
+          NUM_OF_VARIABLES=NUM_OF_VARIABLES+1
+          variable_ptr=>LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE
+       ENDIF      
+   
+      !finding the local numbering through the global to local mapping   
+       DOMAIN_MAPPING_NODES=>LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)%&
+           &COMPONENTS(comp_idx)%PTR%DOMAIN%MAPPINGS%NODES       
+       !get the domain index for this variable component according to my own computional node number
+       DO domain_idx=1,DOMAIN_MAPPING_NODES%GLOBAL_TO_LOCAL_MAP(global_number)%NUMBER_OF_DOMAINS
+          domain_no=DOMAIN_MAPPING_NODES%GLOBAL_TO_LOCAL_MAP(global_number)%DOMAIN_NUMBER(domain_idx)
+          IF(domain_no==my_computational_node_number) THEN
+             MY_DOMAIN_INDEX=domain_idx
+             EXIT !out of loop--domain_idx
+          ENDIF
+       ENDDO !domain_idX
+       local_number=DOMAIN_MAPPING_NODES%GLOBAL_TO_LOCAL_MAP(global_number)%LOCAL_NUMBER(MY_DOMAIN_INDEX)
+       !use local domain information find the out the maximum number of derivatives
+       DOMAIN_NODES=>LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)%COMPONENTS(comp_idx)%PTR%DOMAIN%TOPOLOGY%NODES          
+       MAX_NUM_OF_NODAL_DERIVATIVES=MAX(DOMAIN_NODES%NODES(local_number)%NUMBER_OF_DERIVATIVES,MAX_NUM_OF_NODAL_DERIVATIVES)                
+    ENDDO !comp_idx         
+    !Allocate the momery for group of field variables
+    ALLOCATE(GROUP_FIELDS(NUM_OF_FIELDS),STAT=ERR)
+    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty field buffer in IO",ERR,ERROR,*999)
+    !Allocate the momery for group of field components   
+    ALLOCATE(GROUP_VARIABLES(NUM_OF_VARIABLES),STAT=ERR)
+    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty variable buffer in IO",ERR,ERROR,*999)
+    !Allocate the momery for group of maximum number of derivatives     
+    ALLOCATE(GROUP_DERIVATIVES(MAX_NUM_OF_NODAL_DERIVATIVES),STAT=ERR)
+    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty derivatives buffer in IO",ERR,ERROR,*999)    
+    
+    !fill information into the group of fields and variables
+    NUM_OF_FIELDS=0
+    NUM_OF_VARIABLES=0   
+    NULLIFY(field_ptr)     
+    NULLIFY(variable_ptr)      
+    GROUP_FIELDS(:)=0 !the item in this arrary is the number of variables in the same field
+    GROUP_VARIABLES(:)=0 !the item in this arrary is the number of components in the same variable     
+    DO comp_idx=1,LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)%NUMBER_OF_COMPONENTS    
+       !grouping field variables and components together
+       IF((.NOT.ASSOCIATED(field_ptr,TARGET=LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)% &
+            &COMPONENTS(comp_idx)%PTR%FIELD)).AND.(.NOT.ASSOCIATED(variable_ptr,TARGET=LOCAL_PROCESS_NODAL_INFO_SET% &
+            &NODAL_INFO_SET(LOCAL_NODAL_NUMBER)%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE))) THEN !different field and variables            
+          !add one new variable
+          NUM_OF_FIELDS=NUM_OF_FIELDS+1
+          GROUP_FIELDS(NUM_OF_FIELDS)=GROUP_FIELDS(NUM_OF_FIELDS)+1 
+          !add one new component
+          NUM_OF_VARIABLES=NUM_OF_VARIABLES+1
+          GROUP_VARIABLES(NUM_OF_VARIABLES)=GROUP_VARIABLES(NUM_OF_VARIABLES)+1
+          field_ptr=>LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)%COMPONENTS(comp_idx)%PTR%FIELD
+          variable_ptr=>LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE   
+       ELSE IF (ASSOCIATED(field_ptr,TARGET=LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)% &
+          &COMPONENTS(comp_idx)%PTR%FIELD).AND.(.NOT.ASSOCIATED(variable_ptr,TARGET=LOCAL_PROCESS_NODAL_INFO_SET%&
+          &NODAL_INFO_SET(LOCAL_NODAL_NUMBER)%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE))) THEN !the same field and  different variables
+          !add one new variable
+          GROUP_FIELDS(NUM_OF_FIELDS)=GROUP_FIELDS(NUM_OF_FIELDS)+1
+          !add one new component
+          NUM_OF_VARIABLES=NUM_OF_VARIABLES+1
+          GROUP_VARIABLES(NUM_OF_VARIABLES)=GROUP_VARIABLES(NUM_OF_VARIABLES)+1
+          variable_ptr=>LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE   
+       ELSE  !different components of the same variable
+          !add one new component
+          GROUP_VARIABLES(NUM_OF_VARIABLES)=GROUP_VARIABLES(NUM_OF_VARIABLES)+1                               
+       ENDIF !field_ptr/=LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)%COMPONENTS%COMPONENTS(comp_idx)%PTR%FIELD     
+    ENDDO  !comp_idx        
+    
+    !write out the nodal header
+    var_idx=1
+    comp_idx=1
+    field_idx=1
+    value_idx=1
+    comp_idx1=1
+    global_var_idx=0
+    
+    CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)  
+    IF(LINE/=" "//"#Fields="//TRIM(NUMBER_TO_VSTRING(SUM(GROUP_FIELDS(1:NUM_OF_FIELDS)),"*",ERR,ERROR))) &
+       & CALL FLAG_ERROR("Fields number in the Header part do not match",ERR,ERROR,*999)
+         
+    DO field_idx=1, NUM_OF_FIELDS              
+       !write out the field information
+       !LABEL=FIELD_IO_LABEL_FIELD_INFO_GET(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)%COMPONENTS(comp_idx1)%PTR, FIELD_IO_FIELD_LABEL,ERR,ERROR)
+       !IF(ERR/=0) THEN
+       !   CALL FLAG_ERROR("can not get field label",ERR,ERROR,*999)     
+       !   GOTO 999               
+       !ENDIF
+       !CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)        
+       !IF(LINE/=TRIM(NUMBER_TO_VSTRING(field_idx,"*",ERR,ERROR))//") "//TRIM(LABEL)&
+       !&//" , #variables="//TRIM(NUMBER_TO_VSTRING(GROUP_FIELDS(field_idx),"*",ERR,ERROR)) &       
+       !CALL FLAG_ERROR("Variable number in the Header part do not match",ERR,ERROR,*999)              
+       
+       DO var_idx=1, GROUP_FIELDS(field_idx)
+          global_var_idx=global_var_idx+1
+          !write out the field information
+          LABEL="  "//TRIM(NUMBER_TO_VSTRING(global_var_idx,"*",ERR,ERROR))//") "&
+          &//FIELD_IO_LABEL_FIELD_INFO_GET(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)%&
+          &COMPONENTS(comp_idx1)%PTR, FIELD_IO_VARIABLE_LABEL,ERR,ERROR)
+          IF(ERR/=0) THEN
+             CALL FLAG_ERROR("can not get variable label",ERR,ERROR,*999)     
+             GOTO 999               
+          ENDIF        
+          CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+          IF(LINE/=TRIM(LABEL)//", #Components="//TRIM(NUMBER_TO_VSTRING(GROUP_VARIABLES(global_var_idx),"*",ERR,ERROR))) &
+             & CALL FLAG_ERROR("Components number in the Header part do not match",ERR,ERROR,*999)       
+                        
+          
+          DO comp_idx=1, GROUP_VARIABLES(global_var_idx)
+             !write out the component information
+             LABEL="   "//FIELD_IO_LABEL_FIELD_INFO_GET(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)%&
+             &COMPONENTS(comp_idx1)%PTR, FIELD_IO_COMPONENT_LABEL,ERR,ERROR)
+             IF(ERR/=0) THEN
+                CALL FLAG_ERROR("can not get component label",ERR,ERROR,*999)     
+                GOTO 999               
+             ENDIF        
+             LINE=TRIM(LABEL)//"."                          
+             
+             !finding the local numbering through the global to local mapping   
+             DOMAIN_MAPPING_NODES=>LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)%COMPONENTS(comp_idx)%PTR%&
+                &DOMAIN%MAPPINGS%NODES       
+             !get the domain index for this variable component according to my own computional node number
+             DO domain_idx=1,DOMAIN_MAPPING_NODES%GLOBAL_TO_LOCAL_MAP(global_number)%NUMBER_OF_DOMAINS
+                domain_no=DOMAIN_MAPPING_NODES%GLOBAL_TO_LOCAL_MAP(global_number)%DOMAIN_NUMBER(domain_idx)
+                IF(domain_no==my_computational_node_number) THEN
+                   MY_DOMAIN_INDEX=domain_idx
+                   EXIT !out of loop--domain_idx
+                ENDIF
+             ENDDO !domain_idX
+             local_number=DOMAIN_MAPPING_NODES%GLOBAL_TO_LOCAL_MAP(global_number)%LOCAL_NUMBER(MY_DOMAIN_INDEX)
+             !use local domain information find the out the maximum number of derivatives
+             DOMAIN_NODES=>LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)%COMPONENTS(comp_idx)%PTR%DOMAIN%TOPOLOGY%NODES
+             !get the nodal partial derivatives
+             NUM_OF_NODAL_DEV=DOMAIN_NODES%NODES(local_number)%NUMBER_OF_DERIVATIVES
+             GROUP_DERIVATIVES(1:NUM_OF_NODAL_DEV)=DOMAIN_NODES%NODES(local_number)%PARTIAL_DERIVATIVE_INDEX(:)               
+             !sort  the partial derivatives
+             CALL LIST_SORT(GROUP_DERIVATIVES(1:NUM_OF_NODAL_DEV),ERR,ERROR,*999)
+             !get the derivative name             
+             LABEL=FIELD_IO_LABEL_DERIVATIVE_INFO_GET(GROUP_DERIVATIVES(1:NUM_OF_NODAL_DEV), NUM_OF_NODAL_DEV, &
+                &FIELD_IO_DERIVATIVE_LABEL,ERR,ERROR)
+             IF(ERR/=0) THEN
+                CALL FLAG_ERROR("can not get derivative label",ERR,ERROR,*999)     
+                GOTO 999               
+             ENDIF
+             !write out the header             
+             CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+             !assemble the header        
+             IF(LINE/=LINE//"  Value index= "//TRIM(NUMBER_TO_VSTRING(value_idx,"*",ERR,ERROR))&
+                &//", #Derivatives= "//TRIM(NUMBER_TO_VSTRING(NUM_OF_NODAL_DEV-1,"*",ERR,ERROR))//TRIM(LABEL)) &
+                & CALL FLAG_ERROR("Value index in the Header part do not match",ERR,ERROR,*999)
+             !increase the component index              
+             comp_idx1=comp_idx1+1
+             !increase the value index
+             value_idx=value_idx+NUM_OF_NODAL_DEV
+          ENDDO !comp_idx
+       ENDDO !var_idx
+    ENDDO !field_idx
+
+    !release temporary memory
+    IF(ASSOCIATED(GROUP_FIELDS)) DEALLOCATE(GROUP_FIELDS)
+    IF(ASSOCIATED(GROUP_VARIABLES)) DEALLOCATE(GROUP_VARIABLES)
+    IF(ASSOCIATED(GROUP_DERIVATIVES)) DEALLOCATE(GROUP_DERIVATIVES)    
+        
+    CALL EXITS("FIELD_IO_IMPORT_NODAL_GROUP_HEADER_FORTRAN")
+    RETURN
+999 CALL ERRORS("FIELD_IO_IMPORT_NODAL_GROUP_HEADER_FORTRAN",ERR,ERROR)
+    CALL EXITS("FIELD_IO_IMPORT_NODAL_GROUP_HEADER_FORTRAN")
+    RETURN 1       
+  END SUBROUTINE FIELD_IO_IMPORT_NODAL_GROUP_HEADER_FORTRAN  
 
   !
   !================================================================================================================================
@@ -3109,8 +3383,183 @@ CONTAINS
     CALL EXITS("FIELD_IO_EXPORT_NODES_INTO_SINGLE_FILE")
     RETURN 1  
   END SUBROUTINE FIELD_IO_EXPORT_NODES_INTO_SINGLE_FILE
+ 
+  !
+  !================================================================================================================================
+  !  
 
+  !>Read all the nodal information from LOCAL_PROCESS_NODAL_INFO_SET from local exnode files       
+  SUBROUTINE FIELD_IO_IMPORT_NODES_FROM_LOCAL_FILE(LOCAL_PROCESS_NODAL_INFO_SET, NAME, my_computational_node_number, &
+    &computational_node_numbers,ERR, ERROR, *)
+    !the reason that my_computational_node_number is used in the argument is for future extension
+    !Argument variables   
+    TYPE(FIELD_IO_NODAL_INFO_SET), INTENT(INOUT):: LOCAL_PROCESS_NODAL_INFO_SET !<nodal information in this process
+    TYPE(VARYING_STRING), INTENT(IN) :: NAME !<the prefix name of file.
+    INTEGER(INTG), INTENT(IN):: my_computational_node_number !<local process number    
+    INTEGER(INTG), INTENT(IN):: computational_node_numbers !<total process number       
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LINE 
+    TYPE(VARYING_STRING) :: FILE_NAME !the prefix name of file.    
+    TYPE(VARYING_STRING) :: FILE_STATUS !the status for opening file.    
+    INTEGER(INTG) :: FILE_ID, domain_idx, domain_no, local_number, global_number, MY_DOMAIN_INDEX
+    INTEGER(INTG), ALLOCATABLE :: GROUP_DERIVATIVES(:)    
+    INTEGER(INTG) :: nn, comp_idx,  dev_idx, NUM_OF_NODAL_DEV, MAX_NUM_OF_NODAL_DERIVATIVES
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING_NODES !The domain mapping to calculate nodal mappings
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES ! domain nodes
+    !TYPE(FIELD_VARIABLE_COMPONENT_PTR_TYPE), POINTER :: tmp_components(:)            
+    REAL(DP), ALLOCATABLE :: NODAL_BUFFER(:)
+    REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
 
+    CALL ENTERS("FIELD_IO_IMPORT_NODES_FROM_LOCAL_FILE",ERR,ERROR,*999)    
+    
+    !get my own computianal node number--be careful the rank of process in the MPI pool 
+    !is not necessarily equal to numbering of computional node, so use method COMPUTATIONAL_NODE_NUMBER_GET
+    !will be a secured way to get the number         
+    FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(my_computational_node_number,"*",ERR,ERROR))//".exnode"        
+    FILE_ID=1029
+    MAX_NUM_OF_NODAL_DERIVATIVES=0
+    
+    IF(.NOT.ALLOCATED(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET)) THEN
+       CALL FLAG_ERROR("the nodal information set in input is invalid",ERR,ERROR,*999)            
+    ENDIF
+
+    IF(.NOT.ALLOCATED(LOCAL_PROCESS_NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER)) THEN
+       CALL FLAG_ERROR("the nodal information set is not associated with any numbering list",ERR,ERROR,*999)            
+    ENDIF
+
+    IF(LOCAL_PROCESS_NODAL_INFO_SET%NUMBER_OF_NODES==0) THEN 
+       CALL FLAG_ERROR("the nodal information set does not contain any nodes",ERR,ERROR,*999)            
+    ENDIF
+
+    IF(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(1)%SAME_HEADER==.TRUE.) THEN
+       CALL FLAG_ERROR("the first header flag of nodal information set should be false",ERR,ERROR,*999)            
+    ENDIF
+    
+    !NULLIFY(NODAL_BUFFER)    
+    !NULLIFY(GROUP_DERIVATIVES)
+    
+    !open a file for reading
+    FILE_STATUS="OLD"
+    CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
+    IF(ERR/=0) THEN
+       CALL FLAG_ERROR("can not find the file",ERR,ERROR,*999)     
+       GOTO 999               
+    ENDIF             
+          
+    !read out the group name    
+    CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+    IF(LINE/=FIELD_IO_FILEDS_GROUP_INFO_GET(LOCAL_PROCESS_NODAL_INFO_SET%FIELDS, ERR,ERROR)) THEN   
+       CALL FLAG_ERROR("group name does not match",ERR,ERROR,*999)     
+       GOTO 999               
+    ENDIF               
+           
+    !read out the number of files    
+    LINE=FIELD_IO_MULTI_FILES_INFO_GET(computational_node_numbers, ERR, ERROR)      
+    IF(ERR/=0) THEN
+       CALL FLAG_ERROR("can not get multiple file information in IO",ERR,ERROR,*999)     
+       GOTO 999               
+    ENDIF             
+    !CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)       
+
+    DO nn=1, LOCAL_PROCESS_NODAL_INFO_SET%NUMBER_OF_NODES
+      
+       !tmp_components=>LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS         
+       global_number=LOCAL_PROCESS_NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn)
+       
+       !check whether need to write out the nodal information header  
+       IF(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%SAME_HEADER==.FALSE.) THEN
+        !write out the nodal header
+           
+          CALL FIELD_IO_IMPORT_NODAL_GROUP_HEADER_FORTRAN(LOCAL_PROCESS_NODAL_INFO_SET, nn, MAX_NUM_OF_NODAL_DERIVATIVES, &
+          &my_computational_node_number, FILE_ID, ERR,ERROR,*999) 
+           !value_idx=value_idx-1 !the len of NODAL_BUFFER                      
+          !checking: whether need to allocate temporary memory for Io writing
+          IF(ALLOCATED(NODAL_BUFFER)) THEN
+             IF(SIZE(NODAL_BUFFER)<MAX_NUM_OF_NODAL_DERIVATIVES) THEN 
+                DEALLOCATE(NODAL_BUFFER)
+                DEALLOCATE(GROUP_DERIVATIVES)
+                ALLOCATE(NODAL_BUFFER(MAX_NUM_OF_NODAL_DERIVATIVES),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty nodal buffer in IO writing",ERR,ERROR,*999)
+                ALLOCATE(GROUP_DERIVATIVES(MAX_NUM_OF_NODAL_DERIVATIVES),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty derivative buffer in IO writing",ERR,ERROR,*999)           
+             ENDIF
+          ELSE
+             ALLOCATE(NODAL_BUFFER(MAX_NUM_OF_NODAL_DERIVATIVES),STAT=ERR)
+             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty nodal buffer in IO writing",ERR,ERROR,*999)
+             ALLOCATE(GROUP_DERIVATIVES(MAX_NUM_OF_NODAL_DERIVATIVES),STAT=ERR)
+             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty derivative buffer in IO writing",ERR,ERROR,*999)           
+          ENDIF
+       ENDIF !LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%SAME_HEADER==.FALSE.
+                                   
+       !write out the components' values of this node in this domain
+       DO comp_idx=1,LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%NUMBER_OF_COMPONENTS   
+
+         !finding the local numbering through the global to local mapping   
+          DOMAIN_MAPPING_NODES=>LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%DOMAIN%MAPPINGS%NODES       
+          !get the domain index for this variable component according to my own computional node number
+          DO domain_idx=1,DOMAIN_MAPPING_NODES%GLOBAL_TO_LOCAL_MAP(global_number)%NUMBER_OF_DOMAINS
+             domain_no=DOMAIN_MAPPING_NODES%GLOBAL_TO_LOCAL_MAP(global_number)%DOMAIN_NUMBER(domain_idx)
+             IF(domain_no==my_computational_node_number) THEN
+                MY_DOMAIN_INDEX=domain_idx
+                EXIT !out of loop--domain_idx
+             ENDIF
+          ENDDO !domain_idX
+          local_number=DOMAIN_MAPPING_NODES%GLOBAL_TO_LOCAL_MAP(global_number)%LOCAL_NUMBER(MY_DOMAIN_INDEX)
+          !use local domain information find the out the maximum number of derivatives
+          DOMAIN_NODES=>LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%DOMAIN%TOPOLOGY%NODES
+          
+          !write out the user numbering of node if comp_idx ==1
+          IF(comp_idx==1) THEN 
+             CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+             IF(LINE/="Node:     "//TRIM(NUMBER_TO_VSTRING(DOMAIN_NODES%NODES(local_number)%USER_NUMBER,"*",ERR,ERROR))) THEN
+                CALL FLAG_ERROR("node numbering does not match",ERR,ERROR,*999)
+                GOTO 999      
+             ENDIF                                      
+          ENDIF
+          
+          !get the nodal partial derivatives
+          NUM_OF_NODAL_DEV=DOMAIN_NODES%NODES(local_number)%NUMBER_OF_DERIVATIVES
+          GROUP_DERIVATIVES(1:NUM_OF_NODAL_DEV)=DOMAIN_NODES%NODES(local_number)%PARTIAL_DERIVATIVE_INDEX(:)               
+          !sort  the partial derivatives
+          CALL LIST_SORT(GROUP_DERIVATIVES(1:NUM_OF_NODAL_DEV),ERR,ERROR,*999)
+          DO dev_idx=1, NUM_OF_NODAL_DEV
+             CALL FIELD_IO_FORTRAN_FILE_READ_DP(FILE_ID, NODAL_BUFFER, NUM_OF_NODAL_DEV, ERR,ERROR,*999)              
+             NULLIFY(GEOMETRIC_PARAMETERS)
+             IF(comp_idx==1) THEN
+                CALL FIELD_PARAMETER_SET_GET(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%FIELD,&
+                                          &FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+             ELSE IF (ASSOCIATED(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%DOMAIN, &
+                &TARGET=LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS (comp_idx-1)%PTR%DOMAIN)) THEN
+                CALL FIELD_PARAMETER_SET_GET(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%FIELD,&
+                                          &FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+             ENDIF                                       
+             GEOMETRIC_PARAMETERS(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%&
+               &PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(GROUP_DERIVATIVES(dev_idx),local_number,0))=NODAL_BUFFER(dev_idx)
+                            
+          ENDDO
+       ENDDO !comp_idx                   
+       
+    ENDDO!nn    
+    
+    !close a file    
+    CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
+
+    !release the temporary memory
+    IF(ALLOCATED(NODAL_BUFFER)) THEN
+       DEALLOCATE(NODAL_BUFFER)
+    ENDIF
+    IF(ALLOCATED(GROUP_DERIVATIVES)) THEN
+       DEALLOCATE(GROUP_DERIVATIVES)
+    ENDIF
+    
+    CALL EXITS("FIELD_IO_IMPORT_NODES_FROM_LOCAL_FILE")
+    RETURN
+999 CALL ERRORS("FIELD_IO_IMPORT_NODES_FROM_LOCAL_FILE",ERR,ERROR)
+    CALL EXITS("FIELD_IO_IMPORT_NODES_FROM_LOCAL_FILE")
+    RETURN 1  
+  END SUBROUTINE FIELD_IO_IMPORT_NODES_FROM_LOCAL_FILE 
  
   !
   !================================================================================================================================
@@ -3129,7 +3578,8 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LINE 
-    TYPE(VARYING_STRING) :: FILE_NAME !the prefix name of file.    
+    TYPE(VARYING_STRING) :: FILE_NAME !the prefix name of file.  
+    TYPE(VARYING_STRING) :: FILE_STATUS !the status for opening file.        
     INTEGER(INTG) :: FILE_ID, domain_idx, domain_no, local_number, global_number, MY_DOMAIN_INDEX
     INTEGER(INTG), ALLOCATABLE :: GROUP_DERIVATIVES(:)    
     INTEGER(INTG) :: nn, comp_idx,  dev_idx, NUM_OF_NODAL_DEV, MAX_NUM_OF_NODAL_DERIVATIVES
@@ -3168,7 +3618,8 @@ CONTAINS
     !NULLIFY(GROUP_DERIVATIVES)
     
     !open a file 
-    CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, ERR,ERROR,*999)
+    FILE_STATUS="REPLACE"
+    CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
     
     !write out the group name    
     LINE=FIELD_IO_FILEDS_GROUP_INFO_GET(LOCAL_PROCESS_NODAL_INFO_SET%FIELDS, ERR,ERROR)    
@@ -3368,6 +3819,38 @@ CONTAINS
   !================================================================================================================================
   !  
 
+  !>Read a string using FORTRAN IO     
+  SUBROUTINE FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, STRING_DATA, LEN_OF_DATA, ERR,ERROR,*)
+  
+    !Argument variables   
+    TYPE(VARYING_STRING), INTENT(INOUT) :: STRING_DATA !<the string data.
+    INTEGER(INTG), INTENT(IN) :: FILE_ID !<file ID
+    INTEGER(INTG), INTENT(IN) :: LEN_OF_DATA !<length of string
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    CHARACTER (LEN=LEN_OF_DATA) :: TEMP_STR
+    
+    CALL ENTERS("FIELD_IO_FORTRAN_FILE_READ_STRING",ERR,ERROR,*999)
+        
+    IF(LEN_OF_DATA==0) THEN
+       CALL FLAG_ERROR("leng of string is zero",ERR,ERROR,*999) 
+    ENDIF
+    
+    READ(FILE_ID, "(A)"), TEMP_STR 
+    STRING_DATA=TEMP_STR
+    
+    CALL EXITS("FIELD_IO_FORTRAN_FILE_READ_STRING")
+    RETURN
+999 CALL ERRORS("FIELD_IO_FORTRAN_FILE_READ_STRING",ERR,ERROR)
+    CALL EXITS("FIELD_IO_FORTRAN_FILE_READ_STRING")
+    RETURN 1
+  END SUBROUTINE FIELD_IO_FORTRAN_FILE_READ_STRING
+
+  !
+  !================================================================================================================================
+  !  
+
   !>Write a string using FORTRAN IO     
   SUBROUTINE FIELD_IO_FORTRAN_FILE_WRITE_STRING(FILE_ID, STRING_DATA, LEN_OF_DATA, ERR,ERROR,*)
   
@@ -3431,6 +3914,34 @@ CONTAINS
     CALL EXITS("FIELD_IO_MPIIO_FILE_WRITE_DP")
     RETURN 1
   END SUBROUTINE FIELD_IO_MPIIO_FILE_WRITE_DP
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Read a real data using FORTRAN IO     
+  SUBROUTINE FIELD_IO_FORTRAN_FILE_READ_DP(FILE_ID, REAL_DATA, LEN_OF_DATA, ERR,ERROR,*)
+  
+    !Argument variables   
+    REAL(DP), INTENT(OUT) :: REAL_DATA(:) !<the name of file.
+    INTEGER(INTG), INTENT(IN) :: FILE_ID !<file ID
+    INTEGER(INTG), INTENT(IN) :: LEN_OF_DATA !<length of string
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: DP_FMT !<the name of file.    
+    
+    CALL ENTERS("FIELD_IO_FORTRAN_FILE_READ_DP",ERR,ERROR,*999)    
+   
+    DP_FMT="("//TRIM(NUMBER_TO_VSTRING(LEN_OF_DATA,"*",ERR,ERROR))//"ES)"
+    READ(FILE_ID, CHAR(DP_FMT)), REAL_DATA(1:LEN_OF_DATA)
+    
+    CALL EXITS("FIELD_IO_FORTRAN_FILE_READ_DP")
+    RETURN
+999 CALL ERRORS("FIELD_IO_FORTRAN_FILE_READ_DP",ERR,ERROR)
+    CALL EXITS("FIELD_IO_FORTRAN_FILE_READ_DP")
+    RETURN 1
+  END SUBROUTINE FIELD_IO_FORTRAN_FILE_READ_DP
 
   !
   !================================================================================================================================
@@ -3502,6 +4013,34 @@ CONTAINS
   !================================================================================================================================
   !  
 
+  !>Read a integer data      
+  SUBROUTINE FIELD_IO_FORTRAN_FILE_READ_INTG(FILE_ID, INTG_DATA, LEN_OF_DATA, ERR,ERROR,*)
+  
+    !Argument variables   
+    INTEGER(INTG), INTENT(OUT) :: INTG_DATA(:) !<the name of file.
+    INTEGER(INTG), INTENT(IN) :: FILE_ID !<file ID
+    INTEGER(INTG), INTENT(IN) :: LEN_OF_DATA !<length of string
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: DP_FMT !<the name of file.
+       
+    CALL ENTERS("FIELD_IO_FORTRAN_FILE_READ_INTG",ERR,ERROR,*999)    
+   
+    DP_FMT="("//TRIM(NUMBER_TO_VSTRING(LEN_OF_DATA,"*",ERR,ERROR))//"I)"
+    READ(FILE_ID, CHAR(DP_FMT)), INTG_DATA(1:LEN_OF_DATA)
+    
+    CALL EXITS("FIELD_IO_FORTRAN_FILE_READ_INTG")
+    RETURN
+999 CALL ERRORS("FIELD_IO_FORTRAN_FILE_READ_INTG",ERR,ERROR)
+    CALL EXITS("FIELD_IO_FORTRAN_FILE_READ_INTG")
+    RETURN 1
+  END SUBROUTINE FIELD_IO_FORTRAN_FILE_READ_INTG
+
+  !
+  !================================================================================================================================
+  !  
+
   !>Write a integer data      
   SUBROUTINE FIELD_IO_FORTRAN_FILE_WRITE_INTG(FILE_ID, INTG_DATA, LEN_OF_DATA, ERR,ERROR,*)
   
@@ -3531,10 +4070,11 @@ CONTAINS
   !  
 
   !>Open a file using Fortran 
-  SUBROUTINE FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, ERR,ERROR,*)
+  SUBROUTINE FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*)
   
     !Argument variables   
     TYPE(VARYING_STRING), INTENT(INOUT) :: FILE_NAME !<the name of file.
+    TYPE(VARYING_STRING), INTENT(IN) :: FILE_STATUS !<status for opening a file
     INTEGER(INTG), INTENT(INOUT) :: FILE_ID !<file ID
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -3542,7 +4082,7 @@ CONTAINS
         
     CALL ENTERS("FIELD_IO_FORTRAN_FILE_OPEN",ERR,ERROR,*999)       
 
-    OPEN(UNIT=FILE_ID, FILE=CHAR(FILE_NAME), STATUS='REPLACE', FORM="FORMATTED", ERR=999)   
+    OPEN(UNIT=FILE_ID, FILE=CHAR(FILE_NAME), STATUS=CHAR(FILE_STATUS), FORM="FORMATTED", ERR=999)   
     
     CALL EXITS("FIELD_IO_FORTRAN_FILE_OPEN")
     RETURN
