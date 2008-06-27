@@ -101,6 +101,12 @@ MODULE TYPES
     TYPE(QUADRATURE_SCHEME_PTR_TYPE), POINTER :: SCHEMES(:) !<SCHEMES(scheme_idx). The array of pointers to the quadrature schemes defined for the basis. scheme_idx must be between 1 and QUADRATURE_TYPE::NUMBER_OF_SCHEMES.
   END TYPE QUADRATURE_TYPE
 
+  !>Contains information on the defined basis functions
+  TYPE BASIS_FUNCTIONS_TYPE
+    INTEGER(INTG) :: NUMBER_BASIS_FUNCTIONS !<The number of basis functions definegd
+    TYPE(BASIS_PTR_TYPE), POINTER :: BASES(:) !<The array of pointers to the defined basis functions
+  END TYPE BASIS_FUNCTIONS_TYPE
+
   !> A buffer type to allow for an array of pointers to a BASIS_TYPE.
   TYPE BASIS_PTR_TYPE
     TYPE(BASIS_TYPE), POINTER :: PTR !<The pointer to the basis.

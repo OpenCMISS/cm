@@ -76,7 +76,7 @@ MODULE FIELD_IO_ROUTINES
   INTEGER(INTG), PARAMETER :: FIELD_IO_SCALE_FACTORS_PROPERTY_TYPE=6
 
   !Module types
-  
+
   !>field variable compoment type pointer for IO
   TYPE FIELD_VARIABLE_COMPONENT_PTR_TYPE
     TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: PTR !< pointer field variable component
@@ -236,104 +236,147 @@ MODULE FIELD_IO_ROUTINES
 CONTAINS  
   !
   !================================================================================================================================
+  !  
+  
+  !>Finding basis information 
+  SUBROUTINE FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE(INTERPOLATION, LABEL_TYPE, ERR, ERROR, *)
+    !Argument variables   
+    INTEGER(INTG), INTENT(INOUT) :: INTERPOLATION !< xi interpolation type
+    TYPE(VARYING_STRING), INTENT(IN) :: LABEL_TYPE !<label type
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+   
+    CALL ENTERS("FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE",ERR,ERROR,*999)    
+       
+    SELECT CASE(CHAR(LABEL_TYPE))
+         CASE("l.Lagrange")
+             INTERPOLATION=BASIS_LINEAR_LAGRANGE_INTERPOLATION
+        CASE("q.Lagrange")
+             INTERPOLATION=BASIS_QUADRATIC_LAGRANGE_INTERPOLATION
+         CASE("c.Lagrange")
+             INTERPOLATION=BASIS_CUBIC_LAGRANGE_INTERPOLATION
+         CASE("c.Hermite")
+             INTERPOLATION=BASIS_CUBIC_HERMITE_INTERPOLATION
+         CASE("q1.Hermite")
+             INTERPOLATION=BASIS_QUADRATIC1_HERMITE_INTERPOLATION
+         CASE("q2.Hermite")
+             INTERPOLATION=BASIS_QUADRATIC2_HERMITE_INTERPOLATION
+         CASE DEFAULT 
+             CALL FLAG_ERROR("Invalid interpolation type",ERR,ERROR,*999)
+    END SELECT
+                     
+    CALL EXITS("FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE")
+    RETURN
+999 CALL ERRORS("FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE",ERR,ERROR)
+    CALL EXITS("FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE")
+  END SUBROUTINE FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE    
+
+
+  !
+  !================================================================================================================================
   !
   
-  !!>Create basis by reading information from multiple files \see{FIELD_IO::FIELD_IO_CREATE_BASES}.     
-  !SUBROUTINE FIELD_IO_CREATE_BASES(BASES, NUMBER_OF_BASES, ERR,ERROR,*)
-  !!checking the input data for IO and initialize the nodal information set
-  !!the following items will be checked: the region (the same?), all the pointer(valid?)   
-  !!in this version, different decomposition method will be allowed for the list of field variables(but still in the same region)
-  !!even the each process has exactly the same nodal information and each process will write out exactly the same data
-  !!because CMGui can read the same data for several times   
-  !  !Argument variables       
-  !  TYPE(BASIS_PTR_TYPE), INTENT(INOUT), ALLOCATABLE :: BASES(:) !<LIST OF BASES
-  !  INTEGER(INTG), INTENT(INOUT) :: NUMBER_OF_BASES !<NUMBER_OF_BASES
-  !  INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-  !  TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-  !  !Local Variables
-  !  !INTEGER(INTG), INTENT(IN) :: NUMBER_OF_XI !<The number of Xi directions to set.
-  !  INTEGER(INTG):: my_computational_node_number !<local process number    
-  !  INTEGER(INTG):: computational_node_numbers   !<total process numbers      
-  !  TYPE(FIELD_IO_ELEMENTALL_INFO_SET) :: LOCAL_PROCESS_ELEMENTAL_INFO_SET !<elemental information in this process!
-!
-!    CALL ENTERS("FIELD_IO_CREATE_BASES", ERR,ERROR,*999)        
-!    
-!    !Get the number of computational nodes
-!    computational_node_numbers=COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)
-!    IF(ERR/=0) GOTO 999
-!    !Get my computational node number
-!    my_computational_node_number=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
-!    IF(ERR/=0) GOTO 999
-!    
-!    IF(METHOD=="FORTRAN") THEN
-!       CALL FIELD_IO_ELEMENTAL_INFO_SET_INITIALISE(LOCAL_PROCESS_ELEMENTAL_INFO_SET, FIELDS, ERR,ERROR,*999) 
-!       CALL FIELD_IO_ELEMENTAL_INFO_SET_ATTACH_LOCAL_PROCESS(LOCAL_PROCESS_ELEMENTAL_INFO_SET, ERR,ERROR,*999)
-!       CALL FIELD_IO_ELEMENTAL_INFO_SET_SORT(LOCAL_PROCESS_ELEMENTAL_INFO_SET, my_computational_node_number, ERR,ERROR,*999)    
-!       CALL FIELD_IO_EXPORT_ELEMENTS_INTO_LOCAL_FILE(LOCAL_PROCESS_ELEMENTAL_INFO_SET, FILE_NAME, my_computational_node_number, computational_node_numbers, &
-!         &ERR, ERROR, *999)
-!       CALL FIELD_IO_ELEMENTAL_INFO_SET_FINALIZE(LOCAL_PROCESS_ELEMENTAL_INFO_SET, ERR,ERROR,*999)
-!    ELSE IF(METHOD=="MPIIO") THEN
-!       CALL FLAG_ERROR("list of Field is not associated with any region",ERR,ERROR,*999)
-!    ENDIF     
-!    
-!    
-!    !Intialise the bases
-!    !CALL BASES_INITIALISE(ERR,ERROR,*999) !heye--do not need to call since CMISS_initalize has called the it
-!    !Start the creation of a basis (default is trilinear lagrange)
-!    CALL BASIS_CREATE_START(1,BASIS,ERR,ERROR,*999)  !create basis NO.1 and set it has bilinear largrange basis
-!                                                     !but create basis No.2 and set it has two different basis
-!                                                     !for the problem, we may have more than one field variables.
-!                                                     !we may use different meshes(it means mesh with different bases) to
-!                                                     !interpolate the different field variables. that is why we create two kinds of
-!                                                     !bases here. refer to the sample in chris PPT
-!    !Set the basis to be a bilinear Lagrange basis
-!    CALL BASIS_NUMBER_OF_XI_SET(BASIS,2,ERR,ERROR,*999)
-!    !
-!    !!TEMP: change it to a Simplex basis
-!    !CALL BASIS_TYPE_SET(BASIS,BASIS_SIMPLEX_TYPE,ERR,ERROR,*999)
-!    !CALL BASIS_INTERPOLATION_XI_SET(BASIS,(/BASIS_QUADRATIC_SIMPLEX_INTERPOLATION,BASIS_QUADRATIC_SIMPLEX_INTERPOLATION/), &
-!    !  & ERR,ERROR,*999)
-!    !
-!    !!TEMP: change it to a biquadratic Lagrange basis
-!    !CALL BASIS_INTERPOLATION_XI_SET(BASIS,(/BASIS_QUADRATIC_LAGRANGE_INTERPOLATION,BASIS_QUADRATIC_LAGRANGE_INTERPOLATION/), &
-!    !  & ERR,ERROR,*999)
-!    !!TEMP: change it to a bicubic Lagrange basis
-!    !CALL BASIS_INTERPOLATION_XI_SET(BASIS,(/BASIS_CUBIC_LAGRANGE_INTERPOLATION,BASIS_CUBIC_LAGRANGE_INTERPOLATION/),ERR,ERROR,*999)
-!    !!TEMP: change it to a linear*cubic Lagrange basis
-!    !CALL BASIS_INTERPOLATION_XI_SET(BASIS,(/BASIS_LINEAR_LAGRANGE_INTERPOLATION,BASIS_CUBIC_LAGRANGE_INTERPOLATION/),ERR,ERROR,*999)
-!    !!TEMP: change it to a bicubic Hermite basis
-!    !CALL BASIS_INTERPOLATION_XI_SET(BASIS,(/BASIS_CUBIC_HERMITE_INTERPOLATION,BASIS_CUBIC_HERMITE_INTERPOLATION/),ERR,ERROR,*999)
-!    !!TEMP: change it to a linear-quadratic-cubic Lagrange basis
-!    !CALL BASIS_INTERPOLATION_XI_SET(BASIS,(/BASIS_LINEAR_LAGRANGE_INTERPOLATION,BASIS_QUADRATIC_LAGRANGE_INTERPOLATION, &
-!    !  & BASIS_CUBIC_LAGRANGE_INTERPOLATION/),ERR,ERROR,*999)
-!    !CALL BASIS_INTERPOLATION_XI_SET(BASIS,(/BASIS_CUBIC_HERMITE_INTERPOLATION,BASIS_CUBIC_HERMITE_INTERPOLATION, &
-!    !  & BASIS_CUBIC_HERMITE_INTERPOLATION/),ERR,ERROR,*999)!
+  !>Create basis by reading information from multiple files \see{FIELD_IO::FIELD_IO_CREATE_BASES_IN_LOCAL_PROCESS}.     
+  SUBROUTINE FIELD_IO_CREATE_BASES_IN_LOCAL_PROCESS(FILE_ID, BASES, NUMBER_OF_BASES, ERR,ERROR,*)
+  !checking the input data for IO and initialize the nodal information set
+  !the following items will be checked: the region (the same?), all the pointer(valid?)   
+  !in this version, different decomposition method will be allowed for the list of field variables(but still in the same region)
+  !even the each process has exactly the same nodal information and each process will write out exactly the same data
+  !because CMGui can read the same data for several times   
+    !Argument variables       
+    TYPE(BASIS_FUNCTIONS_TYPE), POINTER :: BASES(:) !<list of bases
+    INTEGER(INTG), INTENT(INOUT) :: NUMBER_OF_BASES !<number of bases
+    INTEGER(INTG), INTENT(IN):: FILE_ID !<file handle
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS
+	TYPE(VARYING_STRING) :: LINE, CMISS_KEYWORD
+	TYPE(VARYING_STRING), ALLOCATABLE :: LIST_STR(:), LIST_STR1(:)
+    INTEGER(INTG) :: idx_basis, pos, NUM_INTERPOLATION_XI
+    INTEGER(INTG) :: INTERPOLATION_XI(3), num_interp
+    LOGICAL :: SWITCH_BASIS
+    
+    CALL ENTERS("FIELD_IO_CREATE_BASES_IN_LOCAL_PROCESS", ERR,ERROR,*999)        
+	                    
+    !Intialise the bases
+    idx_basis=0
+    NUMBER_OF_BASES=0;
+    ERR=0;
+    DO WHILE(ERR==0)    
+       CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+       CMISS_KEYWORD=", #Scale factor="
+       IF(VERIFY(CMISS_KEYWORD,LINE)==0) THEN
+          pos=INDEX(LINE,CMISS_KEYWORD)
+          LINE=REMOVE(LINE, pos, LEN(LINE))
+          IF(NUMBER_OF_BASES==0) THEN
+             ALLOCATE(LIST_STR(1), STAT=ERR)
+             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate character buffer in reading basis",ERR,ERROR,*999)
+             LIST_STR(1)=LINE
+          ELSE
+             SWITCH_BASIS=.FALSE.         
+             DO idx_basis=1,NUMBER_OF_BASES
+                IF(LIST_STR(idx_basis)==LINE) THEN
+                   SWITCH_BASIS=.TRUE.
+                   EXIT
+                ENDIF        
+             ENDDO 
+             IF(SWITCH_BASIS==.FALSE.) THEN
+                ALLOCATE(LIST_STR1(NUMBER_OF_BASES), STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate character buffer in reading basis",ERR,ERROR,*999)
+                LIST_STR1(:)=LIST_STR(:)
+                DEALLOCATE(LIST_STR)
+                ALLOCATE(LIST_STR(NUMBER_OF_BASES+1), STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate character buffer in reading basis",ERR,ERROR,*999)
+                LIST_STR(1:NUMBER_OF_BASES)=LIST_STR1(:)
+                LIST_STR(NUMBER_OF_BASES+1)=LINE
+                NUMBER_OF_BASES=NUMBER_OF_BASES+1   
+                DEALLOCATE(LIST_STR1)             
+             ENDIF !SWITCH_BASIS==.FALSE.
+          ENDIF !NUMBER_OF_BASES==0     
+       ENDIF  !VERIFY(CMISS_KEYWORD,LINE)==0 
+    ENDDO !(ERR==0)           
+    
+    IF(NUMBER_OF_BASES/=0) THEN
+       ALLOCATE(BASES(NUMBER_OF_BASES), STAT=ERR)
+       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate basis buffer in reading basis",ERR,ERROR,*999)
+       BASES%NUMBER_BASIS_FUNCTIONS=NUMBER_OF_BASES
+    ENDIF  
+    NUM_INTERPOLATION_XI=0
+    DO idx_basis=1,NUMBER_OF_BASES
+       CALL BASIS_CREATE_START(idx_basis,BASIS,ERR,ERROR,*999)
+       
+       DO WHILE(VERIFY("*",LIST_STR(idx_basis))==0)
+          NUM_INTERPOLATION_XI=NUM_INTERPOLATION_XI+1 
+          pos=INDEX(LIST_STR(idx_basis),"*")
+          LINE=EXTRACT(LIST_STR(idx_basis), 1, pos)
+          LIST_STR(idx_basis)=REMOVE(LIST_STR(idx_basis),1,pos)
+          CALL FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE(num_interp, LINE, ERR, ERROR, *999)
+          INTERPOLATION_XI(NUM_INTERPOLATION_XI)=num_interp
+       ENDDO
+       NUM_INTERPOLATION_XI=NUM_INTERPOLATION_XI+1
+       LINE=LIST_STR(idx_basis)
+       CALL FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE(num_interp, LINE, ERR, ERROR, *999)
+       INTERPOLATION_XI(NUM_INTERPOLATION_XI)=num_interp     
+       
+       CALL BASIS_NUMBER_OF_XI_SET(BASIS,NUM_INTERPOLATION_XI,ERR,ERROR,*999)
+       CALL BASIS_INTERPOLATION_XI_SET(BASIS,INTERPOLATION_XI,ERR,ERROR,*999)
+       CALL BASIS_CREATE_FINISH(BASIS,ERR,ERROR,*999)
+       
+       BASES%BASES(idx_basis)%PTR=>BASIS      
+    ENDDO !idx_basis
+ 
+    DEALLOCATE(LIST_STR)
+    
+    CALL EXITS("FIELD_IO_CREATE_BASES_IN_LOCAL_PROCESS")
+    RETURN
+999 CALL ERRORS("FIELD_IO_CREATE_BASES_IN_LOCAL_PROCESS",ERR,ERROR)
+    CALL EXITS("FIELD_IO_CREATE_BASES_IN_LOCAL_PROCESS")
+    RETURN 1  
+  END SUBROUTINE FIELD_IO_CREATE_BASES_IN_LOCAL_PROCESS
 
-!    !CALL BASIS_COLLAPSED_XI_SET(BASIS,(/BASIS_XI_COLLAPSED,BASIS_COLLAPSED_AT_XI0/),ERR,ERROR,*999)
-!    !CALL BASIS_COLLAPSED_XI_SET(BASIS,(/BASIS_XI_COLLAPSED,BASIS_COLLAPSED_AT_XI1/),ERR,ERROR,*999)
-!!    !CALL BASIS_COLLAPSED_XI_SET(BASIS,(/BASIS_COLLAPSED_AT_XI0,BASIS_XI_COLLAPSED/),ERR,ERROR,*999)
- !   !CALL BASIS_COLLAPSED_XI_SET(BASIS,(/BASIS_COLLAPSED_AT_XI1,BASIS_XI_COLLAPSED/),ERR,ERROR,*999)
- !!   !CALL BASIS_COLLAPSED_XI_SET(BASIS,(/BASIS_XI_COLLAPSED,BASIS_COLLAPSED_AT_XI0,BASIS_NOT_COLLAPSED/),ERR,ERROR,*999)
-  !  !CALL BASIS_COLLAPSED_XI_SET(BASIS,(/BASIS_XI_COLLAPSED,BASIS_COLLAPSED_AT_XI1,BASIS_NOT_COLLAPSED/),ERR,ERROR,*999)
-  !  !CALL BASIS_COLLAPSED_XI_SET(BASIS,(/BASIS_XI_COLLAPSED,BASIS_NOT_COLLAPSED,BASIS_COLLAPSED_AT_XI0/),ERR,ERROR,*999)
-  !  !CALL BASIS_COLLAPSED_XI_SET(BASIS,(/BASIS_XI_COLLAPSED,BASIS_NOT_COLLAPSED,BASIS_COLLAPSED_AT_XI1/),ERR,ERROR,*999)
-  !  !CALL BASIS_COLLAPSED_XI_SET(BASIS,(/BASIS_COLLAPSED_AT_XI0,BASIS_XI_COLLAPSED,BASIS_XI_COLLAPSED/),ERR,ERROR,*999)
- ! 
- !   !Finish the creation of the basis
- !   CALL BASIS_CREATE_FINISH(BASIS,ERR,ERROR,*999)
- !   CALL BASIS_CREATE_START(2,BASIS2,ERR,ERROR,*999)
- !   CALL BASIS_NUMBER_OF_XI_SET(BASIS2,2,ERR,ERROR,*999)
- !   CALL BASIS_INTERPOLATION_XI_SET(BASIS2,(/BASIS_LINEAR_LAGRANGE_INTERPOLATION,BASIS_CUBIC_HERMITE_INTERPOLATION/),ERR,ERROR,*999)
- !   CALL BASIS_CREATE_FINISH(BASIS2,ERR,ERROR,*999)
-! 
- !   CALL EXITS("FIELD_IO_CREATE_BASES")
- !   RETURN
-!999 CALL ERRORS("FIELD_IO_CREATE_BASES",ERR,ERROR)
-!    CALL EXITS("FIELD_IO_CREATE_BASES")
-!    RETURN 1  
-!  END SUBROUTINE FIELD_IO_CREATE_BASES
 
-   
   !
   !================================================================================================================================
   !

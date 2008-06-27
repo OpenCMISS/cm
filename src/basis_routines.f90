@@ -142,14 +142,14 @@ MODULE BASIS_ROUTINES
   INTEGER(INTG), PARAMETER :: BASIS_NOT_COLLAPSED=4 !<The Xi direction is not collapsed \see BASIS_ROUTINES_XiCollapse,BASIS_ROUTINES
   !>@}
   
-  !Module types
-
-  !>Contains information on the defined basis functions
-  TYPE BASIS_FUNCTIONS_TYPE
-    PRIVATE
-    INTEGER(INTG) :: NUMBER_BASIS_FUNCTIONS !<The number of basis functions definegd
-    TYPE(BASIS_PTR_TYPE), POINTER :: BASES(:) !<The array of pointers to the defined basis functions
-  END TYPE BASIS_FUNCTIONS_TYPE
+  !!Module types
+  ! 
+  !!>Contains information on the defined basis functions
+  !TYPE BASIS_FUNCTIONS_TYPE
+  !  PRIVATE
+  !  INTEGER(INTG) :: NUMBER_BASIS_FUNCTIONS !<The number of basis functions definegd
+  !  TYPE(BASIS_PTR_TYPE), POINTER :: BASES(:) !<The array of pointers to the defined basis functions
+  !END TYPE BASIS_FUNCTIONS_TYPE
   
   !Module variables
 
