@@ -78,6 +78,12 @@ MODULE FIELD_IO_ROUTINES
   !Module types
 
   !>field variable compoment type pointer for IO
+  TYPE MESH_ELEMENTS_TYPE_PTR_TYPE
+    TYPE(MESH_ELEMENTS_TYPE), POINTER :: PTR !< pointer field variable component
+  END MESH_ELEMENTS_TYPE_PTR_TYPE
+
+
+  !>field variable compoment type pointer for IO
   TYPE FIELD_VARIABLE_COMPONENT_PTR_TYPE
     TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: PTR !< pointer field variable component
   END TYPE FIELD_VARIABLE_COMPONENT_PTR_TYPE
@@ -239,9 +245,58 @@ CONTAINS
   !================================================================================================================================
   !  
   
+  !>Finding basis information 
+  SUBROUTINE FILL_BASIS_INFO(LIST_BASES, LIST_STR, NUMBER_OF_COMPONENTS, BASES, ERR, ERROR, *)
+    !Argument variables   
+    INTEGER(INTG), INTENT(INOUT) :: LIST_BASES(:) !< xi interpolation type
+    INTEGER(INTG), INTENT(IN) :: LIST_STR(:) !<label type
+    TYPE(BASIS_FUNCTIONS_TYPE), POINTER :: BASES !< bases function
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: idx_comp
+    INTEGER(INTG) :: INTERPOLATION_XI(3), num_interp, num_bases, INTERPOLATION_TYPE
+    TYPE(VARYING_STRING) :: LINE, LINE1
+    
+    CALL ENTERS("FILL_BASIS_INFO",ERR,ERROR,*999)    	
+	
+	DO idx_comp=1,NUMBER_OF_COMPONENTS
+	   num_interp=0
+	   LINE=LIST_STR(idx_comp)
+       DO WHILE(VERIFY("*",LINE)==0)
+          num_interp=num_interp+1 
+          pos=INDEX(LINE,"*")
+          LINE1=EXTRACT(LINE, 1, pos)
+          LINE=REMOVE(LINE,1,pos)
+          CALL FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE(INTERPOLATION_TYPE, LINE, ERR, ERROR, *999)
+          INTERPOLATION_XI(num_interp)=INTERPOLATION_TYPE
+       ENDDO
+       num_interp=num_interp+1
+       LINE1=EXTRACT(LINE, 1, pos)
+       LINE=REMOVE(LINE,1,pos)
+       CALL FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE(INTERPOLATION_TYPE, LINE, ERR, ERROR, *999)
+       INTERPOLATION_XI(num_interp)=INTERPOLATION_TYPE
+	   
+	   DO num_bases=1, BASES%NUMBER_BASIS_FUNCTIONS
+	      IF(SUM(BASES%BASES(num_bases)%PTR%INTERPOLATION_XI(:)-INTERPOLATION_XI(1:num_interp))==0) EXIT
+	   ENDDO
+	   LIST_BASES(idx_comp)=num_bases
+	ENDDO       
+                     
+    CALL EXITS("FILL_BASIS_INFO")
+    RETURN
+999 CALL ERRORS("FILL_BASIS_INFO",ERR,ERROR)
+    CALL EXITS("FILL_BASIS_INFO")
+  END SUBROUTINE FILL_BASIS_INFO    
+
+
+  !
+  !================================================================================================================================
+  !  
+  
   !>Read the global mesh into one computational node first and then broadcasting to others nodes
   SUBROUTINE FIELD_IO_IMPORT_GLOBAL_MESH(MASTER_COMPUTATIONAL_NUMBER, my_computational_node_number, NAME, MESH, REGION, &
-    USER_NUMBER, &ERR, ERROR, *)
+    USER_NUMBER, BASES, &ERR, ERROR, *)
     !Argument variables   
     INTEGER(INTG), INTENT(IN) :: MASTER_COMPUTATIONAL_NUMBER !< the number of master node
     TYPE(VARYING_STRING), INTENT(IN):: NAME !< the name of elment file
@@ -252,117 +307,557 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: FILE_NAME, FILE_STATUS
+    TYPE(VARYING_STRING) :: FILE_NAME, FILE_STATUS,
+    TYPE(VARYING_STRING) :: CMISS_KEYWORD_FIELD, CMISS_KEYWORD_ELEMENT, CMISS_KEYWORD_NODE, CMISS_KEYWORD_COMPONENT
+    TYPE(VARYING_STRING) :: CMISS_KEYWORD_SHAPE, CMISS_KEYWORD_SCALE_FACTOR_SETS, CMISS_KEYWORD_NUMBER
+    TYPE(VARYING_STRING), ALLOCATABLE :: LIST_STR(:)
     INTEGER(INTG) :: FILE_ID, NUMBER_OF_EXELEM_FILES, NUMBER_OF_EXNODE_FILES, NUMBER_OF_ELEMENTS, NUMBER_OF_NODES
-    INTEGER(INTG) :: NUMBER_OF_MESH_COMPONENTS
-    INTEGER(INTG) :: idx_comp
-    LOGICAL :: FILE_EXIST
-    
+    INTEGER(INTG) :: NUMBER_OF_MESH_COMPONENTS, NUMBER_OF_COMPONENTS, NUMBER_FIELDS, NUMBER_NODAL_LINES
+    INTEGER(INTG) :: GLOBAL_ELEMENT_NUMBER
+    INTEGER(INTG) :: SHAPE_INDEX(3)
+    TYPE(MESH_ELEMENTS_TYPE_PTR_TYPE), ALLOCATABLE :: ELEMENTS_PTR(:) 
+    INTEGER(INTG), ALLOCATABLE :: LIST_NODAL_NUMBER(:), LIST_ELEMENTS(:), LIST_ELEMENTAL_NODES(:), LIST_COMP_NODAL_INDEX(:,:)
+    INTEGER(INTG), ALLOCATABLE :: MESH_COMPONENT_LOOKUP(:,:), LIST_FIELD_COMPONENTS, LIST_BASES(:), LIST_COMP_NODES(:)
+    INTEGER(INTG) :: idx_comp, idx_comp1, pos, idx_node, idx_field, idx_elem, idx_exnodes, idx_exelems, number_of_comp
+    INTEGER(INTG) :: idx_node1, number_of_node, number_of_scalesets, idx_scl, idx_mesh_comp, current_mesh_comp
+    LOGICAL :: FILE_EXIST, START_OF_ELEMENT_SECTION, FIELD_SECTION, FILE_END, SAME_SIZE
     
     CALL ENTERS("FIELD_IO_IMPORT_GLOBAL_MESH",ERR,ERROR,*999)    
 
-    CALL MESH_CREATE_START(USER_NUMBER,REGION,REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS,MESH,ERR,ERROR,*999)
-    
-    IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN !only the master node will import the mesh
-      !checking region pointer
-      IF(.NOT.ASSOCIATED(REGION)) THEN
-         CALL FLAG_ERROR("region is not associated",ERR,ERROR,*999)
-         GOTO 999         
-      ENDIF
+    !checking region pointer
+    IF(.NOT.ASSOCIATED(REGION)) THEN
+       CALL FLAG_ERROR("region is not associated",ERR,ERROR,*999)
+       GOTO 999         
+    ENDIF
 
-      !checking mesh pointer
-      IF(ASSOCIATED(MESH)) THEN
-         CALL FLAG_ERROR("mesh is associated, pls release the memory first",ERR,ERROR,*999)
-         GOTO 999                 
-      ENDIF
+    !checking mesh pointer
+    IF(ASSOCIATED(MESH)) THEN
+       CALL FLAG_ERROR("mesh is associated, pls release the memory first",ERR,ERROR,*999)
+       GOTO 999                 
+    ENDIF
+    
+    IF(REGION%REGION_FINISHED==.FALSE.) THEN
+       CALL FLAG_ERROR("region is not finished",ERR,ERROR,*999)
+       GOTO 999         
+    ENDIF        
+    
+    FILE_STATUS="OLD"    
+    CMISS_KEYWORD_SHAPE="Shape.  Dimension="\\TRIM(NUMBER_TO_VSTRING(REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))
+    CMISS_KEYWORD_ELEMENT="Element:"
+    CMISS_KEYWORD_COMPONENT="#Components="
+    CMISS_KEYWORD_NODE="Nodes:"
+    CMISS_KEYWORD_FIELD="#Fields="
+    CMISS_KEYWORD_SCALE_FACTOR_SETS="#Scale factor sets="
+    NUMBER_NODAL_LINES=3 !in the header, the number of nodal lines for one node 
+
+    CALL MESH_CREATE_START(USER_NUMBER,REGION,REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS,MESH,ERR,ERROR,*999)    
+    
+    !calculate the number of elements, number of fields and number of field components
+    IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN  
       
-      !the file name has to start from zero in a ascended order without break
-      NUMBER_OF_EXELEM_FILES=0
-      FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_EXELEM_FILES,"*",ERR,ERROR))//".exelem"
+      !the file name has to start from zero in an ascended order without break      
+      idx_exelems=0
+      idx_elem=0
+      NUMBER_OF_COMPONENTS=0
+      FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelems,"*",ERR,ERROR))//".exelem"
       INQUIRE(FILE=CHAR(FILE_NAME), EXIST=FILE_EXIST)
       IF(FILE_EXIST==.FALSE.) THEN
          CALL FLAG_ERROR("no file can be found, pls check again",ERR,ERROR,*999)
          GOTO 999                       
       ENDIF 
       DO WHILE(FILE_EXIST==.TRUE.)
-         FILE_STATUS="OLD"
-         FILE_ID=1030+NUMBER_OF_EXELEM_FILES
-         CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)         
          
-         !COUNT HOW MANY ELEMENT and mesh components.......
+         FILE_ID=1030+idx_exelems
+         CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)         
+         START_OF_ELEMENT_SECTION=.FALSE.
+         FIELD_SECTION=.FALSE.            
+          
+         DO WHILE(ERR==0)    
+            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+            
+            !check the beginning of element section
+            IF(START_OF_ELEMENT_SECTION==.FALSE..AND.VERIFY(CMISS_KEYWORD_SHAPE,LINE)==0) THEN
+               START_OF_ELEMENT_SECTION=.TRUE.               
+            ENDIF   
+            
+            !count how many elements            
+            IF(START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_ELEMENT,LINE)==0) idx_elem=idx_elem+1
+            
+            !check whether they have same numbers of fields
+            IF(START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_FIELD,LINE)==0) THEN
+               idx_field=0
+               idx_comp=0
+               FIELD_SECTION=.TRUE.
+               pos=INDEX(LINE,CMISS_KEYWORD_FIELD)               
+               LINE=REMOVE(LINE,1, pos+LENTRIM(CMISS_KEYWORD_FIELD)-1)
+               idx_field=STRING_TO_INTEGER(LINE, ERR,ERROR)
+               IF(idx_exelems==0) THEN
+                  NUMBER_OF_FIELDS=idx_field
+               ELSE
+                  IF(NUMBER_OF_FIELDS/=idx_field) THEN
+                     CALL CALL FLAG_ERROR("find different number of fields in the exelem files",ERR,ERROR,*999)
+                     GOTO 999
+                  ENDIF
+               ENDIF   
+            ENDIF !START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_FIELD,LINE)==0  
+            
+            !check whether they have same numbers of field components
+            IF(FIELD_SECTION==.TRUE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_COMPONENT,LINE)) THEN
+               idx_field=idx_field+1
+               pos=INDEX(LINE,CMISS_KEYWORD_COMPONENT)               
+               LINE=REMOVE(LINE,1, pos+LENTRIM(CMISS_KEYWORD_COMPONENT)-1)
+               idx_comp=idx_comp+STRING_TO_INTEGER(LINE, ERR,ERROR)
+               IF(idx_field>=NUMBER_FIELDS) THEN   
+                  IF(idx_exelems==0) THEN
+                     NUMBER_OF_COMPONENTS=idx_comp
+                  ELSE
+                     IF(NUMBER_OF_COMPONENTS/=idx_comp) THEN
+                        CALL CALL FLAG_ERROR("find different number of components in the exelem files",ERR,ERROR,*999)
+                        GOTO 999
+                     ENDIF
+                  ENDIF   
+                  FIELD_SECTION=.FALSE.
+               ENDIF   
+            ENDIF !FIELD_SECTION==.TRUE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_COMPONENT,LINE                          
+         ENDDO !(ERR==0)                  
                   
          CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
          !checking the next file
-         NUMBER_OF_EXELEM_FILES=NUMBER_OF_EXELEM_FILES+1
-         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_EXELEM_FILES,"*",ERR,ERROR))//".exelem"
+         idx_exelems=idx_exelems+1
+         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelems,"*",ERR,ERROR))//".exelem"
          INQUIRE(FILE=CHAR(FILE_NAME), EXIST=FILE_EXIST)
       ENDDO!FILE_EXIST==.TRUE.
-      CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Total number of exelment files = ",NUMBER_OF_EXELEM_FILES-1, ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Total number of exelment files = ",idx_exelems-1, ERR,ERROR,*999)
+      NUMBER_OF_ELEMENTS=idx_elem
+      NUMBER_OF_EXELEM_FILES=idx_exelems
     ENDIF !MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number           
-    
+        
     !broadcasting the number of elements
     CALL MPI_BCAST(NUMBER_OF_ELEMENTS,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
     CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)       
     CALL MESH_NUMBER_OF_ELEMENTS_SET(MESH,NUMBER_OF_ELEMENTS,ERR,ERROR,*999)
-    !broadcasting the number of mesh components    
-    CALL MPI_BCAST(NUMBER_OF_MESH_COMPONENTS,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
-    CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)       
-	CALL MESH_NUMBER_OF_COMPONENTS_SET(MESH,NUMBER_OF_MESH_COMPONENTS,ERR,ERROR,*999)
 
-    IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN !only the master node will import the mesh
-     
-      !the file name has to start from zero in a ascended order without break
-      NUMBER_OF_EXNODE_FILES=0
-      FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_EXNODE_FILES,"*",ERR,ERROR))//".exnode"
+    !calculate the number of nodes
+    IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN     
+      !the file name has to start from zero in a ascended order without break    
+      idx_exnodes=0
+      idx_node=0
+      FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnodes,"*",ERR,ERROR))//".exnode"
       INQUIRE(FILE=CHAR(FILE_NAME), EXIST=FILE_EXIST)
       IF(FILE_EXIST==.FALSE.) THEN
          CALL FLAG_ERROR("no file can be found, pls check again",ERR,ERROR,*999)
          GOTO 999                       
       ENDIF 
-      DO WHILE(FILE_EXIST==.TRUE.)
-         FILE_STATUS="OLD"
-         FILE_ID=1030+NUMBER_OF_EXNODE_FILES
-         CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)         
+      DO WHILE(FILE_EXIST==.TRUE.)      
+         FILE_ID=1030+idx_exnodes
+         CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
+
+         DO WHILE(ERR==0)    
+            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+            IF(VERIFY(CMISS_KEYWORD_NODE,LINE)==0) idx_node=idx_node+1
+         ENDDO !(ERR==0)                 
          
-         !COUNT HOW MANY NODES and their user numbering....
-                 
          CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
          !checking the next file
-         NUMBER_OF_EXNODE_FILES=NUMBER_OF_EXNODE_FILES+1
-         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_EXNODE_FILES,"*",ERR,ERROR))//".exelem"
+         idx_exnodes=idx_exnodes+1
+         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnodes,"*",ERR,ERROR))//".exnode"
          INQUIRE(FILE=CHAR(FILE_NAME), EXIST=FILE_EXIST)
       ENDDO!FILE_EXIST==.TRUE.
-      CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Total number of exnode files = ",NUMBER_OF_EXNODE_FILES-1, ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Total number of exnode files = ",idx_exnodes-1, ERR,ERROR,*999)
+      NUMBER_OF_NODES=idx_node
+      NUMBER_OF_EXNODE_FILES=idx_exnodes
     ENDIF !MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number           
     
     !broadcasting the number of nodes
     CALL MPI_BCAST(NUMBER_OF_NODES,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
     CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)       
     CALL NODES_CREATE_START(NUMBER_OF_NODES,REGION,NODES,ERR,ERROR,*999)
-    !changing the nodal user number by reading exnode files
-    ! call NODE_NUMBER_SET
+    
+    !collect the nodal numberings (nodal labels) to change the nodal user number by reading exnode files    
+    ALLOCATE(LIST_NODAL_NUMBER(NUMBER_OF_NODES),STAT=ERR)
+    IF(ERR/=0) CALL FLAG_ERROR("can not allocate list of nodal number",ERR,ERROR,*999)
+    IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN    
+      !the file name has to start from zero in a ascended order without break
+      idx_node=1
+      DO idx_exnodes=0, NUMBER_OF_EXNODE_FILES-1
+         FILE_ID=1030+idx_exnodes
+         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnodes,"*",ERR,ERROR))//".exnode"
+         CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)                  
+         DO WHILE(ERR==0)    
+            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+            IF(VERIFY(CMISS_KEYWORD_NODE,LINE)==0) THEN
+               CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+               LIST_NODAL_NUMBER(idx_node)=STRING_TO_INTEGER_VS(LINE, ERR, ERROR, *999)
+               idx_node=idx_node+1
+            ENDIF!VERIFY(CMISS_KEYWORD,LINE)==0
+         ENDDO !(ERR==0)                          
+         CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
+      ENDDO!FILE_EXIST==.TRUE.
+      CALL LIST_SORT(LIST_NODAL_NUMBER, ERR, ERROR, *999)
+    ENDIF !MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number           
+
+    !broadcast the nodal numberings (nodal labels)
+    CALL MPI_BCAST(LIST_NODAL_NUMBER,NUMBER_OF_NODES,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+    CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)         
+    DO idx_node=1, NUMBER_OF_NODES
+       CALL NODE_NUMBER_SET(idx_node, LIST_NODAL_NUMBER(idx_node), ERR,ERROR,*999)
+    ENDDO    
     CALL NODES_CREATE_FINISH(REGION,ERR,ERROR,*999)
+    IF(ALLOCATED(LIST_NODAL_NUMBER)) DEALLOCATE(LIST_NODAL_NUMBER)
+
+    !calculate the number of mesh components
+    IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN      
+      
+      !MESH_COMPONENT_LOOKUP is used to store the difference between field components in term of basis property.
+      ALLOCATE(MESH_COMPONENT_LOOKUP(NUMBER_OF_COMPONENTS,NUMBER_OF_COMPONENTS),STAT=ERR)
+      IF(ERR/=0) CALL FLAG_ERROR("can not allocate list of mesh components",ERR,ERROR,*999)
+      ALLOCATE(LIST_STR(NUMBER_OF_COMPONENTS),STAT=ERR)
+      IF(ERR/=0) CALL FLAG_ERROR("can not allocate list of str",ERR,ERROR,*999)
+      !initialize MESH_COMPONENT_LOOKUP and assume each field component has the same mesh component
+      MESH_COMPONENT_LOOKUP(:,:)=0
+      DO idx_comp=1,NUMBER_OF_COMPONENTS
+         MESH_COMPONENT_LOOKUP(idx_comp,idx_comp)=1
+      ENDDO
+      
+      !checking field component's mesh component by checking the basis           
+      DO idx_exelems=0, NUMBER_OF_EXELEM_FILES-1
+         
+         FILE_ID=1030+idx_exelems
+         !checking the next file
+         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelems,"*",ERR,ERROR))//".exelem"
+         CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)         
+         FIELD_SECTION=.FALSE.    
+          
+         DO WHILE(ERR==0)    
+            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+            
+            !check the beginning of element section
+            IF(START_OF_ELEMENT_SECTION==.FALSE..AND.VERIFY(CMISS_KEYWORD_SHAPE,LINE)==0) THEN
+               START_OF_ELEMENT_SECTION=.TRUE.               
+            ENDIF   
+                       
+            !check whether it is a new header for another group of elements
+            IF(START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_FIELD,LINE)==0) THEN
+               
+               !collect header information
+               pos=INDEX(LINE,CMISS_KEYWORD_FIELD)               
+               LINE=REMOVE(LINE,1, pos+LENTRIM(CMISS_KEYWORD_FIELD)-1)
+               NUMBER_FIELDS=STRING_TO_INTEGER(LINE, ERR,ERROR)
+               idx_comp=0
+               DO idx_field=1,NUMBER_FIELDS
+                  CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+                  pos=INDEX(LINE,CMISS_KEYWORD_COMPONENT)               
+                  LINE=REMOVE(LINE,1, pos+LENTRIM(CMISS_KEYWORD_COMPONENT)-1)
+                  number_of_comp=STRING_TO_INTEGER(LINE, ERR,ERROR)               
+                  DO idx_comp1=1,number_of_comp
+                     idx_comp=idx_comp+1
+                     CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+                     pos=INDEX(LINE,".")
+                     LINE=REMOVE(LINE,1, pos)
+                     LINE=TRIM(ADJUSTL(LINE))
+                     LIST_STR(idx_comp)= LINE
+                     CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+                     pos=INDEX(LINE, CMISS_KEYWORD_NODE)
+                     LINE=REMOVE(LINE,1, pos+LENTRIM(CMISS_KEYWORD_COMPONENT)-1)
+                     number_of_node=STRING_TO_INTEGER(LINE, ERR,ERROR)
+                     DO idx_node1=1, number_of_node*NUMBER_NODAL_LINES
+                        CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+                     ENDDO !idx_node1                
+                  ENDDO !idx_comp1
+               ENDDO !idx_field
+               
+               !compare the bases. Since the geometrical topology is same, if the bases are the same in the same topology, 
+               !they should be in the same mesh component
+               IF(SUM(MESH_COMPONENT_LOOKUP)<NUMBER_OF_COMPONENTS*NUMBER_OF_COMPONENTS) THEN
+                  DO idx_comp=1, NUMBER_OF_COMPONENTS
+                     DO idx_comp1=idx_comp+1, NUMBER_OF_COMPONENTS 
+                        IF(MESH_COMPONENT_LOOKUP(idx_comp1,idx_comp)==0) THEN
+                           IF(LIST_STR(idx_comp1)/=LIST_STR(idx_comp)) THEN
+                              MESH_COMPONENT_LOOKUP(idx_comp1,idx_comp)=1
+                              MESH_COMPONENT_LOOKUP(idx_comp,idx_comp1)=1
+                           ENDIF
+                        ENDIF
+                     ENDDO !idx_comp1   
+                  ENDDO !idx_comp
+               ELSE
+                  idx_exelems=NUMBER_OF_EXELEM_FILES!jump out of the loop
+               ENDIF    
+            ENDIF !START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_FIELD,LINE)==0  
+            
+            !!check whether they have same numbers of field components
+            !IF(FIELD_SECTION==.TRUE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_COMPONENT,LINE)) THEN                             
+            !   IF(idx_field>=NUMBER_FIELDS) THEN   
+            !      FIELD_SECTION=.FALSE.
+            !   ENDIF   
+            !ENDIF !FIELD_SECTION==.TRUE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_COMPONENT,LINE             
+         ENDDO !(ERR==0)                                    
+         CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
+      ENDDO!idx_exelems=0, NUMBER_OF_EXELEM_FILES-1                            
+      
+      !calculate the number of mesh components
+      ALLOCATE(LIST_FIELD_COMPONENTS(NUMBER_OF_COMPONENTS),STAT=ERR)
+      IF(ERR/=0) CALL FLAG_ERROR("can not allocate list of field components",ERR,ERROR,*999)
+      DO idx_comp=1, NUMBER_OF_COMPONENTS
+         LIST_FIELD_COMPONENTS(idx_comp)=idx_comp
+      ENDDO
+      DO idx_comp=1, NUMBER_OF_COMPONENTS
+         DO idx_comp1=idx_comp+1, NUMBER_OF_COMPONENTS
+            IF(LIST_FIELD_COMPONENTS(idx_comp)==idx_comp) THEN
+               IF(MESH_COMPONENT_LOOKUP(idx_comp1,idx_comp)==0) LIST_FIELD_COMPONENTS(idx_comp1)=idx_comp
+            ENDIF   
+         ENDDO !idx_comp1
+      ENDDO !idx_comp
+      DEALLOCATE(MESH_COMPONENT_LOOKUP)      
+      NUMBER_OF_MESH_COMPONENTS=0
+      idx_comp1=0          
+      DO idx_comp=1,NUMBER_OF_COMPONENTS
+         IF(LIST_FIELD_COMPONENTS(idx_comp)==idx_comp) THEN
+            idx_comp1=idx_comp1+1
+            LIST_FIELD_COMPONENTS(idx_comp)=idx_comp1
+            NUMBER_OF_MESH_COMPONENTS=NUMBER_OF_MESH_COMPONENTS+1
+         ENDIF
+      ENDDO
+      !ALLOCATE(LIST_MESH_COMPONENTS(NUMBER_OF_MESH_COMPONENTS),STAT=ERR)
+      !IF(ERR/=0) CALL FLAG_ERROR("can not allocate list of mesh components",ERR,ERROR,*999)
+      !idx_comp1=0
+      !DO idx_comp=1,NUMBER_OF_COMPONENTS        
+      !   IF(LIST_FIELD_COMPONENTS(idx_comp)==idx_comp) THEN
+      !      idx_comp1=idx_comp1+1
+      !      LIST_MESH_COMPONENTS(idx_comp1)=idx_comp
+      !   ENDIF   
+      !ENDDO      
+    ENDIF !MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number           
+
+    !broadcasting the number of mesh components        
+    CALL MPI_BCAST(NUMBER_OF_COMPONENTS,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+    CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)       
+    CALL MPI_BCAST(NUMBER_OF_MESH_COMPONENTS,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+    CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)       
+	CALL MESH_NUMBER_OF_COMPONENTS_SET(MESH,NUMBER_OF_MESH_COMPONENTS,ERR,ERROR,*999)
+    ALLOCATE(ELEMENTS_PTR(NUMBER_OF_MESH_COMPONENTS),STAT=ERR)
+    IF(ERR/=0) CALL FLAG_ERROR("can not allocate list of mesh element pointers",ERR,ERROR,*999)
+    
+    DO idx_comp=1, NUMBER_OF_MESH_COMPONENTS
+       MESH_TOPOLOGY_ELEMENTS_CREATE_START(MESH,idx_comp,BASES%BASES(1)%PTR,ELEMENTS_PTR(idx_comp)%PTR,ERR,ERROR,*999)
+    ENDDO
+    
+    !Collect the elemental numberings (elemental labels)
+    ALLOCATE(LIST_ELEMENTS(NUMBER_OF_ELEMENTS),STAT=ERR)
+    IF(ERR/=0) CALL FLAG_ERROR("can not allocate list of elemental number",ERR,ERROR,*999)		    
+    IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN 
+      
+      !the file name has to start from zero in a ascended order without break
+      DO idx_exelems=0, NUMBER_OF_EXELEM_FILES-1
+         
+         FILE_ID=1030+idx_exelems
+         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelems,"*",ERR,ERROR))//".exelem"      
+         CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)         
+         START_OF_ELEMENT_SECTION=.FALSE.   
+
+         idx_elem=1
+         DO WHILE(ERR==0)    
+            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+            
+            IF(START_OF_ELEMENT_SECTION==.FALSE..AND.VERIFY(CMISS_KEYWORD_SHAPE,LINE)==0) THEN
+               START_OF_ELEMENT_SECTION=.TRUE.               
+            ENDIF   
+                        
+            IF(START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_ELEMENT,LINE)==0) THEN
+               pos=INDEX(LINE,CMISS_KEYWORD_ELEMENT)
+               LINE=REMOVE(LINE,1, pos+LENTRIM(CMISS_KEYWORD_ELEMENT)-1)
+               SHAPE_INDEX(:)=STRING_TO_INTEGER_VS(LINE)
+               LIST_ELEMENTS(idx_elem)=SHAPE_INDEX(1)
+               idx_elem=idx_elem+1
+            ENDIF                            
+         ENDDO !(ERR==0)                  
+                  
+         CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
+      ENDDO!FILE_EXIST==.TRUE.
+      CALL LIST_SORT(LIST_ELEMENTS, ERR, ERROR, *999)      
+    ENDIF !MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number           
+    
+    !broadcast the list of elements for mapping gloabl numbers and user numbers (elemental labels)
+    CALL MPI_BCAST(LIST_ELEMENTS,NUMBER_OF_ELEMENTS,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+    CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)                                      
+    NUMBER_OF_EXELEM_FILES
+    !change the mapping between global elemental numbering and user elemental numbering
+    DO idx_elem=1,NUMBER_OF_ELEMENTS
+       DO idx_comp=1, NUMBER_OF_MESH_COMPONENTS
+          ELEMENTS_PTR(idx_comp)%PTR%ELEMENTS%USER_NUMBER=LIST_ELEMENTS(idx_elem)
+       ENDDO
+    ENDDO      
     
     !creating topological information for each mesh component
-    DO idx_comp=1, NUMBER_OF_MESH_COMPONENTS
-       
-       CALL MESH_TOPOLOGY_ELEMENTS_CREATE_START(idx_comp,BASIS,MESH,ELEMENTS,ERR,ERROR,*999)
-       CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_SET(some_global_number,ELEMENTS,BASIS2,ERR,ERROR,*999)
-       CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET(some_global_number,ELEMENTS,(/1,2,4,5/),ERR,ERROR,*999)
-       CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET(some_global_number,ELEMENTS,(/2,3,5,6/),ERR,ERROR,*999)
-       CALL MESH_TOPOLOGY_ELEMENTS_CREATE_FINISH(MESH,ERR,ERROR,*999)       
-    ENDDO 
+    CALL MPI_BCAST(NUMBER_OF_EXELEM_FILES,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+    CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+    ALLOCATE(LIST_BASES(NUMBER_OF_COMPONENTS),STAT=ERR)
+    IF(ERR/=0) CALL FLAG_ERROR("can not allocate list of bases",ERR,ERROR,*999)		    
+    FILE_END=.FALSE.
+    idx_exelems=0
+    ALLOCATE((LIST_COMP_NODES(NUMBER_OF_COMPONENTS),STAT=ERR)
+    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate list of component nodal index ",ERR,ERROR,*999)             
+    LIST_COMP_NODES(:)=0
     
+    DO WHILE(idx_exelems<NUMBER_OF_EXELEM_FILES)              
+       
+       !goto the start of mesh part
+       IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
+          IF(FILE_END==.FALSE.) THEN
+             FILE_ID=1030+idx_exelems
+             !checking the next file
+             FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelems,"*",ERR,ERROR))//".exelem"
+             CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
+             !check the beginning of element section          
+             DO WHILE(VERIFY(CMISS_KEYWORD_SHAPE,LINE)/=0)
+                CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+             ENDDO  
+             !find a new header
+             DO WHILE(VERIFY(CMISS_KEYWORD_SCALE_FACTOR_SETS,LINE)/=0)
+                CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+                IF(ERR==0) FILE_END=.TRUE.
+             ENDDO
+          ENDIF   
+          
+          !have not touched the end
+          IF(FILE_END==.FALSE.) THEN
+             pos=INDEX(LINE,CMISS_KEYWORD_SCALE_FACTOR_SETS)
+             LINE=REMOVE(LINE,1, pos+LENTRIM(CMISS_KEYWORD_SCALE_FACTOR_SETS)-1)
+             number_of_scalesets=STRING_TO_INTEGER(LINE)
+             idx_mesh_comp=1
+             !skip factors
+             DO idx_scl=1,number_of_scalesets
+                CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+             ENDDO
+             !skip nodes line
+             CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+             pos=INDEX(LINE,CMISS_KEYWORD_NODE)               
+             LINE=REMOVE(LINE,1, pos+LENTRIM(CMISS_KEYWORD_NODE)-1)
+             number_of_node=STRING_TO_INTEGER(LINE)
+             IF(ALLOCATED(LIST_ELEMENTAL_NODES)) THEN
+                ALLOCATE((LIST_ELEMENTAL_NODES(number_of_node),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate list of elemental nodes",ERR,ERROR,*999)
+             ENDIF       
+             LIST_ELEMENTAL_NODES(:)=0  
+             IF(ALLOCATED(LIST_COMP_NODAL_INDEX)) THEN       
+                ALLOCATE((LIST_COMP_NODAL_INDEX(NUMBER_OF_COMPONENTS,number_of_node),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate list of component nodal index ",ERR,ERROR,*999)
+             ENDIF   
+             LIST_COMP_NODAL_INDEX(:,:)=0
+             
+             !read the header
+             CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+             pos=INDEX(LINE,CMISS_KEYWORD_FIELD)               
+             LINE=REMOVE(LINE,1, pos+LENTRIM(CMISS_KEYWORD_FIELD)-1)
+             NUMBER_FIELDS=STRING_TO_INTEGER(LINE, ERR,ERROR)
+             idx_comp=0
+             DO idx_field=1,NUMBER_FIELDS
+                CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+                pos=INDEX(LINE,CMISS_KEYWORD_COMPONENT)               
+                LINE=REMOVE(LINE,1, pos+LENTRIM(CMISS_KEYWORD_COMPONENT)-1)
+                number_of_comp=STRING_TO_INTEGER(LINE, ERR,ERROR)               
+                DO idx_comp1=1,number_of_comp
+                   idx_comp=idx_comp+1
+                   CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+                   pos=INDEX(LINE,".")
+                   LINE=REMOVE(LINE,1, pos)
+                   LINE=TRIM(ADJUSTL(LINE))
+                   LIST_STR(idx_comp)= LINE
+                   CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+                   pos=INDEX(LINE, CMISS_KEYWORD_NODE)
+                   LINE=REMOVE(LINE,1, pos+LENTRIM(CMISS_KEYWORD_COMPONENT)-1)
+                   number_of_node=STRING_TO_INTEGER(LINE, ERR,ERROR)
+                   LIST_COMP_NODES(idx_comp)=number_of_node
+                   DO idx_node1=1, number_of_node
+                      CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+                      pos=INDEX(LINE, ".")
+                      LINE=REMOVE(LINE,pos, LEN(LINE))
+                      LIST_COMP_NODAL_INDEX(idx_comp,idx_node1)=STRING_TO_INTEGER(LINE, ERR,ERROR)
+                      CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+                      CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+                   ENDDO !idx_node1                
+                ENDDO !idx_comp1                
+             ENDDO !idx_field   
+             CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+             pos=INDEX(LINE,CMISS_KEYWORD_ELEMENT)
+             LINE=REMOVE(LINE,1, pos+LENTRIM(CMISS_KEYWORD_ELEMENT)-1)
+             SHAPE_INDEX(:)=STRING_TO_INTEGER(LINE)
+                                       
+             CALL FILL_BASIS_INFO(LIST_BASES, LIST_STR, NUMBER_OF_COMPONENTS, BASES, ERR,ERROR,*999)
+             
+             DO WHILE(VERIFY(CMISS_KEYWORD_NODE,LINE)/=0)
+                CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+             ENDDO
+             CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+             LIST_ELEMENTAL_NODES(:)=STRING_TO_INTEGER(LINE, ERR,ERROR)
+          ENDIF  !FILE_END                        
+       ENDIF !MASTER_COMPUTATIONAL_NUMBER
+       
+       CALL MPI_BCAST(number_of_node,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)                                      
+       
+       IF(MASTER_COMPUTATIONAL_NUMBER/=my_computational_node_number) THEN
+          IF(ALLOCATED(LIST_ELEMENTAL_NODES)) THEN
+             ALLOCATE((LIST_ELEMENTAL_NODES(number_of_node),STAT=ERR)
+             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate list of elemental nodes",ERR,ERROR,*999)
+          ENDIF       
+          LIST_ELEMENTAL_NODES(:)=0  
+          IF(ALLOCATED(LIST_COMP_NODAL_INDEX)) THEN       
+             ALLOCATE((LIST_COMP_NODAL_INDEX(NUMBER_OF_COMPONENTS,number_of_node),STAT=ERR)
+             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate list of component nodal index ",ERR,ERROR,*999)
+          ENDIF   
+          LIST_COMP_NODAL_INDEX(:,:)=0
+       ENDIF
+       
+       CALL MPI_BCAST(LIST_ELEMENTAL_NODES,number_of_node,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)                                      
+       CALL MPI_BCAST(LIST_COMP_NODAL_INDEX,number_of_node*NUMBER_OF_COMPONENTS,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)                                      
+       CALL MPI_BCAST(SHAPE_INDEX,3,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+       CALL MPI_BCAST(LIST_COMP_NODES,NUMBER_OF_COMPONENTS,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+       CALL MPI_BCAST(LIST_BASES,NUMBER_OF_COMPONENTS,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+       
+       current_mesh_comp=1
+       DO idx_comp=1, NUMBER_OF_COMPONENTS
+          CALL LIST_SEARCH(LIST_ELEMENTS, SHAPE_INDEX(1),GLOBAL_ELEMENT_NUMBER, ERR,ERROR,*999)
+          IF(LIST_FIELD_COMPONENTS(idx_comp)==current_mesh_comp) THEN
+             MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_SET(GLOBAL_ELEMENT_NUMBER,ELEMENTS_PTR(LIST_FIELD_COMPONENTS(idx_comp)), &
+                &BASES%BASES(LIST_BASES(idx_comp))%PTR,ERR,ERROR,*999)
+             MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET(GLOBAL_ELEMENT_NUMBER,ELEMENTS_PTR(LIST_FIELD_COMPONENTS(idx_comp)), &
+                &LIST_ELEMENTAL_NODES(LIST_COMP_NODAL_INDEX(idx_comp,:)),ERR,ERROR,*999))
+             current_mesh_comp=current_mesh_comp+1
+          ENDIF          
+       ENDDO        
+       
+       IF(FILE_END==.TRUE.) THEN
+          idx_elem=idx_elem+1
+          CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
+          FILE_END=.FALSE.
+       ENDIF                                                                        
+    ENDDO !idx_elem
+    
+    CALL MESH_TOPOLOGY_ELEMENTS_CREATE_FINISH(MESH,ERR,ERROR,*999)
+    
+    IF(ALLOCATED(LIST_ELEMENTS)) DALLOCATE(LIST_ELEMENTS)
+    IF(ALLOCATED(ELEMENTS_PTR)) DEALLOCATE(ELEMENTS_PTR)
+    IF(ALLOCATED(LIST_NODAL_NUMBER)) DEALLOCATE(LIST_NODAL_NUMBER)
+    IF(ALLOCATED(LIST_ELEMENTAL_NODES)) DEALLICATE(LIST_ELEMENTAL_NODES)
+    IF(ALLOCATED(LIST_STR)) DEALLOCATE(LIST_STR)
+    IF(ALLOCATED(LIST_BASES)) DEALLOCATE(LIST_BASES)
+    IF(ALLOCATED(LIST_FIELD_COMPONENTS)) DEALLOCATED(LIST_FIELD_COMPONENTS)
+    IF(ALLOCATED(MESH_COMPONENT_LOOKUP)) DEALLOCATE(MESH_COMPONENT_LOOKUP)
+    IF(ALLOCATED(LIST_COMP_NODAL_INDEX)) DEALLOCATE(LIST_COMP_NODAL_INDEX)
+    IF(ALLOCATED(LIST_COMP_NODES)) DEALLOCATE(LIST_COMP_NODES)
+       
     CALL MESH_CREATE_FINISH(REGION,MESH,ERR,ERROR,*999)         
- 
-
                          
     CALL EXITS("FIELD_IO_IMPORT_GLOBAL_MESH")
     RETURN
 999 CALL ERRORS("FIELD_IO_IMPORT_GLOBAL_MESH",ERR,ERROR)
     CALL EXITS("FIELD_IO_IMPORT_GLOBAL_MESH")
   END SUBROUTINE FIELD_IO_IMPORT_GLOBAL_MESH    
-
 
   !
   !================================================================================================================================
@@ -407,12 +902,11 @@ CONTAINS
   !
   
   !>Create basis by reading information from multiple files in master node and broadcasting to others nodes    
-  SUBROUTINE FIELD_IO_CREATE_BASES_IN_LOCAL_PROCESS(NAME, BASES, NUMBER_OF_BASES, MASTER_COMPUTATIONAL_NUMBER, & 
+  SUBROUTINE FIELD_IO_CREATE_BASES_IN_LOCAL_PROCESS(NAME, BASES, MASTER_COMPUTATIONAL_NUMBER, & 
      & my_computational_node_number, ERR,ERROR,*)
     !Argument variables       
     TYPE(BASIS_FUNCTIONS_TYPE), POINTER :: BASES(:) !<list of bases
     TYPE(VARYING_STRING), POINTER :: NAME !<name of input    
-    INTEGER(INTG), INTENT(INOUT) :: NUMBER_OF_BASES !<number of bases
     INTEGER(INTG), INTENT(INOUT) :: MASTER_COMPUTATIONAL_NUMBER !< master number 
     INTEGER(INTG), INTENT(INOUT) :: my_computational_node_number !< my computational node number
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -446,9 +940,9 @@ CONTAINS
          FILE_STATUS="OLD"
          FILE_ID=1030+NUMBER_OF_FILES
          CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)         
+         CMISS_KEYWORD=", #Scale factor="
          DO WHILE(ERR==0)    
             CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
-            CMISS_KEYWORD=", #Scale factor="
             IF(VERIFY(CMISS_KEYWORD,LINE)==0) THEN
                pos=INDEX(LINE,CMISS_KEYWORD)
                LINE=REMOVE(LINE, pos, LEN(LINE))
@@ -1042,7 +1536,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: FILE_NAME, LINE, FILE_STATUS !the prefix name of file.    
     TYPE(BASIS_TYPE), POINTER ::BASIS
     INTEGER(INTG) :: FILE_ID, domain_idx, domain_no, local_number, global_number, MY_DOMAIN_INDEX, MAX_NODE_CPMP_INDEX
-    INTEGER(INTG), ALLOCATABLE :: LIST_COMP_SCALE(:)!LIST_COMP(:) !Components which will be used for export scale factors    
+    INTEGER(INTG), ALLOCATABLE :: LIST_COMP_SCALE(:), NODAL_NUMBER(:)!LIST_COMP(:) !Components which will be used for export scale factors    
     INTEGER(INTG) :: nk, np, nn, ns, mk, ny2, elem_idx, comp_idx,  scal_idx, NUM_OF_SCALING_FACTOR_SETS !dev_idx  elem_num  
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING_ELEMENTS !The domain mapping to calculate elemental mappings
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: DOMAIN_ELEMENTS ! domain elements
@@ -1099,8 +1593,12 @@ CONTAINS
        CALL FLAG_ERROR("can not get multiple file information in IO",ERR,ERROR,*999)     
        GOTO 999               
     ENDIF             
-    !CALL FIELD_IO_FORTRAN_FILE_WRITE_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)       
+    !CALL FIELD_IO_FORTRAN_FILE_WRITE_STRING(FILE_ID, LINE, LEN_Thttp://www.bioeng.auckland.ac.nz/home/home.phpRIM(LINE), ERR,ERROR,*999)       
 
+    !write out elements
+    LINE=" Shape.  Dimension=3"
+    CALL FIELD_IO_FORTRAN_FILE_WRITE_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)       
+     
     ns=1!
     DO elem_idx=1, LOCAL_PROCESS_ELEMENTAL_INFO_SET%NUMBER_OF_ELEMENTS
       
@@ -1150,20 +1648,25 @@ CONTAINS
        CALL FIELD_IO_FORTRAN_FILE_WRITE_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)                      
        !node info
        LINE="   Nodes:" !NEED TO LIST ALL THE NODES(SUCH CUBIC CASE)
+       CALL FIELD_IO_FORTRAN_FILE_WRITE_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
        BASIS=>LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_idx)%COMPONENTS(MAX_NODE_CPMP_INDEX)%PTR%DOMAIN%MESH%&
           &TOPOLOGY(LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_idx)%COMPONENTS(MAX_NODE_CPMP_INDEX)%PTR%&
           &MESH_COMPONENT_NUMBER)%PTR%ELEMENTS%ELEMENTS(global_number)%BASIS
        IF(BASIS%DEGENERATE==.FALSE.) THEN
+          ALLOCATE(NODAL_NUMBER(BASIS%NUMBER_OF_NODES),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate list of nodal numbering when writing out exelem",ERR,ERROR,*999)                
+          
           DO nn=1,BASIS%NUMBER_OF_NODES
-             LINE=LINE//" "//TRIM(NUMBER_TO_VSTRING(LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_idx)%&
+             NODAL_NUMBER(nn)=LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_idx)%&
                  &COMPONENTS(MAX_NODE_CPMP_INDEX)%PTR%DOMAIN%MESH%TOPOLOGY(LOCAL_PROCESS_ELEMENTAL_INFO_SET%&
                  &ELEMENTAL_INFO_SET(elem_idx)%COMPONENTS(MAX_NODE_CPMP_INDEX)%PTR%MESH_COMPONENT_NUMBER)%PTR&
-                 &%ELEMENTS%ELEMENTS(global_number)%USER_ELEMENT_NODES(nn),"*",ERR,ERROR))    
+                 &%ELEMENTS%ELEMENTS(global_number)%USER_ELEMENT_NODES(nn)    
           ENDDO !nn
+          CALL FIELD_IO_FORTRAN_FILE_WRITE_INTG(FILE_ID, NODAL_NUMBER, BASIS%NUMBER_OF_NODES, ERR,ERROR,*999)
+          DEALLOCATE(NODAL_NUMBER)
        ELSE
           CALL FLAG_ERROR("exporting degenerated nodes has not been implemented",ERR,ERROR,*999) 
-       ENDIF        
-       CALL FIELD_IO_FORTRAN_FILE_WRITE_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+       ENDIF       
                          
        !write out scale factors information        
        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1947,7 +2450,7 @@ CONTAINS
     ENDIF !ASSOCIATED(FIELDS%REGION
    
     !release the pointers if they are associated
-    !Allocatable is the refer to dynamic size of array
+    !Allocatable is the refer to dynamic size of arrayNode:
     !IF(ASSOCIATED(LOCAL_PROCESS_NODAL_INFO_SET)) THEN
        IF(ALLOCATED(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET)) THEN
           DO nn=1, LOCAL_PROCESS_NODAL_INFO_SET%NUMBER_OF_NODES
@@ -2363,7 +2866,7 @@ CONTAINS
     !   !temporarily use nk, nu here to save memory
     !   IF(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%NUMBER_OF_COMPONENTS/=1) THEN
     !     component_idx=1      
-    !     DO WHILE(component_idx<LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%NUMBER_OF_COMPONENTS) 
+    !     DO WHILE(component_idx<LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%NUMBER_OF_COMPONNode:ENTS) 
     !        !checking the same variable's components
     !       print "(A, I)", "component_idx=", component_idx
     !       print "(A, I)", "LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%NUMBER_OF_COMPONENTS", LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%NUMBER_OF_COMPONENTS
@@ -2765,7 +3268,7 @@ CONTAINS
              IF(LABEL_TYPE==FIELD_IO_VARIABLE_LABEL) THEN
                 FIELD_IO_LABEL_FIELD_INFO_GET="unknown, field,  unknown second time derivative of variable"
              ELSE IF (LABEL_TYPE==FIELD_IO_COMPONENT_LABEL) THEN
-                FIELD_IO_LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
+                FIELD_IO_LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"Node:*",ERR,ERROR))
              ENDIF      
             CASE DEFAULT
              IF(LABEL_TYPE==FIELD_IO_VARIABLE_LABEL) THEN
@@ -4340,13 +4843,13 @@ CONTAINS
     CALL EXITS("FIELD_IO_MPIIO_FILE_OPEN")
     RETURN 1
   END SUBROUTINE FIELD_IO_MPIIO_FILE_OPEN
-    
+
   !
   !================================================================================================================================
   !  
 
   !>Close a file using MPIIO 
-  SUBROUTINE FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*)
+  SUBROUTINE FIELD_IO_FORTRAN_FILE_REWIND(FILE_ID, ERR,ERROR,*)
   
     !Argument variables   
     INTEGER(INTG), INTENT(INOUT) :: FILE_ID !<file ID
@@ -4354,16 +4857,16 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    CALL ENTERS("FIELD_IO_FORTRAN_FILE_CLOSE",ERR,ERROR,*999)    
+    CALL ENTERS("FIELD_IO_FORTRAN_FILE_REWIND",ERR,ERROR,*999)    
    
-    CLOSE(UNIT=FILE_ID, ERR=999)   
+    REWIND(UNIT=FILE_ID, ERR=999)   
     
-    CALL EXITS("FIELD_IO_FORTRAN_FILE_CLOSE")
+    CALL EXITS("FIELD_IO_FORTRAN_FILE_REWIND")
     RETURN
-999 CALL ERRORS("FIELD_IO_FORTRAN_FILE_CLOSE",ERR,ERROR)
-    CALL EXITS("FIELD_IO_FORTRAN_FILE_CLOSE")
+999 CALL ERRORS("FIELD_IO_FORTRAN_FILE_REWIND",ERR,ERROR)
+    CALL EXITS("FIELD_IO_FORTRAN_FILE_REWIND")
     RETURN 1
-  END SUBROUTINE FIELD_IO_FORTRAN_FILE_CLOSE
+  END SUBROUTINE FIELD_IO_FORTRAN_FILE_REWIND
  
   !
   !================================================================================================================================
