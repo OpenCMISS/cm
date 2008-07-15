@@ -256,9 +256,9 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: idx_comp
     INTEGER(INTG) :: INTERPOLATION_XI(3), num_interp, num_bases, INTERPOLATION_TYPE
-    TYPE(VARYING_STRING) :: LINE, LINE1
-    
-    CALL ENTERS("FILL_BASIS_INFO",ERR,ERROR,*999)    	
+    TYPE(VARYING_STRING) :: LINE,  LINE1
+     
+    CALL ENTERS("FILL_BASIS_INFO",ERR,ERROR,*999)   	
 	
 	DO idx_comp=1,NUMBER_OF_COMPONENTS
 	   num_interp=0
@@ -282,7 +282,7 @@ CONTAINS
 	   ENDDO
 	   LIST_BASES(idx_comp)=num_bases
 	ENDDO       
-                     
+	                     
     CALL EXITS("FILL_BASIS_INFO")
     RETURN
 999 CALL ERRORS("FILL_BASIS_INFO",ERR,ERROR)
