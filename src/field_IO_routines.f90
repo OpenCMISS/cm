@@ -130,8 +130,122 @@ CONTAINS
   !
   !================================================================================================================================
   !  
+  
+  !>Create decompition
+  SUBROUTINE FIELD_IO_CREATE_FIELDS(REGION, DECOMPOSITION, ERR, ERROR, *)
+    !Argument variables   
+    TYPE(REGION_TYPE), POINTER :: REGION !<region
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !< decompistion 
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+     
+    CALL ENTERS("FIELD_IO_CREATE_FIELDS",ERR,ERROR,*999)   		
+	
+	
+    CALL EXITS("FIELD_IO_CREATE_FIELDS")
+    RETURN
+999 CALL ERRORS("FIELD_IO_CREATE_FIELDS",ERR,ERROR)
+    CALL EXITS("FIELD_IO_CREATE_FIELDS")
+  END SUBROUTINE FIELD_IO_CREATE_FIELDS    
+
+
+  !
+  !================================================================================================================================
+  !  
+  
+  !>Create decompition
+  SUBROUTINE FIELD_IO_CREATE_DECOMPISTION(DECOMPOSITION, DECOMPOSITION_USER_NUMBER, DECOMPOSITION_METHOD, MESH, NUMBER_OF_DOMAINS, &
+    &ERR, ERROR, *)
+    !Argument variables   
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !< decomposition tye
+    INTEGER(INTG), INTENT(IN) :: DECOMPOSITION_USER_NUMBER !<user number for decompistion
+    INTEGER(INTG), INTENT(IN) :: DECOMPOSITION_METHOD !<decompistion type
+    TYPE(MESH_TYPE), POINTER :: MESH !< mesh type
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DOMAINS !< number of domains 
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    
+    IF(.NOT.ASSOCIATED(MESH)) THEN
+      CALL FLAG_ERROR("mesh is NOT associated before decomposing the mesh",ERR,ERROR,*999)
+      GOTO 999                     
+    ENDIF
+    
+    CALL ENTERS("FIELD_IO_CREATE_DECOMPISTION",ERR,ERROR,*999)   		
+    !Create a decomposition
+    CALL DECOMPOSITION_CREATE_START(DECOMPOSITION_USER_NUMBER,MESH,DECOMPOSITION,ERR,ERROR,*999)
+    !Set the decomposition to be a general decomposition with the specified number of domains
+    CALL DECOMPOSITION_TYPE_SET(DECOMPOSITION,DECOMPOSITION_METHOD,ERR,ERROR,*999)
+    CALL DECOMPOSITION_NUMBER_OF_DOMAINS_SET(DECOMPOSITION,NUMBER_OF_DOMAINS,ERR,ERROR,*999)
+    CALL DECOMPOSITION_CREATE_FINISH(MESH,DECOMPOSITION,ERR,ERROR,*999)
+	                     
+    CALL EXITS("FIELD_IO_CREATE_DECOMPISTION")
+    RETURN
+999 CALL ERRORS("FIELD_IO_CREATE_DECOMPISTION",ERR,ERROR)
+    CALL EXITS("FIELD_IO_CREATE_DECOMPISTION")
+  END SUBROUTINE FIELD_IO_CREATE_DECOMPISTION    
+
+
+  !
+  !================================================================================================================================
+  !  
+  
+  !>Import fields from files into different computational nodes
+  SUBROUTINE FIELD_IO_FILEDS_IMPORT(NAME, METHOD, REGION, MESH, MESH_USER_NUMBER, DECOMPOSITION, DECOMPOSITION_USER_NUMBER, &
+    &DECOMPOSITION_METHOD, BASES, ERR, ERROR, *)
+    !Argument variables   
+    TYPE(VARYING_STRING), INTENT(IN) :: NAME !<name of input 
+    TYPE(VARYING_STRING), INTENT(IN) :: METHOD !<method used for import
+    TYPE(REGION_TYPE), POINTER :: REGION !<region
+    TYPE(MESH_TYPE), POINTER :: MESH !<mesh type
+    INTEGER(INTG), INTENT(IN) :: MESH_USER_NUMBER !<user number for mesh
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !< decompistion 
+    INTEGER(INTG), INTENT(IN) :: DECOMPOSITION_USER_NUMBER !<user number for decompistion
+    INTEGER(INTG), INTENT(IN) :: DECOMPOSITION_METHOD !<decompistion method
+    TYPE(BASIS_FUNCTIONS_TYPE), POINTER :: BASES !< bases function
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: my_computational_node_number !local process number    
+    INTEGER(INTG) :: computational_node_numbers   !total process numbers
+    INTEGER(INTG) :: MASTER_COMPUTATIONAL_NUMBER  !master computational number 
+     
+    CALL ENTERS("FIELD_IO_FILEDS_IMPORT",ERR,ERROR,*999)   		
+       
+    !Get the number of computational nodes
+    computational_node_numbers=COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)
+    IF(ERR/=0) GOTO 999
+    !Get my computational node number
+    my_computational_node_number=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
+    IF(ERR/=0) GOTO 999
+    
+    MASTER_COMPUTATIONAL_NUMBER=0
+    
+    IF(METHOD=="FORTRAN") THEN
+       CALL FIELD_IO_IMPORT_GLOBAL_MESH(NAME, REGION, MESH, MESH_USER_NUMBER, BASES, MASTER_COMPUTATIONAL_NUMBER, &
+            & my_computational_node_number, ERR, ERROR, *999)
+       CALL FIELD_IO_CREATE_DECOMPISTION(DECOMPOSITION, DECOMPOSITION_USER_NUMBER, DECOMPOSITION_METHOD, MESH, &
+            &computational_node_numbers, ERR, ERROR, *999)     
+       CALL FIELD_IO_CREATE_FIELDS(REGION, DECOMPOSITION, ERR, ERROR, *999)
+    ELSE IF(METHOD=="MPIIO") THEN
+       CALL FLAG_ERROR("MPI IO has not been implemented",ERR,ERROR,*999)
+    ELSE 
+       CALL FLAG_ERROR("Unknown method!",ERR,ERROR,*999)   
+    ENDIF     		
+	                     
+    CALL EXITS("FIELD_IO_FILEDS_IMPORT")
+    RETURN
+999 CALL ERRORS("FIELD_IO_FILEDS_IMPORT",ERR,ERROR)
+    CALL EXITS("FIELD_IO_FILEDS_IMPORT")
+  END SUBROUTINE FIELD_IO_FILEDS_IMPORT    
+
+  !
+  !================================================================================================================================
+  !  
+  
   !>Finding basis information 
-  SUBROUTINE FILL_BASIS_INFO(INTERPOLATION_XI, LIST_STR, NUMBER_OF_COMPONENTS, ERR, ERROR, *)
+  SUBROUTINE FIELD_IO_FILL_BASIS_INFO(INTERPOLATION_XI, LIST_STR, NUMBER_OF_COMPONENTS, ERR, ERROR, *)
     !Argument variables   
     INTEGER(INTG), INTENT(INOUT) :: INTERPOLATION_XI(:,:) !< xi interpolation type
     TYPE(VARYING_STRING), INTENT(INOUT) :: LIST_STR(:) !<label type
@@ -143,7 +257,7 @@ CONTAINS
     INTEGER(INTG) :: idx_comp, pos
     INTEGER(INTG) :: num_interp, INTERPOLATION_TYPE
      
-    CALL ENTERS("FILL_BASIS_INFO",ERR,ERROR,*999)   	
+    CALL ENTERS("FIELD_IO_FILL_BASIS_INFO",ERR,ERROR,*999)   	
 	
 	DO idx_comp=1,NUMBER_OF_COMPONENTS
 	   num_interp=0
@@ -163,11 +277,11 @@ CONTAINS
        INTERPOLATION_XI(idx_comp, num_interp)=INTERPOLATION_TYPE	   
 	ENDDO       
 	                     
-    CALL EXITS("FILL_BASIS_INFO")
+    CALL EXITS("FIELD_IO_FILL_BASIS_INFO")
     RETURN
-999 CALL ERRORS("FILL_BASIS_INFO",ERR,ERROR)
-    CALL EXITS("FILL_BASIS_INFO")
-  END SUBROUTINE FILL_BASIS_INFO    
+999 CALL ERRORS("FIELD_IO_FILL_BASIS_INFO",ERR,ERROR)
+    CALL EXITS("FIELD_IO_FILL_BASIS_INFO")
+  END SUBROUTINE FIELD_IO_FILL_BASIS_INFO    
 
 
   !
@@ -175,16 +289,16 @@ CONTAINS
   !  
   
   !>Read the global mesh into one computational node first and then broadcasting to others nodes
-  SUBROUTINE FIELD_IO_IMPORT_GLOBAL_MESH(MASTER_COMPUTATIONAL_NUMBER, my_computational_node_number, NAME, MESH, REGION, &
-    USER_NUMBER, BASES, ERR, ERROR, *)
-    !Argument variables   
-    INTEGER(INTG), INTENT(IN) :: MASTER_COMPUTATIONAL_NUMBER !< the number of master node
-    INTEGER(INTG), INTENT(IN) :: my_computational_node_number !<local process number  
+  SUBROUTINE FIELD_IO_IMPORT_GLOBAL_MESH(NAME, REGION, MESH, MESH_USER_NUMBER, BASES, MASTER_COMPUTATIONAL_NUMBER, &
+    & my_computational_node_number, ERR, ERROR, *)
+    !Argument variables       
     TYPE(VARYING_STRING), INTENT(IN):: NAME !< the name of elment file
     TYPE(MESH_TYPE), POINTER :: MESH !<mesh type
     TYPE(REGION_TYPE), POINTER :: REGION !<region
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !< user number of mesh      
-    TYPE(BASIS_FUNCTIONS_TYPE), INTENT(INOUT) :: BASES !< bases function
+    INTEGER(INTG), INTENT(IN) :: MESH_USER_NUMBER !< user number of mesh      
+    TYPE(BASIS_FUNCTIONS_TYPE), POINTER :: BASES !< bases function
+    INTEGER(INTG), INTENT(IN) :: MASTER_COMPUTATIONAL_NUMBER 
+    INTEGER(INTG), INTENT(IN) :: my_computational_node_number
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -197,6 +311,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: CMISS_KEYWORD_SHAPE, CMISS_KEYWORD_SCALE_FACTOR_SETS
     INTEGER(INTG), ALLOCATABLE :: LIST_NODAL_NUMBER(:), LIST_ELEMENT_NUMBER(:), LIST_ELEMENTAL_NODES(:), LIST_COMP_NODAL_INDEX(:,:)
     INTEGER(INTG), ALLOCATABLE :: MESH_COMPONENT_LOOKUP(:,:), LIST_FIELD_COMPONENTS(:), INTERPOLATION_XI(:,:), LIST_COMP_NODES(:)
+    
     INTEGER(INTG) :: FILE_ID, NUMBER_OF_EXELEM_FILES, NUMBER_OF_EXNODE_FILES, NUMBER_OF_ELEMENTS, NUMBER_OF_NODES
     INTEGER(INTG) :: NUMBER_OF_MESH_COMPONENTS, NUMBER_OF_COMPONENTS, NUMBER_FIELDS, NUMBER_NODAL_LINES, NUMBER_OF_FIELDS
     INTEGER(INTG) :: GLOBAL_ELEMENT_NUMBER, NUMBER_OF_DIMENSIONS
@@ -229,8 +344,7 @@ CONTAINS
        CALL FLAG_ERROR("bases are associated, pls release the memory first",ERR,ERROR,*999)
        GOTO 999
     ENDIF
-    BASES%NUMBER_BASIS_FUNCTIONS=0    
-    
+    BASES%NUMBER_BASIS_FUNCTIONS=0            
     
     FILE_STATUS="OLD"    
     CMISS_KEYWORD_SHAPE="Shape.  Dimension="//TRIM(NUMBER_TO_VSTRING(REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))
@@ -242,7 +356,7 @@ CONTAINS
     NUMBER_NODAL_LINES=3 !in the header, the number of nodal lines for one node 
     
     NUMBER_OF_DIMENSIONS=REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
-    CALL MESH_CREATE_START(USER_NUMBER,REGION,NUMBER_OF_DIMENSIONS,MESH,ERR,ERROR,*999)
+    CALL MESH_CREATE_START(MESH_USER_NUMBER,REGION,NUMBER_OF_DIMENSIONS,MESH,ERR,ERROR,*999)
     
     !calculate the number of elements, number of fields and number of field components
     IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN  
@@ -679,7 +793,7 @@ CONTAINS
                 ALLOCATE(INTERPOLATION_XI(NUMBER_OF_COMPONENTS,NUMBER_OF_DIMENSIONS),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate list of interpolation types",ERR,ERROR,*999)
              ENDIF   
-             CALL FILL_BASIS_INFO(INTERPOLATION_XI, LIST_STR, NUMBER_OF_COMPONENTS, ERR,ERROR,*999)
+             CALL FIELD_IO_FILL_BASIS_INFO(INTERPOLATION_XI, LIST_STR, NUMBER_OF_COMPONENTS, ERR,ERROR,*999)
              
              DO WHILE(VERIFY(CMISS_KEYWORD_NODE,LINE)/=0)
                 CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
@@ -737,7 +851,8 @@ CONTAINS
                 ENDIF
              ENDDO
              
-             IF(pos==0) THEN                
+             IF(pos==0) THEN
+                IF(ASSOCIATED(BASIS)) NULLIFY(BASIS)  
                 CALL BASIS_CREATE_START(BASES%NUMBER_BASIS_FUNCTIONS+1,BASIS,ERR,ERROR,*999)
                 CALL BASIS_NUMBER_OF_XI_SET(BASIS,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
                 CALL BASIS_INTERPOLATION_XI_SET(BASIS,INTERPOLATION_XI(idx_comp,:),ERR,ERROR,*999)
@@ -762,6 +877,8 @@ CONTAINS
     DO idx_comp=1, NUMBER_OF_MESH_COMPONENTS
        CALL MESH_TOPOLOGY_ELEMENTS_CREATE_FINISH(MESH,idx_comp, ERR,ERROR,*999)
     ENDDO           
+    CALL MESH_CREATE_FINISH(REGION,MESH,ERR,ERROR,*999)         
+
     
     IF(ALLOCATED(LIST_ELEMENT_NUMBER)) DEALLOCATE(LIST_ELEMENT_NUMBER)
     IF(ALLOCATED(ELEMENTS_PTR)) DEALLOCATE(ELEMENTS_PTR)
@@ -773,8 +890,7 @@ CONTAINS
     IF(ALLOCATED(MESH_COMPONENT_LOOKUP)) DEALLOCATE(MESH_COMPONENT_LOOKUP)
     IF(ALLOCATED(LIST_COMP_NODAL_INDEX)) DEALLOCATE(LIST_COMP_NODAL_INDEX)
     IF(ALLOCATED(LIST_COMP_NODES)) DEALLOCATE(LIST_COMP_NODES)
-       
-    CALL MESH_CREATE_FINISH(REGION,MESH,ERR,ERROR,*999)         
+    IF(ASSOCIATED(BASIS)) NULLIFY(BASIS)       
                          
     CALL EXITS("FIELD_IO_IMPORT_GLOBAL_MESH")
     RETURN
@@ -1003,9 +1119,11 @@ CONTAINS
             &computational_node_numbers, ERR, ERROR, *999)
        CALL FIELD_IO_ELEMENTAL_INFO_SET_FINALIZE(LOCAL_PROCESS_ELEMENTAL_INFO_SET, ERR,ERROR,*999)
     ELSE IF(METHOD=="MPIIO") THEN
-       CALL FLAG_ERROR("list of Field is not associated with any region",ERR,ERROR,*999)
-    ENDIF     
- 
+       CALL FLAG_ERROR("MPI IO has not been implemented yet",ERR,ERROR,*999)
+    ELSE 
+       CALL FLAG_ERROR("Unknown method!",ERR,ERROR,*999)   
+    ENDIF   
+     
     CALL EXITS("FIELD_IO_ELEMENTS_EXPORT")
     RETURN
 999 CALL ERRORS("FIELD_IO_ELEMENTS_EXPORT",ERR,ERROR)
@@ -2310,14 +2428,16 @@ CONTAINS
             &computational_node_numbers, ERR, ERROR, *999)
        CALL FIELD_IO_NODAL_INFO_SET_FINALIZE(LOCAL_PROCESS_NODAL_INFO_SET, ERR,ERROR,*999)
     ELSE IF(METHOD=="MPIIO") THEN
-       CALL FLAG_ERROR("what are u thinking, of course not!",ERR,ERROR,*999)
+       CALL FLAG_ERROR("MPI IO has not been implemented yet!",ERR,ERROR,*999)
        !CALL FIELD_IO_NODAL_INFO_SET_INITIALISE(LOCAL_PROCESS_NODAL_INFO_SET, FIELDS, ERR,ERROR,*999) 
        !CALL FIELD_IO_NODAL_INFO_SET_ATTACH_LOCAL_PROCESS(LOCAL_PROCESS_NODAL_INFO_SET, ERR,ERROR,*999)
        !CALL FIELD_IO_NODAL_INFO_SET_SORT(LOCAL_PROCESS_NODAL_INFO_SET, my_computational_node_number, ERR,ERROR,*999)
        !CALL FIELD_IO_EXPORT_NODES_INTO_SINGLE_FILE(LOCAL_PROCESS_NODAL_INFO_SET, FILE_NAME, my_computational_node_number, &
        !     &computational_node_numbers, ERR, ERROR, *999)
        !CALL FIELD_IO_NODAL_INFO_SET_FINALIZE(LOCAL_PROCESS_NODAL_INFO_SET, ERR,ERROR,*999)           
-    ENDIF
+    ELSE 
+       CALL FLAG_ERROR("Unknown method!",ERR,ERROR,*999)   
+    ENDIF   
     
     CALL EXITS("FIELD_IO_NODES_EXPORT")
     RETURN
