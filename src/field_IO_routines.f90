@@ -130,16 +130,108 @@ CONTAINS
   !
   !================================================================================================================================
   !  
-  
-  !>Create decompition
-  SUBROUTINE FIELD_IO_CREATE_FIELDS(REGION, DECOMPOSITION, ERR, ERROR, *)
+
+  !>Get the derivative information               
+  FUNCTION FIELD_IO_DERIVATIVE_INFO(LINE, ERR, ERROR)
     !Argument variables   
-    TYPE(REGION_TYPE), POINTER :: REGION !<region
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !< decompistion 
+    TYPE(VARYING_STRING), INTENT(IN) :: LINE !<Text info
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: idx_comp
+    INTEGER(INTG) ::FIELD_IO_DERIVATIVE_INFO
+   
+    CALL ENTERS("FIELD_IO_DERIVATIVE_INFO",ERR,ERROR,*999)    
+   
+
+    IF("d/ds1"==LINE) THEN
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1
+    ELSE IF("d2/ds1ds1"==LINE) THEN
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S1       
+    ELSE IF("d/ds2"==LINE) THEN
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2
+    ELSE IF("d2/ds2ds2"==LINE) THEN
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2_S2
+    ELSE IF("d/ds3"==LINE) THEN
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S2
+    ELSE IF("d2/ds3ds3"==LINE) THEN
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S3
+    ELSE IF("d2/ds3ds3"==LINE) THEN
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S3_S3
+    ELSE IF("d2/ds1ds3"==LINE) THEN
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S3
+    ELSE IF("d2/ds2ds3"==LINE) THEN
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2_S3 
+    ELSE IF("d3/ds1ds2ds3"==LINE) THEN
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S2_S3
+    ELSE IF("d/ds4"==LINE) THEN
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S4
+    ELSE IF("d2/ds4ds4"==LINE) THEN
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S4_S4
+    ELSE IF("d2/ds1ds4"==LINE) THEN
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S4 
+    ELSE IF("d2/ds2ds4"==LINE) THEN
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2_S4
+    ELSE IF("d2/ds3ds4"==LINE) THEN
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S3_S4
+    ELSE IF("d3/ds1ds2ds4"==LINE) THEN
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S2_S4
+    ELSE IF("d3/ds1ds3ds4"==LINE) THEN
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S3_S4
+    ELSE IF("d3/ds2ds3ds4"==LINE) THEN
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2_S3_S4
+    ELSE IF("d4/ds1ds2ds3ds4"==LINE) THEN
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S2_S3_S4
+    ELSE 
+       FIELD_IO_DERIVATIVE_INFO=-1
+       CALL FLAG_ERROR("Could not recognize derivatives from input string",ERR,ERROR,*999)
+    ENDIF
+             
+    CALL EXITS("FIELD_IO_DERIVATIVE_INFO")
+    RETURN
+999 CALL ERRORS("FIELD_IO_DERIVATIVE_INFO",ERR,ERROR)
+    CALL EXITS("FIELD_IO_DERIVATIVE_INFO")
+  END FUNCTION FIELD_IO_DERIVATIVE_INFO    
+
+  !
+  !================================================================================================================================
+  !  
+  
+  !>Create decompsition
+  SUBROUTINE FIELD_IO_CREATE_FIELDS(NAME, REGION, DECOMPOSITION, FIELD_VALUES_SET_TYPE, NUMBER_OF_FIELDS, &
+    &USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER, MESH_COMPONENTS_OF_FIELD_COMPONENTS, COMPONENTS_IN_FIELDS, NUMBER_OF_EXNODE_FILES, &
+    &MASTER_COMPUTATIONAL_NUMBER, my_computational_node_number, FIELD_SCALING_TYPE, ERR, ERROR, *)
+    !Argument variables   
+    TYPE(VARYING_STRING), INTENT(IN) :: NAME
+    TYPE(REGION_TYPE), POINTER :: REGION !<region
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !< decompistion
+    INTEGER(INTG), INTENT(IN) :: FIELD_VALUES_SET_TYPE !<
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_FIELDS !<!< number of fields
+    INTEGER(INTG), INTENT(IN) :: USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(:)
+    INTEGER(INTG), INTENT(IN) :: MESH_COMPONENTS_OF_FIELD_COMPONENTS(:)    
+    INTEGER(INTG), INTENT(IN) :: COMPONENTS_IN_FIELDS(:)
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_EXNODE_FILES
+    INTEGER(INTG), INTENT(IN) :: MASTER_COMPUTATIONAL_NUMBER
+    INTEGER(INTG), INTENT(IN) :: my_computational_node_number
+    INTEGER(INTG), INTENT(IN) :: FIELD_SCALING_TYPE
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG), ALLOCATABLE :: tmp_pointer(:)
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<field
+    TYPE(VARYING_STRING) :: FILE_NAME, FILE_STATUS, LINE, LINE1
+    TYPE(VARYING_STRING) :: CMISS_KEYWORD_FIELDS, CMISS_KEYWORD_NODE, CMISS_KEYWORD_COMPONENTS
+    TYPE(VARYING_STRING) :: CMISS_KEYWORD_VALUE_INDEX, CMISS_KEYWORD_DERIVATIVE
+    INTEGER(INTG), ALLOCATABLE :: LIST_DEV(:), LIST_DEV_POS(:)
+    INTEGER(INTG) :: FILE_ID
+    INTEGER(INTG) :: NUMBER_FIELDS
+    INTEGER(INTG) :: NODAL_USER_NUMBER
+    INTEGER(INTG) :: MPI_IERROR
+    INTEGER(INTG) :: idx_comp, idx_comp1, pos, idx_field, idx_exnodes
+    INTEGER(INTG) :: idx_variable, idx_variable1, idx_dev, idx_dev1, total_number_of_comps, total_number_of_devs, number_of_devs
+    INTEGER(INTG) :: number_of_coms
+    REAL(DP), ALLOCATABLE :: LIST_DEV_VALUE(:)
+    LOGICAL :: SECTION_START, FILE_END, NODE_SECTION
+    
      
     CALL ENTERS("FIELD_IO_CREATE_FIELDS",ERR,ERROR,*999)   		
 	
@@ -152,20 +244,224 @@ CONTAINS
       CALL FLAG_ERROR("region is NOT associated before importing data",ERR,ERROR,*999)
       GOTO 999                     
     ENDIF
+    
+    CMISS_KEYWORD_FIELDS="#Fields="
+    CMISS_KEYWORD_COMPONENTS="#Components="
+    CMISS_KEYWORD_VALUE_INDEX="Value index="
+    CMISS_KEYWORD_DERIVATIVE="#Derivatives="
+    CMISS_KEYWORD_NODE="Node:"
+    
+    idx_variable1=0
+    idx_comp1=0
+    DO idx_field=1,NUMBER_OF_FIELDS
+       IF(ASSOCIATED(FIELD)) NULLIFY(FIELD)
+       !Start to create a default (geometric) field on the region
+       CALL FIELD_CREATE_START(idx_field,REGION,FIELD,ERR,ERROR,*999)       
+       !always has one field variable in one field during reading
+       CALL FIELD_NUMBER_OF_VARIABLES_SET(FIELD,1,ERR,ERROR,*999)
+       !Set the decomposition to use
+       CALL FIELD_MESH_DECOMPOSITION_SET(FIELD,DECOMPOSITION,ERR,ERROR,*999)       
+       !Set the number of components for this field
+       CALL FIELD_NUMBER_OF_COMPONENTS_SET(FIELD,COMPONENTS_IN_FIELDS(idx_field),ERR,ERROR,*999)       
+       DO idx_comp=1, COMPONENTS_IN_FIELDS(idx_field)
+          idx_comp1=idx_comp1+1
+          !Set the domain to be used by the field components
+          CALL FIELD_COMPONENT_MESH_COMPONENT_SET(FIELD,1,idx_comp,MESH_COMPONENTS_OF_FIELD_COMPONENTS(idx_comp1), ERR,ERROR,*999)
+       ENDDO   
+       !Set the scaling factor
+       CALL FIELD_SCALING_TYPE_SET(FIELD, FIELD_SCALING_TYPE, ERR, ERROR, *999)
+       !Finish creating the field
+       CALL FIELD_CREATE_FINISH(REGION,FIELD,ERR,ERROR,*999)
+    ENDDO   
+    
+    DO WHILE(idx_exnodes<NUMBER_OF_EXNODE_FILES)              
+       
+       !goto the start of mesh part
+       IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
+          
+          IF(FILE_END==.TRUE.) THEN             
+             FILE_ID=1030+idx_exnodes
+             !checking the next file
+             FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnodes,"*",ERR,ERROR))//".exnode"
+             CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
+             FILE_END=.FALSE.
+             SECTION_START=.FALSE.
+             NODE_SECTION=.FALSE.
+             idx_exnodes=idx_exnodes+1
+          ENDIF
+                    
+          IF(FILE_END==.FALSE..AND.SECTION_START==.FALSE.)  THEN
+             !find a new header
+             DO WHILE(VERIFY(CMISS_KEYWORD_FIELDS,LINE)/=0)
+                CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
+                IF(ERR==0) FILE_END=.TRUE.
+             ENDDO
+             SECTION_START=.TRUE.
+          ENDIF
+                    
+          !have not touched the end
+          IF(FILE_END==.FALSE..AND.SECTION_START==.TRUE..AND.NODE_SECTION==.FALSE.) THEN
+             pos=INDEX(LINE,CMISS_KEYWORD_FIELDS)
+             LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_FIELDS)-1)
+             !number_of_fields=STRING_TO_INTEGER(LINE, ERR, ERROR)             
+             total_number_of_comps=0
+             total_number_of_devs=0
+             idx_comp1=0
+             idx_dev1=0
+             DO idx_field=1, NUMBER_OF_FIELDS
+                CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR, ERROR,*999)
+                pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)
+                LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENTS)-1)
+                number_of_coms=STRING_TO_INTEGER(LINE, ERR, ERROR) 
+                total_number_of_comps=total_number_of_comps+number_of_coms          
+                
+                IF(ALLOCATED(LIST_DEV_POS)) THEN                   
+                   ALLOCATE(tmp_pointer(total_number_of_comps-number_of_coms),STAT=ERR)
+                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary memory for nodal derivative index in master node", &
+                      &ERR,ERROR,*999)
+                   tmp_pointer(:)=LIST_DEV_POS(:)
+                   DEALLOCATE(LIST_DEV_POS)
+                   ALLOCATE(LIST_DEV_POS(total_number_of_comps),STAT=ERR)
+                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary memory for nodal derivative index in master node", &
+                      &ERR,ERROR,*999)
+                   LIST_DEV_POS(1:total_number_of_comps-number_of_coms)=tmp_pointer(:)
+                   DEALLOCATE(tmp_pointer)            
+                ELSE
+                   ALLOCATE(LIST_DEV_POS(total_number_of_comps),STAT=ERR)
+                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate memory for nodal derivative index",ERR,ERROR,*999)
+                ENDIF
+                
+                DO idx_comp=1, number_of_coms                   
+                   CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR, ERROR,*999)
+                   pos=INDEX(LINE,".")
+                   LINE=REMOVE(LINE,1, pos+1)
+                   pos=INDEX(LINE,CMISS_KEYWORD_VALUE_INDEX)
+                   LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_VALUE_INDEX)-1)
+                   pos=INDEX(LINE,",")
+                   LINE1=EXTRACT(LINE,1,pos-1)
+                   idx_comp1=idx_comp1+1	
+                   LIST_DEV_POS(idx_comp1)=STRING_TO_INTEGER(LINE1, ERR, ERROR)
 
-    !Start to create a default (geometric) field on the region
-    CALL FIELD_CREATE_START(1,REGION,GEOMETRIC_FIELD,ERR,ERROR,*999)
-    !Set the decomposition to use
-    CALL FIELD_MESH_DECOMPOSITION_SET(GEOMETRIC_FIELD,DECOMPOSITION,ERR,ERROR,*999)
-    !Set the domain to be used by the field components
-    CALL FIELD_COMPONENT_MESH_COMPONENT_SET(GEOMETRIC_FIELD,FIELD_STANDARD_VARIABLE_TYPE,1,1,ERR,ERROR,*999)
-    CALL FIELD_COMPONENT_MESH_COMPONENT_SET(GEOMETRIC_FIELD,FIELD_STANDARD_VARIABLE_TYPE,2,1,ERR,ERROR,*999)
-    !CALL FIELD_COMPONENT_MESH_COMPONENT_SET(GEOMETRIC_FIELD,FIELD_STANDARD_VARIABLE_TYPE,3,1,ERR,ERROR,*999)
-    !Finish creating the field
-    CALL FIELD_CREATE_FINISH(REGION,GEOMETRIC_FIELD,ERR,ERROR,*999)
+                   pos=INDEX(LINE,CMISS_KEYWORD_DERIVATIVE)
+                   LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_DERIVATIVE)-1)
+                   pos=INDEX(LINE,"(")
+                   LINE1=EXTRACT(LINE,1,pos-1)
+                   number_of_devs=STRING_TO_INTEGER(LINE, ERR, ERROR)+1
+                   total_number_of_devs=total_number_of_devs+number_of_devs  
+                  
+                   IF(ALLOCATED(LIST_DEV)) THEN                   
+                      ALLOCATE(tmp_pointer(total_number_of_devs-number_of_devs),STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary memory for nodal derivative index in master node", &
+                         &ERR,ERROR,*999)
+                      tmp_pointer(:)=LIST_DEV_POS(:)
+                      DEALLOCATE(LIST_DEV_POS)
+                      ALLOCATE(LIST_DEV_POS(total_number_of_devs),STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary memory for nodal derivative index in master node", &
+                         &ERR,ERROR,*999)
+                      LIST_DEV_POS(1:total_number_of_devs-number_of_devs)=tmp_pointer(:)
+                      DEALLOCATE(tmp_pointer)            
+                   ELSE
+                      ALLOCATE(LIST_DEV(total_number_of_devs),STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate memory for nodal derivative index",ERR,ERROR,*999)
+                   ENDIF
+                                      
+                   pos=INDEX(LINE,"(")
+                   LINE=REMOVE(LINE,1, pos)
+                   pos=INDEX(LINE,")")
+                   LINE=REMOVE(LINE,pos, LEN(LINE))                                      
+                   idx_dev1=idx_dev1+1
+                   LIST_DEV(idx_dev1)=NO_PART_DERIV
+                   DO idx_dev=2, number_of_devs-1
+                      idx_dev1=idx_dev1+1
+                      pos=INDEX(LINE,",")
+                      LINE1=EXTRACT(LINE, 1, pos-1)
+                      LINE=REMOVE(LINE, 1, pos)
+                      LIST_DEV(idx_dev1)=FIELD_IO_DERIVATIVE_INFO(LINE1, ERR,ERROR)
+                   ENDDO
+                   idx_dev1=idx_dev1+1
+                   LIST_DEV(idx_dev1)=FIELD_IO_DERIVATIVE_INFO(LINE, ERR,ERROR)                                        
+                ENDDO !idx_comp
+                NODE_SECTION=.TRUE.              
+             ENDDO !idx_field
+          ENDIF  !FILE_END==.FALSE..AND.SECTION_START=.TRUE..AND.NODE_SECTION=.FALSE.                  
+       ENDIF !MASTER_COMPUTATIONAL_NUMBER
 
+       !broadcasting total_number_of_comps
+       CALL MPI_BCAST(total_number_of_comps,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)                           
+       !broadcasting total_number_of_devs
+       CALL MPI_BCAST(total_number_of_devs,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)  
+       
+       IF(MASTER_COMPUTATIONAL_NUMBER/=my_computational_node_number) THEN
+          ALLOCATE(LIST_DEV_POS(total_number_of_comps),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate memory for nodal derivative index in non-master node",ERR, ERROR,*999)
+          ALLOCATE(LIST_DEV(total_number_of_devs),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate memory for nodal derivative index in non-master node",ERR, ERROR,*999)   
+          ALLOCATE(LIST_DEV_VALUE(total_number_of_devs),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate memory for nodal derivative index in non-master node",ERR, ERROR,*999)                    
+       ENDIF
 
-	
+       !broadcasting total_number_of_comps
+       CALL MPI_BCAST(LIST_DEV_POS,total_number_of_comps,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)                           
+       !broadcasting total_number_of_devs
+       CALL MPI_BCAST(LIST_DEV,total_number_of_devs,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)                
+
+       !goto the start of mesh part
+       IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
+                              
+          !have not touched the end
+          IF(FILE_END==.FALSE..AND.SECTION_START==.TRUE..AND.NODE_SECTION==.TRUE.) THEN
+             CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR, ERROR,*999)
+             IF(VERIFY(CMISS_KEYWORD_NODE, LINE)==0) THEN
+                pos=INDEX(LINE,CMISS_KEYWORD_NODE)
+                LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_NODE)-1)
+                NODAL_USER_NUMBER=STRING_TO_INTEGER(LINE, ERR, ERROR)
+                idx_comp1=1
+                DO idx_comp=1, number_of_coms-1
+                   CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR, ERROR,*999)
+                   LIST_DEV_VALUE(LIST_DEV_POS(idx_comp):LIST_DEV_POS(idx_comp+1)-1)=STRING_TO_INTEGER(LINE, ERR, ERROR)    
+                ENDDO
+                LIST_DEV_VALUE(LIST_DEV_POS(idx_comp):total_number_of_devs)=STRING_TO_INTEGER(LINE, ERR, ERROR)
+             ELSE
+                NODE_SECTION=.TRUE.
+             ENDIF !(VERIFY(CMISS_KEYWORD_NODE , LINE)==0)
+          ENDIF !FILE_END==.FALSE..AND.SECTION_START=.TRUE..AND.NODE_SECTION=.TRUE.
+       ENDIF  !(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number)  
+       
+       !broadcasting total_number_of_devs
+       CALL MPI_BCAST(LIST_DEV_VALUE,total_number_of_devs,MPI_REAL,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+       
+       idx_comp1=0 
+       idx_dev1=0  
+       DO idx_field=1,NUMBER_OF_FIELDS
+          IF(ASSOCIATED(FIELD)) NULLIFY(FIELD)
+          FIELD=>REGION%FIELDS%FIELDS(idx_field)%PTR
+          DO idx_comp=1, COMPONENTS_IN_FIELDS(idx_field)
+             idx_comp1=idx_comp1+1
+             DO idx_dev=1, LIST_DEV_POS(idx_comp1+1)-LIST_DEV_POS(idx_comp1)
+                idx_dev1=idx_dev1+1
+                !Set the domain to be used by the field components
+                CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_VALUES_SET_TYPE, LIST_DEV(idx_dev1), & 
+                   &USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(NODAL_USER_NUMBER), idx_comp, idx_variable, LIST_DEV_VALUE(idx_dev1),&
+                   &ERR, ERROR, *999)                        
+             ENDDO !idx_dev       
+          ENDDO !idx_comp  
+       ENDDO !idx_field      
+    ENDDO !idx_exnodes<NUMBER_OF_EXELEM_FILES  
+
+    DO idx_field=1,NUMBER_FIELDS
+       IF(ASSOCIATED(FIELD)) NULLIFY(FIELD)
+       FIELD=>REGION%FIELDS%FIELDS(idx_field)%PTR
+       CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+       CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+    ENDDO
+    
+    IF(ALLOCATED(tmp_pointer)) DEALLOCATE(tmp_pointer)
+ 	
     CALL EXITS("FIELD_IO_CREATE_FIELDS")
     RETURN
 999 CALL ERRORS("FIELD_IO_CREATE_FIELDS",ERR,ERROR)
@@ -216,7 +512,7 @@ CONTAINS
   
   !>Import fields from files into different computational nodes
   SUBROUTINE FIELD_IO_FILEDS_IMPORT(NAME, METHOD, REGION, MESH, MESH_USER_NUMBER, DECOMPOSITION, DECOMPOSITION_USER_NUMBER, &
-    &DECOMPOSITION_METHOD, BASES, ERR, ERROR, *)
+    &DECOMPOSITION_METHOD, FIELD_VALUES_SET_TYPE, FIELD_SCALING_TYPE, BASES, ERR, ERROR, *)
     !Argument variables   
     TYPE(VARYING_STRING), INTENT(IN) :: NAME !<name of input 
     TYPE(VARYING_STRING), INTENT(IN) :: METHOD !<method used for import
@@ -226,6 +522,8 @@ CONTAINS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !< decompistion 
     INTEGER(INTG), INTENT(IN) :: DECOMPOSITION_USER_NUMBER !<user number for decompistion
     INTEGER(INTG), INTENT(IN) :: DECOMPOSITION_METHOD !<decompistion method
+    INTEGER(INTG), INTENT(IN) :: FIELD_VALUES_SET_TYPE
+    INTEGER(INTG), INTENT(IN) :: FIELD_SCALING_TYPE
     TYPE(BASIS_FUNCTIONS_TYPE), POINTER :: BASES !< bases function
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -233,7 +531,11 @@ CONTAINS
     INTEGER(INTG) :: my_computational_node_number !local process number    
     INTEGER(INTG) :: computational_node_numbers   !total process numbers
     INTEGER(INTG) :: MASTER_COMPUTATIONAL_NUMBER  !master computational number 
-     
+    INTEGER(INTG) :: NUMBER_OF_FIELDS
+    INTEGER(INTG) :: NUMBER_OF_EXNODE_FILES
+    INTEGER(INTG), ALLOCATABLE :: USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(:)
+    INTEGER(INTG), ALLOCATABLE :: MESH_COMPONENTS_OF_FIELD_COMPONENTS(:)
+    INTEGER(INTG), ALLOCATABLE :: COMPONENTS_IN_FIELDS(:)
     CALL ENTERS("FIELD_IO_FILEDS_IMPORT",ERR,ERROR,*999)   		
        
     !Get the number of computational nodes
@@ -247,15 +549,22 @@ CONTAINS
     
     IF(METHOD=="FORTRAN") THEN
        CALL FIELD_IO_IMPORT_GLOBAL_MESH(NAME, REGION, MESH, MESH_USER_NUMBER, BASES, MASTER_COMPUTATIONAL_NUMBER, &
-            & my_computational_node_number, ERR, ERROR, *999)
+            & my_computational_node_number, USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER, MESH_COMPONENTS_OF_FIELD_COMPONENTS, &
+            & COMPONENTS_IN_FIELDS, NUMBER_OF_FIELDS, NUMBER_OF_EXNODE_FILES, ERR, ERROR, *999)
        CALL FIELD_IO_CREATE_DECOMPISTION(DECOMPOSITION, DECOMPOSITION_USER_NUMBER, DECOMPOSITION_METHOD, MESH, &
             &computational_node_numbers, ERR, ERROR, *999)     
-       CALL FIELD_IO_CREATE_FIELDS(REGION, DECOMPOSITION, ERR, ERROR, *999)
+       CALL FIELD_IO_CREATE_FIELDS(NAME, REGION, DECOMPOSITION, FIELD_VALUES_SET_TYPE, NUMBER_OF_FIELDS, &
+            &USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER, MESH_COMPONENTS_OF_FIELD_COMPONENTS, COMPONENTS_IN_FIELDS, &
+            &NUMBER_OF_EXNODE_FILES, MASTER_COMPUTATIONAL_NUMBER, my_computational_node_number, FIELD_SCALING_TYPE, ERR, ERROR, *999)
     ELSE IF(METHOD=="MPIIO") THEN
        CALL FLAG_ERROR("MPI IO has not been implemented",ERR,ERROR,*999)
     ELSE 
        CALL FLAG_ERROR("Unknown method!",ERR,ERROR,*999)   
     ENDIF     		
+	
+	IF(ALLOCATED(USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER)) DEALLOCATE(USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER)
+	IF(ALLOCATED(MESH_COMPONENTS_OF_FIELD_COMPONENTS)) DEALLOCATE(MESH_COMPONENTS_OF_FIELD_COMPONENTS)
+	IF(ALLOCATED(COMPONENTS_IN_FIELDS)) DEALLOCATE(COMPONENTS_IN_FIELDS)
 	                     
     CALL EXITS("FIELD_IO_FILEDS_IMPORT")
     RETURN
@@ -313,7 +622,8 @@ CONTAINS
   
   !>Read the global mesh into one computational node first and then broadcasting to others nodes
   SUBROUTINE FIELD_IO_IMPORT_GLOBAL_MESH(NAME, REGION, MESH, MESH_USER_NUMBER, BASES, MASTER_COMPUTATIONAL_NUMBER, &
-    & my_computational_node_number, ERR, ERROR, *)
+    & my_computational_node_number, USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER, MESH_COMPONENTS_OF_FIELD_COMPONENTS, &
+    & COMPONENTS_IN_FIELDS, NUMBER_OF_FIELDS, NUMBER_OF_EXNODE_FILES, ERR, ERROR, *)
     !Argument variables       
     TYPE(VARYING_STRING), INTENT(IN):: NAME !< the name of elment file
     TYPE(MESH_TYPE), POINTER :: MESH !<mesh type
@@ -322,6 +632,11 @@ CONTAINS
     TYPE(BASIS_FUNCTIONS_TYPE), POINTER :: BASES !< bases function
     INTEGER(INTG), INTENT(IN) :: MASTER_COMPUTATIONAL_NUMBER 
     INTEGER(INTG), INTENT(IN) :: my_computational_node_number
+    INTEGER(INTG), INTENT(INOUT), ALLOCATABLE :: USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(:)
+    INTEGER(INTG), INTENT(INOUT), ALLOCATABLE :: MESH_COMPONENTS_OF_FIELD_COMPONENTS(:)
+    INTEGER(INTG), INTENT(INOUT), ALLOCATABLE :: COMPONENTS_IN_FIELDS(:)
+    INTEGER(INTG), INTENT(INOUT) :: NUMBER_OF_FIELDS
+    INTEGER(INTG), INTENT(INOUT) :: NUMBER_OF_EXNODE_FILES
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -333,16 +648,15 @@ CONTAINS
     TYPE(VARYING_STRING) :: CMISS_KEYWORD_FIELD, CMISS_KEYWORD_ELEMENT, CMISS_KEYWORD_NODE, CMISS_KEYWORD_COMPONENT
     TYPE(VARYING_STRING) :: CMISS_KEYWORD_SHAPE, CMISS_KEYWORD_SCALE_FACTOR_SETS
     INTEGER(INTG), ALLOCATABLE :: LIST_NODAL_NUMBER(:), LIST_ELEMENT_NUMBER(:), LIST_ELEMENTAL_NODES(:), LIST_COMP_NODAL_INDEX(:,:)
-    INTEGER(INTG), ALLOCATABLE :: MESH_COMPONENT_LOOKUP(:,:), LIST_FIELD_COMPONENTS(:), INTERPOLATION_XI(:,:), LIST_COMP_NODES(:)
-    
-    INTEGER(INTG) :: FILE_ID, NUMBER_OF_EXELEM_FILES, NUMBER_OF_EXNODE_FILES, NUMBER_OF_ELEMENTS, NUMBER_OF_NODES
-    INTEGER(INTG) :: NUMBER_OF_MESH_COMPONENTS, NUMBER_OF_COMPONENTS, NUMBER_FIELDS, NUMBER_NODAL_LINES, NUMBER_OF_FIELDS
+    INTEGER(INTG), ALLOCATABLE :: MESH_COMPONENT_LOOKUP(:,:), LIST_FIELD_COMPONENTS(:), INTERPOLATION_XI(:,:), LIST_COMP_NODES(:)    
+    INTEGER(INTG) :: FILE_ID, NUMBER_OF_EXELEM_FILES, NUMBER_OF_ELEMENTS, NUMBER_OF_NODES
+    INTEGER(INTG) :: NUMBER_OF_MESH_COMPONENTS, NUMBER_OF_COMPONENTS, NUMBER_FIELDS, NUMBER_NODAL_LINES
     INTEGER(INTG) :: GLOBAL_ELEMENT_NUMBER, NUMBER_OF_DIMENSIONS
     INTEGER(INTG) :: MPI_IERROR
     INTEGER(INTG) :: SHAPE_INDEX(3)
     INTEGER(INTG) :: idx_comp, idx_comp1, pos, idx_node, idx_node1, idx_field, idx_elem, idx_exnodes, idx_exelems, number_of_comp
     INTEGER(INTG) :: idx_basis, number_of_node, number_of_scalesets, idx_scl, idx_mesh_comp, current_mesh_comp
-    LOGICAL :: FILE_EXIST, START_OF_ELEMENT_SECTION, FIELD_SECTION, FILE_END
+    LOGICAL :: FILE_EXIST, START_OF_ELEMENT_SECTION, FIELD_SECTION, ELE_START, SECTION_START, FILE_END
     
     CALL ENTERS("FIELD_IO_IMPORT_GLOBAL_MESH",ERR,ERROR,*999)    
 
@@ -427,7 +741,10 @@ CONTAINS
                      CALL FLAG_ERROR("find different number of fields in the exelem files",ERR,ERROR,*999)
                      GOTO 999
                   ENDIF
-               ENDIF   
+               ENDIF
+               IF(ALLOCATED(COMPONENTS_IN_FIELDS)) DEALLOCATE(COMPONENTS_IN_FIELDS)
+               ALLOCATE(COMPONENTS_IN_FIELDS(NUMBER_OF_FIELDS), STAT=ERR)
+               IF(ERR/=0) CALL FLAG_ERROR("can not allocate the momery for outputing components in field",ERR,ERROR,*999)               
             ENDIF !START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_FIELD,LINE)==0  
             
             !check whether they have same numbers of field components
@@ -439,14 +756,19 @@ CONTAINS
                IF(idx_field>=NUMBER_FIELDS) THEN   
                   IF(idx_exelems==0) THEN
                      NUMBER_OF_COMPONENTS=idx_comp
+                     COMPONENTS_IN_FIELDS(idx_field)=idx_comp
                   ELSE
                      IF(NUMBER_OF_COMPONENTS/=idx_comp) THEN
-                        CALL FLAG_ERROR("find different number of components in the exelem files",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("find different total number of components in the exelem files",ERR,ERROR,*999)
                         GOTO 999
-                     ENDIF
+                     ENDIF                     
                   ENDIF   
                   FIELD_SECTION=.FALSE.
-               ENDIF   
+               ENDIF
+               IF(COMPONENTS_IN_FIELDS(idx_field)/=idx_comp) THEN
+                  CALL FLAG_ERROR("find different number of components in one field in the exelem files",ERR,ERROR,*999)
+                  GOTO 999               
+               ENDIF 
             ENDIF !FIELD_SECTION==.TRUE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_COMPONENT,LINE                          
          ENDDO !(ERR==0)                  
                   
@@ -532,6 +854,10 @@ CONTAINS
        CALL NODE_NUMBER_SET(idx_node, LIST_NODAL_NUMBER(idx_node), NODES, ERR,ERROR,*999)
     ENDDO    
     CALL NODES_CREATE_FINISH(REGION,ERR,ERROR,*999)
+    IF(ALLOCATED(USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER)) DEALLOCATE(USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER)
+    ALLOCATE(USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(NUMBER_OF_NODES), STAT=ERR)
+    IF(ERR/=0) CALL FLAG_ERROR("can not allocate nodal number mapping for output",ERR,ERROR,*999)
+    USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(:)=LIST_NODAL_NUMBER(:)
     IF(ALLOCATED(LIST_NODAL_NUMBER)) DEALLOCATE(LIST_NODAL_NUMBER)
 
     !calculate the number of mesh components
@@ -647,8 +973,12 @@ CONTAINS
             NUMBER_OF_MESH_COMPONENTS=NUMBER_OF_MESH_COMPONENTS+1
          ENDIF
       ENDDO
+      IF(ALLOCATED(MESH_COMPONENTS_OF_FIELD_COMPONENTS)) DEALLOCATE(MESH_COMPONENTS_OF_FIELD_COMPONENTS)
+      ALLOCATE(MESH_COMPONENTS_OF_FIELD_COMPONENTS(NUMBER_OF_COMPONENTS),STAT=ERR)
+      IF(ERR/=0) CALL FLAG_ERROR("can not allocate mesh components of field components for output",ERR,ERROR,*999)
+      MESH_COMPONENTS_OF_FIELD_COMPONENTS(:)=LIST_FIELD_COMPONENTS(:)
       !ALLOCATE(LIST_MESH_COMPONENTS(NUMBER_OF_MESH_COMPONENTS),STAT=ERR)
-      !IF(ERR/=0) CALL FLAG_ERROR("can not allocate list of mesh components",ERR,ERROR,*999)
+      !IF(ERR/=0) CALL FLAG_ERROR("ALLOCATEDcan not allocate list of mesh components",ERR,ERROR,*999)
       !idx_comp1=0
       !DO idx_comp=1,NUMBER_OF_COMPONENTS        
       !   IF(LIST_FIELD_COMPONENTS(idx_comp)==idx_comp) THEN
@@ -691,7 +1021,7 @@ CONTAINS
             IF(START_OF_ELEMENT_SECTION==.FALSE..AND.VERIFY(CMISS_KEYWORD_SHAPE,LINE)==0) THEN
                START_OF_ELEMENT_SECTION=.TRUE.               
             ENDIF   
-                        
+
             IF(START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_ELEMENT,LINE)==0) THEN
                pos=INDEX(LINE,CMISS_KEYWORD_ELEMENT)
                LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_ELEMENT)-1)
@@ -722,7 +1052,7 @@ CONTAINS
     CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
     !ALLOCATE(LIST_BASES(NUMBER_OF_COMPONENTS),STAT=ERR)
     !IF(ERR/=0) CALL FLAG_ERROR("can not allocate list of bases",ERR,ERROR,*999)		    
-    FILE_END=.FALSE.
+    FILE_END=.TRUE.
     idx_exelems=0
     ALLOCATE(LIST_COMP_NODES(NUMBER_OF_COMPONENTS),STAT=ERR)
     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate list of component nodal index ",ERR,ERROR,*999)             
@@ -732,24 +1062,37 @@ CONTAINS
        
        !goto the start of mesh part
        IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
-          IF(FILE_END==.FALSE.) THEN
+          
+          IF(FILE_END==.TRUE.) THEN             
              FILE_ID=1030+idx_exelems
              !checking the next file
              FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelems,"*",ERR,ERROR))//".exelem"
              CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
+             FILE_END=.FALSE.
+             SECTION_START=.FALSE.
+             ELE_START=.FALSE.
+             idx_exelems=idx_exelems+1
+          ENDIF
+          
+          IF(FILE_END==.FALSE..AND.ELE_START==.FALSE.) THEN
              !check the beginning of element section          
              DO WHILE(VERIFY(CMISS_KEYWORD_SHAPE,LINE)/=0)
                 CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
-             ENDDO  
+             ENDDO
+             ELE_START=.TRUE.
+          ENDIF
+          
+          IF(FILE_END==.FALSE..AND.ELE_START==.TRUE..AND.SECTION_START==.FALSE.) THEN    
              !find a new header
              DO WHILE(VERIFY(CMISS_KEYWORD_SCALE_FACTOR_SETS,LINE)/=0)
                 CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)
                 IF(ERR==0) FILE_END=.TRUE.
              ENDDO
-          ENDIF   
-          
+             SECTION_START=.TRUE.
+          ENDIF
+                    
           !have not touched the end
-          IF(FILE_END==.FALSE.) THEN
+          IF(FILE_END==.FALSE..AND.ELE_START==.TRUE..AND.SECTION_START==.TRUE.) THEN
              pos=INDEX(LINE,CMISS_KEYWORD_SCALE_FACTOR_SETS)
              LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_SCALE_FACTOR_SETS)-1)
              number_of_scalesets=STRING_TO_INTEGER(LINE, ERR,ERROR)
@@ -889,12 +1232,7 @@ CONTAINS
              current_mesh_comp=current_mesh_comp+1
           ENDIF          
        ENDDO        
-       
-       IF(FILE_END==.TRUE.) THEN
-          idx_elem=idx_elem+1
-          CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
-          FILE_END=.FALSE.
-       ENDIF                                                                        
+                                                         
     ENDDO !idx_elem
     
     DO idx_comp=1, NUMBER_OF_MESH_COMPONENTS
@@ -3078,43 +3416,43 @@ CONTAINS
             CASE(NO_PART_DERIV)
               FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET
             CASE(PART_DERIV_S1)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", du/ds1"      
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d/ds1"      
             CASE(PART_DERIV_S1_S1)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d^2u/ds1ds1"       
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds1ds1"       
             CASE(PART_DERIV_S2)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", du/ds2"
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d/ds2"
             CASE(PART_DERIV_S2_S2)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d^2u/ds2ds2"
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds2ds2"
             CASE(PART_DERIV_S1_S2)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", du/ds3"
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d/ds3"
             CASE(PART_DERIV_S3)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d^2u/ds3ds3"
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds3ds3"
             CASE(PART_DERIV_S3_S3)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d^2u/ds3ds3"
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds3ds3"
             CASE(PART_DERIV_S1_S3)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d^2u/ds1ds3"
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds1ds3"
             CASE(PART_DERIV_S2_S3)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d^2u/ds2ds3"
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds2ds3"
             CASE(PART_DERIV_S1_S2_S3)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d^3u/ds1ds2ds3"
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds1ds2ds3"
             CASE(PART_DERIV_S4)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", du/ds4"
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d/ds4"
             CASE(PART_DERIV_S4_S4)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d^2u/ds4ds4"
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds4ds4"
             CASE(PART_DERIV_S1_S4)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d^2u/ds1ds4"
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds1ds4"
             CASE(PART_DERIV_S2_S4)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d^2u/ds2ds4"
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds2ds4"
             CASE(PART_DERIV_S3_S4)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d^2u/ds3ds4"
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds3ds4"
             CASE(PART_DERIV_S1_S2_S4)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d^3u/ds1ds2ds4"
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds1ds2ds4"
             CASE(PART_DERIV_S1_S3_S4)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d^3u/ds1ds3ds4"
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds1ds3ds4"
             CASE(PART_DERIV_S2_S3_S4)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d^3u/ds2ds3ds4"
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds2ds3ds4"
             CASE(PART_DERIV_S1_S2_S3_S4)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d^4u/ds1ds2ds3ds4"
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d4/ds1ds2ds3ds4"
             CASE DEFAULT
               FIELD_IO_LABEL_DERIVATIVE_INFO_GET="unknown field variable type, add more details later, #Components="!&
               !&//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_COMPONENTS,"*",ERR,ERROR))
