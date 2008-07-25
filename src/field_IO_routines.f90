@@ -232,7 +232,7 @@ CONTAINS
     INTEGER(INTG) :: idx_variable, idx_variable1, idx_dev, idx_dev1, total_number_of_comps, total_number_of_devs, number_of_devs
     INTEGER(INTG) :: number_of_coms
     REAL(DP), ALLOCATABLE :: LIST_DEV_VALUE(:)
-    LOGICAL :: SECTION_START, FILE_END, NODE_SECTION
+    LOGICAL :: SECTION_START, FILE_END, NODE_SECTION, FILE_OPEN
     
      
     CALL ENTERS("FIELD_IO_CREATE_FIELDS",ERR,ERROR,*999)   		
@@ -276,7 +276,24 @@ CONTAINS
        CALL FIELD_CREATE_FINISH(REGION,FIELD,ERR,ERROR,*999)
     ENDDO   
     
+    
+    FILE_END=.TRUE.
+    idx_exnodes=-1
+    FILE_ID=1030    
+    
     DO WHILE(idx_exnodes<NUMBER_OF_EXNODE_FILES)              
+
+       CALL MPI_BCAST(FILE_END,1,MPI_LOGICAL,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)                                              
+       
+       IF(FILE_END==.TRUE.) THEN
+          idx_exnodes=idx_exnodes+1
+          IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN 
+             INQUIRE(UNIT=FILE_ID, OPENED=FILE_OPEN) 
+             IF(FILE_OPEN==.TRUE.) CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
+          ENDIF             
+          IF(idx_exnodes>=NUMBER_OF_EXNODE_FILES) EXIT
+       ENDIF
        
        !goto the start of mesh part
        IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
@@ -667,7 +684,7 @@ CONTAINS
     INTEGER(INTG) :: SHAPE_INDEX(SHAPE_SIZE)
     INTEGER(INTG) :: idx_comp, idx_comp1, pos, idx_node, idx_node1, idx_field, idx_elem, idx_exnodes, idx_exelems, number_of_comp
     INTEGER(INTG) :: idx_basis, number_of_node, number_of_scalesets, idx_scl, idx_mesh_comp, current_mesh_comp, num_scl, num_scl_line
-    LOGICAL :: FILE_EXIST, START_OF_ELEMENT_SECTION, FIELD_SECTION, SECTION_START, FILE_END
+    LOGICAL :: FILE_EXIST, START_OF_ELEMENT_SECTION, FIELD_SECTION, SECTION_START, FILE_END, FILE_OPEN
     
     CALL ENTERS("FIELD_IO_IMPORT_GLOBAL_MESH",ERR,ERROR,*999)    
 
@@ -1125,7 +1142,8 @@ CONTAINS
     LIST_COMP_NODES(:)=0
 
     FILE_END=.TRUE.
-    idx_exelems=-1        
+    idx_exelems=-1
+    FILE_ID=1030     
     
     DO WHILE(idx_exelems<NUMBER_OF_EXELEM_FILES)              
        
@@ -1139,6 +1157,10 @@ CONTAINS
        
        IF(FILE_END==.TRUE.) THEN
           idx_exelems=idx_exelems+1
+          IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
+             INQUIRE(UNIT=FILE_ID, OPENED=FILE_OPEN) 
+             IF(FILE_OPEN==.TRUE.) CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
+          ENDIF   
           IF(idx_exelems>=NUMBER_OF_EXELEM_FILES) EXIT
        ENDIF
               
@@ -1154,7 +1176,7 @@ CONTAINS
           !ENDIF
           
           IF(FILE_END==.TRUE.) THEN
-             FILE_ID=1030+idx_exelems
+             FILE_ID=1030+idx_exelems             
              !checking the next file             
              FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelems,"*",ERR,ERROR))//".exelem"
              CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
@@ -2145,9 +2167,10 @@ CONTAINS
        global_number=LOCAL_PROCESS_ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(elem_idx)
        
 
-       IF(ALLOCATED(LIST_COMP_SCALE)) DEALLOCATE(LIST_COMP_SCALE)         
-       ALLOCATE(LIST_COMP_SCALE(LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_idx)%NUMBER_OF_COMPONENTS),STAT=ERR)
-       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate LIST_COMP_SCALE in exelem io",ERR,ERROR,*999)
+       IF(.NOT.ALLOCATED(LIST_COMP_SCALE)) THEN   
+          ALLOCATE(LIST_COMP_SCALE(LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_idx)%NUMBER_OF_COMPONENTS),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate LIST_COMP_SCALE in exelem io",ERR,ERROR,*999)
+       ENDIF   
 
        !check whether need to write out the nodal information header  
        IF(LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_idx)%SAME_HEADER==.FALSE.) THEN
@@ -5394,7 +5417,10 @@ CONTAINS
         
     CALL ENTERS("FIELD_IO_FORTRAN_FILE_OPEN",ERR,ERROR,*999)       
 
+    CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"OPEN FILE",ERR,ERROR,*999)
+
     OPEN(UNIT=FILE_ID, FILE=CHAR(FILE_NAME), STATUS=CHAR(FILE_STATUS), FORM="FORMATTED", ERR=999)   
+        
     
     CALL EXITS("FIELD_IO_FORTRAN_FILE_OPEN")
     RETURN
@@ -5470,9 +5496,11 @@ CONTAINS
     !Local Variables
   
     CALL ENTERS("FIELD_IO_FORTRAN_FILE_CLOSE",ERR,ERROR,*999)
+
+    CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"CLOSE FILE",ERR,ERROR,*999)
   
     CLOSE(UNIT=FILE_ID, ERR=999)
-  
+        
     CALL EXITS("FIELD_IO_FORTRAN_FILE_CLOSE")
     RETURN
 999 CALL ERRORS("FIELD_IO_FORTRAN_FILE_CLOSE",ERR,ERROR)
