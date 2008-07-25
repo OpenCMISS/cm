@@ -559,17 +559,11 @@ CONTAINS
     IF(METHOD=="FORTRAN") THEN
        CALL FIELD_IO_IMPORT_GLOBAL_MESH(NAME, REGION, MESH, MESH_USER_NUMBER, MASTER_COMPUTATIONAL_NUMBER, &
             & my_computational_node_number, USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER, MESH_COMPONENTS_OF_FIELD_COMPONENTS, &
-            & COMPONENTS_IN_FIELDS, NUMBER_OF_FIELDS, NUMBER_OF_EXNODE_FILES, ERR, ERROR, *999)
+            & COMPONENTS_IN_FIELDS, NUMBER_OF_FIELDS, NUMBER_OF_EXNODE_FILES, ERR, ERROR, *999)             
        
-       CALL DECOMPOSITION_CREATE_START(DECOMPOSITION_USER_NUMBER,MESH,DECOMPOSITION,ERR,ERROR,*999)
-       !Set the decomposition to be a general decomposition with the specified number of domains
-       CALL DECOMPOSITION_TYPE_SET(DECOMPOSITION,DECOMPOSITION_METHOD,ERR,ERROR,*999)
-       CALL DECOMPOSITION_NUMBER_OF_DOMAINS_SET(DECOMPOSITION,computational_node_numbers,ERR,ERROR,*999)
-       CALL DECOMPOSITION_CREATE_FINISH(MESH,DECOMPOSITION,ERR,ERROR,*999)
-       
-       
-       !CALL FIELD_IO_CREATE_DECOMPISTION(DECOMPOSITION, DECOMPOSITION_USER_NUMBER, DECOMPOSITION_METHOD, MESH, &
-       !     &computational_node_numbers, ERR, ERROR, *999)     
+       CALL FIELD_IO_CREATE_DECOMPISTION(DECOMPOSITION, DECOMPOSITION_USER_NUMBER, DECOMPOSITION_METHOD, MESH, &
+            &computational_node_numbers, ERR, ERROR, *999)
+                 
        CALL FIELD_IO_CREATE_FIELDS(NAME, REGION, DECOMPOSITION, FIELD_VALUES_SET_TYPE, NUMBER_OF_FIELDS, &
             &USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER, MESH_COMPONENTS_OF_FIELD_COMPONENTS, COMPONENTS_IN_FIELDS, &
             &NUMBER_OF_EXNODE_FILES, MASTER_COMPUTATIONAL_NUMBER, my_computational_node_number, FIELD_SCALING_TYPE, ERR, ERROR, *999)
@@ -674,6 +668,7 @@ CONTAINS
     INTEGER(INTG) :: idx_comp, idx_comp1, pos, idx_node, idx_node1, idx_field, idx_elem, idx_exnodes, idx_exelems, number_of_comp
     INTEGER(INTG) :: idx_basis, number_of_node, number_of_scalesets, idx_scl, idx_mesh_comp, current_mesh_comp, num_scl, num_scl_line
     LOGICAL :: FILE_EXIST, START_OF_ELEMENT_SECTION, FIELD_SECTION, SECTION_START, FILE_END
+    
     CALL ENTERS("FIELD_IO_IMPORT_GLOBAL_MESH",ERR,ERROR,*999)    
 
     !checking region pointer
@@ -806,7 +801,19 @@ CONTAINS
       NUMBER_OF_ELEMENTS=idx_elem
       NUMBER_OF_EXELEM_FILES=idx_exelems
     ENDIF !MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number           
+
         
+    !broadcasting the number of components in each field
+    CALL MPI_BCAST(NUMBER_OF_FIELDS,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+    CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+    IF(MASTER_COMPUTATIONAL_NUMBER/=my_computational_node_number) THEN 
+       IF(ALLOCATED(COMPONENTS_IN_FIELDS)) DEALLOCATE(COMPONENTS_IN_FIELDS)
+       ALLOCATE(COMPONENTS_IN_FIELDS(NUMBER_OF_FIELDS), STAT=ERR)
+       IF(ERR/=0) CALL FLAG_ERROR("can not allocate the momery for outputing components in field",ERR,ERROR,*999)
+       COMPONENTS_IN_FIELDS(:)=0
+    ENDIF
+    CALL MPI_BCAST(COMPONENTS_IN_FIELDS,NUMBER_OF_FIELDS,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+    CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)    
     !broadcasting the number of elements
     CALL MPI_BCAST(NUMBER_OF_ELEMENTS,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
     CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)       
@@ -843,7 +850,9 @@ CONTAINS
       NUMBER_OF_NODES=idx_node
       NUMBER_OF_EXNODE_FILES=idx_exnodes
     ENDIF !MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number           
-    
+        
+    CALL MPI_BCAST(NUMBER_OF_EXNODE_FILES,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+    CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)       
     !broadcasting the number of nodes
     CALL MPI_BCAST(NUMBER_OF_NODES,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
     CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)       
@@ -881,10 +890,11 @@ CONTAINS
     DO idx_node=1, NUMBER_OF_NODES
        IF(idx_node/=USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(idx_node)) CALL NODE_NUMBER_SET(idx_node, USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(idx_node), NODES, ERR,ERROR,*999)
     ENDDO        
-    CALL NODES_CREATE_FINISH(REGION,ERR,ERROR,*999)    
-    IF(ALLOCATED(USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER)) DEALLOCATE(USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER)
-    ALLOCATE(USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(NUMBER_OF_NODES), STAT=ERR)
-    IF(ERR/=0) CALL FLAG_ERROR("can not allocate nodal number mapping for output",ERR,ERROR,*999)
+    CALL NODES_CREATE_FINISH(REGION,ERR,ERROR,*999)
+        
+    !IF(ALLOCATED(USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER)) DEALLOCATE(USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER)
+    !ALLOCATE(USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(NUMBER_OF_NODES), STAT=ERR)
+    !IF(ERR/=0) CALL FLAG_ERROR("can not allocate nodal number mapping for output",ERR,ERROR,*999)
     !USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(:)=LIST_NODAL_NUMBER(:)
     !IF(ALLOCATED(LIST_NODAL_NUMBER)) DEALLOCATE(LIST_NODAL_NUMBER)
 
@@ -1108,12 +1118,14 @@ CONTAINS
     CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
     !ALLOCATE(LIST_BASES(NUMBER_OF_COMPONENTS),STAT=ERR)
     !IF(ERR/=0) CALL FLAG_ERROR("can not allocate list of bases",ERR,ERROR,*999)		    
-    FILE_END=.TRUE.
-    idx_exelems=-1
+
     IF(ALLOCATED(LIST_COMP_NODES)) DEALLOCATE(LIST_COMP_NODES) 
     ALLOCATE(LIST_COMP_NODES(NUMBER_OF_COMPONENTS),STAT=ERR)
     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate list of component nodal index ",ERR,ERROR,*999)             
     LIST_COMP_NODES(:)=0
+
+    FILE_END=.TRUE.
+    idx_exelems=-1        
     
     DO WHILE(idx_exelems<NUMBER_OF_EXELEM_FILES)              
        
@@ -1121,27 +1133,18 @@ CONTAINS
        !   CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"FUCK U in file:",idx_exelems, ERR,ERROR,*999)
           !PRINT *, idx_exelems
        !ENDIF     
-
-       IF(FILE_END==.TRUE.) idx_exelems=idx_exelems+1
+              
+       CALL MPI_BCAST(FILE_END,1,MPI_LOGICAL,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)                                              
+       
+       IF(FILE_END==.TRUE.) THEN
+          idx_exelems=idx_exelems+1
+          IF(idx_exelems>=NUMBER_OF_EXELEM_FILES) EXIT
+       ENDIF
               
        !goto the start of mesh part
        IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
-          
-          IF(FILE_END==.TRUE.) THEN
-             IF(idx_exelems<NUMBER_OF_EXELEM_FILES) THEN
-                FILE_ID=1030+idx_exelems
-                !checking the next file             
-                FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelems,"*",ERR,ERROR))//".exelem"
-                CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
-                FILE_END=.FALSE.
-                SECTION_START=.FALSE.
-                START_OF_ELEMENT_SECTION=.FALSE.
-             ELSE
-                FILE_END=.TRUE.
-                EXIT
-             ENDIF        
-          ENDIF
-          
+                    
           !IF(FILE_END==.FALSE..AND.START_OF_ELEMENT_SECTION==.FALSE.) THEN
           !   !check the beginning of element section          
           !   DO WHILE(VERIFY(CMISS_KEYWORD_SHAPE,LINE)/=0)
@@ -1149,6 +1152,17 @@ CONTAINS
           !   ENDDO
           !   START_OF_ELEMENT_SECTION=.TRUE.
           !ENDIF
+          
+          IF(FILE_END==.TRUE.) THEN
+             FILE_ID=1030+idx_exelems
+             !checking the next file             
+             FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelems,"*",ERR,ERROR))//".exelem"
+             CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
+             FILE_END=.FALSE.
+             SECTION_START=.FALSE.
+             START_OF_ELEMENT_SECTION=.FALSE.
+          ENDIF        
+          
           
           IF(FILE_END==.FALSE..AND.START_OF_ELEMENT_SECTION==.FALSE.) THEN !..AND.SECTION_START==.FALSE.) THEN    
              !find a new header
@@ -1357,14 +1371,14 @@ CONTAINS
              current_mesh_comp=current_mesh_comp+1
           ENDIF                   
        ENDDO !idx_comp    
-       !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"FILE_END:",FILE_END,ERR,ERROR,*999)                                                             
+       !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"FILE_END:",FILE_END,ERR,ERROR,*999)
+       
     ENDDO !idx_exelems<NUMBER_OF_EXELEM_FILES
     
     DO idx_comp=1, NUMBER_OF_MESH_COMPONENTS
        CALL MESH_TOPOLOGY_ELEMENTS_CREATE_FINISH(MESH,idx_comp, ERR,ERROR,*999)
     ENDDO           
-    CALL MESH_CREATE_FINISH(REGION,MESH,ERR,ERROR,*999)         
-    
+    CALL MESH_CREATE_FINISH(REGION,MESH,ERR,ERROR,*999)             
     
     IF(ALLOCATED(LIST_ELEMENT_NUMBER)) DEALLOCATE(LIST_ELEMENT_NUMBER)
     IF(ALLOCATED(ELEMENTS_PTR)) DEALLOCATE(ELEMENTS_PTR)
