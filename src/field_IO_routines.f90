@@ -1121,12 +1121,13 @@ CONTAINS
        !   CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"FUCK U in file:",idx_exelems, ERR,ERROR,*999)
           !PRINT *, idx_exelems
        !ENDIF     
-       
+
+       IF(FILE_END==.TRUE.) idx_exelems=idx_exelems+1
+              
        !goto the start of mesh part
        IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
           
           IF(FILE_END==.TRUE.) THEN
-             idx_exelems=idx_exelems+1             
              IF(idx_exelems<NUMBER_OF_EXELEM_FILES) THEN
                 FILE_ID=1030+idx_exelems
                 !checking the next file             
