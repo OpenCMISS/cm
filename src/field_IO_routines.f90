@@ -134,6 +134,55 @@ CONTAINS
   !================================================================================================================================
   !  
 
+  !>Get the field information 
+  SUBROUTINE FIELD_IO_FIELD_INFO(STRING, LABEL_TYPE, FIELD_TYPE , ERR, ERROR, *)
+    !Argument variables   
+    TYPE(VARYING_STRING), INTENT(IN) :: STRING
+    INTEGER(INTG), INTENT(IN) :: LABEL_TYPE !<identitor for information
+    INTEGER(INTG), INTENT(INOUT) :: FIELD_TYPE
+    !REAL(DP), OPTIONAL, INTENT(INOUT) :: FOCUS
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: pos
+    TYPE(VARYING_STRING) :: LINE, KEYWORD
+   
+    CALL ENTERS("FIELD_IO_FIELD_INFO",ERR,ERROR,*999)    
+    
+    LINE=STRING
+    
+    SELECT CASE(LABEL_TYPE)
+      CASE(FIELD_IO_FIELD_LABEL)
+        pos=INDEX(LINE, ",")
+        LINE=REMOVE(LINE, 1, pos)
+        pos=INDEX(LINE, ",")
+        KEYWORD=EXTRACT(LINE, 1, pos-1)
+        LINE=REMOVE(LINE, 1,pos)
+        KEYWORD=ADJUSTL(KEYWORD)
+        KEYWORD=TRIM(KEYWORD)
+        IF(KEYWORD=="coordinate") THEN
+           FIELD_TYPE=FIELD_GEOMETRIC_TYPE
+        ELSE IF (KEYWORD=="anatomical") THEN
+           FIELD_TYPE=FIELD_FIBRE_TYPE
+        ELSE
+           FIELD_TYPE=-1
+           CALL FLAG_ERROR("Cannot find corresponding field type from input string",ERR,ERROR,*999)   
+        ENDIF   
+      CASE DEFAULT
+        CALL FLAG_ERROR("Cannot find any information from input string",ERR,ERROR,*999)
+    END SELECT!CASE(LABEL_TYPE)
+             
+    CALL EXITS("FIELD_IO_FIELD_INFO")
+    RETURN
+999 CALL ERRORS("FIELD_IO_FIELD_INFO",ERR,ERROR)
+    CALL EXITS("FIELD_IO_FIELD_INFO")
+  END SUBROUTINE FIELD_IO_FIELD_INFO  
+
+
+  !
+  !================================================================================================================================
+  !  
+
   !>Get the derivative information               
   FUNCTION FIELD_IO_DERIVATIVE_INFO(LINE, ERR, ERROR)
     !Argument variables   
@@ -220,17 +269,18 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(FIELD_TYPE), POINTER :: FIELD !<field
+    TYPE(VARYING_STRING), ALLOCATABLE :: LIST_STR(:)
     TYPE(VARYING_STRING) :: FILE_NAME, FILE_STATUS, LINE, LINE1
     TYPE(VARYING_STRING) :: CMISS_KEYWORD_FIELDS, CMISS_KEYWORD_NODE, CMISS_KEYWORD_COMPONENTS
     TYPE(VARYING_STRING) :: CMISS_KEYWORD_VALUE_INDEX, CMISS_KEYWORD_DERIVATIVE
     INTEGER(INTG), ALLOCATABLE :: tmp_pointer(:), LIST_DEV(:), LIST_DEV_POS(:)
     INTEGER(INTG) :: FILE_ID
-    INTEGER(INTG) :: NUMBER_FIELDS
-    INTEGER(INTG) :: NODAL_USER_NUMBER
+    !INTEGER(INTG) :: NUMBER_FIELDS
+    INTEGER(INTG) :: NODAL_USER_NUMBER, FIELD_TYPE!, LABEL_TYPE, FOCUS
     INTEGER(INTG) :: MPI_IERROR
-    INTEGER(INTG) :: idx_comp, idx_comp1, pos, idx_field, idx_exnodes
-    INTEGER(INTG) :: idx_variable, idx_variable1, idx_dev, idx_dev1, total_number_of_comps, total_number_of_devs, number_of_devs
-    INTEGER(INTG) :: number_of_coms
+    INTEGER(INTG) :: idx_comp, idx_comp1, pos, idx_field, idx_exnode
+    INTEGER(INTG) :: idx_variable, idx_dev, idx_dev1, total_number_of_comps, total_number_of_devs, number_of_devs !idx_variable1
+    INTEGER(INTG) :: number_of_comps
     REAL(DP), ALLOCATABLE :: LIST_DEV_VALUE(:)
     LOGICAL :: SECTION_START, FILE_END, NODE_SECTION, FILE_OPEN
     
@@ -252,8 +302,72 @@ CONTAINS
     CMISS_KEYWORD_VALUE_INDEX="Value index="
     CMISS_KEYWORD_DERIVATIVE="#Derivatives="
     CMISS_KEYWORD_NODE="Node:"
-    
-    idx_variable1=0
+
+    FILE_END=.FALSE.
+    idx_exnode=0    
+    FILE_ID=1030
+    FILE_STATUS="OLD"
+    total_number_of_comps=0
+
+    !checking the field strings in exnode files
+    IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN      
+      
+      IF(ALLOCATED(LIST_STR)) DEALLOCATE(LIST_STR)
+      ALLOCATE(LIST_STR(NUMBER_OF_FIELDS),STAT=ERR)
+      IF(ERR/=0) CALL FLAG_ERROR("can not allocate list of strings for fields",ERR,ERROR,*999)
+      
+      DO WHILE(idx_exnode<NUMBER_OF_EXNODE_FILES)
+         
+         FILE_ID=1030+idx_exnode
+         !checking the next file
+         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnode,"*",ERR,ERROR))//".exnode"
+         !INQUIRE(FILE=CHAR(FILE_NAME), OPENED=FILE_OPEN) 
+         CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)         
+         SECTION_START=.FALSE.    
+         FILE_END=.FALSE. 
+          
+         DO WHILE(FILE_END==.FALSE.)    
+            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+            
+            !check the beginning of field section in exnode files
+            IF(SECTION_START==.FALSE..AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
+               SECTION_START=.TRUE.               
+            ENDIF   
+                       
+            !check whether it is a new header for another group of elements
+            IF(SECTION_START==.TRUE..AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
+               
+               !collect header information
+               pos=INDEX(LINE,CMISS_KEYWORD_FIELDS)               
+               LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_FIELDS)-1)
+               idx_field=STRING_TO_INTEGER(LINE, ERR,ERROR)
+               IF(idx_field/=NUMBER_OF_FIELDS) CALL FLAG_ERROR("find different field number in exnode files",ERR,ERROR,*999)
+               idx_comp=0
+               DO idx_field=1,NUMBER_OF_FIELDS
+                  CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+                  IF(idx_exnode==0) THEN
+                     LIST_STR(idx_field)=LINE
+                     pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)
+                     LINE=REMOVE(LINE, 1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENTS)-1)
+                     number_of_comps=STRING_TO_INTEGER(LINE, ERR,ERROR)    
+                     total_number_of_comps=total_number_of_comps+number_of_comps
+                  ELSE
+                     IF(LIST_STR(idx_field)/=LINE) CALL FLAG_ERROR("find different field information in exnode files",ERR,ERROR,*999)                     
+                  ENDIF      
+                  pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)               
+                  LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENTS)-1)
+                  number_of_comps=STRING_TO_INTEGER(LINE, ERR,ERROR)               
+                  DO idx_comp=1,number_of_comps
+                     CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+                  ENDDO !idx_comp1
+               ENDDO !idx_field               
+            ENDIF !START_OF_FIELD_SECTION==.TRUE..AND.(VERIFY(CMISS_KEYWORD_FIELD,LINE)==0)            
+         ENDDO !(FILE_END==.FALSE.)                                    
+         CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
+         idx_exnode=idx_exnode+1
+      ENDDO!idx_exnode<NUMBER_OF_EXNODE_FILES                                
+    ENDIF !MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number     
+
     idx_comp1=0
     DO idx_field=1,NUMBER_OF_FIELDS
        IF(ASSOCIATED(FIELD)) NULLIFY(FIELD)
@@ -269,44 +383,61 @@ CONTAINS
           idx_comp1=idx_comp1+1
           !Set the domain to be used by the field components
           CALL FIELD_COMPONENT_MESH_COMPONENT_SET(FIELD,1,idx_comp,MESH_COMPONENTS_OF_FIELD_COMPONENTS(idx_comp1), ERR,ERROR,*999)
-       ENDDO   
+       ENDDO
        !Set the scaling factor
        CALL FIELD_SCALING_TYPE_SET(FIELD, FIELD_SCALING_TYPE, ERR, ERROR, *999)
+       
+       IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
+          CALL FIELD_IO_FIELD_INFO(LIST_STR(idx_field), FIELD_IO_FIELD_LABEL, FIELD_TYPE, ERR, ERROR, *999)
+       ENDIF
+       CALL MPI_BCAST(FIELD_TYPE,1,MPI_LOGICAL,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)                                              
+       !Set FIELD TYPE
+       CALL FIELD_TYPE_SET(FIELD, FIELD_TYPE, ERR, ERROR, *999)
        !Finish creating the field
        CALL FIELD_CREATE_FINISH(REGION,FIELD,ERR,ERROR,*999)
-    ENDDO   
+    ENDDO
     
-    
+    IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
+       IF(ALLOCATED(LIST_STR)) DEALLOCATE(LIST_STR)
+    ENDIF
+        
     FILE_END=.TRUE.
-    idx_exnodes=-1
-    FILE_ID=1030    
+    idx_exnode=-1    
+    FILE_ID=1030
+    FILE_STATUS="OLD"
+
+    !broadcasting total_number_of_comps
+    CALL MPI_BCAST(total_number_of_comps,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+    CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)                           
+    IF(ALLOCATED(LIST_DEV_POS)) DEALLOCATE(LIST_DEV_POS)
+    ALLOCATE(LIST_DEV_POS(total_number_of_comps),STAT=ERR)
+    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate memory for nodal derivative position in field components",ERR, ERROR,*999)
     
-    DO WHILE(idx_exnodes<NUMBER_OF_EXNODE_FILES)              
+    DO WHILE(idx_exnode<NUMBER_OF_EXNODE_FILES)              
 
        CALL MPI_BCAST(FILE_END,1,MPI_LOGICAL,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
        CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)                                              
        
        IF(FILE_END==.TRUE.) THEN
-          idx_exnodes=idx_exnodes+1
-          IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN 
-             INQUIRE(UNIT=FILE_ID, OPENED=FILE_OPEN) 
-             IF(FILE_OPEN==.TRUE.) CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
-          ENDIF             
-          IF(idx_exnodes>=NUMBER_OF_EXNODE_FILES) EXIT
+          idx_exnode=idx_exnode+1
+          INQUIRE(UNIT=FILE_ID, OPENED=FILE_OPEN) 
+          IF(FILE_OPEN==.TRUE.) CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
+          IF(idx_exnode>=NUMBER_OF_EXNODE_FILES) EXIT
        ENDIF
        
        !goto the start of mesh part
        IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
           
           IF(FILE_END==.TRUE.) THEN             
-             FILE_ID=1030+idx_exnodes
+             FILE_ID=1030+idx_exnode
              !checking the next file
-             FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnodes,"*",ERR,ERROR))//".exnode"
+             FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnode,"*",ERR,ERROR))//".exnode"
              CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
              FILE_END=.FALSE.
              SECTION_START=.FALSE.
              NODE_SECTION=.FALSE.
-             idx_exnodes=idx_exnodes+1
+             idx_exnode=idx_exnode+1
           ENDIF
                     
           IF(FILE_END==.FALSE..AND.SECTION_START==.FALSE.)  THEN
@@ -322,7 +453,6 @@ CONTAINS
              pos=INDEX(LINE,CMISS_KEYWORD_FIELDS)
              LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_FIELDS)-1)
              !number_of_fields=STRING_TO_INTEGER(LINE, ERR, ERROR)             
-             total_number_of_comps=0
              total_number_of_devs=0
              idx_comp1=0
              idx_dev1=0
@@ -330,26 +460,10 @@ CONTAINS
                 CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
                 pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)
                 LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENTS)-1)
-                number_of_coms=STRING_TO_INTEGER(LINE, ERR, ERROR) 
-                total_number_of_comps=total_number_of_comps+number_of_coms          
+                !number_of_comps=STRING_TO_INTEGER(LINE, ERR, ERROR) 
+                !total_number_of_comps=total_number_of_comps+number_of_comps          
                 
-                IF(ALLOCATED(LIST_DEV_POS)) THEN                   
-                   ALLOCATE(tmp_pointer(total_number_of_comps-number_of_coms),STAT=ERR)
-                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary memory for nodal derivative index in master node", &
-                      &ERR,ERROR,*999)
-                   tmp_pointer(:)=LIST_DEV_POS(:)
-                   DEALLOCATE(LIST_DEV_POS)
-                   ALLOCATE(LIST_DEV_POS(total_number_of_comps),STAT=ERR)
-                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary memory for nodal derivative index in master node", &
-                      &ERR,ERROR,*999)
-                   LIST_DEV_POS(1:total_number_of_comps-number_of_coms)=tmp_pointer(:)
-                   DEALLOCATE(tmp_pointer)            
-                ELSE
-                   ALLOCATE(LIST_DEV_POS(total_number_of_comps),STAT=ERR)
-                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate memory for nodal derivative index",ERR,ERROR,*999)
-                ENDIF
-                
-                DO idx_comp=1, number_of_coms                   
+                DO idx_comp=1, number_of_comps                   
                    CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
                    pos=INDEX(LINE,".")
                    LINE=REMOVE(LINE,1, pos+1)
@@ -371,9 +485,9 @@ CONTAINS
                       ALLOCATE(tmp_pointer(total_number_of_devs-number_of_devs),STAT=ERR)
                       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary memory for nodal derivative index in master node", &
                          &ERR,ERROR,*999)
-                      tmp_pointer(:)=LIST_DEV_POS(:)
-                      DEALLOCATE(LIST_DEV_POS)
-                      ALLOCATE(LIST_DEV_POS(total_number_of_devs),STAT=ERR)
+                      tmp_pointer(:)=LIST_DEV(:)
+                      DEALLOCATE(LIST_DEV)
+                      ALLOCATE(LIST_DEV(total_number_of_devs),STAT=ERR)
                       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary memory for nodal derivative index in master node", &
                          &ERR,ERROR,*999)
                       LIST_DEV_POS(1:total_number_of_devs-number_of_devs)=tmp_pointer(:)
@@ -382,40 +496,38 @@ CONTAINS
                       ALLOCATE(LIST_DEV(total_number_of_devs),STAT=ERR)
                       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate memory for nodal derivative index",ERR,ERROR,*999)
                    ENDIF
-                                      
-                   pos=INDEX(LINE,"(")
-                   LINE=REMOVE(LINE,1, pos)
-                   pos=INDEX(LINE,")")
-                   LINE=REMOVE(LINE,pos, LEN(LINE))                                      
-                   idx_dev1=idx_dev1+1
-                   LIST_DEV(idx_dev1)=NO_PART_DERIV
-                   DO idx_dev=2, number_of_devs-1
+                   
+                   IF(number_of_devs<=1) THEN
                       idx_dev1=idx_dev1+1
-                      pos=INDEX(LINE,",")
-                      LINE1=EXTRACT(LINE, 1, pos-1)
-                      LINE=REMOVE(LINE, 1, pos)
-                      LIST_DEV(idx_dev1)=FIELD_IO_DERIVATIVE_INFO(LINE1, ERR,ERROR)
-                   ENDDO
-                   idx_dev1=idx_dev1+1
-                   LIST_DEV(idx_dev1)=FIELD_IO_DERIVATIVE_INFO(LINE, ERR,ERROR)                                        
+                      LIST_DEV(idx_dev1)=NO_PART_DERIV
+                   ELSE                       
+                      pos=INDEX(LINE,"(")
+                      LINE=REMOVE(LINE,1, pos)
+                      pos=INDEX(LINE,")")
+                      LINE=REMOVE(LINE,pos, LEN(LINE))                                      
+                      idx_dev1=idx_dev1+1
+                      LIST_DEV(idx_dev1)=NO_PART_DERIV
+                      DO idx_dev=2, number_of_devs-1
+                         idx_dev1=idx_dev1+1
+                         pos=INDEX(LINE,",")
+                         LINE1=EXTRACT(LINE, 1, pos-1)
+                         LINE=REMOVE(LINE, 1, pos)
+                         LIST_DEV(idx_dev1)=FIELD_IO_DERIVATIVE_INFO(LINE1, ERR,ERROR)
+                      ENDDO
+                      idx_dev1=idx_dev1+1
+                      LIST_DEV(idx_dev1)=FIELD_IO_DERIVATIVE_INFO(LINE, ERR,ERROR)
+                   ENDIF                                           
                 ENDDO !idx_comp
                 NODE_SECTION=.TRUE.              
              ENDDO !idx_field
           ENDIF  !FILE_END==.FALSE..AND.SECTION_START=.TRUE..AND.NODE_SECTION=.FALSE.                  
        ENDIF !MASTER_COMPUTATIONAL_NUMBER
 
-       !broadcasting total_number_of_comps
-       CALL MPI_BCAST(total_number_of_comps,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
-       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)                           
        !broadcasting total_number_of_devs
        CALL MPI_BCAST(total_number_of_devs,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
        CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)  
        
-       IF(MASTER_COMPUTATIONAL_NUMBER/=my_computational_node_number) THEN
-          IF(ALLOCATED(LIST_DEV_POS)) DEALLOCATE(LIST_DEV_POS)
-          ALLOCATE(LIST_DEV_POS(total_number_of_comps),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate memory for nodal derivative index in non-master node",ERR, ERROR,*999)
-          
+       IF(MASTER_COMPUTATIONAL_NUMBER/=my_computational_node_number) THEN          
           IF(ALLOCATED(LIST_DEV)) DEALLOCATE(LIST_DEV)
           ALLOCATE(LIST_DEV(total_number_of_devs),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate memory for nodal derivative index in non-master node",ERR, ERROR,*999)   
@@ -443,7 +555,7 @@ CONTAINS
                 LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_NODE)-1)
                 NODAL_USER_NUMBER=STRING_TO_INTEGER(LINE, ERR, ERROR)
                 idx_comp1=1
-                DO idx_comp=1, number_of_coms-1
+                DO idx_comp=1, number_of_comps-1
                    CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
                    CALL STRING_TO_MUTI_REALS_VS(LINE, LIST_DEV_POS(idx_comp+1)-LIST_DEV_POS(idx_comp), LIST_DEV_VALUE, ERR,ERROR, *999)    
                 ENDDO
@@ -474,9 +586,9 @@ CONTAINS
              ENDDO !idx_dev       
           ENDDO !idx_comp  
        ENDDO !idx_field      
-    ENDDO !idx_exnodes<NUMBER_OF_EXELEM_FILES  
+    ENDDO !idx_exnode<NUMBER_OF_EXELEM_FILES  
 
-    DO idx_field=1,NUMBER_FIELDS
+    DO idx_field=1,NUMBER_OF_FIELDS
        IF(ASSOCIATED(FIELD)) NULLIFY(FIELD)
        FIELD=>REGION%FIELDS%FIELDS(idx_field)%PTR
        CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
@@ -487,6 +599,7 @@ CONTAINS
     IF(ALLOCATED(LIST_DEV_VALUE)) DEALLOCATE(LIST_DEV_VALUE)
     IF(ALLOCATED(LIST_DEV)) DEALLOCATE(LIST_DEV)
     IF(ALLOCATED(LIST_DEV_POS)) DEALLOCATE(LIST_DEV_POS)
+ 	IF(ALLOCATED(LIST_STR)) DEALLOCATE(LIST_STR)
  	
     CALL EXITS("FIELD_IO_CREATE_FIELDS")
     RETURN
@@ -593,6 +706,7 @@ CONTAINS
 	IF(ALLOCATED(USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER)) DEALLOCATE(USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER)
 	IF(ALLOCATED(MESH_COMPONENTS_OF_FIELD_COMPONENTS)) DEALLOCATE(MESH_COMPONENTS_OF_FIELD_COMPONENTS)
 	IF(ALLOCATED(COMPONENTS_IN_FIELDS)) DEALLOCATE(COMPONENTS_IN_FIELDS)
+	!IF(ALLOCATED(LIST_FIELD_TYPE)) DEALLOCATE(LIST_FIELD_TYPE)
 	                     
     CALL EXITS("FIELD_IO_FILEDS_IMPORT")
     RETURN
@@ -672,7 +786,7 @@ CONTAINS
     TYPE(NODES_TYPE), POINTER :: NODES
     TYPE(MESH_ELEMENTS_TYPE_PTR_TYPE), ALLOCATABLE :: ELEMENTS_PTR(:) 
     TYPE(VARYING_STRING) :: FILE_NAME, FILE_STATUS, LINE
-    TYPE(VARYING_STRING) :: CMISS_KEYWORD_FIELD, CMISS_KEYWORD_ELEMENT, CMISS_KEYWORD_NODE, CMISS_KEYWORD_COMPONENT
+    TYPE(VARYING_STRING) :: CMISS_KEYWORD_FIELDS, CMISS_KEYWORD_ELEMENT, CMISS_KEYWORD_NODE, CMISS_KEYWORD_COMPONENTS
     TYPE(VARYING_STRING) :: CMISS_KEYWORD_SHAPE, CMISS_KEYWORD_SCALE_FACTOR_SETS, CMISS_KEYWORD_NODES, CMISS_KEYWORD_SCALE_FACTORS
     INTEGER(INTG), PARAMETER :: NUMBER_NODAL_LINES=3, NUMBER_SCALING_FACTORS_IN_LINE=5
     INTEGER(INTG), ALLOCATABLE :: LIST_ELEMENT_NUMBER(:), LIST_ELEMENTAL_NODES(:), LIST_COMP_NODAL_INDEX(:,:)
@@ -682,7 +796,7 @@ CONTAINS
     INTEGER(INTG) :: GLOBAL_ELEMENT_NUMBER
     INTEGER(INTG) :: MPI_IERROR
     INTEGER(INTG) :: SHAPE_INDEX(SHAPE_SIZE)
-    INTEGER(INTG) :: idx_comp, idx_comp1, pos, idx_node, idx_node1, idx_field, idx_elem, idx_exnodes, idx_exelems, number_of_comp
+    INTEGER(INTG) :: idx_comp, idx_comp1, pos, idx_node, idx_node1, idx_field, idx_elem, idx_exnode, idx_exelem, number_of_comp
     INTEGER(INTG) :: idx_basis, number_of_node, number_of_scalesets, idx_scl, idx_mesh_comp, current_mesh_comp, num_scl, num_scl_line
     LOGICAL :: FILE_EXIST, START_OF_ELEMENT_SECTION, FIELD_SECTION, SECTION_START, FILE_END, FILE_OPEN
     
@@ -714,10 +828,10 @@ CONTAINS
     FILE_STATUS="OLD"    
     CMISS_KEYWORD_SHAPE="Shape.  Dimension="//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))
     CMISS_KEYWORD_ELEMENT="Element:"
-    CMISS_KEYWORD_COMPONENT="#Components="
+    CMISS_KEYWORD_COMPONENTS="#Components="
     CMISS_KEYWORD_NODE="Node:"
     CMISS_KEYWORD_NODES="#Nodes="
-    CMISS_KEYWORD_FIELD="#Fields="
+    CMISS_KEYWORD_FIELDS="#Fields="
     CMISS_KEYWORD_SCALE_FACTOR_SETS="#Scale factor sets="
     CMISS_KEYWORD_SCALE_FACTORS="#Scale factors="
     
@@ -727,18 +841,18 @@ CONTAINS
     IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN  
       
       !the file name has to start from zero in an ascended order without break      
-      idx_exelems=0
+      idx_exelem=0
       idx_elem=0
       NUMBER_OF_COMPONENTS=0
-      FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelems,"*",ERR,ERROR))//".exelem"
+      FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelem,"*",ERR,ERROR))//".exelem"
       INQUIRE(FILE=CHAR(FILE_NAME), EXIST=FILE_EXIST)
       IF(FILE_EXIST==.FALSE.) THEN
-         CALL FLAG_ERROR("no file can be found, pls check again",ERR,ERROR,*999)
-         GOTO 999                       
+         CALL FLAG_ERROR("exelem files can be found, pls check again",ERR,ERROR,*999)
+         !GOTO 999                       
       ENDIF 
       DO WHILE(FILE_EXIST==.TRUE.)
          
-         FILE_ID=1030+idx_exelems
+         FILE_ID=1030+idx_exelem
          CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)         
          START_OF_ELEMENT_SECTION=.FALSE.
          FIELD_SECTION=.FALSE.
@@ -755,18 +869,18 @@ CONTAINS
             IF(START_OF_ELEMENT_SECTION==.TRUE..AND.(VERIFY(CMISS_KEYWORD_ELEMENT,LINE)==0)) idx_elem=idx_elem+1
             
             !check whether they have same numbers of fields
-            IF(START_OF_ELEMENT_SECTION==.TRUE..AND.(VERIFY(CMISS_KEYWORD_FIELD,LINE)==0)) THEN
+            IF(START_OF_ELEMENT_SECTION==.TRUE..AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
                idx_field=0
                idx_comp=0
                FIELD_SECTION=.TRUE.
-               pos=INDEX(LINE,CMISS_KEYWORD_FIELD)               
-               LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_FIELD)-1)               
-               IF(idx_exelems==0) THEN
+               pos=INDEX(LINE,CMISS_KEYWORD_FIELDS)               
+               LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_FIELDS)-1)               
+               IF(idx_exelem==0) THEN
                   NUMBER_OF_FIELDS=STRING_TO_INTEGER(LINE, ERR,ERROR)
                ELSE
                   IF(NUMBER_OF_FIELDS/=STRING_TO_INTEGER(LINE, ERR,ERROR)) THEN
                      CALL FLAG_ERROR("find different number of fields in the exelem files",ERR,ERROR,*999)
-                     GOTO 999
+                     !GOTO 999
                   ENDIF
                ENDIF
 
@@ -775,50 +889,49 @@ CONTAINS
                   IF(ERR/=0) CALL FLAG_ERROR("can not allocate the momery for outputing components in field",ERR,ERROR,*999)
                   COMPONENTS_IN_FIELDS(:)=0
                ENDIF   
-            ENDIF !START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_FIELD,LINE)==0  
+            ENDIF !START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0  
             
             !check whether they have same numbers of field components
-            IF(FIELD_SECTION==.TRUE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.(VERIFY(CMISS_KEYWORD_COMPONENT,LINE)==0)) THEN               
-               idx_field=idx_field+1
-               pos=INDEX(LINE,CMISS_KEYWORD_COMPONENT)               
-               LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENT)-1)
+            IF(FIELD_SECTION==.TRUE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.(VERIFY(CMISS_KEYWORD_COMPONENTS,LINE)==0)) THEN               
+               idx_field=idx_field+1               
+               pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)
+               LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENTS)-1)                                             
                idx_comp1=STRING_TO_INTEGER(LINE, ERR,ERROR)
                idx_comp=idx_comp+idx_comp1
                IF(idx_field>=NUMBER_OF_FIELDS) THEN   
-                  IF(idx_exelems==0) THEN
+                  IF(idx_exelem==0) THEN
                      NUMBER_OF_COMPONENTS=idx_comp
                      COMPONENTS_IN_FIELDS(idx_field)=idx_comp
                   ELSE
                      IF(NUMBER_OF_COMPONENTS/=idx_comp) THEN
                         CALL FLAG_ERROR("find different total number of components in the exelem files",ERR,ERROR,*999)
-                        GOTO 999
+                        !GOTO 999
                      ENDIF                     
                   ENDIF   
                   FIELD_SECTION=.FALSE.
                ENDIF
-               IF(idx_exelems==0) THEN
+               IF(idx_exelem==0) THEN
                  COMPONENTS_IN_FIELDS(idx_field)=idx_comp1
                ELSE
                  IF(COMPONENTS_IN_FIELDS(idx_field)/=idx_comp1) THEN
                     CALL FLAG_ERROR("find different number of components in one field in the exelem files",ERR,ERROR,*999)
-                    GOTO 999               
+                    !GOTO 999               
                  ENDIF
                ENDIF   
-            ENDIF !FIELD_SECTION==.TRUE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_COMPONENT,LINE
+            ENDIF !FIELD_SECTION==.TRUE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_COMPONENTS,LINE
             CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR,*999)                                       
          ENDDO !(FILE_END==.FALSE.)                  
                   
          CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
          !checking the next file
-         idx_exelems=idx_exelems+1
-         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelems,"*",ERR,ERROR))//".exelem"
+         idx_exelem=idx_exelem+1
+         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelem,"*",ERR,ERROR))//".exelem"
          INQUIRE(FILE=CHAR(FILE_NAME), EXIST=FILE_EXIST)
       ENDDO!FILE_EXIST==.TRUE.
-      !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Total number of exelment files = ",idx_exelems, ERR,ERROR,*999)
+      !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Total number of exelment files = ",idx_exelem, ERR,ERROR,*999)
       NUMBER_OF_ELEMENTS=idx_elem
-      NUMBER_OF_EXELEM_FILES=idx_exelems
+      NUMBER_OF_EXELEM_FILES=idx_exelem
     ENDIF !MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number           
-
         
     !broadcasting the number of components in each field
     CALL MPI_BCAST(NUMBER_OF_FIELDS,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
@@ -828,9 +941,15 @@ CONTAINS
        ALLOCATE(COMPONENTS_IN_FIELDS(NUMBER_OF_FIELDS), STAT=ERR)
        IF(ERR/=0) CALL FLAG_ERROR("can not allocate the momery for outputing components in field",ERR,ERROR,*999)
        COMPONENTS_IN_FIELDS(:)=0
+       !IF(ALLOCATED(LIST_FIELD_TYPE)) DEALLOCATE(LIST_FIELD_TYPE)
+       !ALLOCATE(LIST_FIELD_TYPE(NUMBER_OF_FIELDS), STAT=ERR)
+       !IF(ERR/=0) CALL FLAG_ERROR("can not allocate the momery for list of field types",ERR,ERROR,*999)
+       !LIST_FIELD_TYPE(:)=0
     ENDIF
     CALL MPI_BCAST(COMPONENTS_IN_FIELDS,NUMBER_OF_FIELDS,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
     CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)    
+    !CALL MPI_BCAST(LIST_FIELD_TYPE,NUMBER_OF_FIELDS,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+    !CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)    
     !broadcasting the number of elements
     CALL MPI_BCAST(NUMBER_OF_ELEMENTS,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
     CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)       
@@ -839,16 +958,16 @@ CONTAINS
     !calculate the number of nodes
     IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN     
       !the file name has to start from zero in a ascended order without break    
-      idx_exnodes=0
+      idx_exnode=0
       idx_node=0
-      FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnodes,"*",ERR,ERROR))//".exnode"
+      FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnode,"*",ERR,ERROR))//".exnode"
       INQUIRE(FILE=CHAR(FILE_NAME), EXIST=FILE_EXIST)
       IF(FILE_EXIST==.FALSE.) THEN
-         CALL FLAG_ERROR("no file can be found, pls check again",ERR,ERROR,*999)
-         GOTO 999                       
+         CALL FLAG_ERROR("exnode files can be found, pls check again",ERR,ERROR,*999)
+         !GOTO 999                       
       ENDIF 
       DO WHILE(FILE_EXIST==.TRUE.)      
-         FILE_ID=1030+idx_exnodes
+         FILE_ID=1030+idx_exnode
          CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
          FILE_END=.FALSE.
          
@@ -859,13 +978,13 @@ CONTAINS
          
          CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)         
          !checking the next file
-         idx_exnodes=idx_exnodes+1
-         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnodes,"*",ERR,ERROR))//".exnode"
+         idx_exnode=idx_exnode+1
+         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnode,"*",ERR,ERROR))//".exnode"
          INQUIRE(FILE=CHAR(FILE_NAME), EXIST=FILE_EXIST)
       ENDDO!FILE_EXIST==.TRUE.
-      !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Total number of exnode files = ",idx_exnodes, ERR,ERROR,*999)
+      !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Total number of exnode files = ",idx_exnode, ERR,ERROR,*999)
       NUMBER_OF_NODES=idx_node
-      NUMBER_OF_EXNODE_FILES=idx_exnodes
+      NUMBER_OF_EXNODE_FILES=idx_exnode
     ENDIF !MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number           
         
     CALL MPI_BCAST(NUMBER_OF_EXNODE_FILES,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
@@ -882,9 +1001,9 @@ CONTAINS
     IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN    
       !the file name has to start from zero in a ascended order without break
       idx_node=1
-      DO idx_exnodes=0, NUMBER_OF_EXNODE_FILES-1
-         FILE_ID=1030+idx_exnodes
-         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnodes,"*",ERR,ERROR))//".exnode"
+      DO idx_exnode=0, NUMBER_OF_EXNODE_FILES-1
+         FILE_ID=1030+idx_exnode
+         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnode,"*",ERR,ERROR))//".exnode"
          CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)                  
          FILE_END=.FALSE.
          DO WHILE(FILE_END==.FALSE.)    
@@ -931,14 +1050,14 @@ CONTAINS
       DO idx_comp=1,NUMBER_OF_COMPONENTS
          MESH_COMPONENT_LOOKUP(idx_comp,idx_comp)=1
       ENDDO
-      idx_exelems=0
+      idx_exelem=0
       
       !checking field component's mesh component by checking the basis           
-      DO WHILE(idx_exelems<NUMBER_OF_EXELEM_FILES)
+      DO WHILE(idx_exelem<NUMBER_OF_EXELEM_FILES)
          
-         FILE_ID=1030+idx_exelems
+         FILE_ID=1030+idx_exelem
          !checking the next file
-         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelems,"*",ERR,ERROR))//".exelem"
+         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelem,"*",ERR,ERROR))//".exelem"
          CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)         
          FIELD_SECTION=.FALSE.    
          FILE_END=.FALSE. 
@@ -952,17 +1071,17 @@ CONTAINS
             ENDIF   
                        
             !check whether it is a new header for another group of elements
-            IF(START_OF_ELEMENT_SECTION==.TRUE..AND.(VERIFY(CMISS_KEYWORD_FIELD,LINE)==0)) THEN
+            IF(START_OF_ELEMENT_SECTION==.TRUE..AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
                
                !collect header information
-               pos=INDEX(LINE,CMISS_KEYWORD_FIELD)               
-               LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_FIELD)-1)
+               pos=INDEX(LINE,CMISS_KEYWORD_FIELDS)               
+               LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_FIELDS)-1)
                NUMBER_OF_FIELDS=STRING_TO_INTEGER(LINE, ERR,ERROR)
                idx_comp=0
                DO idx_field=1,NUMBER_OF_FIELDS
                   CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-                  pos=INDEX(LINE,CMISS_KEYWORD_COMPONENT)               
-                  LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENT)-1)
+                  pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)               
+                  LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENTS)-1)
                   number_of_comp=STRING_TO_INTEGER(LINE, ERR,ERROR)               
                   DO idx_comp1=1,number_of_comp
                      idx_comp=idx_comp+1
@@ -997,20 +1116,20 @@ CONTAINS
                      ENDDO !idx_comp1   
                   ENDDO !idx_comp
                ELSE
-                  idx_exelems=NUMBER_OF_EXELEM_FILES!jump out of the loop
+                  idx_exelem=NUMBER_OF_EXELEM_FILES!jump out of the loop
                ENDIF    
-            ENDIF !START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_FIELD,LINE)==0  
+            ENDIF !START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0  
             
             !!check whether they have same numbers of field components
-            !IF(FIELD_SECTION==.TRUE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.(VERIFY(CMISS_KEYWORD_COMPONENT,LINE)==0)) THEN                             
+            !IF(FIELD_SECTION==.TRUE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.(VERIFY(CMISS_KEYWORD_COMPONENTS,LINE)==0)) THEN                             
             !   IF(idx_field>=NUMBER_OF_FIELDS) THEN   
             !      FIELD_SECTION=.FALSE.
             !   ENDIF   
-            !ENDIF !FIELD_SECTION==.TRUE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_COMPONENT,LINE             
+            !ENDIF !FIELD_SECTION==.TRUE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_COMPONENTS,LINE             
          ENDDO !(FILE_END==.FALSE.)                                    
          CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
-         idx_exelems=idx_exelems+1
-      ENDDO!idx_exelems=0, NUMBER_OF_EXELEM_FILES-1                            
+         idx_exelem=idx_exelem+1
+      ENDDO!idx_exelem=0, NUMBER_OF_EXELEM_FILES-1                            
       
       !calculate the number of mesh components
       IF(ALLOCATED(MESH_COMPONENTS_OF_FIELD_COMPONENTS)) DEALLOCATE(MESH_COMPONENTS_OF_FIELD_COMPONENTS)
@@ -1079,10 +1198,10 @@ CONTAINS
       
       !the file name has to start from zero in a ascended order without break
       idx_elem=1
-      DO idx_exelems=0, NUMBER_OF_EXELEM_FILES-1
+      DO idx_exelem=0, NUMBER_OF_EXELEM_FILES-1
          
-         FILE_ID=1030+idx_exelems
-         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelems,"*",ERR,ERROR))//".exelem"      
+         FILE_ID=1030+idx_exelem
+         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelem,"*",ERR,ERROR))//".exelem"      
          CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)         
          START_OF_ELEMENT_SECTION=.FALSE. 
          FILE_END=.FALSE.  
@@ -1114,7 +1233,7 @@ CONTAINS
          ENDDO !(FILE_END==.FALSE.)                  
                   
          CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
-      ENDDO!idx_exelems=0
+      ENDDO!idx_exelem=0
       CALL LIST_SORT(LIST_ELEMENT_NUMBER, ERR, ERROR, *999)      
     ENDIF !MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number           
     
@@ -1142,26 +1261,24 @@ CONTAINS
     LIST_COMP_NODES(:)=0
 
     FILE_END=.TRUE.
-    idx_exelems=-1
+    idx_exelem=-1
     FILE_ID=1030     
     
-    DO WHILE(idx_exelems<NUMBER_OF_EXELEM_FILES)              
+    DO WHILE(idx_exelem<NUMBER_OF_EXELEM_FILES)              
        
        !IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
-       !   CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"FUCK U in file:",idx_exelems, ERR,ERROR,*999)
-          !PRINT *, idx_exelems
+       !   CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"FUCK U in file:",idx_exelem, ERR,ERROR,*999)
+          !PRINT *, idx_exelem
        !ENDIF     
               
        CALL MPI_BCAST(FILE_END,1,MPI_LOGICAL,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
        CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)                                              
        
        IF(FILE_END==.TRUE.) THEN
-          idx_exelems=idx_exelems+1
-          IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
-             INQUIRE(UNIT=FILE_ID, OPENED=FILE_OPEN) 
-             IF(FILE_OPEN==.TRUE.) CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
-          ENDIF   
-          IF(idx_exelems>=NUMBER_OF_EXELEM_FILES) EXIT
+          idx_exelem=idx_exelem+1
+          INQUIRE(UNIT=FILE_ID, OPENED=FILE_OPEN) 
+          IF(FILE_OPEN==.TRUE.) CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
+          IF(idx_exelem>=NUMBER_OF_EXELEM_FILES) EXIT
        ENDIF
               
        !goto the start of mesh part
@@ -1176,9 +1293,9 @@ CONTAINS
           !ENDIF
           
           IF(FILE_END==.TRUE.) THEN
-             FILE_ID=1030+idx_exelems             
+             FILE_ID=1030+idx_exelem             
              !checking the next file             
-             FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelems,"*",ERR,ERROR))//".exelem"
+             FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelem,"*",ERR,ERROR))//".exelem"
              CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
              FILE_END=.FALSE.
              SECTION_START=.FALSE.
@@ -1233,14 +1350,14 @@ CONTAINS
              
              !read the header
              CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-             pos=INDEX(LINE,CMISS_KEYWORD_FIELD)               
-             LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_FIELD)-1)
+             pos=INDEX(LINE,CMISS_KEYWORD_FIELDS)               
+             LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_FIELDS)-1)
              NUMBER_OF_FIELDS=STRING_TO_INTEGER(LINE, ERR,ERROR)
              idx_comp=0
              DO idx_field=1,NUMBER_OF_FIELDS
                 CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-                pos=INDEX(LINE,CMISS_KEYWORD_COMPONENT)               
-                LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENT)-1)
+                pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)               
+                LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENTS)-1)
                 number_of_comp=STRING_TO_INTEGER(LINE, ERR,ERROR)               
                 DO idx_comp1=1,number_of_comp
                    idx_comp=idx_comp+1
@@ -1395,7 +1512,7 @@ CONTAINS
        ENDDO !idx_comp    
        !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"FILE_END:",FILE_END,ERR,ERROR,*999)
        
-    ENDDO !idx_exelems<NUMBER_OF_EXELEM_FILES
+    ENDDO !idx_exelem<NUMBER_OF_EXELEM_FILES
     
     DO idx_comp=1, NUMBER_OF_MESH_COMPONENTS
        CALL MESH_TOPOLOGY_ELEMENTS_CREATE_FINISH(MESH,idx_comp, ERR,ERROR,*999)
@@ -1942,7 +2059,7 @@ CONTAINS
              LABEL=FIELD_IO_BASIS_LHTP_FAMILY_LABEL(BASIS, num_scl, num_node, FIELD_IO_SCALE_FACTORS_NUMBER_TYPE, ERR,ERROR)
              IF(ERR/=0) THEN
                 CALL FLAG_ERROR("can not get basis type of lagrange_hermite label",ERR,ERROR,*999)     
-                GOTO 999               
+                !GOTO 999               
              ENDIF               
             !CASE(BASIS_SIMPLEX_TYPE)
             !  CALL BASIS_SIMPLEX_FAMILY_CREATE(BASIS,ERR,ERROR,*999)
@@ -1993,7 +2110,7 @@ CONTAINS
               &COMPONENTS(comp_idx)%PTR, FIELD_IO_VARIABLE_LABEL,ERR,ERROR)
           IF(ERR/=0) THEN
              CALL FLAG_ERROR("can not get variable label",ERR,ERROR,*999)     
-             GOTO 999               
+             !GOTO 999               
           ENDIF        
           LINE=TRIM(LABEL)//", #Components="//TRIM(NUMBER_TO_VSTRING(GROUP_VARIABLES(var_idx),"*",ERR,ERROR))                  
           CALL FIELD_IO_FORTRAN_FILE_WRITE_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)              
@@ -2004,7 +2121,7 @@ CONTAINS
             &COMPONENTS(comp_idx)%PTR, FIELD_IO_COMPONENT_LABEL,ERR,ERROR)
        IF(ERR/=0) THEN
           CALL FLAG_ERROR("can not get component label",ERR,ERROR,*999)     
-          GOTO 999               
+          !GOTO 999               
        ENDIF        
        LINE=TRIM(LABEL)//"."                          
        BASIS=>LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(LOCAL_ELEMENTAL_NUMBER)%COMPONENTS(comp_idx)%PTR%DOMAIN%&
@@ -2014,7 +2131,7 @@ CONTAINS
             LABEL=FIELD_IO_BASIS_LHTP_FAMILY_LABEL(BASIS, num_scl, num_node, FIELD_IO_SCALE_FACTORS_PROPERTY_TYPE, ERR,ERROR)
              IF(ERR/=0) THEN
                 CALL FLAG_ERROR("can not get basis type of lagrange_hermite label",ERR,ERROR,*999)     
-                GOTO 999               
+                !GOTO 999               
              ENDIF                           
             !CASE(BASIS_SIMPLEX_TYPE)
             !  CALL BASIS_SIMPLEX_FAMILY_CREATE(BASIS,ERR,ERROR,*999)
@@ -2145,14 +2262,14 @@ CONTAINS
     LINE=FIELD_IO_FILEDS_GROUP_INFO_GET(LOCAL_PROCESS_ELEMENTAL_INFO_SET%FIELDS, ERR,ERROR)    
     IF(ERR/=0) THEN
        CALL FLAG_ERROR("can not get group name in IO",ERR,ERROR,*999)     
-       GOTO 999               
+       !GOTO 999               
     ENDIF               
     CALL FIELD_IO_FORTRAN_FILE_WRITE_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)       
     !write out the number of files    
     LINE=FIELD_IO_MULTI_FILES_INFO_GET(computational_node_numbers, ERR, ERROR)      
     IF(ERR/=0) THEN
        CALL FLAG_ERROR("can not get multiple file information in IO",ERR,ERROR,*999)     
-       GOTO 999               
+       !GOTO 999               
     ENDIF             
     !CALL FIELD_IO_FORTRAN_FILE_WRITE_STRING(FILE_ID, LINE, LEN_Thttp://www.bioeng.auckland.ac.nz/home/home.phpRIM(LINE), ERR,ERROR,*999)       
 
@@ -4258,7 +4375,7 @@ CONTAINS
           &COMPONENTS(comp_idx1)%PTR, FIELD_IO_VARIABLE_LABEL,ERR,ERROR)
           IF(ERR/=0) THEN
              CALL FLAG_ERROR("can not get variable label",ERR,ERROR,*999)     
-             GOTO 999               
+             !GOTO 999               
           ENDIF        
           LINE=TRIM(LABEL)//", #Components="//TRIM(NUMBER_TO_VSTRING(GROUP_VARIABLES(global_var_idx),"*",ERR,ERROR))        
           CALL FIELD_IO_FORTRAN_FILE_WRITE_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)              
@@ -4269,7 +4386,7 @@ CONTAINS
              &COMPONENTS(comp_idx1)%PTR, FIELD_IO_COMPONENT_LABEL,ERR,ERROR)
              IF(ERR/=0) THEN
                 CALL FLAG_ERROR("can not get component label",ERR,ERROR,*999)     
-                GOTO 999               
+                !GOTO 999               
              ENDIF        
              LINE=TRIM(LABEL)//"."                          
              
@@ -4297,7 +4414,7 @@ CONTAINS
                 &FIELD_IO_DERIVATIVE_LABEL,ERR,ERROR)
              IF(ERR/=0) THEN
                 CALL FLAG_ERROR("can not get derivative label",ERR,ERROR,*999)     
-                GOTO 999               
+                !GOTO 999               
              ENDIF
              !assemble the header        
              LINE=LINE//"  Value index= "//TRIM(NUMBER_TO_VSTRING(value_idx,"*",ERR,ERROR))&
@@ -4945,14 +5062,14 @@ CONTAINS
     LINE=FIELD_IO_FILEDS_GROUP_INFO_GET(LOCAL_PROCESS_NODAL_INFO_SET%FIELDS, ERR,ERROR)    
     IF(ERR/=0) THEN
        CALL FLAG_ERROR("can not get group namein IO",ERR,ERROR,*999)     
-       GOTO 999               
+       !GOTO 999               
     ENDIF               
     CALL FIELD_IO_FORTRAN_FILE_WRITE_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)       
     !write out the number of files    
     LINE=FIELD_IO_MULTI_FILES_INFO_GET(computational_node_numbers, ERR, ERROR)      
     IF(ERR/=0) THEN
        CALL FLAG_ERROR("can not get multiple file information in IO",ERR,ERROR,*999)     
-       GOTO 999               
+       !GOTO 999               
     ENDIF             
     !CALL FIELD_IO_FORTRAN_FILE_WRITE_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)       
 
