@@ -530,13 +530,12 @@ CONTAINS
        IF(MASTER_COMPUTATIONAL_NUMBER/=my_computational_node_number) THEN          
           IF(ALLOCATED(LIST_DEV)) DEALLOCATE(LIST_DEV)
           ALLOCATE(LIST_DEV(total_number_of_devs),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate memory for nodal derivative index in non-master node",ERR, ERROR,*999)   
-          
-          IF(ALLOCATED(LIST_DEV_VALUE)) DEALLOCATE(LIST_DEV_VALUE)
-          ALLOCATE(LIST_DEV_VALUE(total_number_of_devs),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate memory for nodal derivative index in non-master node",ERR, ERROR,*999)                    
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate memory for nodal derivative index in non-master node",ERR, ERROR,*999)             
        ENDIF
-
+       IF(ALLOCATED(LIST_DEV_VALUE)) DEALLOCATE(LIST_DEV_VALUE)
+       ALLOCATE(LIST_DEV_VALUE(total_number_of_devs),STAT=ERR)
+       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate memory for nodal derivative index in non-master node",ERR, ERROR,*999)                    
+    
        !broadcasting total_number_of_comps
        CALL MPI_BCAST(LIST_DEV_POS,total_number_of_comps,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
        CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)                           
@@ -569,7 +568,9 @@ CONTAINS
        !broadcasting total_number_of_devs
        CALL MPI_BCAST(LIST_DEV_VALUE,total_number_of_devs,MPI_REAL,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
        CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
-       
+       CALL MPI_BCAST(NODAL_USER_NUMBER,1,MPI_REAL,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)       
+
        idx_comp1=0 
        idx_dev1=0  
        DO idx_field=1,NUMBER_OF_FIELDS
