@@ -276,9 +276,9 @@ CONTAINS
     INTEGER(INTG), ALLOCATABLE :: tmp_pointer(:), LIST_DEV(:), LIST_DEV_POS(:)
     INTEGER(INTG) :: FILE_ID
     !INTEGER(INTG) :: NUMBER_FIELDS
-    INTEGER(INTG) :: NODAL_USER_NUMBER, FIELD_TYPE!, LABEL_TYPE, FOCUS
+    INTEGER(INTG) :: NODAL_USER_NUMBER, FIELD_TYPE, NUMBER_NODAL_VALUE_LINES, NUMBER_OF_LINES, NUMBER_OF_COMPONENTS!, LABEL_TYPE, FOCUS
     INTEGER(INTG) :: MPI_IERROR
-    INTEGER(INTG) :: idx_comp, idx_comp1, pos, idx_field, idx_exnode
+    INTEGER(INTG) :: idx_comp, idx_comp1, pos, idx_field, idx_exnode, idx_nodal_line
     INTEGER(INTG) :: idx_variable, idx_dev, idx_dev1, total_number_of_comps, total_number_of_devs, number_of_devs !idx_variable1
     INTEGER(INTG) :: number_of_comps
     REAL(DP), ALLOCATABLE :: LIST_DEV_VALUE(:)
@@ -308,6 +308,8 @@ CONTAINS
     FILE_ID=1030
     FILE_STATUS="OLD"
     total_number_of_comps=0
+    NUMBER_NODAL_VALUE_LINES=5
+    NUMBER_OF_COMPONENTS=SUM(COMPONENTS_IN_FIELDS)
 
     !checking the field strings in exnode files
     IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN      
@@ -417,7 +419,7 @@ CONTAINS
     DO WHILE(idx_exnode<NUMBER_OF_EXNODE_FILES)              
 
        CALL MPI_BCAST(FILE_END,1,MPI_LOGICAL,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
-       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)                                              
+       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)                                                     
        
        IF(FILE_END==.TRUE.) THEN
           idx_exnode=idx_exnode+1
@@ -425,19 +427,21 @@ CONTAINS
           IF(FILE_OPEN==.TRUE.) CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
           IF(idx_exnode>=NUMBER_OF_EXNODE_FILES) EXIT
        ENDIF
+
+       !IF(MASTER_COMPUTATIONAL_NUMBER/=my_computational_node_number) PRINT * , idx_exnode
        
        !goto the start of mesh part
        IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
           
           IF(FILE_END==.TRUE.) THEN             
-             FILE_ID=1030+idx_exnode
+             FILE_ID=1030+idx_exnode             
              !checking the next file
              FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnode,"*",ERR,ERROR))//".exnode"
              CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
              FILE_END=.FALSE.
              SECTION_START=.FALSE.
              NODE_SECTION=.FALSE.
-             idx_exnode=idx_exnode+1
+             !idx_exnode=idx_exnode+1
           ENDIF
                     
           IF(FILE_END==.FALSE..AND.SECTION_START==.FALSE.)  THEN
@@ -460,7 +464,7 @@ CONTAINS
                 CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
                 pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)
                 LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENTS)-1)
-                !number_of_comps=STRING_TO_INTEGER(LINE, ERR, ERROR) 
+                number_of_comps=STRING_TO_INTEGER(LINE, ERR, ERROR) 
                 !total_number_of_comps=total_number_of_comps+number_of_comps          
                 
                 DO idx_comp=1, number_of_comps                   
@@ -480,8 +484,9 @@ CONTAINS
                    LINE1=EXTRACT(LINE,1,pos-1)
                    number_of_devs=STRING_TO_INTEGER(LINE, ERR, ERROR)+1
                    total_number_of_devs=total_number_of_devs+number_of_devs  
-                  
+                                      
                    IF(ALLOCATED(LIST_DEV)) THEN                   
+                      IF(ALLOCATED(tmp_pointer)) DEALLOCATE(tmp_pointer)
                       ALLOCATE(tmp_pointer(total_number_of_devs-number_of_devs),STAT=ERR)
                       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary memory for nodal derivative index in master node", &
                          &ERR,ERROR,*999)
@@ -490,16 +495,19 @@ CONTAINS
                       ALLOCATE(LIST_DEV(total_number_of_devs),STAT=ERR)
                       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary memory for nodal derivative index in master node", &
                          &ERR,ERROR,*999)
-                      LIST_DEV_POS(1:total_number_of_devs-number_of_devs)=tmp_pointer(:)
+                      LIST_DEV(1:total_number_of_devs-number_of_devs)=tmp_pointer(:)
                       DEALLOCATE(tmp_pointer)            
                    ELSE
                       ALLOCATE(LIST_DEV(total_number_of_devs),STAT=ERR)
                       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate memory for nodal derivative index",ERR,ERROR,*999)
                    ENDIF
                    
+                   !print *, idx_dev1, NO_PART_DERIV, LIST_DEV
+                   
                    IF(number_of_devs<=1) THEN
-                      idx_dev1=idx_dev1+1
+                      idx_dev1=idx_dev1+1                      
                       LIST_DEV(idx_dev1)=NO_PART_DERIV
+                      !print *, idx_dev1, NO_PART_DERIV, LIST_DEV
                    ELSE                       
                       pos=INDEX(LINE,"(")
                       LINE=REMOVE(LINE,1, pos)
@@ -555,10 +563,21 @@ CONTAINS
                 NODAL_USER_NUMBER=STRING_TO_INTEGER(LINE, ERR, ERROR)
                 idx_comp1=1
                 DO idx_comp=1, number_of_comps-1
-                   CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
-                   CALL STRING_TO_MUTI_REALS_VS(LINE, LIST_DEV_POS(idx_comp+1)-LIST_DEV_POS(idx_comp), LIST_DEV_VALUE, ERR,ERROR, *999)    
+                   IF(LIST_DEV_POS(idx_comp+1)-LIST_DEV_POS(idx_comp)<=NUMBER_NODAL_VALUE_LINES) THEN
+                      CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
+                      CALL STRING_TO_MUTI_REALS_VS(LINE, LIST_DEV_POS(idx_comp+1)-LIST_DEV_POS(idx_comp), LIST_DEV_VALUE, LIST_DEV_POS(idx_comp), ERR,ERROR, *999)
+                   ELSE
+                      NUMBER_OF_LINES=(LIST_DEV_POS(idx_comp+1)-LIST_DEV_POS(idx_comp))/NUMBER_NODAL_VALUE_LINES
+                      DO idx_nodal_line=1, NUMBER_OF_LINES
+                         CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
+                         CALL STRING_TO_MUTI_REALS_VS(LINE, NUMBER_NODAL_VALUE_LINES, LIST_DEV_VALUE, LIST_DEV_POS(idx_comp)+(idx_nodal_line-1)*NUMBER_NODAL_VALUE_LINES, ERR,ERROR, *999)                      
+                      ENDDO
+                      CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
+                      CALL STRING_TO_MUTI_REALS_VS(LINE, (LIST_DEV_POS(idx_comp+1)-LIST_DEV_POS(idx_comp))-NUMBER_NODAL_VALUE_LINES*NUMBER_OF_LINES, LIST_DEV_VALUE, LIST_DEV_POS(idx_comp)+(idx_nodal_line-1)*NUMBER_NODAL_VALUE_LINES, ERR,ERROR, *999)                                            
+                   ENDIF       
                 ENDDO
-                CALL STRING_TO_MUTI_REALS_VS(LINE, total_number_of_devs-LIST_DEV_POS(idx_comp)+1, LIST_DEV_VALUE, ERR,ERROR, *999)                
+                CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
+                CALL STRING_TO_MUTI_REALS_VS(LINE, total_number_of_devs-LIST_DEV_POS(idx_comp)+1, LIST_DEV_VALUE, LIST_DEV_POS(idx_comp), ERR,ERROR, *999)                
              ELSE
                 NODE_SECTION=.TRUE.
              ENDIF !(VERIFY(CMISS_KEYWORD_NODE , LINE)==0)
@@ -566,32 +585,53 @@ CONTAINS
        ENDIF  !(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number)  
        
        !broadcasting total_number_of_devs
-       CALL MPI_BCAST(LIST_DEV_VALUE,total_number_of_devs,MPI_REAL,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+       CALL MPI_BCAST(LIST_DEV_VALUE,total_number_of_devs,MPI_REAL8,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
        CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
-       CALL MPI_BCAST(NODAL_USER_NUMBER,1,MPI_REAL,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+       CALL MPI_BCAST(NODAL_USER_NUMBER,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
        CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)       
-
+       
+       IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
+       print *, "user number:"
+       print *, NODAL_USER_NUMBER
+       print *, LIST_DEV_VALUE
+       ENDIF
+       
        idx_comp1=0 
-       idx_dev1=0  
+       idx_dev1=0 
+       idx_variable=1 
        DO idx_field=1,NUMBER_OF_FIELDS
           IF(ASSOCIATED(FIELD)) NULLIFY(FIELD)
           FIELD=>REGION%FIELDS%FIELDS(idx_field)%PTR
           DO idx_comp=1, COMPONENTS_IN_FIELDS(idx_field)
              idx_comp1=idx_comp1+1
-             DO idx_dev=1, LIST_DEV_POS(idx_comp1+1)-LIST_DEV_POS(idx_comp1)
-                idx_dev1=idx_dev1+1
-                !Set the domain to be used by the field components
-                CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_VALUES_SET_TYPE, LIST_DEV(idx_dev1), & 
-                   &USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(NODAL_USER_NUMBER), idx_comp, idx_variable, LIST_DEV_VALUE(idx_dev1),&
-                   &ERR, ERROR, *999)                        
-             ENDDO !idx_dev       
-          ENDDO !idx_comp  
+             IF(idx_comp1>=NUMBER_OF_COMPONENTS) THEN
+                DO idx_dev=1, total_number_of_devs-LIST_DEV_POS(idx_comp1)+1
+                   idx_dev1=idx_dev1+1
+                   !Set the domain to be used by the field components
+                   CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_VALUES_SET_TYPE, LIST_DEV(idx_dev1), & 
+                      &USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(NODAL_USER_NUMBER), idx_comp, idx_variable, LIST_DEV_VALUE(idx_dev1),&
+                      &ERR, ERROR, *999)                        
+                   !print *, "n--n"                   
+                ENDDO !idx_dev                    
+             ELSE
+                DO idx_dev=1, LIST_DEV_POS(idx_comp1+1)-LIST_DEV_POS(idx_comp1)
+                   idx_dev1=idx_dev1+1
+                   !Set the domain to be used by the field components
+                   CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_VALUES_SET_TYPE, LIST_DEV(idx_dev1), & 
+                      &USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(NODAL_USER_NUMBER), idx_comp, idx_variable, LIST_DEV_VALUE(idx_dev1),&
+                      &ERR, ERROR, *999)                        
+                   !print *, "n--n"                   
+                ENDDO !idx_dev    
+             ENDIF      
+          ENDDO !idx_comp
        ENDDO !idx_field      
-    ENDDO !idx_exnode<NUMBER_OF_EXELEM_FILES  
-
+    ENDDO !idx_exnode<NUMBER_OF_EXELEM_FILES      
+    
+    !print *, "out of loop"
+    
     DO idx_field=1,NUMBER_OF_FIELDS
        IF(ASSOCIATED(FIELD)) NULLIFY(FIELD)
-       FIELD=>REGION%FIELDS%FIELDS(idx_field)%PTR
+       FIELD=>REGION%FIELDS%FIELDS(idx_field)%PTR	
        CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
        CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
     ENDDO
@@ -5664,7 +5704,7 @@ CONTAINS
     RETURN 1
   END SUBROUTINE STRING_TO_MUTI_INTEGERS_VS
 
-  SUBROUTINE STRING_TO_MUTI_REALS_VS(STRING, NUMBER_OF_REALS, REAL_DATA, ERR, ERROR, *)
+  SUBROUTINE STRING_TO_MUTI_REALS_VS(STRING, NUMBER_OF_REALS, REAL_DATA, POSITION, ERR, ERROR, *)
   
     !#### Function: STRING_TO_INTEGER_VS
     !###  Type: INTEGER(INTG)
@@ -5676,10 +5716,12 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(IN) :: STRING
     REAL(DP), INTENT(INOUT) :: REAL_DATA(:)
     INTEGER(INTG), INTENT(IN) :: NUMBER_OF_REALS
+    INTEGER(INTG), INTENT(IN) :: POSITION
     INTEGER(INTG), INTENT(OUT) :: ERR
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING, LOCAL_STRING1
+    CHARACTER(256) :: CHAR_BUFF
     INTEGER(INTG) :: idx, pos
     
     CALL ENTERS("STRING_TO_MUTI_REALS_VS",ERR,ERROR,*999)
@@ -5693,12 +5735,15 @@ CONTAINS
        LOCAL_STRING=TRIM(LOCAL_STRING)
        pos=INDEX(LOCAL_STRING, " ")
        LOCAL_STRING1=EXTRACT(LOCAL_STRING, 1, pos-1)
-       REAL_DATA(idx)=STRING_TO_DOUBLE(LOCAL_STRING1, ERR, ERROR)
+       CHAR_BUFF=CHAR(LOCAL_STRING1)
+       READ(CHAR_BUFF,"(ES)",IOSTAT=ERR,ERR=999) REAL_DATA(idx+POSITION-1)
        LOCAL_STRING=REMOVE(LOCAL_STRING,1,pos)
     ENDDO
     LOCAL_STRING=ADJUSTL(LOCAL_STRING)
     LOCAL_STRING=TRIM(LOCAL_STRING)
-    REAL_DATA(idx)=STRING_TO_DOUBLE(LOCAL_STRING, ERR, ERROR)
+    CHAR_BUFF=CHAR(LOCAL_STRING)
+    READ(CHAR_BUFF,"(ES)",IOSTAT=ERR,ERR=999) REAL_DATA(idx+POSITION-1)
+    !REAL_DATA(idx+POSITION-1)=STRING_TO_DOUBLE(LOCAL_STRING, ERR, ERROR)
 
     CALL EXITS("STRING_TO_MUTI_REALS_VS")
     RETURN
