@@ -92,37 +92,61 @@ MODULE CONSTANTS
   INTEGER(INTG), PARAMETER :: QUADRUPLE_COMPLEX_TYPE=11  !<Quadruple precision complex data type \see CONSTANTS_DataTypes,CONSTANTS
   !>@}
 
-  !Endian parameters
-  INTEGER(INTG), PARAMETER :: BIG_ENDIAN_NUMBER=1
-  INTEGER(INTG), PARAMETER :: LITTLE_ENDIAN_NUMBER=2
+  !> \addtogroup CONSTANTS_EndianTypes CONSTANTS::EndianTypes
+  !> Endian type parameters
+  !> \see CONSTANTS
+  !>@{ 
+  INTEGER(INTG), PARAMETER :: BIG_ENDIAN_NUMBER=1 !<Big endian number type \see CONSTANTS_EndianTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: LITTLE_ENDIAN_NUMBER=2 !<Little endian number type \see CONSTANTS_EndianTypes,CONSTANTS
+  !>@}
 
-  !Character parameters
-  INTEGER(INTG), PARAMETER :: ASCII_CHARACTER=1
-  INTEGER(INTG), PARAMETER :: UNICODE_CHARACTER=2
+  !> \addtogroup CONSTANTS_CharacterFormatTypes CONSTANTS::CharacterFormatTypes
+  !> Bit format types for characters
+  !> \see CONSTANTS
+  !>@{ 
+  INTEGER(INTG), PARAMETER :: ASCII_CHARACTER=1 !<ASCII character type \see CONSTANTS_CharacterFormatTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: UNICODE_CHARACTER=2 !<Unicode character type \see CONSTANTS_CharacterFormatTypes,CONSTANTS
+  !>@}
 
-  !Integer number parameters
-  INTEGER(INTG), PARAMETER :: TWOS_COMPLEMENT_INTEGER=1
-  INTEGER(INTG), PARAMETER :: SIGNED_MAGNITUDE_INTEGER=2
+  !> \addtogroup CONSTANTS_IntegerTypes CONSTANTS::IntegerTypes
+  !> Bit format types for integers
+  !> \see CONSTANTS
+  !>@{ 
+  INTEGER(INTG), PARAMETER :: TWOS_COMPLEMENT_INTEGER=1 !<Twos complement integer type \see CONSTANTS_IntegerFormatTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: SIGNED_MAGNITUDE_INTEGER=2 !<Signed magnitude integer type \see CONSTANTS_IntegerFormatTypes,CONSTANTS
+  !>@}
 
-  !Real number parameters
-  INTEGER(INTG), PARAMETER :: SPIEEE_NUMBER=1
-  INTEGER(INTG), PARAMETER :: DPIEEE_NUMBER=2
+  !> \addtogroup CONSTANTS_RealFormatTypes CONSTANTS::RealFormatTypes
+  !> Bit format types for reals
+  !> \see CONSTANTS
+  !>@{ 
+  INTEGER(INTG), PARAMETER :: SPIEEE_NUMBER=1 !<Single precision IEEE real type \see CONSTANTS_RealFormatTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: DPIEEE_NUMBER=2 !<Double precision IEEE real type \see CONSTANTS_RealFormatTypes,CONSTANTS
+  !>@}
 
-  !Computer systems parameters
-  INTEGER(INTG), PARAMETER :: DEC_COMPUTER=1
-  INTEGER(INTG), PARAMETER :: SGI_COMPUTER=2
-  INTEGER(INTG), PARAMETER :: IBM_COMPUTER=3
-  INTEGER(INTG), PARAMETER :: CRAY_COMPUTER=4
-  INTEGER(INTG), PARAMETER :: PC_COMPUTER=5
-  INTEGER(INTG), PARAMETER :: UNKNOWN_COMPUTER=255
+  !> \addtogroup CONSTANTS_ComputerSystemTypes CONSTANTS::ComputerSystemTypes
+  !> Computer system type parameters
+  !> \see CONSTANTS
+  !>@{ 
+  INTEGER(INTG), PARAMETER :: DEC_COMPUTER=1 !<Digital computer system type \see CONSTANTS_ComputerSystemTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: SGI_COMPUTER=2 !<Silicon Graphics computer system type \see CONSTANTS_ComputerSystemTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: IBM_COMPUTER=3 !<IBM system type \see CONSTANTS_ComputerSystemTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: CRAY_COMPUTER=4 !<Cray computer system type \see CONSTANTS_ComputerSystemTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: PC_COMPUTER=5 !<PC computer system type \see CONSTANTS_ComputerSystemTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: UNKNOWN_COMPUTER=255 !<Unknown computer system type \see CONSTANTS_ComputerSystemTypes,CONSTANTS
+  !>@}
   
-  !Operating systems parameters
-  INTEGER(INTG), PARAMETER :: VMS_OS=1
-  INTEGER(INTG), PARAMETER :: IRIX_OS=2
-  INTEGER(INTG), PARAMETER :: WINDOWS_OS=3
-  INTEGER(INTG), PARAMETER :: LINUX_OS=4
-  INTEGER(INTG), PARAMETER :: AIX_OS=5
-  INTEGER(INTG), PARAMETER :: UNKNOWN_OS=255
+  !> \addtogroup CONSTANTS_OperatingSystemTypes CONSTANTS::OperatingSystemTypes
+  !> Operating system type parameters
+  !> \see CONSTANTS
+  !>@{ 
+  INTEGER(INTG), PARAMETER :: VMS_OS=1 !<VMS operating system type \see CONSTANTS_OperatingSystemTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: IRIX_OS=2 !<IRIX operating system type \see CONSTANTS_OperatingSystemTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: WINDOWS_OS=3 !<Windows operating system type \see CONSTANTS_OperatingSystemTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: LINUX_OS=4 !<Linux operating system type \see CONSTANTS_OperatingSystemTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: AIX_OS=5 !<AIX operating system type \see CONSTANTS_OperatingSystemTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: UNKNOWN_OS=255 !<Unknown operating system type \see CONSTANTS_OperatingSystemTypes,CONSTANTS
+  !>@}
 
   !> \addtogroup CONSTANTS_LibraryTypes CONSTANTS::LibraryTypes
   !> \brief Library type identifiers
@@ -132,7 +156,6 @@ MODULE CONSTANTS
   INTEGER(INTG), PARAMETER :: LIBRARY_PETSC_TYPE=2 !<PETSc library type \see CONSTANTS_LibraryTypes,CONSTANTS
   !>@}
 
-  
   !> \addtogroup CONSTANTS_PartialDerivativeConstants CONSTANTS::PartialDerivativeConstants
   !> \brief Partial derivative constant identifiers
   !> \see CONSTANTS

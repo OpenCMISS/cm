@@ -57,6 +57,7 @@ MODULE CMISS
   USE ISO_VARYING_STRING
   USE KINDS
   USE MACHINE_CONSTANTS
+  USE PROBLEM_ROUTINES
   USE REGION_ROUTINES
   USE TYPES
 
@@ -94,6 +95,8 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(INOUT) :: ERROR !<The error code
     !Local Variables
 
+    !Finalise the problems
+    CALL PROBLEMS_FINALISE(ERR,ERROR,*999)
     !Finalise the regions
     CALL REGIONS_FINALISE(ERR,ERROR,*999)
     !Finalise the coordinate systems
@@ -131,6 +134,8 @@ CONTAINS
     CALL COORDINATE_SYSTEMS_INITIALISE(ERR,ERROR,*999)
     !Initialise the regions
     CALL REGIONS_INITIALISE(ERR,ERROR,*999)
+    !Initialise the problems
+    CALL PROBLEMS_FINALISE(ERR,ERROR,*999)
     
     RETURN
 999 RETURN 1

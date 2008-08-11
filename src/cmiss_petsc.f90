@@ -56,6 +56,7 @@ MODULE CMISS_PETSC
 #include "include/finclude/petscksp.h"
 #include "include/finclude/petscmat.h"
 #include "include/finclude/petscpc.h"
+#include "include/finclude/petscsnes.h"
 #include "include/finclude/petscvec.h"
 #include "include/finclude/petscviewer.h"
 
@@ -165,6 +166,11 @@ MODULE CMISS_PETSC
     PC :: PC_
   END TYPE PETSC_PC_TYPE
 
+  TYPE PETSC_SNES_TYPE
+    PRIVATE
+    SNES :: SNES_
+  END TYPE PETSC_SNES_TYPE
+  
   TYPE PETSC_VEC_TYPE
     PRIVATE
     PetscScalar :: VEC_DATA(1)
@@ -956,15 +962,15 @@ CONTAINS
 
     !Argument Variables
     TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE), INTENT(IN), INTENT(IN) :: CTX !<The local to global mapping context
-    INTEGER(INTG), INTENT(IN) :: ISIN
-    INTEGER(INTG), INTENT(OUT) :: ISOUT
+    TYPE(PETSC_IS_TYPE), INTENT(IN) :: ISIN
+    TYPE(PETSC_IS_TYPE), INTENT(OUT) :: ISOUT
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_ISLOCALTOGLOBALMAPPINGAPPLYIS",ERR,ERROR,*999)
 
-    CALL ISLocalToGlobalMappingApplyIS(CTX%ISLOCALTOGLOBALMAPPING_,ISIN,ISOUT,ERR)
+    CALL ISLocalToGlobalMappingApplyIS(CTX%ISLOCALTOGLOBALMAPPING_,ISIN%IS_,ISOUT%IS_,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)

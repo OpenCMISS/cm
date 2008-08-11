@@ -332,7 +332,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the mesh component number for a field variable component identified by a user number, component number and variable number on a region.
+  !>Sets/changes the mesh component number for a field variable component identified by a user number, component number and variable number on a region. \todo change variable number to variable type.
   SUBROUTINE FIELD_COMPONENT_MESH_COMPONENT_SET_NUMBER(USER_NUMBER,FIELD_VARIABLE_NUMBER,FIELD_COMPONENT_NUMBER,REGION, &
     & MESH_COMPONENT_NUMBER,ERR,ERROR,*)
 
@@ -1116,19 +1116,18 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Destroys a field identified by a pointer to a field on a region and deallocates all memory
-  SUBROUTINE FIELD_DESTROY(FIELD,REGION,ERR,ERROR,*)
+  !>Destroys a field identified by a pointer to a field.
+  SUBROUTINE FIELD_DESTROY(FIELD,ERR,ERROR,*)
 
     !Argument variables
     TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to destroy
-    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containg the field
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: field_idx,field_position,field_position2
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(FIELD_TYPE), POINTER :: FIELD2,GEOMETRIC_FIELD
     TYPE(FIELD_PTR_TYPE), POINTER :: NEW_FIELDS(:),NEW_FIELDS_USING(:)
+    TYPE(REGION_TYPE), POINTER :: REGION
 
     NULLIFY(NEW_FIELDS)
     NULLIFY(NEW_FIELDS_USING)
@@ -1136,83 +1135,67 @@ CONTAINS
     CALL ENTERS("FIELD_DESTROY",ERR,ERROR,*999)
 
     IF(ASSOCIATED(FIELD)) THEN
+      REGION=>FIELD%REGION
       IF(ASSOCIATED(REGION)) THEN
-        IF(ASSOCIATED(REGION%FIELDS)) THEN
-          IF(ASSOCIATED(FIELD%REGION)) THEN
-            IF(FIELD%REGION%USER_NUMBER==REGION%USER_NUMBER) THEN
-              field_position=FIELD%GLOBAL_NUMBER
-              GEOMETRIC_FIELD=>FIELD%GEOMETRIC_FIELD
-              IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
-                !Delete this field from the list of fields using the geometric field.
-                field_position2=0
-                DO field_idx=1,GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_FIELDS_USING
-                  FIELD2=>GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING(field_idx)%PTR
-                  IF(FIELD2%USER_NUMBER==FIELD%USER_NUMBER) THEN
-                    field_position2=field_idx
-                    EXIT
-                  ENDIF
-                ENDDO !field_idx
-                IF(field_position2/=0) THEN
-                  ALLOCATE(NEW_FIELDS_USING(GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_FIELDS_USING+1),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new fields using",ERR,ERROR,*999)
-                  DO field_idx=1,GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_FIELDS_USING
-                    IF(field_idx<field_position2) THEN
-                      NEW_FIELDS_USING(field_idx)%PTR=>GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING(field_idx)%PTR
-                    ELSE IF(field_idx>field_position2) THEN
-                      NEW_FIELDS_USING(field_idx-1)%PTR=>GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING(field_idx)%PTR
-                    ENDIF
-                  ENDDO !field_idx
-                  GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_FIELDS_USING=GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS% &
-                    & NUMBER_OF_FIELDS_USING-1
-                  IF(ASSOCIATED(GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING)) &
-                    & DEALLOCATE(GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING)
-                  GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING=>NEW_FIELDS_USING
-                ELSE
-                  !??? Error
-                ENDIF
-              ENDIF
-              CALL FIELD_SCALINGS_FINALISE(FIELD,ERR,ERROR,*999)
-              CALL FIELD_VARIABLES_FINALISE(FIELD,ERR,ERROR,*999)
-              CALL FIELD_CREATE_VALUES_CACHE_FINALISE(FIELD,ERR,ERROR,*999)
-              CALL FIELD_GEOMETRIC_PARAMETERS_FINALISE(FIELD,ERR,ERROR,*999)
-              CALL FIELD_MAPPINGS_FINALISE(FIELD,ERR,ERROR,*999)
-              IF(ALLOCATED(FIELD%VARIABLE_TYPE_MAP)) DEALLOCATE(FIELD%VARIABLE_TYPE_MAP)
-              DEALLOCATE(FIELD)
-              IF(REGION%FIELDS%NUMBER_OF_FIELDS>1) THEN
-                ALLOCATE(NEW_FIELDS(REGION%FIELDS%NUMBER_OF_FIELDS-1),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new fields",ERR,ERROR,*999)
-                DO field_idx=1,REGION%FIELDS%NUMBER_OF_FIELDS
-                  IF(field_idx<field_position) THEN
-                    NEW_FIELDS(field_idx)%PTR=>REGION%FIELDS%FIELDS(field_idx)%PTR
-                  ELSE IF(field_idx>field_position) THEN
-                    REGION%FIELDS%FIELDS(field_idx)%PTR%GLOBAL_NUMBER=REGION%FIELDS%FIELDS(field_idx)%PTR%GLOBAL_NUMBER-1
-                    NEW_FIELDS(field_idx-1)%PTR=>REGION%FIELDS%FIELDS(field_idx)%PTR
-                  ENDIF
-                ENDDO !field_no
-                DEALLOCATE(REGION%FIELDS%FIELDS)
-                REGION%FIELDS%FIELDS=>NEW_FIELDS
-                REGION%FIELDS%NUMBER_OF_FIELDS=REGION%FIELDS%NUMBER_OF_FIELDS-1
-              ELSE
-                DEALLOCATE(REGION%FIELDS%FIELDS)
-                REGION%FIELDS%NUMBER_OF_FIELDS=0
-              ENDIF
-            ELSE
-              LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
-                & " has not been created on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        field_position=FIELD%GLOBAL_NUMBER
+        GEOMETRIC_FIELD=>FIELD%GEOMETRIC_FIELD
+        IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
+          !Delete this field from the list of fields using the geometric field.
+          field_position2=0
+          DO field_idx=1,GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_FIELDS_USING
+            FIELD2=>GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING(field_idx)%PTR
+            IF(FIELD2%USER_NUMBER==FIELD%USER_NUMBER) THEN
+              field_position2=field_idx
+              EXIT
             ENDIF
+          ENDDO !field_idx
+          IF(field_position2/=0) THEN
+            ALLOCATE(NEW_FIELDS_USING(GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_FIELDS_USING+1),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new fields using",ERR,ERROR,*999)
+            DO field_idx=1,GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_FIELDS_USING
+              IF(field_idx<field_position2) THEN
+                NEW_FIELDS_USING(field_idx)%PTR=>GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING(field_idx)%PTR
+              ELSE IF(field_idx>field_position2) THEN
+                NEW_FIELDS_USING(field_idx-1)%PTR=>GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING(field_idx)%PTR
+              ENDIF
+            ENDDO !field_idx
+            GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_FIELDS_USING=GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS% &
+              & NUMBER_OF_FIELDS_USING-1
+            IF(ASSOCIATED(GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING)) &
+              & DEALLOCATE(GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING)
+            GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING=>NEW_FIELDS_USING
           ELSE
-            LOCAL_ERROR="The region on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
-              & " is not associated"
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            !??? Error
           ENDIF
+        ENDIF
+!!TODO: move to field finalise
+        CALL FIELD_SCALINGS_FINALISE(FIELD,ERR,ERROR,*999)
+        CALL FIELD_VARIABLES_FINALISE(FIELD,ERR,ERROR,*999)
+        CALL FIELD_CREATE_VALUES_CACHE_FINALISE(FIELD,ERR,ERROR,*999)
+        CALL FIELD_GEOMETRIC_PARAMETERS_FINALISE(FIELD,ERR,ERROR,*999)
+        CALL FIELD_MAPPINGS_FINALISE(FIELD,ERR,ERROR,*999)
+        IF(ALLOCATED(FIELD%VARIABLE_TYPE_MAP)) DEALLOCATE(FIELD%VARIABLE_TYPE_MAP)
+        DEALLOCATE(FIELD)
+        IF(REGION%FIELDS%NUMBER_OF_FIELDS>1) THEN
+          ALLOCATE(NEW_FIELDS(REGION%FIELDS%NUMBER_OF_FIELDS-1),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new fields",ERR,ERROR,*999)
+          DO field_idx=1,REGION%FIELDS%NUMBER_OF_FIELDS
+            IF(field_idx<field_position) THEN
+              NEW_FIELDS(field_idx)%PTR=>REGION%FIELDS%FIELDS(field_idx)%PTR
+            ELSE IF(field_idx>field_position) THEN
+              REGION%FIELDS%FIELDS(field_idx)%PTR%GLOBAL_NUMBER=REGION%FIELDS%FIELDS(field_idx)%PTR%GLOBAL_NUMBER-1
+              NEW_FIELDS(field_idx-1)%PTR=>REGION%FIELDS%FIELDS(field_idx)%PTR
+            ENDIF
+          ENDDO !field_no
+          DEALLOCATE(REGION%FIELDS%FIELDS)
+          REGION%FIELDS%FIELDS=>NEW_FIELDS
+          REGION%FIELDS%NUMBER_OF_FIELDS=REGION%FIELDS%NUMBER_OF_FIELDS-1
         ELSE
-          LOCAL_ERROR="The fields on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))// &
-            & " are not associated"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          DEALLOCATE(REGION%FIELDS%FIELDS)
+          REGION%FIELDS%NUMBER_OF_FIELDS=0
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Field region is not associated",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
@@ -5286,7 +5269,7 @@ CONTAINS
       IF(ASSOCIATED(REGION%FIELDS)) THEN
         DO WHILE(REGION%FIELDS%NUMBER_OF_FIELDS>0)
           FIELD=>REGION%FIELDS%FIELDS(1)%PTR
-          CALL FIELD_DESTROY(FIELD,REGION,ERR,ERROR,*999)
+          CALL FIELD_DESTROY(FIELD,ERR,ERROR,*999)
         ENDDO !field_idx
         DEALLOCATE(REGION%FIELDS)
       ENDIF
