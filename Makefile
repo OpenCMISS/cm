@@ -281,6 +281,10 @@ ifeq ($(OPERATING_SYSTEM),linux)
       F_FLGS += -g -pg
       ELFLAGS += -pg
     endif
+    ifneq ($(MPIPROF),false)
+      F_FLAGS += -Wl,--export-dyanmic
+      DBGF_FLAGS += -Wl,--export-dyanmic
+    endif
 #    MP_FLGS = -openmp
     ELFLAGS += -nofor_main -traceback
   endif
@@ -410,8 +414,13 @@ PETSC_LIB_PATH =#
 PETSC_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   ifeq ($(DEBUG),false)
-    PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/linux-gnu-c-opt/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/bmake/linux-gnu-c-opt/ )
+    ifeq ($(MPIPROF),true)
+      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)-debug/lib/linux-gnu-c-debug/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)-debug/bmake/linux-gnu-c-debug/ )
+    else
+      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/linux-gnu-c-opt/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/bmake/linux-gnu-c-opt/ )
+    endif
   else
     PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/linux-gnu-c-debug/ )
     PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/bmake/linux-gnu-c-debug/ )
@@ -448,7 +457,10 @@ MPI_LIB_PATH =#
 MPI_LIBRARIES =#
 MPI_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  MPI_LIBRARIES = -lmpichf90 -lmpich -lpthread -lrt
+  ifeq ($(MPIPROF),true)
+    MPI_LIBRARIES += -lmpe_f2cmpi -llmpe -lmpe
+  endif
+  MPI_LIBRARIES += -lmpichf90 -lmpich -lpthread -lrt
   MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
@@ -503,6 +515,7 @@ OBJECTS = $(OBJECT_DIR)/opencmisstest.o \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
 	$(OBJECT_DIR)/blas.o \
+	$(OBJECT_DIR)/classical_field_routines.o \
 	$(OBJECT_DIR)/cmiss.o \
 	$(OBJECT_DIR)/cmiss_mpi.o \
 	$(OBJECT_DIR)/cmiss_parmetis.o \
@@ -604,6 +617,17 @@ $(OBJECT_DIR)/basis_routines.o	:	$(SOURCE_DIR)/basis_routines.f90 \
 
 $(OBJECT_DIR)/blas.o		:	$(SOURCE_DIR)/blas.f90 \
 	$(OBJECT_DIR)/kinds.o
+
+$(OBJECT_DIR)/classical_field_routines.o		:	$(SOURCE_DIR)/classical_field_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/Laplace_equations_routines.o \
+	$(OBJECT_DIR)/problem_constants.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/types.o \
+	$(MACHINE_OBJECTS)
 
 $(OBJECT_DIR)/cmiss.o		:	$(SOURCE_DIR)/cmiss.f90 \
 	$(OBJECT_DIR)/base_routines.o \
@@ -724,7 +748,7 @@ $(OBJECT_DIR)/equations_set_routines.o		:	$(SOURCE_DIR)/equations_set_routines.f
 	$(OBJECT_DIR)/computational_environment.o \
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/domain_mapping.o \
+	$(OBJECT_DIR)/domain_mappings.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/equations_matrices_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
@@ -752,7 +776,7 @@ $(OBJECT_DIR)/field_routines.o		:	$(SOURCE_DIR)/field_routines.f90 \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 
-$(OBJECT_DIR)/fldui_mechanics_routines.o	:	$(SOURCE_DIR)/fluid_mechanics_routines.f90 \
+$(OBJECT_DIR)/fluid_mechanics_routines.o	:	$(SOURCE_DIR)/fluid_mechanics_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/types.o
@@ -782,7 +806,7 @@ $(OBJECT_DIR)/Laplace_equations_routines.o	:	$(SOURCE_DIR)/Laplace_equations_rou
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_mappings_routines.o \
+	$(OBJECT_DIR)/equations_mapping_routines.o \
 	$(OBJECT_DIR)/equations_matrices_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/field_routines.o \
@@ -1023,6 +1047,7 @@ help:
 	@echo
 	@echo "	(DEBUG=|OPT=)"
 	@echo "	PROF=(true|)"
+	@echo "	MPIPROF=(true|)"
 	@echo "	ABI=(32|64)"
 	@echo 
 	@echo "Available targets:                            "

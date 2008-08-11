@@ -24,8 +24,15 @@ ifndef PROF
   PROF := false
 endif
 
+ifndef MPIPROF
+  MPIPROF := false
+endif
+
 ifndef DEBUG
   ifneq ($(PROF),false)
+    OPT := true
+  endif
+  ifneq ($(MPIPROF),false)
     OPT := true
   endif
   ifndef OPT
@@ -110,9 +117,17 @@ else
 endif
 
 ifeq ($(PROF),false)
-  PROF_SUFFIX =
+  ifeq ($(MPIPROF),false)
+    PROF_SUFFIX =
+  else
+    PROF_SUFFIX = -mpiprof
+  endif
 else
-  PROF_SUFFIX = -prof
+  ifeq ($(MPIPROF),false)
+    PROF_SUFFIX = -prof
+  else
+    PROF_SUFFIX = -mpiprof
+  endif
 endif
 
 ifneq ($(DEBUG),false)
