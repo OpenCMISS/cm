@@ -46,12 +46,16 @@ MODULE PROBLEM_ROUTINES
   USE BASE_ROUTINES
   USE CLASSICAL_FIELD_ROUTINES
   USE DISTRIBUTED_MATRIX_VECTOR
+  USE EQUATIONS_SET_CONSTANTS
+  USE EQUATIONS_SET_ROUTINES
+  USE FIELD_ROUTINES
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
   USE KINDS
   USE PROBLEM_CONSTANTS
   USE SOLUTION_MAPPING_ROUTINES
   USE SOLVER_ROUTINES
+  USE SOLVER_MATRICES_ROUTINES
   USE STRINGS
   USE TIMER
   USE TYPES
@@ -112,69 +116,13 @@ MODULE PROBLEM_ROUTINES
 
   PUBLIC PROBLEM_CONTROL_CREATE_START,PROBLEM_CONTROL_CREATE_FINISH,PROBLEM_CONTROL_DESTROY
   
-  PUBLIC PROBLEM_SOLUTIONS_CREATE_START,PROBLEM_SOLUTIONS_CREATE_FINISH,PROBLEM_SOLUTION_EQUATIONS_SET_ADD, &
-    & PROBLEM_SOLUTION_SPARSITY_TYPE_SET,PROBLEM_SOLUTION_OUTPUT_TYPE_SET
+  PUBLIC PROBLEM_SOLUTIONS_CREATE_START,PROBLEM_SOLUTIONS_CREATE_FINISH,PROBLEM_SOLUTION_EQUATIONS_SET_ADD
 
-  PUBLIC PROBLEM_SOLVER_CREATE_START,PROBLEM_SOLVER_CREATE_FINISH,PROBLEM_SOLVER_DESTROY,PROBLEM_SOLVER_OUTPUT_TYPE_SET
+  PUBLIC PROBLEM_SOLVER_CREATE_START,PROBLEM_SOLVER_CREATE_FINISH,PROBLEM_SOLVER_DESTROY,PROBLEM_SOLVER_GET
    
   PUBLIC PROBLEM_SOLVE
 
 CONTAINS
-
-  !
-  !================================================================================================================================
-  !
-  
-  !>Assembles the solver matrices and rhs from the global equations.
-  SUBROUTINE PROBLEM_ASSEMBLE_SOLVER_MATRICES(SOLUTION,ERR,ERROR,*)
-
-    !Argument variableg
-    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the solution
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    REAL(SP) :: SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),USER_ELAPSED,USER_TIME1(1),USER_TIME2(1)
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER
-    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
-    
-    CALL ENTERS("PROBLEM_ASSEMBLE_SOLVER_MATRICES",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLUTION)) THEN
-      SOLVER=>SOLUTION%SOLVER
-      IF(ASSOCIATED(SOLVER)) THEN
-        SOLVER_MATRICES=>SOLVER%SOLVER_MATRICES
-        IF(ASSOCIATED(SOLVER_MATRICES)) THEN
-          IF(SOLVER%OUTPUT_TYPE>=SOLVER_TIMING_OUTPUT) THEN
-            CALL CPU_TIMER(USER_CPU,USER_TIME1,ERR,ERROR,*999)
-            CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME1,ERR,ERROR,*999)
-          ENDIF
-          CALL DISTRIBUTED_MATRIX_SOLVER_MATRICES_ASSEMBLE(SOLVER_MATRICES,ERR,ERROR,*999)
-          IF(SOLVER%OUTPUT_TYPE>=SOLVER_TIMING_OUTPUT) THEN
-            CALL CPU_TIMER(USER_CPU,USER_TIME2,ERR,ERROR,*999)
-            CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME2,ERR,ERROR,*999)
-            USER_ELAPSED=USER_TIME2(1)-USER_TIME1(1)
-            SYSTEM_ELAPSED=SYSTEM_TIME2(1)-SYSTEM_TIME1(1)
-            CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for solver matrices assembly = ",USER_ELAPSED, &
-              & ERR,ERROR,*999)
-            CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total System time for solver matrices assembly = ",SYSTEM_ELAPSED, &
-              & ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("Solver solver matrices is not associated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Solution solver is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solution is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("PROBLEM_ASSEMBLE_SOLVER_MATRICES")
-    RETURN
-999 CALL ERRORS("PROBLEM_ASSEMBLE_SOLVER_MATRICES",ERR,ERROR)
-    CALL EXITS("PROBLEM_ASSEMBLE_SOLVER_MATRICES")
-    RETURN 1
-  END SUBROUTINE PROBLEM_ASSEMBLE_SOLVER_MATRICES
 
   !
   !================================================================================================================================
@@ -188,7 +136,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: problem_idx,solution_idx
+    INTEGER(INTG) :: problem_idx
 
     CALL ENTERS("PROBLEM_CREATE_FINISH",ERR,ERROR,*999)
 
@@ -196,13 +144,7 @@ CONTAINS
       !Finish the problem specific setup
       CALL PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP_INITIAL_TYPE,PROBLEM_SETUP_FINISH_ACTION,ERR,ERROR,*999)
       !Allocate and set up the problem solutions
-      CALL PROBLEM_SOLUTIONS_INITIALISE(PROBLEM,ERR,ERROR,*999)
-      
-      ALLOCATE(PROBLEM%SOLUTIONS(PROBLEM%NUMBER_OF_SOLUTIONS),STAT=ERR)
-      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate problem solutions.",ERR,ERROR,*999)
-!!TODO
-      DO solution_idx=1,PROBLEM%NUMBER_OF_SOLUTIONS
-      ENDDO !solution_idx
+      CALL PROBLEM_SOLUTIONS_INITIALISE(PROBLEM,ERR,ERROR,*999)      
       !Finish the problem creation
       PROBLEM%PROBLEM_FINISHED=.TRUE.
     ELSE        
@@ -708,7 +650,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: solution_idx
     TYPE(PROBLEM_CONTROL_TYPE), POINTER :: CONTROL
+    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION
     
     CALL ENTERS("PROBLEM_SOLVE",ERR,ERROR,*999)
 
@@ -716,7 +660,15 @@ CONTAINS
       IF(PROBLEM%PROBLEM_FINISHED) THEN
         CONTROL=>PROBLEM%CONTROL
         IF(ASSOCIATED(CONTROL)) THEN
-          !!TODO:
+!!TODO SELECT ON CONTROL TYPES. Branch to separate subroutines.
+          DO solution_idx=1,PROBLEM%NUMBER_OF_SOLUTIONS
+            SOLUTION=>PROBLEM%SOLUTIONS(solution_idx)%PTR
+            IF(ASSOCIATED(SOLUTION)) THEN
+              CALL PROBLEM_SOLUTION_SOLVE(SOLUTION,ERR,ERROR,*999)
+            ELSE
+              CALL FLAG_ERROR("Solution is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ENDDO !solution_idx
         ELSE
           CALL FLAG_ERROR("Problem control is not associated.",ERR,ERROR,*999)
         ENDIF
@@ -735,62 +687,62 @@ CONTAINS
   END SUBROUTINE PROBLEM_SOLVE
 
   !
+  !
   !================================================================================================================================
   !
 
-  !>Solves the solutions for a problem.
-  SUBROUTINE PROBLEM_SOLVE_SOLUTIONS(PROBLEM,ERR,ERROR,*)
+  !>Solves a solution.
+  SUBROUTINE PROBLEM_SOLUTION_SOLVE(SOLUTION,ERR,ERROR,*)
 
    !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to solve
+    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the solution to solve
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: solution_idx
-    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION
+    INTEGER(INTG) :: equations_set_idx
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("PROBLEM_SOLVE_SOLUTIONS",ERR,ERROR,*999)
+    CALL ENTERS("PROBLEM_SOLUTION_SOLVE",ERR,ERROR,*999)
 
-    IF(ASSOCIATED(PROBLEM)) THEN
-      IF(PROBLEM%PROBLEM_FINISHED) THEN
-        DO solution_idx=1,PROBLEM%NUMBER_OF_SOLUTIONS
-          SOLUTION=>PROBLEM%SOLUTIONS(solution_idx)%PTR
-          IF(ASSOCIATED(SOLUTION)) THEN
-            IF(SOLUTION%SOLUTION_FINISHED) THEN
-              SOLVER=>SOLUTION%SOLVER
-              IF(ASSOCIATED(SOLVER)) THEN
-                CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
-              ELSE
-                LOCAL_ERROR="Solver is not associated for solution index "// &
-                  & TRIM(NUMBER_TO_VSTRING(solution_idx,"*",ERR,ERROR))//"."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              LOCAL_ERROR="Solution has not been finished for solution index "// &
-                & TRIM(NUMBER_TO_VSTRING(solution_idx,"*",ERR,ERROR))//"."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            ENDIF
+    IF(ASSOCIATED(SOLUTION)) THEN
+      IF(SOLUTION%SOLUTION_FINISHED) THEN
+        SOLUTION_MAPPING=>SOLUTION%SOLUTION_MAPPING
+        IF(ASSOCIATED(SOLUTION_MAPPING)) THEN
+          !Assemble the equations
+          !Make sure the equations sets are up to date
+          DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
+            EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+            CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)
+            CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
+          ENDDO !equations_set_idx
+          SOLVER=>SOLUTION%SOLVER
+          IF(ASSOCIATED(SOLVER)) THEN
+            !Solve
+            CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
+            !Update depenent field
+            !Back-substitute to find flux values
+            !Update dependent field with the calcualted fluxes
           ELSE
-            LOCAL_ERROR="Solution is not associated for solution index "// &
-              & TRIM(NUMBER_TO_VSTRING(solution_idx,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FLAG_ERROR("Solution solver is not associated.",ERR,ERROR,*999)
           ENDIF
-        ENDDO !solution_idx
+        ELSE
+          CALL FLAG_ERROR("Solution mapping is not associated.",ERR,ERROR,*999)
+        ENDIF
       ELSE
-        CALL FLAG_ERROR("Problem has not been finished.",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Solution has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
+      CALL FLAG_ERROR("Solution is not associated.",ERR,ERROR,*999)
+    ENDIF    
     
-    CALL EXITS("PROBLEM_SOLVE_SOLUTIONS")
+    CALL EXITS("PROBLEM_SOLUTION_SOLVE")
     RETURN
-999 CALL ERRORS("PROBLEM_SOLVE_SOLUTIONS",ERR,ERROR)
-    CALL EXITS("PROBLEM_SOLVE_SOLUTIONS")
+999 CALL ERRORS("PROBLEM_SOLUTION_SOLVE",ERR,ERROR)
+    CALL EXITS("PROBLEM_SOLUTION_SOLVE")
     RETURN 1
-  END SUBROUTINE PROBLEM_SOLVE_SOLUTIONS
+  END SUBROUTINE PROBLEM_SOLUTION_SOLVE
 
   !
   !================================================================================================================================
@@ -874,12 +826,13 @@ CONTAINS
   !
 
   !>Adds an equations set to a problem solution.
-  SUBROUTINE PROBLEM_SOLUTION_EQUATIONS_SET_ADD(PROBLEM,SOLUTION_INDEX,EQUATIONS_SET,ERR,ERROR,*)
+  SUBROUTINE PROBLEM_SOLUTION_EQUATIONS_SET_ADD(PROBLEM,SOLUTION_INDEX,EQUATIONS_SET,EQUATIONS_SET_INDEX,ERR,ERROR,*)
 
     !Argument variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to add the equations set to a solution
     INTEGER(INTG), INTENT(IN) :: SOLUTION_INDEX !<The solution index in the problem to add the equations set to
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to add
+    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_SET_INDEX !<On return, the index of the equations set that has been added.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -888,6 +841,7 @@ CONTAINS
 
     CALL ENTERS("PROBLEM_SOLUTION_EQUATIONS_SET_ADD",ERR,ERROR,*999)
 
+    EQUATIONS_SET_INDEX=0
     IF(ASSOCIATED(PROBLEM)) THEN
       IF(SOLUTION_INDEX>0.AND.SOLUTION_INDEX<=PROBLEM%NUMBER_OF_SOLUTIONS) THEN
         SOLUTION=>PROBLEM%SOLUTIONS(SOLUTION_INDEX)%PTR
@@ -903,7 +857,8 @@ CONTAINS
                   SOLUTION%EQUATIONS_SET_TO_ADD=>EQUATIONS_SET
                   !Add equation set via the problem specific setup
                   CALL PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP_SOLUTION_TYPE,PROBLEM_SETUP_DO_ACTION,ERR,ERROR,*999)
-                  NULLIFY(SOLUTION%EQUATIONS_SET_TO_ADD)                  
+                  NULLIFY(SOLUTION%EQUATIONS_SET_TO_ADD)
+                  EQUATIONS_SET_INDEX=SOLUTION%EQUATIONS_SET_ADDED_INDEX
                 ENDIF
               ELSE
                 CALL FLAG_ERROR("Equations set has not been finished.",ERR,ERROR,*999)
@@ -963,62 +918,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the output type for the problem solution
-  SUBROUTINE PROBLEM_SOLUTION_SPARSITY_TYPE_SET(PROBLEM,SOLUTION_INDEX,SPARSITY_TYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem
-    INTEGER(INTG), INTENT(IN) :: SOLUTION_INDEX !<The solution index to set the sparsity type for
-    INTEGER(INTG), INTENT(IN) :: SPARSITY_TYPE !<The sparsity type to set \see PROBLEM_ROUTINES_SolutionGlobalSparsityTypes,PROBLEM_ROUTINES
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string !<The error string
-    !Local Variables
-    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
- 
-    CALL ENTERS("PROBLEM_SOLUTION_SPARSITY_TYPE_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(PROBLEM)) THEN
-      IF(SOLUTION_INDEX>0.AND.SOLUTION_INDEX<=PROBLEM%NUMBER_OF_SOLUTIONS) THEN
-        SOLUTION=>PROBLEM%SOLUTIONS(SOLUTION_INDEX)%PTR
-        IF(ASSOCIATED(SOLUTION)) THEN
-          IF(SOLUTION%SOLUTION_FINISHED) THEN
-            CALL FLAG_ERROR("Solution has already been finished.",ERR,ERROR,*999)
-          ELSE
-            SELECT CASE(SPARSITY_TYPE)
-            CASE(PROBLEM_SOLUTION_SPARSE_MATRICES)
-              SOLUTION%SPARSITY_TYPE=PROBLEM_SOLUTION_SPARSE_MATRICES
-            CASE(PROBLEM_SOLUTION_FULL_MATRICES)
-              SOLUTION%SPARSITY_TYPE=PROBLEM_SOLUTION_FULL_MATRICES
-            CASE DEFAULT
-              LOCAL_ERROR="The specified sparsity type of "//TRIM(NUMBER_TO_VSTRING(SPARSITY_TYPE,"*",ERR,ERROR))// &
-                & " is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("Solution is not associated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        LOCAL_ERROR="The specified solution index of "//TRIM(NUMBER_TO_VSTRING(SOLUTION_INDEX,"*",ERR,ERROR))// &
-          & " is invalid. The index must be > 0 and <= "//TRIM(NUMBER_TO_VSTRING(PROBLEM%NUMBER_OF_SOLUTIONS,"*",ERR,ERROR))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("PROBLEM_SOLUTION_SPARSITY_TYPE_SET")
-    RETURN
-999 CALL ERRORS("PROBLEM_SOLUTION_SPARSITY_TYPE_SET",ERR,ERROR)
-    CALL EXITS("PROBLEM_SOLUTION_SPARSITY_TYPE_SET")
-    RETURN 1
-  END SUBROUTINE PROBLEM_SOLUTION_SPARSITY_TYPE_SET
-  
-  !
-  !================================================================================================================================
-  !
-
   !>Initialises the solution for a problem.
   SUBROUTINE PROBLEM_SOLUTION_INITIALISE(SOLUTION,ERR,ERROR,*)
 
@@ -1034,11 +933,6 @@ CONTAINS
       SOLUTION%SOLUTION_NUMBER=0
       NULLIFY(SOLUTION%PROBLEM)
       SOLUTION%SOLUTION_FINISHED=.FALSE.
-      SOLUTION%OUTPUT_TYPE=PROBLEM_SOLUTION_NO_OUTPUT
-      SOLUTION%SPARSITY_TYPE=PROBLEM_SOLUTION_SPARSE_MATRICES
-      SOLUTION%SOLVE_TYPE=0
-      SOLUTION%SOLVER_LIBRARY=0
-      SOLUTION%SOLVER_OUTPUT_TYPE=0
       NULLIFY(SOLUTION%EQUATIONS_SET_TO_ADD)
       SOLUTION%EQUATIONS_SET_ADDED_INDEX=0
       NULLIFY(SOLUTION%SOLUTION_MAPPING)
@@ -1053,63 +947,6 @@ CONTAINS
     CALL EXITS("PROBLEM_SOLUTION_INITIALISE")
     RETURN 1
   END SUBROUTINE PROBLEM_SOLUTION_INITIALISE
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the output type for the problem solution
-  SUBROUTINE PROBLEM_SOLUTION_OUTPUT_TYPE_SET(PROBLEM,SOLUTION_INDEX,OUTPUT_TYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the solution output for
-    INTEGER(INTG), INTENT(IN) :: SOLUTION_INDEX !<The solution index to set the output type for
-    INTEGER(INTG), INTENT(IN) :: OUTPUT_TYPE !<The output type to set \todo finish ref
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
- 
-    CALL ENTERS("PROBLEM_SOLUTION_OUTPUT_TYPE_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(PROBLEM)) THEN
-      IF(SOLUTION_INDEX>0.AND.SOLUTION_INDEX<=PROBLEM%NUMBER_OF_SOLUTIONS) THEN
-        SOLUTION=>PROBLEM%SOLUTIONS(SOLUTION_INDEX)%PTR        
-        IF(ASSOCIATED(SOLUTION)) THEN
-          IF(SOLUTION%SOLUTION_FINISHED) THEN
-            CALL FLAG_ERROR("Problem solution has already been finished.",ERR,ERROR,*999)
-          ELSE
-            SELECT CASE(OUTPUT_TYPE)
-            CASE(PROBLEM_SOLUTION_NO_OUTPUT)
-              SOLUTION%OUTPUT_TYPE=PROBLEM_SOLUTION_NO_OUTPUT
-            CASE(PROBLEM_SOLUTION_TIMING_OUTPUT)
-              SOLUTION%OUTPUT_TYPE=PROBLEM_SOLUTION_TIMING_OUTPUT
-            CASE(PROBLEM_SOLUTION_MATRIX_OUTPUT)
-              SOLUTION%OUTPUT_TYPE=PROBLEM_SOLUTION_MATRIX_OUTPUT
-            CASE DEFAULT
-              LOCAL_ERROR="The specified output type of "//TRIM(NUMBER_TO_VSTRING(OUTPUT_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("Solution is not associated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        LOCAL_ERROR="The specified solution index of "//TRIM(NUMBER_TO_VSTRING(SOLUTION_INDEX,"*",ERR,ERROR))// &
-          & " is invalid. The index must be > 0 and <= "//TRIM(NUMBER_TO_VSTRING(PROBLEM%NUMBER_OF_SOLUTIONS,"*",ERR,ERROR))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Problem is not associated",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("PROBLEM_SOLUTION_OUTPUT_TYPE_SET")
-    RETURN
-999 CALL ERRORS("PROBLEM_SOLUTION_OUTPUT_TYPE_SET",ERR,ERROR)
-    CALL EXITS("PROBLEM_SOLUTION_OUTPUT_TYPE_SET")
-    RETURN 1
-  END SUBROUTINE PROBLEM_SOLUTION_OUTPUT_TYPE_SET
   
   !
   !================================================================================================================================
@@ -1233,7 +1070,7 @@ CONTAINS
   !>Start the creation of a problem solver for a problem.
   SUBROUTINE PROBLEM_SOLVER_CREATE_START(PROBLEM,ERR,ERROR,*)
 
-    !Argument variables
+    !Argument variablesg
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to start the creation of a solution for.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -1315,29 +1152,30 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the output type for the problem solver
-  SUBROUTINE PROBLEM_SOLVER_OUTPUT_TYPE_SET(PROBLEM,SOLUTION_INDEX,OUTPUT_TYPE,ERR,ERROR,*)
+  !>Returns a pointer to the solver for a solution on a problme.
+  SUBROUTINE PROBLEM_SOLVER_GET(PROBLEM,SOLUTION_INDEX,SOLVER,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the solver output for
-    INTEGER(INTG), INTENT(IN) :: SOLUTION_INDEX !<The index of the solution to set the solver output for
-    INTEGER(INTG), INTENT(IN) :: OUTPUT_TYPE !<The solver output type to set \see SOLVER_ROUTINES_OutputTypes,SOLVER_ROUTINES
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to get the solver for.
+    INTEGER(INTG), INTENT(IN) :: SOLUTION_INDEX !<The solution index to get the solver for.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<On return, a pointer to the solver. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(SOLUTION_TYPE), POINTER :: SOLUTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
  
-    CALL ENTERS("PROBLEM_SOLVER_OUTPUT_TYPE_SET",ERR,ERROR,*999)
+    CALL ENTERS("PROBLEM_SOLVER_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(PROBLEM)) THEN
       IF(SOLUTION_INDEX>0.AND.SOLUTION_INDEX<=PROBLEM%NUMBER_OF_SOLUTIONS) THEN
         SOLUTION=>PROBLEM%SOLUTIONS(SOLUTION_INDEX)%PTR
         IF(ASSOCIATED(SOLUTION)) THEN
-          IF(SOLUTION%SOLUTION_FINISHED) THEN
-            CALL FLAG_ERROR("Problem solution has already been finished.",ERR,ERROR,*999)
+          IF(ASSOCIATED(SOLVER)) THEN
+            CALL FLAG_ERROR("Solver is already associated.",ERR,ERROR,*999)
           ELSE
-            SOLUTION%OUTPUT_TYPE=OUTPUT_TYPE
+            SOLVER=>SOLUTION%SOLVER
+            IF(.NOT.ASSOCIATED(SOLVER)) CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
           CALL FLAG_ERROR("Solution is not associated.",ERR,ERROR,*999)
@@ -1349,15 +1187,15 @@ CONTAINS
       ENDIF
     ELSE
       CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
+    ENDIF        
        
-    CALL EXITS("PROBLEM_SOLVER_OUTPUT_TYPE_SET")
+    CALL EXITS("PROBLEM_SOLVER_GET")
     RETURN
-999 CALL ERRORS("PROBLEM_SOLVER_OUTPUT_TYPE_SET",ERR,ERROR)
-    CALL EXITS("PROBLEM_SOLVER_OUTPUT_TYPE_SET")
+999 CALL ERRORS("PROBLEM_SOLVER_GET",ERR,ERROR)
+    CALL EXITS("PROBLEM_SOLVER_GET")
     RETURN 1
-  END SUBROUTINE PROBLEM_SOLVER_OUTPUT_TYPE_SET
-  
+  END SUBROUTINE PROBLEM_SOLVER_GET
+
   !
   !================================================================================================================================
   !
@@ -1461,18 +1299,14 @@ CONTAINS
     IF(ASSOCIATED(PROBLEM)) THEN
       CALL FLAG_ERROR("Problem is already associated.",ERR,ERROR,*999)
     ELSE
-      IF(ASSOCIATED(PROBLEM%PROBLEMS)) THEN
-        problem_idx=1
-        DO WHILE(problem_idx<=PROBLEMS%NUMBER_OF_PROBLEMS.AND..NOT.ASSOCIATED(PROBLEM))
-          IF(PROBLEMS%PROBLEMS(problem_idx)%PTR%USER_NUMBER==USER_NUMBER) THEN
-            PROBLEM=>PROBLEMS%PROBLEMS(problem_idx)%PTR
-          ELSE
-            problem_idx=problem_idx+1
-          ENDIF
-        ENDDO
-      ELSE
-        CALL FLAG_ERROR("The problem problems are not associated.",ERR,ERROR,*999)
-      ENDIF
+      problem_idx=1
+      DO WHILE(problem_idx<=PROBLEMS%NUMBER_OF_PROBLEMS.AND..NOT.ASSOCIATED(PROBLEM))
+        IF(PROBLEMS%PROBLEMS(problem_idx)%PTR%USER_NUMBER==USER_NUMBER) THEN
+          PROBLEM=>PROBLEMS%PROBLEMS(problem_idx)%PTR
+        ELSE
+          problem_idx=problem_idx+1
+        ENDIF
+      ENDDO
     ENDIF
     
     CALL EXITS("PROBLEM_USER_NUMBER_FIND")

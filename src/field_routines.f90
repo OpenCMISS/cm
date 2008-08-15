@@ -123,7 +123,7 @@ MODULE FIELD_ROUTINES
   !>@}
 
   !> \addtogroup FIELD_ROUTINES_ParameterSetTypes FIELD_ROUTINES::ParameterSetTypes
-  !> \brief Field parameter set type parameters
+  !> \brief Field parameter set type parameters \todo make program defined constants negative?
   !> \see FIELD_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: FIELD_NUMBER_OF_SET_TYPES=99 !<The maximum number of different parameter sets for a field \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
@@ -226,9 +226,10 @@ MODULE FIELD_ROUTINES
     & FIELD_INTERPOLATION_PARAMETERS_FINALISE,FIELD_INTERPOLATION_PARAMETERS_INITIALISE, &
     & FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET,FIELD_INTERPOLATION_PARAMETERS_LINE_GET, &
     & FIELD_MESH_DECOMPOSITION_SET,FIELD_NEXT_NUMBER_FIND,FIELD_NUMBER_OF_COMPONENTS_SET,FIELD_NUMBER_OF_VARIABLES_SET,  &
-    & FIELD_PARAMETER_SET_GET,FIELD_PARAMETER_SET_CREATE,FIELD_PARAMETER_SET_UPDATE_FINISH, &
-    & FIELD_PARAMETER_SET_UPDATE_START,FIELD_PARAMETER_SET_UPDATE_CONSTANT,FIELD_PARAMETER_SET_UPDATE_DOF, &
-    & FIELD_PARAMETER_SET_UPDATE_ELEMENT,FIELD_PARAMETER_SET_UPDATE_NODE,FIELD_SCALING_TYPE_SET,FIELD_TYPE_SET
+    & FIELD_PARAMETER_SET_ADD,FIELD_PARAMETER_SET_COPY,FIELD_PARAMETER_SET_CREATE,FIELD_PARAMETER_SET_GET, &
+    & FIELD_PARAMETER_SET_RESTORE,FIELD_PARAMETER_SET_UPDATE_FINISH,FIELD_PARAMETER_SET_UPDATE_START, &
+    & FIELD_PARAMETER_SET_UPDATE_CONSTANT,FIELD_PARAMETER_SET_UPDATE_DOF,FIELD_PARAMETER_SET_UPDATE_ELEMENT, &
+    & FIELD_PARAMETER_SET_UPDATE_NODE,FIELD_SCALING_TYPE_SET,FIELD_TYPE_SET
 
 CONTAINS
   
@@ -3236,6 +3237,7 @@ CONTAINS
                     ENDDO !nk
                   ENDDO !np
                 ENDDO !component_idx
+                CALL FIELD_PARAMETER_SET_RESTORE(FIELD,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
                 CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                 CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
               ELSE
@@ -3678,6 +3680,196 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Adds the parameter set from one parameter set type to another parameter set type
+  SUBROUTINE FIELD_PARAMETER_SET_ADD(FIELD,FIELD_FROM_SET_TYPE,FIELD_TO_SET_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to add the parameter sets for
+    INTEGER(INTG), INTENT(IN) :: FIELD_FROM_SET_TYPE !<The field parameter set identifier to add the parameters from
+    INTEGER(INTG), INTENT(IN) :: FIELD_TO_SET_TYPE !<The field parameter set identifier to add the parameters to
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: dof_idx,field_dof
+    REAL(DP) :: VALUE
+    REAL(DP), POINTER :: FIELD_FROM_PARAMETERS(:)
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: FIELD_DOMAIN_MAPPING
+    TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: FIELD_FROM_PARAMETER_SET,FIELD_TO_PARAMETER_SET
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+   
+    CALL ENTERS("FIELD_PARAMETER_SET_ADD",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+      IF(FIELD%FIELD_FINISHED) THEN
+        !Check the from set type input
+        IF(FIELD_FROM_SET_TYPE>0.AND.FIELD_FROM_SET_TYPE<FIELD_NUMBER_OF_SET_TYPES) THEN
+          FIELD_FROM_PARAMETER_SET=>FIELD%PARAMETER_SETS%SET_TYPE(FIELD_FROM_SET_TYPE)%PTR
+          IF(ASSOCIATED(FIELD_FROM_PARAMETER_SET)) THEN
+            !Check the from set type input
+            IF(FIELD_TO_SET_TYPE>0.AND.FIELD_TO_SET_TYPE<FIELD_NUMBER_OF_SET_TYPES) THEN
+              FIELD_TO_PARAMETER_SET=>FIELD%PARAMETER_SETS%SET_TYPE(FIELD_TO_SET_TYPE)%PTR
+              !Loop over the non-ghosted dofs in the field
+              IF(ASSOCIATED(FIELD_TO_PARAMETER_SET)) THEN
+                FIELD_DOMAIN_MAPPING=>FIELD%MAPPINGS%DOMAIN_MAPPING
+                IF(ASSOCIATED(FIELD_DOMAIN_MAPPING)) THEN
+                  !Get the from parameter set data
+                  CALL DISTRIBUTED_VECTOR_DATA_GET(FIELD_FROM_PARAMETER_SET%PARAMETERS,FIELD_FROM_PARAMETERS,ERR,ERROR,*999)
+                  !Set the boundary field dofs
+                  DO dof_idx=1,FIELD_DOMAIN_MAPPING%NUMBER_OF_BOUNDARY
+                    field_dof=FIELD_DOMAIN_MAPPING%BOUNDARY_LIST(dof_idx)
+                    VALUE=FIELD_FROM_PARAMETERS(field_dof)
+                    CALL DISTRIBUTED_VECTOR_VALUES_ADD(FIELD_TO_PARAMETER_SET%PARAMETERS,field_dof,VALUE,ERR,ERROR,*999)
+                  ENDDO !dof_idx
+                  !Start the to parameter set transfer
+                  CALL DISTRIBUTED_VECTOR_UPDATE_START(FIELD_TO_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)
+                  !Set the internal field dofs
+                  DO dof_idx=1,FIELD_DOMAIN_MAPPING%NUMBER_OF_INTERNAL
+                    field_dof=FIELD_DOMAIN_MAPPING%INTERNAL_LIST(dof_idx)
+                    VALUE=FIELD_FROM_PARAMETERS(field_dof)
+                    CALL DISTRIBUTED_VECTOR_VALUES_ADD(FIELD_TO_PARAMETER_SET%PARAMETERS,field_dof,VALUE,ERR,ERROR,*999)
+                  ENDDO !dof_idx
+                  !Finish the to parameter set transfer
+                  CALL DISTRIBUTED_VECTOR_UPDATE_FINISH(FIELD_TO_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)
+                  !Restore the from parameter set transfer
+                  CALL DISTRIBUTED_VECTOR_DATA_RESTORE(FIELD_FROM_PARAMETER_SET%PARAMETERS,FIELD_FROM_PARAMETERS,ERR,ERROR,*999)
+                 ELSE
+                  CALL FLAG_ERROR("Field domain mapping is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                LOCAL_ERROR="The field to set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_TO_SET_TYPE,"*",ERR,ERROR))// &
+                  & " has not been created on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              LOCAL_ERROR="The field to set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_TO_SET_TYPE,"*",ERR,ERROR))// &
+                & " is invalid. The field set type must be between 1 and "// &
+                & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_SET_TYPES,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The field from set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_FROM_SET_TYPE,"*",ERR,ERROR))// &
+              & " has not been created on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The field from set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_FROM_SET_TYPE,"*",ERR,ERROR))// &
+            & " is invalid. The field set type must be between 1 and "// &
+            & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_SET_TYPES,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Field has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("FIELD_PARAMETER_SET_ADD")
+    RETURN
+999 CALL ERRORS("FIELD_PARAMETER_SET_ADD",ERR,ERROR)
+    CALL EXITS("FIELD_PARAMETER_SET_ADD")
+    RETURN 1
+  END SUBROUTINE FIELD_PARAMETER_SET_ADD
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Copys the parameter set from one parameter set type to another parameter set type
+  SUBROUTINE FIELD_PARAMETER_SET_COPY(FIELD,FIELD_FROM_SET_TYPE,FIELD_TO_SET_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to copy the parameters set for
+    INTEGER(INTG), INTENT(IN) :: FIELD_FROM_SET_TYPE !<The field parameter set identifier to copy the parameters from
+    INTEGER(INTG), INTENT(IN) :: FIELD_TO_SET_TYPE !<The field parameter set identifier to copy the parameters to
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: dof_idx,field_dof
+    REAL(DP) :: VALUE
+    REAL(DP), POINTER :: FIELD_FROM_PARAMETERS(:)
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: FIELD_DOMAIN_MAPPING
+    TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: FIELD_FROM_PARAMETER_SET,FIELD_TO_PARAMETER_SET
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+   
+    CALL ENTERS("FIELD_PARAMETER_SET_COPY",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+      IF(FIELD%FIELD_FINISHED) THEN
+        !Check the from set type input
+        IF(FIELD_FROM_SET_TYPE>0.AND.FIELD_FROM_SET_TYPE<FIELD_NUMBER_OF_SET_TYPES) THEN
+          FIELD_FROM_PARAMETER_SET=>FIELD%PARAMETER_SETS%SET_TYPE(FIELD_FROM_SET_TYPE)%PTR
+          IF(ASSOCIATED(FIELD_FROM_PARAMETER_SET)) THEN
+            !Check the from set type input
+            IF(FIELD_TO_SET_TYPE>0.AND.FIELD_TO_SET_TYPE<FIELD_NUMBER_OF_SET_TYPES) THEN
+              FIELD_TO_PARAMETER_SET=>FIELD%PARAMETER_SETS%SET_TYPE(FIELD_TO_SET_TYPE)%PTR
+              !Loop over the non-ghosted dofs in the field
+              IF(ASSOCIATED(FIELD_TO_PARAMETER_SET)) THEN
+                FIELD_DOMAIN_MAPPING=>FIELD%MAPPINGS%DOMAIN_MAPPING
+                IF(ASSOCIATED(FIELD_DOMAIN_MAPPING)) THEN
+                  !Get the from parameter set data
+                  CALL DISTRIBUTED_VECTOR_DATA_GET(FIELD_FROM_PARAMETER_SET%PARAMETERS,FIELD_FROM_PARAMETERS,ERR,ERROR,*999)
+                  !Set the boundary field dofs
+                  DO dof_idx=1,FIELD_DOMAIN_MAPPING%NUMBER_OF_BOUNDARY
+                    field_dof=FIELD_DOMAIN_MAPPING%BOUNDARY_LIST(dof_idx)
+                    VALUE=FIELD_FROM_PARAMETERS(field_dof)
+                    CALL DISTRIBUTED_VECTOR_VALUES_SET(FIELD_TO_PARAMETER_SET%PARAMETERS,field_dof,VALUE,ERR,ERROR,*999)
+                  ENDDO !dof_idx
+                  !Start the to parameter set transfer
+                  CALL DISTRIBUTED_VECTOR_UPDATE_START(FIELD_TO_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)
+                  !Set the internal field dofs
+                  DO dof_idx=1,FIELD_DOMAIN_MAPPING%NUMBER_OF_INTERNAL
+                    field_dof=FIELD_DOMAIN_MAPPING%INTERNAL_LIST(dof_idx)
+                    VALUE=FIELD_FROM_PARAMETERS(field_dof)
+                    CALL DISTRIBUTED_VECTOR_VALUES_SET(FIELD_TO_PARAMETER_SET%PARAMETERS,field_dof,VALUE,ERR,ERROR,*999)
+                  ENDDO !dof_idx
+                  !Finish the to parameter set transfer
+                  CALL DISTRIBUTED_VECTOR_UPDATE_FINISH(FIELD_TO_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)
+                  !Restore the from parameter set data
+                  CALL DISTRIBUTED_VECTOR_DATA_RESTORE(FIELD_FROM_PARAMETER_SET%PARAMETERS,FIELD_FROM_PARAMETERS,ERR,ERROR,*999)
+                 ELSE
+                  CALL FLAG_ERROR("Field domain mapping is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                LOCAL_ERROR="The field to set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_TO_SET_TYPE,"*",ERR,ERROR))// &
+                  & " has not been created on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              LOCAL_ERROR="The field to set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_TO_SET_TYPE,"*",ERR,ERROR))// &
+                & " is invalid. The field set type must be between 1 and "// &
+                & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_SET_TYPES,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The field from set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_FROM_SET_TYPE,"*",ERR,ERROR))// &
+              & " has not been created on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The field from set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_FROM_SET_TYPE,"*",ERR,ERROR))// &
+            & " is invalid. The field set type must be between 1 and "// &
+            & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_SET_TYPES,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Field has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("FIELD_PARAMETER_SET_COPY")
+    RETURN
+999 CALL ERRORS("FIELD_PARAMETER_SET_COPY",ERR,ERROR)
+    CALL EXITS("FIELD_PARAMETER_SET_COPY")
+    RETURN 1
+  END SUBROUTINE FIELD_PARAMETER_SET_COPY
+
+  !
+  !================================================================================================================================
+  !
+
   !>Creates a new parameter set of type set type for a field.
   SUBROUTINE FIELD_PARAMETER_SET_CREATE(FIELD,FIELD_SET_TYPE,ERR,ERROR,*)
 
@@ -3851,7 +4043,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns a pointer to the specified field parameter set array. Note: the values can be used for read operations but a FIELD_PARAMETER_SET_UPDATE call must be used to change any values.
+  !>Returns a pointer to the specified field parameter set array. The pointer must be restored with a call to FIELD_PARAMETER_SET_RESTORE call. Note: the values can be used for read operations but a FIELD_PARAMETER_SET_UPDATE call must be used to change any values.
   SUBROUTINE FIELD_PARAMETER_SET_GET(FIELD,FIELD_SET_TYPE,PARAMETERS,ERR,ERROR,*)
 
     !Argument variables
@@ -3932,6 +4124,62 @@ CONTAINS
     CALL EXITS("FIELD_PARAMETER_SET_INITIALISE")
     RETURN 1
   END SUBROUTINE FIELD_PARAMETER_SET_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Restores the specified field parameter set array that was obtained with FIELD_PARAMETER_SET_GET.
+  SUBROUTINE FIELD_PARAMETER_SET_RESTORE(FIELD,FIELD_SET_TYPE,PARAMETERS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to restore the parameter set from
+    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE !<The field parameter set identifier
+    REAL(DP), POINTER :: PARAMETERS(:) !<The pointer to the field parameter set data obtained with the parameter set get call
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("FIELD_PARAMETER_SET_RESTORE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+      IF(FIELD%FIELD_FINISHED) THEN
+        IF(ASSOCIATED(PARAMETERS)) THEN
+          IF(FIELD_SET_TYPE>0.AND.FIELD_SET_TYPE<=FIELD_NUMBER_OF_SET_TYPES) THEN
+            PARAMETER_SET=>FIELD%PARAMETER_SETS%SET_TYPE(FIELD_SET_TYPE)%PTR
+            IF(ASSOCIATED(PARAMETER_SET)) THEN
+              CALL DISTRIBUTED_VECTOR_DATA_RESTORE(PARAMETER_SET%PARAMETERS,PARAMETERS,ERR,ERROR,*999)
+            ELSE
+              LOCAL_ERROR="The field set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_SET_TYPE,"*",ERR,ERROR))// &
+                & " has not been created on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The field set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_SET_TYPE,"*",ERR,ERROR))// &
+              & " is invalid. The field set type must be between 1 and "// &
+              & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_SET_TYPES,"*",ERR,ERROR))
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Parameters is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+          & " has not been finished"
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("FIELD_PARAMETER_SET_RESTORE")
+    RETURN
+999 CALL ERRORS("FIELD_PARAMETER_SET_RESTORE",ERR,ERROR)
+    CALL EXITS("FIELD_PARAMETER_SET_RESTORE")
+    RETURN 1
+  END SUBROUTINE FIELD_PARAMETER_SET_RESTORE
 
   !
   !================================================================================================================================

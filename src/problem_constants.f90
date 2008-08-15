@@ -137,12 +137,12 @@ MODULE PROBLEM_CONSTANTS
   INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_SOLVER_OUTPUT=2 !<All below and solver output \see PROBLEM_CONSTANTS_SolverOutputTypes,PROBLEM_CONSTANTS
   !>@}
 
-  !> \addtogroup PROBLEM_CONSTANTS_SolutionSparsityTypes PROBLEM_CONSTANTS::SolutionSparsityTypes
+  !> \addtogroup PROBLEM_CONSTANTS_SolverSparsityTypes PROBLEM_CONSTANTS::SolverSparsityTypes
   !> \brief Solution output types
   !> \see PROBLEM_CONSTANTS
   !>@{
-  INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_SPARSE_MATRICES=1 !<Use sparse global matrices \see PROBLEM_CONSTANTS_SolutionSparsityTypes,PROBLEM_CONSTANTS
-  INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_FULL_MATRICES=2 !<Use fully populated global matrices \see PROBLEM_CONSTANTS_SolutionSparsityTypes,PROBLEM_CONSTANTS
+  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_SPARSE_MATRICES=1 !<Use sparse solver matrices \see PROBLEM_CONSTANTS_SolverSparsityTypes,PROBLEM_CONSTANTS
+  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_FULL_MATRICES=2 !<Use fully populated solver matrices \see PROBLEM_CONSTANTS_SolverSparsityTypes,PROBLEM_CONSTANTS
  !>@}
   
 END MODULE PROBLEM_CONSTANTS

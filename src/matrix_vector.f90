@@ -276,9 +276,9 @@ MODULE MATRIX_VECTOR
     & MATRIX_COMPRESSED_ROW_STORAGE_TYPE,MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE,MATRIX_ROW_COLUMN_STORAGE_TYPE
 
   PUBLIC MATRIX_CREATE_FINISH,MATRIX_CREATE_START,MATRIX_DATA_GET,MATRIX_DATA_TYPE_SET,MATRIX_DESTROY, &
-    & MATRIX_DUPLICATE,MATRIX_NUMBER_NON_ZEROS_SET,MATRIX_MAX_SIZE_SET,MATRIX_OUTPUT, &
-    & MATRIX_SIZE_SET,MATRIX_STORAGE_LOCATION_FIND,MATRIX_STORAGE_LOCATIONS_SET,MATRIX_STORAGE_TYPE_SET,MATRIX_VALUES_ADD, &
-    & MATRIX_VALUES_GET,MATRIX_VALUES_SET
+    & MATRIX_DUPLICATE,MATRIX_MAX_COLUMNS_PER_ROW_GET,MATRIX_NUMBER_NON_ZEROS_SET,MATRIX_MAX_SIZE_SET,MATRIX_OUTPUT, &
+    & MATRIX_SIZE_SET,MATRIX_STORAGE_LOCATION_FIND,MATRIX_STORAGE_LOCATIONS_SET,MATRIX_STORAGE_TYPE_GET, &
+    & MATRIX_STORAGE_TYPE_SET,MATRIX_VALUES_ADD,MATRIX_VALUES_GET,MATRIX_VALUES_SET
 
   PUBLIC VECTOR_ALL_VALUES_SET,VECTOR_CREATE_FINISH,VECTOR_CREATE_START,VECTOR_DATA_GET,VECTOR_DATA_TYPE_SET,VECTOR_DESTROY, &
     & VECTOR_DUPLICATE,VECTOR_SIZE_SET,VECTOR_VALUES_GET,VECTOR_VALUES_SET
@@ -993,6 +993,39 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Gets the maximum number of columns in each row of a distributed matrix.
+  SUBROUTINE MATRIX_MAX_COLUMNS_PER_ROW_GET(MATRIX,MAX_COLUMNS_PER_ROW,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(OUT) :: MAX_COLUMNS_PER_ROW !<On return, the maximum number of columns in each row
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    
+    CALL ENTERS("MATRIX_MAX_COLUMNS_PER_ROW_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(MATRIX)) THEN
+      IF(MATRIX%MATRIX_FINISHED) THEN
+        MAX_COLUMNS_PER_ROW=MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW
+      ELSE
+        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("MATRIX_MAX_COLUMNS_PER_ROW_GET")
+    RETURN
+999 CALL ERRORS("MATRIX_MAX_COLUMNS_PER_ROW_GET",ERR,ERROR)
+    CALL EXITS("MATRIX_MAXCOLUMNS_PER_ROW_GET")
+    RETURN 1
+  END SUBROUTINE MATRIX_MAX_COLUMNS_PER_ROW_GET
+
+  !
+  !================================================================================================================================
+  !
+
   !>Sets/changes the number of non zeros for a matrix.
   SUBROUTINE MATRIX_NUMBER_NON_ZEROS_SET(MATRIX,NUMBER_NON_ZEROS,ERR,ERROR,*)
 
@@ -1396,6 +1429,62 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Gets the storage locations (sparsity pattern) of a matrix.
+  SUBROUTINE MATRIX_STORAGE_LOCATIONS_GET(MATRIX,ROW_INDICES,COLUMN_INDICES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), POINTER :: ROW_INDICES(:) !<ROW_INDICES(i). On return, the row index values for the matrix.
+    INTEGER(INTG), POINTER :: COLUMN_INDICES(:) !<COLUMN_INDICES(i). On return, the column index values for the matrix.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MATRIX_STORAGE_LOCATIONS_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(MATRIX)) THEN
+      IF(MATRIX%MATRIX_FINISHED) THEN
+        SELECT CASE(MATRIX%STORAGE_TYPE)
+        CASE(MATRIX_BLOCK_STORAGE_TYPE)
+          CALL FLAG_ERROR("Can not get matrix locations for a block storage matrix",ERR,ERROR,*999)
+        CASE(MATRIX_DIAGONAL_STORAGE_TYPE)
+          CALL FLAG_ERROR("Can not get matrix locations for a diagonal storage matrix",ERR,ERROR,*999)
+        CASE(MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+          CALL FLAG_ERROR("Can not get matrix locations for a column major storage matrix",ERR,ERROR,*999)
+        CASE(MATRIX_ROW_MAJOR_STORAGE_TYPE)
+          CALL FLAG_ERROR("Can not get matrix locations for a row major storage matrix",ERR,ERROR,*999)
+        CASE(MATRIX_COMPRESSED_ROW_STORAGE_TYPE)          
+          ROW_INDICES=>MATRIX%ROW_INDICES
+          COLUMN_INDICES=>MATRIX%COLUMN_INDICES
+        CASE(MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+          ROW_INDICES=>MATRIX%ROW_INDICES
+          COLUMN_INDICES=>MATRIX%COLUMN_INDICES          
+        CASE(MATRIX_ROW_COLUMN_STORAGE_TYPE)
+          ROW_INDICES=>MATRIX%ROW_INDICES
+          COLUMN_INDICES=>MATRIX%COLUMN_INDICES
+        CASE DEFAULT
+          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("Matrix has not been finished.",ERR,ERROR,*999)
+      ENDIF
+   ELSE
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("MATRIX_STORAGE_LOCATIONS_GET")
+    RETURN
+999 CALL ERRORS("MATRIX_STORAGE_LOCATIONS_GET",ERR,ERROR)
+    CALL EXITS("MATRIX_STORAGE_LOCATIONS_GET")
+    RETURN 1
+  END SUBROUTINE MATRIX_STORAGE_LOCATIONS_GET
+
+  !
+  !================================================================================================================================
+  !
+
   !>Sets the storage locations (sparsity pattern) in a matrix to that specified by the row and column indices.
   SUBROUTINE MATRIX_STORAGE_LOCATIONS_SET(MATRIX,ROW_INDICES,COLUMN_INDICES,ERR,ERROR,*)
 
@@ -1611,6 +1700,39 @@ CONTAINS
     CALL EXITS("MATRIX_STORAGE_LOCATIONS_SET")
     RETURN 1
   END SUBROUTINE MATRIX_STORAGE_LOCATIONS_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the storage type for a matrix.
+  SUBROUTINE MATRIX_STORAGE_TYPE_GET(MATRIX,STORAGE_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    INTEGER(INTG), INTENT(OUT) :: STORAGE_TYPE !<On return, the storage type of the matrix. \see MATRIX_VECTOR_StorageTypes,MATRIX_VECTOR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("MATRIX_STORAGE_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(MATRIX)) THEN
+      IF(MATRIX%MATRIX_FINISHED) THEN        
+        STORAGE_TYPE=MATRIX%STORAGE_TYPE
+      ELSE
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("MATRIX_STORAGE_TYPE_GET")
+    RETURN
+999 CALL ERRORS("MATRIX_STORAGE_TYPE_GET",ERR,ERROR)
+    CALL EXITS("MATRIX_STORAGE_TYPE_GET")
+    RETURN 1
+  END SUBROUTINE MATRIX_STORAGE_TYPE_GET
 
   !
   !================================================================================================================================
@@ -2436,9 +2558,7 @@ CONTAINS
               DO k=1,SIZE(ROW_INDICES,1)
                 CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(k),COLUMN_INDICES(k),LOCATION,ERR,ERROR,*999)
                 IF(LOCATION==0) THEN
-                  LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
-                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix"
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  VALUES(k)=0
                 ELSE
                   VALUES(k)=MATRIX%DATA_INTG(LOCATION)
                 ENDIF
@@ -2499,9 +2619,7 @@ CONTAINS
         IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_INTG_TYPE) THEN
           CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDEX,COLUMN_INDEX,LOCATION,ERR,ERROR,*999)
           IF(LOCATION==0) THEN
-            LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
-              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix"
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            VALUE=0
           ELSE
             VALUE=MATRIX%DATA_INTG(LOCATION)
           ENDIF
@@ -2553,9 +2671,7 @@ CONTAINS
                 DO j=1,SIZE(COLUMN_INDICES,1)
                   CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
                   IF(LOCATION==0) THEN
-                    LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    VALUES(i,j)=0
                   ELSE
                     VALUES(i,j)=MATRIX%DATA_INTG(LOCATION)
                   ENDIF
@@ -2622,9 +2738,7 @@ CONTAINS
               DO k=1,SIZE(ROW_INDICES,1)
                 CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(k),COLUMN_INDICES(k),LOCATION,ERR,ERROR,*999)
                 IF(LOCATION==0) THEN
-                  LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
-                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix"
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  VALUES(k)=0.0_SP
                 ELSE
                   VALUES(k)=MATRIX%DATA_SP(LOCATION)
                 ENDIF
@@ -2685,9 +2799,7 @@ CONTAINS
         IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_SP_TYPE) THEN
           CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDEX,COLUMN_INDEX,LOCATION,ERR,ERROR,*999)
           IF(LOCATION==0) THEN
-            LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
-              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix"
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            VALUE=0.0_SP
           ELSE
             VALUE=MATRIX%DATA_SP(LOCATION)
           ENDIF
@@ -2739,9 +2851,7 @@ CONTAINS
                 DO j=1,SIZE(COLUMN_INDICES,1)
                   CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
                   IF(LOCATION==0) THEN
-                    LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    VALUES(i,j)=0.0_SP
                   ELSE
                     VALUES(i,j)=MATRIX%DATA_SP(LOCATION)
                   ENDIF
@@ -2808,9 +2918,7 @@ CONTAINS
               DO k=1,SIZE(ROW_INDICES,1)
                 CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(k),COLUMN_INDICES(k),LOCATION,ERR,ERROR,*999)
                 IF(LOCATION==0) THEN
-                  LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
-                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix"
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  VALUES(k)=0.0_DP
                 ELSE
                   VALUES(k)=MATRIX%DATA_DP(LOCATION)
                 ENDIF
@@ -2871,9 +2979,7 @@ CONTAINS
         IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_DP_TYPE) THEN
           CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDEX,COLUMN_INDEX,LOCATION,ERR,ERROR,*999)
           IF(LOCATION==0) THEN
-            LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
-              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix"
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            VALUE=0.0_DP
           ELSE
             VALUE=MATRIX%DATA_DP(LOCATION)
           ENDIF
@@ -2925,9 +3031,7 @@ CONTAINS
                 DO j=1,SIZE(COLUMN_INDICES,1)
                   CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
                   IF(LOCATION==0) THEN
-                    LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    VALUES(i,j)=0.0_DP
                   ELSE
                     VALUES(i,j)=MATRIX%DATA_DP(LOCATION)
                   ENDIF
@@ -2994,9 +3098,7 @@ CONTAINS
               DO k=1,SIZE(ROW_INDICES,1)
                 CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(k),COLUMN_INDICES(k),LOCATION,ERR,ERROR,*999)
                 IF(LOCATION==0) THEN
-                  LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
-                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix"
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  VALUES(k)=.FALSE.
                 ELSE
                   VALUES(k)=MATRIX%DATA_L(LOCATION)
                 ENDIF
@@ -3057,9 +3159,7 @@ CONTAINS
         IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_L_TYPE) THEN
           CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDEX,COLUMN_INDEX,LOCATION,ERR,ERROR,*999)
           IF(LOCATION==0) THEN
-            LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
-              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix"
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            VALUE=.FALSE.
           ELSE
             VALUE=MATRIX%DATA_L(LOCATION)
           ENDIF
@@ -3111,9 +3211,7 @@ CONTAINS
                 DO j=1,SIZE(COLUMN_INDICES,1)
                   CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
                   IF(LOCATION==0) THEN
-                    LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    VALUES(i,j)=.FALSE.
                   ELSE
                     VALUES(i,j)=MATRIX%DATA_L(LOCATION)
                   ENDIF

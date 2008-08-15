@@ -574,6 +574,7 @@ MODULE TYPES
     INTEGER(INTG) :: N !<The number of local components in the vector
     INTEGER(INTG) :: GLOBAL_N !<The number of global components in the vector
     INTEGER(INTG) :: DATA_SIZE  !<The size of the distributed vector that is held locally by the domain.
+    INTEGER(INTG), ALLOCATABLE :: GLOBAL_NUMBERS(:) !<GLOBAL_NUMBERS(i). The PETSc global number corresponding to the i'th local number.
     TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE) :: ISLTGMAPPING !<The local to global mapping for the vector
     TYPE(PETSC_VEC_TYPE) :: VECTOR !<The PETSc vector
   END TYPE DISTRIBUTED_VECTOR_PETSC_TYPE
@@ -622,7 +623,8 @@ MODULE TYPES
     LOGICAL :: MATRIX_FINISHED !<Is .TRUE. if the distributed matrix has finished being created, .FALSE. if not.
     INTEGER(INTG) :: LIBRARY_TYPE !<The library of the distributed matrix \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
     INTEGER(INTG) :: GHOSTING_TYPE !<The ghosting type \see DISTRIBUTED_MATRIX_VECTOR_GhostingTypes,DISTRIBUTED_MATRIX_VECTOR
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING !<The pointer for the domain mapping that identifies how the matrix is distributed amongst the domains.
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ROW_DOMAIN_MAPPING !<The pointer for the domain mapping that identifies how the matrix rows are distributed amongst the domains.
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: COLUMN_DOMAIN_MAPPING !<The pointer for the domain mapping that identifies how the matrix columns are distributed amongst the domains.
     INTEGER(INTG) :: DATA_TYPE !<The type of data for the distributed matrix \see DISTRIBUTED_MATRIX_VECTOR_DataTypes
     TYPE(DISTRIBUTED_MATRIX_CMISS_TYPE), POINTER :: CMISS !<A pointer to the CMISS distributed matrix information
     TYPE(DISTRIBUTED_MATRIX_PETSC_TYPE), POINTER :: PETSC !<A pointer to the PETSc distributed matrix information
@@ -964,7 +966,6 @@ MODULE TYPES
   !>Contains information about an equations matrix
   TYPE EQUATIONS_MATRIX_TYPE
     INTEGER(INTG) :: MATRIX_NUMBER !<The number of the equations matrix
-!!TODO: make the equations matrices as a pointer array to get a proper pointer to the equations matrices.
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES !<A pointer to the equations matrices for the equation matrix.
     INTEGER(INTG) :: STORAGE_TYPE !<The storage (sparsity) type for this matrix
     INTEGER(INTG) :: STRUCTURE_TYPE !<The structure (sparsity) type for this matrix
@@ -973,6 +974,10 @@ MODULE TYPES
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the distributed global matrix data
     TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_MATRIX !<The element matrix for this glboal matrix
   END TYPE EQUATIONS_MATRIX_TYPE
+
+  TYPE EQUATIONS_MATRIX_PTR_TYPE
+    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: PTR
+  END TYPE EQUATIONS_MATRIX_PTR_TYPE
   
   !>Contains information on the equations matrices and rhs vector
   TYPE EQUATIONS_MATRICES_TYPE
@@ -983,7 +988,7 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of rows in the distributed equations matrices
     INTEGER(INTG) :: TOTAL_NUMBER_OF_ROWS !<The total number of rows in the distributed equations matrices
     INTEGER(INTG) :: NUMBER_OF_MATRICES !<The number of equations matrices defined for the problem.
-    TYPE(EQUATIONS_MATRIX_TYPE), ALLOCATABLE :: MATRICES(:) !<MATRICES(matrix_idx) contains the information on the matrix_idx'th equations matrix
+    TYPE(EQUATIONS_MATRIX_PTR_TYPE), ALLOCATABLE :: MATRICES(:) !<MATRICES(matrix_idx) contains the information on the matrix_idx'th equations matrix
     LOGICAL :: UPDATE_VECTOR !<Is .TRUE. if the equtions rhs vector is to be updated
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the distributed global rhs vector data
     TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_VECTOR !<The element rhs information
@@ -1012,6 +1017,7 @@ MODULE TYPES
   
   TYPE EQUATIONS_MATRIX_TO_VARIABLE_MAP_TYPE
     INTEGER(INTG) :: MATRIX_NUMBER !<The equations matrix number
+    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX !<A pointer to the equations matrix
     INTEGER(INTG) :: VARIABLE_TYPE !<The dependent variable type mapped to this equations matrix
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE !<A pointer to the field variable that is mapped to this equations matrix
     INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in this equations matrix.
@@ -1055,7 +1061,6 @@ MODULE TYPES
   TYPE SOLVER_MATRIX_TYPE
     INTEGER(INTG) :: MATRIX_NUMBER !<The number of the solver matrix
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES !<A pointer to the solver matrices for this solver matrix
-    !TYPE(SOLVER_MATRIX_MAPPING_TYPE), POINTER :: SOLVER_MATRIX_MAP !<A pointer to the solver matrix map for this solver matrix
     LOGICAL :: UPDATE_MATRIX !<Is .TRUE. if the solver matrix is to be updated
     INTEGER(INTG) :: STORAGE_TYPE !<The storage type for the solver matrix.
     INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in the distributed solver matrix
@@ -1063,9 +1068,9 @@ MODULE TYPES
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the distributed solver matrix data
   END TYPE SOLVER_MATRIX_TYPE
 
-  TYPE SOLVER_MATRICES_CREATE_VALUES_CACHE_TYPE
-    INTEGER(INTG), ALLOCATABLE :: MATRIX_STORAGE_TYPE(:)
-  END TYPE SOLVER_MATRICES_CREATE_VALUES_CACHE_TYPE
+  TYPE SOLVER_MATRIX_PTR_TYPE
+    TYPE(SOLVER_MATRIX_TYPE), POINTER :: PTR
+  END TYPE SOLVER_MATRIX_PTR_TYPE
   
   !>Contains information on the solver matrices and rhs vector
   TYPE SOLVER_MATRICES_TYPE
@@ -1076,10 +1081,9 @@ MODULE TYPES
     INTEGER(INTG) :: TOTAL_NUMBER_OF_ROWS !<The total number of rows in the distributed solution matrix
     INTEGER(INTG) :: LIBRARY_TYPE !<The library type for the solver matrices
     INTEGER(INTG) :: NUMBER_OF_MATRICES !<The number of solver matrices defined for the problem
-    TYPE(SOLVER_MATRIX_TYPE), ALLOCATABLE :: MATRICES(:) !<MATRICES(matrix_idx) contains the information on the matrix_idx'th solver matrix
+    TYPE(SOLVER_MATRIX_PTR_TYPE), ALLOCATABLE :: MATRICES(:) !<MATRICES(matrix_idx) contains the information on the matrix_idx'th solver matrix
     LOGICAL :: UPDATE_RHS_VECTOR !<Is .TRUE. if the RHS vector is to be updated
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RHS_VECTOR
-    TYPE(SOLVER_MATRICES_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE !<The create values cache for the solver matrices
   END TYPE SOLVER_MATRICES_TYPE
 
   !>Contains information for a direct linear solver
@@ -1134,8 +1138,9 @@ MODULE TYPES
     TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the problem solution
     LOGICAL :: SOLVER_FINISHED !<Is .TRUE. if the problem solver has finished being created, .FALSE. if not.
     TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING !<A pointer to the problem solution
-    INTEGER(INTG) :: SOLVERTYPE !<The type of the problem solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
+    INTEGER(INTG) :: SOLVE_TYPE !<The type of the problem solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
     INTEGER(INTG) :: OUTPUT_TYPE !<The type of output required \see SOLVER_ROUTINES_OutputTypes,SOLVER_ROUTINES
+    INTEGER(INTG) :: SPARSITY_TYPE !<The type of sparsity to use in the solver matrices \see SOLVER_ROTUINES_SparsityTypes,SOLVER_ROUTINES
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linear solver information
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer to the nonlinear solver information
     TYPE(TIME_INTEGRATION_SOLVER_TYPE), POINTER :: TIME_INTEGRATION_SOLVER !<A pointer to the time integration solver information
@@ -1326,11 +1331,6 @@ MODULE TYPES
     INTEGER(INTG) :: SOLUTION_NUMBER !<The number of the solution
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer back to the problem for this solution
     LOGICAL :: SOLUTION_FINISHED !<Is .TRUE. if the problem solution has finished being created, .FALSE. if not.
-    INTEGER(INTG) :: OUTPUT_TYPE !<The output type for the solution \see PROBLEM_ROUTINES_SolutionOutputTypes,PROBLEM_ROUTINES
-    INTEGER(INTG) :: SPARSITY_TYPE !<The sparsity type for the solution matrices \see PROBLEM_ROUTINES_SolutionGlobalSparsityTypes,PROBLEM_ROUTINES
-    INTEGER(INTG) :: SOLVE_TYPE
-    INTEGER(INTG) :: SOLVER_LIBRARY
-    INTEGER(INTG) :: SOLVER_OUTPUT_TYPE
     !TYPE(SOLUTION_LINEAR_DATA_TYPE), POINTER :: LINEAR_DATA !<A pointer to the data for linear solutions.
     !TYPE(SOLUTION_NONLINEAR_DATA_TYPE), POINTER :: NONLINEAR_DATA !<A pointer to the data for non-linear solutions.
     !TYPE(SOLUTION_TIME_DATA_TYPE), POINTER :: TIME_DATA !<A pointer to the data for non-static solutions.

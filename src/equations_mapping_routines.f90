@@ -128,54 +128,60 @@ CONTAINS
                 !Allocate and initialise the variable to equations matrices maps
                 DO variable_type=1,FIELD_NUMBER_OF_VARIABLE_TYPES
                   DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
-                  NUMBER_OF_LOCAL_DOFS=DEPENDENT_VARIABLE%NUMBER_OF_DOFS
-                  NUMBER_OF_GLOBAL_DOFS=DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS                  
-                  IF(EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES==-1) THEN
-                    ALLOCATE(EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%DOF_TO_ROWS_MAP( &
-                      & NUMBER_OF_LOCAL_DOFS),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable to equations matrices maps dof to rows map.", &
-                      & ERR,ERROR,*999)
-                    EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%DOF_TO_ROWS_MAP=0
-                    EQUATIONS_MAPPING%NUMBER_OF_MATRIX_VARIABLES=EQUATIONS_MAPPING%NUMBER_OF_MATRIX_VARIABLES+1
-                  ELSE IF(EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES>0) THEN
-                    ALLOCATE(EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%EQUATIONS_MATRIX_NUMBERS( &
-                      & EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable to equations matrices maps equations matrix numbers.", &
-                      & ERR,ERROR,*999)
-                    EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%EQUATIONS_MATRIX_NUMBERS=0
-                    ALLOCATE(EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%DOF_TO_COLUMNS_MAPS( &
-                      & EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable to equations matrices maps dof to columns map.", &
-                      & ERR,ERROR,*999)                
-                    EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES=0
-                    DO matrix_idx=1,EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES
-                      IF(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(matrix_idx)==variable_type) THEN
-                        EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES= &
-                          & EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES+1
-                        EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%EQUATIONS_MATRIX_NUMBERS( &
-                          & EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES) = &
-                          & matrix_idx
-                        ALLOCATE(EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%DOF_TO_COLUMNS_MAPS( &
-                          & EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES)% &
-                          & COLUMN_DOF(NUMBER_OF_LOCAL_DOFS),STAT=ERR)
-                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable dof to columns map column dof.",ERR,ERROR,*999)
-                        DO dof_idx=1,NUMBER_OF_LOCAL_DOFS
-                          !1-1 mapping for now
-                          EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%DOF_TO_COLUMNS_MAPS( &
+                  IF(ASSOCIATED(DEPENDENT_VARIABLE)) THEN
+                    NUMBER_OF_LOCAL_DOFS=DEPENDENT_VARIABLE%NUMBER_OF_DOFS
+                    NUMBER_OF_GLOBAL_DOFS=DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS                  
+                    IF(EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES==-1) THEN
+                      ALLOCATE(EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%DOF_TO_ROWS_MAP( &
+                        & NUMBER_OF_LOCAL_DOFS),STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable to equations matrices maps dof to rows map.", &
+                        & ERR,ERROR,*999)
+                      EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%DOF_TO_ROWS_MAP=0
+                      EQUATIONS_MAPPING%NUMBER_OF_MATRIX_VARIABLES=EQUATIONS_MAPPING%NUMBER_OF_MATRIX_VARIABLES+1
+                    ELSE IF(EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)% &
+                      & NUMBER_OF_EQUATIONS_MATRICES>0) THEN
+                      ALLOCATE(EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%EQUATIONS_MATRIX_NUMBERS( &
+                        & EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES), &
+                        & STAT=ERR)
+                      IF(ERR/=0) &
+                        & CALL FLAG_ERROR("Could not allocate variable to equations matrices maps equations matrix numbers.", &
+                        & ERR,ERROR,*999)
+                      ALLOCATE(EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%DOF_TO_COLUMNS_MAPS( &
+                        & EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES), &
+                        & STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable to equations matrices maps dof to columns map.", &
+                        & ERR,ERROR,*999)                
+                      EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%EQUATIONS_MATRIX_NUMBERS=0
+                      EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES=0
+                      DO matrix_idx=1,EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES
+                        IF(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(matrix_idx)==variable_type) THEN
+                          EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES= &
+                            & EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES+1
+                          EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%EQUATIONS_MATRIX_NUMBERS( &
+                            & EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES) = &
+                            & matrix_idx
+                          ALLOCATE(EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%DOF_TO_COLUMNS_MAPS( &
                             & EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES)% &
-                            & COLUMN_DOF(dof_idx)=dof_idx
-                        ENDDO !dof_idx
-                      ENDIF
-                    ENDDO !matrix_idx
-                    ALLOCATE(EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%DOF_TO_ROWS_MAP( &
-                      & NUMBER_OF_LOCAL_DOFS),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable to equations matrices maps dof to rows map.", &
-                      & ERR,ERROR,*999)
-                    DO dof_idx=1,NUMBER_OF_LOCAL_DOFS
-                      !1-1 mappings for now.
-                      EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%DOF_TO_ROWS_MAP(dof_idx)=dof_idx
-                    ENDDO !dof_idx
-                    EQUATIONS_MAPPING%NUMBER_OF_MATRIX_VARIABLES=EQUATIONS_MAPPING%NUMBER_OF_MATRIX_VARIABLES+1
+                            & COLUMN_DOF(NUMBER_OF_LOCAL_DOFS),STAT=ERR)
+                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable dof to columns map column dof.",ERR,ERROR,*999)
+                          DO dof_idx=1,NUMBER_OF_LOCAL_DOFS
+                            !1-1 mapping for now
+                            EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%DOF_TO_COLUMNS_MAPS( &
+                              & EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)% &
+                              & NUMBER_OF_EQUATIONS_MATRICES)%COLUMN_DOF(dof_idx)=dof_idx
+                          ENDDO !dof_idx
+                        ENDIF
+                      ENDDO !matrix_idx
+                      ALLOCATE(EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%DOF_TO_ROWS_MAP( &
+                        & NUMBER_OF_LOCAL_DOFS),STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable to equations matrices maps dof to rows map.", &
+                        & ERR,ERROR,*999)
+                      DO dof_idx=1,NUMBER_OF_LOCAL_DOFS
+                        !1-1 mappings for now.
+                        EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%DOF_TO_ROWS_MAP(dof_idx)=dof_idx
+                      ENDDO !dof_idx
+                      EQUATIONS_MAPPING%NUMBER_OF_MATRIX_VARIABLES=EQUATIONS_MAPPING%NUMBER_OF_MATRIX_VARIABLES+1
+                    ENDIF
                   ENDIF
                 ENDDO !variable_type
                 !Allocate and initialise the variable types            
@@ -268,6 +274,8 @@ CONTAINS
                   IF(EQUATIONS_MAPPING%RHS_VARIABLE_TYPE/=0) EQUATIONS_MAPPING%EQUATIONS_ROW_TO_VARIABLES_MAPS(row_idx)% &
                     & ROW_TO_RHS_DOF=row_idx
                 ENDDO !row_idx
+                EQUATIONS_MAPPING%NUMBER_OF_ROWS=NUMBER_OF_ROWS
+                EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS=TOTAL_NUMBER_OF_ROWS
                 !Calcuate the source row maps if there is a source field
                 IF(ASSOCIATED(EQUATIONS_SET%SOURCE)) THEN
                   SOURCE_FIELD=>EQUATIONS_SET%SOURCE%SOURCE_FIELD
