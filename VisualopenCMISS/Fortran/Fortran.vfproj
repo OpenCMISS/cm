@@ -4,7 +4,7 @@
 		<Platform Name="Win32"/></Platforms>
 	<Configurations>
 		<Configuration Name="Debug|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
-				<Tool Name="VFFortranCompilerTool" AdditionalOptions="/nolink" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32-debug;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32-debug\include;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32-debug\include\finclude;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32-debug\bmake\cygwin-c-debug;C:\Program Files\MPICH2\include" PreprocessorDefinitions="PETSC_AVOID_MPIF_H" Diagnostics="diagnosticsShowAll" ModulePath="$(SolutionDir)..\object\i386-win32-debug\" ObjectFile="$(SolutionDir)..\object\i386-win32-debug\" Traceback="true" RuntimeChecks="rtChecksAll" BoundsCheck="true" RuntimeLibrary="rtQuickWinDebug"/>
+				<Tool Name="VFFortranCompilerTool" AdditionalOptions="/c /V" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32-debug;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32-debug\include;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32-debug\include\finclude;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32-debug\bmake\cygwin-c-debug;C:\Program Files\MPICH2\include" PreprocessorDefinitions="PETSC_AVOID_MPIF_H" Diagnostics="diagnosticsShowAll" DebugParameter="debugParameterUsed" ModulePath="$(SolutionDir)..\object\i386-win32-debug\" ObjectFile="$(SolutionDir)..\object\i386-win32-debug\" Traceback="true" RuntimeChecks="rtChecksAll" BoundsCheck="true" RuntimeLibrary="rtQuickWinDebug"/>
 				<Tool Name="VFLinkerTool" OutputFile="$(SolutionDir)..\bin\i386-win32\OpenCMISSTest-debug.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(SolutionDir)..\object\i386-win32-debug\;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32-debug\lib;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32-debug\lib\cygwin-c-debug\;C:\Program Files\MPICH2\lib\" IgnoreDefaultLibraryNames="LIBC" GenerateDebugInformation="true" ProgramDatabaseFile="$(OUTDIR)/Fortran.pdb" SubSystem="subSystemWindows" AdditionalDependencies="C.lib ParMETISlib.lib METISlib.lib libpetscts.lib libpetscsnes.lib libpetscksp.lib libpetscdm.lib libpetscmat.lib libpetscvec.lib libpetsc.lib libflapack.lib libfblas.lib mpich2.lib fmpich2.lib Advapi32.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
@@ -14,7 +14,7 @@
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
 		<Configuration Name="Release|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
 				<Tool Name="VFFortranCompilerTool" AdditionalOptions="/nolink" SuppressStartupBanner="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32\include;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32\include\finclude;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32\bmake\cygwin-c-opt;C:\Program Files\MPICH2\include" PreprocessorDefinitions="PETSC_AVOID_MPIF_H" ModulePath="$(SolutionDir)..\object\i386-win32\" ObjectFile="$(SolutionDir)..\object\i386-win32\" RuntimeLibrary="rtQuickWin"/>
-				<Tool Name="VFLinkerTool" OutputFile="$(SolutionDir)..\bin\i386-win32\OpenCMISSTest.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(SolutionDir)..\object\i386-win32\;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32\lib;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32\lib\cygwin-c-opt\;C:\Program Files\MPICH2\lib\" SubSystem="subSystemWindows" AdditionalDependencies="C.lib ParMETISlib.lib METISlib.lib libpetscts.lib libpetscsnes.lib libpetscksp.lib libpetscdm.lib libpetscmat.lib libpetscvec.lib libpetsc.lib libflapack.lib libfblas.lib mpich2.lib fmpich2.lib Advapi32.lib"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(SolutionDir)..\bin\i386-win32\OpenCMISSTest.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(SolutionDir)..\object\i386-win32\;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32\lib;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32\lib\cygwin-c-opt\;C:\Program Files\MPICH2\lib\" IgnoreDefaultLibraryNames="LIBC" SubSystem="subSystemWindows" AdditionalDependencies="C.lib ParMETISlib.lib METISlib.lib libpetscts.lib libpetscsnes.lib libpetscksp.lib libpetscdm.lib libpetscmat.lib libpetscvec.lib libpetsc.lib libflapack.lib libfblas.lib mpich2.lib fmpich2.lib Advapi32.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
 				<Tool Name="VFCustomBuildTool"/>
@@ -28,6 +28,7 @@
 		<File RelativePath="..\..\src\base_routines.f90"/>
 		<File RelativePath="..\..\src\basis_routines.f90"/>
 		<File RelativePath="..\..\src\blas.f90"/>
+		<File RelativePath="..\..\src\classical_field_routines.f90"/>
 		<File RelativePath="..\..\src\cmiss.f90"/>
 		<File RelativePath="..\..\src\cmiss_mpi.f90"/>
 		<File RelativePath="..\..\src\cmiss_parmetis.f90"/>
@@ -37,12 +38,20 @@
 		<File RelativePath="..\..\src\coordinate_routines.f90"/>
 		<File RelativePath="..\..\src\distributed_matrix_vector.f90"/>
 		<File RelativePath="..\..\src\domain_mappings.f90"/>
+		<File RelativePath="..\..\src\elasticity_routines.f90"/>
+		<File RelativePath="..\..\src\electromechanics_routines.f90"/>
+		<File RelativePath="..\..\src\equations_mapping_routines.f90"/>
+		<File RelativePath="..\..\src\equations_matrices_routines.f90"/>
+		<File RelativePath="..\..\src\equations_set_constants.f90"/>
+		<File RelativePath="..\..\src\equations_set_routines.f90"/>
 		<File RelativePath="..\..\src\f90c_f.f90"/>
 		<File RelativePath="..\..\src\field_routines.f90"/>
-		<File RelativePath="..\..\src\global_matrices_routines.f90"/>
+		<File RelativePath="..\..\src\fluid_mechanics_routines.f90"/>
 		<File RelativePath="..\..\src\input_output.f90"/>
 		<File RelativePath="..\..\src\iso_varying_string.f90"/>
 		<File RelativePath="..\..\src\kinds.f90"/>
+		<File RelativePath="..\..\src\lapack.f90"/>
+		<File RelativePath="..\..\src\Laplace_equations_routines.f90"/>
 		<File RelativePath="..\..\src\lists.f90"/>
 		<File RelativePath="..\..\src\machine_constants_win32.f90"/>
 		<File RelativePath="..\..\src\maths.f90"/>
@@ -50,6 +59,7 @@
 		<File RelativePath="..\..\src\mesh_routines.f90"/>
 		<File RelativePath="..\..\src\node_routines.f90"/>
 		<File RelativePath="..\..\src\opencmisstest.f90"/>
+		<File RelativePath="..\..\src\problem_constants.f90"/>
 		<File RelativePath="..\..\src\problem_routines.f90"/>
 		<File RelativePath="..\..\src\region_routines.f90"/>
 		<File RelativePath="..\..\src\solution_mapping_routines.f90"/>
