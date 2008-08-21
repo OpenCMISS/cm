@@ -92,7 +92,7 @@ MODULE BASE_ROUTINES
   !>@{  
   INTEGER(INTG), PARAMETER :: ALL_DIAG_TYPE=1 !<Type for setting diagnostic output in all routines \see BASE_ROUTINES_DiagnosticTypes,BASE_ROUTINES
   INTEGER(INTG), PARAMETER :: IN_DIAG_TYPE=2 !<Type for setting diagnostic output in one routine \see BASE_ROUTINES_DiagnosticTypes,BASE_ROUTINES
-  INTEGER(INTG), PARAMETER :: FROM_DIAG_TYPE=3 !<Type for setting diag.nostic output from one routine downwards \see BASE_ROUTINES_DiagnosticTypes,BASE_ROUTINES
+  INTEGER(INTG), PARAMETER :: FROM_DIAG_TYPE=3 !<Type for setting diagnostic output from one routine downwards \see BASE_ROUTINES_DiagnosticTypes,BASE_ROUTINES
   !>@}
 
   !> \addtogroup BASE_ROUTINES_TimingTypes BASE_ROUTINES::TimingTypes

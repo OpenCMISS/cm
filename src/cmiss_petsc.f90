@@ -180,7 +180,7 @@ MODULE CMISS_PETSC
 
   !Module variables
 
-  LOGICAL, PARAMETER :: PETSC_HANDLE_ERROR=.TRUE.
+  LOGICAL, SAVE :: PETSC_HANDLE_ERROR
 
   !Interfaces
 
@@ -371,6 +371,12 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE MatGetArray
     
+   SUBROUTINE MatGetArrayF90(A,mat_data,ierr)
+      Mat A
+      PetscScalar, POINTER :: mat_data(:,:)
+      PetscInt ierr
+    END SUBROUTINE MatGetArrayF90
+    
     SUBROUTINE MatGetOwnershipRange(A,firstrow,lastrow,ierr)
       Mat A
       PetscInt firstrow
@@ -388,12 +394,18 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE MatGetValues
     
-   SUBROUTINE MatRestoreArray(A,mat_data,mat_offset,ierr)
+    SUBROUTINE MatRestoreArray(A,mat_data,mat_offset,ierr)
       Mat A
       PetscScalar mat_data(1)
       PetscOffset mat_offset
       PetscInt ierr
     END SUBROUTINE MatRestoreArray
+        
+    SUBROUTINE MatRestoreArrayF90(A,mat_data,ierr)
+      Mat A
+      PetscScalar, POINTER :: mat_data(:)
+      PetscInt ierr
+    END SUBROUTINE MatRestoreArrayF90
     
     SUBROUTINE MatSetLocalToGlobalMapping(A,ctx,ierr)
       Mat A
@@ -573,6 +585,12 @@ MODULE CMISS_PETSC
       PetscOffset vec_offset
       PetscInt ierr
     END SUBROUTINE VecGetArray
+    
+    SUBROUTINE VecGetArrayF90(x,vec_data,ierr)
+      Vec x
+      PetscScalar, POINTER :: vec_data(:)
+      PetscInt ierr
+    END SUBROUTINE VecGetArrayF90
 
     SUBROUTINE VecGetLocalSize(x,size,ierr)
       Vec x
@@ -633,6 +651,12 @@ MODULE CMISS_PETSC
       PetscOffset vec_offset
       PetscInt ierr
     END SUBROUTINE VecRestoreArray
+
+    SUBROUTINE VecRestoreArrayF90(x,vec_data,ierr)
+      Vec x
+      PetscScalar, POINTER :: vec_data(:)
+      PetscInt ierr
+    END SUBROUTINE VecRestoreArrayF90
 
     SUBROUTINE VecSet(x,value,ierr)
       Vec x
@@ -724,19 +748,68 @@ MODULE CMISS_PETSC
   
   PUBLIC PETSC_PCINITIALISE,PETSC_PCFINALISE,PETSC_PCSETTYPE
 
+  PUBLIC PETSC_ERRORHANDLING_SET_OFF,PETSC_ERRORHANDLING_SET_ON
+  
   PUBLIC PETSC_FINALIZE,PETSC_INITIALIZE,PETSC_LOGPRINTSUMMARY
   
   PUBLIC PETSC_VECINITIALISE,PETSC_VECFINALISE,PETSC_VECASSEMBLYBEGIN,PETSC_VECASSEMBLYEND,PETSC_VECCREATE,PETSC_VECCREATEGHOST, &
     & PETSC_VECCREATEGHOSTWITHARRAY,PETSC_VECCREATEMPI,PETSC_VECCREATEMPIWITHARRAY,PETSC_VECCREATESEQ, &
-    & PETSC_VECCREATESEQWITHARRAY,PETSC_VECDESTROY,PETSC_VECDUPLICATE,PETSC_VECGETARRAY,PETSC_VECGETLOCALSIZE, &
-    & PETSC_VECGETOWNERSHIPRANGE,PETSC_VECGETSIZE,PETSC_VECGETVALUES,PETSC_VECGHOSTGETLOCALFORM,PETSC_VECGHOSTRESTORELOCALFORM, &
-    & PETSC_VECGHOSTUPDATEBEGIN,PETSC_VECGHOSTUPDATEEND,PETSC_VECRESTOREARRAY,PETSC_VECSET,PETSC_VECSETFROMOPTIONS, &
-    & PETSC_VECSETLOCALTOGLOBALMAPPING,PETSC_VECSETSIZES,PETSC_VECSETVALUES,PETSC_VECSETVALUESLOCAL,PETSC_VECVIEW
+    & PETSC_VECCREATESEQWITHARRAY,PETSC_VECDESTROY,PETSC_VECDUPLICATE,PETSC_VECGETARRAY,PETSC_VECGETARRAYF90, &
+    & PETSC_VECGETLOCALSIZE,PETSC_VECGETOWNERSHIPRANGE,PETSC_VECGETSIZE,PETSC_VECGETVALUES,PETSC_VECGHOSTGETLOCALFORM, &
+    & PETSC_VECGHOSTRESTORELOCALFORM,PETSC_VECGHOSTUPDATEBEGIN,PETSC_VECGHOSTUPDATEEND,PETSC_VECRESTOREARRAY, &
+    & PETSC_VECRESTOREARRAYF90,PETSC_VECSET,PETSC_VECSETFROMOPTIONS,PETSC_VECSETLOCALTOGLOBALMAPPING,PETSC_VECSETSIZES, &
+    & PETSC_VECSETVALUES,PETSC_VECSETVALUESLOCAL,PETSC_VECVIEW
 
   PUBLIC PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_STDOUT_SELF,PETSC_VIEWER_DRAW_WORLD,PETSC_VIEWER_DRAW_SELF
 
 CONTAINS
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Set PETSc error handling on
+  SUBROUTINE PETSC_ERRORHANDLING_SET_OFF(ERR,ERROR,*)
+
+    !Argument Variables
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_ERRORHANDLING_SET_OFF",ERR,ERROR,*999)
+
+    PETSC_HANDLE_ERROR=.FALSE.
+    
+    CALL EXITS("PETSC_ERRORHANDLING_SET_OFF")
+    RETURN
+999 CALL ERRORS("PETSC_ERRORHANDLING_SET_OFF",ERR,ERROR)
+    CALL EXITS("PETSC_ERRORHANDLING_SET_OFF")
+    RETURN 1
+  END SUBROUTINE PETSC_ERRORHANDLING_SET_OFF
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Set PETSc error handling on
+  SUBROUTINE PETSC_ERRORHANDLING_SET_ON(ERR,ERROR,*)
+
+    !Argument Variables
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_ERRORHANDLING_SET_ON",ERR,ERROR,*999)
+
+    PETSC_HANDLE_ERROR=.TRUE.
+    
+    CALL EXITS("PETSC_ERRORHANDLING_SET_ON")
+    RETURN
+999 CALL ERRORS("PETSC_ERRORHANDLING_SET_ON",ERR,ERROR)
+    CALL EXITS("PETSC_ERRORHANDLING_SET_ON")
+    RETURN 1
+  END SUBROUTINE PETSC_ERRORHANDLING_SET_ON
+    
   !
   !================================================================================================================================
   !
@@ -781,6 +854,7 @@ CONTAINS
 
     CALL ENTERS("PETSC_INITIALIZE",ERR,ERROR,*999)
 
+    PETSC_HANDLE_ERROR=.TRUE.
     CALL PetscInitialize(FILE,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
@@ -2791,6 +2865,41 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecGetArrayF90 routine.
+  SUBROUTINE PETSC_VECGETARRAYF90(X,ARRAY,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT), TARGET :: X !<The vector to get the array of
+    REAL(DP), POINTER :: ARRAY(:) !<On exit, a pointer to the array of the vector
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_VECGETARRAYF90",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(ARRAY)) THEN
+      CALL FLAG_ERROR("Array is already associated",ERR,ERROR,*999)
+    ELSE
+      CALL VecGetArrayF90(X%VEC,ARRAY,ERR)
+      IF(ERR/=0) THEN
+        IF(PETSC_HANDLE_ERROR) THEN
+          CHKERRQ(ERR)
+        ENDIF
+        CALL FLAG_ERROR("PETSc error in VecGetArrayF90",ERR,ERROR,*999)
+      ENDIF
+    ENDIF
+    
+    CALL EXITS("PETSC_VECGETARRAYF90")
+    RETURN
+999 CALL ERRORS("PETSC_VECGETARRAYF90",ERR,ERROR)
+    CALL EXITS("PETSC_VECGETARRAYF90")
+    RETURN 1
+  END SUBROUTINE PETSC_VECGETARRAYF90
+    
+  !
+  !================================================================================================================================
+  !
+
   !>Buffer routine to the PETSc VecGetLocalSize routine.
   SUBROUTINE PETSC_VECGETLOCALSIZE(X,SIZE,ERR,ERROR,*)
 
@@ -3069,6 +3178,37 @@ CONTAINS
     CALL EXITS("PETSC_VECRESTOREARRAY")
     RETURN 1
   END SUBROUTINE PETSC_VECRESTOREARRAY
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc VecRestoreArrayF90 routine.
+  SUBROUTINE PETSC_VECRESTOREARRAYF90(X,ARRAY,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to restore the array of
+    REAL(DP), POINTER :: ARRAY(:) !<A pointer to the data to restore
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_VECRESTOREARRAYF90",ERR,ERROR,*999)
+
+    CALL VecRestoreArrayF90(X%VEC,ARRAY,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in VecRestoreArrayF90",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_VECRESTOREARRAYF90")
+    RETURN
+999 CALL ERRORS("PETSC_VECRESTOREARRAYF90",ERR,ERROR)
+    CALL EXITS("PETSC_VECRESTOREARRAYF90")
+    RETURN 1
+  END SUBROUTINE PETSC_VECRESTOREARRAYF90
     
   !
   !================================================================================================================================

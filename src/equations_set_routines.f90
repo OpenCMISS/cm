@@ -85,6 +85,8 @@ MODULE EQUATIONS_SET_ROUTINES
     MODULE PROCEDURE EQUATIONS_SET_SPECIFICATION_SET_PTR
   END INTERFACE !EQUATIONS_SET_SPECIFICATION_SET
 
+  PUBLIC EQUATIONS_SET_BACKSUBSTITUTE
+  
   PUBLIC EQUATIONS_SET_CREATE_START,EQUATIONS_SET_CREATE_FINISH,EQUATIONS_SET_DESTROY,EQUATIONS_SETS_INITIALISE, &
     & EQUATIONS_SETS_FINALISE
 
@@ -530,6 +532,218 @@ CONTAINS
     RETURN 1
   END SUBROUTINE EQUATIONS_SET_ASSEMBLE_LINEAR_STATIC_FEM
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Backsubstitutes with an equations set to calculate unknown right hand side vectors
+  SUBROUTINE EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to backsubstitute
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: equations_column_idx,equations_column_number,equations_matrix_idx,equations_row_number, &
+      & EQUATIONS_STORAGE_TYPE,field_dof,rhs_boundary_condition,rhs_field_dof,rhs_variable_dof,variable_dof
+    INTEGER(INTG), POINTER :: COLUMN_INDICES(:),ROW_INDICES(:)
+    REAL(DP) :: DEPENDENT_VALUE,MATRIX_VALUE,RHS_VALUE
+    REAL(DP), POINTER :: DEPENDENT_PARAMETERS(:),EQUATIONS_MATRIX_DATA(:)
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: COLUMN_DOMAIN_MAPPING
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: EQUATIONS_DISTRIBUTED_MATRIX
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX
+    TYPE(EQUATIONS_SET_FIXED_CONDITIONS_TYPE), POINTER :: FIXED_CONDITIONS
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE,RHS_VARIABLE
+    TYPE(SOURCE_EQUATIONS_MATRICES_MAP_TYPE), POINTER :: SOURCE_MAPPINGS
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("EQUATIONS_SET_BACKSUBSTITUTE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(EQUATIONS_SET%EQUATIONS_SET_FINISHED) THEN
+        DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+        IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+          !Get the dependent field parameters
+          CALL FIELD_PARAMETER_SET_GET(DEPENDENT_FIELD,FIELD_VALUES_SET_TYPE,DEPENDENT_PARAMETERS,ERR,ERROR,*999)
+          EQUATIONS=>EQUATIONS_SET%EQUATIONS
+          IF(ASSOCIATED(EQUATIONS)) THEN
+            EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+            IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+              EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
+              IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
+                FIXED_CONDITIONS=>EQUATIONS_SET%FIXED_CONDITIONS
+                IF(ASSOCIATED(FIXED_CONDITIONS)) THEN
+                  SOURCE_MAPPINGS=>EQUATIONS_MAPPING%SOURCE_MAPPINGS
+                  IF(ASSOCIATED(SOURCE_MAPPINGS)) THEN
+!!TODO: source term
+                  ENDIF
+                  RHS_VARIABLE=>EQUATIONS_MAPPING%RHS_VARIABLE
+                  IF(ASSOCIATED(RHS_VARIABLE)) THEN                                 
+                    !Loop over the equations matrices
+                    DO equations_matrix_idx=1,EQUATIONS_MATRICES%NUMBER_OF_MATRICES
+                      DEPENDENT_VARIABLE=>EQUATIONS_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(equations_matrix_idx)%VARIABLE
+                      IF(ASSOCIATED(DEPENDENT_VARIABLE)) THEN
+                        EQUATIONS_MATRIX=>EQUATIONS_MATRICES%MATRICES(equations_matrix_idx)%PTR
+                        IF(ASSOCIATED(EQUATIONS_MATRIX)) THEN
+                          COLUMN_DOMAIN_MAPPING=>EQUATIONS_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(equations_matrix_idx)% &
+                            & COLUMN_DOFS_MAPPING
+                          IF(ASSOCIATED(COLUMN_DOMAIN_MAPPING)) THEN
+                            EQUATIONS_DISTRIBUTED_MATRIX=>EQUATIONS_MATRIX%MATRIX
+                            IF(ASSOCIATED(EQUATIONS_DISTRIBUTED_MATRIX)) THEN
+                              CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_GET(EQUATIONS_DISTRIBUTED_MATRIX,EQUATIONS_STORAGE_TYPE, &
+                                & ERR,ERROR,*999)
+                              CALL DISTRIBUTED_MATRIX_DATA_GET(EQUATIONS_DISTRIBUTED_MATRIX,EQUATIONS_MATRIX_DATA, &
+                                & ERR,ERROR,*999)
+                              SELECT CASE(EQUATIONS_STORAGE_TYPE)
+                              CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)                                    
+                                !Loop over the rows in the equations set
+                                DO equations_row_number=1,EQUATIONS_MAPPING%NUMBER_OF_ROWS
+!!TODO: what if the equations set doesn't have a RHS vector???
+                                  RHS_VALUE=0.0_DP
+                                  rhs_variable_dof=EQUATIONS_MAPPING%EQUATIONS_ROW_TO_VARIABLES_MAPS(equations_row_number)% &
+                                    & ROW_TO_RHS_DOF
+                                  rhs_field_dof=RHS_VARIABLE%DOF_LIST(rhs_variable_dof)
+                                  rhs_boundary_condition=FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(rhs_field_dof)
+                                  SELECT CASE(rhs_boundary_condition)
+                                  CASE(EQUATIONS_SET_NOT_FIXED)
+                                    !Back substitute
+                                    !Loop over the local columns of the equations matrix                                      
+                                    DO equations_column_idx=1,COLUMN_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
+                                      equations_column_number=COLUMN_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(equations_column_idx)
+                                      variable_dof=equations_column_idx
+                                      field_dof=DEPENDENT_VARIABLE%DOF_LIST(variable_dof)
+                                      MATRIX_VALUE=EQUATIONS_MATRIX_DATA(equations_row_number+(equations_column_number-1)* &
+                                        & EQUATIONS_MATRICES%NUMBER_OF_ROWS)
+                                      DEPENDENT_VALUE=DEPENDENT_PARAMETERS(field_dof)                                        
+                                      RHS_VALUE=RHS_VALUE+MATRIX_VALUE*DEPENDENT_VALUE
+                                    ENDDO !equations_column_idx
+                                  CASE(EQUATIONS_SET_FIXED_BOUNDARY_CONDITION)
+                                    !Do nothing
+                                  CASE(EQUATIONS_SET_MIXED_BOUNDARY_CONDITION)
+                                    !Robin or is it Cauchy??? boundary conditions
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The global boundary condition of "// &
+                                      & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
+                                      & " for RHS field dof number "//TRIM(NUMBER_TO_VSTRING(rhs_field_dof,"*",ERR,ERROR))// &
+                                      & " is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                  CALL FIELD_PARAMETER_SET_UPDATE_DOF(DEPENDENT_FIELD,FIELD_VALUES_SET_TYPE,rhs_field_dof, &
+                                    & RHS_VALUE,ERR,ERROR,*999)
+                                ENDDO !equations_row_number
+                              CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
+                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                              CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                      
+                              CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
+                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                              CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+                                CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(EQUATIONS_DISTRIBUTED_MATRIX,ROW_INDICES, &
+                                  & COLUMN_INDICES,ERR,ERROR,*999)
+                                !Loop over the rows in the equations set
+                                DO equations_row_number=1,EQUATIONS_MAPPING%NUMBER_OF_ROWS
+!!TODO: what if the equations set doesn't have a RHS vector???
+                                  RHS_VALUE=0.0_DP
+                                  rhs_variable_dof=EQUATIONS_MAPPING%EQUATIONS_ROW_TO_VARIABLES_MAPS(equations_row_number)% &
+                                    & ROW_TO_RHS_DOF
+                                  rhs_field_dof=RHS_VARIABLE%DOF_LIST(rhs_variable_dof)
+                                  rhs_boundary_condition=FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(rhs_field_dof)
+                                  SELECT CASE(rhs_boundary_condition)
+                                  CASE(EQUATIONS_SET_NOT_FIXED)
+                                    !Back substitute
+                                    !Loop over the local columns of the equations matrix                                      
+                                    DO equations_column_idx=ROW_INDICES(equations_row_number), &
+                                      ROW_INDICES(equations_row_number+1)-1
+                                      equations_column_number=COLUMN_INDICES(equations_column_idx)
+                                      variable_dof=equations_column_idx-ROW_INDICES(equations_row_number)+1
+                                      field_dof=DEPENDENT_VARIABLE%DOF_LIST(variable_dof)
+                                      MATRIX_VALUE=EQUATIONS_MATRIX_DATA(equations_column_idx)
+                                      DEPENDENT_VALUE=DEPENDENT_PARAMETERS(field_dof)
+                                      RHS_VALUE=RHS_VALUE+MATRIX_VALUE*DEPENDENT_VALUE
+                                    ENDDO !equations_column_idx
+                                  CASE(EQUATIONS_SET_FIXED_BOUNDARY_CONDITION)
+                                    !Do nothing
+                                  CASE(EQUATIONS_SET_MIXED_BOUNDARY_CONDITION)
+                                    !Robin or is it Cauchy??? boundary conditions
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The global boundary condition of "// &
+                                      & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
+                                      & " for RHS field dof number "//TRIM(NUMBER_TO_VSTRING(rhs_field_dof,"*",ERR,ERROR))// &
+                                      & " is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                  CALL FIELD_PARAMETER_SET_UPDATE_DOF(DEPENDENT_FIELD,FIELD_VALUES_SET_TYPE,rhs_field_dof, &
+                                    & RHS_VALUE,ERR,ERROR,*999)
+                                ENDDO !equations_row_number
+                              CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                        
+                              CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
+                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                      
+                              CASE DEFAULT
+                                LOCAL_ERROR="The matrix storage type of "// &
+                                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
+                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              END SELECT
+                              CALL DISTRIBUTED_MATRIX_DATA_RESTORE(EQUATIONS_DISTRIBUTED_MATRIX,EQUATIONS_MATRIX_DATA, &
+                                & ERR,ERROR,*999)
+                            ELSE
+                              CALL FLAG_ERROR("Equations matrix distributed matrix is not associated.",ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            CALL FLAG_ERROR("Equations column domain mapping is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("Equations equations matrix is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Dependent variable is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ENDDO !equations_matrix_idx
+                  ELSE
+                    CALL FLAG_ERROR("RHS variable is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Fixed conditions are not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Equations mapping is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Equations matrices is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+          ENDIF
+          !Restore the dependent field parameters
+          CALL FIELD_PARAMETER_SET_RESTORE(DEPENDENT_FIELD,FIELD_VALUES_SET_TYPE,DEPENDENT_PARAMETERS,ERR,ERROR,*999)
+          !Start the update of the field parameters
+          CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+          !Finish the update of the field parameters
+          CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE            
+        CALL FLAG_ERROR("Equations set has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("EQUATIONS_SET_BACKSUBSTITUTE")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_BACKSUBSTITUTE",ERR,ERROR)    
+    CALL EXITS("EQUATIONS_SET_BACKSUBSTITUTE")
+    RETURN 1
+   
+  END SUBROUTINE EQUATIONS_SET_BACKSUBSTITUTE
+        
   !
   !================================================================================================================================
   !

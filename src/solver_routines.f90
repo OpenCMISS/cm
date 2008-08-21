@@ -190,6 +190,8 @@ MODULE SOLVER_ROUTINES
     & SOLVER_LINEAR_ITERATIVE_MAXIMUM_ITERATIONS_SET,SOLVER_LINEAR_ITERATIVE_PRECONDITIONER_TYPE_SET, &
     & SOLVER_LINEAR_ITERATIVE_RELATIVE_TOLERANCE_SET,SOLVER_LINEAR_ITERATIVE_TYPE_SET
 
+  PUBLIC SOLVER_VARIABLES_UPDATE
+  
 CONTAINS
 
   !
@@ -1704,7 +1706,6 @@ CONTAINS
                       ELSE
                         CALL FLAG_ERROR("Solver vector PETSc vector is not associated.",ERR,ERROR,*999)
                       ENDIF
-                      CALL SOLVER_VARIABLES_UPDATE(SOLVER,ERR,ERROR,*999)
                     ELSE
                       CALL FLAG_ERROR("RHS vector petsc PETSc is not associated.",ERR,ERROR,*999)
                     ENDIF
@@ -1957,7 +1958,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: equations_column_idx,equations_column_number,equations_matrix_idx,equations_matrix_number, &
       & equations_row_number,equations_row_number2,equations_set_idx,EQUATIONS_STORAGE_TYPE,rhs_boundary_condition, &
-      & rhs_field_dof,rhs_global_dof,rhs_variable_dof,rhs_variable_type,variable_boundary_condition,solver_column_idx, &
+      & rhs_field_dof,rhs_variable_dof,rhs_variable_type,variable_boundary_condition,solver_column_idx, &
       & solver_column_number,solver_matrix_idx,solver_row_idx,solver_row_number,variable_dof,variable_field_dof, &
       & variable_global_dof,variable_idx,variable_type
     INTEGER(INTG), POINTER :: COLUMN_INDICES(:),ROW_INDICES(:)
@@ -2179,8 +2180,7 @@ CONTAINS
 !!TODO: what if the equations set doesn't have a RHS vector???
                               rhs_variable_dof=EQUATIONS_MAPPING%EQUATIONS_ROW_TO_VARIABLES_MAPS(equations_row_number)% &
                                 & ROW_TO_RHS_DOF
-                              rhs_global_dof=RHS_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(rhs_variable_dof)
-                              rhs_field_dof=RHS_VARIABLE%GLOBAL_DOF_LIST(rhs_global_dof)
+                              rhs_field_dof=RHS_VARIABLE%DOF_LIST(rhs_variable_dof)
                               rhs_boundary_condition=FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(rhs_field_dof)
                               !Apply boundary conditions
                               SELECT CASE(rhs_boundary_condition)
@@ -2782,10 +2782,13 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: solver_dof_idx,solver_matrix_idx
+    INTEGER(INTG) :: equations_set_idx,field_dof,solver_dof_idx,solver_matrix_idx,variable_dof
+    REAL(DP) :: additive_constant,VALUE,variable_coefficient
     REAL(DP), POINTER :: SOLVER_DATA(:)
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: SOLVER_VECTOR
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE
     TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
     TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
@@ -2797,21 +2800,61 @@ CONTAINS
         SOLVER_MATRICES=>SOLVER%SOLVER_MATRICES
         IF(ASSOCIATED(SOLVER_MATRICES)) THEN
           SOLUTION_MAPPING=>SOLVER_MATRICES%SOLUTION_MAPPING
-          IF(ASSOCIATED(SOLUTION_MAPPING)) THEN
+          IF(ASSOCIATED(SOLUTION_MAPPING)) THEN            
             DO solver_matrix_idx=1,SOLVER_MATRICES%NUMBER_OF_MATRICES
               SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(solver_matrix_idx)%PTR
               IF(ASSOCIATED(SOLVER_MATRIX)) THEN
                 SOLVER_VECTOR=>SOLVER_MATRIX%SOLVER_VECTOR
                 IF(ASSOCIATED(SOLVER_VECTOR)) THEN
-                  DOMAIN_MAPPING=>SOLVER_VECTOR%DOMAIN_MAPPING
-                  IF(ASSOCIATED(DOMAIN_MAPPING)) THEN
-                    CALL DISTRIBUTED_VECTOR_DATA_GET(SOLVER_VECTOR,SOLVER_DATA,ERR,ERROR,*999)
-                    DO solver_dof_idx=1,DOMAIN_MAPPING%NUMBER_OF_LOCAL
-                    ENDDO !solver_dof_idx
-                    CALL DISTRIBUTED_VECTOR_DATA_RESTORE(SOLVER_VECTOR,SOLVER_DATA,ERR,ERROR,*999)
-                  ELSE
-                    CALL FLAG_ERROR("Solver vector domain mapping is not associated.",ERR,ERROR,*999)
-                  ENDIF
+                  !Get the solver variables data
+                  CALL DISTRIBUTED_VECTOR_DATA_GET(SOLVER_VECTOR,SOLVER_DATA,ERR,ERROR,*999)
+                  !Loop over the solver variable dofs
+                  DO solver_dof_idx=1,SOLUTION_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%NUMBER_OF_DOFS
+                    !Loop over the equations sets associated with this dof
+                    DO equations_set_idx=1,SOLUTION_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)% &
+                      & SOLVER_COL_TO_VARIABLE_MAPS(solver_dof_idx)%NUMBER_OF_EQUATIONS_SETS                        
+                      DEPENDENT_VARIABLE=>SOLUTION_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)% &
+                        & SOLVER_COL_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE(equations_set_idx)%PTR
+                      IF(ASSOCIATED(DEPENDENT_VARIABLE)) THEN
+                        DEPENDENT_FIELD=>DEPENDENT_VARIABLE%FIELD
+                        IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+                          !Get the dependent field dof the solver dof is mapped to
+                          variable_dof=SOLUTION_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)% &
+                            & SOLVER_COL_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE_DOF(equations_set_idx)
+                          field_dof=DEPENDENT_VARIABLE%GLOBAL_DOF_LIST(variable_dof)
+                          variable_coefficient=SOLUTION_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)% &
+                            & SOLVER_COL_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE_COEFFICIENT(equations_set_idx)
+                          additive_constant=SOLUTION_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)% &
+                            & SOLVER_COL_TO_VARIABLE_MAPS(solver_dof_idx)%ADDITIVE_CONSTANT(equations_set_idx)
+                          !Set the dependent field dof
+                          VALUE=SOLVER_DATA(solver_dof_idx)*variable_coefficient+additive_constant
+                          CALL FIELD_PARAMETER_SET_UPDATE_DOF(DEPENDENT_FIELD,FIELD_VALUES_SET_TYPE,field_dof,VALUE,ERR,ERROR,*999)
+                        ELSE
+                          CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Dependent variable is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ENDDO !equations_set_idx
+                  ENDDO !solver_dof_idx
+                  !Restore the solver dof data
+                  CALL DISTRIBUTED_VECTOR_DATA_RESTORE(SOLVER_VECTOR,SOLVER_DATA,ERR,ERROR,*999)
+                  !Start the transfer of the field dofs
+                  DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                    EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+                    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                      DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                      CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                    ELSE
+                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ENDDO !equations_set_idx
+                  !Finish the transfer of the field dofs
+                  DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                    EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+                    DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                    CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                  ENDDO !equations_set_idx
                 ELSE
                   CALL FLAG_ERROR("Solver vector is not associated.",ERR,ERROR,*999)
                 ENDIF

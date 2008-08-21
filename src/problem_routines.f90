@@ -721,9 +721,13 @@ CONTAINS
           IF(ASSOCIATED(SOLVER)) THEN
             !Solve
             CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
-            !Update depenent field
+            !Update depenent field with solution
+            CALL SOLVER_VARIABLES_UPDATE(SOLVER,ERR,ERROR,*999)
             !Back-substitute to find flux values
-            !Update dependent field with the calcualted fluxes
+            DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
+              EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+              CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,ERR,ERROR,*999)
+            ENDDO !equations_set_idx
           ELSE
             CALL FLAG_ERROR("Solution solver is not associated.",ERR,ERROR,*999)
           ENDIF

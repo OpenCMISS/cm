@@ -76,6 +76,12 @@ MODULE TYPES
 
   IMPLICIT NONE
   
+  !
+  !================================================================================================================================
+  !
+  ! Quadrature types
+  !
+
   !>Contains information for a particular quadrature scheme. \todo Also evaluate the product of the basis functions at gauss points for speed???
   TYPE QUADRATURE_SCHEME_TYPE
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the quadrature scheme in the list of quadrature schemes for a particular quadrature.
@@ -101,6 +107,12 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_OF_SCHEMES !<The number of quadrature schemes defined for this quadrature
     TYPE(QUADRATURE_SCHEME_PTR_TYPE), POINTER :: SCHEMES(:) !<SCHEMES(scheme_idx). The array of pointers to the quadrature schemes defined for the basis. scheme_idx must be between 1 and QUADRATURE_TYPE::NUMBER_OF_SCHEMES.
   END TYPE QUADRATURE_TYPE
+
+  !
+  !================================================================================================================================
+  !
+  ! Basis types
+  !
 
   !> A buffer type to allow for an array of pointers to a BASIS_TYPE.
   TYPE BASIS_PTR_TYPE
@@ -157,6 +169,12 @@ MODULE TYPES
     TYPE(BASIS_TYPE), POINTER :: PARENT_BASIS !<The pointer to the parent basis for the basis. NOTE: that if the basis is not a sub-basis of another basis this pointer will be NULL. 
   END TYPE BASIS_TYPE
 
+  !
+  !================================================================================================================================
+  !
+  ! Coordinate system types
+  !
+
   !>Contains information on a coordinate system. \todo Have a list of coordinate systems and have a pointer in the coordinate_system_type back to the regions that use them.
   TYPE COORDINATE_SYSTEM_TYPE
     INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the coordinate. The user number must be unique.
@@ -168,6 +186,555 @@ MODULE TYPES
     REAL(DP) :: ORIGIN(3) !<ORIGIN(nj). The nj'th component of the origin of the coordinate system wrt the global coordinate system. NOTE: maybe this should be wrt to the parent regions coordinate system - this would then go into the REGION type.
     REAL(DP) :: ORIENTATION(3,3) !<ORIENTATION(nj,mj). he orientation matrix for the orientation of the coordinate system wrt to the global coordinate system. NOTE: maybe this should be wrt to the parent regions coordinate system - this would then go into the REGION type.
   END TYPE COORDINATE_SYSTEM_TYPE
+
+  !
+  !================================================================================================================================
+  !
+  ! Node types
+  !
+
+  !>Contains information about a node.
+  TYPE NODE_TYPE
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of node.
+    INTEGER(INTG) :: USER_NUMBER !<The user defined number of node.
+    TYPE(VARYING_STRING) :: LABEL !<A string label for the node
+    REAL(DP), ALLOCATABLE :: INITIAL_POSITION(:) !<INITIAL_POSITION(nj). The initial position of of the node. Used to identify the position of the node before meshing (e.g., Delauny triangulisation) as the geometric field has not been created when the node is created. The actual geometric coordinates for computation using the node should be taken from the geometric field which uses the node.
+  END TYPE NODE_TYPE
+
+  !>Contains information on the nodes defined on a region.
+  TYPE NODES_TYPE
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the nodes.
+    INTEGER(INTG) :: NUMBER_OF_NODES !<The number of nodes defined on the region.
+    LOGICAL :: NODES_FINISHED !<Is .TRUE. if the nodes have finished being created, .FALSE. if not.
+    TYPE(NODE_TYPE), POINTER :: NODES(:) !<NODES(nodes_idx). A pointer to the nodes. \todo Should this be allocatable?
+    TYPE(TREE_TYPE), POINTER :: NODE_TREE !<The tree for user to global node mapping
+  END TYPE NODES_TYPE
+
+  !
+  !================================================================================================================================
+  !
+  ! Mesh types
+  !
+
+  !>Contains information on the dofs for a mesh.
+  TYPE MESH_DOFS_TYPE
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh.
+    INTEGER(INTG) :: NUMBER_OF_DOFS !<The number of dofs in the mesh.
+  END TYPE MESH_DOFS_TYPE
+
+  !>Contains the information for an element in a mesh.
+  TYPE MESH_ELEMENT_TYPE
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The global element number in the mesh.
+    INTEGER(INTG) :: USER_NUMBER !<The corresponding user number for the element.
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function for the element.
+    INTEGER(INTG), ALLOCATABLE :: GLOBAL_ELEMENT_NODES(:) !<GLOBAL_ELEMENT_NODES(nn). The global node number in the mesh of the nn'th local node in the element. Old CMISS name NPNE(nn,nbf,ne).
+    INTEGER(INTG), ALLOCATABLE :: USER_ELEMENT_NODES(:) !<USER_ELEMENT_NODES(nn). The user node number in the mesh of the nn'th local node in the element. Old CMISS name NPNE(nn,nbf,ne).
+    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ADJACENT_ELEMENTS(:) !<NUMBER_OF_ADJACENT_ELEMENTS(-ni:ni). The number of elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent element before the element in the ni'th direction and +ni gives the adjacent element after the element in the ni'th direction. The ni=0 index should be 1 for the current element. Old CMISS name NXI(-ni:ni,0:nei,ne).
+    INTEGER(INTG), ALLOCATABLE :: ADJACENT_ELEMENTS(:,:) !<ADJACENT_ELEMENTS(nei,-ni:ni). The local element numbers of the elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent elements before the element in the ni'th direction and +ni gives the adjacent elements after the element in the ni'th direction. The ni=0 index should give the current element number. Old CMISS name NXI(-ni:ni,0:nei,ne)
+  END TYPE MESH_ELEMENT_TYPE
+
+  !>Contains the information for the elements of a mesh.
+  TYPE MESH_ELEMENTS_TYPE
+    TYPE(MESH_TYPE), POINTER :: MESH !<The pointer to the mesh for the elements information.
+    INTEGER(INTG) :: NUMBER_OF_ELEMENTS !< The number of elements in the mesh.
+    LOGICAL :: ELEMENTS_FINISHED !<Is .TRUE. if the mesh elements have finished being created, .FALSE. if not.
+    TYPE(MESH_ELEMENT_TYPE), POINTER :: ELEMENTS(:) !<ELEMENTS(ne). The pointer to the array of information for the elements of this mesh. ELEMENTS(ne) contains the information for the ne'th global element of the mesh. \todo Should this be allocatable.
+  END TYPE MESH_ELEMENTS_TYPE
+
+  !>Contains the topology information for a global node of a mesh.
+  TYPE MESH_NODE_TYPE
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The global node number in the mesh.
+    INTEGER(INTG) :: USER_NUMBER !<The corresponding user number for the node.
+    INTEGER(INTG) :: NUMBER_OF_DERIVATIVES !<The number of global derivatives at the node for the mesh. Old CMISS name NKT(nj,np).
+    INTEGER(INTG), ALLOCATABLE :: PARTIAL_DERIVATIVE_INDEX(:) !<PARTIAL_DERIVATIVE_INDEX(nk). The partial derivative index (nu) of the nk'th global derivative for the node. Old CMISS name NUNK(nk,nj,np).
+    INTEGER(INTG), ALLOCATABLE :: DOF_INDEX(:) !<DOF_INDEX(nk). The global dof derivative index (ny) in the domain of the nk'th global derivative for the node.
+    INTEGER(INTG) :: NUMBER_OF_SURROUNDING_ELEMENTS !<The number of elements surrounding the node in the mesh. Old CMISS name NENP(np,0,0:nr).
+    INTEGER(INTG), POINTER :: SURROUNDING_ELEMENTS(:) !<SURROUNDING_ELEMENTS(nep). The global element number of the nep'th element that is surrounding the node. Old CMISS name NENP(np,nep,0:nr). \todo Change this to allocatable.
+  END TYPE MESH_NODE_TYPE
+
+  !>Contains the information for the nodes of a mesh.
+  TYPE MESH_NODES_TYPE
+    TYPE(MESH_TYPE), POINTER :: MESH !<The pointer to the mesh for this nodes information.
+    INTEGER(INTG) :: NUMBER_OF_NODES !<The number of nodes in the mesh.
+    TYPE(MESH_NODE_TYPE), POINTER :: NODES(:) !<NODES(np). The pointer to the array of topology information for the nodes of the mesh. NODES(np) contains the topological information for the np'th global node of the mesh. \todo Should this be allocatable???
+  END TYPE MESH_NODES_TYPE
+
+  !>Contains information on the (global) topology of a mesh.
+  TYPE MESH_TOPOLOGY_TYPE
+    TYPE(MESH_TYPE), POINTER :: MESH !<Pointer to the parent mesh.
+    INTEGER(INTG) :: MESH_COMPONENT_NUMBER !<The mesh component number for this mesh topology.
+    TYPE(MESH_NODES_TYPE), POINTER :: NODES !<Pointer to the nodes within the mesh topology.
+    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS !<Pointer to the elements within the mesh topology.
+    TYPE(MESH_DOFS_TYPE), POINTER :: DOFS !<Pointer to the dofs within the mesh topology.
+  END TYPE MESH_TOPOLOGY_TYPE
+
+  !>A buffer type to allow for an array of pointers to a MESH_TOPOLOGY_TYPE.
+  TYPE MESH_TOPOLOGY_PTR_TYPE
+    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: PTR !<The pointer to the mesh topology.
+  END TYPE MESH_TOPOLOGY_PTR_TYPE
+
+  !
+  !================================================================================================================================
+  !
+  ! Domain types
+  !
+  
+  !>Contains information on the degrees-of-freedom (dofs) for a domain.
+  TYPE DOMAIN_DOFS_TYPE
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<A pointer to the domain.
+    INTEGER(INTG) :: NUMBER_OF_DOFS !<The number of degrees-of-freedom (excluding ghost dofs) in the domain.
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_DOFS !<The total number of degrees-of-freedom (including ghost dofs) in the domain.
+    INTEGER(INTG), ALLOCATABLE :: DOF_INDEX(:,:) !<DOF_INDEX(i,ny). The index for the ny'th degree-of-freedom. When i=1 DOF_INDEX will give the global derivative number (nk) associated with the dof. When i=2 DOF_INDEX will give the local node number (np) associated with the dof.
+  END TYPE DOMAIN_DOFS_TYPE
+
+  !>Contains the information for a line in a domain.
+  TYPE DOMAIN_LINE_TYPE
+    INTEGER(INTG) :: NUMBER !<The line number in the domain.
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function for the line.
+    INTEGER(INTG), ALLOCATABLE :: NODES_IN_LINE(:) !<NODES_IN_LINE(nn). The local node number in the domain of the nn'th local node in the line. Old CMISS name NPL(2..5,nj,nl).
+    INTEGER(INTG), ALLOCATABLE :: DERIVATIVES_IN_LINE(:,:) !<DERIVATIVES_IN_LINE(nk,nn). The global derivative number of the local derivative nk for the local node nn in the line. Old CMISS name NPL(4..5,nj,nl).
+  END TYPE DOMAIN_LINE_TYPE
+
+  !>A buffer type to allow for an array of pointers to a DOMAIN_LINE_TYPE
+  TYPE DOMAIN_LINE_PTR_TYPE
+    TYPE(DOMAIN_LINE_TYPE), POINTER :: PTR !<A pointer to the domain line.
+  END TYPE DOMAIN_LINE_PTR_TYPE
+
+  !>Contains the topology information for the lines of a domain.
+  TYPE DOMAIN_LINES_TYPE
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<The pointer to the domain for this lines topology information.
+    INTEGER(INTG) :: NUMBER_OF_LINES !<The number of lines in this domain topology.
+    TYPE(DOMAIN_LINE_TYPE), ALLOCATABLE :: LINES(:) !<LINES(nl). The pointer to the array of topology information for the lines of this domain. LINES(nl) contains the topological information for the nl'th local line of the domain.
+  END TYPE DOMAIN_LINES_TYPE
+
+  !>Contains the information for a face in a domain.
+  TYPE DOMAIN_FACE_TYPE
+    INTEGER(INTG) :: NUMBER !<The face number in the domain.
+    INTEGER(INTG) :: XI_DIRECTION1 !<The first xi direction of the face. \todo move this to the decomposition face type
+    INTEGER(INTG) :: XI_DIRECTION2 !<The second xi direction of the face. \todo move this to the decomposition face type
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function for the face.
+    INTEGER(INTG), ALLOCATABLE :: NODES_IN_FACE(:) !<NODES_IN_FACE(nn). The local node number in the domain of the nn'th local node in the face. Old CMISS name NPNF(nn,nbf).
+    INTEGER(INTG), ALLOCATABLE :: DERIVATIVES_IN_FACE(:,:) !<DERIVATIVES_IN_FACE(nk,nn). The global derivative number of the local derivative nk for the local node nn in the face.
+  END TYPE DOMAIN_FACE_TYPE
+
+  !>A buffer type to allow for an array of pointers to a FIELD_VARIABLE_TYPE.
+  TYPE DOMAIN_FACE_PTR_TYPE
+    TYPE(DOMAIN_FACE_TYPE), POINTER :: PTR !<The pointer to the domain face.
+  END TYPE DOMAIN_FACE_PTR_TYPE
+
+  !>Contains the topology information for the faces of a domain.
+  TYPE DOMAIN_FACES_TYPE
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<The pointer to the domain for this faces topology information.
+    INTEGER(INTG) :: NUMBER_OF_FACES !<The number of faces in this domain topology.
+    TYPE(DOMAIN_FACE_TYPE), ALLOCATABLE :: FACES(:) !<FACES(nf). The pointer to the array of topology information for the faces of this domain. FACES(nf) contains the topological information for the nf'th local face of the domain.
+  END TYPE DOMAIN_FACES_TYPE
+
+  !>Contains the information for an element in a domain.
+  TYPE DOMAIN_ELEMENT_TYPE
+    INTEGER(INTG) :: NUMBER !<The local element number in the domain.
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function for the element.
+    INTEGER(INTG), ALLOCATABLE :: ELEMENT_NODES(:) !<ELEMENT_NODES(nn). The local node number in the domain of the nn'th local node in the element. Old CMISS name NPNE(nn,nbf,ne).
+    INTEGER(INTG), ALLOCATABLE :: ELEMENT_DERIVATIVES(:,:) !<ELEMENT_DERIVATIVES(nk,nn). The global derivative number of the local derivative nk for the local node nn in the element. Old CMISS name NKJE(nk,nn,nj,ne).
+  END TYPE DOMAIN_ELEMENT_TYPE
+  
+  !>Contains the topology information for the elements of a domain.
+  TYPE DOMAIN_ELEMENTS_TYPE
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<The pointer to the domain for this elements topology information.
+    INTEGER(INTG) :: NUMBER_OF_ELEMENTS !<The number of elements (excluding ghost elements) in this domain topology.
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_ELEMENTS !<The total number of elements (including ghost elements) in this domain topology.
+    TYPE(DOMAIN_ELEMENT_TYPE), POINTER :: ELEMENTS(:) !<ELEMENTS(ne). The pointer to the array of topology information for the elements of this domain. ELEMENTS(ne) contains the topological information for the ne'th local elements of the domain. \todo Change this to allocatable???
+    INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ELEMENT_PARAMETERS !<The maximum number of element parameters (ns) for all the elements in the domain.
+  END TYPE DOMAIN_ELEMENTS_TYPE
+
+  !>Contains the topology information for a local node of a domain.
+  TYPE DOMAIN_NODE_TYPE
+    INTEGER(INTG) :: LOCAL_NUMBER !<The local node number in the domain.
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The corresponding global node number in the mesh of the local node number in the domain.
+    INTEGER(INTG) :: USER_NUMBER !<The corresponding user number for the node.
+    INTEGER(INTG) :: NUMBER_OF_DERIVATIVES !<The number of global derivatives at the node for the domain. Old CMISS name NKT(nj,np)
+    INTEGER(INTG), ALLOCATABLE :: PARTIAL_DERIVATIVE_INDEX(:) !<PARTIAL_DERIVATIVE_INDEX(nk). The partial derivative index (nu) of the nk'th global derivative for the node. Old CMISS name NUNK(nk,nj,np).
+    INTEGER(INTG), ALLOCATABLE :: DOF_INDEX(:) !<DOF_INDEX(nk). The local dof derivative index (ny) in the domain of the nk'th global derivative for the node.
+    INTEGER(INTG) :: NUMBER_OF_SURROUNDING_ELEMENTS !<The number of elements surrounding the node in the domain. Old CMISS name NENP(np,0,0:nr).
+    INTEGER(INTG), POINTER :: SURROUNDING_ELEMENTS(:) !<SURROUNDING_ELEMENTS(nep). The local element number of the nep'th element that is surrounding the node. Old CMISS name NENP(np,nep,0:nr). \todo Change this to allocatable.
+    INTEGER(INTG) :: NUMBER_OF_NODE_LINES !<The number of lines surrounding the node in the domain.
+    INTEGER(INTG), ALLOCATABLE :: NODE_LINES(:) !<NODE_LINES(nlp). The local line number of the nlp'th line that is surrounding the node.
+  END TYPE DOMAIN_NODE_TYPE
+
+  !>Contains the topology information for the nodes of a domain
+  TYPE DOMAIN_NODES_TYPE
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<The pointer to the domain for this nodes topology information.
+    INTEGER(INTG) :: NUMBER_OF_NODES !<The number of nodes (excluding ghost nodes) in this domain topology.
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_NODES !<The total number of nodes (including ghost nodes) in this domain topology.
+    INTEGER(INTG) :: MAXIMUM_NUMBER_OF_DERIVATIVES !<The maximum number of derivatives over the nodes in this domain topology.
+    TYPE(DOMAIN_NODE_TYPE), POINTER :: NODES(:) !<NODES(np). The pointer to the array of topology information for the nodes of this domain. NODES(np) contains the topological information for the np'th local node of the domain. \todo Change this to allocatable???
+  END TYPE DOMAIN_NODES_TYPE
+
+  !>Contains the topology information for a domain
+  TYPE DOMAIN_TOPOLOGY_TYPE
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<The pointer to the domain for this topology information.
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: NODES !<The pointer to the topology information for the nodes of this domain.
+    TYPE(DOMAIN_DOFS_TYPE), POINTER :: DOFS !<The pointer to the topology information for the dofs of this domain.
+    TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS !<The pointer to the topology information for the elements of this domain.
+    TYPE(DOMAIN_FACES_TYPE), POINTER :: FACES !<The pointer to the topology information for the faces of this domain.
+    TYPE(DOMAIN_LINES_TYPE), POINTER :: LINES !<The pointer to the topology information for the lines of this domain.
+  END TYPE DOMAIN_TOPOLOGY_TYPE
+
+  !
+  !================================================================================================================================
+  !
+  ! Distributed matrix vector types
+  !
+
+  !>Contains the information for an adjacent domain for transfering the ghost data of a distributed vector to/from the
+  !>current domain.
+  TYPE DISTRIBUTED_VECTOR_TRANSFER_TYPE
+    TYPE(DISTRIBUTED_VECTOR_CMISS_TYPE), POINTER :: CMISS_VECTOR !<The pointer to the CMISS distributed vector object for this transfer information.
+    INTEGER(INTG) :: DATA_TYPE !<The data type of the distributed vector. This is "inherited" from the distributed vector.
+    INTEGER(INTG) :: SEND_BUFFER_SIZE !<The size of the buffer to send distributed vector data from the current domain to the adjacent domain.
+    INTEGER(INTG) :: RECEIVE_BUFFER_SIZE !<The size of the buffer to receive distributed vector data from the adjacent domain to the current domain.
+    INTEGER(INTG) :: SEND_TAG_NUMBER !<The MPI tag number for the data sending from the current domain to the adjacent domain. It is calculated as an offset from the base tag number of the distribued vector.
+    INTEGER(INTG) :: RECEIVE_TAG_NUMBER !<The MPI tag number for the data receiving from the adjacent domain to the current domain. It is calculated as an offset from the base tag number of the distribued vector.
+    INTEGER(INTG) :: MPI_SEND_REQUEST !<The MPI request pointer for sending data from the current domain to the adjacent domain.
+    INTEGER(INTG) :: MPI_RECEIVE_REQUEST !<The MPI request pointer for sending data from the adjacent domain to the current domain.
+    INTEGER(INTG), ALLOCATABLE :: SEND_BUFFER_INTG(:) !<The integer buffer for sending the distributed integer vector data from the current domain to the adjacent domain.
+    REAL(DP), ALLOCATABLE :: SEND_BUFFER_DP(:) !<The double precision real buffer for sending the distributed real vector data from the current domain to the adjacent domain.
+    REAL(SP), ALLOCATABLE :: SEND_BUFFER_SP(:) !<The single precision real buffer for sending the distributed real vector data from the current domain to the adjacent domain.
+    LOGICAL, ALLOCATABLE :: SEND_BUFFER_L(:) !<The logical buffer for sending the distributed logical vector data from the current domain to the adjacent domain.
+    INTEGER(INTG), ALLOCATABLE :: RECEIVE_BUFFER_INTG(:) !<The integer buffer for receiving the distributed integer vector data from the adjacent domain to the current domain.
+    REAL(DP), ALLOCATABLE :: RECEIVE_BUFFER_DP(:) !<The double precision real buffer for receiving the distributed real vector data from the adjacent domain to the current domain.
+    REAL(SP), ALLOCATABLE :: RECEIVE_BUFFER_SP(:) !<The single precision real buffer for receiving the distributed real vector data from the adjacent domain to the current domain.
+    LOGICAL, ALLOCATABLE :: RECEIVE_BUFFER_L(:) !<The logical buffer for receiving the distributed logical vector data from the adjacent domain to the current domain.  
+  END TYPE DISTRIBUTED_VECTOR_TRANSFER_TYPE
+
+  !>Contains information for a CMISS distributed vector
+  TYPE DISTRIBUTED_VECTOR_CMISS_TYPE
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: DISTRIBUTED_VECTOR !<A pointer to the distributed vector
+    INTEGER(INTG) :: BASE_TAG_NUMBER !<The base number for the MPI tag numbers that will be used to communicate the distributed vector data amongst the domains. The base tag number can be thought of as the identification number for the distributed vector object.
+    INTEGER(INTG) :: N !<The size of the distributed vector
+    INTEGER(INTG) :: DATA_SIZE !<The size of the distributed vector that is held locally by the domain.
+    INTEGER(INTG), ALLOCATABLE :: DATA_INTG(:) !<DATA_INTG(i). The integer data for an integer distributed vector. The i'th component contains the data for the i'th local number of distributed vector data on the domain. 
+    REAL(DP), ALLOCATABLE :: DATA_DP(:) !<DATA_DP(i). The real data for a double precision real distributed vector. The i'th component contains the data for the i'th local number of distributed vector data on the domain. 
+    REAL(SP), ALLOCATABLE :: DATA_SP(:) !<DATA_SP(i). The real data for a single precision real distributed vector. The i'th component contains the data for the i'th local number of distributed vector data on the domain. 
+    LOGICAL, ALLOCATABLE :: DATA_L(:) !<DATA_L(i). The logical data for a logical distributed vector. The i'th component contains the data for the i'th local number of distributed vector data on the domain.  
+    TYPE(DISTRIBUTED_VECTOR_TRANSFER_TYPE), ALLOCATABLE :: TRANSFERS(:) !<TRANSFERS(adjacent_domain_idx). The transfer information for the adjacent_domain_idx'th adjacent domain to this domain. 
+  END TYPE DISTRIBUTED_VECTOR_CMISS_TYPE
+
+  !>Contains information for a PETSc distributed vector
+  TYPE DISTRIBUTED_VECTOR_PETSC_TYPE
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: DISTRIBUTED_VECTOR !<A pointer to the distributed vector
+    INTEGER(INTG) :: N !<The number of local components in the vector
+    INTEGER(INTG) :: GLOBAL_N !<The number of global components in the vector
+    INTEGER(INTG) :: DATA_SIZE  !<The size of the distributed vector that is held locally by the domain.
+    INTEGER(INTG), ALLOCATABLE :: GLOBAL_NUMBERS(:) !<GLOBAL_NUMBERS(i). The PETSc global number corresponding to the i'th local number.
+    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE) :: ISLTGMAPPING !<The local to global mapping for the vector
+    TYPE(PETSC_VEC_TYPE) :: VECTOR !<The PETSc vector
+  END TYPE DISTRIBUTED_VECTOR_PETSC_TYPE
+  
+  !>Contains the information for a vector that is distributed across a number of domains.
+  TYPE DISTRIBUTED_VECTOR_TYPE
+    LOGICAL :: VECTOR_FINISHED !<!<Is .TRUE. if the distributed vector has finished being created, .FALSE. if not.
+    INTEGER(INTG) :: LIBRARY_TYPE !<The format of the distributed vector \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
+    INTEGER(INTG) :: GHOSTING_TYPE !<The ghosting type \see DISTRIBUTED_MATRIX_VECTOR_GhostingTypes,DISTRIBUTED_MATRIX_VECTOR
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING !<The pointer for the domain mapping that identifies how the vector is distributed amongst the domains.
+    INTEGER(INTG) :: DATA_TYPE !<The type of data for the distributed vector \see DISTRIBUTED_MATRIX_VECTOR_DataTypes 
+    TYPE(DISTRIBUTED_VECTOR_CMISS_TYPE), POINTER :: CMISS !<A pointer to the CMISS distributed vector information
+    TYPE(DISTRIBUTED_VECTOR_PETSC_TYPE), POINTER :: PETSC !<A pointer to the PETSc distributed vector information
+  END TYPE DISTRIBUTED_VECTOR_TYPE
+
+  !>Contains information for a CMISS distributed matrix
+  TYPE DISTRIBUTED_MATRIX_CMISS_TYPE
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: DISTRIBUTED_MATRIX !<A pointer to the distributed matrix
+    INTEGER(INTG) :: BASE_TAG_NUMBER !<The base number for the MPI tag numbers that will be used to communicate the distributed matrix data amongst the domains. The base tag number can be thought of as the identification number for the distributed matrix object.
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix to store the rows corresponding to this domain.
+  END TYPE DISTRIBUTED_MATRIX_CMISS_TYPE
+
+  !>Contains information for a PETSc distributed matrix
+  TYPE DISTRIBUTED_MATRIX_PETSC_TYPE
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: DISTRIBUTED_MATRIX !<A pointer to the distributed matrix
+    INTEGER(INTG) :: M !<The number of local rows in the PETSc matrix
+    INTEGER(INTG) :: N !<The number of local columns in the PETSc matrix
+    INTEGER(INTG) :: GLOBAL_M !<The number of global rows in the PETSc matrix
+    INTEGER(INTG) :: GLOBAL_N !<The number of global columns in the PETSc matrix
+    INTEGER(INTG) :: STORAGE_TYPE !<The storage type (sparsity) of the PETSc matrix
+    INTEGER(INTG) :: NUMBER_NON_ZEROS !<The number of non-zeros in the PETSc matrix
+    INTEGER(INTG) :: DATA_SIZE !<The size of the allocated data in the PETSc matrix
+    INTEGER(INTG) :: MAXIMUM_COLUMN_INDICES_PER_ROW !<The maximum number of column indicies for the rows.
+    INTEGER(INTG), ALLOCATABLE :: DIAGONAL_NUMBER_NON_ZEROS(:) !<DIAGONAL_NUMBER_NON_ZEROS(i). The number of non-zeros in the diagonal part of the the i'th row
+    INTEGER(INTG), ALLOCATABLE :: OFFDIAGONAL_NUMBER_NON_ZEROS(:) !<OFFDIAGONAL_NUMBER_NON_ZEROS(i). The number of non-zeros in the off diagonal part of the the i'th row
+    INTEGER(INTG), ALLOCATABLE :: ROW_INDICES(:) !<ROW_INDICES(i). The row indices for the matrix.
+    INTEGER(INTG), ALLOCATABLE :: COLUMN_INDICES(:) !<COLUMN_INDICES(i). The column indices for the matrix.
+    INTEGER(INTG), ALLOCATABLE :: GLOBAL_ROW_NUMBERS(:) !<GLOBAL_ROW_NUMBERS(i). The PETSc global row number corresponding to the i'th local row number.
+    REAL(DP), ALLOCATABLE :: DATA_DP(:) !<DATA_DP(i). The real data for the matrix
+    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE) :: ISLTGMAPPING !<The local to global mapping for the vector
+    TYPE(PETSC_MAT_TYPE) :: MATRIX !<The PETSc matrix
+  END TYPE DISTRIBUTED_MATRIX_PETSC_TYPE
+  
+  !>Contains the information for a matrix that is distributed across a number of domains.
+  TYPE DISTRIBUTED_MATRIX_TYPE
+    LOGICAL :: MATRIX_FINISHED !<Is .TRUE. if the distributed matrix has finished being created, .FALSE. if not.
+    INTEGER(INTG) :: LIBRARY_TYPE !<The library of the distributed matrix \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
+    INTEGER(INTG) :: GHOSTING_TYPE !<The ghosting type \see DISTRIBUTED_MATRIX_VECTOR_GhostingTypes,DISTRIBUTED_MATRIX_VECTOR
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ROW_DOMAIN_MAPPING !<The pointer for the domain mapping that identifies how the matrix rows are distributed amongst the domains.
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: COLUMN_DOMAIN_MAPPING !<The pointer for the domain mapping that identifies how the matrix columns are distributed amongst the domains.
+    INTEGER(INTG) :: DATA_TYPE !<The type of data for the distributed matrix \see DISTRIBUTED_MATRIX_VECTOR_DataTypes
+    TYPE(DISTRIBUTED_MATRIX_CMISS_TYPE), POINTER :: CMISS !<A pointer to the CMISS distributed matrix information
+    TYPE(DISTRIBUTED_MATRIX_PETSC_TYPE), POINTER :: PETSC !<A pointer to the PETSc distributed matrix information
+  END TYPE DISTRIBUTED_MATRIX_TYPE
+
+  !
+  !================================================================================================================================
+  !
+  ! Matrix vector types
+  !
+
+  !>Contains information for a vector
+  TYPE VECTOR_TYPE
+    INTEGER(INTG) :: ID !<The ID of the vector.
+    LOGICAL :: VECTOR_FINISHED !<Is .TRUE. if the vector has finished being created, .FALSE. if not.
+    INTEGER(INTG) :: N !<The length of the vector
+    INTEGER(INTG) :: DATA_TYPE !<The data type of the vector \see MATRIX_VECTOR_DataTypes 
+    INTEGER(INTG) :: SIZE !<The size of the data array of the vector
+    INTEGER(INTG), ALLOCATABLE :: DATA_INTG(:) !<DATA_INTG(i). The integer data for an integer vector. The i'th component contains the data for the i'th component vector data on the domain. 
+    REAL(SP), ALLOCATABLE :: DATA_SP(:) !<DATA_SP(i). The real data for a single precision real vector. The i'th component contains the data for the i'th component vector data on the domain. 
+    REAL(DP), ALLOCATABLE :: DATA_DP(:) !<DATA_DP(i). The real data for a double precision real vector. The i'th component contains the data for the i'th component vector data on the domain. 
+    LOGICAL, ALLOCATABLE :: DATA_L(:) !<DATA_L(i). The real for a logical vector. The i'th component contains the data for the i'th component vector data on the domain. 
+  END TYPE VECTOR_TYPE
+
+  !>Contains information for a matrix
+  TYPE MATRIX_TYPE
+    INTEGER(INTG) :: ID !<The ID of the matrix
+    LOGICAL :: MATRIX_FINISHED !<Is .TRUE. if the matrix has finished being created, .FALSE. if not.
+    INTEGER(INTG) :: M !<The number of rows in the matrix
+    INTEGER(INTG) :: N !<The number of columns in the matrix
+    INTEGER(INTG) :: MAX_M !<The maximum number of columns in the matrix storage
+    INTEGER(INTG) :: MAX_N !<The maximum number of rows in the matrix storage
+    INTEGER(INTG) :: DATA_TYPE !<The data type of the matrix  \see MATRIX_VECTOR_DataTypes 
+    INTEGER(INTG) :: STORAGE_TYPE !<The storage type of the matrix \see MATRIX_VECTOR_StorageTypes 
+    INTEGER(INTG) :: NUMBER_NON_ZEROS !<The number of non-zero elements in the matrix 
+    INTEGER(INTG) :: SIZE !<The size of the data arrays
+    INTEGER(INTG) :: MAXIMUM_COLUMN_INDICES_PER_ROW !<The maximum number of column indicies for the rows.
+    INTEGER(INTG), ALLOCATABLE :: ROW_INDICES(:) !<ROW_INDICES(i). The row indices for the matrix storage scheme. \see MATRIX_VECTOR_MatrixStorageStructures
+    INTEGER(INTG), ALLOCATABLE :: COLUMN_INDICES(:) !<COLUMN_INDICES(i). The column indices for the matrix storage scheme. \see MATRIX_VECTOR_MatrixStorageStructures
+    INTEGER(INTG), ALLOCATABLE :: DATA_INTG(:) !<DATA_INTG(i). The integer data for an integer matrix. The i'th component contains the data for the i'th matrix data stored on the domain.
+    REAL(SP), ALLOCATABLE :: DATA_SP(:) !<DATA_SP(i). The real data for a single precision matrix. The i'th component contains the data for the i'th matrix data stored on the domain.
+    REAL(DP), ALLOCATABLE :: DATA_DP(:) !<DATA_DP(i). The real data for a double precision matrix. The i'th component contains the data for the i'th matrix data stored on the domain.
+    LOGICAL, ALLOCATABLE :: DATA_L(:) !<DATA_L(i). The logical data for a logical matrix. The i'th component contains the data for the i'th matrix data stored on the domain.
+  END TYPE MATRIX_TYPE
+
+  !
+  !================================================================================================================================
+  !
+  ! Domain mapping types
+  !
+  
+  !>Contains the information on an adjacent domain to a domain in a domain mapping. 
+  TYPE DOMAIN_ADJACENT_DOMAIN_TYPE
+    INTEGER(INTG) :: DOMAIN_NUMBER !<The number of the domain that is adjacent to a domain in a mapping.
+    INTEGER(INTG) :: NUMBER_OF_SEND_GHOSTS !<The number of ghost locals in the current domain that are to be sent to this domain.
+    INTEGER(INTG) :: NUMBER_OF_RECEIVE_GHOSTS !<The number of ghost locals in the current domain that are to be received from this domain.
+    INTEGER(INTG), ALLOCATABLE :: LOCAL_GHOST_SEND_INDICES(:) !<LOCAL_GHOST_SEND_INDICES(i). The local numbers of the ghosts in the current domain that are to be sent to this domain.
+    INTEGER(INTG), ALLOCATABLE :: LOCAL_GHOST_RECEIVE_INDICES(:) !<LOCAL_GHOST_RECEIVE_INDICES(i). The local numbers of the ghosts in the current domain that are to be received from this domain.
+  END TYPE DOMAIN_ADJACENT_DOMAIN_TYPE
+  
+  !>Contains the local information for a global mapping number for a domain mapping.
+  TYPE DOMAIN_GLOBAL_MAPPING_TYPE
+    INTEGER(INTG) :: NUMBER_OF_DOMAINS !<The number of domains that the global number is mapped to a local number in.
+    INTEGER(INTG), ALLOCATABLE :: LOCAL_NUMBER(:) !<LOCAL_NUMBER(domain_idx). The mapped local number for the domain_idx'th domain for the global number.
+    INTEGER(INTG), ALLOCATABLE :: DOMAIN_NUMBER(:) !<DOMAIN_NUMBER(domain_idx). The domain number for the domain_idx'th domain for which the global number is mapped to a local number
+    INTEGER(INTG), ALLOCATABLE :: LOCAL_TYPE(:) !<LOCAL_TYPE(domain_idx). The type of local for the domain_idx'th domain for which the global number is mapped to a local number. The types depend on wether the mapped local number in the domain_idx'th domain is an internal, boundary or ghost local number. \see DOMAIN_MAPPINGS_DomainType
+  END TYPE DOMAIN_GLOBAL_MAPPING_TYPE
+
+  !>Contains information on the domain mappings (i.e., local and global numberings).
+  TYPE DOMAIN_MAPPING_TYPE
+    INTEGER(INTG) :: NUMBER_OF_LOCAL !<The number of local numbers in the domain excluding ghost numbers
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_LOCAL !<The total number of local numbers in the domain including ghost numbers.
+    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_DOMAIN_LOCAL(:) !<NUMBER_OF_DOMAIN_LOCAL(domain_no). The total number of locals for domain_no'th domain. NOTE: the domain_no goes from 0 to the number of domains-1.
+    INTEGER(INTG) :: NUMBER_OF_GLOBAL !<The number of global numbers for this mapping.
+    INTEGER(INTG) :: NUMBER_OF_DOMAINS !<The number of domains in this mapping.
+    INTEGER(INTG) :: NUMBER_OF_INTERNAL !<The number of internal numbers in this mapping.
+    INTEGER(INTG), ALLOCATABLE :: INTERNAL_LIST(:) !<INTERNAL_LIST(i). The list of internal numbers for the mapping. The i'th position gives the i'th local internal number.
+    INTEGER(INTG) :: NUMBER_OF_BOUNDARY !<The number of boundary numbers in this mapping.
+    INTEGER(INTG), ALLOCATABLE :: BOUNDARY_LIST(:) !<BOUNDARY_LIST(i). The list of boundary numbers for the mapping. The i'th position gives the i'th local boundary number.
+    INTEGER(INTG) :: NUMBER_OF_GHOST !<The number of ghost numbers in this mapping.
+    INTEGER(INTG), ALLOCATABLE :: GHOST_LIST(:) !<GHOST_LIST(i). The list of ghost numbers for the mapping. The i'th position gives the i'th local ghost number.
+    !!Need a dimension index here as domain  variables that map to matrices will have different row and column
+    !!mappings in general????
+    INTEGER(INTG), ALLOCATABLE :: LOCAL_TO_GLOBAL_MAP(:) !<LOCAL_TO_GLOBAL_MAP(i). The global number for the i'th local number for the mapping.
+    TYPE(DOMAIN_GLOBAL_MAPPING_TYPE), ALLOCATABLE :: GLOBAL_TO_LOCAL_MAP(:) !<GLOBAL_TO_LOCAL_MAP(i). The local information for the i'th global number for the mapping.
+    INTEGER(INTG) :: NUMBER_OF_ADJACENT_DOMAINS !<The number of domains that are adjacent to this domain in the mapping.
+    INTEGER(INTG), ALLOCATABLE :: ADJACENT_DOMAINS_PTR(:) !<ADJACENT_DOMAINS_PTR(domain_no). The pointer to the list of adjacent domains for domain_no. ADJACENT_DOMAINS_PTR(domain_no) gives the starting position in ADJACENT_DOMAINS_LIST for the first adjacent domain number for domain number domain_no. ADJACENT_DOMAINS_PTR(domain_no+1) gives the last+1 position in ADJACENT_DOMAINS_LIST for the last adjacent domain number for domain number domain_no. NOTE: the index for ADJACENT_DOMAINS_PTR varies from 0 to the number of domains+1.
+    INTEGER(INTG), ALLOCATABLE :: ADJACENT_DOMAINS_LIST(:) !<ADJACENT_DOMAINS_LIST(i). The list of adjacent domains for each domain. The start and end positions for the list for domain number domain_no are given by ADJACENT_DOMAIN_PTR(domain_no) and ADJACENT_DOMAIN_PTR(domain_no+1)-1 respectively.
+    TYPE(DOMAIN_ADJACENT_DOMAIN_TYPE), ALLOCATABLE :: ADJACENT_DOMAINS(:) !<ADJACENT_DOMAINS(adjacent_domain_idx). The adjacent domain information for the adjacent_domain_idx'th adjacent domain to this domain. 
+  END TYPE DOMAIN_MAPPING_TYPE
+
+  !>Contains information on the domain decomposition mappings.
+  TYPE DOMAIN_MAPPINGS_TYPE
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<A pointer to the domain decomposition.
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS !<Pointer to the element mappings for the domain decomposition.
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES !<Pointer to the node mappings for the domain decomposition.
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOFS !<Pointer to the dof mappings for the domain decomposition.
+  END TYPE DOMAIN_MAPPINGS_TYPE
+  
+  !>A pointer to the domain decomposition for this domain.
+  TYPE DOMAIN_TYPE
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<A pointer to the domain decomposition for this domain.
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh for this domain.
+    INTEGER(INTG) :: MESH_COMPONENT_NUMBER !<The mesh component number of the mesh which this domain was decomposed from.
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region that this domain is in. This is "inherited" from the mesh region. 
+    INTEGER(INTG) :: NUMBER_OF_DIMENSIONS !<The number of dimensions for this domain. This is "inherited" from the mesh.
+    INTEGER(INTG), ALLOCATABLE :: NODE_DOMAIN(:) !<NODE_DOMAIN(np). The domain number that the np'th global node is in for the domain decomposition. Note: the domain numbers start at 0 and go up to the NUMBER_OF_DOMAINS-1.
+    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: MAPPINGS !<Pointer to the mappings for the domain  e.g., global to local and local to global maps
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<Pointer to the topology for the domain.
+  END TYPE DOMAIN_TYPE
+
+  !>A buffer type to allow for an array of pointers to a DOMAIN_TYPE.
+  TYPE DOMAIN_PTR_TYPE 
+    TYPE(DOMAIN_TYPE), POINTER :: PTR !<The pointer to the domain.
+  END TYPE DOMAIN_PTR_TYPE
+
+  !
+  !================================================================================================================================
+  !
+  ! Decomposition types
+  !
+  
+  !>Contains the information for a line in a decomposition.
+  TYPE DECOMPOSITION_LINE_TYPE
+    INTEGER(INTG) :: NUMBER !<The line number in the decomposition.
+    INTEGER(INTG) :: XI_DIRECTION !<The Xi direction of the line. Old CMISS name NPL(1,0,nl)
+    INTEGER(INTG) :: NUMBER_OF_SURROUNDING_ELEMENTS !<The number of elements that surround (use) this line.
+    INTEGER(INTG), ALLOCATABLE :: SURROUNDING_ELEMENTS(:) !<SURROUNDING_ELEMENTS(nel). The local element number of the nel'th element that surrounds (uses) this line. 
+    INTEGER(INTG), ALLOCATABLE :: ELEMENT_LINES(:) !<ELEMENT_LINES(nel). The local arc number of the nel'th element that surrounds (uses) this line.
+    INTEGER(INTG) :: ADJACENT_LINES(0:1) !<ADJACENT_LINES(0:1). The line number of adjacent lines. ADJACENT_LINES(0) is the line number adjacent in the -xi direction. ADJACENT_LINES(1) is the line number adjacent in the +xi direction. Old CMISS name NPL(2..3,0,nl).
+  END TYPE DECOMPOSITION_LINE_TYPE
+
+  !>Contains the topology information for the lines of a decomposition.
+  TYPE DECOMPOSITION_LINES_TYPE
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<The pointer to the decomposition for this lines topology information.
+    INTEGER(INTG) :: NUMBER_OF_LINES !<The number of lines in this decomposition topology.
+    TYPE(DECOMPOSITION_LINE_TYPE), ALLOCATABLE :: LINES(:) !<LINES(nl). The pointer to the array of topology information for the lines of this decomposition. LINES(nl) contains the topological information for the nl'th local line of the decomposition.
+  END TYPE DECOMPOSITION_LINES_TYPE
+
+  !>Contains the information for an element in a decomposition.
+  TYPE DECOMPOSITION_ELEMENT_TYPE
+    INTEGER(INTG) :: LOCAL_NUMBER !<The local element number in the decomposition.
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The corresponding global element number in the mesh of the local element number in the decomposition.
+    INTEGER(INTG) :: USER_NUMBER !<The corresponding user number for the element.
+    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ADJACENT_ELEMENTS(:) !<NUMBER_OF_ADJACENT_ELEMENTS(-ni:ni). The number of elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent element before the element in the ni'th direction and +ni gives the adjacent element after the element in the ni'th direction. The ni=0 index should be 1 for the current element. Old CMISS name NXI(-ni:ni,0:nei,ne).
+    INTEGER(INTG), ALLOCATABLE :: ADJACENT_ELEMENTS(:,:) !<ADJACENT_ELEMENTS(nei,-ni:ni). The local element numbers of the elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent elements before the element in the ni'th direction and +ni gives the adjacent elements after the element in the ni'th direction. The ni=0 index should give the current element number. Old CMISS name NXI(-ni:ni,0:nei,ne).
+    INTEGER(INTG), ALLOCATABLE :: ELEMENT_LINES(:) !<ELEMENT_LINES(nae). The local decomposition line number corresponding to the nae'th local line of the element. Old CMISS name NLL(nae,ne). 
+  END TYPE DECOMPOSITION_ELEMENT_TYPE
+
+  !>Contains the topology information for the elements of a decomposition.
+  TYPE DECOMPOSITION_ELEMENTS_TYPE
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<The pointer to the decomposition for this elements topology information.
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_ELEMENTS !<The total number of elements in this decomposition topology.
+    TYPE(DECOMPOSITION_ELEMENT_TYPE), POINTER :: ELEMENTS(:) !<ELEMENTS(ne). The pointer to the array of topology information for the elements of this decomposition. ELEMENTS(ne) contains the topological information for the ne'th local element of the decomposition. \todo Change this to allocatable???
+  END TYPE DECOMPOSITION_ELEMENTS_TYPE
+
+   !>Contains the topology information for a decomposition
+  TYPE DECOMPOSITION_TOPOLOGY_TYPE
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<The pointer to the decomposition for this topology information.
+    TYPE(DECOMPOSITION_ELEMENTS_TYPE), POINTER :: ELEMENTS !<The pointer to the topology information for the elements of this decomposition.
+    TYPE(DECOMPOSITION_LINES_TYPE), POINTER :: LINES !<The pointer to the topology information for the lines of this decomposition.
+  END TYPE DECOMPOSITION_TOPOLOGY_TYPE
+
+  !>Contains information on the domain decomposition.
+  TYPE DECOMPOSITION_TYPE
+    INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the domain decomposition. The user number must be unique.
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the domain decomposition in the list of domain decompositions for a particular mesh.
+    LOGICAL :: DECOMPOSITION_FINISHED !<Is .TRUE. if the decomposition has finished being created, .FALSE. if not.
+    TYPE(DECOMPOSITIONS_TYPE), POINTER :: DECOMPOSITIONS !<A pointer to the decompositions for this decomposition.
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh for this decomposition.
+    INTEGER(INTG) :: MESH_COMPONENT_NUMBER !<The component number (index) of the mesh component that this decomposition belongs to (i.e., was generated from).
+    INTEGER(INTG) :: DECOMPOSITION_TYPE !<The type of the domain decomposition \see MESH_ROUTINES_DecompositionTypes.
+    INTEGER(INTG) :: NUMBER_OF_DOMAINS !<The number of domains that this decomposition contains.
+    INTEGER(INTG) :: NUMBER_OF_EDGES_CUT !<For automatically calcualted decompositions, the number of edges of the mesh dual graph that were cut for the composition. It provides an indication of the optimally of the automatic decomposition.
+    INTEGER(INTG), ALLOCATABLE :: ELEMENT_DOMAIN(:) !<ELEMENT_DOMAIN(ne). The domain number that the ne'th global element is in for the decomposition. Note: the domain numbers start at 0 and go up to the NUMBER_OF_DOMAINS-1.
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the topology for this decomposition.
+    TYPE(DOMAIN_PTR_TYPE), POINTER :: DOMAIN(:) !<DOMAIN(mesh_component_idx). A pointer to the domain for mesh component for the domain associated with the computational node. \todo Change this to allocatable???
+  END TYPE DECOMPOSITION_TYPE
+
+  !>A buffer type to allow for an array of pointers to a DECOMPOSITION_TYPE.
+  TYPE DECOMPOSITION_PTR_TYPE
+    TYPE(DECOMPOSITION_TYPE), POINTER :: PTR !<The pointer to the domain decomposition. 
+  END TYPE DECOMPOSITION_PTR_TYPE
+
+  !>Contains information on the domain decompositions defined on a mesh.
+  TYPE DECOMPOSITIONS_TYPE
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh.
+    INTEGER(INTG) :: NUMBER_OF_DECOMPOSITIONS !<The number of decompositions defined on the mesh.
+    TYPE(DECOMPOSITION_PTR_TYPE), POINTER :: DECOMPOSITIONS(:) !<DECOMPOSITIONS(decomposition_idx). The array of pointers to the domain decompositions.
+  END TYPE DECOMPOSITIONS_TYPE
+
+  !>Contains information on a generated regular mesh
+  TYPE GENERATED_MESH_REGULAR_TYPE
+    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh
+    REAL(DP), ALLOCATABLE :: ORIGIN(:) !<ORIGIN(nj). The position of the origin (first) corner of the regular mesh
+    REAL(DP), ALLOCATABLE :: MAXIMUM_EXTENT(:) !<MAXIMUM_EXTENT(nj). The extent/size in each nj'th direction of the regular mesh.
+    INTEGER(INTG) :: MESH_DIMENSION !<The dimension/number of Xi directions of the regular mesh.
+    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ELEMENTS_XI(:) !<NUMBER_OF_ELEMENTS_XI(ni). The number of elements in the ni'th Xi direction for the mesh.
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<The pointer to the basis used in the regular mesh.
+  END TYPE GENERATED_MESH_REGULAR_TYPE
+
+  !
+  !================================================================================================================================
+  !
+  ! Generated mesh types
+  !
+  
+  !>Contains information for generated meshes.
+  TYPE GENERATED_MESH_TYPE
+    INTEGER(INTG) :: USER_NUMBER !<The user number of the generated mesh.
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the generated mesh.
+    INTEGER(INTG) :: TYPE !<The type of generated mesh. \see GENERATED_MESH_ROUTINES_GeneratedMeshTypes
+    TYPE(GENERATED_MESH_REGULAR_TYPE), POINTER :: REGULAR_MESH !<A pointer to the information for a regular generated mesh. 
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh that is generated
+  END TYPE GENERATED_MESH_TYPE
+
+  !
+  !================================================================================================================================
+  !
+  ! Mesh types
+  !
+  
+  !>Contains information on a mesh defined on a region.
+  TYPE MESH_TYPE
+    INTEGER(INTG) :: USER_NUMBER !<The user number of the mesh. The user number must be unique.
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The corresponding global number for the mesh.
+    LOGICAL :: MESH_FINISHED !<Is .TRUE. if the mesh has finished being created, .FALSE. if not.
+    TYPE(MESHES_TYPE), POINTER :: MESHES !<A pointer to the meshes for this mesh.
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing this mesh.
+    INTEGER(INTG) :: NUMBER_OF_DIMENSIONS !<The number of dimensions (Xi directions) for this mesh.
+    INTEGER(INTG) :: NUMBER_OF_COMPONENTS !<The number of mesh components in this mesh.
+    LOGICAL :: MESH_EMBEDDED !<Is .TRUE. if the mesh is embedded in another mesh, .FALSE. if not.
+    TYPE(MESH_TYPE), POINTER :: EMBEDDING_MESH !<If this mesh is embedded the pointer to the mesh that this mesh is embedded in. IF the mesh is not embedded the pointer is NULL.
+    INTEGER(INTG) :: NUMBER_OF_EMBEDDED_MESHES !<The number of meshes that are embedded in this mesh.
+    TYPE(MESH_PTR_TYPE), POINTER :: EMBEDDED_MESHES(:) !<EMBEDDED_MESHES(mesh_idx). A pointer to the mesh_idx'th mesh that is embedded in this mesh.
+    INTEGER(INTG) :: NUMBER_OF_ELEMENTS !<The number of elements in the mesh.
+    INTEGER(INTG) :: NUMBER_OF_FACES !<The number of faces in the mesh.
+    INTEGER(INTG) :: NUMBER_OF_LINES !<The number of lines in the mesh.
+    TYPE(MESH_TOPOLOGY_PTR_TYPE), POINTER :: TOPOLOGY(:) !<TOPOLOGY(mesh_component_idx). A pointer to the topology mesh_component_idx'th mesh component.
+    TYPE(DECOMPOSITIONS_TYPE), POINTER :: DECOMPOSITIONS !<A pointer to the decompositions for this mesh.
+  END TYPE MESH_TYPE
+
+  !>A buffer type to allow for an array of pointers to a MESH_TYPE.
+  TYPE MESH_PTR_TYPE
+    TYPE(MESH_TYPE), POINTER :: PTR !<The pointer to the mesh. 
+  END TYPE MESH_PTR_TYPE
+
+  !>Contains information on the meshes defined on a region.
+  TYPE MESHES_TYPE
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region.
+    INTEGER(INTG) :: NUMBER_OF_MESHES !<The number of meshes defined on the region.
+    TYPE(MESH_PTR_TYPE), POINTER :: MESHES(:) !<MESHES(meshes_idx). The array of pointers to the meshes.
+  END TYPE MESHES_TYPE
+
+  !
+  !================================================================================================================================
+  !
+  ! Field types
+  !
 
   !> Contains the interpolated point coordinate metrics. Old CMISS name GL,GU,RG.
   TYPE FIELD_INTERPOLATED_POINT_METRICS_TYPE
@@ -360,589 +927,12 @@ MODULE TYPES
     TYPE(FIELD_PTR_TYPE), POINTER :: FIELDS(:) !<FIELDS(fields_idx). The array of pointers to the fields.
   END TYPE FIELDS_TYPE
 
-  !>Contains information about a node.
-  TYPE NODE_TYPE
-    INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of node.
-    INTEGER(INTG) :: USER_NUMBER !<The user defined number of node.
-    TYPE(VARYING_STRING) :: LABEL !<A string label for the node
-    REAL(DP), ALLOCATABLE :: INITIAL_POSITION(:) !<INITIAL_POSITION(nj). The initial position of of the node. Used to identify the position of the node before meshing (e.g., Delauny triangulisation) as the geometric field has not been created when the node is created. The actual geometric coordinates for computation using the node should be taken from the geometric field which uses the node.
-  END TYPE NODE_TYPE
-
-  !>Contains information on the nodes defined on a region.
-  TYPE NODES_TYPE
-    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the nodes.
-    INTEGER(INTG) :: NUMBER_OF_NODES !<The number of nodes defined on the region.
-    LOGICAL :: NODES_FINISHED !<Is .TRUE. if the nodes have finished being created, .FALSE. if not.
-    TYPE(NODE_TYPE), POINTER :: NODES(:) !<NODES(nodes_idx). A pointer to the nodes. \todo Should this be allocatable?
-    TYPE(TREE_TYPE), POINTER :: NODE_TREE !<The tree for user to global node mapping
-  END TYPE NODES_TYPE
-
-  !>Contains information on the dofs for a mesh.
-  TYPE MESH_DOFS_TYPE
-    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh.
-    INTEGER(INTG) :: NUMBER_OF_DOFS !<The number of dofs in the mesh.
-  END TYPE MESH_DOFS_TYPE
-
-  !>Contains the information for an element in a mesh.
-  TYPE MESH_ELEMENT_TYPE
-    INTEGER(INTG) :: GLOBAL_NUMBER !<The global element number in the mesh.
-    INTEGER(INTG) :: USER_NUMBER !<The corresponding user number for the element.
-    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function for the element.
-    INTEGER(INTG), ALLOCATABLE :: GLOBAL_ELEMENT_NODES(:) !<GLOBAL_ELEMENT_NODES(nn). The global node number in the mesh of the nn'th local node in the element. Old CMISS name NPNE(nn,nbf,ne).
-    INTEGER(INTG), ALLOCATABLE :: USER_ELEMENT_NODES(:) !<USER_ELEMENT_NODES(nn). The user node number in the mesh of the nn'th local node in the element. Old CMISS name NPNE(nn,nbf,ne).
-    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ADJACENT_ELEMENTS(:) !<NUMBER_OF_ADJACENT_ELEMENTS(-ni:ni). The number of elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent element before the element in the ni'th direction and +ni gives the adjacent element after the element in the ni'th direction. The ni=0 index should be 1 for the current element. Old CMISS name NXI(-ni:ni,0:nei,ne).
-    INTEGER(INTG), ALLOCATABLE :: ADJACENT_ELEMENTS(:,:) !<ADJACENT_ELEMENTS(nei,-ni:ni). The local element numbers of the elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent elements before the element in the ni'th direction and +ni gives the adjacent elements after the element in the ni'th direction. The ni=0 index should give the current element number. Old CMISS name NXI(-ni:ni,0:nei,ne)
-  END TYPE MESH_ELEMENT_TYPE
-
-  !>Contains the information for the elements of a mesh.
-  TYPE MESH_ELEMENTS_TYPE
-    TYPE(MESH_TYPE), POINTER :: MESH !<The pointer to the mesh for the elements information.
-    INTEGER(INTG) :: NUMBER_OF_ELEMENTS !< The number of elements in the mesh.
-    LOGICAL :: ELEMENTS_FINISHED !<Is .TRUE. if the mesh elements have finished being created, .FALSE. if not.
-    TYPE(MESH_ELEMENT_TYPE), POINTER :: ELEMENTS(:) !<ELEMENTS(ne). The pointer to the array of information for the elements of this mesh. ELEMENTS(ne) contains the information for the ne'th global element of the mesh. \todo Should this be allocatable.
-  END TYPE MESH_ELEMENTS_TYPE
-
-  !>Contains the topology information for a global node of a mesh.
-  TYPE MESH_NODE_TYPE
-    INTEGER(INTG) :: GLOBAL_NUMBER !<The global node number in the mesh.
-    INTEGER(INTG) :: USER_NUMBER !<The corresponding user number for the node.
-    INTEGER(INTG) :: NUMBER_OF_DERIVATIVES !<The number of global derivatives at the node for the mesh. Old CMISS name NKT(nj,np).
-    INTEGER(INTG), ALLOCATABLE :: PARTIAL_DERIVATIVE_INDEX(:) !<PARTIAL_DERIVATIVE_INDEX(nk). The partial derivative index (nu) of the nk'th global derivative for the node. Old CMISS name NUNK(nk,nj,np).
-    INTEGER(INTG), ALLOCATABLE :: DOF_INDEX(:) !<DOF_INDEX(nk). The global dof derivative index (ny) in the domain of the nk'th global derivative for the node.
-    INTEGER(INTG) :: NUMBER_OF_SURROUNDING_ELEMENTS !<The number of elements surrounding the node in the mesh. Old CMISS name NENP(np,0,0:nr).
-    INTEGER(INTG), POINTER :: SURROUNDING_ELEMENTS(:) !<SURROUNDING_ELEMENTS(nep). The global element number of the nep'th element that is surrounding the node. Old CMISS name NENP(np,nep,0:nr). \todo Change this to allocatable.
-  END TYPE MESH_NODE_TYPE
-
-  !>Contains the information for the nodes of a mesh.
-  TYPE MESH_NODES_TYPE
-    TYPE(MESH_TYPE), POINTER :: MESH !<The pointer to the mesh for this nodes information.
-    INTEGER(INTG) :: NUMBER_OF_NODES !<The number of nodes in the mesh.
-    TYPE(MESH_NODE_TYPE), POINTER :: NODES(:) !<NODES(np). The pointer to the array of topology information for the nodes of the mesh. NODES(np) contains the topological information for the np'th global node of the mesh. \todo Should this be allocatable???
-  END TYPE MESH_NODES_TYPE
-
-  !>Contains information on the (global) topology of a mesh.
-  TYPE MESH_TOPOLOGY_TYPE
-    TYPE(MESH_TYPE), POINTER :: MESH !<Pointer to the parent mesh.
-    INTEGER(INTG) :: MESH_COMPONENT_NUMBER !<The mesh component number for this mesh topology.
-    TYPE(MESH_NODES_TYPE), POINTER :: NODES !<Pointer to the nodes within the mesh topology.
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS !<Pointer to the elements within the mesh topology.
-    TYPE(MESH_DOFS_TYPE), POINTER :: DOFS !<Pointer to the dofs within the mesh topology.
-  END TYPE MESH_TOPOLOGY_TYPE
-
-  !>A buffer type to allow for an array of pointers to a MESH_TOPOLOGY_TYPE.
-  TYPE MESH_TOPOLOGY_PTR_TYPE
-    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: PTR !<The pointer to the mesh topology.
-  END TYPE MESH_TOPOLOGY_PTR_TYPE
+  !
+  !================================================================================================================================
+  !
+  ! Equations matrices types
+  !
   
-  !>Contains information on the degrees-of-freedom (dofs) for a domain.
-  TYPE DOMAIN_DOFS_TYPE
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<A pointer to the domain.
-    INTEGER(INTG) :: NUMBER_OF_DOFS !<The number of degrees-of-freedom (excluding ghost dofs) in the domain.
-    INTEGER(INTG) :: TOTAL_NUMBER_OF_DOFS !<The total number of degrees-of-freedom (including ghost dofs) in the domain.
-    INTEGER(INTG), ALLOCATABLE :: DOF_INDEX(:,:) !<DOF_INDEX(i,ny). The index for the ny'th degree-of-freedom. When i=1 DOF_INDEX will give the global derivative number (nk) associated with the dof. When i=2 DOF_INDEX will give the local node number (np) associated with the dof.
-  END TYPE DOMAIN_DOFS_TYPE
-
-  !>Contains the information for a line in a domain.
-  TYPE DOMAIN_LINE_TYPE
-    INTEGER(INTG) :: NUMBER !<The line number in the domain.
-    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function for the line.
-    INTEGER(INTG), ALLOCATABLE :: NODES_IN_LINE(:) !<NODES_IN_LINE(nn). The local node number in the domain of the nn'th local node in the line. Old CMISS name NPL(2..5,nj,nl).
-    INTEGER(INTG), ALLOCATABLE :: DERIVATIVES_IN_LINE(:,:) !<DERIVATIVES_IN_LINE(nk,nn). The global derivative number of the local derivative nk for the local node nn in the line. Old CMISS name NPL(4..5,nj,nl).
-  END TYPE DOMAIN_LINE_TYPE
-
-  !>A buffer type to allow for an array of pointers to a DOMAIN_LINE_TYPE
-  TYPE DOMAIN_LINE_PTR_TYPE
-    TYPE(DOMAIN_LINE_TYPE), POINTER :: PTR !<A pointer to the domain line.
-  END TYPE DOMAIN_LINE_PTR_TYPE
-
-  !>Contains the topology information for the lines of a domain.
-  TYPE DOMAIN_LINES_TYPE
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<The pointer to the domain for this lines topology information.
-    INTEGER(INTG) :: NUMBER_OF_LINES !<The number of lines in this domain topology.
-    TYPE(DOMAIN_LINE_TYPE), ALLOCATABLE :: LINES(:) !<LINES(nl). The pointer to the array of topology information for the lines of this domain. LINES(nl) contains the topological information for the nl'th local line of the domain.
-  END TYPE DOMAIN_LINES_TYPE
-
-  !>Contains the information for a face in a domain.
-  TYPE DOMAIN_FACE_TYPE
-    INTEGER(INTG) :: NUMBER !<The face number in the domain.
-    INTEGER(INTG) :: XI_DIRECTION1 !<The first xi direction of the face. \todo move this to the decomposition face type
-    INTEGER(INTG) :: XI_DIRECTION2 !<The second xi direction of the face. \todo move this to the decomposition face type
-    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function for the face.
-    INTEGER(INTG), ALLOCATABLE :: NODES_IN_FACE(:) !<NODES_IN_FACE(nn). The local node number in the domain of the nn'th local node in the face. Old CMISS name NPNF(nn,nbf).
-    INTEGER(INTG), ALLOCATABLE :: DERIVATIVES_IN_FACE(:,:) !<DERIVATIVES_IN_FACE(nk,nn). The global derivative number of the local derivative nk for the local node nn in the face.
-  END TYPE DOMAIN_FACE_TYPE
-
-  !>A buffer type to allow for an array of pointers to a FIELD_VARIABLE_TYPE.
-  TYPE DOMAIN_FACE_PTR_TYPE
-    TYPE(DOMAIN_FACE_TYPE), POINTER :: PTR !<The pointer to the domain face.
-  END TYPE DOMAIN_FACE_PTR_TYPE
-
-  !>Contains the topology information for the faces of a domain.
-  TYPE DOMAIN_FACES_TYPE
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<The pointer to the domain for this faces topology information.
-    INTEGER(INTG) :: NUMBER_OF_FACES !<The number of faces in this domain topology.
-    TYPE(DOMAIN_FACE_TYPE), ALLOCATABLE :: FACES(:) !<FACES(nf). The pointer to the array of topology information for the faces of this domain. FACES(nf) contains the topological information for the nf'th local face of the domain.
-  END TYPE DOMAIN_FACES_TYPE
-
-  !>Contains the information for an element in a domain.
-  TYPE DOMAIN_ELEMENT_TYPE
-    INTEGER(INTG) :: NUMBER !<The local element number in the domain.
-    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function for the element.
-    INTEGER(INTG), ALLOCATABLE :: ELEMENT_NODES(:) !<ELEMENT_NODES(nn). The local node number in the domain of the nn'th local node in the element. Old CMISS name NPNE(nn,nbf,ne).
-    INTEGER(INTG), ALLOCATABLE :: ELEMENT_DERIVATIVES(:,:) !<ELEMENT_DERIVATIVES(nk,nn). The global derivative number of the local derivative nk for the local node nn in the element. Old CMISS name NKJE(nk,nn,nj,ne).
-  END TYPE DOMAIN_ELEMENT_TYPE
-  
-  !>Contains the topology information for the elements of a domain.
-  TYPE DOMAIN_ELEMENTS_TYPE
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<The pointer to the domain for this elements topology information.
-    INTEGER(INTG) :: NUMBER_OF_ELEMENTS !<The number of elements (excluding ghost elements) in this domain topology.
-    INTEGER(INTG) :: TOTAL_NUMBER_OF_ELEMENTS !<The total number of elements (including ghost elements) in this domain topology.
-    TYPE(DOMAIN_ELEMENT_TYPE), POINTER :: ELEMENTS(:) !<ELEMENTS(ne). The pointer to the array of topology information for the elements of this domain. ELEMENTS(ne) contains the topological information for the ne'th local elements of the domain. \todo Change this to allocatable???
-    INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ELEMENT_PARAMETERS !<The maximum number of element parameters (ns) for all the elements in the domain.
-  END TYPE DOMAIN_ELEMENTS_TYPE
-
-  !>Contains the topology information for a local node of a domain.
-  TYPE DOMAIN_NODE_TYPE
-    INTEGER(INTG) :: LOCAL_NUMBER !<The local node number in the domain.
-    INTEGER(INTG) :: GLOBAL_NUMBER !<The corresponding global node number in the mesh of the local node number in the domain.
-    INTEGER(INTG) :: USER_NUMBER !<The corresponding user number for the node.
-    INTEGER(INTG) :: NUMBER_OF_DERIVATIVES !<The number of global derivatives at the node for the domain. Old CMISS name NKT(nj,np)
-    INTEGER(INTG), ALLOCATABLE :: PARTIAL_DERIVATIVE_INDEX(:) !<PARTIAL_DERIVATIVE_INDEX(nk). The partial derivative index (nu) of the nk'th global derivative for the node. Old CMISS name NUNK(nk,nj,np).
-    INTEGER(INTG), ALLOCATABLE :: DOF_INDEX(:) !<DOF_INDEX(nk). The local dof derivative index (ny) in the domain of the nk'th global derivative for the node.
-    INTEGER(INTG) :: NUMBER_OF_SURROUNDING_ELEMENTS !<The number of elements surrounding the node in the domain. Old CMISS name NENP(np,0,0:nr).
-    INTEGER(INTG), POINTER :: SURROUNDING_ELEMENTS(:) !<SURROUNDING_ELEMENTS(nep). The local element number of the nep'th element that is surrounding the node. Old CMISS name NENP(np,nep,0:nr). \todo Change this to allocatable.
-    INTEGER(INTG) :: NUMBER_OF_NODE_LINES !<The number of lines surrounding the node in the domain.
-    INTEGER(INTG), ALLOCATABLE :: NODE_LINES(:) !<NODE_LINES(nlp). The local line number of the nlp'th line that is surrounding the node.
-  END TYPE DOMAIN_NODE_TYPE
-
-  !>Contains the topology information for the nodes of a domain
-  TYPE DOMAIN_NODES_TYPE
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<The pointer to the domain for this nodes topology information.
-    INTEGER(INTG) :: NUMBER_OF_NODES !<The number of nodes (excluding ghost nodes) in this domain topology.
-    INTEGER(INTG) :: TOTAL_NUMBER_OF_NODES !<The total number of nodes (including ghost nodes) in this domain topology.
-    INTEGER(INTG) :: MAXIMUM_NUMBER_OF_DERIVATIVES !<The maximum number of derivatives over the nodes in this domain topology.
-    TYPE(DOMAIN_NODE_TYPE), POINTER :: NODES(:) !<NODES(np). The pointer to the array of topology information for the nodes of this domain. NODES(np) contains the topological information for the np'th local node of the domain. \todo Change this to allocatable???
-  END TYPE DOMAIN_NODES_TYPE
-
-  !>Contains the topology information for a domain
-  TYPE DOMAIN_TOPOLOGY_TYPE
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<The pointer to the domain for this topology information.
-    TYPE(DOMAIN_NODES_TYPE), POINTER :: NODES !<The pointer to the topology information for the nodes of this domain.
-    TYPE(DOMAIN_DOFS_TYPE), POINTER :: DOFS !<The pointer to the topology information for the dofs of this domain.
-    TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS !<The pointer to the topology information for the elements of this domain.
-    TYPE(DOMAIN_FACES_TYPE), POINTER :: FACES !<The pointer to the topology information for the faces of this domain.
-    TYPE(DOMAIN_LINES_TYPE), POINTER :: LINES !<The pointer to the topology information for the lines of this domain.
-  END TYPE DOMAIN_TOPOLOGY_TYPE
-
-  !>Contains the information for an adjacent domain for transfering the ghost data of a distributed vector to/from the
-  !>current domain.
-  TYPE DISTRIBUTED_VECTOR_TRANSFER_TYPE
-    TYPE(DISTRIBUTED_VECTOR_CMISS_TYPE), POINTER :: CMISS_VECTOR !<The pointer to the CMISS distributed vector object for this transfer information.
-    INTEGER(INTG) :: DATA_TYPE !<The data type of the distributed vector. This is "inherited" from the distributed vector.
-    INTEGER(INTG) :: SEND_BUFFER_SIZE !<The size of the buffer to send distributed vector data from the current domain to the adjacent domain.
-    INTEGER(INTG) :: RECEIVE_BUFFER_SIZE !<The size of the buffer to receive distributed vector data from the adjacent domain to the current domain.
-    INTEGER(INTG) :: SEND_TAG_NUMBER !<The MPI tag number for the data sending from the current domain to the adjacent domain. It is calculated as an offset from the base tag number of the distribued vector.
-    INTEGER(INTG) :: RECEIVE_TAG_NUMBER !<The MPI tag number for the data receiving from the adjacent domain to the current domain. It is calculated as an offset from the base tag number of the distribued vector.
-    INTEGER(INTG) :: MPI_SEND_REQUEST !<The MPI request pointer for sending data from the current domain to the adjacent domain.
-    INTEGER(INTG) :: MPI_RECEIVE_REQUEST !<The MPI request pointer for sending data from the adjacent domain to the current domain.
-    INTEGER(INTG), ALLOCATABLE :: SEND_BUFFER_INTG(:) !<The integer buffer for sending the distributed integer vector data from the current domain to the adjacent domain.
-    REAL(DP), ALLOCATABLE :: SEND_BUFFER_DP(:) !<The double precision real buffer for sending the distributed real vector data from the current domain to the adjacent domain.
-    REAL(SP), ALLOCATABLE :: SEND_BUFFER_SP(:) !<The single precision real buffer for sending the distributed real vector data from the current domain to the adjacent domain.
-    LOGICAL, ALLOCATABLE :: SEND_BUFFER_L(:) !<The logical buffer for sending the distributed logical vector data from the current domain to the adjacent domain.
-    INTEGER(INTG), ALLOCATABLE :: RECEIVE_BUFFER_INTG(:) !<The integer buffer for receiving the distributed integer vector data from the adjacent domain to the current domain.
-    REAL(DP), ALLOCATABLE :: RECEIVE_BUFFER_DP(:) !<The double precision real buffer for receiving the distributed real vector data from the adjacent domain to the current domain.
-    REAL(SP), ALLOCATABLE :: RECEIVE_BUFFER_SP(:) !<The single precision real buffer for receiving the distributed real vector data from the adjacent domain to the current domain.
-    LOGICAL, ALLOCATABLE :: RECEIVE_BUFFER_L(:) !<The logical buffer for receiving the distributed logical vector data from the adjacent domain to the current domain.  
-  END TYPE DISTRIBUTED_VECTOR_TRANSFER_TYPE
-
-  !>Contains information for a CMISS distributed vector
-  TYPE DISTRIBUTED_VECTOR_CMISS_TYPE
-    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: DISTRIBUTED_VECTOR !<A pointer to the distributed vector
-    INTEGER(INTG) :: BASE_TAG_NUMBER !<The base number for the MPI tag numbers that will be used to communicate the distributed vector data amongst the domains. The base tag number can be thought of as the identification number for the distributed vector object.
-    INTEGER(INTG) :: N !<The size of the distributed vector
-    INTEGER(INTG) :: DATA_SIZE !<The size of the distributed vector that is held locally by the domain.
-    INTEGER(INTG), ALLOCATABLE :: DATA_INTG(:) !<DATA_INTG(i). The integer data for an integer distributed vector. The i'th component contains the data for the i'th local number of distributed vector data on the domain. 
-    REAL(DP), ALLOCATABLE :: DATA_DP(:) !<DATA_DP(i). The real data for a double precision real distributed vector. The i'th component contains the data for the i'th local number of distributed vector data on the domain. 
-    REAL(SP), ALLOCATABLE :: DATA_SP(:) !<DATA_SP(i). The real data for a single precision real distributed vector. The i'th component contains the data for the i'th local number of distributed vector data on the domain. 
-    LOGICAL, ALLOCATABLE :: DATA_L(:) !<DATA_L(i). The logical data for a logical distributed vector. The i'th component contains the data for the i'th local number of distributed vector data on the domain.  
-    TYPE(DISTRIBUTED_VECTOR_TRANSFER_TYPE), ALLOCATABLE :: TRANSFERS(:) !<TRANSFERS(adjacent_domain_idx). The transfer information for the adjacent_domain_idx'th adjacent domain to this domain. 
-  END TYPE DISTRIBUTED_VECTOR_CMISS_TYPE
-
-  !>Contains information for a PETSc distributed vector
-  TYPE DISTRIBUTED_VECTOR_PETSC_TYPE
-    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: DISTRIBUTED_VECTOR !<A pointer to the distributed vector
-    INTEGER(INTG) :: N !<The number of local components in the vector
-    INTEGER(INTG) :: GLOBAL_N !<The number of global components in the vector
-    INTEGER(INTG) :: DATA_SIZE  !<The size of the distributed vector that is held locally by the domain.
-    INTEGER(INTG), ALLOCATABLE :: GLOBAL_NUMBERS(:) !<GLOBAL_NUMBERS(i). The PETSc global number corresponding to the i'th local number.
-    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE) :: ISLTGMAPPING !<The local to global mapping for the vector
-    TYPE(PETSC_VEC_TYPE) :: VECTOR !<The PETSc vector
-  END TYPE DISTRIBUTED_VECTOR_PETSC_TYPE
-  
-  !>Contains the information for a vector that is distributed across a number of domains.
-  TYPE DISTRIBUTED_VECTOR_TYPE
-    LOGICAL :: VECTOR_FINISHED !<!<Is .TRUE. if the distributed vector has finished being created, .FALSE. if not.
-    INTEGER(INTG) :: LIBRARY_TYPE !<The format of the distributed vector \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
-    INTEGER(INTG) :: GHOSTING_TYPE !<The ghosting type \see DISTRIBUTED_MATRIX_VECTOR_GhostingTypes,DISTRIBUTED_MATRIX_VECTOR
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING !<The pointer for the domain mapping that identifies how the vector is distributed amongst the domains.
-    INTEGER(INTG) :: DATA_TYPE !<The type of data for the distributed vector \see DISTRIBUTED_MATRIX_VECTOR_DataTypes 
-    TYPE(DISTRIBUTED_VECTOR_CMISS_TYPE), POINTER :: CMISS !<A pointer to the CMISS distributed vector information
-    TYPE(DISTRIBUTED_VECTOR_PETSC_TYPE), POINTER :: PETSC !<A pointer to the PETSc distributed vector information
-  END TYPE DISTRIBUTED_VECTOR_TYPE
-
-  !>Contains information for a CMISS distributed matrix
-  TYPE DISTRIBUTED_MATRIX_CMISS_TYPE
-    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: DISTRIBUTED_MATRIX !<A pointer to the distributed matrix
-    INTEGER(INTG) :: BASE_TAG_NUMBER !<The base number for the MPI tag numbers that will be used to communicate the distributed matrix data amongst the domains. The base tag number can be thought of as the identification number for the distributed matrix object.
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix to store the rows corresponding to this domain.
-  END TYPE DISTRIBUTED_MATRIX_CMISS_TYPE
-
-  !>Contains information for a PETSc distributed matrix
-  TYPE DISTRIBUTED_MATRIX_PETSC_TYPE
-    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: DISTRIBUTED_MATRIX !<A pointer to the distributed matrix
-    INTEGER(INTG) :: M !<The number of local rows in the PETSc matrix
-    INTEGER(INTG) :: N !<The number of local columns in the PETSc matrix
-    INTEGER(INTG) :: GLOBAL_M !<The number of global rows in the PETSc matrix
-    INTEGER(INTG) :: GLOBAL_N !<The number of global columns in the PETSc matrix
-    INTEGER(INTG) :: STORAGE_TYPE !<The storage type (sparsity) of the PETSc matrix
-    INTEGER(INTG) :: NUMBER_NON_ZEROS !<The number of non-zeros in the PETSc matrix
-    INTEGER(INTG) :: DATA_SIZE !<The size of the allocated data in the PETSc matrix
-    INTEGER(INTG) :: MAXIMUM_COLUMN_INDICES_PER_ROW !<The maximum number of column indicies for the rows.
-    INTEGER(INTG), ALLOCATABLE :: DIAGONAL_NUMBER_NON_ZEROS(:) !<DIAGONAL_NUMBER_NON_ZEROS(i). The number of non-zeros in the diagonal part of the the i'th row
-    INTEGER(INTG), ALLOCATABLE :: OFFDIAGONAL_NUMBER_NON_ZEROS(:) !<OFFDIAGONAL_NUMBER_NON_ZEROS(i). The number of non-zeros in the off diagonal part of the the i'th row
-    INTEGER(INTG), ALLOCATABLE :: ROW_INDICES(:) !<ROW_INDICES(i). The row indices for the matrix.
-    INTEGER(INTG), ALLOCATABLE :: COLUMN_INDICES(:) !<COLUMN_INDICES(i). The column indices for the matrix.
-    INTEGER(INTG), ALLOCATABLE :: GLOBAL_ROW_NUMBERS(:) !<GLOBAL_ROW_NUMBERS(i). The PETSc global row number corresponding to the i'th local row number.
-    REAL(DP), ALLOCATABLE :: DATA_DP(:) !<DATA_DP(i). The real data for the matrix
-    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE) :: ISLTGMAPPING !<The local to global mapping for the vector
-    TYPE(PETSC_MAT_TYPE) :: MATRIX !<The PETSc matrix
-  END TYPE DISTRIBUTED_MATRIX_PETSC_TYPE
-  
-  !>Contains the information for a matrix that is distributed across a number of domains.
-  TYPE DISTRIBUTED_MATRIX_TYPE
-    LOGICAL :: MATRIX_FINISHED !<Is .TRUE. if the distributed matrix has finished being created, .FALSE. if not.
-    INTEGER(INTG) :: LIBRARY_TYPE !<The library of the distributed matrix \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
-    INTEGER(INTG) :: GHOSTING_TYPE !<The ghosting type \see DISTRIBUTED_MATRIX_VECTOR_GhostingTypes,DISTRIBUTED_MATRIX_VECTOR
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ROW_DOMAIN_MAPPING !<The pointer for the domain mapping that identifies how the matrix rows are distributed amongst the domains.
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: COLUMN_DOMAIN_MAPPING !<The pointer for the domain mapping that identifies how the matrix columns are distributed amongst the domains.
-    INTEGER(INTG) :: DATA_TYPE !<The type of data for the distributed matrix \see DISTRIBUTED_MATRIX_VECTOR_DataTypes
-    TYPE(DISTRIBUTED_MATRIX_CMISS_TYPE), POINTER :: CMISS !<A pointer to the CMISS distributed matrix information
-    TYPE(DISTRIBUTED_MATRIX_PETSC_TYPE), POINTER :: PETSC !<A pointer to the PETSc distributed matrix information
-  END TYPE DISTRIBUTED_MATRIX_TYPE
-
-  !>Contains information for a vector
-  TYPE VECTOR_TYPE
-    INTEGER(INTG) :: ID !<The ID of the vector.
-    LOGICAL :: VECTOR_FINISHED !<Is .TRUE. if the vector has finished being created, .FALSE. if not.
-    INTEGER(INTG) :: N !<The length of the vector
-    INTEGER(INTG) :: DATA_TYPE !<The data type of the vector \see MATRIX_VECTOR_DataTypes 
-    INTEGER(INTG) :: SIZE !<The size of the data array of the vector
-    INTEGER(INTG), ALLOCATABLE :: DATA_INTG(:) !<DATA_INTG(i). The integer data for an integer vector. The i'th component contains the data for the i'th component vector data on the domain. 
-    REAL(SP), ALLOCATABLE :: DATA_SP(:) !<DATA_SP(i). The real data for a single precision real vector. The i'th component contains the data for the i'th component vector data on the domain. 
-    REAL(DP), ALLOCATABLE :: DATA_DP(:) !<DATA_DP(i). The real data for a double precision real vector. The i'th component contains the data for the i'th component vector data on the domain. 
-    LOGICAL, ALLOCATABLE :: DATA_L(:) !<DATA_L(i). The real for a logical vector. The i'th component contains the data for the i'th component vector data on the domain. 
-  END TYPE VECTOR_TYPE
-
-  !>Contains information for a matrix
-  TYPE MATRIX_TYPE
-    INTEGER(INTG) :: ID !<The ID of the matrix
-    LOGICAL :: MATRIX_FINISHED !<Is .TRUE. if the matrix has finished being created, .FALSE. if not.
-    INTEGER(INTG) :: M !<The number of rows in the matrix
-    INTEGER(INTG) :: N !<The number of columns in the matrix
-    INTEGER(INTG) :: MAX_M !<The maximum number of columns in the matrix storage
-    INTEGER(INTG) :: MAX_N !<The maximum number of rows in the matrix storage
-    INTEGER(INTG) :: DATA_TYPE !<The data type of the matrix  \see MATRIX_VECTOR_DataTypes 
-    INTEGER(INTG) :: STORAGE_TYPE !<The storage type of the matrix \see MATRIX_VECTOR_StorageTypes 
-    INTEGER(INTG) :: NUMBER_NON_ZEROS !<The number of non-zero elements in the matrix 
-    INTEGER(INTG) :: SIZE !<The size of the data arrays
-    INTEGER(INTG) :: MAXIMUM_COLUMN_INDICES_PER_ROW !<The maximum number of column indicies for the rows.
-    INTEGER(INTG), ALLOCATABLE :: ROW_INDICES(:) !<ROW_INDICES(i). The row indices for the matrix storage scheme. \see MATRIX_VECTOR_MatrixStorageStructures
-    INTEGER(INTG), ALLOCATABLE :: COLUMN_INDICES(:) !<COLUMN_INDICES(i). The column indices for the matrix storage scheme. \see MATRIX_VECTOR_MatrixStorageStructures
-    INTEGER(INTG), ALLOCATABLE :: DATA_INTG(:) !<DATA_INTG(i). The integer data for an integer matrix. The i'th component contains the data for the i'th matrix data stored on the domain.
-    REAL(SP), ALLOCATABLE :: DATA_SP(:) !<DATA_SP(i). The real data for a single precision matrix. The i'th component contains the data for the i'th matrix data stored on the domain.
-    REAL(DP), ALLOCATABLE :: DATA_DP(:) !<DATA_DP(i). The real data for a double precision matrix. The i'th component contains the data for the i'th matrix data stored on the domain.
-    LOGICAL, ALLOCATABLE :: DATA_L(:) !<DATA_L(i). The logical data for a logical matrix. The i'th component contains the data for the i'th matrix data stored on the domain.
-  END TYPE MATRIX_TYPE
-  
-  !>Contains the information on an adjacent domain to a domain in a domain mapping. 
-  TYPE DOMAIN_ADJACENT_DOMAIN_TYPE
-    INTEGER(INTG) :: DOMAIN_NUMBER !<The number of the domain that is adjacent to a domain in a mapping.
-    INTEGER(INTG) :: NUMBER_OF_SEND_GHOSTS !<The number of ghost locals in the current domain that are to be sent to this domain.
-    INTEGER(INTG) :: NUMBER_OF_RECEIVE_GHOSTS !<The number of ghost locals in the current domain that are to be received from this domain.
-    INTEGER(INTG), ALLOCATABLE :: LOCAL_GHOST_SEND_INDICES(:) !<LOCAL_GHOST_SEND_INDICES(i). The local numbers of the ghosts in the current domain that are to be sent to this domain.
-    INTEGER(INTG), ALLOCATABLE :: LOCAL_GHOST_RECEIVE_INDICES(:) !<LOCAL_GHOST_RECEIVE_INDICES(i). The local numbers of the ghosts in the current domain that are to be received from this domain.
-  END TYPE DOMAIN_ADJACENT_DOMAIN_TYPE
-  
-  !>Contains the local information for a global mapping number for a domain mapping.
-  TYPE DOMAIN_GLOBAL_MAPPING_TYPE
-    INTEGER(INTG) :: NUMBER_OF_DOMAINS !<The number of domains that the global number is mapped to a local number in.
-    INTEGER(INTG), ALLOCATABLE :: LOCAL_NUMBER(:) !<LOCAL_NUMBER(domain_idx). The mapped local number for the domain_idx'th domain for the global number.
-    INTEGER(INTG), ALLOCATABLE :: DOMAIN_NUMBER(:) !<DOMAIN_NUMBER(domain_idx). The domain number for the domain_idx'th domain for which the global number is mapped to a local number
-    INTEGER(INTG), ALLOCATABLE :: LOCAL_TYPE(:) !<LOCAL_TYPE(domain_idx). The type of local for the domain_idx'th domain for which the global number is mapped to a local number. The types depend on wether the mapped local number in the domain_idx'th domain is an internal, boundary or ghost local number. \see DOMAIN_MAPPINGS_DomainType
-  END TYPE DOMAIN_GLOBAL_MAPPING_TYPE
-
-  !>Contains information on the domain mappings (i.e., local and global numberings).
-  TYPE DOMAIN_MAPPING_TYPE
-    INTEGER(INTG) :: NUMBER_OF_LOCAL !<The number of local numbers in the domain excluding ghost numbers
-    INTEGER(INTG) :: TOTAL_NUMBER_OF_LOCAL !<The total number of local numbers in the domain including ghost numbers.
-    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_DOMAIN_LOCAL(:) !<NUMBER_OF_DOMAIN_LOCAL(domain_no). The total number of locals for domain_no'th domain. NOTE: the domain_no goes from 0 to the number of domains-1.
-    INTEGER(INTG) :: NUMBER_OF_GLOBAL !<The number of global numbers for this mapping.
-    INTEGER(INTG) :: NUMBER_OF_DOMAINS !<The number of domains in this mapping.
-    INTEGER(INTG) :: NUMBER_OF_INTERNAL !<The number of internal numbers in this mapping.
-    INTEGER(INTG), ALLOCATABLE :: INTERNAL_LIST(:) !<INTERNAL_LIST(i). The list of internal numbers for the mapping. The i'th position gives the i'th local internal number.
-    INTEGER(INTG) :: NUMBER_OF_BOUNDARY !<The number of boundary numbers in this mapping.
-    INTEGER(INTG), ALLOCATABLE :: BOUNDARY_LIST(:) !<BOUNDARY_LIST(i). The list of boundary numbers for the mapping. The i'th position gives the i'th local boundary number.
-    INTEGER(INTG) :: NUMBER_OF_GHOST !<The number of ghost numbers in this mapping.
-    INTEGER(INTG), ALLOCATABLE :: GHOST_LIST(:) !<GHOST_LIST(i). The list of ghost numbers for the mapping. The i'th position gives the i'th local ghost number.
-    !!Need a dimension index here as domain  variables that map to matrices will have different row and column
-    !!mappings in general????
-    INTEGER(INTG), ALLOCATABLE :: LOCAL_TO_GLOBAL_MAP(:) !<LOCAL_TO_GLOBAL_MAP(i). The global number for the i'th local number for the mapping.
-    TYPE(DOMAIN_GLOBAL_MAPPING_TYPE), ALLOCATABLE :: GLOBAL_TO_LOCAL_MAP(:) !<GLOBAL_TO_LOCAL_MAP(i). The local information for the i'th global number for the mapping.
-    INTEGER(INTG) :: NUMBER_OF_ADJACENT_DOMAINS !<The number of domains that are adjacent to this domain in the mapping.
-    INTEGER(INTG), ALLOCATABLE :: ADJACENT_DOMAINS_PTR(:) !<ADJACENT_DOMAINS_PTR(domain_no). The pointer to the list of adjacent domains for domain_no. ADJACENT_DOMAINS_PTR(domain_no) gives the starting position in ADJACENT_DOMAINS_LIST for the first adjacent domain number for domain number domain_no. ADJACENT_DOMAINS_PTR(domain_no+1) gives the last+1 position in ADJACENT_DOMAINS_LIST for the last adjacent domain number for domain number domain_no. NOTE: the index for ADJACENT_DOMAINS_PTR varies from 0 to the number of domains+1.
-    INTEGER(INTG), ALLOCATABLE :: ADJACENT_DOMAINS_LIST(:) !<ADJACENT_DOMAINS_LIST(i). The list of adjacent domains for each domain. The start and end positions for the list for domain number domain_no are given by ADJACENT_DOMAIN_PTR(domain_no) and ADJACENT_DOMAIN_PTR(domain_no+1)-1 respectively.
-    TYPE(DOMAIN_ADJACENT_DOMAIN_TYPE), ALLOCATABLE :: ADJACENT_DOMAINS(:) !<ADJACENT_DOMAINS(adjacent_domain_idx). The adjacent domain information for the adjacent_domain_idx'th adjacent domain to this domain. 
-  END TYPE DOMAIN_MAPPING_TYPE
-
-  !>Contains information on the domain decomposition mappings.
-  TYPE DOMAIN_MAPPINGS_TYPE
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<A pointer to the domain decomposition.
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS !<Pointer to the element mappings for the domain decomposition.
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES !<Pointer to the node mappings for the domain decomposition.
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOFS !<Pointer to the dof mappings for the domain decomposition.
-  END TYPE DOMAIN_MAPPINGS_TYPE
-  
-  !>A pointer to the domain decomposition for this domain.
-  TYPE DOMAIN_TYPE
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<A pointer to the domain decomposition for this domain.
-    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh for this domain.
-    INTEGER(INTG) :: MESH_COMPONENT_NUMBER !<The mesh component number of the mesh which this domain was decomposed from.
-    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region that this domain is in. This is "inherited" from the mesh region. 
-    INTEGER(INTG) :: NUMBER_OF_DIMENSIONS !<The number of dimensions for this domain. This is "inherited" from the mesh.
-    INTEGER(INTG), ALLOCATABLE :: NODE_DOMAIN(:) !<NODE_DOMAIN(np). The domain number that the np'th global node is in for the domain decomposition. Note: the domain numbers start at 0 and go up to the NUMBER_OF_DOMAINS-1.
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: MAPPINGS !<Pointer to the mappings for the domain  e.g., global to local and local to global maps
-    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<Pointer to the topology for the domain.
-  END TYPE DOMAIN_TYPE
-
-  !>A buffer type to allow for an array of pointers to a DOMAIN_TYPE.
-  TYPE DOMAIN_PTR_TYPE 
-    TYPE(DOMAIN_TYPE), POINTER :: PTR !<The pointer to the domain.
-  END TYPE DOMAIN_PTR_TYPE
-  
-  !>Contains the information for a line in a decomposition.
-  TYPE DECOMPOSITION_LINE_TYPE
-    INTEGER(INTG) :: NUMBER !<The line number in the decomposition.
-    INTEGER(INTG) :: XI_DIRECTION !<The Xi direction of the line. Old CMISS name NPL(1,0,nl)
-    INTEGER(INTG) :: NUMBER_OF_SURROUNDING_ELEMENTS !<The number of elements that surround (use) this line.
-    INTEGER(INTG), ALLOCATABLE :: SURROUNDING_ELEMENTS(:) !<SURROUNDING_ELEMENTS(nel). The local element number of the nel'th element that surrounds (uses) this line. 
-    INTEGER(INTG), ALLOCATABLE :: ELEMENT_LINES(:) !<ELEMENT_LINES(nel). The local arc number of the nel'th element that surrounds (uses) this line.
-    INTEGER(INTG) :: ADJACENT_LINES(0:1) !<ADJACENT_LINES(0:1). The line number of adjacent lines. ADJACENT_LINES(0) is the line number adjacent in the -xi direction. ADJACENT_LINES(1) is the line number adjacent in the +xi direction. Old CMISS name NPL(2..3,0,nl).
-  END TYPE DECOMPOSITION_LINE_TYPE
-
-  !>Contains the topology information for the lines of a decomposition.
-  TYPE DECOMPOSITION_LINES_TYPE
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<The pointer to the decomposition for this lines topology information.
-    INTEGER(INTG) :: NUMBER_OF_LINES !<The number of lines in this decomposition topology.
-    TYPE(DECOMPOSITION_LINE_TYPE), ALLOCATABLE :: LINES(:) !<LINES(nl). The pointer to the array of topology information for the lines of this decomposition. LINES(nl) contains the topological information for the nl'th local line of the decomposition.
-  END TYPE DECOMPOSITION_LINES_TYPE
-
-  !>Contains the information for an element in a decomposition.
-  TYPE DECOMPOSITION_ELEMENT_TYPE
-    INTEGER(INTG) :: LOCAL_NUMBER !<The local element number in the decomposition.
-    INTEGER(INTG) :: GLOBAL_NUMBER !<The corresponding global element number in the mesh of the local element number in the decomposition.
-    INTEGER(INTG) :: USER_NUMBER !<The corresponding user number for the element.
-    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ADJACENT_ELEMENTS(:) !<NUMBER_OF_ADJACENT_ELEMENTS(-ni:ni). The number of elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent element before the element in the ni'th direction and +ni gives the adjacent element after the element in the ni'th direction. The ni=0 index should be 1 for the current element. Old CMISS name NXI(-ni:ni,0:nei,ne).
-    INTEGER(INTG), ALLOCATABLE :: ADJACENT_ELEMENTS(:,:) !<ADJACENT_ELEMENTS(nei,-ni:ni). The local element numbers of the elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent elements before the element in the ni'th direction and +ni gives the adjacent elements after the element in the ni'th direction. The ni=0 index should give the current element number. Old CMISS name NXI(-ni:ni,0:nei,ne).
-    INTEGER(INTG), ALLOCATABLE :: ELEMENT_LINES(:) !<ELEMENT_LINES(nae). The local decomposition line number corresponding to the nae'th local line of the element. Old CMISS name NLL(nae,ne). 
-  END TYPE DECOMPOSITION_ELEMENT_TYPE
-
-  !>Contains the topology information for the elements of a decomposition.
-  TYPE DECOMPOSITION_ELEMENTS_TYPE
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<The pointer to the decomposition for this elements topology information.
-    INTEGER(INTG) :: TOTAL_NUMBER_OF_ELEMENTS !<The total number of elements in this decomposition topology.
-    TYPE(DECOMPOSITION_ELEMENT_TYPE), POINTER :: ELEMENTS(:) !<ELEMENTS(ne). The pointer to the array of topology information for the elements of this decomposition. ELEMENTS(ne) contains the topological information for the ne'th local element of the decomposition. \todo Change this to allocatable???
-  END TYPE DECOMPOSITION_ELEMENTS_TYPE
-
-   !>Contains the topology information for a decomposition
-  TYPE DECOMPOSITION_TOPOLOGY_TYPE
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<The pointer to the decomposition for this topology information.
-    TYPE(DECOMPOSITION_ELEMENTS_TYPE), POINTER :: ELEMENTS !<The pointer to the topology information for the elements of this decomposition.
-    TYPE(DECOMPOSITION_LINES_TYPE), POINTER :: LINES !<The pointer to the topology information for the lines of this decomposition.
-  END TYPE DECOMPOSITION_TOPOLOGY_TYPE
-
-  !>Contains information on the domain decomposition.
-  TYPE DECOMPOSITION_TYPE
-    INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the domain decomposition. The user number must be unique.
-    INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the domain decomposition in the list of domain decompositions for a particular mesh.
-    LOGICAL :: DECOMPOSITION_FINISHED !<Is .TRUE. if the decomposition has finished being created, .FALSE. if not.
-    TYPE(DECOMPOSITIONS_TYPE), POINTER :: DECOMPOSITIONS !<A pointer to the decompositions for this decomposition.
-    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh for this decomposition.
-    INTEGER(INTG) :: MESH_COMPONENT_NUMBER !<The component number (index) of the mesh component that this decomposition belongs to (i.e., was generated from).
-    INTEGER(INTG) :: DECOMPOSITION_TYPE !<The type of the domain decomposition \see MESH_ROUTINES_DecompositionTypes.
-    INTEGER(INTG) :: NUMBER_OF_DOMAINS !<The number of domains that this decomposition contains.
-    INTEGER(INTG) :: NUMBER_OF_EDGES_CUT !<For automatically calcualted decompositions, the number of edges of the mesh dual graph that were cut for the composition. It provides an indication of the optimally of the automatic decomposition.
-    INTEGER(INTG), ALLOCATABLE :: ELEMENT_DOMAIN(:) !<ELEMENT_DOMAIN(ne). The domain number that the ne'th global element is in for the decomposition. Note: the domain numbers start at 0 and go up to the NUMBER_OF_DOMAINS-1.
-    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the topology for this decomposition.
-    TYPE(DOMAIN_PTR_TYPE), POINTER :: DOMAIN(:) !<DOMAIN(mesh_component_idx). A pointer to the domain for mesh component for the domain associated with the computational node. \todo Change this to allocatable???
-  END TYPE DECOMPOSITION_TYPE
-
-  !>A buffer type to allow for an array of pointers to a DECOMPOSITION_TYPE.
-  TYPE DECOMPOSITION_PTR_TYPE
-    TYPE(DECOMPOSITION_TYPE), POINTER :: PTR !<The pointer to the domain decomposition. 
-  END TYPE DECOMPOSITION_PTR_TYPE
-
-  !>Contains information on the domain decompositions defined on a mesh.
-  TYPE DECOMPOSITIONS_TYPE
-    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh.
-    INTEGER(INTG) :: NUMBER_OF_DECOMPOSITIONS !<The number of decompositions defined on the mesh.
-    TYPE(DECOMPOSITION_PTR_TYPE), POINTER :: DECOMPOSITIONS(:) !<DECOMPOSITIONS(decomposition_idx). The array of pointers to the domain decompositions.
-  END TYPE DECOMPOSITIONS_TYPE
-
-  !>Contains information on a generated regular mesh
-  TYPE GENERATED_MESH_REGULAR_TYPE
-    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh
-    REAL(DP), ALLOCATABLE :: ORIGIN(:) !<ORIGIN(nj). The position of the origin (first) corner of the regular mesh
-    REAL(DP), ALLOCATABLE :: MAXIMUM_EXTENT(:) !<MAXIMUM_EXTENT(nj). The extent/size in each nj'th direction of the regular mesh.
-    INTEGER(INTG) :: MESH_DIMENSION !<The dimension/number of Xi directions of the regular mesh.
-    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ELEMENTS_XI(:) !<NUMBER_OF_ELEMENTS_XI(ni). The number of elements in the ni'th Xi direction for the mesh.
-    TYPE(BASIS_TYPE), POINTER :: BASIS !<The pointer to the basis used in the regular mesh.
-  END TYPE GENERATED_MESH_REGULAR_TYPE
-
-  !>Contains information for generated meshes.
-  TYPE GENERATED_MESH_TYPE
-    INTEGER(INTG) :: USER_NUMBER !<The user number of the generated mesh.
-    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the generated mesh.
-    INTEGER(INTG) :: TYPE !<The type of generated mesh. \see GENERATED_MESH_ROUTINES_GeneratedMeshTypes
-    TYPE(GENERATED_MESH_REGULAR_TYPE), POINTER :: REGULAR_MESH !<A pointer to the information for a regular generated mesh. 
-    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh that is generated
-  END TYPE GENERATED_MESH_TYPE
-  
-  !>Contains information on a mesh defined on a region.
-  TYPE MESH_TYPE
-    INTEGER(INTG) :: USER_NUMBER !<The user number of the mesh. The user number must be unique.
-    INTEGER(INTG) :: GLOBAL_NUMBER !<The corresponding global number for the mesh.
-    LOGICAL :: MESH_FINISHED !<Is .TRUE. if the mesh has finished being created, .FALSE. if not.
-    TYPE(MESHES_TYPE), POINTER :: MESHES !<A pointer to the meshes for this mesh.
-    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing this mesh.
-    INTEGER(INTG) :: NUMBER_OF_DIMENSIONS !<The number of dimensions (Xi directions) for this mesh.
-    INTEGER(INTG) :: NUMBER_OF_COMPONENTS !<The number of mesh components in this mesh.
-    LOGICAL :: MESH_EMBEDDED !<Is .TRUE. if the mesh is embedded in another mesh, .FALSE. if not.
-    TYPE(MESH_TYPE), POINTER :: EMBEDDING_MESH !<If this mesh is embedded the pointer to the mesh that this mesh is embedded in. IF the mesh is not embedded the pointer is NULL.
-    INTEGER(INTG) :: NUMBER_OF_EMBEDDED_MESHES !<The number of meshes that are embedded in this mesh.
-    TYPE(MESH_PTR_TYPE), POINTER :: EMBEDDED_MESHES(:) !<EMBEDDED_MESHES(mesh_idx). A pointer to the mesh_idx'th mesh that is embedded in this mesh.
-    INTEGER(INTG) :: NUMBER_OF_ELEMENTS !<The number of elements in the mesh.
-    INTEGER(INTG) :: NUMBER_OF_FACES !<The number of faces in the mesh.
-    INTEGER(INTG) :: NUMBER_OF_LINES !<The number of lines in the mesh.
-    TYPE(MESH_TOPOLOGY_PTR_TYPE), POINTER :: TOPOLOGY(:) !<TOPOLOGY(mesh_component_idx). A pointer to the topology mesh_component_idx'th mesh component.
-    TYPE(DECOMPOSITIONS_TYPE), POINTER :: DECOMPOSITIONS !<A pointer to the decompositions for this mesh.
-  END TYPE MESH_TYPE
-
-  !>A buffer type to allow for an array of pointers to a MESH_TYPE.
-  TYPE MESH_PTR_TYPE
-    TYPE(MESH_TYPE), POINTER :: PTR !<The pointer to the mesh. 
-  END TYPE MESH_PTR_TYPE
-
-  !>Contains information on the meshes defined on a region.
-  TYPE MESHES_TYPE
-    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region.
-    INTEGER(INTG) :: NUMBER_OF_MESHES !<The number of meshes defined on the region.
-    TYPE(MESH_PTR_TYPE), POINTER :: MESHES(:) !<MESHES(meshes_idx). The array of pointers to the meshes.
-  END TYPE MESHES_TYPE
-
-  !>Contains information on the geometry for an equations set
-  TYPE EQUATIONS_SET_GEOMETRY_TYPE
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
-    TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<The geometric field for this equations set.
-    TYPE(FIELD_TYPE), POINTER :: FIBRE_FIELD !<The fibre field for this equations set if one is defined. If no fibre field is defined the pointer is NULL.
-  END TYPE EQUATIONS_SET_GEOMETRY_TYPE
-
-  TYPE EQUATIONS_SET_MATERIALS_TYPE
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
-    LOGICAL :: MATERIALS_FINISHED !<Is .TRUE. if the materials for the equations set has finished being created, .FALSE. if not.
-    TYPE(FIELD_TYPE), POINTER :: MATERIAL_FIELD !<A pointer to the material field for the equations set if one is defined. If no material field is defined the pointer is NULL.
-  END TYPE EQUATIONS_SET_MATERIALS_TYPE
-
-  !>Contains information on the fixed conditions for the problem.
-  TYPE EQUATIONS_SET_FIXED_CONDITIONS_TYPE
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
-    LOGICAL :: FIXED_CONDITIONS_FINISHED !<Is .TRUE. if the fixed conditions for the equations set has finished being created, .FALSE. if not.
-    INTEGER(INTG), ALLOCATABLE :: GLOBAL_BOUNDARY_CONDITIONS(:) !<GLOBAL_BOUNDARY_CONDITIONS(dof_idx). The global boundary condition for the dof_idx'th dof of the dependent field. \see EQUATIONS_ROUTINES_FixedConditions,EQUATIONS_ROUTINES
-    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: BOUNDARY_CONDITIONS !<A pointer to the distributed vector containing the boundary conditions for the domain for this process.
-  END TYPE EQUATIONS_SET_FIXED_CONDITIONS_TYPE
-
-  !>Contains information on the dependent variables for the equations set.
-  TYPE EQUATIONS_SET_DEPENDENT_TYPE
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
-    LOGICAL :: DEPENDENT_FINISHED !<Is .TRUE. if the dependent variables for the equations set has finished being created, .FALSE. if not.
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD !<A pointer to the dependent field for the equations set.
-  END TYPE EQUATIONS_SET_DEPENDENT_TYPE
-
-  !>Contains information on the source for the equations set.
-  TYPE EQUATIONS_SET_SOURCE_TYPE
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
-    LOGICAL :: SOURCE_FINISHED !<Is .TRUE. if the source for the equations set has finished being created, .FALSE. if not.
-    TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD !<A pointer to the source field for the equations set if one is defined. If no source is defined the pointer is NULL.
-  END TYPE EQUATIONS_SET_SOURCE_TYPE
-
-  !>Contains information on the analytic setup for the equations set.
-  TYPE EQUATIONS_SET_ANALYTIC_TYPE
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
-    LOGICAL :: ANALYTIC_FINISHED !<Is .TRUE. if the analytic setup for the problem has finished being created, .FALSE. if not.
-  END TYPE EQUATIONS_SET_ANALYTIC_TYPE
-
-  !>Contains information on the interpolation for the equations
-  TYPE EQUATIONS_INTERPOLATION_TYPE
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations
-    TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<A pointer to the geometric field for the equations.
-    TYPE(FIELD_TYPE), POINTER :: FIBRE_FIELD !<A pointer to the fibre field for the equations (if one is defined).
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD !<A pointer to the dependent field for the equations 
-    TYPE(FIELD_TYPE), POINTER :: MATERIAL_FIELD !<A pointer to the material field for the equations (if one is defined).
-    TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD !<A pointer to the source field for the equations (if one is defined).
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: GEOMETRIC_INTERP_PARAMETERS !<A pointer to the geometric interpolation parameters for the equations.
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: FIBRE_INTERP_PARAMETERS !<A pointer to the fibre interpolation parameters for the equations (if a fibre field is defined). 
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: DEPENDENT_INTERP_PARAMETERS !<A pointer to the dependent interpolation parameters for the equations. 
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: MATERIAL_INTERP_PARAMETERS !<A pointer to the material interpolation parameters for the equations (if a material field is defined). 
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: SOURCE_INTERP_PARAMETERS !<A pointer to the source interpolation parameters for the equations (if a source field is defined). 
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: GEOMETRIC_INTERP_POINT !<A pointer to the geometric interpolated point information for the equations. 
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: FIBRE_INTERP_POINT !<A pointer to the fibre interpolated point information for the equations (if a fibre field is defined). 
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: DEPENDENT_INTERP_POINT !<A pointer to the dependent interpolated point information for the equations. 
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: MATERIAL_INTERP_POINT !<A pointer to the material interpolated point information for the equations (if a material field is defined). 
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: SOURCE_INTERP_POINT !<A pointer to the source interpolated point information for the equations (if a source field is defined).
-    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: GEOMETRIC_INTERP_POINT_METRICS !<A pointer to the geometric interpolated point metrics information 
-    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: FIBRE_INTERP_POINT_METRICS !<A pointer to the fibre interpolated point metrics information 
-  END TYPE EQUATIONS_INTERPOLATION_TYPE
-
-  !>Contains information on any data required for a linear solution
-  TYPE PROBLEM_LINEAR_DATA_TYPE
-    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the problem solution.
-  END TYPE PROBLEM_LINEAR_DATA_TYPE
-
-  !>Contains information on any data required for a linear solution
-  TYPE EQUATIONS_LINEAR_DATA_TYPE
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations.
-  END TYPE EQUATIONS_LINEAR_DATA_TYPE
-
-  !>Contains information on any data required for a non-linear solution
-  TYPE PROBLEM_NONLINEAR_DATA_TYPE
-    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the problem solution.
-    INTEGER(INTG) :: NUMBER_OF_ITERATIONS
-  END TYPE PROBLEM_NONLINEAR_DATA_TYPE
-
-  !>Contains information on any data required for a non-linear solution
-  TYPE EQUATIONS_NONLINEAR_DATA_TYPE
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations.
-  END TYPE EQUATIONS_NONLINEAR_DATA_TYPE
-
-  !>Contains information on any data required for a time-dependent solution
-  TYPE PROBLEM_TIME_DATA_TYPE
-    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the problem solution.
-  END TYPE PROBLEM_TIME_DATA_TYPE
-
-  !>Contains information on any data required for a time-dependent equations
-  TYPE EQUATIONS_TIME_DATA_TYPE
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations.
-  END TYPE EQUATIONS_TIME_DATA_TYPE
-
   !>Contains information for an element matrix
   TYPE ELEMENT_MATRIX_TYPE
     INTEGER(INTG) :: EQUATIONS_MATRIX_NUMBER
@@ -993,7 +983,13 @@ MODULE TYPES
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the distributed global rhs vector data
     TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_VECTOR !<The element rhs information
   END TYPE EQUATIONS_MATRICES_TYPE
- 
+
+  !
+  !================================================================================================================================
+  !
+  ! Equations mapping types
+  !
+  
   !>Contains the information about the mapping of a variable DOF to an equations matrix column
   TYPE VARIABLE_TO_EQUATIONS_COLUMN_MAP_TYPE
     INTEGER(INTG), ALLOCATABLE :: COLUMN_DOF(:) !<COLUMN_DOF(dof_idx). The equations column number for this equations matrix that the dof_idx'th variable DOF is mapped to.  
@@ -1056,6 +1052,155 @@ MODULE TYPES
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ROW_DOFS_MAPPING !<The domain mapping for the equations rows
     TYPE(EQUATIONS_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE !<The create values cache for the equations mapping
   END TYPE EQUATIONS_MAPPING_TYPE
+
+  !
+  !================================================================================================================================
+  !
+  ! Equations types
+  !
+  
+  !>Contains information on the interpolation for the equations
+  TYPE EQUATIONS_INTERPOLATION_TYPE
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations
+    TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<A pointer to the geometric field for the equations.
+    TYPE(FIELD_TYPE), POINTER :: FIBRE_FIELD !<A pointer to the fibre field for the equations (if one is defined).
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD !<A pointer to the dependent field for the equations 
+    TYPE(FIELD_TYPE), POINTER :: MATERIAL_FIELD !<A pointer to the material field for the equations (if one is defined).
+    TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD !<A pointer to the source field for the equations (if one is defined).
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: GEOMETRIC_INTERP_PARAMETERS !<A pointer to the geometric interpolation parameters for the equations.
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: FIBRE_INTERP_PARAMETERS !<A pointer to the fibre interpolation parameters for the equations (if a fibre field is defined). 
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: DEPENDENT_INTERP_PARAMETERS !<A pointer to the dependent interpolation parameters for the equations. 
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: MATERIAL_INTERP_PARAMETERS !<A pointer to the material interpolation parameters for the equations (if a material field is defined). 
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: SOURCE_INTERP_PARAMETERS !<A pointer to the source interpolation parameters for the equations (if a source field is defined). 
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: GEOMETRIC_INTERP_POINT !<A pointer to the geometric interpolated point information for the equations. 
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: FIBRE_INTERP_POINT !<A pointer to the fibre interpolated point information for the equations (if a fibre field is defined). 
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: DEPENDENT_INTERP_POINT !<A pointer to the dependent interpolated point information for the equations. 
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: MATERIAL_INTERP_POINT !<A pointer to the material interpolated point information for the equations (if a material field is defined). 
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: SOURCE_INTERP_POINT !<A pointer to the source interpolated point information for the equations (if a source field is defined).
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: GEOMETRIC_INTERP_POINT_METRICS !<A pointer to the geometric interpolated point metrics information 
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: FIBRE_INTERP_POINT_METRICS !<A pointer to the fibre interpolated point metrics information 
+  END TYPE EQUATIONS_INTERPOLATION_TYPE
+
+  !>Contains information on any data required for a linear solution
+  TYPE EQUATIONS_LINEAR_DATA_TYPE
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations.
+  END TYPE EQUATIONS_LINEAR_DATA_TYPE
+
+  !>Contains information on any data required for a non-linear solution
+  TYPE EQUATIONS_NONLINEAR_DATA_TYPE
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations.
+  END TYPE EQUATIONS_NONLINEAR_DATA_TYPE
+  
+  !>Contains information on any data required for a time-dependent equations
+  TYPE EQUATIONS_TIME_DATA_TYPE
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations.
+  END TYPE EQUATIONS_TIME_DATA_TYPE
+
+  !>Contains information about the equations in an equations set.
+  TYPE EQUATIONS_TYPE
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations_set
+    LOGICAL :: EQUATIONS_FINISHED !<Is .TRUE. if the equations have finished being created, .FALSE. if not.
+    INTEGER(INTG) :: OUTPUT_TYPE !<The output type for the equations \see EQUATIONS_ROUTINES_EquationsOutputTypes,EQUATIONS_ROUTINES \todo move to equations set???
+    INTEGER(INTG) :: SPARSITY_TYPE !<The sparsity type for the equation matrices of the equations \see EQUATIONS_ROUTINES_EquationsSparsityTypes,EQUATIONS_ROUTINES \todo move to equations set???
+    TYPE(EQUATIONS_INTERPOLATION_TYPE), POINTER :: INTERPOLATION !<A pointer to the interpolation information used in the equations.
+    !!TODO: Are these three needed? What about solution method data???
+    TYPE(EQUATIONS_LINEAR_DATA_TYPE), POINTER :: LINEAR_DATA !<A pointer to the data for linear equations.
+    TYPE(EQUATIONS_NONLINEAR_DATA_TYPE), POINTER :: NONLINEAR_DATA !<A pointer to the data for non-linear equations.
+    TYPE(EQUATIONS_TIME_DATA_TYPE), POINTER :: TIME_DATA !<A pointer to the data for non-static equations.
+    
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping for the equations.
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES !<A pointer to the equations matrices and vectors used for the equations.
+  END TYPE EQUATIONS_TYPE
+
+  !
+  !================================================================================================================================
+  !
+  ! Equations set types
+  !
+  
+  !>Contains information on the geometry for an equations set
+  TYPE EQUATIONS_SET_GEOMETRY_TYPE
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
+    TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<The geometric field for this equations set.
+    TYPE(FIELD_TYPE), POINTER :: FIBRE_FIELD !<The fibre field for this equations set if one is defined. If no fibre field is defined the pointer is NULL.
+  END TYPE EQUATIONS_SET_GEOMETRY_TYPE
+
+  TYPE EQUATIONS_SET_MATERIALS_TYPE
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
+    LOGICAL :: MATERIALS_FINISHED !<Is .TRUE. if the materials for the equations set has finished being created, .FALSE. if not.
+    TYPE(FIELD_TYPE), POINTER :: MATERIAL_FIELD !<A pointer to the material field for the equations set if one is defined. If no material field is defined the pointer is NULL.
+  END TYPE EQUATIONS_SET_MATERIALS_TYPE
+
+  !>Contains information on the fixed conditions for the problem.
+  TYPE EQUATIONS_SET_FIXED_CONDITIONS_TYPE
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
+    LOGICAL :: FIXED_CONDITIONS_FINISHED !<Is .TRUE. if the fixed conditions for the equations set has finished being created, .FALSE. if not.
+    INTEGER(INTG), ALLOCATABLE :: GLOBAL_BOUNDARY_CONDITIONS(:) !<GLOBAL_BOUNDARY_CONDITIONS(dof_idx). The global boundary condition for the dof_idx'th dof of the dependent field. \see EQUATIONS_ROUTINES_FixedConditions,EQUATIONS_ROUTINES
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: BOUNDARY_CONDITIONS !<A pointer to the distributed vector containing the boundary conditions for the domain for this process.
+  END TYPE EQUATIONS_SET_FIXED_CONDITIONS_TYPE
+
+  !>Contains information on the dependent variables for the equations set.
+  TYPE EQUATIONS_SET_DEPENDENT_TYPE
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
+    LOGICAL :: DEPENDENT_FINISHED !<Is .TRUE. if the dependent variables for the equations set has finished being created, .FALSE. if not.
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD !<A pointer to the dependent field for the equations set.
+  END TYPE EQUATIONS_SET_DEPENDENT_TYPE
+
+  !>Contains information on the source for the equations set.
+  TYPE EQUATIONS_SET_SOURCE_TYPE
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
+    LOGICAL :: SOURCE_FINISHED !<Is .TRUE. if the source for the equations set has finished being created, .FALSE. if not.
+    TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD !<A pointer to the source field for the equations set if one is defined. If no source is defined the pointer is NULL.
+  END TYPE EQUATIONS_SET_SOURCE_TYPE
+
+  !>Contains information on the analytic setup for the equations set.
+  TYPE EQUATIONS_SET_ANALYTIC_TYPE
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
+    LOGICAL :: ANALYTIC_FINISHED !<Is .TRUE. if the analytic setup for the problem has finished being created, .FALSE. if not.
+  END TYPE EQUATIONS_SET_ANALYTIC_TYPE
+
+  !>Contains information on an equations set.
+  TYPE EQUATIONS_SET_TYPE
+    INTEGER(INTG) :: USER_NUMBER !<The user identifying number of the equations set
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The global index of the equations set in the region.
+    LOGICAL :: EQUATIONS_SET_FINISHED !<Is .TRUE. if the equations set have finished being created, .FALSE. if not.
+    TYPE(EQUATIONS_SETS_TYPE), POINTER :: EQUATIONS_SETS !<A pointer back to the equations sets
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer back to the region containing the equations set.
+    
+    INTEGER(INTG) :: CLASS !<The equations set specification class identifier
+    INTEGER(INTG) :: TYPE !<The equations set specification type identifier
+    INTEGER(INTG) :: SUBTYPE !<The equations set specification subtype identifier
+
+!!TODO: Are these two needed?
+    INTEGER(INTG) :: LINEARITY !<The equations set linearity type \see EQUATIONS_ROUTINES_LinearityTypes
+    INTEGER(INTG) :: TIME_TYPE !<The equations set time dependence type \see EQUATIONS_ROUTINES_TimeDepedenceTypes
+    
+    INTEGER(INTG) :: SOLUTION_METHOD !<The solution method for the equations set \see EQUATIONS_ROUTINES_SolutionMethods 
+    
+    TYPE(EQUATIONS_SET_GEOMETRY_TYPE) :: GEOMETRY !<The geometry information for the equations set.
+    TYPE(EQUATIONS_SET_MATERIALS_TYPE), POINTER :: MATERIALS !<A pointer to the materials information for the equations set.
+    TYPE(EQUATIONS_SET_SOURCE_TYPE), POINTER :: SOURCE !<A pointer to the source information for the equations set.
+    TYPE(EQUATIONS_SET_DEPENDENT_TYPE) :: DEPENDENT !<The depedent variable information for the equations set.
+    TYPE(EQUATIONS_SET_ANALYTIC_TYPE), POINTER :: ANALYTIC !<A pointer to the analytic setup information for the equations set.
+    TYPE(EQUATIONS_SET_FIXED_CONDITIONS_TYPE), POINTER :: FIXED_CONDITIONS !<A pointer to the fixed condition information for the equations set. \todo Change name to BOUNDARY_CONDITIONS???
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !A pointer to the equations information for the equations set
+  END TYPE EQUATIONS_SET_TYPE
+  
+  TYPE EQUATIONS_SET_PTR_TYPE
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: PTR
+  END TYPE EQUATIONS_SET_PTR_TYPE
+  
+  TYPE EQUATIONS_SETS_TYPE
+    TYPE(REGION_TYPE) , POINTER :: REGION
+    INTEGER(INTG) :: NUMBER_OF_EQUATIONS_SETS
+    TYPE(EQUATIONS_SET_PTR_TYPE), POINTER :: EQUATIONS_SETS(:)
+  END TYPE EQUATIONS_SETS_TYPE
+
+  !
+  !================================================================================================================================
+  !
+  ! Solver matrices types
+  !
   
   !>Contains information on the solver matrix
   TYPE SOLVER_MATRIX_TYPE
@@ -1086,6 +1231,12 @@ MODULE TYPES
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RHS_VECTOR
   END TYPE SOLVER_MATRICES_TYPE
 
+  !
+  !================================================================================================================================
+  !
+  ! Solver types
+  !
+  
   !>Contains information for a direct linear solver
   TYPE LINEAR_DIRECT_SOLVER_TYPE
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linear solver
@@ -1148,59 +1299,12 @@ MODULE TYPES
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES !<A pointer to the solver matrices for the problem
   END TYPE SOLVER_TYPE
 
-  !>Contains information about the equations in an equations set.
-  TYPE EQUATIONS_TYPE
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations_set
-    LOGICAL :: EQUATIONS_FINISHED !<Is .TRUE. if the equations have finished being created, .FALSE. if not.
-    INTEGER(INTG) :: OUTPUT_TYPE !<The output type for the equations \see EQUATIONS_ROUTINES_EquationsOutputTypes,EQUATIONS_ROUTINES \todo move to equations set???
-    INTEGER(INTG) :: SPARSITY_TYPE !<The sparsity type for the equation matrices of the equations \see EQUATIONS_ROUTINES_EquationsSparsityTypes,EQUATIONS_ROUTINES \todo move to equations set???
-    TYPE(EQUATIONS_INTERPOLATION_TYPE), POINTER :: INTERPOLATION !<A pointer to the interpolation information used in the equations.
-    !!TODO: Are these three needed? What about solution method data???
-    TYPE(EQUATIONS_LINEAR_DATA_TYPE), POINTER :: LINEAR_DATA !<A pointer to the data for linear equations.
-    TYPE(EQUATIONS_NONLINEAR_DATA_TYPE), POINTER :: NONLINEAR_DATA !<A pointer to the data for non-linear equations.
-    TYPE(EQUATIONS_TIME_DATA_TYPE), POINTER :: TIME_DATA !<A pointer to the data for non-static equations.
-    
-    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping for the equations.
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES !<A pointer to the equations matrices and vectors used for the equations.
-  END TYPE EQUATIONS_TYPE
+  !
+  !================================================================================================================================
+  !
+  ! Solution mapping types
+  !
   
-  !>Contains information on an equations set.
-  TYPE EQUATIONS_SET_TYPE
-    INTEGER(INTG) :: USER_NUMBER !<The user identifying number of the equations set
-    INTEGER(INTG) :: GLOBAL_NUMBER !<The global index of the equations set in the region.
-    LOGICAL :: EQUATIONS_SET_FINISHED !<Is .TRUE. if the equations set have finished being created, .FALSE. if not.
-    TYPE(EQUATIONS_SETS_TYPE), POINTER :: EQUATIONS_SETS !<A pointer back to the equations sets
-    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer back to the region containing the equations set.
-    
-    INTEGER(INTG) :: CLASS !<The equations set specification class identifier
-    INTEGER(INTG) :: TYPE !<The equations set specification type identifier
-    INTEGER(INTG) :: SUBTYPE !<The equations set specification subtype identifier
-
-!!TODO: Are these two needed?
-    INTEGER(INTG) :: LINEARITY !<The equations set linearity type \see EQUATIONS_ROUTINES_LinearityTypes
-    INTEGER(INTG) :: TIME_TYPE !<The equations set time dependence type \see EQUATIONS_ROUTINES_TimeDepedenceTypes
-    
-    INTEGER(INTG) :: SOLUTION_METHOD !<The solution method for the equations set \see EQUATIONS_ROUTINES_SolutionMethods 
-    
-    TYPE(EQUATIONS_SET_GEOMETRY_TYPE) :: GEOMETRY !<The geometry information for the equations set.
-    TYPE(EQUATIONS_SET_MATERIALS_TYPE), POINTER :: MATERIALS !<A pointer to the materials information for the equations set.
-    TYPE(EQUATIONS_SET_SOURCE_TYPE), POINTER :: SOURCE !<A pointer to the source information for the equations set.
-    TYPE(EQUATIONS_SET_DEPENDENT_TYPE) :: DEPENDENT !<The depedent variable information for the equations set.
-    TYPE(EQUATIONS_SET_ANALYTIC_TYPE), POINTER :: ANALYTIC !<A pointer to the analytic setup information for the equations set.
-    TYPE(EQUATIONS_SET_FIXED_CONDITIONS_TYPE), POINTER :: FIXED_CONDITIONS !<A pointer to the fixed condition information for the equations set. \todo Change name to BOUNDARY_CONDITIONS???
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !A pointer to the equations information for the equations set
-  END TYPE EQUATIONS_SET_TYPE
-  
-  TYPE EQUATIONS_SET_PTR_TYPE
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: PTR
-  END TYPE EQUATIONS_SET_PTR_TYPE
-  
-  TYPE EQUATIONS_SETS_TYPE
-    TYPE(REGION_TYPE) , POINTER :: REGION
-    INTEGER(INTG) :: NUMBER_OF_EQUATIONS_SETS
-    TYPE(EQUATIONS_SET_PTR_TYPE), POINTER :: EQUATIONS_SETS(:)
-  END TYPE EQUATIONS_SETS_TYPE
-
   TYPE EQUATIONS_COL_TO_SOLVER_COLS_MAP_TYPE
     INTEGER(INTG) :: NUMBER_OF_SOLVER_COLS !<The number of solver cols this equations column is mapped to
     INTEGER(INTG), ALLOCATABLE :: SOLVER_COLS(:) !<SOLVER_COLS(i). The solver column number for the i'th solver column that this column is mapped to
@@ -1274,7 +1378,8 @@ MODULE TYPES
   !>Contains information about mapping the solver column (solver dof) to the field variable dofs in the equations set.
   TYPE SOLVER_COL_TO_VARIABLE_MAP_TYPE
     INTEGER(INTG) :: NUMBER_OF_EQUATIONS_SETS !<The number of equations sets this column is mapped to
-    INTEGER(INTG), ALLOCATABLE :: VARIABLE_TYPE(:) !<VARIABLE_TYPE(i). The variable type that the column is mapped to in the i'th equation set
+    INTEGER(INTG), ALLOCATABLE :: EQUATIONS_SET_INDICES(:) !<EQUATIONS_SET_INDICES(i). The equations set index of the i'th equations set that this solver column is mapped to.
+    TYPE(FIELD_VARIABLE_PTR_TYPE), ALLOCATABLE :: VARIABLE(:) !<VARIABLE(i).VARIABLE(i)%PTR is a pointer to the field variable that the column is mapped to in the i'th equation set
     INTEGER(INTG), ALLOCATABLE :: VARIABLE_DOF(:) !<VARIABLE_DOF(i). The variable dof number that the column is mapped to in the i'th equations set
     REAL(DP), ALLOCATABLE :: VARIABLE_COEFFICIENT(:) !<VARIABLE_COEFFICIENT(i). The mulitplicative coefficient for the mapping to the i'th equations set
     REAL(DP), ALLOCATABLE :: ADDITIVE_CONSTANT(:) !<ADDITIVE_CONSTANT(i). The additive constant for the mapping to the i'th equations set
@@ -1292,7 +1397,10 @@ MODULE TYPES
     TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING !<A pointer to the solution mapping for this solver matrix mapping
     TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX !<A pointer to the solver matrix being mappind
     INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in this distributed solver matrix
-    TYPE(SOLVER_COL_TO_EQUATIONS_SET_MAP_TYPE), ALLOCATABLE :: SOLVER_COL_TO_EQUATIONS_SET_MAPS(:) !<SOLVER_TO_EQUATIONS_SET_MAP(equations_set_idx). The solver columns to equations matrix maps for the col_idx'th column set. 
+    TYPE(SOLVER_COL_TO_EQUATIONS_SET_MAP_TYPE), ALLOCATABLE :: SOLVER_COL_TO_EQUATIONS_SET_MAPS(:) !<SOLVER_TO_EQUATIONS_SET_MAP(equations_set_idx). The solver columns to equations matrix maps for the col_idx'th column set.
+    INTEGER(INTG) :: NUMBER_OF_DOFS !<The number of (local) dofs in the solver vector associated with this solver matrix
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_DOFS !<The total number of (global) dofs in the solver vector associated with this solver matrix.
+!!TODO: should this be index by solver dof rather than column???
     TYPE(SOLVER_COL_TO_VARIABLE_MAP_TYPE), ALLOCATABLE :: SOLVER_COL_TO_VARIABLE_MAPS(:) !<SOLVER_COL_TO_EQUATIONS_MAPS(col_idx). The mappings from the col_idx'th column of the solver matrix to the field variables in the equations set.
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: COLUMN_DOFS_MAPPING !<The domain mapping for solver matrix column dofs
   END TYPE SOLVER_COL_TO_EQUATIONS_SETS_MAP_TYPE
@@ -1326,6 +1434,12 @@ MODULE TYPES
     TYPE(SOLUTION_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE !<The create values cache for the solution mapping
   END TYPE SOLUTION_MAPPING_TYPE
 
+  !
+  !================================================================================================================================
+  !
+  ! Solution types
+  !
+  
   !>Contains information on the solution of a problem
   TYPE SOLUTION_TYPE
     INTEGER(INTG) :: SOLUTION_NUMBER !<The number of the solution
@@ -1343,7 +1457,29 @@ MODULE TYPES
   TYPE SOLUTION_PTR_TYPE
     TYPE(SOLUTION_TYPE), POINTER :: PTR
   END TYPE SOLUTION_PTR_TYPE
+
+  !
+  !================================================================================================================================
+  !
+  ! Problem types
+  !
   
+  !>Contains information on any data required for a linear solution
+  TYPE PROBLEM_LINEAR_DATA_TYPE
+    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the problem solution.
+  END TYPE PROBLEM_LINEAR_DATA_TYPE
+
+  !>Contains information on any data required for a non-linear solution
+  TYPE PROBLEM_NONLINEAR_DATA_TYPE
+    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the problem solution.
+    INTEGER(INTG) :: NUMBER_OF_ITERATIONS
+  END TYPE PROBLEM_NONLINEAR_DATA_TYPE
+
+ !>Contains information on any data required for a time-dependent solution
+  TYPE PROBLEM_TIME_DATA_TYPE
+    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the problem solution.
+  END TYPE PROBLEM_TIME_DATA_TYPE
+
   TYPE PROBLEM_CONTROL_TYPE
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer back to the problem
     LOGICAL :: CONTROL_FINISHED !<Is .TRUE. if the problem control has finished being created, .FALSE. if not.
@@ -1377,6 +1513,11 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_OF_PROBLEMS !<The number of problems defined.
     TYPE(PROBLEM_PTR_TYPE), POINTER :: PROBLEMS(:) !<The array of pointers to the problems.
   END TYPE PROBLEMS_TYPE
+
+  !
+  !================================================================================================================================
+  !
+  ! Region types
   
   !>A buffer type to allow for an array of pointers to a REGION_TYPE.
   TYPE REGION_PTR_TYPE
@@ -1397,5 +1538,9 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_OF_SUB_REGIONS !<The number of sub-regions defined for the region.
     TYPE(REGION_PTR_TYPE), POINTER :: SUB_REGIONS(:) !<An array of pointers to the sub-regions defined on the region.
   END TYPE REGION_TYPE
+
+  !
+  !================================================================================================================================
+  !
 
 END MODULE TYPES

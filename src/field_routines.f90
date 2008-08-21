@@ -3690,7 +3690,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: dof_idx,field_dof
+    INTEGER(INTG) :: dof_idx
     REAL(DP) :: VALUE
     REAL(DP), POINTER :: FIELD_FROM_PARAMETERS(:)
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: FIELD_DOMAIN_MAPPING
@@ -3714,20 +3714,13 @@ CONTAINS
                 IF(ASSOCIATED(FIELD_DOMAIN_MAPPING)) THEN
                   !Get the from parameter set data
                   CALL DISTRIBUTED_VECTOR_DATA_GET(FIELD_FROM_PARAMETER_SET%PARAMETERS,FIELD_FROM_PARAMETERS,ERR,ERROR,*999)
-                  !Set the boundary field dofs
-                  DO dof_idx=1,FIELD_DOMAIN_MAPPING%NUMBER_OF_BOUNDARY
-                    field_dof=FIELD_DOMAIN_MAPPING%BOUNDARY_LIST(dof_idx)
-                    VALUE=FIELD_FROM_PARAMETERS(field_dof)
-                    CALL DISTRIBUTED_VECTOR_VALUES_ADD(FIELD_TO_PARAMETER_SET%PARAMETERS,field_dof,VALUE,ERR,ERROR,*999)
+                  !Set the field dofs
+                  DO dof_idx=1,FIELD_DOMAIN_MAPPING%NUMBER_OF_LOCAL
+                    VALUE=FIELD_FROM_PARAMETERS(dof_idx)
+                    CALL DISTRIBUTED_VECTOR_VALUES_ADD(FIELD_TO_PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
                   ENDDO !dof_idx
                   !Start the to parameter set transfer
-                  CALL DISTRIBUTED_VECTOR_UPDATE_START(FIELD_TO_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)
-                  !Set the internal field dofs
-                  DO dof_idx=1,FIELD_DOMAIN_MAPPING%NUMBER_OF_INTERNAL
-                    field_dof=FIELD_DOMAIN_MAPPING%INTERNAL_LIST(dof_idx)
-                    VALUE=FIELD_FROM_PARAMETERS(field_dof)
-                    CALL DISTRIBUTED_VECTOR_VALUES_ADD(FIELD_TO_PARAMETER_SET%PARAMETERS,field_dof,VALUE,ERR,ERROR,*999)
-                  ENDDO !dof_idx
+                  CALL DISTRIBUTED_VECTOR_UPDATE_START(FIELD_TO_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)                  !
                   !Finish the to parameter set transfer
                   CALL DISTRIBUTED_VECTOR_UPDATE_FINISH(FIELD_TO_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)
                   !Restore the from parameter set transfer
@@ -3785,7 +3778,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: dof_idx,field_dof
+    INTEGER(INTG) :: dof_idx
     REAL(DP) :: VALUE
     REAL(DP), POINTER :: FIELD_FROM_PARAMETERS(:)
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: FIELD_DOMAIN_MAPPING
@@ -3809,20 +3802,13 @@ CONTAINS
                 IF(ASSOCIATED(FIELD_DOMAIN_MAPPING)) THEN
                   !Get the from parameter set data
                   CALL DISTRIBUTED_VECTOR_DATA_GET(FIELD_FROM_PARAMETER_SET%PARAMETERS,FIELD_FROM_PARAMETERS,ERR,ERROR,*999)
-                  !Set the boundary field dofs
-                  DO dof_idx=1,FIELD_DOMAIN_MAPPING%NUMBER_OF_BOUNDARY
-                    field_dof=FIELD_DOMAIN_MAPPING%BOUNDARY_LIST(dof_idx)
-                    VALUE=FIELD_FROM_PARAMETERS(field_dof)
-                    CALL DISTRIBUTED_VECTOR_VALUES_SET(FIELD_TO_PARAMETER_SET%PARAMETERS,field_dof,VALUE,ERR,ERROR,*999)
+                  !Set the field dofs
+                  DO dof_idx=1,FIELD_DOMAIN_MAPPING%NUMBER_OF_LOCAL
+                    VALUE=FIELD_FROM_PARAMETERS(dof_idx)
+                    CALL DISTRIBUTED_VECTOR_VALUES_SET(FIELD_TO_PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
                   ENDDO !dof_idx
                   !Start the to parameter set transfer
-                  CALL DISTRIBUTED_VECTOR_UPDATE_START(FIELD_TO_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)
-                  !Set the internal field dofs
-                  DO dof_idx=1,FIELD_DOMAIN_MAPPING%NUMBER_OF_INTERNAL
-                    field_dof=FIELD_DOMAIN_MAPPING%INTERNAL_LIST(dof_idx)
-                    VALUE=FIELD_FROM_PARAMETERS(field_dof)
-                    CALL DISTRIBUTED_VECTOR_VALUES_SET(FIELD_TO_PARAMETER_SET%PARAMETERS,field_dof,VALUE,ERR,ERROR,*999)
-                  ENDDO !dof_idx
+                  CALL DISTRIBUTED_VECTOR_UPDATE_START(FIELD_TO_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)                  
                   !Finish the to parameter set transfer
                   CALL DISTRIBUTED_VECTOR_UPDATE_FINISH(FIELD_TO_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)
                   !Restore the from parameter set data
