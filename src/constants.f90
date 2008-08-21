@@ -124,6 +124,15 @@ MODULE CONSTANTS
   INTEGER(INTG), PARAMETER :: AIX_OS=5
   INTEGER(INTG), PARAMETER :: UNKNOWN_OS=255
 
+  !> \addtogroup CONSTANTS_LibraryTypes CONSTANTS::LibraryTypes
+  !> \brief Library type identifiers
+  !> \see CONSTANTS
+  !>@{ 
+  INTEGER(INTG), PARAMETER :: LIBRARY_CMISS_TYPE=1 !<CMISS (internal) library type \see CONSTANTS_LibraryTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: LIBRARY_PETSC_TYPE=2 !<PETSc library type \see CONSTANTS_LibraryTypes,CONSTANTS
+  !>@}
+
+  
   !> \addtogroup CONSTANTS_PartialDerivativeConstants CONSTANTS::PartialDerivativeConstants
   !> \brief Partial derivative constant identifiers
   !> \see CONSTANTS

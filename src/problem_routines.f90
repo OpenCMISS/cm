@@ -170,7 +170,8 @@ MODULE PROBLEM_ROUTINES
   INTEGER(INTG), PARAMETER :: PROBLEM_SOURCE_SETUP_TYPE=5 !<Source setup for a problem. \see PROBLEM_ROUTINES_SetupTypes,PROBLEM_ROUTINES
   INTEGER(INTG), PARAMETER :: PROBLEM_ANALYTIC_SETUP_TYPE=6 !<Analytic setup for a problem. \see PROBLEM_ROUTINES_SetupTypes,PROBLEM_ROUTINES
   INTEGER(INTG), PARAMETER :: PROBLEM_FIXED_CONDITIONS_SETUP_TYPE=7 !<Fixed conditions setup for a problem. \see PROBLEM_ROUTINES_SetupTypes,PROBLEM_ROUTINES
-  INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_SETUP_TYPE=8 !<Solution parameters setup for a problem. \see PROBLEM_ROUTINES_SetupTypes,PROBLEM_ROUTINES
+  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_SETUP_TYPE=8 !<Solver setup for a problem. \see PROBLEM_ROUTINES_SetupTypes,PROBLEM_ROUTINES
+  INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_SETUP_TYPE=9 !<Solution parameters setup for a problem. \see PROBLEM_ROUTINES_SetupTypes,PROBLEM_ROUTINES
   !>@}
   
   !> \addtogroup PROBLEM_ROUTINES_SetupActionTypes PROBLEM_ROUTINES::SetupActionTypes
@@ -197,6 +198,14 @@ MODULE PROBLEM_ROUTINES
   INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_TIMING_OUTPUT=1 !<Timing information output \see PROBLEM_ROUTINES_SolutionOutputTypes,PROBLEM_ROUTINES
   INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_GLOBAL_MATRIX_OUTPUT=2 !<All below and Global matrices output \see PROBLEM_ROUTINES_SolutionOutputTypes,PROBLEM_ROUTINES
   INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_ELEMENT_MATRIX_OUTPUT=3 !<All below and Element matrices output \see PROBLEM_ROUTINES_SolutionOutputTypes,PROBLEM_ROUTINES
+  !>@}
+
+  !> \addtogroup PROBLEM_ROUTINES_SolutionGlobalSparsityTypes PROBLEM_ROUTINES::SolutionGlobalSparsityTypes
+  !> \brief Solution output types
+  !> \see PROBLEM_ROUTINES
+  !>@{
+  INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_SPARSE_GLOBAL_MATRICES=1 !<Use sparse global matrices \see PROBLEM_ROUTINES_SolutionGlobalSparsityTypes,PROBLEM_ROUTINES
+  INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_FULL_GLOBAL_MATRICES=2 !<Use fully populated global matrices \see PROBLEM_ROUTINES_SolutionGlobalSparsityTypes,PROBLEM_ROUTINES
  !>@}
 
   !Module types
@@ -239,6 +248,8 @@ MODULE PROBLEM_ROUTINES
   PUBLIC PROBLEM_SOLUTION_NO_OUTPUT,PROBLEM_SOLUTION_TIMING_OUTPUT,PROBLEM_SOLUTION_GLOBAL_MATRIX_OUTPUT, &
     & PROBLEM_SOLUTION_ELEMENT_MATRIX_OUTPUT
 
+  PUBLIC PROBLEM_SOLUTION_SPARSE_GLOBAL_MATRICES,PROBLEM_SOLUTION_FULL_GLOBAL_MATRICES
+
   PUBLIC PROBLEM_CREATE_START,PROBLEM_CREATE_FINISH,PROBLEM_DESTROY,PROBLEMS_INITIALISE,PROBLEMS_FINALISE
 
   PUBLIC PROBLEM_FIXED_CONDITIONS_CREATE_START,PROBLEM_FIXED_CONDITIONS_CREATE_FINISH,PROBLEM_FIXED_CONDITIONS_SET_DOF
@@ -249,7 +260,8 @@ MODULE PROBLEM_ROUTINES
   PUBLIC PROBLEM_DEPENDENT_COMPONENT_MESH_COMPONENT_SET,PROBLEM_DEPENDENT_CREATE_START,PROBLEM_DEPENDENT_CREATE_FINISH, &
     & PROBLEM_DEPENDENT_DEPENDENT_FIELD_GET,PROBLEM_DEPENDENT_SCALING_SET
   
-  PUBLIC PROBLEM_SOLUTION_CREATE_START,PROBLEM_SOLUTION_CREATE_FINISH,PROBLEM_SOLUTION_OUTPUT_TYPE_SET
+  PUBLIC PROBLEM_SOLUTION_CREATE_START,PROBLEM_SOLUTION_CREATE_FINISH,PROBLEM_SOLUTION_GLOBAL_SPARSITY_TYPE_SET, &
+    & PROBLEM_SOLUTION_OUTPUT_TYPE_SET
   
   PUBLIC PROBLEM_SOURCE_COMPONENT_INTERPOLATION_SET,PROBLEM_SOURCE_COMPONENT_MESH_COMPONENT_SET, &
     & PROBLEM_SOURCE_CREATE_START,PROBLEM_SOURCE_CREATE_FINISH,PROBLEM_SOURCE_SCALING_SET
@@ -739,6 +751,303 @@ CONTAINS
   !================================================================================================================================
   !
 
+  SUBROUTINE PROBLEM_CREATE_FINISH(REGION,PROBLEM,ERR,ERROR,*)
+
+    !#### Subroutine: PROBLEM_CREATE_FINISH
+    !###  Description:
+    !###    Finishes the process of creating a problem on a region.
+
+    !Argument variables
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    INTEGER(INTG), INTENT(OUT) :: ERR
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    !Local Variables
+    INTEGER(INTG) :: problem_idx
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("PROBLEM_CREATE_FINISH",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(REGION)) THEN
+      IF(ASSOCIATED(PROBLEM)) THEN
+        IF(ASSOCIATED(PROBLEM%REGION)) THEN
+          IF(PROBLEM%REGION%USER_NUMBER==REGION%USER_NUMBER) THEN            
+            !Finish the problem specific setup
+            CALL PROBLEM_SETUP(PROBLEM,PROBLEM_INITIAL_SETUP_TYPE,PROBLEM_FINISH_ACTION,ERR,ERROR,*999)
+            !Finish the problem specific geometry setup
+            CALL PROBLEM_SETUP(PROBLEM,PROBLEM_GEOMETRY_SETUP_TYPE,PROBLEM_FINISH_ACTION,ERR,ERROR,*999)
+            !Finish the problem creation
+            PROBLEM%PROBLEM_FINISHED=.TRUE.
+          ELSE
+            LOCAL_ERROR="The region user number of the specified problem ("// &
+              & TRIM(NUMBER_TO_VSTRING(PROBLEM%REGION%USER_NUMBER,"*",ERR,ERROR))// &
+              & ") does not match the user number of the specified region ("// &
+              & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//")"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Problem region is not associated",ERR,ERROR,*999)
+        ENDIF
+      ELSE        
+        CALL FLAG_ERROR("Problem is not associated",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    IF(DIAGNOSTICS1) THEN
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Region = ",REGION%USER_NUMBER,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of problems = ",REGION%PROBLEMS%NUMBER_OF_PROBLEMS,ERR,ERROR,*999)
+      DO problem_idx=1,REGION%PROBLEMS%NUMBER_OF_PROBLEMS
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Problem number = ",problem_idx,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    User number   = ", &
+          & REGION%PROBLEMS%PROBLEMS(problem_idx)%PTR%USER_NUMBER,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Global number = ", &
+          & REGION%PROBLEMS%PROBLEMS(problem_idx)%PTR%GLOBAL_NUMBER,ERR,ERROR,*999)
+      ENDDO !problem_idx    
+    ENDIF
+    
+    CALL EXITS("PROBLEM_CREATE_FINISH")
+    RETURN
+999 CALL ERRORS("PROBLEM_CREATE_FINISH",ERR,ERROR)    
+    CALL EXITS("PROBLEM_CREATE_FINISH")
+    RETURN 1
+   
+  END SUBROUTINE PROBLEM_CREATE_FINISH
+        
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE PROBLEM_CREATE_START(USER_NUMBER,REGION,GEOM_FIBRE_FIELD,PROBLEM,ERR,ERROR,*)
+
+    !#### Subroutine: PROBLEM_CREATE_START
+    !###  Description:
+    !###    Starts the process of creating a problem defined by USER_NUMBER in the region identified by REGION.
+    
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(FIELD_TYPE), POINTER :: GEOM_FIBRE_FIELD
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    INTEGER(INTG), INTENT(OUT) :: ERR
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    !Local Variables
+    INTEGER(INTG) :: problem_idx
+    TYPE(PROBLEM_TYPE), POINTER :: NEW_PROBLEM
+    TYPE(PROBLEM_PTR_TYPE), POINTER :: NEW_PROBLEMS(:)
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+ 
+    NULLIFY(NEW_PROBLEM)
+    NULLIFY(NEW_PROBLEMS)
+
+    CALL ENTERS("PROBLEM_CREATE_START",ERR,ERROR,*999)
+
+    NULLIFY(PROBLEM)
+    IF(ASSOCIATED(REGION)) THEN
+      IF(ASSOCIATED(REGION%PROBLEMS)) THEN
+        CALL PROBLEM_USER_NUMBER_FIND(USER_NUMBER,REGION,PROBLEM,ERR,ERROR,*999)
+        IF(ASSOCIATED(PROBLEM)) THEN
+          LOCAL_ERROR="Problem number "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))// &
+            & " has already been created on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ELSE
+          IF(ASSOCIATED(GEOM_FIBRE_FIELD)) THEN
+            IF(GEOM_FIBRE_FIELD%FIELD_FINISHED) THEN
+              IF(GEOM_FIBRE_FIELD%TYPE==FIELD_GEOMETRIC_TYPE.OR.GEOM_FIBRE_FIELD%TYPE==FIELD_FIBRE_TYPE) THEN
+                !Allocate the new problem
+                ALLOCATE(NEW_PROBLEM,STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new problem",ERR,ERROR,*999)
+                !Initalise problem
+                CALL PROBLEM_INITIALISE(NEW_PROBLEM,ERR,ERROR,*999)
+                !Set default problem values
+                NEW_PROBLEM%USER_NUMBER=USER_NUMBER
+                NEW_PROBLEM%GLOBAL_NUMBER=REGION%PROBLEMS%NUMBER_OF_PROBLEMS+1
+                NEW_PROBLEM%PROBLEMS=>REGION%PROBLEMS
+                NEW_PROBLEM%REGION=>REGION
+                !Default to a standardised Laplace.
+                NEW_PROBLEM%CLASS=PROBLEM_CLASSICAL_FIELD_CLASS
+                NEW_PROBLEM%TYPE=PROBLEM_LAPLACE_EQUATION_TYPE
+                NEW_PROBLEM%SUBTYPE=PROBLEM_STANDARD_LAPLACE_SUBTYPE
+                !Start problem specific setup
+                CALL PROBLEM_SETUP(NEW_PROBLEM,PROBLEM_INITIAL_SETUP_TYPE,PROBLEM_START_ACTION,ERR,ERROR,*999)
+                !Set up the geometry
+                CALL PROBLEM_GEOMETRY_INITIALISE(NEW_PROBLEM,ERR,ERROR,*999)
+                IF(GEOM_FIBRE_FIELD%TYPE==FIELD_GEOMETRIC_TYPE) THEN
+                  NEW_PROBLEM%GEOMETRY%GEOMETRIC_FIELD=>GEOM_FIBRE_FIELD
+                  NULLIFY(NEW_PROBLEM%GEOMETRY%FIBRE_FIELD)
+                ELSE
+                  NEW_PROBLEM%GEOMETRY%GEOMETRIC_FIELD=>GEOM_FIBRE_FIELD%GEOMETRIC_FIELD
+                  NEW_PROBLEM%GEOMETRY%FIBRE_FIELD=>GEOM_FIBRE_FIELD
+                ENDIF
+                !Set up problem specific geometry
+                CALL PROBLEM_SETUP(NEW_PROBLEM,PROBLEM_GEOMETRY_SETUP_TYPE,PROBLEM_START_ACTION,ERR,ERROR,*999)                
+                
+                !Add new problem into list of problems in the region
+                ALLOCATE(NEW_PROBLEMS(REGION%PROBLEMS%NUMBER_OF_PROBLEMS+1),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new problems",ERR,ERROR,*999)
+                DO problem_idx=1,REGION%PROBLEMS%NUMBER_OF_PROBLEMS
+                  NEW_PROBLEMS(problem_idx)%PTR=>REGION%PROBLEMS%PROBLEMS(problem_idx)%PTR
+                ENDDO !problem_idx
+                NEW_PROBLEMS(REGION%PROBLEMS%NUMBER_OF_PROBLEMS+1)%PTR=>NEW_PROBLEM
+                IF(ASSOCIATED(REGION%PROBLEMS%PROBLEMS)) DEALLOCATE(REGION%PROBLEMS%PROBLEMS)
+                REGION%PROBLEMS%PROBLEMS=>NEW_PROBLEMS
+                REGION%PROBLEMS%NUMBER_OF_PROBLEMS=REGION%PROBLEMS%NUMBER_OF_PROBLEMS+1
+                PROBLEM=>NEW_PROBLEM
+              ELSE
+                CALL FLAG_ERROR("The specified geometric field is not a geometric or fibre field",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("The specified geometric field is not finished",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The specified geometric field is not associated",ERR,ERROR,*999)
+          ENDIF
+        ENDIF
+      ELSE
+        LOCAL_ERROR="The problems on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))// &
+          & " are not associated. Initialise problems first."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PROBLEM_CREATE_START")
+    RETURN
+999 CALL ERRORS("PROBLEM_CREATE_START",ERR,ERROR)
+    CALL EXITS("PROBLEM_CREATE_START")
+    RETURN 1   
+  END SUBROUTINE PROBLEM_CREATE_START
+  
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE PROBLEM_DESTROY(USER_NUMBER,REGION,ERR,ERROR,*)
+
+    !#### Subroutine: PROBLEM_DESTROY
+    !###  Description:
+    !###    Destroys a problem identified by a user number on the give region and deallocates all memory.
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
+    TYPE(REGION_TYPE), POINTER :: REGION
+    INTEGER(INTG), INTENT(OUT) :: ERR
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    !Local Variables
+    INTEGER(INTG) :: problem_idx,problem_position
+    LOGICAL :: FOUND
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(PROBLEM_PTR_TYPE), POINTER :: NEW_PROBLEMS(:)
+
+    NULLIFY(NEW_PROBLEMS)
+
+    CALL ENTERS("PROBLEM_DESTROY",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(REGION)) THEN
+      IF(ASSOCIATED(REGION%PROBLEMS)) THEN
+        
+        !Find the problem identified by the user number
+        FOUND=.FALSE.
+        problem_position=0
+        DO WHILE(problem_position<REGION%PROBLEMS%NUMBER_OF_PROBLEMS.AND..NOT.FOUND)
+          problem_position=problem_position+1
+          IF(REGION%PROBLEMS%PROBLEMS(problem_position)%PTR%USER_NUMBER==USER_NUMBER) FOUND=.TRUE.
+        ENDDO
+        
+        IF(FOUND) THEN
+          
+          PROBLEM=>REGION%PROBLEMS%PROBLEMS(problem_position)%PTR
+          
+          !Destroy all the problem components
+          CALL PROBLEM_FINALISE(PROBLEM,ERR,ERROR,*999)
+          
+          !Remove the problem from the list of problems
+          IF(REGION%PROBLEMS%NUMBER_OF_PROBLEMS>1) THEN
+            ALLOCATE(NEW_PROBLEMS(REGION%PROBLEMS%NUMBER_OF_PROBLEMS-1),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new problems",ERR,ERROR,*999)
+            DO problem_idx=1,REGION%PROBLEMS%NUMBER_OF_PROBLEMS
+              IF(problem_idx<problem_position) THEN
+                NEW_PROBLEMS(problem_idx)%PTR=>REGION%PROBLEMS%PROBLEMS(problem_idx)%PTR
+              ELSE IF(problem_idx>problem_position) THEN
+                REGION%PROBLEMS%PROBLEMS(problem_idx)%PTR%GLOBAL_NUMBER=REGION%PROBLEMS%PROBLEMS(problem_idx)%PTR%GLOBAL_NUMBER-1
+                NEW_PROBLEMS(problem_idx-1)%PTR=>REGION%PROBLEMS%PROBLEMS(problem_idx)%PTR
+              ENDIF
+            ENDDO !problem_idx
+            DEALLOCATE(REGION%PROBLEMS%PROBLEMS)
+            REGION%PROBLEMS%PROBLEMS=>NEW_PROBLEMS
+            REGION%PROBLEMS%NUMBER_OF_PROBLEMS=REGION%PROBLEMS%NUMBER_OF_PROBLEMS-1
+          ELSE
+            DEALLOCATE(REGION%PROBLEMS%PROBLEMS)
+            REGION%PROBLEMS%NUMBER_OF_PROBLEMS=0
+          ENDIF
+          
+        ELSE
+          LOCAL_ERROR="Problem number "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))// &
+            & " has not been created on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="The problems on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))// &
+          & " are not associated"
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*998)
+    ENDIF    
+
+    CALL EXITS("PROBLEM_DESTROY")
+    RETURN
+999 IF(ASSOCIATED(NEW_PROBLEMS)) DEALLOCATE(NEW_PROBLEMS)
+998 CALL ERRORS("PROBLEM_DESTROY",ERR,ERROR)
+    CALL EXITS("PROBLEM_DESTROY")
+    RETURN 1   
+  END SUBROUTINE PROBLEM_DESTROY
+  
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE PROBLEM_FINALISE(PROBLEM,ERR,ERROR,*)
+
+    !#### Subroutine: PROBLEM_FINALISE
+    !###  Description:
+    !###    Finalise the problem and deallocate all memory.
+
+    !Argument variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    INTEGER(INTG), INTENT(OUT) :: ERR
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    !Local Variables
+
+    CALL ENTERS("PROBLEM_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_GEOMETRY_FINALISE(PROBLEM,ERR,ERROR,*999)
+      CALL PROBLEM_DEPENDENT_FINALISE(PROBLEM,ERR,ERROR,*999)
+      CALL PROBLEM_MATERIALS_FINALISE(PROBLEM,ERR,ERROR,*999)
+      CALL PROBLEM_SOURCE_FINALISE(PROBLEM,ERR,ERROR,*999)
+      CALL PROBLEM_ANALYTIC_FINALISE(PROBLEM,ERR,ERROR,*999)
+      CALL PROBLEM_FIXED_CONDITIONS_FINALISE(PROBLEM,ERR,ERROR,*999)
+      CALL PROBLEM_SOLUTION_FINALISE(PROBLEM,ERR,ERROR,*999)
+      DEALLOCATE(PROBLEM)
+    ELSE
+      CALL FLAG_ERROR("Problem is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("PROBLEM_FINALISE")
+    RETURN
+999 CALL ERRORS("PROBLEM_FINALISE",ERR,ERROR)
+    CALL EXITS("PROBLEM_FINALISE")
+    RETURN 1
+  END SUBROUTINE PROBLEM_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
   !>Calculates the element stiffness matries and rhs vector for the given element number for a finite element problem.
   SUBROUTINE PROBLEM_FINITE_ELEMENT_CALCULATE(PROBLEM,ELEMENT_NUMBER,ERR,ERROR,*)
 
@@ -795,7 +1104,7 @@ CONTAINS
             & '("  Column dofs  :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
           CALL WRITE_STRING_MATRIX(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_ROWS,1,1,ELEMENT_MATRIX%NUMBER_OF_COLUMNS, &
             & 8,8,ELEMENT_MATRIX%MATRIX(1:ELEMENT_MATRIX%NUMBER_OF_ROWS,1:ELEMENT_MATRIX%NUMBER_OF_COLUMNS), &
-            & WRITE_STRING_MATRIX_NAME_AND_INDICIES,'("  Matrix','(",I2,",:)',' :",8(X,E13.6))','(16X,8(X,E13.6))', &
+            & WRITE_STRING_MATRIX_NAME_AND_INDICES,'("  Matrix','(",I2,",:)',' :",8(X,E13.6))','(16X,8(X,E13.6))', &
             & ERR,ERROR,*999)        
         ENDDO !matrix_idx
         CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Element RHS vector :",ERR,ERROR,*999)
@@ -1430,7 +1739,6 @@ CONTAINS
                   CALL FLAG_ERROR("Problem fixed conditions is not associated",ERR,ERROR,*999)
                 ENDIF
               CASE(PROBLEM_FINISH_ACTION)
-                !Allocate global matrices
                 SELECT CASE(PROBLEM%SOLUTION_METHOD)
                 CASE(PROBLEM_FEM_SOLUTION_METHOD)
                   !Create the global problem.
@@ -1439,13 +1747,25 @@ CONTAINS
                   CALL PROBLEM_GLOBAL_MATRICES_VARIABLE_TYPES_SET(GLOBAL_MATRICES,(/FIELD_STANDARD_VARIABLE_TYPE/), &
                     & ERR,ERROR,*999)
                   CALL PROBLEM_GLOBAL_MATRICES_RHS_VARIABLE_TYPE_SET(GLOBAL_MATRICES,FIELD_NORMAL_VARIABLE_TYPE,ERR,ERROR,*999)
-                  !CALL PROBLEM_GLOBAL_MATRICES_STORAGE_TYPE_SET(GLOBAL_MATRICES,(/MATRIX_BLOCK_STORAGE_TYPE/), &
-                  !  & ERR,ERROR,*999)
-                  CALL PROBLEM_GLOBAL_MATRICES_STORAGE_TYPE_SET(GLOBAL_MATRICES,(/MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
-                    & ERR,ERROR,*999)
-                  CALL PROBLEM_GLOBAL_MATRICES_STRUCTURE_TYPE_SET(GLOBAL_MATRICES,(/PROBLEM_GLOBAL_MATRIX_FEM_STRUCTURE/), &
-                    & ERR,ERROR,*999)
-                  CALL PROBLEM_GLOBAL_MATRICES_CREATE_FINISH(GLOBAL_MATRICES,ERR,ERROR,*999)                  
+                  IF(PROBLEM%SOLUTION%GLOBAL_SPARSITY_TYPE==PROBLEM_SOLUTION_FULL_GLOBAL_MATRICES) THEN
+                    CALL PROBLEM_GLOBAL_MATRICES_STORAGE_TYPE_SET(GLOBAL_MATRICES,(/MATRIX_BLOCK_STORAGE_TYPE/), &
+                      & ERR,ERROR,*999)
+                  ELSE IF(PROBLEM%SOLUTION%GLOBAL_SPARSITY_TYPE==PROBLEM_SOLUTION_SPARSE_GLOBAL_MATRICES) THEN
+                    CALL PROBLEM_GLOBAL_MATRICES_STORAGE_TYPE_SET(GLOBAL_MATRICES,(/MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
+                      & ERR,ERROR,*999)
+                    CALL PROBLEM_GLOBAL_MATRICES_STRUCTURE_TYPE_SET(GLOBAL_MATRICES,(/PROBLEM_GLOBAL_MATRIX_FEM_STRUCTURE/), &
+                      & ERR,ERROR,*999)
+                  ELSE
+                    LOCAL_ERROR="The problem solution global matrices type of "// &
+                      & TRIM(NUMBER_TO_VSTRING(PROBLEM%SOLUTION%GLOBAL_SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid"
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
+                  CALL PROBLEM_GLOBAL_MATRICES_CREATE_FINISH(GLOBAL_MATRICES,ERR,ERROR,*999)
+                  !Create the solution matrices
+                  !CALL PROBLEM_SOLVER_MATRICES_CREATE_START(PROBLEM%SOLUTION,SOLVER_MATRICES,ERR,ERROR,*999)
+                  !CALL PROBLEM_SOLVER_MATRICES_NUMBER_SET(SOLVER_MATRICES,1,ERR,ERROR,*999)
+                  !CALL PROBLEM_SOLVER_MATRICES_GLOBAL_MATRICES_SET(SOLVER_MATRICES,(/1/),ERR,ERROR,*999)
+                  !CALL PROBLEM_SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
                 CASE(PROBLEM_BEM_SOLUTION_METHOD)
                   CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
                 CASE(PROBLEM_FD_SOLUTION_METHOD)
@@ -1497,303 +1817,6 @@ CONTAINS
     CALL EXITS("PROBLEM_STANDARD_LAPLACE_SETUP")
     RETURN 1
   END SUBROUTINE PROBLEM_STANDARD_LAPLACE_SETUP
-
-  !
-  !================================================================================================================================
-  !
-
-  SUBROUTINE PROBLEM_CREATE_FINISH(REGION,PROBLEM,ERR,ERROR,*)
-
-    !#### Subroutine: PROBLEM_CREATE_FINISH
-    !###  Description:
-    !###    Finishes the process of creating a problem on a region.
-
-    !Argument variables
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
-    !Local Variables
-    INTEGER(INTG) :: problem_idx
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("PROBLEM_CREATE_FINISH",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(REGION)) THEN
-      IF(ASSOCIATED(PROBLEM)) THEN
-        IF(ASSOCIATED(PROBLEM%REGION)) THEN
-          IF(PROBLEM%REGION%USER_NUMBER==REGION%USER_NUMBER) THEN            
-            !Finish the problem specific setup
-            CALL PROBLEM_SETUP(PROBLEM,PROBLEM_INITIAL_SETUP_TYPE,PROBLEM_FINISH_ACTION,ERR,ERROR,*999)
-            !Finish the problem specific geometry setup
-            CALL PROBLEM_SETUP(PROBLEM,PROBLEM_GEOMETRY_SETUP_TYPE,PROBLEM_FINISH_ACTION,ERR,ERROR,*999)
-            !Finish the problem creation
-            PROBLEM%PROBLEM_FINISHED=.TRUE.
-          ELSE
-            LOCAL_ERROR="The region user number of the specified problem ("// &
-              & TRIM(NUMBER_TO_VSTRING(PROBLEM%REGION%USER_NUMBER,"*",ERR,ERROR))// &
-              & ") does not match the user number of the specified region ("// &
-              & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//")"
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("Problem region is not associated",ERR,ERROR,*999)
-        ENDIF
-      ELSE        
-        CALL FLAG_ERROR("Problem is not associated",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
-    ENDIF
-    
-    IF(DIAGNOSTICS1) THEN
-      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Region = ",REGION%USER_NUMBER,ERR,ERROR,*999)
-      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of problems = ",REGION%PROBLEMS%NUMBER_OF_PROBLEMS,ERR,ERROR,*999)
-      DO problem_idx=1,REGION%PROBLEMS%NUMBER_OF_PROBLEMS
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Problem number = ",problem_idx,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    User number   = ", &
-          & REGION%PROBLEMS%PROBLEMS(problem_idx)%PTR%USER_NUMBER,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Global number = ", &
-          & REGION%PROBLEMS%PROBLEMS(problem_idx)%PTR%GLOBAL_NUMBER,ERR,ERROR,*999)
-      ENDDO !problem_idx    
-    ENDIF
-    
-    CALL EXITS("PROBLEM_CREATE_FINISH")
-    RETURN
-999 CALL ERRORS("PROBLEM_CREATE_FINISH",ERR,ERROR)    
-    CALL EXITS("PROBLEM_CREATE_FINISH")
-    RETURN 1
-   
-  END SUBROUTINE PROBLEM_CREATE_FINISH
-        
-  !
-  !================================================================================================================================
-  !
-
-  SUBROUTINE PROBLEM_CREATE_START(USER_NUMBER,REGION,GEOM_FIBRE_FIELD,PROBLEM,ERR,ERROR,*)
-
-    !#### Subroutine: PROBLEM_CREATE_START
-    !###  Description:
-    !###    Starts the process of creating a problem defined by USER_NUMBER in the region identified by REGION.
-    
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(FIELD_TYPE), POINTER :: GEOM_FIBRE_FIELD
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
-    !Local Variables
-    INTEGER(INTG) :: problem_idx
-    TYPE(PROBLEM_TYPE), POINTER :: NEW_PROBLEM
-    TYPE(PROBLEM_PTR_TYPE), POINTER :: NEW_PROBLEMS(:)
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
- 
-    NULLIFY(NEW_PROBLEM)
-    NULLIFY(NEW_PROBLEMS)
-
-    CALL ENTERS("PROBLEM_CREATE_START",ERR,ERROR,*999)
-
-    NULLIFY(PROBLEM)
-    IF(ASSOCIATED(REGION)) THEN
-      IF(ASSOCIATED(REGION%PROBLEMS)) THEN
-        CALL PROBLEM_USER_NUMBER_FIND(USER_NUMBER,REGION,PROBLEM,ERR,ERROR,*999)
-        IF(ASSOCIATED(PROBLEM)) THEN
-          LOCAL_ERROR="Problem number "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))// &
-            & " has already been created on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        ELSE
-          IF(ASSOCIATED(GEOM_FIBRE_FIELD)) THEN
-            IF(GEOM_FIBRE_FIELD%FIELD_FINISHED) THEN
-              IF(GEOM_FIBRE_FIELD%TYPE==FIELD_GEOMETRIC_TYPE.OR.GEOM_FIBRE_FIELD%TYPE==FIELD_FIBRE_TYPE) THEN
-                !Allocate the new problem
-                ALLOCATE(NEW_PROBLEM,STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new problem",ERR,ERROR,*999)
-                !Initalise problem
-                CALL PROBLEM_INITIALISE(NEW_PROBLEM,ERR,ERROR,*999)
-                !Set default problem values
-                NEW_PROBLEM%USER_NUMBER=USER_NUMBER
-                NEW_PROBLEM%GLOBAL_NUMBER=REGION%PROBLEMS%NUMBER_OF_PROBLEMS+1
-                NEW_PROBLEM%PROBLEMS=>REGION%PROBLEMS
-                NEW_PROBLEM%REGION=>REGION
-                !Default to a standardised Laplace.
-                NEW_PROBLEM%CLASS=PROBLEM_CLASSICAL_FIELD_CLASS
-                NEW_PROBLEM%TYPE=PROBLEM_LAPLACE_EQUATION_TYPE
-                NEW_PROBLEM%SUBTYPE=PROBLEM_STANDARD_LAPLACE_SUBTYPE
-                !Start problem specific setup
-                CALL PROBLEM_SETUP(NEW_PROBLEM,PROBLEM_INITIAL_SETUP_TYPE,PROBLEM_START_ACTION,ERR,ERROR,*999)
-                !Set up the geometry
-                CALL PROBLEM_GEOMETRY_INITIALISE(NEW_PROBLEM,ERR,ERROR,*999)
-                IF(GEOM_FIBRE_FIELD%TYPE==FIELD_GEOMETRIC_TYPE) THEN
-                  NEW_PROBLEM%GEOMETRY%GEOMETRIC_FIELD=>GEOM_FIBRE_FIELD
-                  NULLIFY(NEW_PROBLEM%GEOMETRY%FIBRE_FIELD)
-                ELSE
-                  NEW_PROBLEM%GEOMETRY%GEOMETRIC_FIELD=>GEOM_FIBRE_FIELD%GEOMETRIC_FIELD
-                  NEW_PROBLEM%GEOMETRY%FIBRE_FIELD=>GEOM_FIBRE_FIELD
-                ENDIF
-                !Set up problem specific geometry
-                CALL PROBLEM_SETUP(NEW_PROBLEM,PROBLEM_GEOMETRY_SETUP_TYPE,PROBLEM_START_ACTION,ERR,ERROR,*999)                
-                
-                !Add new problem into list of problems in the region
-                ALLOCATE(NEW_PROBLEMS(REGION%PROBLEMS%NUMBER_OF_PROBLEMS+1),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new problems",ERR,ERROR,*999)
-                DO problem_idx=1,REGION%PROBLEMS%NUMBER_OF_PROBLEMS
-                  NEW_PROBLEMS(problem_idx)%PTR=>REGION%PROBLEMS%PROBLEMS(problem_idx)%PTR
-                ENDDO !problem_idx
-                NEW_PROBLEMS(REGION%PROBLEMS%NUMBER_OF_PROBLEMS+1)%PTR=>NEW_PROBLEM
-                IF(ASSOCIATED(REGION%PROBLEMS%PROBLEMS)) DEALLOCATE(REGION%PROBLEMS%PROBLEMS)
-                REGION%PROBLEMS%PROBLEMS=>NEW_PROBLEMS
-                REGION%PROBLEMS%NUMBER_OF_PROBLEMS=REGION%PROBLEMS%NUMBER_OF_PROBLEMS+1
-                PROBLEM=>NEW_PROBLEM
-              ELSE
-                CALL FLAG_ERROR("The specified geometric field is not a geometric or fibre field",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The specified geometric field is not finished",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("The specified geometric field is not associated",ERR,ERROR,*999)
-          ENDIF
-        ENDIF
-      ELSE
-        LOCAL_ERROR="The problems on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))// &
-          & " are not associated. Initialise problems first."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("PROBLEM_CREATE_START")
-    RETURN
-999 CALL ERRORS("PROBLEM_CREATE_START",ERR,ERROR)
-    CALL EXITS("PROBLEM_CREATE_START")
-    RETURN 1   
-  END SUBROUTINE PROBLEM_CREATE_START
-  
-  !
-  !================================================================================================================================
-  !
-
-  SUBROUTINE PROBLEM_DESTROY(USER_NUMBER,REGION,ERR,ERROR,*)
-
-    !#### Subroutine: PROBLEM_DESTROY
-    !###  Description:
-    !###    Destroys a problem identified by a user number on the give region and deallocates all memory.
-
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    TYPE(REGION_TYPE), POINTER :: REGION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
-    !Local Variables
-    INTEGER(INTG) :: problem_idx,problem_position
-    LOGICAL :: FOUND
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
-    TYPE(PROBLEM_PTR_TYPE), POINTER :: NEW_PROBLEMS(:)
-
-    NULLIFY(NEW_PROBLEMS)
-
-    CALL ENTERS("PROBLEM_DESTROY",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(REGION)) THEN
-      IF(ASSOCIATED(REGION%PROBLEMS)) THEN
-        
-        !Find the problem identified by the user number
-        FOUND=.FALSE.
-        problem_position=0
-        DO WHILE(problem_position<REGION%PROBLEMS%NUMBER_OF_PROBLEMS.AND..NOT.FOUND)
-          problem_position=problem_position+1
-          IF(REGION%PROBLEMS%PROBLEMS(problem_position)%PTR%USER_NUMBER==USER_NUMBER) FOUND=.TRUE.
-        ENDDO
-        
-        IF(FOUND) THEN
-          
-          PROBLEM=>REGION%PROBLEMS%PROBLEMS(problem_position)%PTR
-          
-          !Destroy all the problem components
-          CALL PROBLEM_FINALISE(PROBLEM,ERR,ERROR,*999)
-          
-          !Remove the problem from the list of problems
-          IF(REGION%PROBLEMS%NUMBER_OF_PROBLEMS>1) THEN
-            ALLOCATE(NEW_PROBLEMS(REGION%PROBLEMS%NUMBER_OF_PROBLEMS-1),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new problems",ERR,ERROR,*999)
-            DO problem_idx=1,REGION%PROBLEMS%NUMBER_OF_PROBLEMS
-              IF(problem_idx<problem_position) THEN
-                NEW_PROBLEMS(problem_idx)%PTR=>REGION%PROBLEMS%PROBLEMS(problem_idx)%PTR
-              ELSE IF(problem_idx>problem_position) THEN
-                REGION%PROBLEMS%PROBLEMS(problem_idx)%PTR%GLOBAL_NUMBER=REGION%PROBLEMS%PROBLEMS(problem_idx)%PTR%GLOBAL_NUMBER-1
-                NEW_PROBLEMS(problem_idx-1)%PTR=>REGION%PROBLEMS%PROBLEMS(problem_idx)%PTR
-              ENDIF
-            ENDDO !problem_idx
-            DEALLOCATE(REGION%PROBLEMS%PROBLEMS)
-            REGION%PROBLEMS%PROBLEMS=>NEW_PROBLEMS
-            REGION%PROBLEMS%NUMBER_OF_PROBLEMS=REGION%PROBLEMS%NUMBER_OF_PROBLEMS-1
-          ELSE
-            DEALLOCATE(REGION%PROBLEMS%PROBLEMS)
-            REGION%PROBLEMS%NUMBER_OF_PROBLEMS=0
-          ENDIF
-          
-        ELSE
-          LOCAL_ERROR="Problem number "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))// &
-            & " has not been created on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        LOCAL_ERROR="The problems on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))// &
-          & " are not associated"
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*998)
-    ENDIF    
-
-    CALL EXITS("PROBLEM_DESTROY")
-    RETURN
-999 IF(ASSOCIATED(NEW_PROBLEMS)) DEALLOCATE(NEW_PROBLEMS)
-998 CALL ERRORS("PROBLEM_DESTROY",ERR,ERROR)
-    CALL EXITS("PROBLEM_DESTROY")
-    RETURN 1   
-  END SUBROUTINE PROBLEM_DESTROY
-  
-  !
-  !================================================================================================================================
-  !
-
-  SUBROUTINE PROBLEM_FINALISE(PROBLEM,ERR,ERROR,*)
-
-    !#### Subroutine: PROBLEM_FINALISE
-    !###  Description:
-    !###    Finalise the problem and deallocate all memory.
-
-    !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
-    !Local Variables
-
-    CALL ENTERS("PROBLEM_FINALISE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(PROBLEM)) THEN
-      CALL PROBLEM_GEOMETRY_FINALISE(PROBLEM,ERR,ERROR,*999)
-      CALL PROBLEM_DEPENDENT_FINALISE(PROBLEM,ERR,ERROR,*999)
-      CALL PROBLEM_MATERIALS_FINALISE(PROBLEM,ERR,ERROR,*999)
-      CALL PROBLEM_SOURCE_FINALISE(PROBLEM,ERR,ERROR,*999)
-      CALL PROBLEM_ANALYTIC_FINALISE(PROBLEM,ERR,ERROR,*999)
-      CALL PROBLEM_FIXED_CONDITIONS_FINALISE(PROBLEM,ERR,ERROR,*999)
-      CALL PROBLEM_SOLUTION_FINALISE(PROBLEM,ERR,ERROR,*999)
-      DEALLOCATE(PROBLEM)
-    ELSE
-      CALL FLAG_ERROR("Problem is not associated",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("PROBLEM_FINALISE")
-    RETURN
-999 CALL ERRORS("PROBLEM_FINALISE",ERR,ERROR)
-    CALL EXITS("PROBLEM_FINALISE")
-    RETURN 1
-  END SUBROUTINE PROBLEM_FINALISE
 
   !
   !================================================================================================================================
@@ -2478,14 +2501,14 @@ CONTAINS
 
     CALL ENTERS("PROBLEM_GLOBAL_MATRICES_CREATE_START",ERR,ERROR,*998)
 
-    IF(ASSOCIATED(GLOBAL_MATRICES)) THEN
-      CALL FLAG_ERROR("Global matrices is already associated",ERR,ERROR,*998)
-    ELSE
-      NULLIFY(GLOBAL_MATRICES)
-      IF(ASSOCIATED(PROBLEM_SOLUTION)) THEN
-        IF(PROBLEM_SOLUTION%SOLUTION_FINISHED) THEN
-          CALL FLAG_ERROR("Problem solutin has already been finished",ERR,ERROR,*998)
+    IF(ASSOCIATED(PROBLEM_SOLUTION)) THEN
+      IF(PROBLEM_SOLUTION%SOLUTION_FINISHED) THEN
+        CALL FLAG_ERROR("Problem solution has already been finished",ERR,ERROR,*998)
+      ELSE
+        IF(ASSOCIATED(GLOBAL_MATRICES)) THEN
+          CALL FLAG_ERROR("Global matrices is already associated",ERR,ERROR,*998)
         ELSE
+          NULLIFY(GLOBAL_MATRICES)
           IF(ASSOCIATED(PROBLEM_SOLUTION%PROBLEM)) THEN
             !Initialise the global matrices
             CALL PROBLEM_GLOBAL_MATRICES_INITIALISE(PROBLEM_SOLUTION,ERR,ERROR,*999)
@@ -2494,9 +2517,9 @@ CONTAINS
             CALL FLAG_ERROR("Problem solution problem is not associated",ERR,ERROR,*998)
           ENDIF
         ENDIF
-      ELSE
-        CALL FLAG_ERROR("Problem solution is not associated",ERR,ERROR,*998)
       ENDIF
+    ELSE
+      CALL FLAG_ERROR("Problem solution is not associated",ERR,ERROR,*998)
     ENDIF
     
     CALL EXITS("PROBLEM_GLOBAL_MATRICES_CREATE_START")
@@ -4620,7 +4643,7 @@ CONTAINS
     TYPE(PROBLEM_GLOBAL_MATRICES_TYPE), POINTER :: GLOBAL_MATRICES !<A pointer to the global matrices
     INTEGER(INTG), INTENT(IN) :: matrix_idx !<The matrix number to calculate the structure of
     INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_NON_ZEROS !<On return the number of non-zeros in the matrix
-    INTEGER(INTG), POINTER :: ROW_INDICES(:) !<On return a pointer to row location indicies. The calling routine is responsible for deallocation.
+    INTEGER(INTG), POINTER :: ROW_INDICES(:) !<On return a pointer to row location indices. The calling routine is responsible for deallocation.
     INTEGER(INTG), POINTER :: COLUMN_INDICES(:) !<On return a pointer to the column location indices. The calling routine is responsible for deallocation.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -4783,16 +4806,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finish the creation of a solution for a problem.
   SUBROUTINE PROBLEM_SOLUTION_CREATE_FINISH(PROBLEM,ERR,ERROR,*)
 
-    !#### Subroutine: PROBLEM_SOLUTION_CREATE_FINISH
-    !###  Description:
-    !###    Finish the creation of a solution for a problem.
-
     !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: SOLUTION
     
@@ -4804,9 +4824,9 @@ CONTAINS
         IF(SOLUTION%SOLUTION_FINISHED) THEN
           CALL FLAG_ERROR("Problem solution has been finished",ERR,ERROR,*999)
         ELSE
-          !Finish the problem specific solver setup.
+          !Finish the problem specific solution setup.
           CALL PROBLEM_SETUP(PROBLEM,PROBLEM_SOLUTION_SETUP_TYPE,PROBLEM_FINISH_ACTION,ERR,ERROR,*999)
-          !Finish the problem solver creation
+          !Finish the problem solution creation
           SOLUTION%SOLUTION_FINISHED=.TRUE.
         ENDIF
       ELSE
@@ -4882,7 +4902,6 @@ CONTAINS
         IF(ASSOCIATED(PROBLEM%SOLUTION%LINEAR_DATA)) CALL PROBLEM_LINEAR_DATA_FINALISE(PROBLEM%SOLUTION,ERR,ERROR,*999)
         IF(ASSOCIATED(PROBLEM%SOLUTION%NONLINEAR_DATA)) CALL PROBLEM_NONLINEAR_DATA_FINALISE(PROBLEM%SOLUTION,ERR,ERROR,*999)
         IF(ASSOCIATED(PROBLEM%SOLUTION%TIME_DATA)) CALL PROBLEM_TIME_DATA_FINALISE(PROBLEM%SOLUTION,ERR,ERROR,*999)
-        IF(ASSOCIATED(PROBLEM%SOLUTION%SOLVER)) CALL PROBLEM_SOLVER_FINALISE(PROBLEM%SOLUTION,ERR,ERROR,*999)
         IF(ASSOCIATED(PROBLEM%SOLUTION%GLOBAL_MATRICES)) CALL PROBLEM_GLOBAL_MATRICES_FINALISE(PROBLEM%SOLUTION,ERR,ERROR,*999)
         IF(ASSOCIATED(PROBLEM%SOLUTION%SOLVER_MATRICES)) CALL PROBLEM_SOLVER_MATRICES_FINALISE(PROBLEM%SOLUTION,ERR,ERROR,*999)
         DEALLOCATE(PROBLEM%SOLUTION)
@@ -4898,6 +4917,53 @@ CONTAINS
     RETURN 1
   END SUBROUTINE PROBLEM_SOLUTION_FINALISE
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the output type for the problem solution
+  SUBROUTINE PROBLEM_SOLUTION_GLOBAL_SPARSITY_TYPE_SET(PROBLEM,SPARSITY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem
+    INTEGER(INTG), INTENT(IN) :: SPARSITY_TYPE !<The sparsity type to set \see PROBLEM_ROUTINES_SolutionGlobalSparsityTypes,PROBLEM_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+ 
+    CALL ENTERS("PROBLEM_SOLUTION_GLOBAL_SPARSITY_TYPE_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(PROBLEM)) THEN
+      IF(ASSOCIATED(PROBLEM%SOLUTION)) THEN
+        IF(PROBLEM%SOLUTION%SOLUTION_FINISHED) THEN
+          CALL FLAG_ERROR("Problem solution has already been finished",ERR,ERROR,*999)
+        ELSE
+          SELECT CASE(SPARSITY_TYPE)
+          CASE(PROBLEM_SOLUTION_SPARSE_GLOBAL_MATRICES)
+            PROBLEM%SOLUTION%GLOBAL_SPARSITY_TYPE=PROBLEM_SOLUTION_SPARSE_GLOBAL_MATRICES
+          CASE(PROBLEM_SOLUTION_FULL_GLOBAL_MATRICES)
+            PROBLEM%SOLUTION%GLOBAL_SPARSITY_TYPE=PROBLEM_SOLUTION_FULL_GLOBAL_MATRICES
+          CASE DEFAULT
+            LOCAL_ERROR="The specified global sparsity type of "//TRIM(NUMBER_TO_VSTRING(SPARSITY_TYPE,"*",ERR,ERROR))// &
+              & " is invalid"
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Problem solution is not associated",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Problem is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("PROBLEM_SOLUTION_GLOBAL_SPARSITY_TYPE_SET")
+    RETURN
+999 CALL ERRORS("PROBLEM_SOLUTION_GLOBAL_SPARSITY_TYPE_SET",ERR,ERROR)
+    CALL EXITS("PROBLEM_SOLUTION_GLOBAL_SPARSITY_TYPE_SET")
+    RETURN 1
+  END SUBROUTINE PROBLEM_SOLUTION_GLOBAL_SPARSITY_TYPE_SET
+  
   !
   !================================================================================================================================
   !
@@ -4924,6 +4990,7 @@ CONTAINS
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate problem solution",ERR,ERROR,*999)
         PROBLEM%SOLUTION%PROBLEM=>PROBLEM
         PROBLEM%SOLUTION%OUTPUT_TYPE=PROBLEM_SOLUTION_NO_OUTPUT
+        PROBLEM%SOLUTION%GLOBAL_SPARSITY_TYPE=PROBLEM_SOLUTION_SPARSE_GLOBAL_MATRICES
         NULLIFY(PROBLEM%SOLUTION%INTERPOLATION)
         NULLIFY(PROBLEM%SOLUTION%LINEAR_DATA)
         NULLIFY(PROBLEM%SOLUTION%NONLINEAR_DATA)
@@ -4994,71 +5061,6 @@ CONTAINS
     RETURN 1
   END SUBROUTINE PROBLEM_SOLUTION_OUTPUT_TYPE_SET
   
-  !
-  !================================================================================================================================
-  !
-
-  !>Finalises the solver for the problem solution and deallocates all memory.
-  SUBROUTINE PROBLEM_SOLVER_FINALISE(PROBLEM_SOLUTION,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION !<A pointer to the problem solution
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-    CALL ENTERS("PROBLEM_SOLVER_FINALISE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(PROBLEM_SOLUTION)) THEN
-      IF(ASSOCIATED(PROBLEM_SOLUTION%SOLVER)) THEN
-        DEALLOCATE(PROBLEM_SOLUTION%SOLVER)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Problem solution is not associated",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("PROBLEM_SOLVER_FINALISE")
-    RETURN
-999 CALL ERRORS("PROBLEM_SOLVER_FINALISE",ERR,ERROR)
-    CALL EXITS("PROBLEM_SOLVER_FINALISE")
-    RETURN 1
-  END SUBROUTINE PROBLEM_SOLVER_FINALISE
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Initialises the solver for the problem solution.
-  SUBROUTINE PROBLEM_SOLVER_INITALISE(PROBLEM_SOLUTION,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(PROBLEM_SOLUTION_TYPE), POINTER :: PROBLEM_SOLUTION !<A pointer to the problem solution
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-    CALL ENTERS("PROBLEM_SOLVER_INITALISE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(PROBLEM_SOLUTION)) THEN
-      IF(ASSOCIATED(PROBLEM_SOLUTION%SOLVER)) THEN
-        CALL FLAG_ERROR("Solver is already associated for this problem",ERR,ERROR,*999)
-      ELSE
-        ALLOCATE(PROBLEM_SOLUTION%SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate problem solver",ERR,ERROR,*999)
-        PROBLEM_SOLUTION%SOLVER%PROBLEM_SOLUTION=>PROBLEM_SOLUTION
-        PROBLEM_SOLUTION%SOLVER%SOLVER_FINISHED=.FALSE.
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Problem solution is not associated",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("PROBLEM_SOLVER_INITALISE")
-    RETURN
-999 CALL ERRORS("PROBLEM_SOLVER_INITALISE",ERR,ERROR)
-    CALL EXITS("PROBLEM_SOLVER_INITALISE")
-    RETURN 1
-  END SUBROUTINE PROBLEM_SOLVER_INITALISE
-
   !
   !================================================================================================================================
   !

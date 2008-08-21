@@ -59,24 +59,24 @@ MODULE TREES
   !> \brief The colour of the tree nodes
   !> \see TREES
   !>@{
-  INTEGER(INTG), PARAMETER :: TREE_BLACK_NODE=0 !<The black colour type for a tree \see TREES_TreeNodeColourTypes,TREES::TreeNodeColourTypes
-  INTEGER(INTG), PARAMETER :: TREE_RED_NODE=1 !<The number of problem time dependence types defined. \see TREES_TreeNodeColourTypes,TREES::TreeNodeColourTypes
+  INTEGER(INTG), PARAMETER :: TREE_BLACK_NODE=0 !<The black colour type for a tree node \see TREES_TreeNodeColourTypes,TREES
+  INTEGER(INTG), PARAMETER :: TREE_RED_NODE=1 !<The red colour type for a tree node \see TREES_TreeNodeColourTypes,TREES
   !>@}
 
   !> \addtogroup TREES_TreeNodeInsertStatus TREES::TreeNodeInsertStatus
   !> \brief The insert status for tree nodes
   !> \see TREES
   !>@{
-  INTEGER(INTG), PARAMETER :: TREE_NODE_INSERT_SUCESSFUL=1 !<Successful insert status \see TREES_TreeNodeInsertStatus,TREES::TreeNodeInsertStatus
-  INTEGER(INTG), PARAMETER :: TREE_NODE_DUPLICATE_KEY=2 !<Duplicate key found for those trees that do not allow duplicate keys \see TREES_TreeNodeInsertStatus,TREES::TreeNodeInsertStatus
+  INTEGER(INTG), PARAMETER :: TREE_NODE_INSERT_SUCESSFUL=1 !<Successful insert status \see TREES_TreeNodeInsertStatus,TREES
+  INTEGER(INTG), PARAMETER :: TREE_NODE_DUPLICATE_KEY=2 !<Duplicate key found for those trees that do not allow duplicate keys \see TREES_TreeNodeInsertStatus,TREES
   !>@}
 
   !> \addtogroup TREES_TreeInsertTypes TREES::TreeInsertTypes
   !> \brief The insert type for a tree
   !> \see TREES
   !>@{
-  INTEGER(INTG), PARAMETER :: TREE_DUPLICATES_ALLOWED_TYPE=1 !<Duplicate keys allowed tree type \see TREES_TreeInsertTypes,TREES::TreeInsertTypes
-  INTEGER(INTG), PARAMETER :: TREE_NO_DUPLICATES_ALLOWED=2 !<No duplicate keys allowed tree type \see TREES_TreeInsertTypes,TREES::TreeInsertTypes
+  INTEGER(INTG), PARAMETER :: TREE_DUPLICATES_ALLOWED_TYPE=1 !<Duplicate keys allowed tree type \see TREES_TreeInsertTypes,TREES
+  INTEGER(INTG), PARAMETER :: TREE_NO_DUPLICATES_ALLOWED=2 !<No duplicate keys allowed tree type \see TREES_TreeInsertTypes,TREES
   !>@}
 
   !Module types

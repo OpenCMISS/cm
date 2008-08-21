@@ -1101,19 +1101,19 @@ CONTAINS
           SELECT CASE(MATRIX%DATA_TYPE)
           CASE(MATRIX_VECTOR_INTG_TYPE)
             CALL WRITE_STRING_MATRIX(ID,1,1,MATRIX%M,1,1,MATRIX%N,8,8,RESHAPE(MATRIX%DATA_INTG,(/MATRIX%MAX_M,MATRIX%MAX_N/)), &
-              & WRITE_STRING_MATRIX_NAME_AND_INDICIES,'("Matrix','(",I9,",:)',':",8(X,I13))','(20X,8(X,I13))', &
+              & WRITE_STRING_MATRIX_NAME_AND_INDICES,'("Matrix','(",I9,",:)',':",8(X,I13))','(20X,8(X,I13))', &
               & ERR,ERROR,*999)
           CASE(MATRIX_VECTOR_SP_TYPE)
             CALL WRITE_STRING_MATRIX(ID,1,1,MATRIX%M,1,1,MATRIX%N,8,8,RESHAPE(MATRIX%DATA_SP,(/MATRIX%MAX_M,MATRIX%MAX_N/)), &
-              & WRITE_STRING_MATRIX_NAME_AND_INDICIES,'("Matrix','(",I9,",:)',':",8(X,E13.6))','(20X,8(X,E13.6))', &
+              & WRITE_STRING_MATRIX_NAME_AND_INDICES,'("Matrix','(",I9,",:)',':",8(X,E13.6))','(20X,8(X,E13.6))', &
               & ERR,ERROR,*999)
           CASE(MATRIX_VECTOR_DP_TYPE)
             CALL WRITE_STRING_MATRIX(ID,1,1,MATRIX%M,1,1,MATRIX%N,8,8,RESHAPE(MATRIX%DATA_DP,(/MATRIX%MAX_M,MATRIX%MAX_N/)), &
-              & WRITE_STRING_MATRIX_NAME_AND_INDICIES,'("Matrix','(",I9,",:)',':",8(X,E13.6))','(20X,8(X,E13.6))', &
+              & WRITE_STRING_MATRIX_NAME_AND_INDICES,'("Matrix','(",I9,",:)',':",8(X,E13.6))','(20X,8(X,E13.6))', &
               & ERR,ERROR,*999)
           CASE(MATRIX_VECTOR_L_TYPE)            
             CALL WRITE_STRING_MATRIX(ID,1,1,MATRIX%M,1,1,MATRIX%N,8,8,RESHAPE(MATRIX%DATA_L,(/MATRIX%MAX_M,MATRIX%MAX_N/)), &
-              & WRITE_STRING_MATRIX_NAME_AND_INDICIES,'("Matrix','(",I9,",:)',':",8(X,L13))','(20X,8(X,L13))', &
+              & WRITE_STRING_MATRIX_NAME_AND_INDICES,'("Matrix','(",I9,",:)',':",8(X,L13))','(20X,8(X,L13))', &
               & ERR,ERROR,*999)
           CASE DEFAULT
             LOCAL_ERROR="The matrix data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid"
@@ -1131,19 +1131,19 @@ CONTAINS
             SELECT CASE(MATRIX%DATA_TYPE)              
             CASE(MATRIX_VECTOR_INTG_TYPE)
               INITIAL_STRING='("Matrix('//ROW_STRING//',:):",8(X,I13))'
-              CALL WRITE_STRING_VECTOR(ID,MATRIX%ROW_INDICES(i),1,MATRIX%ROW_INDICES(i+1),8,8,MATRIX%DATA_INTG,INITIAL_STRING, &
+              CALL WRITE_STRING_VECTOR(ID,MATRIX%ROW_INDICES(i),1,MATRIX%ROW_INDICES(i+1)-1,8,8,MATRIX%DATA_INTG,INITIAL_STRING, &
                 & '(20X,8(X,I13))',ERR,ERROR,*999)
             CASE(MATRIX_VECTOR_SP_TYPE)
               INITIAL_STRING='("Matrix('//ROW_STRING//',:):",8(X,E13.6))'
-              CALL WRITE_STRING_VECTOR(ID,MATRIX%ROW_INDICES(i),1,MATRIX%ROW_INDICES(i+1),8,8,MATRIX%DATA_SP,INITIAL_STRING, &
+              CALL WRITE_STRING_VECTOR(ID,MATRIX%ROW_INDICES(i),1,MATRIX%ROW_INDICES(i+1)-1,8,8,MATRIX%DATA_SP,INITIAL_STRING, &
                 & '(20X,8(X,E13.6))',ERR,ERROR,*999)
             CASE(MATRIX_VECTOR_DP_TYPE)
               INITIAL_STRING='("Matrix('//ROW_STRING//',:):",8(X,E13.6))'
-              CALL WRITE_STRING_VECTOR(ID,MATRIX%ROW_INDICES(i),1,MATRIX%ROW_INDICES(i+1),8,8,MATRIX%DATA_DP,INITIAL_STRING, &
+              CALL WRITE_STRING_VECTOR(ID,MATRIX%ROW_INDICES(i),1,MATRIX%ROW_INDICES(i+1)-1,8,8,MATRIX%DATA_DP,INITIAL_STRING, &
                 & '(20X,8(X,E13.6))',ERR,ERROR,*999)
             CASE(MATRIX_VECTOR_L_TYPE)            
               INITIAL_STRING='("Matrix('//ROW_STRING//',:):",8(X,L13))'
-              CALL WRITE_STRING_VECTOR(ID,MATRIX%ROW_INDICES(i),1,MATRIX%ROW_INDICES(i+1),8,8,MATRIX%DATA_L,INITIAL_STRING, &
+              CALL WRITE_STRING_VECTOR(ID,MATRIX%ROW_INDICES(i),1,MATRIX%ROW_INDICES(i+1)-1,8,8,MATRIX%DATA_L,INITIAL_STRING, &
                 & '(20X,8(X,L13))',ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The matrix data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid"
@@ -1156,19 +1156,19 @@ CONTAINS
             SELECT CASE(MATRIX%DATA_TYPE)              
             CASE(MATRIX_VECTOR_INTG_TYPE)
               INITIAL_STRING='("Matrix(:,'//COL_STRING//'):",8(X,I13))'
-              CALL WRITE_STRING_VECTOR(ID,MATRIX%COLUMN_INDICES(j),1,MATRIX%COLUMN_INDICES(j+1),8,8,MATRIX%DATA_INTG, &
+              CALL WRITE_STRING_VECTOR(ID,MATRIX%COLUMN_INDICES(j),1,MATRIX%COLUMN_INDICES(j+1)-1,8,8,MATRIX%DATA_INTG, &
                 & INITIAL_STRING,'(20X,8(X,I13))',ERR,ERROR,*999)
             CASE(MATRIX_VECTOR_SP_TYPE)
               INITIAL_STRING='("Matrix(:,'//COL_STRING//'):",8(X,E13.6))'
-              CALL WRITE_STRING_VECTOR(ID,MATRIX%COLUMN_INDICES(j),1,MATRIX%COLUMN_INDICES(j+1),8,8,MATRIX%DATA_SP, &
+              CALL WRITE_STRING_VECTOR(ID,MATRIX%COLUMN_INDICES(j),1,MATRIX%COLUMN_INDICES(j+1)-1,8,8,MATRIX%DATA_SP, &
                 & INITIAL_STRING,'(20X,8(X,E13.6))',ERR,ERROR,*999)
             CASE(MATRIX_VECTOR_DP_TYPE)
               INITIAL_STRING='("Matrix(:,'//COL_STRING//'):",8(X,E13.6))'
-              CALL WRITE_STRING_VECTOR(ID,MATRIX%COLUMN_INDICES(j),1,MATRIX%COLUMN_INDICES(j+1),8,8,MATRIX%DATA_DP, &
+              CALL WRITE_STRING_VECTOR(ID,MATRIX%COLUMN_INDICES(j),1,MATRIX%COLUMN_INDICES(j+1)-1,8,8,MATRIX%DATA_DP, &
                 & INITIAL_STRING,'(20X,8(X,E13.6))',ERR,ERROR,*999)
             CASE(MATRIX_VECTOR_L_TYPE)            
               INITIAL_STRING='("Matrix(:,'//COL_STRING//'):",8(X,L13))'
-              CALL WRITE_STRING_VECTOR(ID,MATRIX%COLUMN_INDICES(j),1,MATRIX%COLUMN_INDICES(j+1),8,8,MATRIX%DATA_L, &
+              CALL WRITE_STRING_VECTOR(ID,MATRIX%COLUMN_INDICES(j),1,MATRIX%COLUMN_INDICES(j+1)-1,8,8,MATRIX%DATA_L, &
                 & INITIAL_STRING,'(20X,8(X,L13))',ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The matrix data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid"
@@ -1372,7 +1372,7 @@ CONTAINS
 
     !Argument variables
     TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index values for the sparisty pattern.
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index values for the sparisty pattern.
     INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INDICES(i). The column index values for the sparsity pattern.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -1639,12 +1639,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Adds values to an integer matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=MATRIX(I,J)+VALUE
+  !>Adds values to an integer matrix at the location specified by the row and column indices i.e., MATRIX(I,J)=MATRIX(I,J)+VALUE
   SUBROUTINE MATRIX_VALUES_ADD_INTG(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
     TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the i'th value to add
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index for the i'th value to add
     INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(i). The column index for the i'th value to add
     INTEGER(INTG), INTENT(IN) :: VALUES(:) !<VALUES(i). The value of the i'th value to add
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -1755,12 +1755,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Adds a matrix of values to an integer matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=MATRIX(I,J)+VALUE
+  !>Adds a matrix of values to an integer matrix at the location specified by the row and column indices i.e., MATRIX(I,J)=MATRIX(I,J)+VALUE
   SUBROUTINE MATRIX_VALUES_ADD_INTG2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
     TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the ij'th value to add
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index for the ij'th value to add
     INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(j). The column index for the ij'th value to add
     INTEGER(INTG), INTENT(IN) :: VALUES(:,:) !<VALUES(i,j). The value of the ij'th value to add
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -1825,12 +1825,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Adds values to a single precision real matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=MATRIX(I,J)+VALUE
+  !>Adds values to a single precision real matrix at the location specified by the row and column indices i.e., MATRIX(I,J)=MATRIX(I,J)+VALUE
   SUBROUTINE MATRIX_VALUES_ADD_SP(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
     TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the i'th value to add
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index for the i'th value to add
     INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(i). The column index for the i'th value to add
     REAL(SP), INTENT(IN) :: VALUES(:) !<VALUES(i). The value of the i'th value to add
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -1941,12 +1941,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Adds a matrix of values to a single precision real matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=MATRIX(I,J)+VALUE
+  !>Adds a matrix of values to a single precision real matrix at the location specified by the row and column indices i.e., MATRIX(I,J)=MATRIX(I,J)+VALUE
   SUBROUTINE MATRIX_VALUES_ADD_SP2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
     TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the ij'th value to add
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index for the ij'th value to add
     INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(j). The column index for the ij'th value to add
     REAL(SP), INTENT(IN) :: VALUES(:,:) !<VALUES(i,j). The value of the ij'th value to add
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -2011,12 +2011,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Adds values to a double precision real matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=MATRIX(I,J)+VALUE
+  !>Adds values to a double precision real matrix at the location specified by the row and column indices i.e., MATRIX(I,J)=MATRIX(I,J)+VALUE
   SUBROUTINE MATRIX_VALUES_ADD_DP(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
     TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the i'th value to add
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index for the i'th value to add
     INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(i). The column index for the i'th value to add
     REAL(DP), INTENT(IN) :: VALUES(:) !<VALUES(i). The value of the i'th value to add
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -2048,13 +2048,13 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The size of the column indicies array ("// &
+            LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The size of the row indicies array ("// &
+          LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -2127,12 +2127,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Adds a matrix of values to a double precision real matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=MATRIX(I,J)+VALUE
+  !>Adds a matrix of values to a double precision real matrix at the location specified by the row and column indices i.e., MATRIX(I,J)=MATRIX(I,J)+VALUE
   SUBROUTINE MATRIX_VALUES_ADD_DP2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
     TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the ij'th value to add
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index for the ij'th value to add
     INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(j). The column index for the ij'th value to add
     REAL(DP), INTENT(IN) :: VALUES(:,:) !<VALUES(i,j). The value of the ij'th value to add
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -2166,14 +2166,14 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The size of the column indicies array ("// &
+            LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The size of the row indicies array ("// &
+          LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows the values array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
@@ -2197,12 +2197,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Adds values to a logical matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=MATRIX(I,J).OR.VALUE
+  !>Adds values to a logical matrix at the location specified by the row and column indices i.e., MATRIX(I,J)=MATRIX(I,J).OR.VALUE
   SUBROUTINE MATRIX_VALUES_ADD_L(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
     TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the i'th value to add
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index for the i'th value to add
     INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(i). The column index for the i'th value to add
     LOGICAL, INTENT(IN) :: VALUES(:) !<VALUES(i). The value of the i'th value to add
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -2234,13 +2234,13 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The size of the column indicies array ("// &
+            LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The size of the row indicies array ("// &
+          LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -2313,12 +2313,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Adds a matrix of values to a logical matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=MATRIX(I,J).OR.VALUE
+  !>Adds a matrix of values to a logical matrix at the location specified by the row and column indices i.e., MATRIX(I,J)=MATRIX(I,J).OR.VALUE
   SUBROUTINE MATRIX_VALUES_ADD_L2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
     TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the ij'th value to add
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index for the ij'th value to add
     INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(j). The column index for the ij'th value to add
     LOGICAL, INTENT(IN) :: VALUES(:,:) !<VALUES(i,j). The value of the ij'th value to add
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -2352,14 +2352,14 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The size of the column indicies array ("// &
+            LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The size of the row indicies array ("// &
+          LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
@@ -2383,12 +2383,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the values in an integer matrix at the location specified by the row and column indicies i.e., VALUE=MATRIX(I,J)
+  !>Gets the values in an integer matrix at the location specified by the row and column indices i.e., VALUE=MATRIX(I,J)
   SUBROUTINE MATRIX_VALUES_GET_INTG(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
     TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the i'th value to get
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index for the i'th value to get
     INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(i). The column index for the i'th value to get
     INTEGER(INTG), INTENT(OUT) :: VALUES(:) !<VALUES(i). On return the value of the i'th value to get
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -2499,12 +2499,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the matrix of values in an integer matrix at the location specified by the row and column indicies i.e., VALUE=MATRIX(I,J)
+  !>Gets the matrix of values in an integer matrix at the location specified by the row and column indices i.e., VALUE=MATRIX(I,J)
   SUBROUTINE MATRIX_VALUES_GET_INTG2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
     TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the ij'th value to get
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index for the ij'th value to get
     INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(j). The column index for the ij'th value to get
     INTEGER(INTG), INTENT(OUT) :: VALUES(:,:) !<VALUES(i,j). On return the value of the ij'th value to get
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -2569,12 +2569,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets values in a single precision real matrix at the location specified by the row and column indicies i.e., VALUE=MATRIX(I,J)
+  !>Gets values in a single precision real matrix at the location specified by the row and column indices i.e., VALUE=MATRIX(I,J)
   SUBROUTINE MATRIX_VALUES_GET_SP(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
     TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the i'th value to get
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index for the i'th value to get
     INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(i). The column index for the i'th value to get
     REAL(SP), INTENT(OUT) :: VALUES(:) !<VALUES(i). On return the value of the i'th value to get
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -2685,12 +2685,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets a matrix of values in a single precision real matrix at the location specified by the row and column indicies i.e., VALUE=MATRIX(I,J)
+  !>Gets a matrix of values in a single precision real matrix at the location specified by the row and column indices i.e., VALUE=MATRIX(I,J)
   SUBROUTINE MATRIX_VALUES_GET_SP2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
     TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the ij'th value to get
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index for the ij'th value to get
     INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(j). The column index for the ij'th value to get
     REAL(SP), INTENT(OUT) :: VALUES(:,:) !<VALUES(i,j). On return the value of the ij'th value to get
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -2755,12 +2755,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets values in a double precision real matrix at the location specified by the row and column indicies i.e., VALUE=MATRIX(I,J)
+  !>Gets values in a double precision real matrix at the location specified by the row and column indices i.e., VALUE=MATRIX(I,J)
   SUBROUTINE MATRIX_VALUES_GET_DP(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
     TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the i'th value to get
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index for the i'th value to get
     INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(i). The column index for the i'th value to get
     REAL(DP), INTENT(OUT) :: VALUES(:) !<VALUES(i). On return the value of the i'th value to get
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -2792,13 +2792,13 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The size of the column indicies array ("// &
+            LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The size of the row indicies array ("// &
+          LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -2871,12 +2871,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets a matrix of values in a double precision real matrix at the location specified by the row and column indicies i.e., VALUE=MATRIX(I,J)
+  !>Gets a matrix of values in a double precision real matrix at the location specified by the row and column indices i.e., VALUE=MATRIX(I,J)
   SUBROUTINE MATRIX_VALUES_GET_DP2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
     TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the ij'th value to get
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index for the ij'th value to get
     INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(j). The column index for the ij'th value to get
     REAL(DP), INTENT(OUT) :: VALUES(:,:) !<VALUES(i,j). On return the value of the ij'th value to get
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -2910,14 +2910,14 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The size of the column indicies array ("// &
+            LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The size of the row indicies array ("// &
+          LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
@@ -2941,12 +2941,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets values in a logical matrix at the location specified by the row and column indicies i.e., VALUE=MATRIX(I,J)
+  !>Gets values in a logical matrix at the location specified by the row and column indices i.e., VALUE=MATRIX(I,J)
   SUBROUTINE MATRIX_VALUES_GET_L(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
     TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the i'th value to get
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index for the i'th value to get
     INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(i). The column index for the i'th value to get
     LOGICAL, INTENT(OUT) :: VALUES(:) !<VALUES(i). On return the value of the i'th value to get
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -2978,13 +2978,13 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The size of the column indicies array ("// &
+            LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The size of the row indicies array ("// &
+          LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -3057,12 +3057,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets a matrix of values in a logical matrix at the location specified by the row and column indicies i.e., VALUE=MATRIX(I,J)
+  !>Gets a matrix of values in a logical matrix at the location specified by the row and column indices i.e., VALUE=MATRIX(I,J)
   SUBROUTINE MATRIX_VALUES_GET_L2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
     TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the ij'th value to get
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index for the ij'th value to get
     INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(j). The column index for the ij'th value to get
     LOGICAL, INTENT(OUT) :: VALUES(:,:) !<VALUES(i,j). On return the value of the ij'th value to get
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -3096,14 +3096,14 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The size of the column indicies array ("// &
+            LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The size of the row indicies array ("// &
+          LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
@@ -3127,12 +3127,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets the values in an integer matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=VALUE
+  !>Sets the values in an integer matrix at the location specified by the row and column indices i.e., MATRIX(I,J)=VALUE
   SUBROUTINE MATRIX_VALUES_SET_INTG(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
     TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the i'th value to set
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index for the i'th value to set
     INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(i). The column index for the i'th value to set
     INTEGER(INTG), INTENT(IN) :: VALUES(:) !<VALUES(i). The value of the i'th value to set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -3243,12 +3243,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets the matrix of values in an integer matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=VALUE
+  !>Sets the matrix of values in an integer matrix at the location specified by the row and column indices i.e., MATRIX(I,J)=VALUE
   SUBROUTINE MATRIX_VALUES_SET_INTG2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
     TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
-    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICIES(i). The row index for the ij'th value to set
+    INTEGER(INTG), INTENT(IN) :: ROW_INDICES(:) !<ROW_INDICES(i). The row index for the ij'th value to set
     INTEGER(INTG), INTENT(IN) :: COLUMN_INDICES(:) !<COLUMN_INIDICES(j). The column index for the ij'th value to set
     INTEGER(INTG), INTENT(IN) :: VALUES(:,:) !<VALUES(i,j). The value of the i,j'th value to set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -3313,7 +3313,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets the values in a single precision real matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=VALUE
+  !>Sets the values in a single precision real matrix at the location specified by the row and column indices i.e., MATRIX(I,J)=VALUE
   SUBROUTINE MATRIX_VALUES_SET_SP(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
@@ -3429,7 +3429,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets the matrix of values in a single precision real matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=VALUE
+  !>Sets the matrix of values in a single precision real matrix at the location specified by the row and column indices i.e., MATRIX(I,J)=VALUE
   SUBROUTINE MATRIX_VALUES_SET_SP2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
@@ -3499,7 +3499,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets the values in a double precision real matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=VALUE
+  !>Sets the values in a double precision real matrix at the location specified by the row and column indices i.e., MATRIX(I,J)=VALUE
   SUBROUTINE MATRIX_VALUES_SET_DP(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
@@ -3536,13 +3536,13 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The size of the column indicies array ("// &
+            LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The size of the row indicies array ("// &
+          LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -3615,7 +3615,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets the matrix of values in a double precision real matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=VALUE
+  !>Sets the matrix of values in a double precision real matrix at the location specified by the row and column indices i.e., MATRIX(I,J)=VALUE
   SUBROUTINE MATRIX_VALUES_SET_DP2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
@@ -3654,14 +3654,14 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The size of the column indicies array ("// &
+            LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The size of the row indicies array ("// &
+          LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
@@ -3685,7 +3685,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets the values in a logical matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=VALUE
+  !>Sets the values in a logical matrix at the location specified by the row and column indices i.e., MATRIX(I,J)=VALUE
   SUBROUTINE MATRIX_VALUES_SET_L(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
@@ -3722,13 +3722,13 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The size of the column indicies array ("// &
+            LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The size of the row indicies array ("// &
+          LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -3801,7 +3801,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets the matrix of values in a logical matrix at the location specified by the row and column indicies i.e., MATRIX(I,J)=VALUE
+  !>Sets the matrix of values in a logical matrix at the location specified by the row and column indices i.e., MATRIX(I,J)=VALUE
   SUBROUTINE MATRIX_VALUES_SET_L2(MATRIX,ROW_INDICES,COLUMN_INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
@@ -3840,14 +3840,14 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The size of the column indicies array ("// &
+            LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The size of the row indicies array ("// &
+          LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
@@ -4512,7 +4512,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the values in an integer vector at the indicies specified.
+  !>Gets the values in an integer vector at the indices specified.
   SUBROUTINE VECTOR_VALUES_GET_INTG(VECTOR,INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
@@ -4617,7 +4617,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the values in a single precision real vector at the indicies specified
+  !>Gets the values in a single precision real vector at the indices specified
   SUBROUTINE VECTOR_VALUES_GET_SP(VECTOR,INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
@@ -4722,7 +4722,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the values in a double precision real vector at the indicies specified.
+  !>Gets the values in a double precision real vector at the indices specified.
   SUBROUTINE VECTOR_VALUES_GET_DP(VECTOR,INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables
@@ -4827,7 +4827,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the values in a logical real vector at the indicies specified.
+  !>Gets the values in a logical real vector at the indices specified.
   SUBROUTINE VECTOR_VALUES_GET_L(VECTOR,INDICES,VALUES,ERR,ERROR,*)
 
     !Argument variables

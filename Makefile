@@ -74,7 +74,7 @@ include $(GLOBAL_ROOT)/utils/Makefile.inc
 
 BASE_EXE_NAME = openCMISS
 
-SOURCE_DIR = $(GLOBAL_ROOT)/openCMISS
+SOURCE_DIR = $(GLOBAL_ROOT)/src
 OBJECT_DIR := $(GLOBAL_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
 MODULE_DIR := $(OBJECT_DIR)
 EXE_DIR := $(GLOBAL_ROOT)/bin/$(BIN_ARCH_DIR)
@@ -405,7 +405,7 @@ else
 endif
 
 #PETSc
-PETSC_LIBRARIES = -lpetscmat -lpetscvec -lpetsc -lMrm -lXmu -lXm -lXt -lX11
+PETSC_LIBRARIES = -lpetscksp -lpetscmat -lpetscvec -lpetsc -lMrm -lXmu -lXm -lXt -lX11
 PETSC_LIB_PATH =#
 PETSC_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
@@ -680,6 +680,16 @@ $(OBJECT_DIR)/field_routines.o		:	$(SOURCE_DIR)/field_routines.f90 \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 
+$(OBJECT_DIR)/field_IO_routines.o   :	  $(SOURCE_DIR)/field_IO_routines.f90 \
+	$(OBJECT_DIR)/lists.o \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/types.o \
+	$(OBJECT_DIR)/constants.o 
+
 $(OBJECT_DIR)/f90c_c.o	:	$(SOURCE_DIR)/f90c_c.c 
 
 $(OBJECT_DIR)/f90c_f.o	:	$(SOURCE_DIR)/f90c_f.f90 \
@@ -770,7 +780,7 @@ $(OBJECT_DIR)/opencmisstest.o		:	$(SOURCE_DIR)/opencmisstest.f90 \
 	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/field_routines.o \
-        $(OBJECT_DIR)/field_IO_routines.o \
+	$(OBJECT_DIR)/field_IO_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -842,20 +852,12 @@ $(OBJECT_DIR)/trees.o		:	$(SOURCE_DIR)/trees.f90 \
 	$(OBJECT_DIR)/strings.o
 
 $(OBJECT_DIR)/types.o		:	$(SOURCE_DIR)/types.f90 \
+	$(OBJECT_DIR)/cmiss_petsc.o \
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/trees.o
 
-$(OBJECT_DIR)/field_IO_routines.o   :	  $(SOURCE_DIR)/field_IO_routines.f90 \
-	$(OBJECT_DIR)/lists.o \
-        $(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o \
-	$(OBJECT_DIR)/constants.o 
 # ----------------------------------------------------------------------------
 #
 # clean and clobber for removing objects and executable.
