@@ -9,6 +9,7 @@
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
 				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(SolutionDir)..\bin\i386-win32\OpenCMISSTest-debug.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(SolutionDir)..\object\i386-win32-debug\;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32-debug\lib;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32-debug\lib\cygwin-c-debug\;C:\Program Files\MPICH2\lib\" IgnoreDefaultLibraryNames="LIBC" GenerateDebugInformation="true" ProgramDatabaseFile="$(OUTDIR)/Fortran.pdb" SubSystem="subSystemWindows" AdditionalDependencies="C.lib ParMETISlib.lib METISlib.lib libpetscts.lib libpetscsnes.lib libpetscksp.lib libpetscdm.lib libpetscmat.lib libpetscvec.lib libpetsc.lib libflapack.lib libfblas.lib mpich2.lib fmpich2.lib Advapi32.lib"/>
 				<Tool Name="VFPreLinkEventTool"/>
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
@@ -18,6 +19,7 @@
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
 				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(SolutionDir)..\bin\i386-win32\OpenCMISSTest.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(SolutionDir)..\object\i386-win32\;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32\lib;$(SolutionDir)..\..\..\opencmissextras\cm\external\i386-win32\lib\cygwin-c-opt\;C:\Program Files\MPICH2\lib\" IgnoreDefaultLibraryNames="LIBC" SubSystem="subSystemWindows" AdditionalDependencies="C.lib ParMETISlib.lib METISlib.lib libpetscts.lib libpetscsnes.lib libpetscksp.lib libpetscdm.lib libpetscmat.lib libpetscvec.lib libpetsc.lib libflapack.lib libfblas.lib mpich2.lib fmpich2.lib Advapi32.lib"/>
 				<Tool Name="VFPreLinkEventTool"/>
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration></Configurations>

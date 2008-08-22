@@ -169,6 +169,12 @@ MODULE TYPES
     TYPE(BASIS_TYPE), POINTER :: PARENT_BASIS !<The pointer to the parent basis for the basis. NOTE: that if the basis is not a sub-basis of another basis this pointer will be NULL. 
   END TYPE BASIS_TYPE
 
+  !>Contains information on the defined basis functions
+  TYPE BASIS_FUNCTIONS_TYPE
+   INTEGER(INTG) :: NUMBER_BASIS_FUNCTIONS !<The number of basis functions definegd
+    TYPE(BASIS_PTR_TYPE), POINTER :: BASES(:) !<The array of pointers to the defined basis functions
+  END TYPE BASIS_FUNCTIONS_TYPE
+  
   !
   !================================================================================================================================
   !

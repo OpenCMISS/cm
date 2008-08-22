@@ -43,6 +43,7 @@
 		<File RelativePath="..\..\src\equations_set_constants.f90"/>
 		<File RelativePath="..\..\src\equations_set_routines.f90"/>
 		<File RelativePath="..\..\src\f90c_f.f90"/>
+		<File RelativePath="..\..\src\field_IO_routines.f90"/>
 		<File RelativePath="..\..\src\field_routines.f90"/>
 		<File RelativePath="..\..\src\input_output.f90"/>
 		<File RelativePath="..\..\src\iso_varying_string.f90"/>

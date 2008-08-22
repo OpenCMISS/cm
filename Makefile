@@ -96,7 +96,7 @@ AR = ar
 EXE_LINK = $(FC)
 DSO_LINK = ld
 
-DBGCF_FLGS = -g#OPT=false flags for C and fortran
+DBGCF_FLGS = -g #OPT=false flags for C and fortran
 # Option lists
 # (suboption lists become more specific so that later ones overrule previous)
 CFLAGS = $(strip $(CFL_FLGS) $(CFE_FLGS) $(CF_FLGS) $(C_FLGS))
@@ -532,11 +532,12 @@ OBJECTS = $(OBJECT_DIR)/opencmisstest.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/equations_set_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/field_IO_routines.o\
 	$(OBJECT_DIR)/fluid_mechanics_routines.o \
 	$(OBJECT_DIR)/f90c_f.o \
 	$(OBJECT_DIR)/f90c_c.o \
 	$(OBJECT_DIR)/input_output.o \
-        $(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/Laplace_equations_routines.o \
 	$(OBJECT_DIR)/lists.o \
@@ -776,6 +777,25 @@ $(OBJECT_DIR)/field_routines.o		:	$(SOURCE_DIR)/field_routines.f90 \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 
+$(OBJECT_DIR)/field_IO_routines.o	:	$(SOURCE_DIR)/field_IO_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/cmiss_mpi.o \
+	$(OBJECT_DIR)/computational_environment.o \
+	$(OBJECT_DIR)/constants.o \
+	$(OBJECT_DIR)/coordinate_routines.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/lists.o \
+	$(MACHINE_OBJECTS) \
+	$(OBJECT_DIR)/mesh_routines.o \
+	$(OBJECT_DIR)/node_routines.o \
+	$(OBJECT_DIR)/region_routines.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/types.o
+
 $(OBJECT_DIR)/fluid_mechanics_routines.o	:	$(SOURCE_DIR)/fluid_mechanics_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -784,11 +804,6 @@ $(OBJECT_DIR)/fluid_mechanics_routines.o	:	$(SOURCE_DIR)/fluid_mechanics_routine
 $(OBJECT_DIR)/f90c_c.o	:	$(SOURCE_DIR)/f90c_c.c 
 
 $(OBJECT_DIR)/f90c_f.o	:	$(SOURCE_DIR)/f90c_f.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(MACHINE_OBJECTS) \
-	$(OBJECT_DIR)/iso_varying_string.o
 
 $(OBJECT_DIR)/input_output.o	:	$(SOURCE_DIR)/input_output.f90 \
 	$(OBJECT_DIR)/base_routines.o \
@@ -895,6 +910,7 @@ $(OBJECT_DIR)/opencmisstest.o		:	$(SOURCE_DIR)/opencmisstest.f90 \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/equations_set_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/field_IO_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -919,6 +935,11 @@ $(OBJECT_DIR)/problem_routines.o	:	$(SOURCE_DIR)/problem_routines.f90 \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/distributed_matrix_vector.o \
+	$(OBJECT_DIR)/domain_mappings.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/problem_constants.o \
 	$(OBJECT_DIR)/solution_mapping_routines.o \
@@ -938,6 +959,7 @@ $(OBJECT_DIR)/region_routines.o	:	$(SOURCE_DIR)/region_routines.f90 \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/mesh_routines.o \
 	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/timer_f.o \
 	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/solution_mapping_routines.o	:	$(SOURCE_DIR)/solution_mapping_routines.f90 \
