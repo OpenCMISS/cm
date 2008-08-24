@@ -55,18 +55,25 @@ MODULE INPUT_OUTPUT
   
   !Module parameters
 
-  INTEGER(INTG), PARAMETER :: WRITE_STRING_MATRIX_NAME_ONLY=1
-  INTEGER(INTG), PARAMETER :: WRITE_STRING_MATRIX_NAME_AND_INDICIES=2
+  !> \addtogroup INPUT_OUTPUT_MatrixNameIndexFormat INPUT_OUTPUT::MatrixNameIndexFormat
+  !> \brief Output type parameter
+  !> \see INPUT_OUTPUT
+  !>@{  
+  INTEGER(INTG), PARAMETER :: WRITE_STRING_MATRIX_NAME_ONLY=1 !<Write the matrix name with out any indices \see INPUT_OUTPUT_MatrixNameIndexFormat,INPUT_OUTPUT::MatrixNameIndexFormat
+  INTEGER(INTG), PARAMETER :: WRITE_STRING_MATRIX_NAME_AND_INDICES=2 !<Write the matrix name together with the matrix indices \see INPUT_OUTPUT_MatrixNameIndexFormat,INPUT_OUTPUT::MatrixNameIndexFormat
+  !>@}
 
   !Module types
 
   !Interfaces
 
+  !>Write a string to a given output stream
   INTERFACE WRITE_STRING
     MODULE PROCEDURE WRITE_STRING_C
     MODULE PROCEDURE WRITE_STRING_VS
   END INTERFACE !WRITE_STRING
 
+  !>Write a string followed by a value to a given output stream
   INTERFACE WRITE_STRING_VALUE
     MODULE PROCEDURE WRITE_STRING_VALUE_C
     MODULE PROCEDURE WRITE_STRING_VALUE_DP
@@ -77,6 +84,7 @@ MODULE INPUT_OUTPUT
     MODULE PROCEDURE WRITE_STRING_VALUE_VS
   END INTERFACE !WRITE_STRING_VALUE
 
+  !>Write a string, value, string then a value to a given output stream
   INTERFACE WRITE_STRING_TWO_VALUE
     MODULE PROCEDURE WRITE_STRING_TWO_VALUE_C_C
     MODULE PROCEDURE WRITE_STRING_TWO_VALUE_C_DP
@@ -116,6 +124,7 @@ MODULE INPUT_OUTPUT
     MODULE PROCEDURE WRITE_STRING_TWO_VALUE_VS_VS
   END INTERFACE !WRITE_STRING_TWO_VALUE
 
+  !>Write a string followed by a value formatted in a particular way to a specified output stream
   INTERFACE WRITE_STRING_FMT_VALUE
     MODULE PROCEDURE WRITE_STRING_FMT_VALUE_C
     MODULE PROCEDURE WRITE_STRING_FMT_VALUE_DP
@@ -125,7 +134,8 @@ MODULE INPUT_OUTPUT
     MODULE PROCEDURE WRITE_STRING_FMT_VALUE_SP
     MODULE PROCEDURE WRITE_STRING_FMT_VALUE_VS
   END INTERFACE !WRITE_STRING_FMT_VALUE
-
+  
+  !>Write a string, value, string then a value with the values formatted in a particular way to a given output stream
   INTERFACE WRITE_STRING_FMT_TWO_VALUE
     MODULE PROCEDURE WRITE_STRING_FMT_TWO_VALUE_C_C
     MODULE PROCEDURE WRITE_STRING_FMT_TWO_VALUE_C_DP
@@ -165,6 +175,7 @@ MODULE INPUT_OUTPUT
     MODULE PROCEDURE WRITE_STRING_FMT_TWO_VALUE_VS_VS
   END INTERFACE !WRITE_STRING_FMT_TWO_VALUE
 
+  !>Write a string followed by a vector to a specified output stream.
   INTERFACE WRITE_STRING_VECTOR
     MODULE PROCEDURE WRITE_STRING_VECTOR_DP
     MODULE PROCEDURE WRITE_STRING_VECTOR_INTG
@@ -172,7 +183,8 @@ MODULE INPUT_OUTPUT
     MODULE PROCEDURE WRITE_STRING_VECTOR_L
     MODULE PROCEDURE WRITE_STRING_VECTOR_SP
   END INTERFACE !WRITE_STRING_VECTOR
-
+  
+  !>Write a string followed by a indexed vector to a specified output stream.
   INTERFACE WRITE_STRING_IDX_VECTOR
     MODULE PROCEDURE WRITE_STRING_IDX_VECTOR_DP
     MODULE PROCEDURE WRITE_STRING_IDX_VECTOR_INTG
@@ -181,6 +193,7 @@ MODULE INPUT_OUTPUT
     MODULE PROCEDURE WRITE_STRING_IDX_VECTOR_SP
   END INTERFACE !WRITE_STRING_IDX_VECTOR
 
+  !>Write a string followed by a matrix to a specified output stream
   INTERFACE WRITE_STRING_MATRIX
     MODULE PROCEDURE WRITE_STRING_MATRIX_DP
     MODULE PROCEDURE WRITE_STRING_MATRIX_INTG
@@ -189,7 +202,7 @@ MODULE INPUT_OUTPUT
     MODULE PROCEDURE WRITE_STRING_MATRIX_SP
   END INTERFACE !WRITE_STRING_MATRIX
 
-  PUBLIC WRITE_STRING_MATRIX_NAME_ONLY,WRITE_STRING_MATRIX_NAME_AND_INDICIES
+  PUBLIC WRITE_STRING_MATRIX_NAME_ONLY,WRITE_STRING_MATRIX_NAME_AND_INDICES
   
   PUBLIC WRITE_STRING,WRITE_STRING_VALUE,WRITE_STRING_TWO_VALUE,WRITE_STRING_FMT_VALUE,WRITE_STRING_FMT_TWO_VALUE, &
     & WRITE_STRING_VECTOR,WRITE_STRING_IDX_VECTOR,WRITE_STRING_MATRIX
@@ -198,31 +211,20 @@ MODULE INPUT_OUTPUT
 
 CONTAINS
 
-  
-  !================================================================================================================================
-  !
-
-  !#### Generic-Subroutine: WRITE_STRING
-  !###  Description:
-  !###    Writes the  STRING  to the given output stream specified by ID. 
-  !###  Child-subroutines: WRITE_STRING_C,WRITE_STRING_VS
-  
+  !!TODO: put back enters,exits etc.
+ 
   !
   !================================================================================================================================
   !
 
+  !>Writes the character STRING to the given output stream specified by ID.
   SUBROUTINE WRITE_STRING_C(ID,STRING,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_C
-    !###  Description:
-    !###    Writes the character STRING to the given output stream specified by ID.
-    !###  Parent-subroutine: WRITE_STRING
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: STRING
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream to write to \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: STRING !<The string to write
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
 
 !    CALL ENTERS("WRITE_STRING_C",ERR,ERROR,*999)
@@ -241,18 +243,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the varying string STRING to the given output stream specified by ID.
   SUBROUTINE WRITE_STRING_VS(ID,STRING,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_VS
-    !###  Description:
-    !###    Writes the varying string STRING to the given output stream specified by ID.
-    !###  Parent-subroutine: WRITE_STRING
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    TYPE(VARYING_STRING), INTENT(IN) :: STRING
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream to write to \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    TYPE(VARYING_STRING), INTENT(IN) :: STRING !<The string to write
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
 
 !    CALL ENTERS("WRITE_STRING_VS",ERR,ERROR,*999)
@@ -271,31 +269,15 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !#### Generic-Subroutine: WRITE_STRING_VALUE
-  !###  Description:
-  !###    Writes the FIRST STRING followed by a formatted VALUE to the given output stream specified by ID. Free format is used to
-  !###    format the value.
-  !###  Child-subroutines: WRITE_STRING_VALUE_C,WRITE_STRING_VALUE_DP,WRITE_STRING_VALUE_INTG,WRITE_STRING_VALUE_LINTG,
-  !###    WRITE_STRING_VALUE_L,WRITE_STRING_VALUE_SP,WRITE_STRING_VALUE_VS
-  
-  !
-  !================================================================================================================================
-  !
-
+  !>Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID. Free format is used to format the value.
   SUBROUTINE WRITE_STRING_VALUE_C(ID,FIRST_STRING,VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_VALUE_C
-    !###  Description:
-    !###    Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID. Free
-    !###    format is used to format the value.
-    !###  Parent-subroutine: WRITE_STRING_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: VALUE !<The value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -316,20 +298,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID. Free format is used to format the value.
   SUBROUTINE WRITE_STRING_VALUE_DP(ID,FIRST_STRING,VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_VALUE_DP
-    !###  Description:
-    !###    Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID. Free
-    !###    format is used to format the value.
-    !###  Parent-subroutine: WRITE_STRING_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(DP), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(DP), INTENT(IN) :: VALUE !<The value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -351,20 +328,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID. Free format is used to format the value.
   SUBROUTINE WRITE_STRING_VALUE_INTG(ID,FIRST_STRING,VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_VALUE_INTG
-    !###  Description:
-    !###    Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID. Free
-    !###    format is used to format the value.
-    !###  Parent-subroutine: WRITE_STRING_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    INTEGER(INTG), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    INTEGER(INTG), INTENT(IN) :: VALUE !<The value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -386,20 +358,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID. Free format is used to format the value.
   SUBROUTINE WRITE_STRING_VALUE_LINTG(ID,FIRST_STRING,VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_VALUE_LINTG
-    !###  Description:
-    !###    Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID. Free
-    !###    format is used to format the value.
-    !###  Parent-subroutine: WRITE_STRING_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    INTEGER(LINTG), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    INTEGER(LINTG), INTENT(IN) :: VALUE !<The value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -421,20 +388,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID. Free format is used to format the value.
   SUBROUTINE WRITE_STRING_VALUE_L(ID,FIRST_STRING,VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_VALUE_DP
-    !###  Description:
-    !###    Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID. Free
-    !###    format is used to format the value.
-    !###  Parent-subroutine: WRITE_STRING_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    LOGICAL, INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    LOGICAL, INTENT(IN) :: VALUE !<The value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -455,20 +417,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID. Free format is used to format the value.
   SUBROUTINE WRITE_STRING_VALUE_SP(ID,FIRST_STRING,VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_VALUE_SP
-    !###  Description:
-    !###    Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID. Free
-    !###    format is used to format the value.
-    !###  Parent-subroutine: WRITE_STRING_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(SP), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(SP), INTENT(IN) :: VALUE !<The value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -490,20 +447,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID. Free format is used to format the value.
   SUBROUTINE WRITE_STRING_VALUE_VS(ID,FIRST_STRING,VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_VALUE_VS
-    !###  Description:
-    !###    Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID. Free
-    !###    format is used to format the value.
-    !###  Parent-subroutine: WRITE_STRING_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: VALUE !<The value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -524,43 +476,17 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !#### Generic-Subroutine: WRITE_STRING_TWO_VALUE
-  !###  Description:
-  !###    Writes the FIRST_STRING followed by a formatted FIRST_VALUE and the the SECOND_STRING followed by a formatted
-  !####   SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
-  !###  Child-subroutines: WRITE_STRING_TWO_VALUE_C_C,WRITE_STRING_TWO_VALUE_C_DP,WRITE_STRING_TWO_VALUE_C_INTG,
-  !###    WRITE_STRING_TWO_VALUE_C_L,WRITE_STRING_TWO_VALUE_C_SP,WRITE_STRING_TWO_VALUE_C_VS,
-  !###    WRITE_STRING_TWO_VALUE_DP_C,WRITE_STRING_TWO_VALUE_DP_DP,WRITE_STRING_TWO_VALUE_DP_INTG,
-  !###    WRITE_STRING_TWO_VALUE_DP_L,WRITE_STRING_TWO_VALUE_DP_SP,WRITE_STRING_TWO_VALUE_DP_VS,
-  !###    WRITE_STRING_TWO_VALUE_INTG_C,WRITE_STRING_TWO_VALUE_INTG_DP,WRITE_STRING_TWO_VALUE_INTG_INTG,
-  !###    WRITE_STRING_TWO_VALUE_INTG_L,WRITE_STRING_TWO_VALUE_INTG_SP,WRITE_STRING_TWO_VALUE_INTG_VS,
-  !###    WRITE_STRING_TWO_VALUE_L_C,WRITE_STRING_TWO_VALUE_L_DP,WRITE_STRING_TWO_VALUE_L_INTG,
-  !###    WRITE_STRING_TWO_VALUE_L_L,WRITE_STRING_TWO_VALUE_L_SP,WRITE_STRING_TWO_VALUE_L_VS,
-  !###    WRITE_STRING_TWO_VALUE_SP_C,WRITE_STRING_TWO_VALUE_SP_DP,WRITE_STRING_TWO_VALUE_SP_INTG,
-  !###    WRITE_STRING_TWO_VALUE_SP_L,WRITE_STRING_TWO_VALUE_SP_SP,WRITE_STRING_TWO_VALUE_SP_VS,
-  !###    WRITE_STRING_TWO_VALUE_VS_C,WRITE_STRING_TWO_VALUE_VS_DP,WRITE_STRING_TWO_VALUE_VS_INTG,
-  !###    WRITE_STRING_TWO_VALUE_VS_L,WRITE_STRING_TWO_VALUE_VS_SP,WRITE_STRING_TWO_VALUE_VS_VS
-  
-  !
-  !================================================================================================================================
-  !
-
+  !>Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted character SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_C_C(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_C_C
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted
-    !###    character SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -581,22 +507,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted double precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_C_DP(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_C_DP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted
-    !###    double precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(DP), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(DP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -618,22 +539,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted integer SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_C_INTG(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_C_INTG
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted
-    !###    integer SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -655,22 +571,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted logical SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_C_L(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_C_L
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted
-    !###    logical SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    LOGICAL, INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    LOGICAL, INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -691,22 +602,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted single precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_C_SP(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_C_SP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted
-    !###    single precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(SP), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(SP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -728,22 +634,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted varying string SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_C_VS(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_C_VS
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted
-    !###    varying string SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -764,23 +665,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed by a formatted character SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_DP_C(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_DP_C
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted character SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(DP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(DP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -802,23 +697,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed by a formatted double precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_DP_DP(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_DP_DP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted double precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(DP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(DP), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(DP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(DP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -844,23 +733,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed by a formatted integer SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_DP_INTG(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_DP_INTG
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted integer SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(DP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(DP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -886,23 +769,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed by a formatted logical SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_DP_L(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_DP_L
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted logical SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(DP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    LOGICAL, INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(DP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    LOGICAL, INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -927,23 +804,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed by a formatted single precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_DP_SP(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_DP_SP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted single precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(DP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(SP), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(DP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(SP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -969,23 +840,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed by a formatted single precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_DP_VS(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_DP_VS
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted single precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(DP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(DP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -1007,23 +872,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed by a formatted character SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_INTG_C(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_INTG_C
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted character SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -1045,23 +904,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed by a formatted double precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_INTG_DP(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_INTG_DP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted double precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(DP), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(DP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -1087,23 +940,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed by a formatted integer SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_INTG_INTG(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_INTG_INTG
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted integer SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -1129,23 +976,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed by a formatted logical SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_INTG_L(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_INTG_L
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted logical SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    LOGICAL, INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    LOGICAL, INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -1170,23 +1011,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed by a formatted single precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_INTG_SP(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_INTG_SP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted single precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(SP), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(SP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -1212,23 +1047,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed by a formatted single precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_INTG_VS(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_INTG_VS
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted single precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -1250,23 +1079,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed by a formatted character SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_L_C(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_L_C
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted character SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    LOGICAL, INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    LOGICAL, INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -1288,23 +1111,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed by a formatted double precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_L_DP(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_L_DP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted double precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    LOGICAL, INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(DP), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    LOGICAL, INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(DP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -1330,23 +1147,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed by a formatted integer SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_L_INTG(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_L_INTG
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted integer SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    LOGICAL, INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    LOGICAL, INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -1370,23 +1181,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed by a formatted logical SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_L_L(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_INTG_L
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted logical SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    LOGICAL, INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    LOGICAL, INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    LOGICAL, INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    LOGICAL, INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -1411,23 +1216,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed by a formatted single precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_L_SP(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_L_SP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted single precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    LOGICAL, INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(SP), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    LOGICAL, INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(SP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -1451,23 +1250,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed by a formatted single precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_L_VS(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_L_VS
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted single precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    LOGICAL, INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    LOGICAL, INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -1489,23 +1282,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed by a formatted character SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_SP_C(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_SP_C
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted character SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(SP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(SP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -1527,23 +1314,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed by a formatted double precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_SP_DP(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_SP_DP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted double precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(SP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(DP), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(SP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(DP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -1569,23 +1350,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed by a formatted integer SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_SP_INTG(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_SP_INTG
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted integer SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(SP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(SP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -1611,23 +1386,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed by a formatted logical SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_SP_L(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_SP_L
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted logical SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(SP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    LOGICAL, INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(SP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    LOGICAL, INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -1650,23 +1419,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed by a formatted single precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_SP_SP(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_SP_SP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted single precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(SP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(SP), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(SP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(SP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -1692,23 +1455,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed by a formatted single precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_SP_VS(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_SP_VS
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted single precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(SP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(SP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -1730,22 +1487,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by a formatted character SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_VS_C(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_VS_C
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by a
-    !###    formatted character SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -1766,23 +1518,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by a formatted double precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_VS_DP(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_VS_DP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by a
-    !###    formatted double precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(DP), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(DP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -1804,22 +1550,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by a formatted integer SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_VS_INTG(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_VS_INTG
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by a
-    !###    formatted integer SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -1840,23 +1581,18 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
+  
+  !>Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by a formatted logical SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_VS_L(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_VS_L
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by
-    !###    a formatted logical SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    LOGICAL, INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    LOGICAL, INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -1877,23 +1613,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by a formatted single precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_VS_SP(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_VS_SP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by a
-    !###    formatted single precision SECOND_VALUE to the given output stream specified by ID. Free format is used to format
-    !###    both values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(SP), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(SP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -1915,23 +1645,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by a formatted varying string SECOND_VALUE to the given output stream specified by ID. Free format is used to format both values.
   SUBROUTINE WRITE_STRING_TWO_VALUE_VS_VS(ID,FIRST_STRING,FIRST_VALUE,SECOND_STRING,SECOND_VALUE,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_TWO_VALUE_VS_VS
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by a
-    !###    formatted varying string SECOND_VALUE to the given output stream specified by ID. Free format is used to format both
-    !###    values.
-    !###  Parent-subroutine: WRITE_STRING_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -1952,32 +1676,16 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !#### Generic-Subroutine: WRITE_STRING_FMT_VALUE
-  !###  Description:
-  !###    Writes the FIRST STRING followed by a formatted VALUE to the given output stream specified by ID. FORMAT_STRING is used
-  !###    to format the value.
-  !###  Child-subroutines: WRITE_STRING_FMT_VALUE_C,WRITE_STRING_FMT_VALUE_DP,WRITE_STRING_FMT_VALUE_INTG,
-  !###    WRITE_STRING_FMT_VALUE_LINTG,WRITE_STRING_FMT_VALUE_L,WRITE_STRING_FMT_VALUE_SP,WRITE_STRING_FMT_VALUE_VS
-  
-  !
-  !================================================================================================================================
-  !
-
+  !>Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID. FORMAT_STRING is used to format the value.
   SUBROUTINE WRITE_STRING_FMT_VALUE_C(ID,FIRST_STRING,VALUE,FORMAT_STRING,ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_VALUE_C
-    !###  Description:
-    !###    Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID.
-    !###    FORMAT_STRING is used to format the value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FORMAT_STRING
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: VALUE !<The value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FORMAT_STRING !<The format string to be used to format the value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -1998,21 +1706,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID. FORMAT_STRING is used to format the value.
   SUBROUTINE WRITE_STRING_FMT_VALUE_DP(ID,FIRST_STRING,VALUE,FORMAT_STRING,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_FMT_VALUE_DP
-    !###  Description:
-    !###    Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID.
-    !###    FORMAT_STRING is used to format the value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(DP), INTENT(IN) :: VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FORMAT_STRING
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(DP), INTENT(IN) :: VALUE !<The value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FORMAT_STRING !<The format string to be used to format the value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -2034,21 +1737,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID. FORMAT_STRING is used to format the value.
   SUBROUTINE WRITE_STRING_FMT_VALUE_INTG(ID,FIRST_STRING,VALUE,FORMAT_STRING,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_FMT_VALUE_INTG
-    !###  Description:
-    !###    Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID.
-    !###    FORMAT_STRING is used to format the value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    INTEGER(INTG), INTENT(IN) :: VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FORMAT_STRING
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    INTEGER(INTG), INTENT(IN) :: VALUE !<The value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FORMAT_STRING !<The format string to be used to format the value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -2069,21 +1767,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID. FORMAT_STRING is used to format the value.
   SUBROUTINE WRITE_STRING_FMT_VALUE_LINTG(ID,FIRST_STRING,VALUE,FORMAT_STRING,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_FMT_VALUE_INTG
-    !###  Description:
-    !###    Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID.
-    !###    FORMAT_STRING is used to format the value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    INTEGER(LINTG), INTENT(IN) :: VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FORMAT_STRING
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    INTEGER(LINTG), INTENT(IN) :: VALUE !<The value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FORMAT_STRING !<The format string to be used to format the value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -2104,21 +1797,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID. FORMAT_STRING is used to format the value.
   SUBROUTINE WRITE_STRING_FMT_VALUE_L(ID,FIRST_STRING,VALUE,FORMAT_STRING,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_FMT_VALUE_DP
-    !###  Description:
-    !###    Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID.
-    !###    FORMAT_STRING is used to format the value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    LOGICAL, INTENT(IN) :: VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FORMAT_STRING
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    LOGICAL, INTENT(IN) :: VALUE !<The value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FORMAT_STRING !<The format string to be used to format the value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -2139,21 +1827,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID. FORMAT_STRING is used to format the value.
   SUBROUTINE WRITE_STRING_FMT_VALUE_SP(ID,FIRST_STRING,VALUE,FORMAT_STRING,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_FMT_VALUE_SP
-    !###  Description:
-    !###    Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID.
-    !###    FORMAT_STRING is used to format the value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(SP), INTENT(IN) :: VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FORMAT_STRING
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(SP), INTENT(IN) :: VALUE !<The value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FORMAT_STRING !<The format string to be used to format the value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -2175,21 +1858,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID. FORMAT_STRING is used to format the value.
   SUBROUTINE WRITE_STRING_FMT_VALUE_VS(ID,FIRST_STRING,VALUE,FORMAT_STRING,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_FMT_VALUE_VS
-    !###  Description:
-    !###    Writes the FIRST STRING followed by a formatted character VALUE to the given output stream specified by ID.
-    !###    FORMAT_STRING is used to format the value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FORMAT_STRING
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: VALUE !<The value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FORMAT_STRING !<The format string to be used to format the value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -2210,48 +1888,20 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !#### Generic-Subroutine: WRITE_STRING_FMT_TWO_VALUE
-  !###  Description:
-  !###    Writes the FIRST_STRING followed by a formatted FIRST_VALUE and the the SECOND_STRING followed by a formatted
-  !###    SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and
-  !###    SECOND_FORMAT is used to format the second value
-  !###  Child-subroutines: WRITE_STRING_FMT_TWO_VALUE_C_C,WRITE_STRING_FMT_TWO_VALUE_C_DP,WRITE_STRING_FMT_TWO_VALUE_C_INTG,
-  !###    WRITE_STRING_FMT_TWO_VALUE_C_L,WRITE_STRING_FMT_TWO_VALUE_C_SP,WRITE_STRING_FMT_TWO_VALUE_C_VS,
-  !###    WRITE_STRING_FMT_TWO_VALUE_DP_C,WRITE_STRING_FMT_TWO_VALUE_DP_DP,WRITE_STRING_FMT_TWO_VALUE_DP_INTG,
-  !###    WRITE_STRING_FMT_TWO_VALUE_DP_L,WRITE_STRING_FMT_TWO_VALUE_DP_SP,WRITE_STRING_FMT_TWO_VALUE_DP_VS,
-  !###    WRITE_STRING_FMT_TWO_VALUE_INTG_C,WRITE_STRING_FMT_TWO_VALUE_INTG_DP,WRITE_STRING_FMT_TWO_VALUE_INTG_INTG,
-  !###    WRITE_STRING_FMT_TWO_VALUE_INTG_L,WRITE_STRING_FMT_TWO_VALUE_INTG_SP,WRITE_STRING_FMT_TWO_VALUE_INTG_VS,
-  !###    WRITE_STRING_FMT_TWO_VALUE_L_C,WRITE_STRING_FMT_TWO_VALUE_L_DP,WRITE_STRING_FMT_TWO_VALUE_L_INTG,
-  !###    WRITE_STRING_FMT_TWO_VALUE_L_L,WRITE_STRING_FMT_TWO_VALUE_L_SP,WRITE_STRING_FMT_TWO_VALUE_L_VS,
-  !###    WRITE_STRING_FMT_TWO_VALUE_SP_C,WRITE_STRING_FMT_TWO_VALUE_SP_DP,WRITE_STRING_FMT_TWO_VALUE_SP_INTG,
-  !###    WRITE_STRING_FMT_TWO_VALUE_SP_L,WRITE_STRING_FMT_TWO_VALUE_SP_SP,WRITE_STRING_FMT_TWO_VALUE_SP_VS,
-  !###    WRITE_STRING_FMT_TWO_VALUE_VS_C,WRITE_STRING_FMT_TWO_VALUE_VS_DP,WRITE_STRING_FMT_TWO_VALUE_VS_INTG,
-  !###    WRITE_STRING_FMT_TWO_VALUE_VS_L,WRITE_STRING_FMT_TWO_VALUE_VS_SP,WRITE_STRING_FMT_TWO_VALUE_VS_VS
-  
-  !
-  !================================================================================================================================
-  !
-
+  !>Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted character SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_C_C(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_C_C
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted
-    !###    character SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and
-    !###    SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -2272,26 +1922,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted double precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_C_DP(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_C_DP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted
-    !###    double precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first
-    !###    value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(DP), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(DP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -2313,26 +1957,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted integer SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_C_INTG(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_C_INTG
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted
-    !###    integer SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and
-    !###    SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -2354,26 +1992,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted logical SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_C_L(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_C_L
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted
-    !###    logical SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and
-    !###    SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    LOGICAL, INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    LOGICAL, INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -2394,26 +2026,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted single precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_C_SP(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_C_SP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted
-    !###    single precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first
-    !###    value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(SP), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(SP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -2435,26 +2061,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted varying string SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_C_VS(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_C_VS
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted character FIRST_VALUE and the the SECOND_STRING followed by a formatted
-    !###    varying string SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value
-    !###    and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -2475,26 +2095,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed by a formatted character SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_DP_C(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_DP_C
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted character SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the
-    !###    first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(DP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(DP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -2516,26 +2130,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed by a formatted double precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_DP_DP(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_DP_DP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted double precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to
-    !###    format the first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(DP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(DP), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(DP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(DP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -2561,26 +2169,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed by a formatted integer SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_DP_INTG(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE, &
     & SECOND_FORMAT,ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_DP_INTG
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted integer SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the
-    !###    first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(DP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(DP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -2606,26 +2208,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed by a formatted logical SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_DP_L(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_DP_L
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted logical SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the
-    !###    first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(DP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    LOGICAL, INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(DP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    LOGICAL, INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -2650,26 +2246,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed by a formatted single precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_DP_SP(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_DP_SP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted single precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to
-    !###    format the first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(DP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(SP), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(DP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(SP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -2695,26 +2285,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed by a formatted single precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_DP_VS(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_DP_VS
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted double precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted single precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to
-    !###    format the first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(DP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(DP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -2736,26 +2320,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed by a formatted character SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_INTG_C(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_INTG_C
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted character SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the
-    !###    first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -2777,26 +2355,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed by a formatted double precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_INTG_DP(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE, &
     & SECOND_FORMAT,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_INTG_DP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted double precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to
-    !###    format the first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(DP), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(DP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -2822,26 +2394,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed by a formatted integer SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_INTG_INTG(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE, &
     & SECOND_FORMAT,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_INTG_INTG
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted integer SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the
-    !###    first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -2867,26 +2433,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed by a formatted logical SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_INTG_L(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_INTG_L
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted logical SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the
-    !###    first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    LOGICAL, INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    LOGICAL, INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -2911,26 +2471,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed by a formatted single precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_INTG_SP(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE, &
     & SECOND_FORMAT,ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_INTG_SP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted single precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to
-    !###    format the first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(SP), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(SP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -2956,26 +2510,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed by a formatted single precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_INTG_VS(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE, &
     & SECOND_FORMAT,ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_INTG_VS
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted integer FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted single precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to
-    !###    format the first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
-    
+   
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    INTEGER(INTG), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -2997,26 +2545,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed by a formatted character SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_L_C(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_L_C
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted character SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the
-    !###    first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    LOGICAL, INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    LOGICAL, INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -3038,26 +2580,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed by a formatted double precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_L_DP(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_L_DP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted double precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to
-    !###    format the first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    LOGICAL, INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(DP), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    LOGICAL, INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(DP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -3083,26 +2619,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed by a formatted integer SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_L_INTG(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_L_INTG
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted integer SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the
-    !###    first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    LOGICAL, INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    LOGICAL, INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -3126,26 +2656,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed by a formatted logical SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_L_L(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_INTG_L
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted logical SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the
-    !###    first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    LOGICAL, INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    LOGICAL, INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    LOGICAL, INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    LOGICAL, INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -3170,26 +2694,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed by a formatted single precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_L_SP(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_L_SP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted single precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to
-    !###    format the first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    LOGICAL, INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(SP), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    LOGICAL, INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(SP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -3213,26 +2731,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed by a formatted single precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_L_VS(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_L_VS
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted logical FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted single precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to
-    !###    format the first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    LOGICAL, INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    LOGICAL, INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -3254,26 +2766,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed by a formatted character SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_SP_C(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_SP_C
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted character SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the
-    !###    first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(SP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(SP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -3295,26 +2801,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed by a formatted double precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_SP_DP(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_SP_DP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted double precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to
-    !###    format the first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
-    
+   
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(SP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(DP), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(SP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(DP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -3340,26 +2840,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed by a formatted integer SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_SP_INTG(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE, &
     & SECOND_FORMAT,ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_SP_INTG
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted integer SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the
-    !###    first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(SP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(SP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -3385,26 +2879,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed by a formatted logical SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_SP_L(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_SP_L
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted logical SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the
-    !###    first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(SP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    LOGICAL, INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(SP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    LOGICAL, INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -3427,26 +2915,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed by a formatted single precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_SP_SP(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_SP_SP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted single precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to
-    !###    format the first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(SP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(SP), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(SP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(SP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING,LOCAL_STRING2
 
@@ -3472,26 +2954,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed by a formatted single precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_SP_VS(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
 
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_SP_VS
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted single precision FIRST_VALUE and the the SECOND_STRING followed
-    !###    by a formatted single precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to
-    !###    format the first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    REAL(SP), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    REAL(SP), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -3513,26 +2989,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by a formatted character SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_VS_C(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_VS_C
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by a
-    !###    formatted character SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the
-    !###    first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -3553,26 +3023,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by a formatted double precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_VS_DP(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_VS_DP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by a
-    !###    formatted double precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the
-    !###    first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(DP), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(DP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -3594,26 +3058,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by a formatted integer SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_VS_INTG(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE, &
     & SECOND_FORMAT,ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_VS_INTG
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by a
-    !###    formatted integer SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the
-    !###    first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    INTEGER(INTG), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -3635,26 +3093,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by a formatted logical SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_VS_L(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_VS_L
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by
-    !###    a formatted logical SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the
-    !###    first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    LOGICAL, INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    LOGICAL, INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -3675,26 +3127,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by a formatted single precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_VS_SP(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_VS_SP
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by a
-    !###    formatted single precision SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the
-    !###    first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    REAL(SP), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    REAL(SP), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -3716,26 +3162,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by a formatted varying string SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the first value and SECOND_FORMAT is used to format the second value.
   SUBROUTINE WRITE_STRING_FMT_TWO_VALUE_VS_VS(ID,FIRST_STRING,FIRST_VALUE,FIRST_FORMAT,SECOND_STRING,SECOND_VALUE,SECOND_FORMAT, &
     & ERR,ERROR,*)
-
-    !#### Child-Subroutine: WRITE_STRING_FMT_TWO_VALUE_VS_VS
-    !###  Description:
-    !###    Writes the FIRST_STRING followed by a formatted varying string FIRST_VALUE and the the SECOND_STRING followed by a
-    !###    formatted varying string SECOND_VALUE to the given output stream specified by ID. FIRST_FORMAT is used to format the
-    !###    first value and SECOND_FORMAT is used to format the second value.
-    !###  Parent-subroutine: WRITE_STRING_FMT_TWO_VALUE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING
-    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE
-    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_STRING !<The first string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: FIRST_VALUE !<The first value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used to format the first value
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_STRING !<The second string to be output
+    TYPE(VARYING_STRING), INTENT(IN) :: SECOND_VALUE !<The second value to be output
+    CHARACTER(LEN=*), INTENT(IN) :: SECOND_FORMAT !<The format string to be used to format the second value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
@@ -3756,36 +3196,22 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !#### Generic-Subroutine: WRITE_STRING_VECTOR
-  !###  Description:
-  !###    Writes the given VECTOR to the given output stream specified by ID. The FIRST_FORMAT is the format initially used,
-  !###    followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data items
-  !###    in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. FIRST_IDX and LAST_IDX are the
-  !###    extents of the data and DELTA is the NUMBER of indicies to skip for each index.
-  !###  Child-subroutines: WRITE_STRING_VECTOR_DP,WRITE_STRING_VECTOR_INTG,WRITE_STRING_VECTOR_LINTG,WRITE_STRING_VECTOR_L,
-  !###    WRITE_STRING_VECTOR_SP
-
-  !
-  !================================================================================================================================
-  !
-  
+  !>Writes the given double precision VECTOR to the given output stream specified by ID. The FIRST_FORMAT is the format initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. FIRST_IDX and LAST_IDX are the extents of the data and DELTA is the NUMBER of indices to skip for each index.
   SUBROUTINE WRITE_STRING_VECTOR_DP(ID,FIRST_IDX,DELTA,LAST_IDX,NUMBER_FIRST,NUMBER_REPEAT,VECTOR,FIRST_FORMAT,REPEAT_FORMAT, &
     & ERR,ERROR,*)
 
-    !#### Generic-Subroutine: WRITE_STRING_VECTOR_DP
-    !###  Description:
-    !###    Writes the given double precision VECTOR to the given output stream specified by ID. The FIRST_FORMAT is the format
-    !###    initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number
-    !###    of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. FIRST_IDX and
-    !###    LAST_IDX are the extents of the data and DELTA is the NUMBER of indicies to skip for each index.
-    !###  Parent-subroutines: WRITE_STRING_VECTOR
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID,FIRST_IDX,DELTA,LAST_IDX, NUMBER_FIRST,NUMBER_REPEAT
-    REAL(DP), INTENT(IN) :: VECTOR(:)
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT,REPEAT_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    INTEGER(INTG), INTENT(IN) :: FIRST_IDX !<The first index of the vector to output
+    INTEGER(INTG), INTENT(IN) :: DELTA !<The delta increment to be used when outputing the first through to the last vector index
+    INTEGER(INTG), INTENT(IN) :: LAST_IDX !<The last index of the vector to output
+    INTEGER(INTG), INTENT(IN) :: NUMBER_FIRST !<The number of vector elements to be output on the first line
+    INTEGER(INTG), INTENT(IN) :: NUMBER_REPEAT !<The number of vector elements to be output on the second and subsequently repeated lines
+    REAL(DP), INTENT(IN) :: VECTOR(:) !<The vector to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used for the first line of output
+    CHARACTER(LEN=*), INTENT(IN) :: REPEAT_FORMAT !<The format type to be used for the second and subsequently repeated lines of output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) ::  current,final,count
 
@@ -3814,24 +3240,23 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Writes the given integer VECTOR to the given output stream specified by ID. The FIRST_FORMAT is the format initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. FIRST_IDX and LAST_IDX are the extents of the data and DELTA is the NUMBER of indices to skip for each index.
   SUBROUTINE WRITE_STRING_VECTOR_INTG(ID,FIRST_IDX,DELTA,LAST_IDX,NUMBER_FIRST,NUMBER_REPEAT,VECTOR,FIRST_FORMAT,REPEAT_FORMAT, &
     & ERR,ERROR,*)
 
-    !#### Generic-Subroutine: WRITE_STRING_VECTOR_INTG
-    !###  Description:
-    !###    Writes the given integer VECTOR to the given output stream specified by ID. The FIRST_FORMAT is the format initially
-    !###    used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data
-    !###    items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. FIRST_IDX and LAST_IDX
-    !###    are the extents of the data and DELTA is the NUMBER of indicies to skip for each index.
-    !###  Parent-subroutines: WRITE_STRING_VECTOR
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID,FIRST_IDX,DELTA,LAST_IDX,NUMBER_FIRST,NUMBER_REPEAT
-    INTEGER(INTG), INTENT(IN) :: VECTOR(:)
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT,REPEAT_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    INTEGER(INTG), INTENT(IN) :: FIRST_IDX !<The first index of the vector to output
+    INTEGER(INTG), INTENT(IN) :: DELTA !<The delta increment to be used when outputing the first through to the last vector index
+    INTEGER(INTG), INTENT(IN) :: LAST_IDX !<The last index of the vector to output
+    INTEGER(INTG), INTENT(IN) :: NUMBER_FIRST !<The number of vector elements to be output on the first line
+    INTEGER(INTG), INTENT(IN) :: NUMBER_REPEAT !<The number of vector elements to be output on the second and subsequently repeated lines
+    INTEGER(INTG), INTENT(IN) :: VECTOR(:) !<The vector to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used for the first line of output
+    CHARACTER(LEN=*), INTENT(IN) :: REPEAT_FORMAT !<The format type to be used for the second and subsequently repeated lines of output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) ::  current,final,count
 
@@ -3860,24 +3285,23 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Writes the given integer VECTOR to the given output stream specified by ID. The FIRST_FORMAT is the format initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. FIRST_IDX and LAST_IDX are the extents of the data and DELTA is the NUMBER of indices to skip for each index.
   SUBROUTINE WRITE_STRING_VECTOR_LINTG(ID,FIRST_IDX,DELTA,LAST_IDX,NUMBER_FIRST,NUMBER_REPEAT,VECTOR,FIRST_FORMAT,REPEAT_FORMAT, &
     & ERR,ERROR,*)
 
-    !#### Generic-Subroutine: WRITE_STRING_VECTOR_LINTG
-    !###  Description:
-    !###    Writes the given integer VECTOR to the given output stream specified by ID. The FIRST_FORMAT is the format initially
-    !###    used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data
-    !###    items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. FIRST_IDX and LAST_IDX
-    !###    are the extents of the data and DELTA is the NUMBER of indicies to skip for each index.
-    !###  Parent-subroutines: WRITE_STRING_VECTOR
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID,FIRST_IDX,DELTA,LAST_IDX,NUMBER_FIRST,NUMBER_REPEAT
-    INTEGER(LINTG), INTENT(IN) :: VECTOR(:)
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT,REPEAT_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    INTEGER(INTG), INTENT(IN) :: FIRST_IDX !<The first index of the vector to output
+    INTEGER(INTG), INTENT(IN) :: DELTA !<The delta increment to be used when outputing the first through to the last vector index
+    INTEGER(INTG), INTENT(IN) :: LAST_IDX !<The last index of the vector to output
+    INTEGER(INTG), INTENT(IN) :: NUMBER_FIRST !<The number of vector elements to be output on the first line
+    INTEGER(INTG), INTENT(IN) :: NUMBER_REPEAT !<The number of vector elements to be output on the second and subsequently repeated lines
+    INTEGER(LINTG), INTENT(IN) :: VECTOR(:) !<The vector to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used for the first line of output
+    CHARACTER(LEN=*), INTENT(IN) :: REPEAT_FORMAT !<The format type to be used for the second and subsequently repeated lines of output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) ::  current,final,count
 
@@ -3906,24 +3330,23 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Writes the given logical VECTOR to the given output stream specified by ID. The FIRST_FORMAT is the format initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. FIRST_IDX and LAST_IDX are the extents of the data and DELTA is the NUMBER of indices to skip for each index.
   SUBROUTINE WRITE_STRING_VECTOR_L(ID,FIRST_IDX,DELTA,LAST_IDX,NUMBER_FIRST,NUMBER_REPEAT,VECTOR,FIRST_FORMAT,REPEAT_FORMAT, &
     & ERR,ERROR,*)
 
-    !#### Generic-Subroutine: WRITE_STRING_VECTOR_L
-    !###  Description:
-    !###    Writes the given logical VECTOR to the given output stream specified by ID. The FIRST_FORMAT is the format initially
-    !###    used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data
-    !###    items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. FIRST_IDX and LAST_IDX
-    !###    are the extents of the data and DELTA is the NUMBER of indicies to skip for each index.
-    !###  Parent-subroutines: WRITE_STRING_VECTOR
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID,FIRST_IDX,DELTA,LAST_IDX,NUMBER_FIRST,NUMBER_REPEAT
-    LOGICAL, INTENT(IN) :: VECTOR(:)
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT,REPEAT_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    INTEGER(INTG), INTENT(IN) :: FIRST_IDX !<The first index of the vector to output
+    INTEGER(INTG), INTENT(IN) :: DELTA !<The delta increment to be used when outputing the first through to the last vector index
+    INTEGER(INTG), INTENT(IN) :: LAST_IDX !<The last index of the vector to output
+    INTEGER(INTG), INTENT(IN) :: NUMBER_FIRST !<The number of vector elements to be output on the first line
+    INTEGER(INTG), INTENT(IN) :: NUMBER_REPEAT !<The number of vector elements to be output on the second and subsequently repeated lines
+    LOGICAL, INTENT(IN) :: VECTOR(:) !<The vector to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used for the first line of output
+    CHARACTER(LEN=*), INTENT(IN) :: REPEAT_FORMAT !<The format type to be used for the second and subsequently repeated lines of output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) ::  current,final,count
 
@@ -3952,24 +3375,23 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Writes the given single precision VECTOR to the given output stream specified by ID. The FIRST_FORMAT is the format initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. FIRST_IDX and LAST_IDX are the extents of the data and DELTA is the NUMBER of indices to skip for each index.
   SUBROUTINE WRITE_STRING_VECTOR_SP(ID,FIRST_IDX,DELTA,LAST_IDX,NUMBER_FIRST,NUMBER_REPEAT,VECTOR,FIRST_FORMAT,REPEAT_FORMAT, &
     & ERR,ERROR,*)
 
-    !#### Generic-Subroutine: WRITE_STRING_VECTOR_SP
-    !###  Description:
-    !###    Writes the given single precision VECTOR to the given output stream specified by ID. The FIRST_FORMAT is the format
-    !###    initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number
-    !###    of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. FIRST_IDX and
-    !###    LAST_IDX are the extents of the data and DELTA is the NUMBER of indicies to skip for each index.
-    !###  Parent-subroutines: WRITE_STRING_VECTOR
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID,FIRST_IDX,DELTA,LAST_IDX,NUMBER_FIRST,NUMBER_REPEAT
-    REAL(SP), INTENT(IN) :: VECTOR(:)
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT,REPEAT_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    INTEGER(INTG), INTENT(IN) :: FIRST_IDX !<The first index of the vector to output
+    INTEGER(INTG), INTENT(IN) :: DELTA !<The delta increment to be used when outputing the first through to the last vector index
+    INTEGER(INTG), INTENT(IN) :: LAST_IDX !<The last index of the vector to output
+    INTEGER(INTG), INTENT(IN) :: NUMBER_FIRST !<The number of vector elements to be output on the first line
+    INTEGER(INTG), INTENT(IN) :: NUMBER_REPEAT !<The number of vector elements to be output on the second and subsequently repeated lines
+    REAL(SP), INTENT(IN) :: VECTOR(:) !<The vector to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used for the first line of output
+    CHARACTER(LEN=*), INTENT(IN) :: REPEAT_FORMAT !<The format type to be used for the second and subsequently repeated lines of output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) ::  current,final,count
 
@@ -3999,51 +3421,35 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !#### Generic-Subroutine: WRITE_STRING_IDX_VECTOR
-  !###  Description:
-  !###    Writes the given indexed VECTOR to the given output stream specified by ID. NUM_INDICIES is the number of indicies and
-  !###    INDICIES(i) contain the indicies of the vector to write. The FIRST_FORMAT is the format initially used, followed by the
-  !###    REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data items in the FIRST_FORMAT
-  !###    and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. DELTA is the number of actual indicies to skip for
-  !###    each index.
-  !###  Child-subroutines: WRITE_STRING_IDX_VECTOR_DP,WRITE_STRING_IDX_VECTOR_INTG,WRITE_STRING_IDX_VECTOR_LINTG,
-  !###    WRITE_STRING_IDX_VECTOR_L,WRITE_STRING_IDX_VECTOR_SP
-
-  !
-  !================================================================================================================================
-  !
-  
-  SUBROUTINE WRITE_STRING_IDX_VECTOR_DP(ID,NUM_INDICIES,INDICIES,DELTA,NUMBER_FIRST,NUMBER_REPEAT,VECTOR,FIRST_FORMAT, &
+  !>Writes the given indexed double precision VECTOR to the given output stream specified by ID. NUM_INDICES is the number of indices and INDICES(i) contain the indices of the vector to write. The FIRST_FORMAT is the format initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. DELTA is the number of actual indices to skip for each index.
+  SUBROUTINE WRITE_STRING_IDX_VECTOR_DP(ID,NUM_INDICES,INDICES,DELTA,NUMBER_FIRST,NUMBER_REPEAT,VECTOR,FIRST_FORMAT, &
     & REPEAT_FORMAT,ERR,ERROR,*)
 
-    !#### Generic-Subroutine: WRITE_STRING_VECTOR_DP
-    !###  Description:
-    !###    Writes the given indexed double precision VECTOR to the given output stream specified by ID. NUM_INDICIES is the
-    !###    number of indicies and INDICIES(i) contain the indicies of the vector to write. The FIRST_FORMAT is the format
-    !###    initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number
-    !###    of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. DELTA is the
-    !###    number of actual indicies to skip for each index.
-    !###  Parent-subroutines: WRITE_STRING_IDX_VECTOR
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID,NUM_INDICIES,INDICIES(NUM_INDICIES),DELTA,NUMBER_FIRST,NUMBER_REPEAT
-    REAL(DP), INTENT(IN) :: VECTOR(:)
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT,REPEAT_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    INTEGER(INTG), INTENT(IN) :: NUM_INDICES !<The number of indices of the vector to output
+    INTEGER(INTG), INTENT(IN) :: INDICES(NUM_INDICES) !<INDICES(i). The i'th index of the vector to output
+    INTEGER(INTG), INTENT(IN) :: DELTA !<The delta increment to be used when outputing the first through to the last vector index
+    INTEGER(INTG), INTENT(IN) :: NUMBER_FIRST !<The number of vector elements to be output on the first line
+    INTEGER(INTG), INTENT(IN) :: NUMBER_REPEAT !<The number of vector elements to be output on the second and subsequently repeated lines
+    REAL(DP), INTENT(IN) :: VECTOR(:) !<The vector to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used for the first line of output
+    CHARACTER(LEN=*), INTENT(IN) :: REPEAT_FORMAT !<The format type to be used for the second and subsequently repeated lines of output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) ::  current,count,number_to_do
 
 !    CALL ENTERS("WRITE_STRING_IDX_VECTOR_DP",ERR,ERROR,*999)
         
-    number_to_do=NUM_INDICIES
-    WRITE(OP_STRING,FMT=FIRST_FORMAT) (VECTOR((INDICIES(count)-1)*DELTA+1),count=1,MIN(NUMBER_FIRST,NUM_INDICIES))
+    number_to_do=NUM_INDICES
+    WRITE(OP_STRING,FMT=FIRST_FORMAT) (VECTOR((INDICES(count)-1)*DELTA+1),count=1,MIN(NUMBER_FIRST,NUM_INDICES))
     CALL WRITE_STR(ID,ERR,ERROR,*999)
-    number_to_do=NUM_INDICIES-NUMBER_FIRST
+    number_to_do=NUM_INDICES-NUMBER_FIRST
     current=NUMBER_FIRST+1
     DO WHILE(number_to_do>0) !more stuff to do
-      WRITE(OP_STRING,FMT=REPEAT_FORMAT) (VECTOR((INDICIES(count)-1)*DELTA+1),count=current,MIN(current+NUMBER_REPEAT-1, &
-        & NUM_INDICIES))
+      WRITE(OP_STRING,FMT=REPEAT_FORMAT) (VECTOR((INDICES(count)-1)*DELTA+1),count=current,MIN(current+NUMBER_REPEAT-1, &
+        & NUM_INDICES))
       CALL WRITE_STR(ID,ERR,ERROR,*999)
       current=current+NUMBER_REPEAT
       number_to_do=number_to_do-NUMBER_REPEAT
@@ -4059,38 +3465,36 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  SUBROUTINE WRITE_STRING_IDX_VECTOR_INTG(ID,NUM_INDICIES,INDICIES,DELTA,NUMBER_FIRST,NUMBER_REPEAT,VECTOR,FIRST_FORMAT, &
+
+  !>Writes the given indexed integer VECTOR to the given output stream specified by ID. NUM_INDICES is the number of indices and INDICES(i) contain the indices of the vector to write. The FIRST_FORMAT is the format initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. DELTA is the number of actual indices to skip for each index.
+  SUBROUTINE WRITE_STRING_IDX_VECTOR_INTG(ID,NUM_INDICES,INDICES,DELTA,NUMBER_FIRST,NUMBER_REPEAT,VECTOR,FIRST_FORMAT, &
     & REPEAT_FORMAT,ERR,ERROR,*)
 
-    !#### Generic-Subroutine: WRITE_STRING_IDX_VECTOR_INTG
-    !###  Description:
-    !###    Writes the given indexed integer VECTOR to the given output stream specified by ID. NUM_INDICIES is the number of
-    !###    indicies and INDICIES(i) contain the indicies of the vector to write. The FIRST_FORMAT is the format initially used,
-    !###    followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data items
-    !###    in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. DELTA is the number of actual
-    !###    indicies to skip for each index.
-    !###  Parent-subroutines: WRITE_STRING_IDX_VECTOR
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID,NUM_INDICIES,INDICIES(NUM_INDICIES),DELTA,NUMBER_FIRST,NUMBER_REPEAT
-    INTEGER(INTG), INTENT(IN) :: VECTOR(:)
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT,REPEAT_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    INTEGER(INTG), INTENT(IN) :: NUM_INDICES !<The number of indices of the vector to output
+    INTEGER(INTG), INTENT(IN) :: INDICES(NUM_INDICES) !<INDICES(i). The i'th index of the vector to output
+    INTEGER(INTG), INTENT(IN) :: DELTA !<The delta increment to be used when outputing the first through to the last vector index
+    INTEGER(INTG), INTENT(IN) :: NUMBER_FIRST !<The number of vector elements to be output on the first line
+    INTEGER(INTG), INTENT(IN) :: NUMBER_REPEAT !<The number of vector elements to be output on the second and subsequently repeated lines
+    INTEGER(INTG), INTENT(IN) :: VECTOR(:) !<The vector to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used for the first line of output
+    CHARACTER(LEN=*), INTENT(IN) :: REPEAT_FORMAT !<The format type to be used for the second and subsequently repeated lines of output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) ::  current,count,number_to_do
 
 !    CALL ENTERS("WRITE_STRING_IDX_VECTOR_INTG",ERR,ERROR,*999)
         
-    number_to_do=NUM_INDICIES
-    WRITE(OP_STRING,FMT=FIRST_FORMAT) (VECTOR((INDICIES(count)-1)*DELTA+1),count=1,MIN(NUMBER_FIRST,NUM_INDICIES))
+    number_to_do=NUM_INDICES
+    WRITE(OP_STRING,FMT=FIRST_FORMAT) (VECTOR((INDICES(count)-1)*DELTA+1),count=1,MIN(NUMBER_FIRST,NUM_INDICES))
     CALL WRITE_STR(ID,ERR,ERROR,*999)
-    number_to_do=NUM_INDICIES-NUMBER_FIRST
+    number_to_do=NUM_INDICES-NUMBER_FIRST
     current=NUMBER_FIRST+1
     DO WHILE(number_to_do>0) !more stuff to do
-      WRITE(OP_STRING,FMT=REPEAT_FORMAT) (VECTOR((INDICIES(count)-1)*DELTA+1),count=current,MIN(current+NUMBER_REPEAT-1, &
-        & NUM_INDICIES))
+      WRITE(OP_STRING,FMT=REPEAT_FORMAT) (VECTOR((INDICES(count)-1)*DELTA+1),count=current,MIN(current+NUMBER_REPEAT-1, &
+        & NUM_INDICES))
       CALL WRITE_STR(ID,ERR,ERROR,*999)
       current=current+NUMBER_REPEAT
       number_to_do=number_to_do-NUMBER_REPEAT
@@ -4106,38 +3510,41 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  SUBROUTINE WRITE_STRING_IDX_VECTOR_LINTG(ID,NUM_INDICIES,INDICIES,DELTA,NUMBER_FIRST,NUMBER_REPEAT,VECTOR,FIRST_FORMAT, &
+
+  !>Writes the given indexed integer VECTOR to the given output stream specified by ID. NUM_INDICES is the number of indices and INDICES(i) contain the indices of the vector to write. The FIRST_FORMAT is the format initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. DELTA is the number of actual indices to skip for each index.
+  SUBROUTINE WRITE_STRING_IDX_VECTOR_LINTG(ID,NUM_INDICES,INDICES,DELTA,NUMBER_FIRST,NUMBER_REPEAT,VECTOR,FIRST_FORMAT, &
     & REPEAT_FORMAT,ERR,ERROR,*)
 
     !#### Generic-Subroutine: WRITE_STRING_IDX_VECTOR_LINTG
     !###  Description:
-    !###    Writes the given indexed integer VECTOR to the given output stream specified by ID. NUM_INDICIES is the number of
-    !###    indicies and INDICIES(i) contain the indicies of the vector to write. The FIRST_FORMAT is the format initially used,
-    !###    followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data items
-    !###    in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. DELTA is the number of actual
-    !###    indicies to skip for each index.
+    !###    
     !###  Parent-subroutines: WRITE_STRING_IDX_VECTOR
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID,NUM_INDICIES,INDICIES(NUM_INDICIES),DELTA,NUMBER_FIRST,NUMBER_REPEAT
-    INTEGER(LINTG), INTENT(IN) :: VECTOR(:)
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT,REPEAT_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    INTEGER(INTG), INTENT(IN) :: NUM_INDICES !<The number of indices of the vector to output
+    INTEGER(INTG), INTENT(IN) :: INDICES(NUM_INDICES) !<INDICES(i). The i'th index of the vector to output
+    INTEGER(INTG), INTENT(IN) :: DELTA !<The delta increment to be used when outputing the first through to the last vector index
+    INTEGER(INTG), INTENT(IN) :: NUMBER_FIRST !<The number of vector elements to be output on the first line
+    INTEGER(INTG), INTENT(IN) :: NUMBER_REPEAT !<The number of vector elements to be output on the second and subsequently repeated lines
+    INTEGER(LINTG), INTENT(IN) :: VECTOR(:) !<The vector to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used for the first line of output
+    CHARACTER(LEN=*), INTENT(IN) :: REPEAT_FORMAT !<The format type to be used for the second and subsequently repeated lines of output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) ::  current,count,number_to_do
 
 !    CALL ENTERS("WRITE_STRING_IDX_VECTOR_LINTG",ERR,ERROR,*999)
         
-    number_to_do=NUM_INDICIES
-    WRITE(OP_STRING,FMT=FIRST_FORMAT) (VECTOR((INDICIES(count)-1)*DELTA+1),count=1,MIN(NUMBER_FIRST,NUM_INDICIES))
+    number_to_do=NUM_INDICES
+    WRITE(OP_STRING,FMT=FIRST_FORMAT) (VECTOR((INDICES(count)-1)*DELTA+1),count=1,MIN(NUMBER_FIRST,NUM_INDICES))
     CALL WRITE_STR(ID,ERR,ERROR,*999)
-    number_to_do=NUM_INDICIES-NUMBER_FIRST
+    number_to_do=NUM_INDICES-NUMBER_FIRST
     current=NUMBER_FIRST+1
     DO WHILE(number_to_do>0) !more stuff to do
-      WRITE(OP_STRING,FMT=REPEAT_FORMAT) (VECTOR((INDICIES(count)-1)*DELTA+1),count=current,MIN(current+NUMBER_REPEAT-1, &
-        & NUM_INDICIES))
+      WRITE(OP_STRING,FMT=REPEAT_FORMAT) (VECTOR((INDICES(count)-1)*DELTA+1),count=current,MIN(current+NUMBER_REPEAT-1, &
+        & NUM_INDICES))
       CALL WRITE_STR(ID,ERR,ERROR,*999)
       current=current+NUMBER_REPEAT
       number_to_do=number_to_do-NUMBER_REPEAT
@@ -4153,38 +3560,36 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  SUBROUTINE WRITE_STRING_IDX_VECTOR_L(ID,NUM_INDICIES,INDICIES,DELTA,NUMBER_FIRST,NUMBER_REPEAT,VECTOR,FIRST_FORMAT, &
+
+  !>Writes the given indexed logical VECTOR to the given output stream specified by ID. NUM_INDICES is the number of indices and INDICES(i) contain the indices of the vector to write. The FIRST_FORMAT is the format initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. DELTA is the number of actual indices to skip for each index.
+  SUBROUTINE WRITE_STRING_IDX_VECTOR_L(ID,NUM_INDICES,INDICES,DELTA,NUMBER_FIRST,NUMBER_REPEAT,VECTOR,FIRST_FORMAT, &
     & REPEAT_FORMAT,ERR,ERROR,*)
 
-    !#### Generic-Subroutine: WRITE_STRING_VECTOR_L
-    !###  Description:
-    !###    Writes the given indexed logical VECTOR to the given output stream specified by ID. NUM_INDICIES is the number of
-    !###    indicies and INDICIES(i) contain the indicies of the vector to write. The FIRST_FORMAT is the format initially used,
-    !###    followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data items
-    !###    in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. DELTA is the number of actual
-    !###    indicies to skip for each index.
-    !###  Parent-subroutines: WRITE_STRING_IDX_VECTOR
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID,NUM_INDICIES,INDICIES(NUM_INDICIES),DELTA,NUMBER_FIRST,NUMBER_REPEAT
-    LOGICAL, INTENT(IN) :: VECTOR(:)
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT,REPEAT_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    INTEGER(INTG), INTENT(IN) :: NUM_INDICES !<The number of indices of the vector to output
+    INTEGER(INTG), INTENT(IN) :: INDICES(NUM_INDICES) !<INDICES(i). The i'th index of the vector to output
+    INTEGER(INTG), INTENT(IN) :: DELTA !<The delta increment to be used when outputing the first through to the last vector index
+    INTEGER(INTG), INTENT(IN) :: NUMBER_FIRST !<The number of vector elements to be output on the first line
+    INTEGER(INTG), INTENT(IN) :: NUMBER_REPEAT !<The number of vector elements to be output on the second and subsequently repeated lines
+    LOGICAL, INTENT(IN) :: VECTOR(:) !<The vector to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used for the first line of output
+    CHARACTER(LEN=*), INTENT(IN) :: REPEAT_FORMAT !<The format type to be used for the second and subsequently repeated lines of output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) ::  current,count,number_to_do
 
 !    CALL ENTERS("WRITE_STRING_IDX_VECTOR_L",ERR,ERROR,*999)
         
-    number_to_do=NUM_INDICIES
-    WRITE(OP_STRING,FMT=FIRST_FORMAT) (VECTOR((INDICIES(count)-1)*DELTA+1),count=1,MIN(NUMBER_FIRST,NUM_INDICIES))
+    number_to_do=NUM_INDICES
+    WRITE(OP_STRING,FMT=FIRST_FORMAT) (VECTOR((INDICES(count)-1)*DELTA+1),count=1,MIN(NUMBER_FIRST,NUM_INDICES))
     CALL WRITE_STR(ID,ERR,ERROR,*999)
-    number_to_do=NUM_INDICIES-NUMBER_FIRST
+    number_to_do=NUM_INDICES-NUMBER_FIRST
     current=NUMBER_FIRST+1
     DO WHILE(number_to_do>0) !more stuff to do
-      WRITE(OP_STRING,FMT=REPEAT_FORMAT) (VECTOR((INDICIES(count)-1)*DELTA+1),count=current,MIN(current+NUMBER_REPEAT-1, &
-        & NUM_INDICIES))
+      WRITE(OP_STRING,FMT=REPEAT_FORMAT) (VECTOR((INDICES(count)-1)*DELTA+1),count=current,MIN(current+NUMBER_REPEAT-1, &
+        & NUM_INDICES))
       CALL WRITE_STR(ID,ERR,ERROR,*999)
       current=current+NUMBER_REPEAT
       number_to_do=number_to_do-NUMBER_REPEAT
@@ -4200,38 +3605,36 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  SUBROUTINE WRITE_STRING_IDX_VECTOR_SP(ID,NUM_INDICIES,INDICIES,DELTA,NUMBER_FIRST,NUMBER_REPEAT,VECTOR,FIRST_FORMAT, &
+
+  !>Writes the given indexed single precision VECTOR to the given output stream specified by ID. NUM_INDICES is the number of indices and INDICES(i) contain the indices of the vector to write. The FIRST_FORMAT is the format initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. DELTA is the number of actual indices to skip for each index.
+  SUBROUTINE WRITE_STRING_IDX_VECTOR_SP(ID,NUM_INDICES,INDICES,DELTA,NUMBER_FIRST,NUMBER_REPEAT,VECTOR,FIRST_FORMAT, &
     & REPEAT_FORMAT,ERR,ERROR,*)
 
-    !#### Generic-Subroutine: WRITE_STRING_VECTOR_SP
-    !###  Description:
-    !###    Writes the given indexed single precision VECTOR to the given output stream specified by ID. NUM_INDICIES is the
-    !###    number of indicies and INDICIES(i) contain the indicies of the vector to write. The FIRST_FORMAT is the format
-    !###    initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number
-    !###    of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. DELTA is the
-    !###    number of actual indicies to skip for each index.
-    !###  Parent-subroutines: WRITE_STRING_IDX_VECTOR
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID,NUM_INDICIES,INDICIES(NUM_INDICIES),DELTA,NUMBER_FIRST,NUMBER_REPEAT
-    REAL(SP), INTENT(IN) :: VECTOR(:)
-    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT,REPEAT_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    INTEGER(INTG), INTENT(IN) :: NUM_INDICES !<The number of indices of the vector to output
+    INTEGER(INTG), INTENT(IN) :: INDICES(NUM_INDICES) !<INDICES(i). The i'th index of the vector to output
+    INTEGER(INTG), INTENT(IN) :: DELTA !<The delta increment to be used when outputing the first through to the last vector index
+    INTEGER(INTG), INTENT(IN) :: NUMBER_FIRST !<The number of vector elements to be output on the first line
+    INTEGER(INTG), INTENT(IN) :: NUMBER_REPEAT !<The number of vector elements to be output on the second and subsequently repeated lines
+    REAL(SP), INTENT(IN) :: VECTOR(:) !<The vector to be output
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used for the first line of output
+    CHARACTER(LEN=*), INTENT(IN) :: REPEAT_FORMAT !<The format type to be used for the second and subsequently repeated lines of output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) ::  current,count,number_to_do
 
 !    CALL ENTERS("WRITE_STRING_IDX_VECTOR_SP",ERR,ERROR,*999)
         
-    number_to_do=NUM_INDICIES
-    WRITE(OP_STRING,FMT=FIRST_FORMAT) (VECTOR((INDICIES(count)-1)*DELTA+1),count=1,MIN(NUMBER_FIRST,NUM_INDICIES))
+    number_to_do=NUM_INDICES
+    WRITE(OP_STRING,FMT=FIRST_FORMAT) (VECTOR((INDICES(count)-1)*DELTA+1),count=1,MIN(NUMBER_FIRST,NUM_INDICES))
     CALL WRITE_STR(ID,ERR,ERROR,*999)
-    number_to_do=NUM_INDICIES-NUMBER_FIRST
+    number_to_do=NUM_INDICES-NUMBER_FIRST
     current=NUMBER_FIRST+1
     DO WHILE(number_to_do>0) !more stuff to do
-      WRITE(OP_STRING,FMT=REPEAT_FORMAT) (VECTOR((INDICIES(count)-1)*DELTA+1),count=current,MIN(current+NUMBER_REPEAT-1, &
-        & NUM_INDICIES))
+      WRITE(OP_STRING,FMT=REPEAT_FORMAT) (VECTOR((INDICES(count)-1)*DELTA+1),count=current,MIN(current+NUMBER_REPEAT-1, &
+        & NUM_INDICES))
       CALL WRITE_STR(ID,ERR,ERROR,*999)
       current=current+NUMBER_REPEAT
       number_to_do=number_to_do-NUMBER_REPEAT
@@ -4248,48 +3651,28 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !#### Generic-Subroutine: WRITE_STRING_MATRIX
-  !###  Description:
-  !###    Writes the given  MATRIX to the given output stream specified by ID. The basic output is determined
-  !###    by the flag INDEX_FORMAT_TYPE. If INDEX_FORMAT_TYPE is WRITE_STRING_MATRIX_NAME_ONLY then the first line of output
-  !###    for each row is MATRIX_NAME_FORMAT concatenated named with the FIRST_FORMAT. If INDEX_FORMAT_TYPE is
-  !###    WRITE_STRING_MATRIX_NAME_AND_INDICIES then the first line of output for each row is MATRIX_NAME_FORMAT concatenated
-  !###    with ROW_INDEX_FORMAT and concatenated with FIRST_FORMAT. Note that with a WRITE_STRING_MATRIX_NAME_AND_INDICIES index
-  !###    format type the row number will be supplied to the format before the matrix data. The FIRST_FORMAT is the format
-  !###    initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the
-  !###    number of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT.
-  !###    FIRST_ROW/FIRST_COLUMN and LAST_ROW/LAST_COLUMN are the extents of the row/column and DELTA_ROW/DELTA_COLUMN is the
-  !###  Child-subroutines: WRITE_STRING_MATRIX_DP,WRITE_STRING_MATRIX_INTG,WRITE_STRING_MATRIX_LINTG,WRITE_STRING_MATRIX_L,
-  !###    WRITE_STRING_MATRIX_SP
-
-  !
-  !================================================================================================================================
-  !
-  
+  !>Writes the given double precision MATRIX to the given output stream specified by ID. The basic output is determined by the flag INDEX_FORMAT_TYPE. If INDEX_FORMAT_TYPE is WRITE_STRING_MATRIX_NAME_ONLY then the first line of output for each row is MATRIX_NAME_FORMAT concatenated named with the FIRST_FORMAT. If INDEX_FORMAT_TYPE is WRITE_STRING_MATRIX_NAME_AND_INDICES then the first line of output for each row is MATRIX_NAME_FORMAT concatenated with ROW_INDEX_FORMAT and concatenated with FIRST_FORMAT. Note that with a WRITE_STRING_MATRIX_NAME_AND_INDICES index format type the row number will be supplied to the format before the matrix data. The FIRST_FORMAT is the format initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. FIRST_ROW/FIRST_COLUMN and LAST_ROW/LAST_COLUMN are the extents of the row/column and DELTA_ROW/DELTA_COLUMN is the NUMBER of indices to skip for each row/column index.
   SUBROUTINE WRITE_STRING_MATRIX_DP(ID,FIRST_ROW,DELTA_ROW,LAST_ROW,FIRST_COLUMN,DELTA_COLUMN,LAST_COLUMN,NUMBER_FIRST, &
     & NUMBER_REPEAT,MATRIX,INDEX_FORMAT_TYPE,MATRIX_NAME_FORMAT,ROW_INDEX_FORMAT,FIRST_FORMAT,REPEAT_FORMAT,ERR,ERROR,*)
 
-    !#### Generic-Subroutine: WRITE_STRING_MATRIX_DP
-    !###  Description:
-    !###    Writes the given double precision MATRIX to the given output stream specified by ID. The basic output is determined
-    !###    by the flag INDEX_FORMAT_TYPE. If INDEX_FORMAT_TYPE is WRITE_STRING_MATRIX_NAME_ONLY then the first line of output
-    !###    for each row is MATRIX_NAME_FORMAT concatenated named with the FIRST_FORMAT. If INDEX_FORMAT_TYPE is
-    !###    WRITE_STRING_MATRIX_NAME_AND_INDICIES then the first line of output for each row is MATRIX_NAME_FORMAT concatenated
-    !###    with ROW_INDEX_FORMAT and concatenated with FIRST_FORMAT. Note that with a WRITE_STRING_MATRIX_NAME_AND_INDICIES index
-    !###    format type the row number will be supplied to the format before the matrix data. The FIRST_FORMAT is the format
-    !###    initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the
-    !###    number of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT.
-    !###    FIRST_ROW/FIRST_COLUMN and LAST_ROW/LAST_COLUMN are the extents of the row/column and DELTA_ROW/DELTA_COLUMN is the
-    !###    NUMBER of indicies to skip for each row/column index.
-    !###  Parent-subroutines: WRITE_STRING_MATRIX
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID,FIRST_ROW,DELTA_ROW,LAST_ROW,FIRST_COLUMN,DELTA_COLUMN,LAST_COLUMN,NUMBER_FIRST,NUMBER_REPEAT
-    REAL(DP), INTENT(IN) :: MATRIX(:,:)
-    INTEGER(INTG), INTENT(IN) :: INDEX_FORMAT_TYPE
-    CHARACTER(LEN=*), INTENT(IN) :: MATRIX_NAME_FORMAT,ROW_INDEX_FORMAT,FIRST_FORMAT,REPEAT_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    INTEGER(INTG), INTENT(IN) :: FIRST_ROW !<The first row of the matrix to be output
+    INTEGER(INTG), INTENT(IN) :: DELTA_ROW !<The delta row increment to be used when outputing the first through to the last matrix row
+    INTEGER(INTG), INTENT(IN) :: LAST_ROW !<The last row of the matrix to be output
+    INTEGER(INTG), INTENT(IN) :: FIRST_COLUMN !<The first column of the matrix to be output
+    INTEGER(INTG), INTENT(IN) :: DELTA_COLUMN !<The delta column increate to be used when outputing the first through to the last matrix column
+    INTEGER(INTG), INTENT(IN) :: LAST_COLUMN !<The last column of the matrix to be output
+    INTEGER(INTG), INTENT(IN) :: NUMBER_FIRST !<The number of matrix elements to be output on the first line
+    INTEGER(INTG), INTENT(IN) :: NUMBER_REPEAT !<The number of matrix elements to be output on the second and subsequently repeated lines
+    REAL(DP), INTENT(IN) :: MATRIX(:,:) !<The matrix to be output
+    INTEGER(INTG), INTENT(IN) :: INDEX_FORMAT_TYPE !<The format type to be used for the matrix name and indices \see INPUT_OUTPUT_MatrixNameIndexFormat,INPUT_OUTPUT::MatrixNameIndexFormat
+    CHARACTER(LEN=*), INTENT(IN) :: MATRIX_NAME_FORMAT !<The format string to be used to format the matrix name
+    CHARACTER(LEN=*), INTENT(IN) :: ROW_INDEX_FORMAT !<The format string to be used to format the row indices
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used for the first line of output
+    CHARACTER(LEN=*), INTENT(IN) :: REPEAT_FORMAT !<The format type to be used for the second and subsequently repeated lines of output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) ::  current_row,current_column,final_column,count
     CHARACTER(LEN=MAXSTRLEN) :: FORMAT_STR
@@ -4298,7 +3681,7 @@ CONTAINS
 
     IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_ONLY) THEN
       FORMAT_STR=MATRIX_NAME_FORMAT//FIRST_FORMAT
-    ELSE IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_AND_INDICIES) THEN
+    ELSE IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_AND_INDICES) THEN
       FORMAT_STR=MATRIX_NAME_FORMAT//ROW_INDEX_FORMAT//FIRST_FORMAT
     ELSE
       CALL FLAG_ERROR("Invalid index format type",ERR,ERROR,*999)
@@ -4309,7 +3692,7 @@ CONTAINS
       IF(final_column>LAST_COLUMN) final_column=LAST_COLUMN
       IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_ONLY) THEN
         WRITE(OP_STRING,FMT=FORMAT_STR) (MATRIX(current_row,count),count=current_column,final_column,DELTA_COLUMN)
-      ELSE IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_AND_INDICIES) THEN
+      ELSE IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_AND_INDICES) THEN
         WRITE(OP_STRING,FMT=FORMAT_STR) current_row,(MATRIX(current_row,count),count=current_column,final_column,DELTA_COLUMN)
       ENDIF
       CALL WRITE_STR(ID,ERR,ERROR,*999)
@@ -4332,31 +3715,34 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Writes the given integer MATRIX to the given output stream specified by ID. The basic output is determined by the flag INDEX_FORMAT_TYPE. If INDEX_FORMAT_TYPE is WRITE_STRING_MATRIX_NAME_ONLY then the first line of output for each row is MATRIX_NAME_FORMAT concatenated named with the FIRST_FORMAT. If INDEX_FORMAT_TYPE is WRITE_STRING_MATRIX_NAME_AND_INDICES then the first line of output for each row is MATRIX_NAME_FORMAT concatenated with ROW_INDEX_FORMAT and concatenated with FIRST_FORMAT. Note that with a WRITE_STRING_MATRIX_NAME_AND_INDICES index format type the row number will be supplied to the format before the matrix data. The FIRST_FORMAT is the format initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. FIRST_ROW/FIRST_COLUMN and LAST_ROW/LAST_COLUMN are the extents of the row/column and DELTA_ROW/DELTA_COLUMN is the NUMBER of indices to skip for each row/column index.
   SUBROUTINE WRITE_STRING_MATRIX_INTG(ID,FIRST_ROW,DELTA_ROW,LAST_ROW,FIRST_COLUMN,DELTA_COLUMN,LAST_COLUMN,NUMBER_FIRST, &
     & NUMBER_REPEAT,MATRIX,INDEX_FORMAT_TYPE,MATRIX_NAME_FORMAT,ROW_INDEX_FORMAT,FIRST_FORMAT,REPEAT_FORMAT,ERR,ERROR,*)
 
     !#### Generic-Subroutine: WRITE_STRING_MATRIX_INTG
     !###  Description:
-    !###    Writes the given integer MATRIX to the given output stream specified by ID. The basic output is determined
-    !###    by the flag INDEX_FORMAT_TYPE. If INDEX_FORMAT_TYPE is WRITE_STRING_MATRIX_NAME_ONLY then the first line of output
-    !###    for each row is MATRIX_NAME_FORMAT concatenated named with the FIRST_FORMAT. If INDEX_FORMAT_TYPE is
-    !###    WRITE_STRING_MATRIX_NAME_AND_INDICIES then the first line of output for each row is MATRIX_NAME_FORMAT concatenated
-    !###    with ROW_INDEX_FORMAT and concatenated with FIRST_FORMAT. Note that with a WRITE_STRING_MATRIX_NAME_AND_INDICIES index
-    !###    format type the row number will be supplied to the format before the matrix data. The FIRST_FORMAT is the format
-    !###    initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the
-    !###    number of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT.
-    !###    FIRST_ROW/FIRST_COLUMN and LAST_ROW/LAST_COLUMN are the extents of the row/column and DELTA_ROW/DELTA_COLUMN is the
-    !###    NUMBER of indicies to skip for each row/column index.
+    !###    
     !###  Parent-subroutines: WRITE_STRING_MATRIX
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID,FIRST_ROW,DELTA_ROW,LAST_ROW,FIRST_COLUMN,DELTA_COLUMN,LAST_COLUMN,NUMBER_FIRST,NUMBER_REPEAT
-    INTEGER(INTG), INTENT(IN) :: MATRIX(:,:)
-    INTEGER(INTG), INTENT(IN) :: INDEX_FORMAT_TYPE
-    CHARACTER(LEN=*), INTENT(IN) :: MATRIX_NAME_FORMAT,ROW_INDEX_FORMAT,FIRST_FORMAT,REPEAT_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    INTEGER(INTG), INTENT(IN) :: FIRST_ROW !<The first row of the matrix to be output
+    INTEGER(INTG), INTENT(IN) :: DELTA_ROW !<The delta row increment to be used when outputing the first through to the last matrix row
+    INTEGER(INTG), INTENT(IN) :: LAST_ROW !<The last row of the matrix to be output
+    INTEGER(INTG), INTENT(IN) :: FIRST_COLUMN !<The first column of the matrix to be output
+    INTEGER(INTG), INTENT(IN) :: DELTA_COLUMN !<The delta column increate to be used when outputing the first through to the last matrix column
+    INTEGER(INTG), INTENT(IN) :: LAST_COLUMN !<The last column of the matrix to be output
+    INTEGER(INTG), INTENT(IN) :: NUMBER_FIRST !<The number of matrix elements to be output on the first line
+    INTEGER(INTG), INTENT(IN) :: NUMBER_REPEAT !<The number of matrix elements to be output on the second and subsequently repeated lines
+    INTEGER(INTG), INTENT(IN) :: MATRIX(:,:) !<The matrix to be output
+    INTEGER(INTG), INTENT(IN) :: INDEX_FORMAT_TYPE !<The format type to be used for the matrix name and indices \see INPUT_OUTPUT_MatrixNameIndexFormat,INPUT_OUTPUT::MatrixNameIndexFormat
+    CHARACTER(LEN=*), INTENT(IN) :: MATRIX_NAME_FORMAT !<The format string to be used to format the matrix name
+    CHARACTER(LEN=*), INTENT(IN) :: ROW_INDEX_FORMAT !<The format string to be used to format the row indices
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used for the first line of output
+    CHARACTER(LEN=*), INTENT(IN) :: REPEAT_FORMAT !<The format type to be used for the second and subsequently repeated lines of output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) ::  current_row,current_column,final_column,count
     CHARACTER(LEN=MAXSTRLEN) :: FORMAT_STR
@@ -4365,7 +3751,7 @@ CONTAINS
 
     IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_ONLY) THEN
       FORMAT_STR=MATRIX_NAME_FORMAT//FIRST_FORMAT
-    ELSE IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_AND_INDICIES) THEN
+    ELSE IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_AND_INDICES) THEN
       FORMAT_STR=MATRIX_NAME_FORMAT//ROW_INDEX_FORMAT//FIRST_FORMAT
     ELSE
       CALL FLAG_ERROR("Invalid index format type",ERR,ERROR,*999)
@@ -4376,7 +3762,7 @@ CONTAINS
       IF(final_column>LAST_COLUMN) final_column=LAST_COLUMN
       IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_ONLY) THEN
         WRITE(OP_STRING,FMT=FORMAT_STR) (MATRIX(current_row,count),count=current_column,final_column,DELTA_COLUMN)
-      ELSE IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_AND_INDICIES) THEN
+      ELSE IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_AND_INDICES) THEN
         WRITE(OP_STRING,FMT=FORMAT_STR) current_row,(MATRIX(current_row,count),count=current_column,final_column,DELTA_COLUMN)
       ENDIF
       CALL WRITE_STR(ID,ERR,ERROR,*999)
@@ -4399,31 +3785,31 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Writes the given long integer MATRIX to the given output stream specified by ID. The basic output is determined by the flag INDEX_FORMAT_TYPE. If INDEX_FORMAT_TYPE is WRITE_STRING_MATRIX_NAME_ONLY then the first line of output for each row is MATRIX_NAME_FORMAT concatenated named with the FIRST_FORMAT. If INDEX_FORMAT_TYPE is WRITE_STRING_MATRIX_NAME_AND_INDICES then the first line of output for each row is MATRIX_NAME_FORMAT concatenated with ROW_INDEX_FORMAT and concatenated with FIRST_FORMAT. Note that with a WRITE_STRING_MATRIX_NAME_AND_INDICES index format type the row number will be supplied to the format before the matrix data. The FIRST_FORMAT is the format initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. FIRST_ROW/FIRST_COLUMN and LAST_ROW/LAST_COLUMN are the extents of the row/column and DELTA_ROW/DELTA_COLUMN is the NUMBER of indices to skip for each row/column index.
+
+  !>Writes the given long integer MATRIX to the given output stream specified by ID. The basic output is determined by the flag INDEX_FORMAT_TYPE. If INDEX_FORMAT_TYPE is WRITE_STRING_MATRIX_NAME_ONLY then the first line of output for each row is MATRIX_NAME_FORMAT concatenated named with the FIRST_FORMAT. If INDEX_FORMAT_TYPE is WRITE_STRING_MATRIX_NAME_AND_INDICES then the first line of output for each row is MATRIX_NAME_FORMAT concatenated with ROW_INDEX_FORMAT and concatenated with FIRST_FORMAT. Note that with a WRITE_STRING_MATRIX_NAME_AND_INDICES index format type the row number will be supplied to the format before the matrix data. The FIRST_FORMAT is the format initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. FIRST_ROW/FIRST_COLUMN and LAST_ROW/LAST_COLUMN are the extents of the row/column and DELTA_ROW/DELTA_COLUMN is the NUMBER of indices to skip for each row/column index.
   SUBROUTINE WRITE_STRING_MATRIX_LINTG(ID,FIRST_ROW,DELTA_ROW,LAST_ROW,FIRST_COLUMN,DELTA_COLUMN,LAST_COLUMN,NUMBER_FIRST, &
     & NUMBER_REPEAT,MATRIX,INDEX_FORMAT_TYPE,MATRIX_NAME_FORMAT,ROW_INDEX_FORMAT,FIRST_FORMAT,REPEAT_FORMAT,ERR,ERROR,*)
 
-    !#### Generic-Subroutine: WRITE_STRING_MATRIX_LINTG
-    !###  Description:
-    !###    Writes the given long integer MATRIX to the given output stream specified by ID. The basic output is determined
-    !###    by the flag INDEX_FORMAT_TYPE. If INDEX_FORMAT_TYPE is WRITE_STRING_MATRIX_NAME_ONLY then the first line of output
-    !###    for each row is MATRIX_NAME_FORMAT concatenated named with the FIRST_FORMAT. If INDEX_FORMAT_TYPE is
-    !###    WRITE_STRING_MATRIX_NAME_AND_INDICIES then the first line of output for each row is MATRIX_NAME_FORMAT concatenated
-    !###    with ROW_INDEX_FORMAT and concatenated with FIRST_FORMAT. Note that with a WRITE_STRING_MATRIX_NAME_AND_INDICIES index
-    !###    format type the row number will be supplied to the format before the matrix data. The FIRST_FORMAT is the format
-    !###    initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the
-    !###    number of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT.
-    !###    FIRST_ROW/FIRST_COLUMN and LAST_ROW/LAST_COLUMN are the extents of the row/column and DELTA_ROW/DELTA_COLUMN is the
-    !###    NUMBER of indicies to skip for each row/column index.
-    !###  Parent-subroutines: WRITE_STRING_MATRIX
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID,FIRST_ROW,DELTA_ROW,LAST_ROW,FIRST_COLUMN,DELTA_COLUMN,LAST_COLUMN,NUMBER_FIRST,NUMBER_REPEAT
-    INTEGER(LINTG), INTENT(IN) :: MATRIX(:,:)
-    INTEGER(INTG), INTENT(IN) :: INDEX_FORMAT_TYPE
-    CHARACTER(LEN=*), INTENT(IN) :: MATRIX_NAME_FORMAT,ROW_INDEX_FORMAT,FIRST_FORMAT,REPEAT_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    INTEGER(INTG), INTENT(IN) :: FIRST_ROW !<The first row of the matrix to be output
+    INTEGER(INTG), INTENT(IN) :: DELTA_ROW !<The delta row increment to be used when outputing the first through to the last matrix row
+    INTEGER(INTG), INTENT(IN) :: LAST_ROW !<The last row of the matrix to be output
+    INTEGER(INTG), INTENT(IN) :: FIRST_COLUMN !<The first column of the matrix to be output
+    INTEGER(INTG), INTENT(IN) :: DELTA_COLUMN !<The delta column increate to be used when outputing the first through to the last matrix column
+    INTEGER(INTG), INTENT(IN) :: LAST_COLUMN !<The last column of the matrix to be output
+    INTEGER(INTG), INTENT(IN) :: NUMBER_FIRST !<The number of matrix elements to be output on the first line
+    INTEGER(INTG), INTENT(IN) :: NUMBER_REPEAT !<The number of matrix elements to be output on the second and subsequently repeated lines
+    INTEGER(LINTG), INTENT(IN) :: MATRIX(:,:) !<The matrix to be output
+    INTEGER(INTG), INTENT(IN) :: INDEX_FORMAT_TYPE !<The format type to be used for the matrix name and indices \see INPUT_OUTPUT_MatrixNameIndexFormat,INPUT_OUTPUT::MatrixNameIndexFormat
+    CHARACTER(LEN=*), INTENT(IN) :: MATRIX_NAME_FORMAT !<The format string to be used to format the matrix name
+    CHARACTER(LEN=*), INTENT(IN) :: ROW_INDEX_FORMAT !<The format string to be used to format the row indices
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used for the first line of output
+    CHARACTER(LEN=*), INTENT(IN) :: REPEAT_FORMAT !<The format type to be used for the second and subsequently repeated lines of output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) ::  current_row,current_column,final_column,count
     CHARACTER(LEN=MAXSTRLEN) :: FORMAT_STR
@@ -4432,7 +3818,7 @@ CONTAINS
 
     IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_ONLY) THEN
       FORMAT_STR=MATRIX_NAME_FORMAT//FIRST_FORMAT
-    ELSE IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_AND_INDICIES) THEN
+    ELSE IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_AND_INDICES) THEN
       FORMAT_STR=MATRIX_NAME_FORMAT//ROW_INDEX_FORMAT//FIRST_FORMAT
     ELSE
       CALL FLAG_ERROR("Invalid index format type",ERR,ERROR,*999)
@@ -4443,7 +3829,7 @@ CONTAINS
       IF(final_column>LAST_COLUMN) final_column=LAST_COLUMN
       IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_ONLY) THEN
         WRITE(OP_STRING,FMT=FORMAT_STR) (MATRIX(current_row,count),count=current_column,final_column,DELTA_COLUMN)
-      ELSE IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_AND_INDICIES) THEN
+      ELSE IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_AND_INDICES) THEN
         WRITE(OP_STRING,FMT=FORMAT_STR) current_row,(MATRIX(current_row,count),count=current_column,final_column,DELTA_COLUMN)
       ENDIF
       CALL WRITE_STR(ID,ERR,ERROR,*999)
@@ -4466,31 +3852,29 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Writes the given logical MATRIX to the given output stream specified by ID. The basic output is determined by the flag INDEX_FORMAT_TYPE. If INDEX_FORMAT_TYPE is WRITE_STRING_MATRIX_NAME_ONLY then the first line of output for each row is MATRIX_NAME_FORMAT concatenated named with the FIRST_FORMAT. If INDEX_FORMAT_TYPE is WRITE_STRING_MATRIX_NAME_AND_INDICES then the first line of output for each row is MATRIX_NAME_FORMAT concatenated with ROW_INDEX_FORMAT and concatenated with FIRST_FORMAT. Note that with a WRITE_STRING_MATRIX_NAME_AND_INDICES index format type the row number will be supplied to the format before the matrix data. The FIRST_FORMAT is the format initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. FIRST_ROW/FIRST_COLUMN and LAST_ROW/LAST_COLUMN are the extents of the row/column and DELTA_ROW/DELTA_COLUMN is the NUMBER of indices to skip for each row/column index.
   SUBROUTINE WRITE_STRING_MATRIX_L(ID,FIRST_ROW,DELTA_ROW,LAST_ROW,FIRST_COLUMN,DELTA_COLUMN,LAST_COLUMN,NUMBER_FIRST, &
     & NUMBER_REPEAT,MATRIX,INDEX_FORMAT_TYPE,MATRIX_NAME_FORMAT,ROW_INDEX_FORMAT,FIRST_FORMAT,REPEAT_FORMAT,ERR,ERROR,*)
 
-    !#### Generic-Subroutine: WRITE_STRING_MATRIX_L
-    !###  Description:
-    !###    Writes the given logical MATRIX to the given output stream specified by ID. The basic output is determined
-    !###    by the flag INDEX_FORMAT_TYPE. If INDEX_FORMAT_TYPE is WRITE_STRING_MATRIX_NAME_ONLY then the first line of output
-    !###    for each row is MATRIX_NAME_FORMAT concatenated named with the FIRST_FORMAT. If INDEX_FORMAT_TYPE is
-    !###    WRITE_STRING_MATRIX_NAME_AND_INDICIES then the first line of output for each row is MATRIX_NAME_FORMAT concatenated
-    !###    with ROW_INDEX_FORMAT and concatenated with FIRST_FORMAT. Note that with a WRITE_STRING_MATRIX_NAME_AND_INDICIES index
-    !###    format type the row number will be supplied to the format before the matrix data. The FIRST_FORMAT is the format
-    !###    initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the
-    !###    number of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT.
-    !###    FIRST_ROW/FIRST_COLUMN and LAST_ROW/LAST_COLUMN are the extents of the row/column and DELTA_ROW/DELTA_COLUMN is the
-    !###    NUMBER of indicies to skip for each row/column index.
-    !###  Parent-subroutines: WRITE_STRING_MATRIX
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID,FIRST_ROW,DELTA_ROW,LAST_ROW,FIRST_COLUMN,DELTA_COLUMN,LAST_COLUMN,NUMBER_FIRST,NUMBER_REPEAT
-    LOGICAL, INTENT(IN) :: MATRIX(:,:)
-    INTEGER(INTG), INTENT(IN) :: INDEX_FORMAT_TYPE
-    CHARACTER(LEN=*), INTENT(IN) :: MATRIX_NAME_FORMAT,ROW_INDEX_FORMAT,FIRST_FORMAT,REPEAT_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    INTEGER(INTG), INTENT(IN) :: FIRST_ROW !<The first row of the matrix to be output
+    INTEGER(INTG), INTENT(IN) :: DELTA_ROW !<The delta row increment to be used when outputing the first through to the last matrix row
+    INTEGER(INTG), INTENT(IN) :: LAST_ROW !<The last row of the matrix to be output
+    INTEGER(INTG), INTENT(IN) :: FIRST_COLUMN !<The first column of the matrix to be output
+    INTEGER(INTG), INTENT(IN) :: DELTA_COLUMN !<The delta column increate to be used when outputing the first through to the last matrix column
+    INTEGER(INTG), INTENT(IN) :: LAST_COLUMN !<The last column of the matrix to be output
+    INTEGER(INTG), INTENT(IN) :: NUMBER_FIRST !<The number of matrix elements to be output on the first line
+    INTEGER(INTG), INTENT(IN) :: NUMBER_REPEAT !<The number of matrix elements to be output on the second and subsequently repeated lines
+    LOGICAL, INTENT(IN) :: MATRIX(:,:) !<The matrix to be output
+    INTEGER(INTG), INTENT(IN) :: INDEX_FORMAT_TYPE !<The format type to be used for the matrix name and indices \see INPUT_OUTPUT_MatrixNameIndexFormat,INPUT_OUTPUT::MatrixNameIndexFormat
+    CHARACTER(LEN=*), INTENT(IN) :: MATRIX_NAME_FORMAT !<The format string to be used to format the matrix name
+    CHARACTER(LEN=*), INTENT(IN) :: ROW_INDEX_FORMAT !<The format string to be used to format the row indices
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used for the first line of output
+    CHARACTER(LEN=*), INTENT(IN) :: REPEAT_FORMAT !<The format type to be used for the second and subsequently repeated lines of output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) ::  current_row,current_column,final_column,count
     CHARACTER(LEN=MAXSTRLEN) :: FORMAT_STR
@@ -4499,7 +3883,7 @@ CONTAINS
 
     IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_ONLY) THEN
       FORMAT_STR=MATRIX_NAME_FORMAT//FIRST_FORMAT
-    ELSE IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_AND_INDICIES) THEN
+    ELSE IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_AND_INDICES) THEN
       FORMAT_STR=MATRIX_NAME_FORMAT//ROW_INDEX_FORMAT//FIRST_FORMAT
     ELSE
       CALL FLAG_ERROR("Invalid index format type",ERR,ERROR,*999)
@@ -4510,7 +3894,7 @@ CONTAINS
       IF(final_column>LAST_COLUMN) final_column=LAST_COLUMN
       IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_ONLY) THEN
         WRITE(OP_STRING,FMT=FORMAT_STR) (MATRIX(current_row,count),count=current_column,final_column,DELTA_COLUMN)
-      ELSE IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_AND_INDICIES) THEN
+      ELSE IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_AND_INDICES) THEN
         WRITE(OP_STRING,FMT=FORMAT_STR) current_row,(MATRIX(current_row,count),count=current_column,final_column,DELTA_COLUMN)
       ENDIF
       CALL WRITE_STR(ID,ERR,ERROR,*999)
@@ -4533,31 +3917,29 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Writes the given single precision MATRIX to the given output stream specified by ID. The basic output is determined by the flag INDEX_FORMAT_TYPE. If INDEX_FORMAT_TYPE is WRITE_STRING_MATRIX_NAME_ONLY then the first line of output for each row is MATRIX_NAME_FORMAT concatenated named with the FIRST_FORMAT. If INDEX_FORMAT_TYPE is WRITE_STRING_MATRIX_NAME_AND_INDICES then the first line of output for each row is MATRIX_NAME_FORMAT concatenated with ROW_INDEX_FORMAT and concatenated with FIRST_FORMAT. Note that with a WRITE_STRING_MATRIX_NAME_AND_INDICES index format type the row number will be supplied to the format before the matrix data. The FIRST_FORMAT is the format initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the number of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT. FIRST_ROW/FIRST_COLUMN and LAST_ROW/LAST_COLUMN are the extents of the row/column and DELTA_ROW/DELTA_COLUMN is the NUMBER of indices to skip for each row/column index.
   SUBROUTINE WRITE_STRING_MATRIX_SP(ID,FIRST_ROW,DELTA_ROW,LAST_ROW,FIRST_COLUMN,DELTA_COLUMN,LAST_COLUMN,NUMBER_FIRST, &
     & NUMBER_REPEAT,MATRIX,INDEX_FORMAT_TYPE,MATRIX_NAME_FORMAT,ROW_INDEX_FORMAT,FIRST_FORMAT,REPEAT_FORMAT,ERR,ERROR,*)
 
-    !#### Generic-Subroutine: WRITE_STRING_MATRIX_SP
-    !###  Description:
-    !###    Writes the given single precision MATRIX to the given output stream specified by ID. The basic output is determined
-    !###    by the flag INDEX_FORMAT_TYPE. If INDEX_FORMAT_TYPE is WRITE_STRING_MATRIX_NAME_ONLY then the first line of output
-    !###    for each row is MATRIX_NAME_FORMAT concatenated named with the FIRST_FORMAT. If INDEX_FORMAT_TYPE is
-    !###    WRITE_STRING_MATRIX_NAME_AND_INDICIES then the first line of output for each row is MATRIX_NAME_FORMAT concatenated
-    !###    with ROW_INDEX_FORMAT and concatenated with FIRST_FORMAT. Note that with a WRITE_STRING_MATRIX_NAME_AND_INDICIES index
-    !###    format type the row number will be supplied to the format before the matrix data. The FIRST_FORMAT is the format
-    !###    initially used, followed by the REPEAT_FORMAT which is repeated as many times as necessary. NUMBER_FIRST is the
-    !###    number of data items in the FIRST_FORMAT and NUMBER_REPEAT is the number of data items in the REPEAT_FORMAT.
-    !###    FIRST_ROW/FIRST_COLUMN and LAST_ROW/LAST_COLUMN are the extents of the row/column and DELTA_ROW/DELTA_COLUMN is the
-    !###    NUMBER of indicies to skip for each row/column index.
-    !###  Parent-subroutines: WRITE_STRING_MATRIX
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ID,FIRST_ROW,DELTA_ROW,LAST_ROW,FIRST_COLUMN,DELTA_COLUMN,LAST_COLUMN,NUMBER_FIRST,NUMBER_REPEAT
-    REAL(SP), INTENT(IN) :: MATRIX(:,:)
-    INTEGER(INTG), INTENT(IN) :: INDEX_FORMAT_TYPE
-    CHARACTER(LEN=*), INTENT(IN) :: MATRIX_NAME_FORMAT,ROW_INDEX_FORMAT,FIRST_FORMAT,REPEAT_FORMAT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream. An ID of > 9 specifies file output \see BASE_ROUTINES_OutputType,BASE_ROUTINES_FileUnits
+    INTEGER(INTG), INTENT(IN) :: FIRST_ROW !<The first row of the matrix to be output
+    INTEGER(INTG), INTENT(IN) :: DELTA_ROW !<The delta row increment to be used when outputing the first through to the last matrix row
+    INTEGER(INTG), INTENT(IN) :: LAST_ROW !<The last row of the matrix to be output
+    INTEGER(INTG), INTENT(IN) :: FIRST_COLUMN !<The first column of the matrix to be output
+    INTEGER(INTG), INTENT(IN) :: DELTA_COLUMN !<The delta column increate to be used when outputing the first through to the last matrix column
+    INTEGER(INTG), INTENT(IN) :: LAST_COLUMN !<The last column of the matrix to be output
+    INTEGER(INTG), INTENT(IN) :: NUMBER_FIRST !<The number of matrix elements to be output on the first line
+    INTEGER(INTG), INTENT(IN) :: NUMBER_REPEAT !<The number of matrix elements to be output on the second and subsequently repeated lines
+    REAL(SP), INTENT(IN) :: MATRIX(:,:) !<The matrix to be output
+    INTEGER(INTG), INTENT(IN) :: INDEX_FORMAT_TYPE !<The format type to be used for the matrix name and indices \see INPUT_OUTPUT_MatrixNameIndexFormat,INPUT_OUTPUT::MatrixNameIndexFormat
+    CHARACTER(LEN=*), INTENT(IN) :: MATRIX_NAME_FORMAT !<The format string to be used to format the matrix name
+    CHARACTER(LEN=*), INTENT(IN) :: ROW_INDEX_FORMAT !<The format string to be used to format the row indices
+    CHARACTER(LEN=*), INTENT(IN) :: FIRST_FORMAT !<The format string to be used for the first line of output
+    CHARACTER(LEN=*), INTENT(IN) :: REPEAT_FORMAT !<The format type to be used for the second and subsequently repeated lines of output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) ::  current_row,current_column,final_column,count
     CHARACTER(LEN=MAXSTRLEN) :: FORMAT_STR
@@ -4566,7 +3948,7 @@ CONTAINS
 
     IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_ONLY) THEN
       FORMAT_STR=MATRIX_NAME_FORMAT//FIRST_FORMAT
-    ELSE IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_AND_INDICIES) THEN
+    ELSE IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_AND_INDICES) THEN
       FORMAT_STR=MATRIX_NAME_FORMAT//ROW_INDEX_FORMAT//FIRST_FORMAT
     ELSE
       CALL FLAG_ERROR("Invalid index format type",ERR,ERROR,*999)
@@ -4577,7 +3959,7 @@ CONTAINS
       IF(final_column>LAST_COLUMN) final_column=LAST_COLUMN
       IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_ONLY) THEN
         WRITE(OP_STRING,FMT=FORMAT_STR) (MATRIX(current_row,count),count=current_column,final_column,DELTA_COLUMN)
-      ELSE IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_AND_INDICIES) THEN
+      ELSE IF(INDEX_FORMAT_TYPE==WRITE_STRING_MATRIX_NAME_AND_INDICES) THEN
         WRITE(OP_STRING,FMT=FORMAT_STR) current_row,(MATRIX(current_row,count),count=current_column,final_column,DELTA_COLUMN)
       ENDIF
       CALL WRITE_STR(ID,ERR,ERROR,*999)

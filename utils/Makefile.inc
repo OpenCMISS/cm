@@ -24,8 +24,15 @@ ifndef PROF
   PROF := false
 endif
 
+ifndef MPIPROF
+  MPIPROF := false
+endif
+
 ifndef DEBUG
   ifneq ($(PROF),false)
+    OPT := true
+  endif
+  ifneq ($(MPIPROF),false)
     OPT := true
   endif
   ifndef OPT
@@ -79,6 +86,12 @@ ifeq ($(SYSNAME),CYGWIN_NT-5.1)
   INSTRUCTION := i386
   OPERATING_SYSTEM := win32
 endif
+ifeq ($(SYSNAME),CYGWIN_NT-6.0)
+  LIB_ARCH_DIR = $(INSTRUCTION)-$(OPERATING_SYSTEM)# no ABI
+  ABI=32
+  INSTRUCTION := i386
+  OPERATING_SYSTEM := win32
+endif
 ifeq ($(SYSNAME),AIX)
   ifndef ABI
     ifdef OBJECT_MODE
@@ -110,9 +123,17 @@ else
 endif
 
 ifeq ($(PROF),false)
-  PROF_SUFFIX =
+  ifeq ($(MPIPROF),false)
+    PROF_SUFFIX =
+  else
+    PROF_SUFFIX = -mpiprof
+  endif
 else
-  PROF_SUFFIX = -prof
+  ifeq ($(MPIPROF),false)
+    PROF_SUFFIX = -prof
+  else
+    PROF_SUFFIX = -mpiprof
+  endif
 endif
 
 ifneq ($(DEBUG),false)

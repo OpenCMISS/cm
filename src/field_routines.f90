@@ -123,7 +123,7 @@ MODULE FIELD_ROUTINES
   !>@}
 
   !> \addtogroup FIELD_ROUTINES_ParameterSetTypes FIELD_ROUTINES::ParameterSetTypes
-  !> \brief Field parameter set type parameters
+  !> \brief Field parameter set type parameters \todo make program defined constants negative?
   !> \see FIELD_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: FIELD_NUMBER_OF_SET_TYPES=99 !<The maximum number of different parameter sets for a field \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
@@ -226,42 +226,29 @@ MODULE FIELD_ROUTINES
     & FIELD_INTERPOLATION_PARAMETERS_FINALISE,FIELD_INTERPOLATION_PARAMETERS_INITIALISE, &
     & FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET,FIELD_INTERPOLATION_PARAMETERS_LINE_GET, &
     & FIELD_MESH_DECOMPOSITION_SET,FIELD_NEXT_NUMBER_FIND,FIELD_NUMBER_OF_COMPONENTS_SET,FIELD_NUMBER_OF_VARIABLES_SET,  &
-    & FIELD_PARAMETER_SET_GET,FIELD_PARAMETER_SET_CREATE,FIELD_PARAMETER_SET_UPDATE_FINISH, &
-    & FIELD_PARAMETER_SET_UPDATE_START,FIELD_PARAMETER_SET_UPDATE_CONSTANT,FIELD_PARAMETER_SET_UPDATE_DOF, &
-    & FIELD_PARAMETER_SET_UPDATE_ELEMENT,FIELD_PARAMETER_SET_UPDATE_NODE,FIELD_SCALING_TYPE_SET,FIELD_TYPE_SET
+    & FIELD_PARAMETER_SET_ADD,FIELD_PARAMETER_SET_COPY,FIELD_PARAMETER_SET_CREATE,FIELD_PARAMETER_SET_GET, &
+    & FIELD_PARAMETER_SET_RESTORE,FIELD_PARAMETER_SET_UPDATE_FINISH,FIELD_PARAMETER_SET_UPDATE_START, &
+    & FIELD_PARAMETER_SET_UPDATE_CONSTANT,FIELD_PARAMETER_SET_UPDATE_DOF,FIELD_PARAMETER_SET_UPDATE_ELEMENT, &
+    & FIELD_PARAMETER_SET_UPDATE_NODE,FIELD_SCALING_TYPE_SET,FIELD_TYPE_SET
 
 CONTAINS
   
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Subroutine: FIELD_COMPONENT_INTERPOLATION_SET
-  !###  Description:
-  !###    Sets/changes the interpolation type for a field component
-  !###  Child-subroutines: FIELD_COMPONENT_INTERPOLATION_SET_NUMBER,FIELD_COMPONENT_INTERPOLATION_SET_PTR
 
-  !
-  !================================================================================================================================
-  !
-
+  !> Sets/changes the interpolation type for a field variable component identified by a user number and component number on a region.
   SUBROUTINE FIELD_COMPONENT_INTERPOLATION_SET_NUMBER(USER_NUMBER,FIELD_VARIABLE_NUMBER,FIELD_COMPONENT_NUMBER,REGION, &
     & INTERPOLATION_TYPE,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_COMPONENT_INTERPOLATION_SET_NUMBER
-    !###  Description:
-    !###    Sets/changes the interpolation type for a field variable component identified by a user number and component number on
-    !###    a region.
-    !###  Parent-subroutine: FIELD_COMPONENT_INTERPOLATION_SET
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    INTEGER(INTG), INTENT(IN) :: FIELD_VARIABLE_NUMBER
-    INTEGER(INTG), INTENT(IN) :: FIELD_COMPONENT_NUMBER
-    TYPE(REGION_TYPE), POINTER :: REGION
-    INTEGER(INTG), INTENT(IN) :: INTERPOLATION_TYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !>The user number of the field to change
+    INTEGER(INTG), INTENT(IN) :: FIELD_VARIABLE_NUMBER !<The field variable number of the field variable component
+    INTEGER(INTG), INTENT(IN) :: FIELD_COMPONENT_NUMBER !<The field component number of the field variable component
+    TYPE(REGION_TYPE), POINTER :: REGION !<The region containing the field
+    INTEGER(INTG), INTENT(IN) :: INTERPOLATION_TYPE !<The interpolation type to set/change \see FIELD_ROUTINES_InterpolationTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
 
@@ -284,22 +271,18 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Sets/changes the interpolation type for a field variable component identified by a pointer.
   SUBROUTINE FIELD_COMPONENT_INTERPOLATION_SET_PTR(FIELD,FIELD_VARIABLE_NUMBER,FIELD_COMPONENT_NUMBER,INTERPOLATION_TYPE, &
     & ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_COMPONENT_INTERPOLATION_SET_PTR
-    !###  Description:
-    !###    Sets/changes the interpolation type for a field variable component identified by a pointer.
-    !###  Parent-subroutine: FIELD_COMPONENT_INTERPOLATION_SET
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: FIELD_VARIABLE_NUMBER
-    INTEGER(INTG), INTENT(IN) :: FIELD_COMPONENT_NUMBER
-    INTEGER(INTG), INTENT(IN) :: INTERPOLATION_TYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to set the interpolation for
+    INTEGER(INTG), INTENT(IN) :: FIELD_VARIABLE_NUMBER !<The field variable number of the field variable component to set
+    INTEGER(INTG), INTENT(IN) :: FIELD_COMPONENT_NUMBER !<The field component number of the field variable component to set
+    INTEGER(INTG), INTENT(IN) :: INTERPOLATION_TYPE !<The interpolation type to set \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -349,33 +332,19 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Subroutine: FIELD_COMPONENT_MESH_COMPONENT_SET
-  !###  Description:
-  !###    Sets/changes the mesh component number for a field component
-  !###  Child-subroutines: FIELD_COMPONENT_MESH_COMPONENT_SET_NUMBER,FIELD_COMPONENT_MESH_COMPONENT_SET_PTR
 
-  !
-  !================================================================================================================================
-  !
-
+  !>Sets/changes the mesh component number for a field variable component identified by a user number, component number and variable number on a region. \todo change variable number to variable type.
   SUBROUTINE FIELD_COMPONENT_MESH_COMPONENT_SET_NUMBER(USER_NUMBER,FIELD_VARIABLE_NUMBER,FIELD_COMPONENT_NUMBER,REGION, &
     & MESH_COMPONENT_NUMBER,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_COMPONENT_MESH_COMPONENT_SET_NUMBER
-    !###  Description:
-    !###    Sets/changes the mesh component number for a field variable component identified by a user number, component number
-    !###    and variable number on a region.
-    !###  Parent-subroutine: FIELD_COMPONENT_MESH_COMPONENT_SET
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    INTEGER(INTG), INTENT(IN) :: FIELD_VARIABLE_NUMBER
-    INTEGER(INTG), INTENT(IN) :: FIELD_COMPONENT_NUMBER
-    TYPE(REGION_TYPE), POINTER :: REGION
-    INTEGER(INTG), INTENT(IN) :: MESH_COMPONENT_NUMBER
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the field to set the mesh component for
+    INTEGER(INTG), INTENT(IN) :: FIELD_VARIABLE_NUMBER !<The field variable number of the field variable component to set
+    INTEGER(INTG), INTENT(IN) :: FIELD_COMPONENT_NUMBER !<The field component number of the field variable component to set
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the field
+    INTEGER(INTG), INTENT(IN) :: MESH_COMPONENT_NUMBER !<The mesh component number to set for the specified field variable component
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
 
@@ -398,23 +367,18 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Sets/changes the mesh component number for a field variable component identified by a pointer to a field and a field variable number.
   SUBROUTINE FIELD_COMPONENT_MESH_COMPONENT_SET_PTR(FIELD,FIELD_VARIABLE_NUMBER,FIELD_COMPONENT_NUMBER,MESH_COMPONENT_NUMBER, &
     & ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_COMPONENT_MESH_COMPONENT_SET_PTR
-    !###  Description:
-    !###    Sets/changes the mesh component number for a field variable component identified by a pointer to a field and a
-    !###    field variable number.
-    !###  Parent-subroutine: FIELD_COMPONENT_MESH_COMPONENT_SET
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: FIELD_VARIABLE_NUMBER
-    INTEGER(INTG), INTENT(IN) :: FIELD_COMPONENT_NUMBER
-    INTEGER(INTG), INTENT(IN) :: MESH_COMPONENT_NUMBER
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to set the mesh component for
+    INTEGER(INTG), INTENT(IN) :: FIELD_VARIABLE_NUMBER !<The field variable number to set the field variable component for
+    INTEGER(INTG), INTENT(IN) :: FIELD_COMPONENT_NUMBER !<The field component number to set the field variable component for
+    INTEGER(INTG), INTENT(IN) :: MESH_COMPONENT_NUMBER !<The mesh component to set for the specified field variable component
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -494,16 +458,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises a field variable component and deallocates all memory.
   SUBROUTINE FIELD_VARIABLE_COMPONENT_FINALISE(FIELD_VARIABLE_COMPONENT,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_VARIABLE_COMPONENT_FINALISE
-    !###  Description:
-    !###    Finalises a field variable component and deallocates all memory.
-
     !Argument variables
-    TYPE(FIELD_VARIABLE_COMPONENT_TYPE) :: FIELD_VARIABLE_COMPONENT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_VARIABLE_COMPONENT_TYPE) :: FIELD_VARIABLE_COMPONENT !<The field variable component to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("FIELD_VARIABLE_COMPONENT_FINALISE",ERR,ERROR,*999)
@@ -521,18 +482,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises a field variable component.
   SUBROUTINE FIELD_VARIABLE_COMPONENT_INITIALISE(FIELD,VARIABLE_NUMBER,COMPONENT_NUMBER,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_VARIABLE_COMPONENT_INITIALISE
-    !###  Description:
-    !###    Initialises a field variable component.
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER
-    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field containing the field variable component to initialise
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<The field variable number of the field variable component
+    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<The field component number of the field variable component
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: ne
     TYPE(BASIS_TYPE), POINTER :: BASIS
@@ -638,16 +596,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises a field variable component parameter to dof map and deallocates all memory.
   SUBROUTINE FIELD_VARIABLE_COMPONENT_PARAM_TO_DOF_MAP_FINALISE(FIELD_VARIABLE_COMPONENT,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_VARIABLE_COMPONENT_PARAM_TO_DOF_MAP_FINALISE
-    !###  Description:
-    !###    Finalises a field variable component parameter to dof map and deallocates all memory.
-
     !Argument variables
-    TYPE(FIELD_VARIABLE_COMPONENT_TYPE) :: FIELD_VARIABLE_COMPONENT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_VARIABLE_COMPONENT_TYPE) :: FIELD_VARIABLE_COMPONENT !<The field variable component to finialise the parameter to dof map for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("FIELD_VARIABLE_COMPONENT_PARAM_TO_DOF_MAP_FINALISE",ERR,ERROR,*999)
@@ -675,16 +630,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises a field variable component parameter to dof map.
   SUBROUTINE FIELD_VARIABLE_COMPONENT_PARAM_TO_DOF_MAP_INITIALISE(FIELD_VARIABLE_COMPONENT,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_VARIABLE_COMPONENT_PARAM_TO_DOF_MAP_INITIALISE
-    !###  Description:
-    !###    Initialises a field variable component parameter to dof map.
-
     !Argument variables
-    TYPE(FIELD_VARIABLE_COMPONENT_TYPE) :: FIELD_VARIABLE_COMPONENT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_VARIABLE_COMPONENT_TYPE) :: FIELD_VARIABLE_COMPONENT !<The field variable component to initialise the parameter to dof map for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("FIELD_VARIABLE_COMPONENT_PARAM_TO_DOF_MAP_INITIALISE",ERR,ERROR,*999)
@@ -706,16 +658,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the field variable components for a field variable and deallocates all memory.
   SUBROUTINE FIELD_VARIABLE_COMPONENTS_FINALISE(FIELD_VARIABLE,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_VARIABLE_COMPONENTS_FINALISE
-    !###  Description:
-    !###    Finalises the field variable components for a field variable and deallocates all memory.
-
     !Argument variables
-    TYPE(FIELD_VARIABLE_TYPE) :: FIELD_VARIABLE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_VARIABLE_TYPE) :: FIELD_VARIABLE !<The field variable to finalise the field variable components for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx
 
@@ -740,17 +689,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the field components.
   SUBROUTINE FIELD_VARIABLE_COMPONENTS_INITIALISE(FIELD,VARIABLE_NUMBER,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_VARIABLE_COMPONENTS_INITIALISE
-    !###  Description:
-    !###    Initialises the field components.
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to initialise the field variable components for
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<The field variable number to initialise the field variable components for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -793,17 +739,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finishes the creation of a field on a region. 
   SUBROUTINE FIELD_CREATE_FINISH(REGION,FIELD,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_CREATE_FINISH
-    !###  Description:
-    !###    Finishes the creation of a field on a region. 
-
     !Argument variables
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the field
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to finish the creation of
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: field_idx
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -817,10 +760,8 @@ CONTAINS
             !Check field has a decomposition associated
             IF(ASSOCIATED(FIELD%DECOMPOSITION)) THEN
               !Initialise the components
-              !heye: initialize the field from cache
               CALL FIELD_VARIABLES_INITIALISE(FIELD,ERR,ERROR,*999)
               IF(ASSOCIATED(FIELD%GEOMETRIC_FIELD)) THEN
-                !heye:release cache  
                 CALL FIELD_CREATE_VALUES_CACHE_FINALISE(FIELD,ERR,ERROR,*999)
                 FIELD%FIELD_FINISHED=.TRUE.
                 !Calculate dof mappings
@@ -889,7 +830,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Starts the creation of a field defined by a user number in the specified region.
+  !>Starts the creation of a field defined by a user number in the specified region. \todo Add in FIELD_INITIALISE
   SUBROUTINE FIELD_CREATE_START(USER_NUMBER,REGION,FIELD,ERR,ERROR,*)
 
     !Argument variables
@@ -942,6 +883,7 @@ CONTAINS
           ENDDO !variable_type_idx
           NEW_FIELD%SCALINGS%SCALING_TYPE=FIELD_ARITHMETIC_MEAN_SCALING
           NEW_FIELD%SCALINGS%NUMBER_OF_SCALING_INDICES=0
+          NULLIFY(NEW_FIELD%MAPPINGS%DOMAIN_MAPPING)
           CALL FIELD_CREATE_VALUES_CACHE_INITIALISE(NEW_FIELD,ERR,ERROR,*999)
           !Add new field into list of fields in the region
           ALLOCATE(NEW_FIELDS(REGION%FIELDS%NUMBER_OF_FIELDS+1),STAT=ERR)
@@ -978,16 +920,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalise the create values cache for a field.
   SUBROUTINE FIELD_CREATE_VALUES_CACHE_FINALISE(FIELD,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_CREATE_VALUES_CACHE_FINALISE
-    !###  Description:
-    !###    Finalise the create values cache for a field.
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to finialise the create values cache for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("FIELD_CREATE_VALUES_CACHE_FINALISE",ERR,ERROR,*999)
@@ -1010,20 +949,17 @@ CONTAINS
     RETURN 1
   END SUBROUTINE FIELD_CREATE_VALUES_CACHE_FINALISE
 
-   !
+  !
   !================================================================================================================================
   !
 
+  !>Initialises the create values cache for a field.
   SUBROUTINE FIELD_CREATE_VALUES_CACHE_INITIALISE(FIELD,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_CREATE_VALUES_CACHE_INITIALISE
-    !###  Description:
-    !###    Initialises the create values cache for a field.
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to initialise the create values cache for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: NUMBER_OF_COMPONENTS,component_idx,variable_idx
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -1074,29 +1010,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Subroutine: FIELD_DEPENDENT_TYPE_SET
-  !###  Description:
-  !###    Sets/changes the dependent type for a field.
-  !###  Child-subroutines: FIELD_DEPENDENT_TYPE_SET_NUMBER,FIELD_DEPENDENT_TYPE_SET_PTR
 
-  !
-  !================================================================================================================================
-  !
-
+  !>Sets/changes the dependent type for a field identified by a user number.
   SUBROUTINE FIELD_DEPENDENT_TYPE_SET_NUMBER(USER_NUMBER,REGION,DEPENDENT_TYPE,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_DEPENDENT_TYPE_SET_NUMBER
-    !###  Description:
-    !###    Sets/changes the dependent type for a field identified by a user number.
-    !###  Parent-subroutine: FIELD_DEPENDENT_TYPE_SET
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    TYPE(REGION_TYPE), POINTER :: REGION
-    INTEGER(INTG), INTENT(IN) :: DEPENDENT_TYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the field to set the dependent type for
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the field
+    INTEGER(INTG), INTENT(IN) :: DEPENDENT_TYPE !<The dependent type to set/change for the field \see FIELD_ROUTINES_DependentTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
 
@@ -1119,18 +1042,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets/changes the dependent type for a field indentified by a pointer.
   SUBROUTINE FIELD_DEPENDENT_TYPE_SET_PTR(FIELD,DEPENDENT_TYPE,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_DEPENDENT_TYPE_SET_PTR
-    !###  Description:
-    !###    Sets/changes the dependent type for a field indentified by a pointer.
-    !###  Parent-subroutine: FIELD_DEPENDENT_TYPE_SET
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: DEPENDENT_TYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to set/change the dependent type for
+    INTEGER(INTG), INTENT(IN) :: DEPENDENT_TYPE !<The dependent type to set/change \see FIELD_ROUTINES_DependentTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: OLD_VARIABLE_TYPES
     INTEGER(INTG), ALLOCATABLE :: OLD_INTERPOLATION_TYPE(:,:),OLD_MESH_COMPONENT_NUMBER(:,:)
@@ -1198,22 +1117,18 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE FIELD_DESTROY(FIELD,REGION,ERR,ERROR,*)
-
-    !#### Subroutine: FIELD_DESTROY
-    !###  Description:
-    !###    Destroys a field identified by a pointer to a field on a region and deallocates all memory
+  !>Destroys a field identified by a pointer to a field.
+  SUBROUTINE FIELD_DESTROY(FIELD,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    TYPE(REGION_TYPE), POINTER :: REGION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to destroy
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: field_idx,field_position,field_position2
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(FIELD_TYPE), POINTER :: FIELD2,GEOMETRIC_FIELD
     TYPE(FIELD_PTR_TYPE), POINTER :: NEW_FIELDS(:),NEW_FIELDS_USING(:)
+    TYPE(REGION_TYPE), POINTER :: REGION
 
     NULLIFY(NEW_FIELDS)
     NULLIFY(NEW_FIELDS_USING)
@@ -1221,83 +1136,67 @@ CONTAINS
     CALL ENTERS("FIELD_DESTROY",ERR,ERROR,*999)
 
     IF(ASSOCIATED(FIELD)) THEN
+      REGION=>FIELD%REGION
       IF(ASSOCIATED(REGION)) THEN
-        IF(ASSOCIATED(REGION%FIELDS)) THEN
-          IF(ASSOCIATED(FIELD%REGION)) THEN
-            IF(FIELD%REGION%USER_NUMBER==REGION%USER_NUMBER) THEN
-              field_position=FIELD%GLOBAL_NUMBER
-              GEOMETRIC_FIELD=>FIELD%GEOMETRIC_FIELD
-              IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
-                !Delete this field from the list of fields using the geometric field.
-                field_position2=0
-                DO field_idx=1,GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_FIELDS_USING
-                  FIELD2=>GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING(field_idx)%PTR
-                  IF(FIELD2%USER_NUMBER==FIELD%USER_NUMBER) THEN
-                    field_position2=field_idx
-                    EXIT
-                  ENDIF
-                ENDDO !field_idx
-                IF(field_position2/=0) THEN
-                  ALLOCATE(NEW_FIELDS_USING(GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_FIELDS_USING+1),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new fields using",ERR,ERROR,*999)
-                  DO field_idx=1,GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_FIELDS_USING
-                    IF(field_idx<field_position2) THEN
-                      NEW_FIELDS_USING(field_idx)%PTR=>GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING(field_idx)%PTR
-                    ELSE IF(field_idx>field_position2) THEN
-                      NEW_FIELDS_USING(field_idx-1)%PTR=>GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING(field_idx)%PTR
-                    ENDIF
-                  ENDDO !field_idx
-                  GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_FIELDS_USING=GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS% &
-                    & NUMBER_OF_FIELDS_USING-1
-                  IF(ASSOCIATED(GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING)) &
-                    & DEALLOCATE(GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING)
-                  GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING=>NEW_FIELDS_USING
-                ELSE
-                  !??? Error
-                ENDIF
-              ENDIF
-              CALL FIELD_SCALINGS_FINALISE(FIELD,ERR,ERROR,*999)
-              CALL FIELD_VARIABLES_FINALISE(FIELD,ERR,ERROR,*999)
-              CALL FIELD_CREATE_VALUES_CACHE_FINALISE(FIELD,ERR,ERROR,*999)
-              CALL FIELD_GEOMETRIC_PARAMETERS_FINALISE(FIELD,ERR,ERROR,*999)
-              CALL FIELD_MAPPINGS_FINALISE(FIELD,ERR,ERROR,*999)
-              IF(ALLOCATED(FIELD%VARIABLE_TYPE_MAP)) DEALLOCATE(FIELD%VARIABLE_TYPE_MAP)
-              DEALLOCATE(FIELD)
-              IF(REGION%FIELDS%NUMBER_OF_FIELDS>1) THEN
-                ALLOCATE(NEW_FIELDS(REGION%FIELDS%NUMBER_OF_FIELDS-1),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new fields",ERR,ERROR,*999)
-                DO field_idx=1,REGION%FIELDS%NUMBER_OF_FIELDS
-                  IF(field_idx<field_position) THEN
-                    NEW_FIELDS(field_idx)%PTR=>REGION%FIELDS%FIELDS(field_idx)%PTR
-                  ELSE IF(field_idx>field_position) THEN
-                    REGION%FIELDS%FIELDS(field_idx)%PTR%GLOBAL_NUMBER=REGION%FIELDS%FIELDS(field_idx)%PTR%GLOBAL_NUMBER-1
-                    NEW_FIELDS(field_idx-1)%PTR=>REGION%FIELDS%FIELDS(field_idx)%PTR
-                  ENDIF
-                ENDDO !field_no
-                DEALLOCATE(REGION%FIELDS%FIELDS)
-                REGION%FIELDS%FIELDS=>NEW_FIELDS
-                REGION%FIELDS%NUMBER_OF_FIELDS=REGION%FIELDS%NUMBER_OF_FIELDS-1
-              ELSE
-                DEALLOCATE(REGION%FIELDS%FIELDS)
-                REGION%FIELDS%NUMBER_OF_FIELDS=0
-              ENDIF
-            ELSE
-              LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
-                & " has not been created on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        field_position=FIELD%GLOBAL_NUMBER
+        GEOMETRIC_FIELD=>FIELD%GEOMETRIC_FIELD
+        IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
+          !Delete this field from the list of fields using the geometric field.
+          field_position2=0
+          DO field_idx=1,GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_FIELDS_USING
+            FIELD2=>GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING(field_idx)%PTR
+            IF(FIELD2%USER_NUMBER==FIELD%USER_NUMBER) THEN
+              field_position2=field_idx
+              EXIT
             ENDIF
+          ENDDO !field_idx
+          IF(field_position2/=0) THEN
+            ALLOCATE(NEW_FIELDS_USING(GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_FIELDS_USING+1),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new fields using",ERR,ERROR,*999)
+            DO field_idx=1,GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_FIELDS_USING
+              IF(field_idx<field_position2) THEN
+                NEW_FIELDS_USING(field_idx)%PTR=>GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING(field_idx)%PTR
+              ELSE IF(field_idx>field_position2) THEN
+                NEW_FIELDS_USING(field_idx-1)%PTR=>GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING(field_idx)%PTR
+              ENDIF
+            ENDDO !field_idx
+            GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_FIELDS_USING=GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS% &
+              & NUMBER_OF_FIELDS_USING-1
+            IF(ASSOCIATED(GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING)) &
+              & DEALLOCATE(GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING)
+            GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING=>NEW_FIELDS_USING
           ELSE
-            LOCAL_ERROR="The region on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
-              & " is not associated"
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            !??? Error
           ENDIF
+        ENDIF
+!!TODO: move to field finalise
+        CALL FIELD_SCALINGS_FINALISE(FIELD,ERR,ERROR,*999)
+        CALL FIELD_VARIABLES_FINALISE(FIELD,ERR,ERROR,*999)
+        CALL FIELD_CREATE_VALUES_CACHE_FINALISE(FIELD,ERR,ERROR,*999)
+        CALL FIELD_GEOMETRIC_PARAMETERS_FINALISE(FIELD,ERR,ERROR,*999)
+        CALL FIELD_MAPPINGS_FINALISE(FIELD,ERR,ERROR,*999)
+        IF(ALLOCATED(FIELD%VARIABLE_TYPE_MAP)) DEALLOCATE(FIELD%VARIABLE_TYPE_MAP)
+        DEALLOCATE(FIELD)
+        IF(REGION%FIELDS%NUMBER_OF_FIELDS>1) THEN
+          ALLOCATE(NEW_FIELDS(REGION%FIELDS%NUMBER_OF_FIELDS-1),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new fields",ERR,ERROR,*999)
+          DO field_idx=1,REGION%FIELDS%NUMBER_OF_FIELDS
+            IF(field_idx<field_position) THEN
+              NEW_FIELDS(field_idx)%PTR=>REGION%FIELDS%FIELDS(field_idx)%PTR
+            ELSE IF(field_idx>field_position) THEN
+              REGION%FIELDS%FIELDS(field_idx)%PTR%GLOBAL_NUMBER=REGION%FIELDS%FIELDS(field_idx)%PTR%GLOBAL_NUMBER-1
+              NEW_FIELDS(field_idx-1)%PTR=>REGION%FIELDS%FIELDS(field_idx)%PTR
+            ENDIF
+          ENDDO !field_no
+          DEALLOCATE(REGION%FIELDS%FIELDS)
+          REGION%FIELDS%FIELDS=>NEW_FIELDS
+          REGION%FIELDS%NUMBER_OF_FIELDS=REGION%FIELDS%NUMBER_OF_FIELDS-1
         ELSE
-          LOCAL_ERROR="The fields on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))// &
-            & " are not associated"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          DEALLOCATE(REGION%FIELDS%FIELDS)
+          REGION%FIELDS%NUMBER_OF_FIELDS=0
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Field region is not associated",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
@@ -1315,29 +1214,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Subroutine: FIELD_DIMENSION_SET
-  !###  Description:
-  !###    Sets/changes the field dimension for a field.
-  !###  Child-subroutines: FIELD_DIMENSION_SET_NUMBER,FIELD_DIMENSION_SET_PTR
 
-  !
-  !================================================================================================================================
-  !
-
+  !>Sets/changes the field dimension for a field identified by a user number.
   SUBROUTINE FIELD_DIMENSION_SET_NUMBER(USER_NUMBER,REGION,FIELD_DIMENSION,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_DIMENSION_SET_NUMBER
-    !###  Description:
-    !###    Sets/changes the field dimension for a field identified by a user number.
-    !###  Parent-subroutine: FIELD_DIMENSION_SET
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    TYPE(REGION_TYPE), POINTER :: REGION
-    INTEGER(INTG), INTENT(IN) :: FIELD_DIMENSION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the field to set the dimension for
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the field
+    INTEGER(INTG), INTENT(IN) :: FIELD_DIMENSION !<The dimension to set/change \see FIELD_ROUTINES_DimensionTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
 
@@ -1359,19 +1245,15 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Sets/changes the field dimension for a field identified by a pointer.
   SUBROUTINE FIELD_DIMENSION_SET_PTR(FIELD,FIELD_DIMENSION,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_DIMENSION_SET_PTR
-    !###  Description:
-    !###    Sets/changes the field dimension for a field identified by a pointer.
-    !###  Parent-subroutine: FIELD_DIMENSION_SET
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: FIELD_DIMENSION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to set/change the dimension for
+    INTEGER(INTG), INTENT(IN) :: FIELD_DIMENSION !<The field dimension to set/change \see FIELD_ROUTINES_DimensionTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: variable_idx
     INTEGER(INTG), ALLOCATABLE :: OLD_INTERPOLATION_TYPE(:,:),OLD_MESH_COMPONENT_NUMBER(:,:)
@@ -1435,24 +1317,17 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Interpolates a field at a gauss point to give an interpolated point. PARTIAL_DERIVATIVE_TYPE controls which partial derivatives are evaluated. If it is NO_PART_DERIV then only the field values are interpolated. If it is FIRST_PART_DERIV then the field values and first partial derivatives are interpolated. If it is SECOND_PART_DERIV the the field values and first and second partial derivatives are evaluated. Old CMISS name XEXG, ZEXG
   SUBROUTINE FIELD_INTERPOLATE_GAUSS(PARTIAL_DERIVATIVE_TYPE,QUADRATURE_SCHEME,GAUSS_POINT_NUMBER,INTERPOLATED_POINT,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_INTERPOLATE_GAUSS
-    !###  Old-cmiss-name: XEXG, ZEXG
-    !###  Description:
-    !###    Interpolates a field at a gauss point to give an interpolated point. PARTIAL_DERIVATIVE_TYPE controls which partial
-    !###    derivatives are evaluated. If it is NO_PART_DERIV then only the field values are interpolated. If it is
-    !###    FIRST_PART_DERIV then the field values and first partial derivatives are interpolated. If it is SECOND_PART_DERIV the
-    !###    the field values and first and second partial derivatives are evaluated. 
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: PARTIAL_DERIVATIVE_TYPE
-    INTEGER(INTG), INTENT(IN) :: QUADRATURE_SCHEME
-    INTEGER(INTG), INTENT(IN) :: GAUSS_POINT_NUMBER
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: PARTIAL_DERIVATIVE_TYPE !<The partial derivative type of the provided field interpolation
+    INTEGER(INTG), INTENT(IN) :: QUADRATURE_SCHEME !<The quadrature scheme of the Gauss points \see BASIS_ROUTINES_QuadratureSchemes,BASIS_ROUTINES
+    INTEGER(INTG), INTENT(IN) :: GAUSS_POINT_NUMBER !<The number of the Gauss point to interpolate the field at
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT !<The pointer to the interpolated point which will contain the field interpolation information at the specified Gauss point
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx,ni,nu
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
@@ -1527,24 +1402,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Interpolates a field at a xi location to give an interpolated point. XI is the element location to be interpolated at. PARTIAL_DERIVATIVE_TYPE controls which partial derivatives are evaluated. If it is NO_PART_DERIV then only the field values are interpolated. If it is FIRST_PART_DERIV then the field values and first partial derivatives are interpolated. If it is SECOND_PART_DERIV the the field values and first and second partial derivatives are evaluated. Old CMISS name PXI
   SUBROUTINE FIELD_INTERPOLATE_XI(PARTIAL_DERIVATIVE_TYPE,XI,INTERPOLATED_POINT,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_INTERPOLATE_XI
-    !###  Old-cmiss-name: PXI
-    !###  Description:
-    !###    Interpolates a field at a xi location to give an interpolated point. XI is the element location to be interpolated at.
-    !###    PARTIAL_DERIVATIVE_TYPE controls which partial derivatives are evaluated. If it is NO_PART_DERIV then only
-    !###    the field values are interpolated. If it is FIRST_PART_DERIV then the field values and first partial derivatives
-    !###    are interpolated. If it is SECOND_PART_DERIV the the field values and first and second partial derivatives are
-    !###    evaluated. 
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: PARTIAL_DERIVATIVE_TYPE
-    REAL(DP), INTENT(IN) :: XI(:)
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: PARTIAL_DERIVATIVE_TYPE !<The partial derivative type of the provide field interpolation
+    REAL(DP), INTENT(IN) :: XI(:) !<XI(ni). The ni'th Xi coordinate to evaluate the field at
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT !<The pointer to the interpolated point which will contain the field interpolation information at the specified Xi point
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx,ni,nu
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
@@ -1631,16 +1498,13 @@ CONTAINS
   !================================================================================================================================
   !
   
+  !>Finalises the interpolated point and deallocates all memory.
   SUBROUTINE FIELD_INTERPOLATED_POINT_FINALISE(INTERPOLATED_POINT,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_INTERPOLATED_POINT_FINALISE
-    !###  Description:
-    !###    Finalises the interpolated point and deallocates all memory.
-
     !Argument variables
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT !<A pointer to the interpolated point to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("FIELD_INTERPOLATED_POINT_FINALISE",ERR,ERROR,*999)
@@ -1660,18 +1524,15 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Initialises the interpolated point for an interpolation parameters
   SUBROUTINE FIELD_INTERPOLATED_POINT_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_INTERPOLATED_POINT_INITIALISE
-    !###  Description:
-    !###    Initialises the interpolated point for an interpolation parameters
-
     !Argument variables
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS !<A pointer to the interpolation parameters to initialise the interpolated point for
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT !<On exit, A pointer to the interpolated point that has been initialised
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: DUMMY_ERR,NUMBER_OF_DIMENSIONS
     TYPE(VARYING_STRING) :: DUMMY_ERROR
@@ -1748,21 +1609,18 @@ CONTAINS
     CALL EXITS("FIELD_INTERPOLATED_POINT_METRICS_CALCULATE")
     RETURN 1
   END SUBROUTINE FIELD_INTERPOLATED_POINT_METRICS_CALCULATE
-    
+        
   !
   !================================================================================================================================
   !
-  
+
+  !>Finalises the interpolated point metrics and deallocates all memory.
   SUBROUTINE FIELD_INTERPOLATED_POINT_METRICS_FINALISE(INTERPOLATED_POINT_METRICS,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_INTERPOLATED_POINT_METRICS_FINALISE
-    !###  Description:
-    !###    Finalises the interpolated point metrics and deallocates all memory.
-
     !Argument variables
-    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: INTERPOLATED_POINT_METRICS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: INTERPOLATED_POINT_METRICS !<A pointer to the interpolated point metrics to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("FIELD_INTERPOLATED_POINT_METRICS_FINALISE",ERR,ERROR,*999)
@@ -1785,18 +1643,15 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Initialises the interpolated point metrics for an interpolated point.
   SUBROUTINE FIELD_INTERPOLATED_POINT_METRICS_INITIALISE(INTERPOLATED_POINT,INTERPOLATED_POINT_METRICS,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_INTERPOLATED_POINT_METRICS_INITIALISE
-    !###  Description:
-    !###    Initialises the interpolated point metrics for an interpolated point.
-
     !Argument variables
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT
-    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: INTERPOLATED_POINT_METRICS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT !A pointer to the interpolated point to initliase the interpolated point metrics for
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: INTERPOLATED_POINT_METRICS !<On exit, a pointer to the interpolated point metrics that have been initialised
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: NUMBER_OF_XI_DIMENSIONS,NUMBER_OF_X_DIMENSIONS
     INTEGER(INTG) :: DUMMY_ERR
@@ -1852,20 +1707,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Gets the interpolation parameters for a particular element. Old CMISS name XPXE, ZPZE
   SUBROUTINE FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(PARAMETER_SET_NUMBER,ELEMENT_NUMBER,INTERPOLATION_PARAMETERS,ERR,ERROR,*)
-
-    !#### Subroutine: FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET
-    !###  Old-cmiss-name: XPXE
-    !###  Description:
-    !###    Gets the interpolation parameters for a particular element.
-
+    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: PARAMETER_SET_NUMBER
-    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: PARAMETER_SET_NUMBER !<The field parameter set number to get the element parameters for
+    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to get the element parameters for
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS !<A pointer to the interpolation parameters
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx,mk,nk,nn,np,ns,ny,ny2,scaling_idx
     REAL(DP), POINTER :: FIELD_PARAMETER_SET_DATA(:),SCALE_FACTORS(:)
@@ -2010,17 +1861,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Finalises the interpolation parameters and deallocates all memory
   SUBROUTINE FIELD_INTERPOLATION_PARAMETERS_FINALISE(INTERPOLATION_PARAMETERS,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_INTERPOLATION_PARAMETERS_FINALISE
-    !###  Description:
-    !###    Finalises the interpolation parameters and deallocates all memory
-
     !Argument variables
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS !<A pointer to the interpolation parameters to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("FIELD_INTERPOLATION_PARAMETERS_FINALISE",ERR,ERROR,*999)
@@ -2042,19 +1890,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Initialises the interpolation parameters for a field variable.
   SUBROUTINE FIELD_INTERPOLATION_PARAMETERS_INITIALISE(FIELD,VARIABLE_NUMBER,INTERPOLATION_PARAMETERS,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_INTERPOLATION_PARAMETERS_INITIALISE
-    !###  Description:
-    !###    Initialises the interpolation parameters for a field variable.
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to initialise the interpolation parameters for
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<The field variable number to initialise the interpolation parameters for
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS !<On exit, a pointer to the initialised interpolation parameters.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx,DUMMY_ERR
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
@@ -2117,20 +1962,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Gets the interpolation parameters for a particular line. Old CMISS name XPXE, ZPZE
   SUBROUTINE FIELD_INTERPOLATION_PARAMETERS_LINE_GET(PARAMETER_SET_NUMBER,LINE_NUMBER,INTERPOLATION_PARAMETERS,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_INTERPOLATION_PARAMETERS_LINE_GET
-    !###  Old-cmiss-name: XPXE
-    !###  Description:
-    !###    Gets the interpolation parameters for a particular line.
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: PARAMETER_SET_NUMBER
-    INTEGER(INTG), INTENT(IN) :: LINE_NUMBER
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: PARAMETER_SET_NUMBER !<The field parameter set number to get the line parameters for
+    INTEGER(INTG), INTENT(IN) :: LINE_NUMBER !<The line number to get the line parameters for
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS !<A pointer to the interpolation parameters
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx,mk,nk,nn,np,ns,ny,ny2,scaling_idx
     REAL(DP), POINTER :: FIELD_PARAMETER_SET_DATA(:),SCALE_FACTORS(:)
@@ -2268,16 +2109,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the mappings for a field and deallocates all memory. 
   SUBROUTINE FIELD_MAPPINGS_FINALISE(FIELD,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_MAPPINGS_FINALISE
-    !###  Description:
-    !###   Finalises the mappings for a field and deallocates all memory. 
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("FIELD_MAPPINGS_FINALISE",ERR,ERROR,*999)
@@ -2303,16 +2141,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the mappings for a field. 
   SUBROUTINE FIELD_MAPPINGS_INITIALISE(FIELD,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_MAPPINGS_INITIALISE
-    !###  Description:
-    !###   Initialises the mappings for a field. 
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to initialise the mappings for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("FIELD_MAPPINGS_INITIALISE",ERR,ERROR,*999)
@@ -2344,14 +2179,10 @@ CONTAINS
   !>Calculates the mappings for a field.
   SUBROUTINE FIELD_MAPPINGS_CALCULATE(FIELD,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_MAPPINGS_CALCULATE
-    !###  Description:
-    !###   Calculates the mappings for a field. 
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to calculate the mappings for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: variable_idx,component_idx,GLOBAL_DOFS_OFFSET,VARIABLE_GLOBAL_DOFS_OFFSET,NUMBER_OF_GLOBAL_DOFS, &
       & NUMBER_OF_LOCAL_DOFS,NUMBER_OF_CONSTANT_DOFS,NUMBER_OF_ELEMENT_DOFS,NUMBER_OF_NODE_DOFS,NUMBER_OF_POINT_DOFS, &
@@ -2430,6 +2261,8 @@ CONTAINS
         ALLOCATE(FIELD%VARIABLES(variable_idx)%DOF_LIST(NUMBER_OF_VARIABLE_DOFS),STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field variable dof list",ERR,ERROR,*999)
         FIELD%VARIABLES(variable_idx)%NUMBER_OF_DOFS=NUMBER_OF_VARIABLE_DOFS
+        ALLOCATE(FIELD%VARIABLES(variable_idx)%GLOBAL_DOF_LIST(TOTAL_NUMBER_OF_VARIABLE_DOFS),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field variable global dof list",ERR,ERROR,*999)
         FIELD%VARIABLES(variable_idx)%TOTAL_NUMBER_OF_DOFS=TOTAL_NUMBER_OF_VARIABLE_DOFS
       ENDDO !variable_idx
       !Allocate the mapping arrays
@@ -2476,6 +2309,7 @@ CONTAINS
       !Calculate the local and global numbers and set up the mappings
       DO variable_idx=1,FIELD%NUMBER_OF_VARIABLES
         NUMBER_OF_VARIABLE_DOFS=0
+        TOTAL_NUMBER_OF_VARIABLE_DOFS=0
         VARIABLE_GLOBAL_DOFS_OFFSET=0
         VARIABLE_LOCAL_DOFS_OFFSETS=0
         FIELD_VARIABLE_DOFS_MAPPING=>FIELD%VARIABLES(variable_idx)%DOMAIN_MAPPING
@@ -2510,6 +2344,8 @@ CONTAINS
             variable_local_ny=1+VARIABLE_LOCAL_DOFS_OFFSETS(my_computational_node_number)
             NUMBER_OF_VARIABLE_DOFS=NUMBER_OF_VARIABLE_DOFS+1
             FIELD%VARIABLES(variable_idx)%DOF_LIST(NUMBER_OF_VARIABLE_DOFS)=local_ny
+            TOTAL_NUMBER_OF_VARIABLE_DOFS=TOTAL_NUMBER_OF_VARIABLE_DOFS+1
+            FIELD%VARIABLES(variable_idx)%GLOBAL_DOF_LIST(TOTAL_NUMBER_OF_VARIABLE_DOFS)=global_ny
             !Allocate and set up global to local domain map for variable mapping
             IF(ASSOCIATED(FIELD_VARIABLE_DOFS_MAPPING)) THEN
               variable_global_ny=1+VARIABLE_GLOBAL_DOFS_OFFSET
@@ -2569,6 +2405,8 @@ CONTAINS
             DO ny=1,ELEMENTS_MAPPING%NUMBER_OF_GLOBAL
               !Handle field mappings
               global_ny=ny+GLOBAL_DOFS_OFFSET
+              TOTAL_NUMBER_OF_VARIABLE_DOFS=TOTAL_NUMBER_OF_VARIABLE_DOFS+1
+              FIELD%VARIABLES(variable_idx)%GLOBAL_DOF_LIST(TOTAL_NUMBER_OF_VARIABLE_DOFS)=global_ny
               CALL DOMAIN_MAPPINGS_MAPPING_GLOBAL_INITIALISE(FIELD_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_ny),ERR,ERROR,*999)
               NUMBER_OF_DOMAINS=DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS
               ALLOCATE(FIELD_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_ny)%LOCAL_NUMBER(NUMBER_OF_DOMAINS),STAT=ERR)
@@ -2664,6 +2502,8 @@ CONTAINS
             DO ny=1,DOFS_MAPPING%NUMBER_OF_GLOBAL
               !Handle field mapping
               global_ny=ny+GLOBAL_DOFS_OFFSET
+              TOTAL_NUMBER_OF_VARIABLE_DOFS=TOTAL_NUMBER_OF_VARIABLE_DOFS+1
+              FIELD%VARIABLES(variable_idx)%GLOBAL_DOF_LIST(TOTAL_NUMBER_OF_VARIABLE_DOFS)=global_ny
               CALL DOMAIN_MAPPINGS_MAPPING_GLOBAL_INITIALISE(FIELD_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_ny),ERR,ERROR,*999)
               NUMBER_OF_DOMAINS=DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS
               ALLOCATE(FIELD_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_ny)%LOCAL_NUMBER(NUMBER_OF_DOMAINS),STAT=ERR)
@@ -2771,16 +2611,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the dofs to parameters  mapping for a field and deallocates all memory. 
   SUBROUTINE FIELD_MAPPINGS_DOF_TO_PARAM_MAP_FINALISE(DOF_TO_PARAM_MAP,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_DOFS_MAPPINGS_DOF_TO_PARAM_MAP_FINALISE
-    !###  Description:
-    !###   Finalises the dofs to parameters  mapping for a field and deallocates all memory. 
-
     !Argument variables
-    TYPE(FIELD_DOF_TO_PARAM_MAP_TYPE) :: DOF_TO_PARAM_MAP
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_DOF_TO_PARAM_MAP_TYPE) :: DOF_TO_PARAM_MAP !<The dof to parameter map to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("FIELD_MAPPINGS_DOF_TO_PARAM_MAP_FINALISE",ERR,ERROR,*999)
@@ -2808,16 +2645,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the dofs to parameters mappings for a field.
   SUBROUTINE FIELD_MAPPINGS_DOF_TO_PARAM_MAP_INITIALISE(DOF_TO_PARAM_MAP,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_MAPPINGS_DOF_TO_PARAM_INITIALISE
-    !###  Description:
-    !###   Initialises the dofs to parameters mappings for a field. 
-
     !Argument variables
-    TYPE(FIELD_DOF_TO_PARAM_MAP_TYPE) :: DOF_TO_PARAM_MAP
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_DOF_TO_PARAM_MAP_TYPE) :: DOF_TO_PARAM_MAP !<The dof to parameter map to initialise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("FIELD_MAPPINGS_DOF_TO_PARAM_INITIALISE",ERR,ERROR,*999)
@@ -2838,29 +2672,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Subroutine: FIELD_GEOMETRIC_FIELD_SET
-  !###  Description:
-  !###    Sets/changes the geometric field for a field.
-  !###  Child-subroutines: FIELD_GEOMETRIC_FIELD_SET_NUMBER,FIELD_GEOMETRIC_FIELD_SET_PTR
 
-  !
-  !================================================================================================================================
-  !
-
+  !>Sets/changes the geometric field for a field identified by a user number.
   SUBROUTINE FIELD_GEOMETRIC_FIELD_SET_NUMBER(USER_NUMBER,REGION,GEOMETRIC_FIELD,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_GEOMETRIC_FIELD_SET_NUMBER
-    !###  Description:
-    !###    Sets/changes the geometric field for a field identified by a user number.
-    !###  Parent-subroutine: FIELD_GEOMETRIC_FIELD_SET
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the field
+    TYPE(REGION_TYPE), POINTER :: REGION !<The region of the field
+    TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<A pointer to the geometric field to associate with this field
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
 
@@ -2882,19 +2703,15 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Sets/changes the geometric field for a field identified by a pointer.
   SUBROUTINE FIELD_GEOMETRIC_FIELD_SET_PTR(FIELD,GEOMETRIC_FIELD,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_GEOMETRIC_FIELD_SET_PTR
-    !###  Description:
-    !###    Sets/changes the geometric field for a field identified by a pointer.
-    !###  Parent-subroutine: FIELD_GEOMETRIC_FIELD_SET
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to set the geometric field for
+    TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<A pointer to the geometric field
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -2959,16 +2776,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Calculates the geometric parameters (line lengths, areas, volumes, scaling etc.) for a field. 
   SUBROUTINE FIELD_GEOMETRIC_PARAMETERS_CALCULATE(FIELD,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_GEOMETRIC_PARAMETERS_CALCULATE
-    !###  Description:
-    !###   Calculates the geometric parameters (line lengths, areas, volumes, scaling etc.) for a field. 
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<The field to calculate the geometric parameters for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -3001,16 +2815,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the geometric parameters for a field and deallocates all memory. 
   SUBROUTINE FIELD_GEOMETRIC_PARAMETERS_FINALISE(FIELD,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_GEOMETRIC_PARAMETERS_FINALISE
-    !###  Description:
-    !###   Finalises the geometric parameters for a field and deallocates all memory. 
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to finalise the geometric parameters for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: field_idx
     TYPE(FIELD_TYPE), POINTER :: FIELD2
@@ -3045,16 +2856,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the geometric parameters for a geometric field
   SUBROUTINE FIELD_GEOMETRIC_PARAMETERS_INITIALISE(FIELD,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_GEOMETRIC_PARAMETERS_INITIALISE
-    !###  Description:
-    !###   Initialises the geometric parameters for a geometric field . 
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to initialise the geometric parameters for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: field_idx
     TYPE(FIELD_PTR_TYPE), POINTER :: NEW_FIELDS_USING(:)
@@ -3114,18 +2922,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
+  
+  !>Calculates the line lengths from the parameters of a geometric field. Old CMISS name LINSCA
   SUBROUTINE FIELD_GEOMETRIC_PARAMETERS_LINE_LENGTHS_CALCULATE(FIELD,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_GEOMETRIC_PARAMETERS_LINE_LENGTHS_CALCULATE
-    !###  Old-cmiss-name: LINSCA
-    !###  Description:
-    !###   Calculates the line lengths from the parameters of a geometric field. 
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to calculate the line lengths for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: DUMMY_ERR,ITERATION_NUMBER,MAXIMUM_DIFFERENCE_LINE,ng,nl
     INTEGER(INTG), PARAMETER :: LINES_MAXIMUM_NUMBER_OF_ITERATIONS=20
@@ -3278,17 +3082,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the geometric parameters for a field and deallocates all memory. 
   SUBROUTINE FIELD_GEOMETRIC_PARAMETERS_SCALE_FACTORS_UPDATE(FIELD,UPDATE_FIELDS_USING,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_GEOMETRIC_PARAMETERS_SCALE_FACTORS_UPDATE
-    !###  Description:
-    !###   Finalises the geometric parameters for a field and deallocates all memory. 
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    LOGICAL, INTENT(IN) :: UPDATE_FIELDS_USING
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to update the scale factors for
+    LOGICAL, INTENT(IN) :: UPDATE_FIELDS_USING !<If .TRUE. then update the fields that use this fields geometric parameters.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: field_idx,LAST_FIELD_IDX
     TYPE(FIELD_TYPE), POINTER :: FIELD2
@@ -3324,17 +3125,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Updates the geometric field parameters from the initial nodal positions of the mesh. Any derivative values for the nodes are calculated from an average straight line approximation.
   SUBROUTINE FIELD_GEOMETRIC_PARAMETERS_UPDATE_FROM_INITIAL_MESH(FIELD,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_GEOMETRIC_PARAMETERS_UPDATE_FROM_INITIAL_MESH
-    !###  Description:
-    !###    Updates the geometric field parameters from the initial nodal positions of the mesh. Any derivative values for the
-    !###    nodes are calculated from an average straight line approximation.
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to update the geometric parameters for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx,component_idx2,global_np,global_np1,global_np2,nk,nk1,nk2,nl,nnl,np,np1,np2,nu,ny, &
       & DERIVATIVES_NUMBER_OF_LINES(8)
@@ -3440,6 +3237,7 @@ CONTAINS
                     ENDDO !nk
                   ENDDO !np
                 ENDDO !component_idx
+                CALL FIELD_PARAMETER_SET_RESTORE(FIELD,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
                 CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                 CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
               ELSE
@@ -3479,29 +3277,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Subroutine: FIELD_MESH_DECOMPOSITION_SET
-  !###  Description:
-  !###    Sets/changes the mesh decomposition for a field.
-  !###  Child-subroutines: FIELD_MESH_DECOMPOSITION_SET_NUMBER,FIELD_MESH_DECOMPOSITION_SET_PTR
 
-  !
-  !================================================================================================================================
-  !
-
+  !>Sets/changes the mesh decomposition for a field identified by a user number.
   SUBROUTINE FIELD_MESH_DECOMPOSITION_SET_NUMBER(USER_NUMBER,REGION,MESH_DECOMPOSITION,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_MESH_DECOMPOSITION_SET_NUMBER
-    !###  Description:
-    !###    Sets/changes the mesh decomposition for a field identified by a user number.
-    !###  Parent-subroutine: FIELD_MESH_DECOMPOSITION_SET
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    TYPE(REGION_TYPE), POINTER :: REGION
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the field
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region of the field
     TYPE(DECOMPOSITION_TYPE), POINTER :: MESH_DECOMPOSITION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
 
@@ -3525,18 +3310,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets/changes the mesh decomposition for a field indentified by a pointer.
   SUBROUTINE FIELD_MESH_DECOMPOSITION_SET_PTR(FIELD,MESH_DECOMPOSITION,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_MESH_DECOMPOSITION_SET_PTR
-    !###  Description:
-    !###    Sets/changes the mesh decomposition for a field indentified by a pointer.
-    !###  Parent-subroutine: FIELD_MESH_DECOMPOSITION_SET
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    TYPE(DECOMPOSITION_TYPE), POINTER :: MESH_DECOMPOSITION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to set the decomposition for
+    TYPE(DECOMPOSITION_TYPE), POINTER :: MESH_DECOMPOSITION !<A pointer to the mesh decomposition to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -3591,17 +3372,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finds the next available user number for the fields defined on the given region.
   SUBROUTINE FIELD_NEXT_NUMBER_FIND(REGION,NEXT_NUMBER,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_NEXT_NUMBER_FIND
-    !###  Description:
-    !###    Finds the next available user number for the fields defined on the given region.
-
     !Argument variables
-    TYPE(REGION_TYPE), POINTER :: REGION
-    INTEGER(INTG), INTENT(OUT) :: NEXT_NUMBER
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region
+    INTEGER(INTG), INTENT(OUT) :: NEXT_NUMBER !<On exit, the next field user number in the region
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: field_idx,MAXIMUM_USER_NUMBER
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -3639,29 +3417,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Subroutine: FIELD_NUMBER_OF_COMPONENTS_SET
-  !###  Description:
-  !###    Sets/changes the number of field components for a field.
-  !###  Child-subroutines: FIELD_NUMBER_OF_COMPONENTS_SET_NUMBER,FIELD_NUMBER_OF_COMPONENTS_SET_PTR
 
-  !
-  !================================================================================================================================
-  !
-
+  !>Sets/changes the number of field components for a field variable identified by a user and variable number.
   SUBROUTINE FIELD_NUMBER_OF_COMPONENTS_SET_NUMBER(USER_NUMBER,REGION,NUMBER_OF_COMPONENTS,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_NUMBER_OF_COMPONENTS_SET_NUMBER
-    !###  Description:
-    !###    Sets/changes the number of field components for a field variable identified by a user and variable number.
-    !###  Parent-subroutine: FIELD_NUMBER_OF_COMPONENTS_SET
-
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    TYPE(REGION_TYPE), POINTER :: REGION
+   !Argument variables
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the field
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the field
     INTEGER(INTG), INTENT(IN) :: NUMBER_OF_COMPONENTS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
     
@@ -3684,18 +3449,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets/changes the number of field components for a field identified by a pointer.
   SUBROUTINE FIELD_NUMBER_OF_COMPONENTS_SET_PTR(FIELD,NUMBER_OF_COMPONENTS,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_SET_NUMBER_OF_COMPONENTS_PTR
-    !###  Description:
-    !###    Sets/changes the number of field components for a field identified by a pointer.
-    !###  Parent-subroutine: FIELD_NUMBER_OF_COMPONENTS_SET
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_COMPONENTS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to set the number of components
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_COMPONENTS !<The number of components to be set.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: variable_idx
     INTEGER(INTG), ALLOCATABLE :: OLD_INTERPOLATION_TYPE(:,:),OLD_MESH_COMPONENT_NUMBER(:,:)
@@ -3778,29 +3539,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Subroutine: FIELD_NUMBER_OF_VARIABLE_TYPES_SET
-  !###  Description:
-  !###    Sets/changes the number of variable types for a field.
-  !###  Child-subroutines: FIELD_NUMBER_OF_VARIABLE_TYPES_SET_NUMBER,FIELD_NUMBER_OF_VARIABLE_TYPES_SET_PTR
 
-  !
-  !================================================================================================================================
-  !
-
+  !>Sets/changes the number of variable types for a field identified by a user number.
   SUBROUTINE FIELD_NUMBER_OF_VARIABLES_SET_NUMBER(USER_NUMBER,REGION,NUMBER_OF_VARIABLES,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_NUMBER_OF_VARIABLES_SET_NUMBER
-    !###  Description:
-    !###    Sets/changes the number of variable types for a field identified by a user number.
-    !###  Parent-subroutine: FIELD_NUMBER_OF_VARIABLES_SET
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    TYPE(REGION_TYPE), POINTER :: REGION
-    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_VARIABLES
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the field
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the field
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_VARIABLES !<The number of variables to set for the field
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
     
@@ -3823,18 +3571,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets/changes the number of variables for a field identified by a pointer.
   SUBROUTINE FIELD_NUMBER_OF_VARIABLES_SET_PTR(FIELD,NUMBER_OF_VARIABLES,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_SET_NUMBER_OF_VARIABLES_PTR
-    !###  Description:
-    !###    Sets/changes the number of variables for a field identified by a pointer.
-    !###  Parent-subroutine: FIELD_NUMBER_OF_VARIABLES_SET
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_VARIABLES
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to set the number of variables for
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_VARIABLES !<The number of variables to set for the field
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: variable_idx
     INTEGER(INTG), ALLOCATABLE :: OLD_VARIABLE_TYPES(:),OLD_INTERPOLATION_TYPE(:,:),OLD_MESH_COMPONENT_NUMBER(:,:)
@@ -3936,17 +3680,190 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE FIELD_PARAMETER_SET_CREATE(FIELD,FIELD_SET_TYPE,ERR,ERROR,*)
-
-    !#### Subroutine: FIELD_PARAMETER_SET_CREATE
-    !###  Description:
-    !###   Creates a new parameter set of type set type for a field. 
+  !>Adds the parameter set from one parameter set type to another parameter set type
+  SUBROUTINE FIELD_PARAMETER_SET_ADD(FIELD,FIELD_FROM_SET_TYPE,FIELD_TO_SET_TYPE,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to add the parameter sets for
+    INTEGER(INTG), INTENT(IN) :: FIELD_FROM_SET_TYPE !<The field parameter set identifier to add the parameters from
+    INTEGER(INTG), INTENT(IN) :: FIELD_TO_SET_TYPE !<The field parameter set identifier to add the parameters to
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: dof_idx
+    REAL(DP) :: VALUE
+    REAL(DP), POINTER :: FIELD_FROM_PARAMETERS(:)
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: FIELD_DOMAIN_MAPPING
+    TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: FIELD_FROM_PARAMETER_SET,FIELD_TO_PARAMETER_SET
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+   
+    CALL ENTERS("FIELD_PARAMETER_SET_ADD",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+      IF(FIELD%FIELD_FINISHED) THEN
+        !Check the from set type input
+        IF(FIELD_FROM_SET_TYPE>0.AND.FIELD_FROM_SET_TYPE<FIELD_NUMBER_OF_SET_TYPES) THEN
+          FIELD_FROM_PARAMETER_SET=>FIELD%PARAMETER_SETS%SET_TYPE(FIELD_FROM_SET_TYPE)%PTR
+          IF(ASSOCIATED(FIELD_FROM_PARAMETER_SET)) THEN
+            !Check the from set type input
+            IF(FIELD_TO_SET_TYPE>0.AND.FIELD_TO_SET_TYPE<FIELD_NUMBER_OF_SET_TYPES) THEN
+              FIELD_TO_PARAMETER_SET=>FIELD%PARAMETER_SETS%SET_TYPE(FIELD_TO_SET_TYPE)%PTR
+              !Loop over the non-ghosted dofs in the field
+              IF(ASSOCIATED(FIELD_TO_PARAMETER_SET)) THEN
+                FIELD_DOMAIN_MAPPING=>FIELD%MAPPINGS%DOMAIN_MAPPING
+                IF(ASSOCIATED(FIELD_DOMAIN_MAPPING)) THEN
+                  !Get the from parameter set data
+                  CALL DISTRIBUTED_VECTOR_DATA_GET(FIELD_FROM_PARAMETER_SET%PARAMETERS,FIELD_FROM_PARAMETERS,ERR,ERROR,*999)
+                  !Set the field dofs
+                  DO dof_idx=1,FIELD_DOMAIN_MAPPING%NUMBER_OF_LOCAL
+                    VALUE=FIELD_FROM_PARAMETERS(dof_idx)
+                    CALL DISTRIBUTED_VECTOR_VALUES_ADD(FIELD_TO_PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
+                  ENDDO !dof_idx
+                  !Start the to parameter set transfer
+                  CALL DISTRIBUTED_VECTOR_UPDATE_START(FIELD_TO_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)                  !
+                  !Finish the to parameter set transfer
+                  CALL DISTRIBUTED_VECTOR_UPDATE_FINISH(FIELD_TO_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)
+                  !Restore the from parameter set transfer
+                  CALL DISTRIBUTED_VECTOR_DATA_RESTORE(FIELD_FROM_PARAMETER_SET%PARAMETERS,FIELD_FROM_PARAMETERS,ERR,ERROR,*999)
+                 ELSE
+                  CALL FLAG_ERROR("Field domain mapping is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                LOCAL_ERROR="The field to set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_TO_SET_TYPE,"*",ERR,ERROR))// &
+                  & " has not been created on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              LOCAL_ERROR="The field to set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_TO_SET_TYPE,"*",ERR,ERROR))// &
+                & " is invalid. The field set type must be between 1 and "// &
+                & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_SET_TYPES,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The field from set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_FROM_SET_TYPE,"*",ERR,ERROR))// &
+              & " has not been created on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The field from set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_FROM_SET_TYPE,"*",ERR,ERROR))// &
+            & " is invalid. The field set type must be between 1 and "// &
+            & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_SET_TYPES,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Field has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("FIELD_PARAMETER_SET_ADD")
+    RETURN
+999 CALL ERRORS("FIELD_PARAMETER_SET_ADD",ERR,ERROR)
+    CALL EXITS("FIELD_PARAMETER_SET_ADD")
+    RETURN 1
+  END SUBROUTINE FIELD_PARAMETER_SET_ADD
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Copys the parameter set from one parameter set type to another parameter set type
+  SUBROUTINE FIELD_PARAMETER_SET_COPY(FIELD,FIELD_FROM_SET_TYPE,FIELD_TO_SET_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to copy the parameters set for
+    INTEGER(INTG), INTENT(IN) :: FIELD_FROM_SET_TYPE !<The field parameter set identifier to copy the parameters from
+    INTEGER(INTG), INTENT(IN) :: FIELD_TO_SET_TYPE !<The field parameter set identifier to copy the parameters to
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: dof_idx
+    REAL(DP) :: VALUE
+    REAL(DP), POINTER :: FIELD_FROM_PARAMETERS(:)
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: FIELD_DOMAIN_MAPPING
+    TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: FIELD_FROM_PARAMETER_SET,FIELD_TO_PARAMETER_SET
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+   
+    CALL ENTERS("FIELD_PARAMETER_SET_COPY",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+      IF(FIELD%FIELD_FINISHED) THEN
+        !Check the from set type input
+        IF(FIELD_FROM_SET_TYPE>0.AND.FIELD_FROM_SET_TYPE<FIELD_NUMBER_OF_SET_TYPES) THEN
+          FIELD_FROM_PARAMETER_SET=>FIELD%PARAMETER_SETS%SET_TYPE(FIELD_FROM_SET_TYPE)%PTR
+          IF(ASSOCIATED(FIELD_FROM_PARAMETER_SET)) THEN
+            !Check the from set type input
+            IF(FIELD_TO_SET_TYPE>0.AND.FIELD_TO_SET_TYPE<FIELD_NUMBER_OF_SET_TYPES) THEN
+              FIELD_TO_PARAMETER_SET=>FIELD%PARAMETER_SETS%SET_TYPE(FIELD_TO_SET_TYPE)%PTR
+              !Loop over the non-ghosted dofs in the field
+              IF(ASSOCIATED(FIELD_TO_PARAMETER_SET)) THEN
+                FIELD_DOMAIN_MAPPING=>FIELD%MAPPINGS%DOMAIN_MAPPING
+                IF(ASSOCIATED(FIELD_DOMAIN_MAPPING)) THEN
+                  !Get the from parameter set data
+                  CALL DISTRIBUTED_VECTOR_DATA_GET(FIELD_FROM_PARAMETER_SET%PARAMETERS,FIELD_FROM_PARAMETERS,ERR,ERROR,*999)
+                  !Set the field dofs
+                  DO dof_idx=1,FIELD_DOMAIN_MAPPING%NUMBER_OF_LOCAL
+                    VALUE=FIELD_FROM_PARAMETERS(dof_idx)
+                    CALL DISTRIBUTED_VECTOR_VALUES_SET(FIELD_TO_PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
+                  ENDDO !dof_idx
+                  !Start the to parameter set transfer
+                  CALL DISTRIBUTED_VECTOR_UPDATE_START(FIELD_TO_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)                  
+                  !Finish the to parameter set transfer
+                  CALL DISTRIBUTED_VECTOR_UPDATE_FINISH(FIELD_TO_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)
+                  !Restore the from parameter set data
+                  CALL DISTRIBUTED_VECTOR_DATA_RESTORE(FIELD_FROM_PARAMETER_SET%PARAMETERS,FIELD_FROM_PARAMETERS,ERR,ERROR,*999)
+                 ELSE
+                  CALL FLAG_ERROR("Field domain mapping is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                LOCAL_ERROR="The field to set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_TO_SET_TYPE,"*",ERR,ERROR))// &
+                  & " has not been created on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              LOCAL_ERROR="The field to set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_TO_SET_TYPE,"*",ERR,ERROR))// &
+                & " is invalid. The field set type must be between 1 and "// &
+                & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_SET_TYPES,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The field from set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_FROM_SET_TYPE,"*",ERR,ERROR))// &
+              & " has not been created on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The field from set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_FROM_SET_TYPE,"*",ERR,ERROR))// &
+            & " is invalid. The field set type must be between 1 and "// &
+            & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_SET_TYPES,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Field has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("FIELD_PARAMETER_SET_COPY")
+    RETURN
+999 CALL ERRORS("FIELD_PARAMETER_SET_COPY",ERR,ERROR)
+    CALL EXITS("FIELD_PARAMETER_SET_COPY")
+    RETURN 1
+  END SUBROUTINE FIELD_PARAMETER_SET_COPY
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Creates a new parameter set of type set type for a field.
+  SUBROUTINE FIELD_PARAMETER_SET_CREATE(FIELD,FIELD_SET_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to create the parameter set for
+    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE !<The field parameter set identifier
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: DUMMY_ERR,parameter_set_idx
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: NEW_PARAMETER_SET
@@ -4016,17 +3933,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Destroys the parameter set of type set type for a field and deallocates all memory.
   SUBROUTINE FIELD_PARAMETER_SET_DESTROY(FIELD,FIELD_SET_TYPE,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_PARAMETER_SET_DESTROY
-    !###  Description:
-    !###   Destroys the parameter set of type set type for a field and deallocates all memory. 
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to destroy a parameter set for
+    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE !<The field parameter set identifier
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: parameter_set_idx,SET_INDEX
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
@@ -4087,16 +4001,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the parameter set for a field and deallocates all memory.
   SUBROUTINE FIELD_PARAMETER_SET_FINALISE(FIELD_PARAMETER_SET,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_PARAMETER_SET_FINALISE
-    !###  Description:
-    !###   Finalises the parameter set for a field and deallocates all memory. 
-
     !Argument variables
-    TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: FIELD_PARAMETER_SET
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: FIELD_PARAMETER_SET !<A pointer to the field parameter set to destroy
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("FIELD_PARAMETER_SET_FINALISE",ERR,ERROR,*999)
@@ -4118,19 +4029,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns a pointer to the specified field parameter set array. The pointer must be restored with a call to FIELD_PARAMETER_SET_RESTORE call. Note: the values can be used for read operations but a FIELD_PARAMETER_SET_UPDATE call must be used to change any values.
   SUBROUTINE FIELD_PARAMETER_SET_GET(FIELD,FIELD_SET_TYPE,PARAMETERS,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_PARAMETER_SET_GET
-    !###  Description:
-    !###    Returns a pointer to the specified field parameter set array. Note: the values can be used for read operations but
-    !###    a FIELD_PARAMETER_SET_UPDATE call must be used to change any values.
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE
-    REAL(DP), POINTER :: PARAMETERS(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to get the parameter set from
+    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE !<The field parameter set identifier
+    REAL(DP), POINTER :: PARAMETERS(:) !<On exit, a pointer to the field parameter set data
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -4179,16 +4086,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the parameter set for a field.
   SUBROUTINE FIELD_PARAMETER_SET_INITIALISE(FIELD_PARAMETER_SET,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_PARAMETER_SET_INITIALISE
-    !###  Description:
-    !###   Initialises the parameter set for a field. 
-
-    !Argument variables
-    TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: FIELD_PARAMETER_SET
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+   !Argument variables
+    TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: FIELD_PARAMETER_SET !<The field parameter set to initialise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("FIELD_PARAMETER_SET_INITIALISE",ERR,ERROR,*999)
@@ -4211,20 +4115,73 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE FIELD_PARAMETER_SET_UPDATE_CONSTANT(FIELD,FIELD_SET_TYPE,COMPONENT_NUMBER,VARIABLE_NUMBER,VALUE,ERR,ERROR,*)
-
-    !#### Subroutine: FIELD_PARAMETER_SET_UPDATE_CONSTANT
-    !###  Description:
-    !###    Updates the given parameter set with the given value for the constant of the field variable component.
+  !>Restores the specified field parameter set array that was obtained with FIELD_PARAMETER_SET_GET.
+  SUBROUTINE FIELD_PARAMETER_SET_RESTORE(FIELD,FIELD_SET_TYPE,PARAMETERS,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE
-    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER
-    INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER
-    REAL(DP), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to restore the parameter set from
+    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE !<The field parameter set identifier
+    REAL(DP), POINTER :: PARAMETERS(:) !<The pointer to the field parameter set data obtained with the parameter set get call
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("FIELD_PARAMETER_SET_RESTORE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+      IF(FIELD%FIELD_FINISHED) THEN
+        IF(ASSOCIATED(PARAMETERS)) THEN
+          IF(FIELD_SET_TYPE>0.AND.FIELD_SET_TYPE<=FIELD_NUMBER_OF_SET_TYPES) THEN
+            PARAMETER_SET=>FIELD%PARAMETER_SETS%SET_TYPE(FIELD_SET_TYPE)%PTR
+            IF(ASSOCIATED(PARAMETER_SET)) THEN
+              CALL DISTRIBUTED_VECTOR_DATA_RESTORE(PARAMETER_SET%PARAMETERS,PARAMETERS,ERR,ERROR,*999)
+            ELSE
+              LOCAL_ERROR="The field set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_SET_TYPE,"*",ERR,ERROR))// &
+                & " has not been created on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The field set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_SET_TYPE,"*",ERR,ERROR))// &
+              & " is invalid. The field set type must be between 1 and "// &
+              & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_SET_TYPES,"*",ERR,ERROR))
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Parameters is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+          & " has not been finished"
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("FIELD_PARAMETER_SET_RESTORE")
+    RETURN
+999 CALL ERRORS("FIELD_PARAMETER_SET_RESTORE",ERR,ERROR)
+    CALL EXITS("FIELD_PARAMETER_SET_RESTORE")
+    RETURN 1
+  END SUBROUTINE FIELD_PARAMETER_SET_RESTORE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Updates the given parameter set with the given value for the constant of the field variable component.
+  SUBROUTINE FIELD_PARAMETER_SET_UPDATE_CONSTANT(FIELD,FIELD_SET_TYPE,COMPONENT_NUMBER,VARIABLE_NUMBER,VALUE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to update
+    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE !<The field parameter set identifier
+    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<The field variable component number to update
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<The field variable to update
+    REAL(DP), INTENT(IN) :: VALUE !<The value to update to
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: ny
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
@@ -4296,19 +4253,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Updates the given parameter set with the given value for a particular dof of the field.
   SUBROUTINE FIELD_PARAMETER_SET_UPDATE_DOF(FIELD,FIELD_SET_TYPE,DOF_NUMBER,VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_PARAMETER_SET_UPDATE_DOF
-    !###  Description:
-    !###    Updates the given parameter set with the given value for a particular dof of the field.
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE
-    INTEGER(INTG), INTENT(IN) :: DOF_NUMBER
-    REAL(DP), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to update
+    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE !<The field parameter set identifier
+    INTEGER(INTG), INTENT(IN) :: DOF_NUMBER !<The dof number to update
+    REAL(DP), INTENT(IN) :: VALUE !<The value to update to
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: GLOBAL_DOF_NUMBER
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
@@ -4373,22 +4327,19 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Updates the given parameter set with the given value for a particular element of the field variable component.
   SUBROUTINE FIELD_PARAMETER_SET_UPDATE_ELEMENT(FIELD,FIELD_SET_TYPE,ELEMENT_NUMBER,COMPONENT_NUMBER,VARIABLE_NUMBER, &
     & VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_PARAMETER_SET_UPDATE_ELEMENT
-    !###  Description:
-    !###    Updates the given parameter set with the given value for a particular element of the field variable component.
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE
-    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER
-    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER
-    INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER
-    REAL(DP), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to update
+    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE !<The field parameter set identifier
+    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to update
+    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<The field variable component to update
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<The field variable to update
+    REAL(DP), INTENT(IN) :: VALUE !<The value to update to
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: ny
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
@@ -4462,17 +4413,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finishes the the parameter set update for a field. 
   SUBROUTINE FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD,FIELD_SET_TYPE,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_PARAMETER_SET_UPDATE_FINISH
-    !###  Description:
-    !###    Finishes the the parameter set update for a field. 
-
-    !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+     !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to finish the update for
+    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE !<The field parameter set identifier to finish the update for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -4514,24 +4462,20 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Updates the given parameter set with the given value for a particular node and derivative of the field variable component.
   SUBROUTINE FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_SET_TYPE,DERIVATIVE_NUMBER,NODE_NUMBER,COMPONENT_NUMBER,VARIABLE_NUMBER, &
     & VALUE,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_PARAMETER_SET_UPDATE_NODE
-    !###  Description:
-    !###    Updates the given parameter set with the given value for a particular node and derivative of the field variable
-    !###    component.
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE
-    INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBER
-    INTEGER(INTG), INTENT(IN) :: NODE_NUMBER
-    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER
-    INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER
-    REAL(DP), INTENT(IN) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to update
+    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE !<The field parameter set identifier
+    INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBER !<The node derivative number to update
+    INTEGER(INTG), INTENT(IN) :: NODE_NUMBER !<The node number to update
+    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<The field variable component number to update
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<The field variable to update
+    REAL(DP), INTENT(IN) :: VALUE !<The value to update to
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: ny
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
@@ -4618,17 +4562,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Starts the the parameter set update for a field. 
   SUBROUTINE FIELD_PARAMETER_SET_UPDATE_START(FIELD,FIELD_SET_TYPE,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_PARAMETER_SET_UPDATE_START
-    !###  Description:
-    !###    Starts the the parameter set update for a field. 
-
-    !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    !Argument variables 
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to start the update for
+    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE !<The field parameter set identifier to update
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -4666,16 +4607,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the parameter sets for a field and deallocates all memory. 
   SUBROUTINE FIELD_PARAMETER_SETS_FINALISE(FIELD,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_PARAMETER_SETS_FINALISE
-    !###  Description:
-    !###   Finalises the parameter sets for a field and deallocates all memory. 
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to finalise the parameter sets for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: parameter_set_idx
 
@@ -4705,15 +4643,12 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the parameter sets for a field. 
   SUBROUTINE FIELD_PARAMETER_SETS_INITIALISE(FIELD,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_PARAMETER_SETS_INITIALISE
-    !###  Description:
-    !###   Initialises the parameter sets for a field. 
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(OUT) :: ERR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to initialise the parameter sets for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
     !Local Variables
     INTEGER(INTG) :: parameter_set_idx
@@ -4744,17 +4679,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the scaling for a field scaling index and deallocates all memory. 
   SUBROUTINE FIELD_SCALING_FINALISE(FIELD,SCALING_INDEX,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_SCALING_FINALISE
-    !###  Description:
-    !###   Finalises the scaling for a field scaling index and deallocates all memory. 
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: SCALING_INDEX
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to finalise the scalings for
+    INTEGER(INTG), INTENT(IN) :: SCALING_INDEX !<The scaling index to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -4787,18 +4719,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the scalings for a field scaling index corresponding to a mesh component index.
   SUBROUTINE FIELD_SCALING_INITIALISE(FIELD,SCALING_INDEX,MESH_COMPONENT_NUMBER,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_SCALING_INITIALISE
-    !###  Description:
-    !###   Initialises the scalings for a field scaling index corresponding to a mesh component index.
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: SCALING_INDEX
-    INTEGER(INTG), INTENT(IN) :: MESH_COMPONENT_NUMBER
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to initialise the scaling for
+    INTEGER(INTG), INTENT(IN) :: SCALING_INDEX !<The scaling index to initialise
+    INTEGER(INTG), INTENT(IN) :: MESH_COMPONENT_NUMBER !<The mesh component number to initialise for the scaling
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -4866,18 +4795,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
+  
+  !>Calculates the scale factors from the geometric field associated with the field.
   SUBROUTINE FIELD_SCALINGS_CALCULATE(FIELD,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_SCALINGS_CALCULATE
-    !###  Old-cmiss-name: DLSE
-    !###  Description:
-    !###    Calculates the scale factors from the geometric field associated with the field.
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to calculate the scalings for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: MESH_COMPONENT_NUMBER,ni,ni1,ni2,nk,nk2,nl,nl2,nlp,np,nu,nu1,nu2,ny,ny1,ny2,ny3,scaling_idx
     REAL(DP) :: LENGTH1,LENGTH2,MEAN_LENGTH,TEMP
@@ -5094,16 +5019,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the scalings for a field and deallocates all memory. 
   SUBROUTINE FIELD_SCALINGS_FINALISE(FIELD,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_SCALINGS_FINALISE
-    !###  Description:
-    !###   Finalises the scalings for a field and deallocates all memory. 
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to finalise the scalings for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: scaling_idx
 
@@ -5129,16 +5051,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the scaling parameters sets for a field. 
   SUBROUTINE FIELD_SCALINGS_INITIALISE(FIELD,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_SCALINGS_INITIALISE
-    !###  Description:
-    !###   Initialises the scaling parameters sets for a field. 
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to initialise the scalings for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx,NUMBER_OF_MESH_COMPONENTS,scaling_idx,variable_idx
     INTEGER(INTG), ALLOCATABLE :: MESH_COMPONENTS_MAP(:)
@@ -5202,29 +5121,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Subroutine: FIELD_SCALING_TYPE_SET
-  !###  Description:
-  !###    Sets/changes the scaling type for a field.
-  !###  Child-subroutines: FIELD_SCALING_TYPE_SET_NUMBER,FIELD_SCALING_TYPE_SET_PTR
 
-  !
-  !================================================================================================================================
-  !
-
+  !>Sets/changes the scaling type for a field identified by a user number on a region.
   SUBROUTINE FIELD_SCALING_TYPE_SET_NUMBER(USER_NUMBER,REGION,SCALING_TYPE,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_SCALING_TYPE_SET_NUMBER
-    !###  Description:
-    !###    Sets/changes the scaling type for a field identified by a user number on a region.
-    !###  Parent-subroutine: FIELD_SCALING_TYPE_SET
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    TYPE(REGION_TYPE), POINTER :: REGION
-    INTEGER(INTG), INTENT(IN) :: SCALING_TYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the field
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the field
+    INTEGER(INTG), INTENT(IN) :: SCALING_TYPE !<The scaling type to set \see FIELD_ROUTINES_ScalingTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
 
@@ -5246,19 +5152,15 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Sets/changes the scaling type for a field identified by a pointer.
   SUBROUTINE FIELD_SCALING_TYPE_SET_PTR(FIELD,SCALING_TYPE,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_SCALING_TYPE_SET_PTR
-    !###  Description:
-    !###    Sets/changes the scaling type for a field identified by a pointer.
-    !###  Parent-subroutine: FIELD_SCALING_TYPE_SET
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: SCALING_TYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to set the scaling type for
+    INTEGER(INTG), INTENT(IN) :: SCALING_TYPE !<The scaling type to set \see FIELD_ROUTINES_ScalingTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -5292,29 +5194,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Subroutine: FIELD_TYPE_SET
-  !###  Description:
-  !###    Sets/changes the field type for a field.
-  !###  Child-subroutines: FIELD_TYPE_SET_NUMBER,FIELD_TYPE_SET_PTR
 
-  !
-  !================================================================================================================================
-  !
-
+  !>Sets/changes the field type for a field identified by a user number.
   SUBROUTINE FIELD_TYPE_SET_NUMBER(USER_NUMBER,REGION,TYPE,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_TYPE_SET_NUMBER
-    !###  Description:
-    !###    Sets/changes the field type for a field identified by a user number.
-    !###  Parent-subroutine: FIELD_TYPE_SET
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    TYPE(REGION_TYPE), POINTER :: REGION
-    INTEGER(INTG), INTENT(IN) :: TYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the field
+    TYPE(REGION_TYPE), POINTER :: REGION !<The region containing the field
+    INTEGER(INTG), INTENT(IN) :: TYPE !<The field type to set \see FIELD_ROUTINES_FieldTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
 
@@ -5337,18 +5226,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets/changes the field type for a field identified by a pointer.
   SUBROUTINE FIELD_TYPE_SET_PTR(FIELD,TYPE,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_TYPE_SET_PTR
-    !###  Description:
-    !###    Sets/changes the field type for a field identified by a pointer.
-    !###  Parent-subroutine: FIELD_TYPE_SET
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: TYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to set the type for
+    INTEGER(INTG), INTENT(IN) :: TYPE !<The field type to set \see FIELD_ROUTINES_FieldTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -5390,20 +5275,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
+  
+  !>Finds and returns in FIELD a pointer to the field identified by USER_NUMBER in the given REGION. If no field with that USER_NUMBER exists FIELD is left nullified.
   SUBROUTINE FIELD_USER_NUMBER_FIND(USER_NUMBER,REGION,FIELD,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_USER_NUMBER_FIND
-    !###  Description:
-    !###    Finds and returns in FIELD a pointer to the field identified by USER_NUMBER in the given REGION. If no field with that
-    !###    USER_NUMBER exists FIELD is left nullified.
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The field user number to find
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the field
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<On exit, a pointer to the field with the given user number. If no field with that user number exists in the region the FIELD is null.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: field_idx
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -5454,6 +5335,7 @@ CONTAINS
 
     CALL FIELD_VARIABLE_COMPONENTS_FINALISE(FIELD_VARIABLE,ERR,ERROR,*999)
     IF(ALLOCATED(FIELD_VARIABLE%DOF_LIST)) DEALLOCATE(FIELD_VARIABLE%DOF_LIST)
+    IF(ALLOCATED(FIELD_VARIABLE%GLOBAL_DOF_LIST)) DEALLOCATE(FIELD_VARIABLE%GLOBAL_DOF_LIST)
     IF(ASSOCIATED(FIELD_VARIABLE%DOMAIN_MAPPING)) THEN
       CALL DOMAIN_MAPPINGS_MAPPING_FINALISE(FIELD_VARIABLE%DOMAIN_MAPPING,ERR,ERROR,*999)
       DEALLOCATE(FIELD_VARIABLE%DOMAIN_MAPPING)
@@ -5470,17 +5352,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises a field variable.
   SUBROUTINE FIELD_VARIABLE_INITIALISE(FIELD,VARIABLE_NUMBER,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_VARIABLE_INITIALISE
-    !###  Description:
-    !###    Initialises a field variable.
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to initialise the variable for
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<The variable number of the field to initialise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -5536,16 +5415,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the field variables for a field and deallocates all memory.
   SUBROUTINE FIELD_VARIABLES_FINALISE(FIELD,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_VARIABLES_FINALISE
-    !###  Description:
-    !###    Finalises the field variables for a field and deallocates all memory.
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to finalise the variables for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: variable_idx
 
@@ -5574,16 +5450,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the field variables.
   SUBROUTINE FIELD_VARIABLES_INITIALISE(FIELD,ERR,ERROR,*)
 
-    !#### Subroutine: FIELD_VARIABLESS_INITIALISE
-    !###  Description:
-    !###    Initialises the field variables.
-
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to initialise the variables for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: variable_idx
     
@@ -5614,16 +5487,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the fields for the given region and deallocates all memory.
   SUBROUTINE FIELDS_FINALISE(REGION,ERR,ERROR,*)
 
-    !#### Subroutine: FIELDS_FINALISE
-    !###  Description:
-    !###    Finalises the fields for the given region and deallocates all memory.
-
     !Argument variables
-    TYPE(REGION_TYPE), POINTER :: REGION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to finalise the fields for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
 
@@ -5633,7 +5503,7 @@ CONTAINS
       IF(ASSOCIATED(REGION%FIELDS)) THEN
         DO WHILE(REGION%FIELDS%NUMBER_OF_FIELDS>0)
           FIELD=>REGION%FIELDS%FIELDS(1)%PTR
-          CALL FIELD_DESTROY(FIELD,REGION,ERR,ERROR,*999)
+          CALL FIELD_DESTROY(FIELD,ERR,ERROR,*999)
         ENDDO !field_idx
         DEALLOCATE(REGION%FIELDS)
       ENDIF
@@ -5652,16 +5522,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the fields for the given region.
   SUBROUTINE FIELDS_INITIALISE(REGION,ERR,ERROR,*)
 
-    !#### Subroutine: FIELDS_INITIALISE
-    !###  Description:
-    !###    Initialises the fields for the given region.
-
     !Argument variables
-    TYPE(REGION_TYPE), POINTER :: REGION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to initialise the fields for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("FIELDS_INITIALISE",ERR,ERROR,*999)

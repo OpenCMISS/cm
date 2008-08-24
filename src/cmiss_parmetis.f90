@@ -116,12 +116,9 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the ParMetis ParMETIS_V3_PartKway routine.
   SUBROUTINE PARMETIS_PARTKWAY(VERTEX_DISTANCE,XADJ,ADJNCY,VERTEX_WEIGHT,ADJ_WEIGHT,WEIGHT_FLAG,NUM_FLAG,NCON, &
     & NUMBER_PARTS,TP_WEIGHTS,UB_VEC,OPTIONS,NUMBER_EDGES_CUT,PARTITION,COMMUNICATOR,ERR,ERROR,*)
-
-    !#### Subroutine: PARMETIS_PARTKWAY
-    !###  Description:
-    !###    Buffer routine to the ParMetis ParMETIS_V3_PartKway routine.
 
     !Argument Variables
     INTEGER(INTG), INTENT(IN) :: VERTEX_DISTANCE(:)
@@ -162,12 +159,9 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the ParMetis ParMETIS_V3_PartMeshKway routine.
   SUBROUTINE PARMETIS_PARTMESHKWAY(ELEMENT_DISTANCE,ELEMENT_PTR,ELEMENT_INDEX,ELEMENT_WEIGHT,WEIGHT_FLAG,NUM_FLAG,NCON, &
     & NUMBER_COMMON_NODES,NUMBER_PARTS,TP_WEIGHTS,UB_VEC,OPTIONS,NUMBER_EDGES_CUT,PARTITION,COMMUNICATOR,ERR,ERROR,*)
-
-    !#### Subroutine: PARMETIS_PARTMESHKWAY
-    !###  Description:
-    !###    Buffer routine to the ParMetis ParMETIS_V3_PartMeshKway routine.
 
     !Argument Variables
     INTEGER(INTG), INTENT(IN) :: ELEMENT_DISTANCE(:)
@@ -204,5 +198,9 @@ CONTAINS
     CALL EXITS("PARMETIS_PARTMESHKWAY")
     RETURN 1
   END SUBROUTINE PARMETIS_PARTMESHKWAY
+
+  !
+  !================================================================================================================================
+  !
     
 END MODULE CMISS_PARMETIS

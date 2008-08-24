@@ -81,11 +81,13 @@ MODULE MESH_ROUTINES
 
   !Interfaces
 
+  !>Sets/changes the number of mesh components for a mesh.
   INTERFACE MESH_NUMBER_OF_COMPONENTS_SET
     MODULE PROCEDURE MESH_NUMBER_OF_COMPONENTS_SET_NUMBER
     MODULE PROCEDURE MESH_NUMBER_OF_COMPONENTS_SET_PTR
   END INTERFACE !MESH_NUMBER_OF_COMPONENTS_SET
-  
+
+  !>Sets/changes the number of elements for a mesh.
   INTERFACE MESH_NUMBER_OF_ELEMENTS_SET
     MODULE PROCEDURE MESH_NUMBER_OF_ELEMENTS_SET_NUMBER
     MODULE PROCEDURE MESH_NUMBER_OF_ELEMENTS_SET_PTR
@@ -109,17 +111,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finishes the creation of a domain decomposition on a given mesh.
   SUBROUTINE DECOMPOSITION_CREATE_FINISH(MESH,DECOMPOSITION,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITION_CREATE_FINISH
-    !###  Description:
-    !###    Finishes the creation of a domain decomposition on a given mesh.
-
     !Argument variables
-    TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to decompose.
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<A pointer to the decomposition to finish creating
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: decomposition_no
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -182,18 +181,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Starts the creation of a domain decomposition for a given mesh.
   SUBROUTINE DECOMPOSITION_CREATE_START(USER_NUMBER,MESH,DECOMPOSITION,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITION_CREATE_START
-    !###  Description:
-    !###    Starts the creation of a domain decomposition for a given mesh.
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the decomposition 
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to decompose
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<On return a pointer to the created decomposition. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: decomposition_no
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -233,6 +229,8 @@ CONTAINS
             NEW_DECOMPOSITION%ELEMENT_DOMAIN=0          
             !Nullify the domain
             NULLIFY(NEW_DECOMPOSITION%DOMAIN)
+            !Nullify the topology
+            NULLIFY(NEW_DECOMPOSITION%TOPOLOGY)
             !Add new decomposition into list of decompositions on the mesh
             ALLOCATE(NEW_DECOMPOSITIONS(MESH%DECOMPOSITIONS%NUMBER_OF_DECOMPOSITIONS+1),STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new decompositions",ERR,ERROR,*999)
@@ -274,17 +272,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Destroys a domain decomposition identified by a user number and deallocates all memory.
   SUBROUTINE DECOMPOSITION_DESTROY(USER_NUMBER,MESH,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITION_DESTROY
-    !###  Description:
-    !###    Destroys a domain decomposition identified by a user number and deallocates all memory.
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    TYPE(MESH_TYPE), POINTER :: MESH
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the decomposition to destroy.
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh containing the decomposition.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: decomposition_idx,decomposition_position
     LOGICAL :: FOUND    
@@ -364,16 +359,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Calculates the element domains for a decomposition of a mesh.
   SUBROUTINE DECOMPOSITION_ELEMENT_DOMAIN_CALCULATE(DECOMPOSITION,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITION_ELEMENT_DOMAIN_CALCULATE
-    !###    Calculates a domains for a decomposition of a mesh.
-
     !Argument variables
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<A pointer to the decomposition to calculate the element domains for.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: number_elem_indicies,elem_index,elem_count,ne,nn,my_computational_node_number,number_computational_nodes, &
       & no_computational_node,ELEMENT_START,ELEMENT_STOP,MY_ELEMENT_START,MY_ELEMENT_STOP,NUMBER_OF_ELEMENTS, &
@@ -481,13 +474,13 @@ CONTAINS
               CALL PARMETIS_PARTMESHKWAY(ELEMENT_DISTANCE,ELEMENT_PTR,ELEMENT_INDICIES,ELEMENT_WEIGHT,WEIGHT_FLAG,NUMBER_FLAG, &
                 & NUMBER_OF_CONSTRAINTS,NUMBER_OF_COMMON_NODES,DECOMPOSITION%NUMBER_OF_DOMAINS,TPWGTS,UBVEC,PARMETIS_OPTIONS, &
                 & DECOMPOSITION%NUMBER_OF_EDGES_CUT,DECOMPOSITION%ELEMENT_DOMAIN(DISPLACEMENTS(my_computational_node_number)+1:), &
-                & MPI_COMM_WORLD,ERR,ERROR,*999)
+                & COMPUTATIONAL_ENVIRONMENT%MPI_COMM,ERR,ERROR,*999)
               
               !Transfer all the element domain information to the other computational nodes so that each rank has all the info
               IF(number_computational_nodes>1) THEN
                 !This should work on a single processor but doesn't for mpich2 under windows. Maybe a bug? Avoid for now.
                 CALL MPI_ALLGATHERV(MPI_IN_PLACE,MAX_NUMBER_ELEMENTS_PER_NODE,MPI_INTEGER,DECOMPOSITION%ELEMENT_DOMAIN, &
-                  & RECEIVE_COUNTS,DISPLACEMENTS,MPI_INTEGER,MPI_COMM_WORLD,MPI_IERROR)
+                  & RECEIVE_COUNTS,DISPLACEMENTS,MPI_INTEGER,COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
                 CALL MPI_ERROR_CHECK("MPI_ALLGATHERV",MPI_IERROR,ERR,ERROR,*999)
               ENDIF
               
@@ -554,18 +547,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Sets the domain for a given element in a decomposition of a mesh.
   SUBROUTINE DECOMPOSITION_ELEMENT_DOMAIN_SET(DECOMPOSITION,GLOBAL_ELEMENT_NUMBER,DOMAIN_NUMBER,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITION_ELEMENT_DOMAIN_SET
-    !###    Sets the domain for a given element in a decomposition of a mesh.
-
     !Argument variables
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_ELEMENT_NUMBER
-    INTEGER(INTG), INTENT(IN) :: DOMAIN_NUMBER
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<A pointer to the decomposition to set the element domain for
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_ELEMENT_NUMBER !<The global element number to set the domain for.
+    INTEGER(INTG), INTENT(IN) :: DOMAIN_NUMBER !<The domain of the global element.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: number_computational_nodes
     TYPE(MESH_TYPE), POINTER :: MESH
@@ -622,17 +613,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets/changes the mesh component number which will be used for the decomposition of a mesh.
   SUBROUTINE DECOMPOSITION_MESH_COMPONENT_NUMBER_SET(DECOMPOSITION,MESH_COMPONENT_NUMBER,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITION_MESH_COMPONENT_NUMBER_SET
-    !###  Description:
-    !###    Sets/changes the mesh component number which will be used for the decomposition of a mesh.
-
     !Argument variables
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    INTEGER(INTG), INTENT(IN) :: MESH_COMPONENT_NUMBER
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<A pointer to the decomposition to set the mesh component for
+    INTEGER(INTG), INTENT(IN) :: MESH_COMPONENT_NUMBER !<The mesh component number to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -670,17 +658,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets/changes the number of domains for a decomposition.
   SUBROUTINE DECOMPOSITION_NUMBER_OF_DOMAINS_SET(DECOMPOSITION,NUMBER_OF_DOMAINS,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITION_NUMBER_OF_DOMAINS_SET
-    !###  Description:
-    !###    Sets/changes the number of domains for a decomposition.
-
     !Argument variables
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DOMAINS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<A pointer to the decomposition to set the number of domains for.
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DOMAINS !<The number of domains to set.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: NUMBER_COMPUTATIONAL_NODES
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -744,16 +729,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Calculates the topology for a decomposition.
   SUBROUTINE DECOMPOSITION_TOPOLOGY_CALCULATE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITION_TOPOLOGY_CALCULATE
-    !###  Description:
-    !###    Calculates the decomposition topology.
-
     !Argument variables
-    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the decomposition topology to calculate.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DECOMPOSITION_TOPOLOGY_CALCULATE",ERR,ERROR,*999)
@@ -780,16 +762,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the given decomposition topology element.
   SUBROUTINE DECOMPOSITION_TOPOLOGY_ELEMENT_FINALISE(ELEMENT,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITION_TOPOLOGY_ELEMENT_FINALISE
-    !###  Description:
-    !###    Finalises the given decomposition topology element.
-
     !Argument variables
-    TYPE(DECOMPOSITION_ELEMENT_TYPE) :: ELEMENT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DECOMPOSITION_ELEMENT_TYPE) :: ELEMENT !<The decomposition element to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DECOMPOSITION_TOPOLOGY_ELEMENT_FINALISE",ERR,ERROR,*999)
@@ -809,16 +788,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the given decomposition topology element.
   SUBROUTINE DECOMPOSITION_TOPOLOGY_ELEMENT_INITIALISE(ELEMENT,ERR,ERROR,*)
-
-    !#### Subroutine: DECOMPOSITION_TOPOLOGY_ELEMENT_INITIALISE
-    !###  Description:
-    !###    Initialises the given decomposition topology element.
-
+ 
     !Argument variables
-    TYPE(DECOMPOSITION_ELEMENT_TYPE) :: ELEMENT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DECOMPOSITION_ELEMENT_TYPE) :: ELEMENT !<The decomposition element to initialise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DECOMPOSITION_TOPOLOGY_ELEMENT_INITIALISE",ERR,ERROR,*999)
@@ -838,17 +814,13 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !SUBROUTINE DECOMPOSITION_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENTS_CALCULATE(TOPOLOGY,ERR,ERROR,*)
+  !>Calculates the element numbers adjacent to an element in a decomposition topology.
   SUBROUTINE DECOMP_TOPOLOGY_ELEM_ADJACENT_ELEM_CALCULATE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITION_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENTS_CALCULATE
-    !###  Description:
-    !###    Calculates the element numbers adjacent to an element in a decomposition topology.
-
     !Argument variables
-    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the decomposition topology to calculate the adjacent elements for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: j,ne,ne1,ne2,nep1,nep2,ni,nn,nn1,nn2,np,np1,np2,DUMMY_ERR,FACE_XI(2),NODE_POSITION_INDEX(3)
     INTEGER(INTG) :: xi_direction,direction_index,xi_dir_check,xi_dir_search,NUMBER_NODE_MATCHES
@@ -1090,16 +1062,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Calculates the decomposition element topology.
   SUBROUTINE DECOMPOSITION_TOPOLOGY_ELEMENTS_CALCULATE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITION_TOPOLOGY_ELEMENTS_CALCULATE
-    !###  Description:
-    !###    Calculates the decomposition element topology.
-
     !Argument variables
-    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the decomposition topology to calculate the elements for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: ne,global_element
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
@@ -1195,16 +1164,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the elements in the given decomposition topology. \todo Pass in the decomposition elements pointer.
   SUBROUTINE DECOMPOSITION_TOPOLOGY_ELEMENTS_FINALISE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITION_TOPOLOGY_ELEMENTS_FINALISE
-    !###  Description:
-    !###    Finalises the elements in the given decomposition topology.
-
     !Argument variables
-    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the decomposition topology to finalise the elements for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: ne
 
@@ -1233,16 +1199,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the element data structures for a decomposition topology.
   SUBROUTINE DECOMPOSITION_TOPOLOGY_ELEMENTS_INITIALISE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITION_TOPOLOGY_ELEMENTS_INITIALISE
-    !###  Description:
-    !###    Initialises the element data structures for a decomposition topology.
-
     !Argument variables
-    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the decomposition topology to initialise the elements for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DECOMPOSITION_TOPOLOGY_ELEMENTS_INITIALISE",ERR,ERROR,*999)
@@ -1272,16 +1235,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the topology in the given decomposition. \todo Pass in a pointer to the decomposition topology
   SUBROUTINE DECOMPOSITION_TOPOLOGY_FINALISE(DECOMPOSITION,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITION_TOPOLOGY_FINALISE
-    !###  Description:
-    !###    Finalises the topology in the given decomposition.
-
     !Argument variables
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<A pointer to the decomposition to finalise the topology for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DECOMPOSITION_TOPOLOGY_FINALISE",ERR,ERROR,*999)
@@ -1306,16 +1266,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the topology for a given decomposition.
   SUBROUTINE DECOMPOSITION_TOPOLOGY_INITIALISE(DECOMPOSITION,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITION_TOPOLOGY_INITIALISE
-    !###  Description:
-    !###    Initialises the topology for a given decomposition.
-
     !Argument variables
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<A pointer to the decomposition to initialise the topology for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DECOMPOSITION_TOPOLOGY_INITIALISE",ERR,ERROR,*999)
@@ -1349,16 +1306,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises a line in the given decomposition topology and deallocates all memory.
   SUBROUTINE DECOMPOSITION_TOPOLOGY_LINE_FINALISE(LINE,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITION_TOPOLOGY_LINE_FINALISE
-    !###  Description:
-    !###    Finalises a line in the given decomposition topology and deallocates all memory.
-
     !Argument variables
-    TYPE(DECOMPOSITION_LINE_TYPE) :: LINE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DECOMPOSITION_LINE_TYPE) :: LINE !<The decomposition line to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DECOMPOSITION_TOPOLOGY_LINE_FINALISE",ERR,ERROR,*999)
@@ -1381,16 +1335,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the line data structure for a decomposition topology line.
   SUBROUTINE DECOMPOSITION_TOPOLOGY_LINE_INITIALISE(LINE,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITION_TOPOLOGY_LINE_INITIALISE
-    !###  Description:
-    !###    Initialises the line data structure for a decomposition topology line.
-
     !Argument variables
-    TYPE(DECOMPOSITION_LINE_TYPE) :: LINE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DECOMPOSITION_LINE_TYPE) :: LINE !<The decomposition line to initialise.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DECOMPOSITION_TOPOLOGY_LINE_INITIALISE",ERR,ERROR,*999)
@@ -1411,16 +1362,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Calculates the lines in the given decomposition topology.
   SUBROUTINE DECOMPOSITION_TOPOLOGY_LINES_CALCULATE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITION_TOPOLOGY_LINES_CALCULATE
-    !###  Description:
-    !###    Calculates the lines in the given decomposition topology.
-
     !Argument variables
-    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the decomposition topology to calculate the lines for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx,ne,ne2,nae,nae2,nn,nnl,nk,nl,nl2,np,np2,elem_idx,node_idx,node_idx2,NODES_IN_LINE(4), &
       & NUMBER_OF_LINES,MAX_NUMBER_OF_LINES,NEW_MAX_NUMBER_OF_LINES,LINE_NUMBER,COUNT
@@ -1857,16 +1805,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the lines in the given decomposition topology. \todo Pass in the topology lines
   SUBROUTINE DECOMPOSITION_TOPOLOGY_LINES_FINALISE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITION_TOPOLOGY_LINES_FINALISE
-    !###  Description:
-    !###    Finalises the lines in the given decomposition topology.
-
     !Argument variables
-    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the decomposition topology to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: nl
     
@@ -1895,16 +1840,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the line data structures for a decomposition topology.
   SUBROUTINE DECOMPOSITION_TOPOLOGY_LINES_INITIALISE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITION_TOPOLOGY_LINES_INITIALISE
-    !###  Description:
-    !###    Initialises the line data structures for a decomposition topology.
-
     !Argument variables
-    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the decomposition topology to initialise the lines for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DECOMPOSITION_TOPOLOGY_LINES_INITIALISE",ERR,ERROR,*999)
@@ -1933,17 +1875,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets/changes the decomposition type for a decomposition.
   SUBROUTINE DECOMPOSITION_TYPE_SET(DECOMPOSITION,TYPE,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITION_TYPE_SET
-    !###  Description:
-    !###    Sets/changes the decomposition type for a decomposition.
-
     !Argument variables
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    INTEGER(INTG), INTENT(IN) :: TYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<A pointer to the decomposition to set the type for
+    INTEGER(INTG), INTENT(IN) :: TYPE !<The decomposition type to set \see MESH_ROUTINES_DecompositionTypes,MESH_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -1981,19 +1920,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finds and returns in DECOMPOSITION a pointer to the decomposition identified by USER_NUMBER in the given MESH. If no decomposition with that USER_NUMBER exists DECOMPOSITION is left nullified.
   SUBROUTINE DECOMPOSITION_USER_NUMBER_FIND(USER_NUMBER,MESH,DECOMPOSITION,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITION_USER_NUMBER_FIND
-    !###  Description:
-    !###    Finds and returns in DECOMPOSITION a pointer to the decomposition identified by USER_NUMBER in the given MESH.
-    !###    If no decomposition with that USER_NUMBER exists DECOMPOSITION is left nullified.
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the decomposition to find
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh containing the decomposition to find
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<On return a pointer to the decomposition with the specified user number. If no decomposition with that user number exists then DECOMPOSITION is returned NULL.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: decomposition_idx
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -2031,16 +1966,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the domain decompositions for a given mesh. \todo Pass in a pointer to the decompositions.
   SUBROUTINE DECOMPOSITIONS_FINALISE(MESH,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITIONS_FINALISE
-    !###  Description:
-    !###    Finalises the domain decompositions for a given mesh.
-
     !Argument variables
-    TYPE(MESH_TYPE), POINTER :: MESH
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to finalise the decomposition for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: USER_NUMBER
 
@@ -2069,16 +2001,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the domain decompositions for a given mesh.
   SUBROUTINE DECOMPOSITIONS_INITIALISE(MESH,ERR,ERROR,*)
 
-    !#### Subroutine: DECOMPOSITIONS_INITIALISE
-    !###  Description:
-    !###    Initialises the domain decompositions for a given mesh.
-
     !Argument variables
-    TYPE(MESH_TYPE), POINTER :: MESH
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to initialise the decompositions for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DECOMPOSITIONS_INITIALISE",ERR,ERROR,*999)
@@ -2108,16 +2037,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the domain for a given decomposition and deallocates all memory. \todo Pass in a pointer to the domain
   SUBROUTINE DOMAIN_FINALISE(DECOMPOSITION,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_FINALISE
-    !###  Description:
-    !###    Finalises the domain for a given decomposition and deallocates all memory.
-
     !Argument variables
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<A pointer to the decomposition to finalise the domain for.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx
     
@@ -2151,16 +2077,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the domain for a given decomposition.
   SUBROUTINE DOMAIN_INITIALISE(DECOMPOSITION,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_INITIALISE
-    !###  Description:
-    !###    Initialises the domain for a given decomposition.
-
     !Argument variables
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<A pointer to the decomposition to initialise the domain for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx
 
@@ -2210,16 +2133,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the dofs mapping in the given domain mappings. \todo Pass in the domain mappings dofs
   SUBROUTINE DOMAIN_MAPPINGS_DOFS_FINALISE(DOMAIN_MAPPINGS,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_MAPPINGS_DOFS_FINALISE
-    !###  Description:
-    !###    Finalises the dofs mapping in the given domain mappings.
-
     !Argument variables
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS !<A pointer to the domain mappings to finalise the dofs for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
     CALL ENTERS("DOMAIN_MAPPINGS_DOFS_FINALISE",ERR,ERROR,*999)
@@ -2245,16 +2165,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Intialises the dofs mapping in the given domain mapping.
   SUBROUTINE DOMAIN_MAPPINGS_DOFS_INITIALISE(DOMAIN_MAPPINGS,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_MAPPINGS_DOFS_INITIALISE
-    !###  Description:
-    !###    Intialises the dofs mapping in the given domain mapping.
-
     !Argument variables
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS !<A pointer to the domain mappings to initialise the dofs for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
     CALL ENTERS("DOMAIN_MAPPINGS_DOFS_INITIALISE",ERR,ERROR,*999)
@@ -2283,16 +2200,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Calculates the local/global element mappings for a domain decomposition.
   SUBROUTINE DOMAIN_MAPPINGS_ELEMENTS_CALCULATE(DOMAIN,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_MAPPINGS_ELEMENTS_CALCULATE
-    !###    Calculates the local/global element mappings for a domain decomposition.
-
     !Argument variables
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<A pointer to the domain to calculate the element mappings for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: no_adjacent_element,adjacent_element,domain_no,domain_idx,ne,nn,np,NUMBER_OF_DOMAINS, &
       & NUMBER_OF_ADJACENT_ELEMENTS,my_computational_node_number,component_idx
@@ -2505,16 +2420,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the mappings in the given domain. \todo pass in the domain mappings
   SUBROUTINE DOMAIN_MAPPINGS_FINALISE(DOMAIN,ERR,ERROR,*)
 
-    !#### Subroutine: 
-    !###  Description:
-    !###    Finalises the mappings in the given domain.
-
     !Argument variables
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<A pointer to the domain to finalise the mappings for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DOMAIN_MAPPINGS_FINALISE",ERR,ERROR,*999)
@@ -2540,16 +2452,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the element mapping in the given domain mapping. \todo pass in the domain mappings elements
   SUBROUTINE DOMAIN_MAPPINGS_ELEMENTS_FINALISE(DOMAIN_MAPPINGS,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_MAPPINGS_ELEMENTS_FINALISE
-    !###  Description:
-    !###    Finalises the element mapping in the given domain mapping.
-
     !Argument variables
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS !<A pointer to the domain mappings to finalise the elements for.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
     CALL ENTERS("DOMAIN_MAPPINGS_ELEMENTS_FINALISE",ERR,ERROR,*999)
@@ -2575,16 +2484,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the element mapping in the given domain mapping.
   SUBROUTINE DOMAIN_MAPPINGS_ELEMENTS_INITIALISE(DOMAIN_MAPPINGS,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_MAPPINGS_ELEMENTS_INITIALISE
-    !###  Description:
-    !###    Intialises the element mapping in the given domain mapping.
-
     !Argument variables
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS !<A pointer to the domain mappings to initialise the elements for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
     CALL ENTERS("DOMAIN_MAPPINGS_ELEMENTS_INITIALISE",ERR,ERROR,*999)
@@ -2614,16 +2520,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the mappings for a domain decomposition. \todo finalise on error.
   SUBROUTINE DOMAIN_MAPPINGS_INITIALISE(DOMAIN,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_MAPPINGS_INITIALISE
-    !###  Description:
-    !###    Initialises the mappings for a domain decomposition.
-
     !Argument variables
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<A pointer to the domain to initialise the mappings for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DOMAIN_MAPPINGS_INITIALISE",ERR,ERROR,*999)
@@ -2659,16 +2562,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Calculates the local/global node and dof mappings for a domain decomposition.
   SUBROUTINE DOMAIN_MAPPINGS_NODES_DOFS_CALCULATE(DOMAIN,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_MAPPINGS_NODES_DOFS_CALCULATE
-    !###    Calculates the local/global node and dof mappings for a domain decomposition.
-
     !Argument variables
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<A pointer to the domain to calculate the node dofs for.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: no_adjacent_element,no_ghost_node,adjacent_element,ghost_node,NUMBER_OF_NODES_PER_DOMAIN, &
       & domain_idx,domain_idx2,domain_no,nk,np,ny,NUMBER_OF_DOMAINS,MAX_NUMBER_DOMAINS,NUMBER_OF_GHOST_NODES, &
@@ -3106,16 +3007,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the node mapping in the given domain mappings. \todo pass in the nodes mapping
   SUBROUTINE DOMAIN_MAPPINGS_NODES_FINALISE(DOMAIN_MAPPINGS,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_MAPPINGS_NODES_FINALISE
-    !###  Description:
-    !###    Finalises the node mapping in the given domain mappings.
-
     !Argument variables
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS !<A pointer to the domain mapping to finalise the nodes for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
     CALL ENTERS("DOMAIN_MAPPINGS_NODES_FINALISE",ERR,ERROR,*999)
@@ -3141,16 +3039,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the node mapping in the given domain mapping. \todo finalise on error
   SUBROUTINE DOMAIN_MAPPINGS_NODES_INITIALISE(DOMAIN_MAPPINGS,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_MAPPINGS_NODES_INITIALISE
-    !###  Description:
-    !###    Intialises the node mapping in the given domain mapping.
-
     !Argument variables
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS !<A pointer to the domain mappings to initialise the nodes for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code 
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
     CALL ENTERS("DOMAIN_MAPPINGS_NODES_INITIALISE",ERR,ERROR,*999)
@@ -3180,16 +3075,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Calculates the domain topology.
   SUBROUTINE DOMAIN_TOPOLOGY_CALCULATE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_TOPOLOGY_CALCULATE
-    !###  Description:
-    !###    Calculates the domain topology.
-
-    !Argument variables
-    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+   !Argument variables
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the domain topology to calculate.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: ne,np
     TYPE(BASIS_TYPE), POINTER :: BASIS
@@ -3229,16 +3121,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the local domain topology from the mesh topology.
   SUBROUTINE DOMAIN_TOPOLOGY_INITIALISE_FROM_MESH(DOMAIN,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_TOPOLOGY_INITIALISE_FROM_MESH
-    !###  Description:
-    !###    Initialises the local domain topology from the mesh topology.
-
     !Argument variables
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<A pointer to the domain to initialise the domain topology from the mesh topology for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: local_element,global_element,local_node,global_node,ne,nn,nk,nkk,np,ny,component_idx
     LOGICAL :: FOUND
@@ -3405,16 +3294,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the dofs in the given domain topology. \todo pass in the dofs topolgy
   SUBROUTINE DOMAIN_TOPOLOGY_DOFS_FINALISE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_TOPOLOGY_DOFS_FINALISE
-    !###  Description:
-    !###    Finalises the dofs in the given domain topology.
-
     !Argument variables
-    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the domain topology to finalise the dofs for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DOMAIN_TOPOLOGY_DOFS_FINALISE",ERR,ERROR,*999)
@@ -3440,16 +3326,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the dofs data structures for a domain topology. \todo finalise on exit
   SUBROUTINE DOMAIN_TOPOLOGY_DOFS_INITIALISE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_TOPOLOGY_DOFS_INITIALISE
-    !###  Description:
-    !###    Initialises the dofs data structures for a domain topology.
-
     !Argument variables
-    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the domain topology to initialise the dofs for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DOMAIN_TOPOLOGY_DOFS_INITIALISE",ERR,ERROR,*999)
@@ -3479,16 +3362,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the given domain topology element.
   SUBROUTINE DOMAIN_TOPOLOGY_ELEMENT_FINALISE(ELEMENT,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_TOPOLOGY_ELEMENT_FINALISE
-    !###  Description:
-    !###    Finalises the given domain topology element.
-
     !Argument variables
-    TYPE(DOMAIN_ELEMENT_TYPE) :: ELEMENT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_ELEMENT_TYPE) :: ELEMENT !<The domain element to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DOMAIN_TOPOLOGY_ELEMENT_FINALISE",ERR,ERROR,*999)
@@ -3507,16 +3387,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the given domain topology element.
   SUBROUTINE DOMAIN_TOPOLOGY_ELEMENT_INITIALISE(ELEMENT,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_TOPOLOGY_ELEMENT_INITIALISE
-    !###  Description:
-    !###    Initialises the given domain topology element.
-
     !Argument variables
-    TYPE(DOMAIN_ELEMENT_TYPE) :: ELEMENT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_ELEMENT_TYPE) :: ELEMENT !<The domain element to initialise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DOMAIN_TOPOLOGY_ELEMENT_INITIALISE",ERR,ERROR,*999)
@@ -3536,16 +3413,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the elements in the given domain topology. \todo pass in the domain elements
   SUBROUTINE DOMAIN_TOPOLOGY_ELEMENTS_FINALISE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_TOPOLOGY_ELEMENTS_FINALISE
-    !###  Description:
-    !###    Finalises the elements in the given domain topology.
-
     !Argument variables
-    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the domain topology to finalise the elements for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: ne
 
@@ -3575,16 +3449,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the element data structures for a domain topology. \todo finalise on error
   SUBROUTINE DOMAIN_TOPOLOGY_ELEMENTS_INITIALISE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_TOPOLOGY_ELEMENTS_INITIALISE
-    !###  Description:
-    !###    Initialises the element data structures for a domain topology.
-
     !Argument variables
-    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the domain topology to initialise the elements for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DOMAIN_TOPOLOGY_ELEMENTS_INITIALISE",ERR,ERROR,*999)
@@ -3616,16 +3487,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the topology in the given domain. \todo pass in domain topology
   SUBROUTINE DOMAIN_TOPOLOGY_FINALISE(DOMAIN,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_TOPOLOGY_FINALISE
-    !###  Description:
-    !###    Finalises the topology in the given domain.
-
-    !Argument variables
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+   !Argument variables
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<A pointer to the domain to finalise the topology for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DOMAIN_TOPOLOGY_FINALISE",ERR,ERROR,*999)
@@ -3652,16 +3520,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the topology for a given domain. \todo finalise on error
   SUBROUTINE DOMAIN_TOPOLOGY_INITIALISE(DOMAIN,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_TOPOLOGY_INITIALISE
-    !###  Description:
-    !###    Initialises the topology for a given domain.
-
     !Argument variables
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !A pointer to the domain to initialise the topology for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DOMAIN_TOPOLOGY_INITIALISE",ERR,ERROR,*999)
@@ -3703,16 +3568,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises a line in the given domain topology and deallocates all memory.
   SUBROUTINE DOMAIN_TOPOLOGY_LINE_FINALISE(LINE,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_TOPOLOGY_LINE_FINALISE
-    !###  Description:
-    !###    Finalises a line in the given domain topology and deallocates all memory.
-
     !Argument variables
-    TYPE(DOMAIN_LINE_TYPE) :: LINE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_LINE_TYPE) :: LINE !<The domain line to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DOMAIN_TOPOLOGY_LINE_FINALISE",ERR,ERROR,*999)
@@ -3734,16 +3596,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the line data structure for a domain topology line.
   SUBROUTINE DOMAIN_TOPOLOGY_LINE_INITIALISE(LINE,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_TOPOLOGY_LINE_INITIALISE
-    !###  Description:
-    !###    Initialises the line data structure for a domain topology line.
-
     !Argument variables
-    TYPE(DOMAIN_LINE_TYPE) :: LINE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_LINE_TYPE) :: LINE !<The domain line to initialise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DOMAIN_TOPOLOGY_LINE_INITIALISE",ERR,ERROR,*999)
@@ -3762,16 +3621,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the lines in the given domain topology. \todo pass in domain lines
   SUBROUTINE DOMAIN_TOPOLOGY_LINES_FINALISE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_TOPOLOGY_LINES_FINALISE
-    !###  Description:
-    !###    Finalises the lines in the given domain topology.
-
     !Argument variables
-    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the domain topology to finalise the lines for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: nl
     
@@ -3801,16 +3657,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the line data structures for a domain topology. \todo finalise on error
   SUBROUTINE DOMAIN_TOPOLOGY_LINES_INITIALISE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_TOPOLOGY_LINES_INITIALISE
-    !###  Description:
-    !###    Initialises the line data structures for a domain topology.
-
     !Argument variables
-    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the domain topology to initialise the lines for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DOMAIN_TOPOLOGY_LINES_INITIALISE",ERR,ERROR,*999)
@@ -3839,16 +3692,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the given domain topology node and deallocates all memory.
   SUBROUTINE DOMAIN_TOPOLOGY_NODE_FINALISE(NODE,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_TOPOLOGY_NODE_FINALISE
-    !###  Description:
-    !###    Finalises the given domain topology node and deallocates all memory.
-
     !Argument variables
-    TYPE(DOMAIN_NODE_TYPE) :: NODE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_NODE_TYPE) :: NODE !<The domain node to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DOMAIN_TOPOLOGY_NODE_FINALISE",ERR,ERROR,*999)
@@ -3869,16 +3719,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the given domain topology node.
   SUBROUTINE DOMAIN_TOPOLOGY_NODE_INITIALISE(NODE,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_TOPOLOGY_NODE_INITIALISE
-    !###  Description:
-    !###    Initialises the given domain topology node.
-
     !Argument variables
-    TYPE(DOMAIN_NODE_TYPE) :: NODE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_NODE_TYPE) :: NODE !<The domain node to initialise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DOMAIN_TOPOLOGY_NODE_INITIALISE",ERR,ERROR,*999)
@@ -3901,16 +3748,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the nodees in the given domain topology. \todo pass in domain nodes
   SUBROUTINE DOMAIN_TOPOLOGY_NODES_FINALISE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_TOPOLOGY_NODES_FINALISE
-    !###  Description:
-    !###    Finalises the nodees in the given domain topology.
-
     !Argument variables
-    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the domain topology to initialise the nodes for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: np
 
@@ -3940,16 +3784,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the nodes data structures for a domain topology. \todo finalise on error
   SUBROUTINE DOMAIN_TOPOLOGY_NODES_INITIALISE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_TOPOLOGY_NODES_INITIALISE
-    !###  Description:
-    !###    Initialises the nodes data structures for a domain topology.
-
     !Argument variables
-    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the domain topology to initialise the nodes for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DOMAIN_TOPOLOGY_NODES_INITIALISE",ERR,ERROR,*999)
@@ -3981,16 +3822,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Calculates the element numbers surrounding a node for a domain.
   SUBROUTINE DOMAIN_TOPOLOGY_NODES_SURROUNDING_ELEMENTS_CALCULATE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_TOPOLOGY_NODES_SURROUNDING_ELEMENTS_CALCULATE
-    !###  Description:
-    !###    Calculates the element numbers surrounding a node for a domain.
-
     !Argument variables
-    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the domain topology to calculate the elements surrounding the nodes for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: element_no,insert_position,ne,nn,np,surrounding_elem_no
     INTEGER(INTG), POINTER :: NEW_SURROUNDING_ELEMENTS(:)
@@ -4073,17 +3911,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finishes the process of creating a mesh on a region. \todo remove region
   SUBROUTINE MESH_CREATE_FINISH(REGION,MESH,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_CREATE_FINISH
-    !###  Description:
-    !###    Finishes the process of creating a mesh on a region.
-
     !Argument variables
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(MESH_TYPE), POINTER :: MESH
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the mesh
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to finish creating
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx,mesh_idx
     LOGICAL :: FINISHED
@@ -4169,23 +4004,19 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Creates the regular mesh with the given USER_NUMBER in the specifed REGION. The mesh starts at the ORIGIN(:) and has a maximum extent position of MAXIMUM_EXTENT(:) with the NUMBER_OF_ELEMENTS(:) in each direction. Each element is of the specified BASIS type. A pointer to the finished mesh is returned in MESH. \todo move to generated mesh routines
   SUBROUTINE MESH_CREATE_REGULAR(USER_NUMBER,REGION,ORIGIN,MAXIMUM_EXTENT,NUMBER_ELEMENTS_XI,BASIS,MESH,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_CREATE_REGULAR
-    !###  Description:
-    !###    Creates the regular mesh with the given USER_NUMBER in the specifed REGION. The mesh starts at the ORIGIN(:) and has
-    !###    a maximum extent position of MAXIMUM_EXTENT(:) with the NUMBER_OF_ELEMENTS(:) in each direction. Each element is of
-    !###    the specified BASIS type. A pointer to the finished mesh is returned in MESH.  
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    TYPE(REGION_TYPE), POINTER :: REGION
-    REAL(DP), INTENT(IN) :: ORIGIN(:),MAXIMUM_EXTENT(:)
-    INTEGER(INTG), INTENT(IN) :: NUMBER_ELEMENTS_XI(:) ! use to describe how many elements in each direction
-    TYPE(BASIS_TYPE), POINTER :: BASIS
-    TYPE(MESH_TYPE), POINTER :: MESH
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the mesh to create
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the mesh
+    REAL(DP), INTENT(IN) :: ORIGIN(:) !<ORIGIN(i). ORIGIN(i) contains the i'th coordinate in the region of the origin of the regular mesh.
+    REAL(DP), INTENT(IN) :: MAXIMUM_EXTENT(:) !<MAXIMUM_EXTENT(i). MAXIMUM_EXTENT(i) contains the i'th extent (or size) of the regular mesh.
+    INTEGER(INTG), INTENT(IN) :: NUMBER_ELEMENTS_XI(:) !<NUMBER_ELEMENTS_XI(i). NUMBER_ELEMENTS_XI(i) contains the number of elements in the i'th direction 
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis to use for each element in the regular mesh
+    TYPE(MESH_TYPE), POINTER :: MESH !<On return, a pointer to the generated mesh
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: ni,ne,ne1,ne2,ne3,NN,nn1,nn2,nn3,np,np1,np2,np3,TOTAL_NUMBER_OF_NODES_XI(3),TOTAL_NUMBER_ELEMENTS_XI(3), &
       & TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_ELEMENTS,NUMBER_OF_DIMENSIONS
@@ -4351,20 +4182,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Starts the process of creating a mesh defined by a user number with the specified NUMBER_OF_DIMENSIONS in the region identified by REGION.
   SUBROUTINE MESH_CREATE_START(USER_NUMBER,REGION,NUMBER_OF_DIMENSIONS,MESH,ERR,ERROR,*)
-
-    !#### Subroutine: MESH_CREATE_START
-    !###  Description:
-    !###    Starts the process of creating a mesh defined by a user number with the specified NUMBER_OF_DIMENSIONS in the region
-    !###    identified by REGION.
-
+    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    TYPE(REGION_TYPE), POINTER :: REGION
-    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DIMENSIONS
-    TYPE(MESH_TYPE), POINTER :: MESH
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the mesh to create
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to create the mesh on
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DIMENSIONS !<The number of dimensions in the mesh.
+    TYPE(MESH_TYPE), POINTER :: MESH !<On exit, a pointer to the created mesh. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: mesh_idx
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -4451,17 +4278,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Destroys the mesh identified by a user number on the given region and deallocates all memory.
   SUBROUTINE MESH_DESTROY(USER_NUMBER,REGION,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_DESTROY
-    !###  Description:
-    !###    Destroys the mesh identified by a user number on the given region and deallocates all memory.
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    TYPE(REGION_TYPE), POINTER :: REGION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the mesh to destroy
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the mesh
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: mesh_idx,mesh_position
     LOGICAL :: FOUND
@@ -4538,16 +4362,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises a mesh and deallocates all memory.
   SUBROUTINE MESH_FINALISE(MESH,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_FINALISE
-    !###  Description:
-    !###    Finalises a mesh and deallocates all memory
-
     !Argument variables
-    TYPE(MESH_TYPE), POINTER :: MESH
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("MESH_FINALISE",ERR,ERROR,*999)
@@ -4570,16 +4391,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises a mesh.
   SUBROUTINE MESH_INITIALISE(MESH,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_INITIALISE
-    !###  Description:
-    !###    Initialises a mesh.
-
     !Argument variables
-    TYPE(MESH_TYPE), POINTER :: MESH
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to initialise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("MESH_INITIALISE",ERR,ERROR,*999)
@@ -4615,29 +4433,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Subroutine: MESH_NUMBER_OF_COMPONENTS_SET
-  !###  Description:
-  !###    Sets/changes the number of mesh components for a mesh.
-  !###  Child-subroutines: MESH_NUMBER_OF_COMPONENTS_SET_NUMBER,MESH_NUMBER_OF_COMPONENTS_SET_PTR
 
-  !
-  !================================================================================================================================
-  !
-
+  !>Changes/sets the number of mesh components for a mesh identified by a given user number on a region.
   SUBROUTINE MESH_NUMBER_OF_COMPONENTS_SET_NUMBER(USER_NUMBER,REGION,NUMBER_OF_COMPONENTS,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_NUMBER_OF_COMPONENTS_SET_NUMBER
-    !###  Description:
-    !###    Changes/sets the number of mesh components for a mesh identified by a given user number on a region.
-    !###  Parent-subroutine: MESH_NUMBER_OF_COMPONENTS_SET
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    TYPE(REGION_TYPE), POINTER :: REGION
-    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_COMPONENTS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the mesh to set the number of components for
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the mesh
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_COMPONENTS !<The number of components to set for the mesh
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(MESH_TYPE), POINTER :: MESH
 
@@ -4667,18 +4472,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Changes/sets the number of mesh components for a mesh identified by a pointer.
   SUBROUTINE MESH_NUMBER_OF_COMPONENTS_SET_PTR(MESH,NUMBER_OF_COMPONENTS,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_NUMBER_OF_COMPONENTS_SET_PTR
-    !###  Description:
-    !###    Changes/sets the number of mesh components for a mesh identified by a pointer.
-    !###  Parent-subroutine: MESH_NUMBER_OF_COMPONENTS_SET
-
     !Argument variables
-    TYPE(MESH_TYPE), POINTER :: MESH
-    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_COMPONENTS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to set the number of components for
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_COMPONENTS !<The number of components to set.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -4740,29 +4541,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Subroutine: MESH_NUMBER_OF_ELEMENTS_SET
-  !###  Description:
-  !###    Sets/changes the number of elements for a mesh.
-  !###  Child-subroutines: MESH_NUMBER_OF_ELEMENTS_SET_NUMBER,MESH_NUMBER_OF_ELEMENTS_SET_PTR
 
-  !
-  !================================================================================================================================
-  !
-
+  !>Changes/sets the number of elements for a mesh identified by a given user number on a region.
   SUBROUTINE MESH_NUMBER_OF_ELEMENTS_SET_NUMBER(USER_NUMBER,REGION,NUMBER_OF_ELEMENTS,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_NUMBER_OF_ELEMENTS_SET_NUMBER
-    !###  Description:
-    !###    Changes/sets the number of elements for a mesh identified by a given user number on a region.
-    !###  Parent-subroutine: MESH_NUMBER_OF_ELEMENTS_SET
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    TYPE(REGION_TYPE), POINTER :: REGION
-    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_ELEMENTS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the mesh to set the number of elements for
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the mesh
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_ELEMENTS !<The number of elements to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(MESH_TYPE), POINTER :: MESH
 
@@ -4792,18 +4580,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Changes/sets the number of elements for a mesh identified by a pointer.
   SUBROUTINE MESH_NUMBER_OF_ELEMENTS_SET_PTR(MESH,NUMBER_OF_ELEMENTS,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_NUMBER_OF_ELEMENTS_SET_PTR
-    !###  Description:
-    !###    Changes/sets the number of elements for a mesh identified by a pointer.
-    !###  Parent-subroutine: MESH_NUMBER_OF_ELEMENTS_SET
-
     !Argument variables
-    TYPE(MESH_TYPE), POINTER :: MESH
-    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_ELEMENTS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to set the number of elements for
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_ELEMENTS !<The number of elements to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -4856,16 +4640,13 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE MESH_TOPOLOGY_CALCULATE(TOPOLOGY,ERR,ERROR,*)
-
-    !#### Subroutine: MESH_TOPOLOGY_CALCULATE
-    !###  Description:
-    !###    Calculates the mesh topology.
+  !>Calculates the mesh topology.
+  SUBROUTINE MESH_TOPOLOGY_CALCULATE(TOPOLOGY,ERR,ERROR,*)    
 
     !Argument variables
-    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the mesh topology to calculate
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("MESH_TOPOLOGY_CALCULATE",ERR,ERROR,*999)
@@ -4896,16 +4677,13 @@ CONTAINS
   !===============================================================================================================================
   !
 
+  !>Calculates the degrees-of-freedom for a mesh topology. 
   SUBROUTINE MESH_TOPOLOGY_DOFS_CALCULATE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_DOFS_CALCULATE
-    !###  Description:
-    !###    Calculates the degrees-of-freedom for a mesh topology. 
-
     !Argument variables
-    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the mesh topology to calculate the dofs for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: np,nk,NUMBER_OF_DOFS
 
@@ -4945,16 +4723,13 @@ CONTAINS
   !===============================================================================================================================
   !
 
+  !>Finalises the dof data structures for a mesh topology and deallocates any memory. \todo pass in dofs
   SUBROUTINE MESH_TOPOLOGY_DOFS_FINALISE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_DOFS_FINALISE
-    !###  Description:
-    !###    Finalises the dof data structures for a mesh topology and deallocates any memory. 
-
     !Argument variables
-    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the mesh topology to finalise the dofs for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("MESH_TOPOLOGY_DOFS_FINALISE",ERR,ERROR,*999)
@@ -4978,16 +4753,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the dofs in a given mesh topology. \todo finalise on error
   SUBROUTINE MESH_TOPOLOGY_DOFS_INITIALISE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_DOFS_INITIALISE
-    !###  Description:
-    !###    Initialises the dofs in a given mesh topology.
-
     !Argument variables
-    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the mesh topology to initialise the dofs for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("MESH_TOPOLOGY_DOFS_INITIALISE",ERR,ERROR,*999)
@@ -5016,18 +4788,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Changes/sets the basis for a global element identified by a given global number. \todo use user number.
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_BASIS_SET(GLOBAL_NUMBER,ELEMENTS,BASIS,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_ELEMENTS_BASIS_SET
-    !###  Description:
-    !###    Changes/sets the basis for a global element identified by a given global number.
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS
-    TYPE(BASIS_TYPE), POINTER :: BASIS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number of the element to set the basis for
+    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS !<A pointer to the elements to set the basis for \todo before element number?
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis to set. \todo allow number version as well.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -5074,17 +4843,14 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finishes the process of creating elements for a specified mesh component in a mesh topology.
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_CREATE_FINISH(MESH,MESH_COMPONENT_NUMBER,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_ELEMENTS_CREATE_FINISH
-    !###  Description:
-    !###    Finishes the process of creating elements for a specified mesh component in a mesh topology.
-
     !Argument variables
-    TYPE(MESH_TYPE), POINTER :: MESH
-    INTEGER(INTG), INTENT(IN) :: MESH_COMPONENT_NUMBER
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to finish creating the elements for
+    INTEGER(INTG), INTENT(IN) :: MESH_COMPONENT_NUMBER !<The mesh component number to finish creating the elements for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: ne
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -5156,20 +4922,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Starts the process of creating elements in the mesh component identified by MESH and component_idx. The elements will be created with a default basis of BASIS. ELEMENTS is the returned pointer to the MESH_ELEMENTS data structure.
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_CREATE_START(MESH,MESH_COMPONENT_NUMBER,BASIS,ELEMENTS,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_ELEMENTS_CREATE_START
-    !###  Description:
-    !###    Starts the process of creating elements in the mesh component identified by MESH and component_idx. The elements will
-    !###    will be created with a default basis of BASIS. ELEMENTS is the returned pointer to the MESH_ELEMENTS data structure.
-
     !Argument variables
-    TYPE(MESH_TYPE), POINTER :: MESH
-    INTEGER(INTG), INTENT(IN) :: MESH_COMPONENT_NUMBER
-    TYPE(BASIS_TYPE), POINTER :: BASIS
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to start creating the elements on
+    INTEGER(INTG), INTENT(IN) :: MESH_COMPONENT_NUMBER !<The mesh component number
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the default basis to use
+    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS !<On return, a pointer to the created mesh elements
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: ne
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -5238,16 +5000,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Destroys the elements in a mesh topology. \todo as this is a user routine it should take a mesh pointer like create start and finish? Split this into destroy and finalise?
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_DESTROY(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_ELEMENTS_DESTROY
-    !###  Description:
-    !###    Destroys the elements in a mesh topology.
-
     !Argument variables
-    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the mesh topology to destroy the elements for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: ne
 
@@ -5285,16 +5044,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the given mesh topology element.
   SUBROUTINE MESH_TOPOLOGY_ELEMENT_FINALISE(ELEMENT,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_ELEMENT_FINALISE
-    !###  Description:
-    !###    Finalises the given mesh topology element.
-
     !Argument variables
-    TYPE(MESH_ELEMENT_TYPE) :: ELEMENT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_ELEMENT_TYPE) :: ELEMENT !<The mesh element to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("MESH_TOPOLOGY_ELEMENT_FINALISE",ERR,ERROR,*999)
@@ -5315,16 +5071,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the given mesh topology element.
   SUBROUTINE MESH_TOPOLOGY_ELEMENT_INITIALISE(ELEMENT,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_ELEMENT_INITIALISE
-    !###  Description:
-    !###    Initialises the given mesh topology element.
-
     !Argument variables
-    TYPE(MESH_ELEMENT_TYPE) :: ELEMENT
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_ELEMENT_TYPE) :: ELEMENT !<The mesh element to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("MESH_TOPOLOGY_ELEMENT_INITIALISE",ERR,ERROR,*999)
@@ -5344,18 +5097,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Changes/sets the basis for a mesh element identified by a given global number. \todo should take user number
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_SET(GLOBAL_NUMBER,ELEMENTS,BASIS,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_SET
-    !###  Description:
-    !###    Changes/sets the basis for a mesh element identified by a given global number.
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS
-    TYPE(BASIS_TYPE), POINTER :: BASIS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number of the element to set the basis for
+    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS !<A pointer to the elements to set the basis for \todo before number?
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG), ALLOCATABLE :: OLD_USER_ELEMENT_NODES(:),OLD_GLOBAL_ELEMENT_NODES(:)
     TYPE(MESH_ELEMENT_TYPE), POINTER :: ELEMENT
@@ -5423,18 +5173,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Changes/sets the element nodes for a mesh element identified by a given global number. \todo specify by user number not global number
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET(GLOBAL_NUMBER,ELEMENTS,USER_ELEMENT_NODES,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET
-    !###  Description:
-    !###    Changes/sets the element nodes for a mesh element identified by a given global number.
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS
-    INTEGER(INTG), INTENT(IN) :: USER_ELEMENT_NODES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number of the element to set the nodes for
+    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS !<A pointer to the elements to set \todo before number?
+    INTEGER(INTG), INTENT(IN) :: USER_ELEMENT_NODES(:) !<USER_ELEMENT_NODES(i). USER_ELEMENT_NODES(i) is the i'th user node number for the element
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: nn,NUMBER_OF_BAD_NODES,GLOBAL_NODE_NUMBER
     INTEGER(INTG), ALLOCATABLE :: GLOBAL_ELEMENT_NODES(:),BAD_NODES(:)
@@ -5523,16 +5270,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Calculates the element numbers surrounding an element in a mesh topology.
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENTS_CALCULATE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENTS_CALCULATE
-    !###  Description:
-    !###    Calculates the element numbers surrounding an element in a mesh topology.
-
     !Argument variables
-    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the mesh topology to calculate the elements adjacent to elements for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: j,ne,ne1,ne2,nep1,nep2,ni,nn,nn1,nn2,np,np1,np2,DUMMY_ERR,FACE_XI(2),NODE_POSITION_INDEX(3)
     INTEGER(INTG) :: xi_direction,direction_index,xi_dir_check,xi_dir_search,NUMBER_NODE_MATCHES
@@ -5738,16 +5482,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the elements data structures for a mesh topology and deallocates any memory. \todo pass in elements
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_FINALISE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_ELEMENTS_FINALISE
-    !###  Description:
-    !###    Finalises the elements data structures for a mesh topology and deallocates any memory. 
-
     !Argument variables
-    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the mesh topology to finalise the elements for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: ne
 
@@ -5775,16 +5516,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the elements in a given mesh topology. \todo finalise on error
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_INITIALISE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_ELEMENTS_INITIALISE
-    !###  Description:
-    !###    Initialises the elements in a given mesh topology.
-
     !Argument variables
-    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the mesh topology to initialise the elements for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("MESH_TOPOLOGY_ELEMENTS_INITIALISE",ERR,ERROR,*999)
@@ -5814,17 +5552,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Changes/sets the user number for a global element identified by a given global number. \todo Check that the user number doesn't already exist.
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_NUMBER_SET(GLOBAL_NUMBER,USER_NUMBER,ELEMENTS,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_ELEMENTS_NUMBER_SET
-    !###  Description:
-    !###    Changes/sets the user number for a global element identified by a given global number.
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER,USER_NUMBER
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number of the elements to set.
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the element to set
+    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS !<A pointer to the elements to set the user number for \todo This should be the first parameter.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -5858,16 +5594,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the topology in the given mesh. \todo pass in the mesh topology
   SUBROUTINE MESH_TOPOLOGY_FINALISE(MESH,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_FINALISE
-    !###  Description:
-    !###    Finalises the topology in the given mesh.
-
     !Argument variables
-    TYPE(MESH_TYPE), POINTER :: MESH
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to finalise the topology for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx
 
@@ -5897,16 +5630,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the topology for a given mesh. \todo finalise on error
   SUBROUTINE MESH_TOPOLOGY_INITIALISE(MESH,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_INITIALISE
-    !###  Description:
-    !###    Initialises the topology for a given mesh.
-
     !Argument variables
-    TYPE(MESH_TYPE), POINTER :: MESH
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to initialise the mesh topology for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx
     
@@ -5947,16 +5677,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the given mesh topology node. 
   SUBROUTINE MESH_TOPOLOGY_NODE_FINALISE(NODE,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_NODE_FINALISE
-    !###  Description:
-    !###    Finalises the given mesh topology node.
-
     !Argument variables
-    TYPE(MESH_NODE_TYPE) :: NODE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_NODE_TYPE) :: NODE !<The mesh node to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("MESH_TOPOLOGY_NODE_FINALISE",ERR,ERROR,*999)
@@ -5976,16 +5703,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the given mesh topology node.
   SUBROUTINE MESH_TOPOLOGY_NODE_INITIALISE(NODE,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_NODE_INITIALISE
-    !###  Description:
-    !###    Initialises the given mesh topology node.
-
     !Argument variables
-    TYPE(MESH_NODE_TYPE) :: NODE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_NODE_TYPE) :: NODE !<The mesh node to initialise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("MESH_TOPOLOGY_NODE_INITIALISE",ERR,ERROR,*999)
@@ -6111,16 +5835,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Calculates the number of derivatives at each node in a topology.
   SUBROUTINE MESH_TOPOLOGY_NODES_DERIVATIVES_CALCULATE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_NODES_DERIVATIVES_CALCULATE
-    !###  Description:
-    !###    Calculates the number of derivatives at each node in a topology.
-
     !Argument variables
-    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the mesh topology to calculate the derivates at each node for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: elem_idx,MAX_NUMBER_OF_DERIVATIVES,ne,nk,nn,np,NUMBER_OF_DERIVATIVES
     INTEGER(INTG), POINTER :: DERIVATIVES(:)
@@ -6220,16 +5941,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Calculates the element numbers surrounding a node for a mesh.
   SUBROUTINE MESH_TOPOLOGY_NODES_SURROUNDING_ELEMENTS_CALCULATE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_NODES_SURROUNDING_ELEMENTS_CALCULATE
-    !###  Description:
-    !###    Calculates the element numbers surrounding a node for a mesh.
-
     !Argument variables
-    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the mesh topology to calculate the elements surrounding each node for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: element_no,insert_position,ne,nn,np,surrounding_elem_no
     INTEGER(INTG), POINTER :: NEW_SURROUNDING_ELEMENTS(:)
@@ -6307,16 +6025,13 @@ CONTAINS
   !===============================================================================================================================
   !
 
+  !>Finalises the nodes data structures for a mesh topology and deallocates any memory. \todo pass in nodes
   SUBROUTINE MESH_TOPOLOGY_NODES_FINALISE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_NODES_FINALISE
-    !###  Description:
-    !###    Finalises the nodes data structures for a mesh topology and deallocates any memory. 
-
     !Argument variables
-    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the mesh topology to finalise the nodes for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: np
 
@@ -6345,16 +6060,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the nodes in a given mesh topology. \todo finalise on errors
   SUBROUTINE MESH_TOPOLOGY_NODES_INITIALISE(TOPOLOGY,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_TOPOLOGY_NODES_INITIALISE
-    !###  Description:
-    !###    Initialises the nodes in a given mesh topology.
-
     !Argument variables
-    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the mesh topology to initialise the nodes for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("MESH_TOPOLOGY_NODES_INITIALISE",ERR,ERROR,*999)
@@ -6384,19 +6096,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finds and returns in MESH a pointer to the mesh identified by USER_NUMBER in the given REGION. If no mesh with that number exits MESH is left nullified.
   SUBROUTINE MESH_USER_NUMBER_FIND(USER_NUMBER,REGION,MESH,ERR,ERROR,*)
 
-    !#### Subroutine: MESH_USER_NUMBER_FIND
-    !###  Description:
-    !###    Finds and returns in MESH a pointer to the mesh identified by USER_NUMBER in the given REGION. If no mesh with that
-    !###    number exits MESH is left nullified.
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(MESH_TYPE), POINTER :: MESH
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the mesh to find
+    TYPE(REGION_TYPE), POINTER :: REGION !<The region containing the mesh
+    TYPE(MESH_TYPE), POINTER :: MESH !<On return, a pointer to the mesh of the specified user number. In no mesh with the specified user number exists the pointer is returned NULL.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: mesh_idx
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -6434,16 +6142,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the meshes in the given region. \todo pass in meshes
   SUBROUTINE MESHES_FINALISE(REGION,ERR,ERROR,*)
 
-    !#### Subroutine: MESHES_FINALISE
-    !###  Description:
-    !###    Finalises the meshes in the given region.
-
-    !Argument variables
-    TYPE(REGION_TYPE), POINTER :: REGION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+   !Argument variables
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to finalise the meshes for.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: USER_NUMBER
 
@@ -6473,16 +6178,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the meshes for the given region. \todo finalise on error
   SUBROUTINE MESHES_INITIALISE(REGION,ERR,ERROR,*)
 
-    !#### Subroutine: MESHES_INITIALISE
-    !###  Description:
-    !###    Initialises the meshes for the given region.
-
     !Argument variables
-    TYPE(REGION_TYPE), POINTER :: REGION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to initialise the meshes for.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 

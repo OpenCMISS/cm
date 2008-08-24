@@ -406,16 +406,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the mapping for a domain mappings mapping and deallocates all memory.
   SUBROUTINE DOMAIN_MAPPINGS_MAPPING_FINALISE(DOMAIN_MAPPING,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_MAPPINGS_MAPPING_FINALISE
-    !###  Description:
-    !###    Finalises the mapping for a domain mappings mapping and deallocates all memory.
-
     !Argument variables
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING !<A pointer to the domain mapping to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: idx
 
@@ -452,16 +449,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !> Finalises the global mapping in the given domain mappings.
   SUBROUTINE DOMAIN_MAPPINGS_MAPPING_GLOBAL_FINALISE(MAPPING_GLOBAL_MAP,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_MAPPINGS_MAPPING_GLOBAL_FINALISE
-    !###  Description:
-    !###    Finalises the global mapping in the given domain mappings.
-
     !Argument variables
-    TYPE(DOMAIN_GLOBAL_MAPPING_TYPE) :: MAPPING_GLOBAL_MAP
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_GLOBAL_MAPPING_TYPE) :: MAPPING_GLOBAL_MAP !<The domain global mapping to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<Th error string
     !Local Variables
 
     CALL ENTERS("DOMAIN_MAPPINGS_MAPPING_GLOBAL_FINALISE",ERR,ERROR,*999)
@@ -482,16 +476,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises the global mapping in the given domain mappings.
   SUBROUTINE DOMAIN_MAPPINGS_MAPPING_GLOBAL_INITIALISE(MAPPING_GLOBAL_MAP,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_MAPPINGS_MAPPING_GLOBAL_INTIALISE
-    !###  Description:
-    !###    Finalises the global mapping in the given domain mappings.
-
     !Argument variables
-    TYPE(DOMAIN_GLOBAL_MAPPING_TYPE) :: MAPPING_GLOBAL_MAP
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_GLOBAL_MAPPING_TYPE) :: MAPPING_GLOBAL_MAP !<The domain global mapping to initialise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("DOMAIN_MAPPINGS_MAPPING_GLOBAL_INITIALISE",ERR,ERROR,*999)
@@ -510,18 +501,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the mapping for a domain mappings mapping.
   SUBROUTINE DOMAIN_MAPPINGS_MAPPING_INITIALISE(DOMAIN_MAPPING,NUMBER_OF_DOMAINS,ERR,ERROR,*)
 
-    !#### Subroutine: DOMAIN_MAPPINGS_MAPPING_INITIALISE
-    !###  Description:
-    !###    Initialises the mapping for a domain mappings mapping.
-
     !Argument variables
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING
-    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DOMAINS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING !<A pointer to the domain mapping to initialise the mappings for
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DOMAINS !<The number of domains 
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("DOMAIN_MAPPINGS_MAPPING_INITIALISE",ERR,ERROR,*999)
 
@@ -536,7 +525,9 @@ CONTAINS
         DOMAIN_MAPPING%NUMBER_OF_GHOST=0
         DOMAIN_MAPPING%NUMBER_OF_ADJACENT_DOMAINS=0
       ELSE
-        CALL FLAG_ERROR("Number of domains must be >0",ERR,ERROR,*999)
+        LOCAL_ERROR="The specified number of domains of "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DOMAINS,"*",ERR,ERROR))// &
+          & " is invalid. The number of domains must be > 0"
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Domain mapping is not associated",ERR,ERROR,*999)
@@ -548,5 +539,9 @@ CONTAINS
     CALL EXITS("DOMAIN_MAPPINGS_MAPPING_INITIALISE")
     RETURN 1
   END SUBROUTINE DOMAIN_MAPPINGS_MAPPING_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
   
 END MODULE DOMAIN_MAPPINGS
