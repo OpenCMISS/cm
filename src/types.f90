@@ -69,7 +69,7 @@
 MODULE TYPES
 
   USE CONSTANTS
-  USE CMISS_PETSC
+  USE CMISS_PETSC_TYPES
   USE KINDS
   USE ISO_VARYING_STRING
   USE TREES
@@ -278,6 +278,63 @@ MODULE TYPES
   TYPE MESH_TOPOLOGY_PTR_TYPE
     TYPE(MESH_TOPOLOGY_TYPE), POINTER :: PTR !<The pointer to the mesh topology.
   END TYPE MESH_TOPOLOGY_PTR_TYPE
+
+  !>Contains information on a mesh defined on a region.
+  TYPE MESH_TYPE
+    INTEGER(INTG) :: USER_NUMBER !<The user number of the mesh. The user number must be unique.
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The corresponding global number for the mesh.
+    LOGICAL :: MESH_FINISHED !<Is .TRUE. if the mesh has finished being created, .FALSE. if not.
+    TYPE(MESHES_TYPE), POINTER :: MESHES !<A pointer to the meshes for this mesh.
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing this mesh.
+    INTEGER(INTG) :: NUMBER_OF_DIMENSIONS !<The number of dimensions (Xi directions) for this mesh.
+    INTEGER(INTG) :: NUMBER_OF_COMPONENTS !<The number of mesh components in this mesh.
+    LOGICAL :: MESH_EMBEDDED !<Is .TRUE. if the mesh is embedded in another mesh, .FALSE. if not.
+    TYPE(MESH_TYPE), POINTER :: EMBEDDING_MESH !<If this mesh is embedded the pointer to the mesh that this mesh is embedded in. IF the mesh is not embedded the pointer is NULL.
+    INTEGER(INTG) :: NUMBER_OF_EMBEDDED_MESHES !<The number of meshes that are embedded in this mesh.
+    TYPE(MESH_PTR_TYPE), POINTER :: EMBEDDED_MESHES(:) !<EMBEDDED_MESHES(mesh_idx). A pointer to the mesh_idx'th mesh that is embedded in this mesh.
+    INTEGER(INTG) :: NUMBER_OF_ELEMENTS !<The number of elements in the mesh.
+    INTEGER(INTG) :: NUMBER_OF_FACES !<The number of faces in the mesh.
+    INTEGER(INTG) :: NUMBER_OF_LINES !<The number of lines in the mesh.
+    TYPE(MESH_TOPOLOGY_PTR_TYPE), POINTER :: TOPOLOGY(:) !<TOPOLOGY(mesh_component_idx). A pointer to the topology mesh_component_idx'th mesh component.
+    TYPE(DECOMPOSITIONS_TYPE), POINTER :: DECOMPOSITIONS !<A pointer to the decompositions for this mesh.
+  END TYPE MESH_TYPE
+
+  !>A buffer type to allow for an array of pointers to a MESH_TYPE.
+  TYPE MESH_PTR_TYPE
+    TYPE(MESH_TYPE), POINTER :: PTR !<The pointer to the mesh. 
+  END TYPE MESH_PTR_TYPE
+
+  !>Contains information on the meshes defined on a region.
+  TYPE MESHES_TYPE
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region.
+    INTEGER(INTG) :: NUMBER_OF_MESHES !<The number of meshes defined on the region.
+    TYPE(MESH_PTR_TYPE), POINTER :: MESHES(:) !<MESHES(meshes_idx). The array of pointers to the meshes.
+  END TYPE MESHES_TYPE
+
+  !
+  !================================================================================================================================
+  !
+  ! Generated Mesh types
+  !
+
+  !>Contains information on a generated regular mesh
+  TYPE GENERATED_MESH_REGULAR_TYPE
+    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh
+    REAL(DP), ALLOCATABLE :: ORIGIN(:) !<ORIGIN(nj). The position of the origin (first) corner of the regular mesh
+    REAL(DP), ALLOCATABLE :: MAXIMUM_EXTENT(:) !<MAXIMUM_EXTENT(nj). The extent/size in each nj'th direction of the regular mesh.
+    INTEGER(INTG) :: MESH_DIMENSION !<The dimension/number of Xi directions of the regular mesh.
+    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ELEMENTS_XI(:) !<NUMBER_OF_ELEMENTS_XI(ni). The number of elements in the ni'th Xi direction for the mesh.
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<The pointer to the basis used in the regular mesh.
+  END TYPE GENERATED_MESH_REGULAR_TYPE
+
+  !>Contains information on a generated mesh
+  TYPE GENERATED_MESH_TYPE
+    INTEGER(INTG) :: USER_NUMBER
+    TYPE(REGION_TYPE), POINTER :: REGION
+    INTEGER(INTG) :: GENERATED_TYPE
+    TYPE(GENERATED_MESH_REGULAR_TYPE), POINTER :: REGULAR_MESH
+    TYPE(MESH_TYPE), POINTER :: MESH
+  END TYPE GENERATED_MESH_TYPE
 
   !
   !================================================================================================================================
@@ -672,69 +729,6 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_OF_DECOMPOSITIONS !<The number of decompositions defined on the mesh.
     TYPE(DECOMPOSITION_PTR_TYPE), POINTER :: DECOMPOSITIONS(:) !<DECOMPOSITIONS(decomposition_idx). The array of pointers to the domain decompositions.
   END TYPE DECOMPOSITIONS_TYPE
-
-  !>Contains information on a generated regular mesh
-  TYPE GENERATED_MESH_REGULAR_TYPE
-    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh
-    REAL(DP), ALLOCATABLE :: ORIGIN(:) !<ORIGIN(nj). The position of the origin (first) corner of the regular mesh
-    REAL(DP), ALLOCATABLE :: MAXIMUM_EXTENT(:) !<MAXIMUM_EXTENT(nj). The extent/size in each nj'th direction of the regular mesh.
-    INTEGER(INTG) :: MESH_DIMENSION !<The dimension/number of Xi directions of the regular mesh.
-    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ELEMENTS_XI(:) !<NUMBER_OF_ELEMENTS_XI(ni). The number of elements in the ni'th Xi direction for the mesh.
-    TYPE(BASIS_TYPE), POINTER :: BASIS !<The pointer to the basis used in the regular mesh.
-  END TYPE GENERATED_MESH_REGULAR_TYPE
-
-  !
-  !================================================================================================================================
-  !
-  ! Generated mesh types
-  !
-  
-  !>Contains information for generated meshes.
-  TYPE GENERATED_MESH_TYPE
-    INTEGER(INTG) :: USER_NUMBER !<The user number of the generated mesh.
-    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the generated mesh.
-    INTEGER(INTG) :: TYPE !<The type of generated mesh. \see GENERATED_MESH_ROUTINES_GeneratedMeshTypes
-    TYPE(GENERATED_MESH_REGULAR_TYPE), POINTER :: REGULAR_MESH !<A pointer to the information for a regular generated mesh. 
-    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh that is generated
-  END TYPE GENERATED_MESH_TYPE
-
-  !
-  !================================================================================================================================
-  !
-  ! Mesh types
-  !
-  
-  !>Contains information on a mesh defined on a region.
-  TYPE MESH_TYPE
-    INTEGER(INTG) :: USER_NUMBER !<The user number of the mesh. The user number must be unique.
-    INTEGER(INTG) :: GLOBAL_NUMBER !<The corresponding global number for the mesh.
-    LOGICAL :: MESH_FINISHED !<Is .TRUE. if the mesh has finished being created, .FALSE. if not.
-    TYPE(MESHES_TYPE), POINTER :: MESHES !<A pointer to the meshes for this mesh.
-    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing this mesh.
-    INTEGER(INTG) :: NUMBER_OF_DIMENSIONS !<The number of dimensions (Xi directions) for this mesh.
-    INTEGER(INTG) :: NUMBER_OF_COMPONENTS !<The number of mesh components in this mesh.
-    LOGICAL :: MESH_EMBEDDED !<Is .TRUE. if the mesh is embedded in another mesh, .FALSE. if not.
-    TYPE(MESH_TYPE), POINTER :: EMBEDDING_MESH !<If this mesh is embedded the pointer to the mesh that this mesh is embedded in. IF the mesh is not embedded the pointer is NULL.
-    INTEGER(INTG) :: NUMBER_OF_EMBEDDED_MESHES !<The number of meshes that are embedded in this mesh.
-    TYPE(MESH_PTR_TYPE), POINTER :: EMBEDDED_MESHES(:) !<EMBEDDED_MESHES(mesh_idx). A pointer to the mesh_idx'th mesh that is embedded in this mesh.
-    INTEGER(INTG) :: NUMBER_OF_ELEMENTS !<The number of elements in the mesh.
-    INTEGER(INTG) :: NUMBER_OF_FACES !<The number of faces in the mesh.
-    INTEGER(INTG) :: NUMBER_OF_LINES !<The number of lines in the mesh.
-    TYPE(MESH_TOPOLOGY_PTR_TYPE), POINTER :: TOPOLOGY(:) !<TOPOLOGY(mesh_component_idx). A pointer to the topology mesh_component_idx'th mesh component.
-    TYPE(DECOMPOSITIONS_TYPE), POINTER :: DECOMPOSITIONS !<A pointer to the decompositions for this mesh.
-  END TYPE MESH_TYPE
-
-  !>A buffer type to allow for an array of pointers to a MESH_TYPE.
-  TYPE MESH_PTR_TYPE
-    TYPE(MESH_TYPE), POINTER :: PTR !<The pointer to the mesh. 
-  END TYPE MESH_PTR_TYPE
-
-  !>Contains information on the meshes defined on a region.
-  TYPE MESHES_TYPE
-    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region.
-    INTEGER(INTG) :: NUMBER_OF_MESHES !<The number of meshes defined on the region.
-    TYPE(MESH_PTR_TYPE), POINTER :: MESHES(:) !<MESHES(meshes_idx). The array of pointers to the meshes.
-  END TYPE MESHES_TYPE
 
   !
   !================================================================================================================================
