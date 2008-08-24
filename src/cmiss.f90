@@ -129,10 +129,10 @@ CONTAINS
     !Intialise the computational environment
     CALL COMPUTATIONAL_ENVIRONMENT_INITIALISE(ERR,ERROR,*999)
     !Intialise the bases
-    CALL BASES_INITIALISE(ERR,ERROR,*999)
+    CALL BASES_INITIALISE(ERR,ERROR,*999) !BASES is the pl of basis
     !Initialise the coordinate systems
     CALL COORDINATE_SYSTEMS_INITIALISE(ERR,ERROR,*999)
-    !Initialise the regions
+    !Initialise the regions 
     CALL REGIONS_INITIALISE(ERR,ERROR,*999)
     !Initialise the problems
     CALL PROBLEMS_FINALISE(ERR,ERROR,*999)
