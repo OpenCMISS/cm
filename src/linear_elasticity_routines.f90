@@ -1,7 +1,7 @@
 !> \file
-!> $Id: Laplace_equations_routines.f90 28 2007-07-27 08:35:14Z cpb $
+!> $Id: linear_elasticity_routines.f90 28 2007-07-27 08:35:14Z cpb $
 !> \author Chris Bradley
-!> \brief This module handles all Laplace equations routines.
+!> \brief This module handles all linear elasticity routines.
 !>
 !> \section LICENSE
 !>
@@ -40,8 +40,8 @@
 !> the terms of any one of the MPL, the GPL or the LGPL.
 !>
 
-!>This module handles all Laplace equations routines.
-MODULE LAPLACE_EQUATIONS_ROUTINES
+!>This module handles all linear elasticity routines.
+MODULE LINEAR_ELASTICITY_ROUTINES
 
   USE BASE_ROUTINES
   USE BASIS_ROUTINES
@@ -75,8 +75,8 @@ MODULE LAPLACE_EQUATIONS_ROUTINES
 
   !Interfaces
 
-  PUBLIC LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE,LAPLACE_EQUATION_EQUATIONS_SET_SETUP, &
-    & LAPLACE_EQUATION_EQUATIONS_SET_SUBTYPE_SET,LAPLACE_EQUATION_PROBLEM_SUBTYPE_SET,LAPLACE_EQUATION_PROBLEM_SETUP
+  PUBLIC LINEAR_ELASTICITY_FINITE_ELEMENT_CALCULATE,LINEAR_ELASTICITY_EQUATIONS_SET_SETUP, &
+    & LINEAR_ELASTICITY_EQUATIONS_SET_SUBTYPE_SET,LINEAR_ELASTICITY_PROBLEM_SUBTYPE_SET,LINEAR_ELASTICITY_PROBLEM_SETUP
   
 CONTAINS
 
@@ -84,8 +84,8 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Calculates the element stiffness matrices and RHS for a Laplace equation finite element equations set.
-  SUBROUTINE LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
+  !>Calculates the element stiffness matrices and RHS for a linear elasticity finite element equations set.
+  SUBROUTINE LINEAR_ELASTICITY_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to perform the finite element calculations on
@@ -93,107 +93,33 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) ng,mh,mhs,mi,ms,nh,nhs,ni,ns
-    REAL(DP) :: RWG,SUM,PGMSI(3),PGNSI(3)
-    TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,GEOMETRIC_BASIS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
-    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
+     
+    CALL ENTERS("LINEAR_ELASTICITY_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN
-        SELECT CASE(EQUATIONS_SET%SUBTYPE)
-        CASE(EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE)
-          !Store all these in equations matrices/somewhere else?????
-          DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
-          GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
-          EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
-          EQUATIONS_MATRIX=>EQUATIONS_MATRICES%MATRICES(1)%PTR
-          EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-          FIELD_VARIABLE=>EQUATIONS_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(1)%VARIABLE
-          DEPENDENT_BASIS=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-            & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-          GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-            & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-          QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
-            & GEOMETRIC_INTERP_PARAMETERS,ERR,ERROR,*999)
-          !Loop over gauss points
-          DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
-            CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
-              & GEOMETRIC_INTERP_POINT,ERR,ERROR,*999)
-            CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,EQUATIONS%INTERPOLATION% &
-              & GEOMETRIC_INTERP_POINT_METRICS,ERR,ERROR,*999)
-            !Calculate RWG.
-!!TODO: Think about symmetric problems. 
-            RWG=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)
-            !Loop over field components
-            mhs=0          
-            DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-              !Loop over element rows
-!!TODO: CHANGE ELEMENT CALCULATE TO WORK OF ns ???
-              DO ms=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
-                mhs=mhs+1
-                nhs=0
-                IF(EQUATIONS_MATRIX%UPDATE_MATRIX) THEN
-                  !Loop over element columns
-                  DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                    DO ns=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
-                      nhs=nhs+1
-                      DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
-                        PGMSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
-                        PGNSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
-                      ENDDO !ni
-                      SUM=0.0_DP
-                      DO mi=1,DEPENDENT_BASIS%NUMBER_OF_XI
-                        DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
-                          SUM=SUM+PGMSI(mi)*PGNSI(ni)*EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%GU(mi,ni)
-                        ENDDO !ni
-                      ENDDO !mi
-                      EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
-                    ENDDO !ns
-                  ENDDO !nh
-                ENDIF
-                IF(EQUATIONS_MATRICES%UPDATE_VECTOR) EQUATIONS_MATRICES%ELEMENT_VECTOR%VECTOR(mhs)=0.0_DP
-              ENDDO !ms
-            ENDDO !mh
-          ENDDO !ng
-          
-        CASE(EQUATIONS_SET_GENERALISED_LAPLACE_SUBTYPE)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-        CASE DEFAULT
-          LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-            & " is not valid for a Laplace equation type of a classical field equations set class."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        END SELECT
-      ELSE
+       ELSE
         CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE")
+    CALL EXITS("LINEAR_ELASTICITY_FINITE_ELEMENT_CALCULATE")
     RETURN
-999 CALL ERRORS("LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR)
-    CALL EXITS("LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE")
+999 CALL ERRORS("LINEAR_ELASTICITY_FINITE_ELEMENT_CALCULATE",ERR,ERROR)
+    CALL EXITS("LINEAR_ELASTICITY_FINITE_ELEMENT_CALCULATE")
     RETURN 1
-  END SUBROUTINE LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE
+  END SUBROUTINE LINEAR_ELASTICITY_FINITE_ELEMENT_CALCULATE
 
   !
   !================================================================================================================================
   !
 
-  !>Sets up the Laplace equation type of a classical field equations set class.
-  SUBROUTINE LAPLACE_EQUATION_EQUATIONS_SET_SETUP(EQUATIONS_SET,SETUP_TYPE,ACTION_TYPE,ERR,ERROR,*)
+  !>Sets up the Linear elasticity equation type of an elasticity equations set class.
+  SUBROUTINE LINEAR_ELASTICITY_EQUATIONS_SET_SETUP(EQUATIONS_SET,SETUP_TYPE,ACTION_TYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to setup a Laplace equation on.
@@ -202,100 +128,18 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("LAPLACE_EQUATION_EQUATIONS_SET_SETUP",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
-      CASE(EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE)
-        CALL LAPLACE_EQUATION_EQUATIONS_SET_STANDARD_SETUP(EQUATIONS_SET,SETUP_TYPE,ACTION_TYPE,ERR,ERROR,*999)
-      CASE(EQUATIONS_SET_GENERALISED_LAPLACE_SUBTYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a Laplace equation type of a classical field equation set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-    ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("LAPLACE_EQUATION_EQUATIONS_SET_SETUP")
-    RETURN
-999 CALL ERRORS("LAPLACE_EQUATION_EQUATIONS_SET_SETUP",ERR,ERROR)
-    CALL EXITS("LAPLACE_EQUATION_EQUATIONS_SET_SETUP")
-    RETURN 1
-  END SUBROUTINE LAPLACE_EQUATION_EQUATIONS_SET_SETUP
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the equation subtype for a Laplace equation type of a classical field equations set class.
-  SUBROUTINE LAPLACE_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the equation subtype for
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE !<The equation subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("LAPLACE_EQUATION_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR,*999)
-    
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET_SUBTYPE)
-      CASE(EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_CLASSICAL_FIELD_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_LAPLACE_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE
-        CALL LAPLACE_EQUATION_EQUATIONS_SET_STANDARD_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INITIAL_TYPE, &
-          & EQUATIONS_SET_SETUP_START_ACTION,ERR,ERROR,*999)
-      CASE(EQUATIONS_SET_GENERALISED_LAPLACE_SUBTYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a Laplace equation type of a classical field equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-    ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("LAPLACE_EQUATION_EQUATIONS_SET_SUBTYPE_SET")
-    RETURN
-999 CALL ERRORS("LAPLACE_EQUATION_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("LAPLACE_EQUATION_EQUATIONS_SET_SUBTYPE_SET")
-    RETURN 1
-  END SUBROUTINE LAPLACE_EQUATION_EQUATIONS_SET_SUBTYPE_SET
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets up the standard Laplace equation.
-  SUBROUTINE LAPLACE_EQUATION_EQUATIONS_SET_STANDARD_SETUP(EQUATIONS_SET,SETUP_TYPE,ACTION_TYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to setup
-    INTEGER(INTG), INTENT(IN) :: SETUP_TYPE !<The setup type to perform
-    INTEGER(INTG), INTENT(IN) :: ACTION_TYPE !<The action type to perform
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: NEXT_NUMBER
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    INTEGER(INTG) :: component_idx,NEXT_NUMBER,NUMBER_OF_COMPONENTS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("LAPLACE_EQUATION_EQUATION_SET_STANDARD_SETUP",ERR,ERROR,*999)
+    CALL ENTERS("LINEAR_ELASTICITY_EQUATIONS_SET_SETUP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE) THEN
+      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      CASE(EQUATIONS_SET_NO_SUBTYPE)
         SELECT CASE(SETUP_TYPE)
         CASE(EQUATIONS_SET_SETUP_INITIAL_TYPE)
           SELECT CASE(ACTION_TYPE)
@@ -308,7 +152,7 @@ CONTAINS
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a standard Laplace equation."
+              & " is invalid for a linear elasticity equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(EQUATIONS_SET_SETUP_GEOMETRY_TYPE)
@@ -326,20 +170,26 @@ CONTAINS
             CALL FIELD_GEOMETRIC_FIELD_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, &
               & ERR,ERROR,*999)
             CALL FIELD_NUMBER_OF_VARIABLES_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,2,ERR,ERROR,*999)
-            CALL FIELD_NUMBER_OF_COMPONENTS_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,1,ERR,ERROR,*999)
+            NUMBER_OF_COMPONENTS= EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(FIELD_STANDARD_VARIABLE_TYPE)% &
+              & NUMBER_OF_COMPONENTS
+            CALL FIELD_NUMBER_OF_COMPONENTS_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
             !Default to the geometric interpolation setup
-            CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_STANDARD_VARIABLE_TYPE,1, &
-              & EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(FIELD_STANDARD_VARIABLE_TYPE)%COMPONENTS(1)% &
-              & MESH_COMPONENT_NUMBER,ERR,ERROR,*999)
-            CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_NORMAL_VARIABLE_TYPE,1, &
-              & EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(FIELD_STANDARD_VARIABLE_TYPE)%COMPONENTS(1)% &
-              & MESH_COMPONENT_NUMBER,ERR,ERROR,*999)
+            DO component_idx=1,NUMBER_OF_COMPONENTS
+              CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_STANDARD_VARIABLE_TYPE, &
+                & component_idx,EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(FIELD_STANDARD_VARIABLE_TYPE)%COMPONENTS( &
+                & component_idx)%MESH_COMPONENT_NUMBER,ERR,ERROR,*999)
+              CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_NORMAL_VARIABLE_TYPE, &
+                & component_idx,EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLES(FIELD_STANDARD_VARIABLE_TYPE)%COMPONENTS( &
+                & component_idx)%MESH_COMPONENT_NUMBER,ERR,ERROR,*999)
+            ENDDO !component_idx
             SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
             CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
-              CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_STANDARD_VARIABLE_TYPE,1, &
-                & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-              CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_NORMAL_VARIABLE_TYPE,1, &
-                & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+              DO component_idx=1,NUMBER_OF_COMPONENTS
+                CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_STANDARD_VARIABLE_TYPE, &
+                  & component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_NORMAL_VARIABLE_TYPE, &
+                  & component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+              ENDDO !component_idx
               CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD% &
                 & SCALINGS%SCALING_TYPE,ERR,ERROR,*999)
             CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
@@ -362,7 +212,7 @@ CONTAINS
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a standard Laplace equation"
+              & " is invalid for a linear elasticity equation"
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(EQUATIONS_SET_SETUP_MATERIALS_TYPE)
@@ -375,7 +225,7 @@ CONTAINS
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a standard Laplace equation."
+              & " is invalid for a linear elasticity equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(EQUATIONS_SET_SETUP_SOURCE_TYPE)
@@ -388,7 +238,7 @@ CONTAINS
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a standard Laplace equation."
+              & " is invalid for a linear elasticity equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(EQUATIONS_SET_SETUP_ANALYTIC_TYPE)
@@ -405,7 +255,7 @@ CONTAINS
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a standard Laplace equation."
+              & " is invalid for a linear elasticity equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(EQUATIONS_SET_SETUP_FIXED_CONDITIONS_TYPE)
@@ -432,7 +282,7 @@ CONTAINS
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a standard Laplace equation."
+              & " is invalid for a linear elasticity equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(EQUATIONS_SET_SETUP_EQUATIONS_TYPE)
@@ -497,124 +347,82 @@ CONTAINS
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a standard Laplace equation."
+              & " is invalid for a linear elasticity equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
-            & " is invalid for a standard Laplace equation."
+            & " is invalid for a linear elasticity equation."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
-      ELSE
-        LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-          & " does not equal a standard Laplace equation subtype."
+      CASE DEFAULT
+        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+          & " is not valid for a linear elasticity equation type of an elasticity equation set class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      ENDIF
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("LINEAR_ELASTICITY_EQUATIONS_SET_SETUP")
+    RETURN
+999 CALL ERRORS("LINEAR_ELASTICITY_EQUATIONS_SET_SETUP",ERR,ERROR)
+    CALL EXITS("LINEAR_ELASTICITY_EQUATIONS_SET_SETUP")
+    RETURN 1
+  END SUBROUTINE LINEAR_ELASTICITY_EQUATIONS_SET_SETUP
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the equation subtype for a linear elasticity equation type of an elasticity equations set class.
+  SUBROUTINE LINEAR_ELASTICITY_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the equation subtype for
+    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE !<The equation subtype to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("LINEAR_ELASTICITY_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      SELECT CASE(EQUATIONS_SET_SUBTYPE)
+      CASE(EQUATIONS_SET_NO_SUBTYPE)        
+        EQUATIONS_SET%CLASS=EQUATIONS_SET_ELASTICITY_CLASS
+        EQUATIONS_SET%TYPE=EQUATIONS_SET_LINEAR_ELASTICITY_TYPE
+        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_NO_SUBTYPE       
+        CALL LINEAR_ELASTICITY_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INITIAL_TYPE, &
+          & EQUATIONS_SET_SETUP_START_ACTION,ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
+          & " is not valid for a linear elasticity equation type of an elasticity equations set class."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
     ELSE
       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("LAPLACE_EQUATION_EQUATIONS_SET_STANDARD_SETUP")
+    CALL EXITS("LINEAR_ELASTICITY_EQUATIONS_SET_SUBTYPE_SET")
     RETURN
-999 CALL ERRORS("LAPLACE_EQUATION_EQUATIONS_SET_STANDARD_SETUP",ERR,ERROR)
-    CALL EXITS("LAPLACE_EQUATION_EQUATIONS_SET_STANDARD_SETUP")
+999 CALL ERRORS("LINEAR_ELASTICITY_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR)
+    CALL EXITS("LINEAR_ELASTICITY_EQUATIONS_SET_SUBTYPE_SET")
     RETURN 1
-  END SUBROUTINE LAPLACE_EQUATION_EQUATIONS_SET_STANDARD_SETUP
+  END SUBROUTINE LINEAR_ELASTICITY_EQUATIONS_SET_SUBTYPE_SET
 
   !
   !================================================================================================================================
   !
  
-  !>Sets up the Laplace solution.
-  SUBROUTINE LAPLACE_EQUATION_PROBLEM_SETUP(PROBLEM,SETUP_TYPE,ACTION_TYPE,ERR,ERROR,*)
+  !>Sets up the linear elasticity problem.
+  SUBROUTINE LINEAR_ELASTICITY_PROBLEM_SETUP(PROBLEM,SETUP_TYPE,ACTION_TYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the solutions set to setup a Laplace equation on.
     INTEGER(INTG), INTENT(IN) :: SETUP_TYPE !<The setup type
     INTEGER(INTG), INTENT(IN) :: ACTION_TYPE !<The action type
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("LAPLACE_EQUATION_PROBLEM_SETUP",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM%SUBTYPE)
-      CASE(PROBLEM_STANDARD_LAPLACE_SUBTYPE)
-        CALL LAPLACE_EQUATION_PROBLEM_STANDARD_SETUP(PROBLEM,SETUP_TYPE,ACTION_TYPE,ERR,ERROR,*999)
-      CASE(PROBLEM_GENERALISED_LAPLACE_SUBTYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE DEFAULT
-        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a Laplace equation type of a classical field problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-    ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("LAPLACE_EQUATION_PROBLEM_SETUP")
-    RETURN
-999 CALL ERRORS("LAPLACE_EQUATION_PROBLEM_SETUP",ERR,ERROR)
-    CALL EXITS("LAPLACE_EQUATION_PROBLEM_SETUP")
-    RETURN 1
-  END SUBROUTINE LAPLACE_EQUATION_PROBLEM_SETUP
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the problem subtype for a Laplace equation type .
-  SUBROUTINE LAPLACE_EQUATION_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the problem subtype for
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_SUBTYPE !<The problem subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("LAPLACE_EQUATION_PROBLEM_SUBTYPE_SET",ERR,ERROR,*999)
-    
-    IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM_SUBTYPE)
-      CASE(PROBLEM_STANDARD_LAPLACE_SUBTYPE)        
-        PROBLEM%CLASS=PROBLEM_CLASSICAL_FIELD_CLASS
-        PROBLEM%TYPE=PROBLEM_LAPLACE_EQUATION_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_STANDARD_LAPLACE_SUBTYPE     
-        CALL LAPLACE_EQUATION_PROBLEM_STANDARD_SETUP(PROBLEM,PROBLEM_SETUP_INITIAL_TYPE,PROBLEM_SETUP_START_ACTION, &
-          & ERR,ERROR,*999)
-      CASE(PROBLEM_GENERALISED_LAPLACE_SUBTYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE DEFAULT
-        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a Laplace equation type of a classical field problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-    ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("LAPLACE_EQUATION_PROBLEM_SUBTYPE_SET")
-    RETURN
-999 CALL ERRORS("LAPLACE_EQUATION_PROBLEM_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("LAPLACE_EQUATION_PROBLEM_SUBTYPE_SET")
-    RETURN 1
-  END SUBROUTINE LAPLACE_EQUATION_PROBLEM_SUBTYPE_SET
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets up the standard Laplace equations solution.
-  SUBROUTINE LAPLACE_EQUATION_PROBLEM_STANDARD_SETUP(PROBLEM,SETUP_TYPE,ACTION_TYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to setup
-    INTEGER(INTG), INTENT(IN) :: SETUP_TYPE !<The setup type to perform
-    INTEGER(INTG), INTENT(IN) :: ACTION_TYPE !<The action type to perform
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -624,10 +432,11 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("LAPLACE_EQUATION_PROBLEM_STANDARD_SETUP",ERR,ERROR,*999)
+    CALL ENTERS("LINEAR_ELASTICITY_PROBLEM_SETUP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(PROBLEM)) THEN
-      IF(PROBLEM%SUBTYPE==PROBLEM_STANDARD_LAPLACE_SUBTYPE) THEN
+      SELECT CASE(PROBLEM%SUBTYPE)
+      CASE(EQUATIONS_SET_NO_SUBTYPE)
         SELECT CASE(SETUP_TYPE)
         CASE(PROBLEM_SETUP_INITIAL_TYPE)
           SELECT CASE(ACTION_TYPE)
@@ -640,7 +449,7 @@ CONTAINS
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a standard Laplace equation."
+              & " is invalid for a linear elasticity problem."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_CONTROL_TYPE)
@@ -654,7 +463,7 @@ CONTAINS
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a standard Laplace equation."
+              & " is invalid for a linear elasticity problem."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLUTION_TYPE)
@@ -674,10 +483,10 @@ CONTAINS
            CASE(PROBLEM_SETUP_DO_ACTION)
              EQUATIONS_SET=>SOLUTION%EQUATIONS_SET_TO_ADD
              IF(ASSOCIATED(EQUATIONS_SET)) THEN
-               !Check the equations set is from a standard Laplace equation
-               IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS.AND. &
-                 & EQUATIONS_SET%TYPE==EQUATIONS_SET_LAPLACE_EQUATION_TYPE.AND. &
-                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE) THEN
+               !Check the equations set is from a linear elasticity equations set
+               IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS.AND. &
+                 & EQUATIONS_SET%TYPE==EQUATIONS_SET_LINEAR_ELASTICITY_TYPE.AND. &
+                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_NO_SUBTYPE) THEN
                  SOLUTION_MAPPING=>SOLUTION%SOLUTION_MAPPING            
                  IF(ASSOCIATED(SOLUTION_MAPPING)) THEN
                    CALL SOLUTION_MAPPING_EQUATIONS_SET_ADD(SOLUTION_MAPPING,SOLUTION%EQUATIONS_SET_TO_ADD,SOLUTION% &
@@ -688,7 +497,7 @@ CONTAINS
                    CALL FLAG_ERROR("Solution mapping is not associated.",ERR,ERROR,*999)
                  ENDIF
                ELSE
-                 CALL FLAG_ERROR("The equations set to add is not a standard Laplace equations set.",ERR,ERROR,*999)
+                 CALL FLAG_ERROR("The equations set to add is not a linear elasticity equations set.",ERR,ERROR,*999)
                ENDIF
              ELSE
                CALL FLAG_ERROR("Equations set to add is not associated.",ERR,ERROR,*999)
@@ -696,7 +505,7 @@ CONTAINS
            CASE DEFAULT
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
                 & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
-                & " is invalid for a standard Laplace equation."
+                & " is invalid for a linear elasticity problem."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE
@@ -722,7 +531,7 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
                 & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
-                & " is invalid for a standard Laplace equation."
+                & " is invalid for a linear elasticity problem."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE
@@ -730,27 +539,64 @@ CONTAINS
           ENDIF
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
-            & " is invalid for a standard Laplace equation."
+            & " is invalid for a linear elasticity problem."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
-      ELSE
-        LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-          & " does not equal a standard Laplace equation subtype."
+      CASE DEFAULT
+        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+          & " is not valid for a linear elasticity type of an elasticity problem class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      ENDIF
+      END SELECT
     ELSE
       CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("LAPLACE_EQUATION_PROBLEM_STANDARD_SETUP")
+    CALL EXITS("LINEAR_ELASTICITY_PROBLEM_SETUP")
     RETURN
-999 CALL ERRORS("LAPLACE_EQUATION_PROBLEM_STANDARD_SETUP",ERR,ERROR)
-    CALL EXITS("LAPLACE_EQUATION_PROBLEM_STANDARD_SETUP")
+999 CALL ERRORS("LINEAR_ELASTICITY_PROBLEM_SETUP",ERR,ERROR)
+    CALL EXITS("LINEAR_ELASTICITY_PROBLEM_SETUP")
     RETURN 1
-  END SUBROUTINE LAPLACE_EQUATION_PROBLEM_STANDARD_SETUP
+  END SUBROUTINE LINEAR_ELASTICITY_PROBLEM_SETUP
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the problem subtype for a linear elasticity type .
+  SUBROUTINE LINEAR_ELASTICITY_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the problem subtype for
+    INTEGER(INTG), INTENT(IN) :: PROBLEM_SUBTYPE !<The problem subtype to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("LINEAR_ELASTICITY_PROBLEM_SUBTYPE_SET",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(PROBLEM)) THEN
+      SELECT CASE(PROBLEM_SUBTYPE)
+      CASE(PROBLEM_NO_SUBTYPE)        
+        PROBLEM%SUBTYPE=PROBLEM_NO_SUBTYPE      
+      CASE DEFAULT
+        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
+          & " is not valid for a linear elasticity type of an elasticity problem class."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("LINEAR_ELASTICITY_PROBLEM_SUBTYPE_SET")
+    RETURN
+999 CALL ERRORS("LINEAR_ELASTICITY_PROBLEM_SUBTYPE_SET",ERR,ERROR)
+    CALL EXITS("LINEAR_ELASTICITY_PROBLEM_SUBTYPE_SET")
+    RETURN 1
+  END SUBROUTINE LINEAR_ELASTICITY_PROBLEM_SUBTYPE_SET
 
   !
   !================================================================================================================================
   !
  
-END MODULE LAPLACE_EQUATIONS_ROUTINES
+END MODULE LINEAR_ELASTICITY_ROUTINES

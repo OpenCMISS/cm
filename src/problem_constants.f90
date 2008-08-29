@@ -127,6 +127,14 @@ MODULE PROBLEM_CONSTANTS
   INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_MATRIX_OUTPUT=2 !<All below and solution matrices output \see PROBLEM_CONSTANTS_SolutionOutputTypes,PROBLEM_CONSTANTS
   !>@}
 
+  !> \addtogroup PROBLEM_CONSTANTS_SolutionLinearityTypes PROBLEM_CONSTANTS::SolutionLinearityTypes
+  !> \brief The solution linearity type parameters
+  !> \see PROBLEM_CONSTANTS
+  !>@{
+  INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_LINEAR=1 !<The problem solution is linear. \see PROBLEM_CONSTANTS_SolutionLinearityTypes,PROBLEM_CONSTANTS
+  INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_NONLINEAR=2 !<The problem solution is nonlinear. \see PROBLEM_CONSTANTS_SolutionLinearityTypes,PROBLEM_CONSTANTS
+  !>@}
+
 
   !> \addtogroup PROBLEM_CONSTANTS_SolverOutputTypes PROBLEM_CONSTANTS::SolverOutputTypes
   !> \brief Solver output types
