@@ -286,6 +286,7 @@ MODULE TYPES
     LOGICAL :: MESH_FINISHED !<Is .TRUE. if the mesh has finished being created, .FALSE. if not.
     TYPE(MESHES_TYPE), POINTER :: MESHES !<A pointer to the meshes for this mesh.
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing this mesh.
+    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh generate this mesh.
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS !<The number of dimensions (Xi directions) for this mesh.
     INTEGER(INTG) :: NUMBER_OF_COMPONENTS !<The number of mesh components in this mesh.
     LOGICAL :: MESH_EMBEDDED !<Is .TRUE. if the mesh is embedded in another mesh, .FALSE. if not.
@@ -330,11 +331,25 @@ MODULE TYPES
   !>Contains information on a generated mesh
   TYPE GENERATED_MESH_TYPE
     INTEGER(INTG) :: USER_NUMBER
+    INTEGER(INTG) :: GLOBAL_NUMBER
+    LOGICAL :: GENERATED_MESH_FINISHED !<Is .TRUE. if the generated mesh has finished being created, .FALSE. if not.
     TYPE(REGION_TYPE), POINTER :: REGION
     INTEGER(INTG) :: GENERATED_TYPE
     TYPE(GENERATED_MESH_REGULAR_TYPE), POINTER :: REGULAR_MESH
     TYPE(MESH_TYPE), POINTER :: MESH
   END TYPE GENERATED_MESH_TYPE
+  
+  !>A buffer type to allow for an array of pointers to a GENERATED_MESH_TYPE.
+  TYPE GENERATED_MESH_PTR_TYPE
+    TYPE(GENERATED_MESH_TYPE), POINTER :: PTR !<The pointer to the generated mesh.
+  END TYPE GENERATED_MESH_PTR_TYPE
+       
+  !>Contains information on the generated meshes defined on a region.
+  TYPE GENERATED_MESHES_TYPE
+    INTEGER(INTG) :: NUMBER_OF_GENERATED_MESHES !<The number of generated meshes defined.
+    TYPE(GENERATED_MESH_PTR_TYPE), POINTER :: GENERATED_MESHES(:) !<The array of pointers to the generated meshes.
+  END TYPE GENERATED_MESHES_TYPE
+  
 
   !
   !================================================================================================================================
