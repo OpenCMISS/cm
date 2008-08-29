@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Chapter 1. Introduction</title><meta content="DocBook XSL Stylesheets V1.68.1" name="generator" /><link rel="start" href="index.html" title="OpenCMISS Programmer Documentation" /><link rel="up" href="index.html" title="OpenCMISS Programmer Documentation" /><link rel="prev" href="index.html" title="OpenCMISS Programmer Documentation" /><link rel="next" href="ch02.html" title="Chapter 2. OpenCMISS Concepts" /></head><body><div class="navheader"><table summary="Navigation header" width="100%"><tr><th align="center" colspan="3">Chapter 1. Introduction</th></tr><tr><td align="left" width="20%"><a accesskey="p" href="index.html">Prev</a> </td><th align="center" width="60%"> </th><td align="right" width="20%"> <a accesskey="n" href="ch02.html">Next</a></td></tr></table><hr /></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a id="N10005" />Chapter 1. Introduction</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="sect1"><a href="ch01.html#N1000A">1. CMISS</a></span></dt><dt><span class="sect1"><a href="ch01.html#N10011">2. Shared Memeory Computing vs Distributed Memeory Computing</a></span></dt><dt><span class="sect1"><a href="ch01.html#N10018">3. Objectives of OpenCMISS</a></span></dt></dl></div><p>
+    OpenCMISS is a project for the re-engineering of the CMISS computational engine.
+  </p><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="N1000A" />1. CMISS</h2></div></div></div><p>
+      CMISS is an interactive computer program for Continuum Mechanics, Image analysis, Signal processing 
+      and SystemIdentification.
+      It is a mathematical modelling environment that allows the application of finite element analysis, 
+      boundary element and collocation techniques to a variety of complex bioengineering problems. 
+    </p><p>
+     CMISS consists of two main components, cmgui and cm. 
+     cmgui is a graphical front end with advanced 3D display and modelling capabilities. 
+     It is the open source project written in C/C++.   
+     cm is a computational backend that may be run remotely on powerful workstations or supercomputers. 
+     cm is developed under Fortran 77 and has some licensing liminitions.
+    </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="N10011" />2. Shared Memeory Computing vs Distributed Memeory Computing</h2></div></div></div><p>
+      cm uses OpenMP for shared memeory computing. 
+      A shared memory system is relatively easy to program since all processors share a single view of data 
+      and the communication between processors can be as fast as memory accesses to a same location. 
+      However, CPU-to-memeory connection will eventually become a bottleneck. 
+    </p><p>
+      The distributed memory systems increase the CPU and memeory scalibility over shared memeory system, 
+      but it is much harder to program. The MPI standard is used for message passing.  
+    </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="N10018" />3. Objectives of OpenCMISS</h2></div></div></div><p>
+      OpenCMISS is re-engineering of CMISS cm component. 
+      It is intended to give a library based approach to enable use in multiple applications.
+      It is developed under Fortan 95 and Modular, easily extendable and programmable.
+      It would be integrated with MPI to provide modular, easily extendable and programmable code which is applicatable 
+      for either MPI based distributed system, OpenMP based shared memeory system and/or serial code. 
+      It will be open sourced. 
+    </p></div></div><div class="navfooter"><hr /><table summary="Navigation footer" width="100%"><tr><td align="left" width="40%"><a accesskey="p" href="index.html">Prev</a> </td><td align="center" width="20%"> </td><td align="right" width="40%"> <a accesskey="n" href="ch02.html">Next</a></td></tr><tr><td valign="top" align="left" width="40%">OpenCMISS Programmer Documentation </td><td align="center" width="20%"><a accesskey="h" href="index.html">Home</a></td><td valign="top" align="right" width="40%"> Chapter 2. OpenCMISS Concepts</td></tr></table></div></body></html>
