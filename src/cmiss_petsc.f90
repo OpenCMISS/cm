@@ -68,6 +68,10 @@ MODULE CMISS_PETSC
   InsertMode, PARAMETER :: PETSC_INSERT_VALUES = INSERT_VALUES
   InsertMode, PARAMETER :: PETSC_ADD_VALUES = ADD_VALUES
 
+  !Scatter mode types
+  ScatterMode, PARAMETER :: PETSC_SCATTER_FORWARD = SCATTER_FORWARD
+  ScatterMode, PARAMETER :: PETSC_SCATTER_REVERSE = SCATTER_REVERSE
+  
   !KSPConvergedReason types
   KSPConvergedReason, PARAMETER :: PETSC_KSP_CONVERGED_RTOL = KSP_CONVERGED_RTOL
   KSPConvergedReason, PARAMETER :: PETSC_KSP_CONVERGED_ATOL = KSP_CONVERGED_ATOL
@@ -156,6 +160,12 @@ MODULE CMISS_PETSC
   SNESType, PARAMETER :: PETSC_SNESLS = SNESLS
   SNESType, PARAMETER :: PETSC_SNESTR = SNESTR
   SNESType, PARAMETER :: PETSC_SNESTEST = SNESTEST
+
+  !SNES line search types
+  INTEGER(INTG), PARAMETER :: PETSC_SNES_LINESEARCH_NONORMS = 1
+  INTEGER(INTG), PARAMETER :: PETSC_SNES_LINESEARCH_NO = 2
+  INTEGER(INTG), PARAMETER :: PETSC_SNES_LINESEARCH_QUADRATIC = 3
+  INTEGER(INTG), PARAMETER :: PETSC_SNES_LINESEARCH_CUBIC = 4  
   
   !Module types
 
@@ -492,6 +502,39 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE SNESDestroy
 
+    SUBROUTINE SNESGetConvergedReason(snes,reason,ierr)
+      SNES snes
+      SNESConvergedReason reason
+      PetscInt ierr
+    END SUBROUTINE SNESGetConvergedReason
+    
+    SUBROUTINE SNESGetFunctionNorm(snes,fnorm,ierr)
+      SNES snes
+      PetscReal fnorm
+      PetscInt ierr
+    END SUBROUTINE SNESGetFunctionNorm
+
+    SUBROUTINE SNESGetIterationNumber(snes,iter,ierr)
+      SNES snes
+      PetscInt iter
+      PetscInt ierr
+    END SUBROUTINE SNESGetIterationNumber
+
+    SUBROUTINE SNESLineSearchSet(snes,func,lsctx,ierr)
+      SNES snes
+      EXTERNAL func
+      PetscFortranAddr lsctx
+      PetscInt ierr
+    END SUBROUTINE SNESLineSearchSet
+    
+    SUBROUTINE SNESLineSearchSetParams(snes,alpha,maxstep,steptol,ierr)
+      SNES snes
+      PetscReal alpha
+      PetscReal maxstep
+      PetscReal steptol
+      PetscInt ierr
+    END SUBROUTINE SNESLineSearchSetParams
+    
     SUBROUTINE SNESSetFromOptions(snes,ierr)
       SNES snes
       PetscInt ierr
@@ -502,9 +545,35 @@ MODULE CMISS_PETSC
       SNES snes
       Vec f
       EXTERNAL ffunction
-      TYPE(SOLUTION_TYPE), POINTER :: ctx
+      TYPE(SOLVER_TYPE), POINTER :: ctx
       PetscInt ierr
     END SUBROUTINE SNESSetFunction
+
+    SUBROUTINE SNESSetJacobian(snes,A,B,Jfunction,ctx,ierr)
+      USE TYPES
+      SNES snes
+      Mat A
+      Mat B      
+      EXTERNAL Jfunction
+      TYPE(SOLVER_TYPE), POINTER :: ctx
+      PetscInt ierr
+    END SUBROUTINE SNESSetJacobian
+
+    SUBROUTINE SNESSetTolerances(snes,abstol,rtol,stol,maxit,maxf,ierr)
+      SNES snes
+      PetscReal abstol
+      PetscReal rtol
+      PetscReal stol
+      PetscInt maxit
+      PetscInt maxf
+      PetscInt ierr
+    END SUBROUTINE SNESSetTolerances
+    
+    SUBROUTINE SNESSetTrustRegionTolerance(snes,trtol,ierr)
+      SNES snes
+      PetscReal trtol
+      PetscInt ierr
+    END SUBROUTINE SNESSetTrustRegionTolerance
 
     SUBROUTINE SNESSetType(snes,method,ierr)
       SNES snes
@@ -726,8 +795,9 @@ MODULE CMISS_PETSC
 
   END INTERFACE
 
-  PUBLIC PETSC_ADD_VALUES,PETSC_INSERT_VALUES,PETSC_COMM_WORLD,PETSC_COMM_SELF,PETSC_DECIDE,PETSC_NULL_CHARACTER, &
-    & PETSC_NULL_DOUBLE,PETSC_NULL_INTEGER,PETSC_NULL_SCALAR,SCATTER_FORWARD,SCATTER_REVERSE
+  PUBLIC PETSC_ADD_VALUES,PETSC_INSERT_VALUES,PETSC_COMM_WORLD,PETSC_COMM_SELF,PETSC_DECIDE,PETSC_DEFAULT_INTEGER, &
+    & PETSC_DEFAULT_DOUBLE_PRECISION,PETSC_NULL_CHARACTER,PETSC_NULL_DOUBLE,PETSC_NULL_INTEGER,PETSC_NULL_SCALAR, &
+    & PETSC_SCATTER_FORWARD,PETSC_SCATTER_REVERSE
   
   PUBLIC PETSC_KSPRICHARDSON,PETSC_KSPCHEBYCHEV,PETSC_KSPCG,PETSC_KSPCGNE,PETSC_KSPSTCG,PETSC_KSPGMRES,PETSC_KSPFGMRES, &
     & PETSC_KSPLGMRES,PETSC_KSPTCQMR,PETSC_KSPBCGS,PETSC_KSPBCGSL,PETSC_KSPCGS,PETSC_KSPTFQMR,PETSC_KSPCR,PETSC_KSPLSQR, &
@@ -769,10 +839,19 @@ MODULE CMISS_PETSC
   
   PUBLIC PETSC_FINALIZE,PETSC_INITIALIZE,PETSC_LOGPRINTSUMMARY
 
+  PUBLIC PETSC_SNESLS,PETSC_SNESTR,PETSC_SNESTEST
+  
+  PUBLIC PETSC_SNES_LINESEARCH_NONORMS,PETSC_SNES_LINESEARCH_NO,PETSC_SNES_LINESEARCH_QUADRATIC,PETSC_SNES_LINESEARCH_CUBIC
+
   PUBLIC PETSC_SNES_CONVERGED_FNORM_ABS,PETSC_SNES_CONVERGED_FNORM_RELATIVE,PETSC_SNES_CONVERGED_PNORM_RELATIVE, &
     & PETSC_SNES_CONVERGED_ITS,PETSC_SNES_CONVERGED_TR_DELTA,PETSC_SNES_DIVERGED_FUNCTION_COUNT,PETSC_SNES_DIVERGED_LINEAR_SOLVE, &
     & PETSC_SNES_DIVERGED_FNORM_NAN,PETSC_SNES_DIVERGED_MAX_IT,PETSC_SNES_DIVERGED_LS_FAILURE,PETSC_SNES_DIVERGED_LOCAL_MIN, &
     & PETSC_SNES_CONVERGED_ITERATING
+
+  PUBLIC PETSC_SNESFINALISE,PETSC_SNESINITIALISE,PETSC_SNESCREATE,PETSC_SNESDESTROY,PETSC_SNESGETCONVERGEDREASON, &
+    & PETSC_SNESGETFUNCTIONNORM,PETSC_SNESGETITERATIONNUMBER,PETSC_SNESLINESEARCHSET,PETSC_SNESLINESEARCHSETPARAMS, &
+    & PETSC_SNESSETFROMOPTIONS,PETSC_SNESSETFUNCTION,PETSC_SNESSETJACOBIAN,PETSC_SNESSETTOLERANCES, &
+    & PETSC_SNESSETTRUSTREGIONTOLERANCE,PETSC_SNESSETTYPE,PETSC_SNESSOLVE
   
   PUBLIC PETSC_VECINITIALISE,PETSC_VECFINALISE,PETSC_VECASSEMBLYBEGIN,PETSC_VECASSEMBLYEND,PETSC_VECCREATE,PETSC_VECCREATEGHOST, &
     & PETSC_VECCREATEGHOSTWITHARRAY,PETSC_VECCREATEMPI,PETSC_VECCREATEMPIWITHARRAY,PETSC_VECCREATESEQ, &
@@ -2440,6 +2519,511 @@ CONTAINS
     RETURN 1
   END SUBROUTINE PETSC_PCSETTYPE
     
+   !
+  !================================================================================================================================
+  !
+
+  !Finalise the PETSc SNES structure and destroy the SNES
+  SUBROUTINE PETSC_SNESFINALISE(SNES_,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_SNESFINALISE",ERR,ERROR,*999)
+
+    IF(SNES_%SNES_/=PETSC_NULL) THEN
+      CALL PETSC_SNESDESTROY(SNES_,ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_SNESFINALISE")
+    RETURN
+999 CALL ERRORS("PETSC_SNESFINALISE",ERR,ERROR)
+    CALL EXITS("PETSC_SNESFINALISE")
+    RETURN 1
+  END SUBROUTINE PETSC_SNESFINALISE
+    
+  !
+  !================================================================================================================================
+  !
+
+  !Initialise the PETSc SNES structure
+  SUBROUTINE PETSC_SNESINITIALISE(SNES_,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The snes to 
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_SNESINITIALISE",ERR,ERROR,*999)
+
+    SNES_%SNES_=PETSC_NULL
+     
+    CALL EXITS("PETSC_SNESINITIALISE")
+    RETURN
+999 CALL ERRORS("PETSC_SNESINITIALISE",ERR,ERROR)
+    CALL EXITS("PETSC_SNESINITIALISE")
+    RETURN 1
+  END SUBROUTINE PETSC_SNESINITIALISE
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESCreate routine.
+  SUBROUTINE PETSC_SNESCREATE(COMMUNICATOR,SNES_,ERR,ERROR,*)
+
+    !Argument Variables
+    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator for the SNES creation
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<On exit, the SNES information
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_SNESCREATE",ERR,ERROR,*999)
+
+    CALL SNESCreate(COMMUNICATOR,SNES_%SNES_,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in SNESCreate",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_SNESCREATE")
+    RETURN
+999 CALL ERRORS("PETSC_SNESCREATE",ERR,ERROR)
+    CALL EXITS("PETSC_SNESCREATE")
+    RETURN 1
+  END SUBROUTINE PETSC_SNESCREATE
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESDestroy routine.
+  SUBROUTINE PETSC_SNESDESTROY(SNES_,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to destroy
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_SNESDESTROY",ERR,ERROR,*999)
+
+    CALL SNESDestroy(SNES_%SNES_,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in SNESDestroy",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_SNESDESTROY")
+    RETURN
+999 CALL ERRORS("PETSC_SNESDESTROY",ERR,ERROR)
+    CALL EXITS("PETSC_SNESDESTROY")
+    RETURN 1
+  END SUBROUTINE PETSC_SNESDESTROY
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESGetConvergedReason routine.
+  SUBROUTINE PETSC_SNESGETCONVERGEDREASON(SNES_,REASON,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to get the converged reason for
+    INTEGER(INTG), INTENT(OUT) :: REASON !<On exit, the converged reason
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_SNESGETCONVERGEDREASON",ERR,ERROR,*999)
+
+    CALL SNESGetConvergedReason(SNES_%SNES_,REASON,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in SNESGetConvergedReason",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_SNESGETCONVERGEDREASON")
+    RETURN
+999 CALL ERRORS("PETSC_SNESGETCONVERGEDREASON",ERR,ERROR)
+    CALL EXITS("PETSC_SNESGETCONVERGEDREASON")
+    RETURN 1
+  END SUBROUTINE PETSC_SNESGETCONVERGEDREASON
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESGetFunctionNorm routine.
+  SUBROUTINE PETSC_SNESGETFUNCTIONNORM(SNES_,FUNCTION_NORM,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to get the function norm for
+    REAL(DP), INTENT(OUT) :: FUNCTION_NORM !<On exit, the function norm
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_SNESGETFUNCTIONNORM",ERR,ERROR,*999)
+
+    CALL SNESGetFunctionNorm(SNES_%SNES_,FUNCTION_NORM,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in SNESGetFunctionNorm",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_SNESGETFUNCTIONNORM")
+    RETURN
+999 CALL ERRORS("PETSC_SNESGETFUNCTIONNORM",ERR,ERROR)
+    CALL EXITS("PETSC_SNESGETFUNCTIONNORM")
+    RETURN 1
+  END SUBROUTINE PETSC_SNESGETFUNCTIONNORM
+    
+ !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESGetIterationNumber routine.
+  SUBROUTINE PETSC_SNESGETITERATIONNUMBER(SNES_,ITERATION_NUMBER,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to get the iteration number for
+    INTEGER(INTG), INTENT(OUT) :: ITERATION_NUMBER !<On exit, the number of iterations
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_SNESGETITERATIONNUMBER",ERR,ERROR,*999)
+
+    CALL SNESGetIterationNumber(SNES_%SNES_,ITERATION_NUMBER,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in SNESGetIterationNumber",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_SNESGETITERATIONNUMBER")
+    RETURN
+999 CALL ERRORS("PETSC_SNESGETITERATIONNUMBER",ERR,ERROR)
+    CALL EXITS("PETSC_SNESGETITERATIONNUMBER")
+    RETURN 1
+  END SUBROUTINE PETSC_SNESGETITERATIONNUMBER
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESLineSearchSet routine.
+  SUBROUTINE PETSC_SNESLINESEARCHSET(SNES_,LINESEARCH_TYPE,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the line search for
+    INTEGER(INTG), INTENT(IN) :: LINESEARCH_TYPE !<The line search type
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_SNESLINESEARCHSET",ERR,ERROR,*999)
+
+    SELECT CASE(LINESEARCH_TYPE)
+    CASE(PETSC_SNES_LINESEARCH_NONORMS)
+      CALL SNESLineSearchSet(SNES_%SNES_,SNESLINESEARCHNONORMS,PETSC_NULL_OBJECT,ERR)
+    CASE(PETSC_SNES_LINESEARCH_NO)
+      CALL SNESLineSearchSet(SNES_%SNES_,SNESLINESEARCHNO,PETSC_NULL_OBJECT,ERR)
+    CASE(PETSC_SNES_LINESEARCH_QUADRATIC)
+      CALL SNESLineSearchSet(SNES_%SNES_,SNESLINESEARCHQUADRATIC,PETSC_NULL_OBJECT,ERR)
+    CASE(PETSC_SNES_LINESEARCH_CUBIC)
+      CALL SNESLineSearchSet(SNES_%SNES_,SNESLINESEARCHCUBIC,PETSC_NULL_OBJECT,ERR)
+    CASE DEFAULT
+      CALL FLAG_ERROR("Invalid line search type.",ERR,ERROR,*999)
+    END SELECT
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in SNESLineSearchSet.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_SNESLINESEARCHSET")
+    RETURN
+999 CALL ERRORS("PETSC_SNESLINESEARCHSET",ERR,ERROR)
+    CALL EXITS("PETSC_SNESLINESEARCHSET")
+    RETURN 1
+  END SUBROUTINE PETSC_SNESLINESEARCHSET
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESLineSearchSetParams routine.
+  SUBROUTINE PETSC_SNESLINESEARCHSETPARAMS(SNES_,ALPHA,MAXSTEP,STEPTOL,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the line search parameters for
+    REAL(DP), INTENT(IN) :: ALPHA !<The scalar such that 0.5f_{n+1} . f_{n+1} <= .5*f_n . f_n - alpha |f_n . J . f_n| 
+    REAL(DP), INTENT(IN) :: MAXSTEP !<The maximum norm of the update vector
+    REAL(DP), INTENT(IN) :: STEPTOL !<the minimum norm fraction of the the original step after scaling
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_SNESLINESEARCHSETPARAMS",ERR,ERROR,*999)
+
+    CALL SNESLineSearchSetParams(SNES_%SNES_,ALPHA,MAXSTEP,STEPTOL,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in SNESLineSearchSetParams",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_SNESLINESEARCHSETPARAMS")
+    RETURN
+999 CALL ERRORS("PETSC_SNESLINESEARCHSETPARAMS",ERR,ERROR)
+    CALL EXITS("PETSC_SNESLINESEARCHSETPARAMS")
+    RETURN 1
+  END SUBROUTINE PETSC_SNESLINESEARCHSETPARAMS
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSetFromOptions routine.
+  SUBROUTINE PETSC_SNESSETFROMOPTIONS(SNES_,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set from the command line options
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_SNESSETFROMOPTIONS",ERR,ERROR,*999)
+
+    CALL SNESSetFromOptions(SNES_%SNES_,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in SNESSetFromOptions",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_SNESSETFROMOPTIONS")
+    RETURN
+999 CALL ERRORS("PETSC_SNESSETFROMOPTIONS",ERR,ERROR)
+    CALL EXITS("PETSC_SNESSETFROMOPTIONS")
+    RETURN 1
+  END SUBROUTINE PETSC_SNESSETFROMOPTIONS
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSetFunction routine.
+  SUBROUTINE PETSC_SNESSETFUNCTION(SNES_,F,FFUNCTION,CTX,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the function for
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: F !<The residual vector
+    EXTERNAL FFUNCTION !<The external function to call
+    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the function
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_SNESSETFUNCTION",ERR,ERROR,*999)
+
+    CALL SNESSetFunction(SNES_%SNES_,F%VEC,FFUNCTION,CTX,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in SNESSetFunction",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_SNESSETFUNCTION")
+    RETURN
+999 CALL ERRORS("PETSC_SNESSETFUNCTION",ERR,ERROR)
+    CALL EXITS("PETSC_SNESSETFUNCTION")
+    RETURN 1
+  END SUBROUTINE PETSC_SNESSETFUNCTION
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSetJacobian routine.
+  SUBROUTINE PETSC_SNESSETJACOBIAN(SNES_,A,B,JFUNCTION,CTX,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the function for
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The Jacobian matrix
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: B !<The Jacobian preconditioning matrix
+    EXTERNAL JFUNCTION !<The external function to call
+    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the function
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_SNESSETJACOBIAN",ERR,ERROR,*999)
+
+    CALL SNESSetJacobian(SNES_%SNES_,A%MAT,B%MAT,JFUNCTION,CTX,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in SNESSetJacobian",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_SNESSETJACOBIAN")
+    RETURN
+999 CALL ERRORS("PETSC_SNESSETJACOBIAN",ERR,ERROR)
+    CALL EXITS("PETSC_SNESSETJACOBIAN")
+    RETURN 1
+  END SUBROUTINE PETSC_SNESSETJACOBIAN
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSetTolerances routine.
+  SUBROUTINE PETSC_SNESSETTOLERANCES(SNES_,ABSTOL,RTOL,STOL,MAXIT,MAXF,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the tolerances for
+    REAL(DP), INTENT(IN) :: ABSTOL !<The absolute convergence tolerance
+    REAL(DP), INTENT(IN) :: RTOL !<The relative convergence tolerance
+    REAL(DP), INTENT(IN) :: STOL !<The convergence tolerance for the change in the solution between steps
+    INTEGER(INTG), INTENT(IN) :: MAXIT !<The maximum number of iterations
+    INTEGER(INTG), INTENT(IN) :: MAXF !<The maximum number of function evaluations
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_SNESSETTOLERANCES",ERR,ERROR,*999)
+
+    CALL SNESSetTolerances(SNES_%SNES_,ABSTOL,RTOL,STOL,MAXIT,MAXF,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in SNESSetTolerances",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_SNESSETTOLERANCES")
+    RETURN
+999 CALL ERRORS("PETSC_SNESSETTOLERANCES",ERR,ERROR)
+    CALL EXITS("PETSC_SNESSETTOLERANCES")
+    RETURN 1
+  END SUBROUTINE PETSC_SNESSETTOLERANCES
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSetTrustRegionTolerance routine.
+  SUBROUTINE PETSC_SNESSETTRUSTREGIONTOLERANCE(SNES_,TRTOL,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the tolerances for
+    REAL(DP), INTENT(IN) :: TRTOL !<The trust region tolerance
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_SNESSETTRUSTREGIONTOLERANCE",ERR,ERROR,*999)
+
+    CALL SNESSetTrustRegionTolerance(SNES_%SNES_,TRTOL,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in SNESSetTrustRegionTolerance",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_SNESSETTRUSTREGIONTOLERANCE")
+    RETURN
+999 CALL ERRORS("PETSC_SNESSETTRUSTREGIONTOLERANCE",ERR,ERROR)
+    CALL EXITS("PETSC_SNESSETTRUSTREGIONTOLERANCE")
+    RETURN 1
+  END SUBROUTINE PETSC_SNESSETTRUSTREGIONTOLERANCE
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSetType routine.
+  SUBROUTINE PETSC_SNESSETTYPE(SNES_,METHOD,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the type for
+    SNESType, INTENT(IN) :: METHOD !<The SNES type
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_SNESSETTYPE",ERR,ERROR,*999)
+
+    CALL SNESSetType(SNES_%SNES_,METHOD,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in SNESSetType",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_SNESSETTYPE")
+    RETURN
+999 CALL ERRORS("PETSC_SNESSETTYPE",ERR,ERROR)
+    CALL EXITS("PETSC_SNESSETTYPE")
+    RETURN 1
+  END SUBROUTINE PETSC_SNESSETTYPE
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSolve routine.
+  SUBROUTINE PETSC_SNESSOLVE(SNES_,B,X,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to solve
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: B !<The constant part of the equation
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The solution vector
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_SNESSOLVE",ERR,ERROR,*999)
+
+    CALL SNESSolve(SNES_%SNES_,B%VEC,X%VEC,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in SNESSolve",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_SNESSOLVE")
+    RETURN
+999 CALL ERRORS("PETSC_SNESSOLVE",ERR,ERROR)
+    CALL EXITS("PETSC_SNESSOLVE")
+    RETURN 1
+  END SUBROUTINE PETSC_SNESSOLVE
+    
   !
   !================================================================================================================================
   !
@@ -2491,7 +3075,7 @@ CONTAINS
     CALL EXITS("PETSC_VECINITIALISE")
     RETURN 1
   END SUBROUTINE PETSC_VECINITIALISE
-    
+  
   !
   !================================================================================================================================
   !

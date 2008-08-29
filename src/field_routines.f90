@@ -1141,32 +1141,34 @@ CONTAINS
         field_position=FIELD%GLOBAL_NUMBER
         GEOMETRIC_FIELD=>FIELD%GEOMETRIC_FIELD
         IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
-          !Delete this field from the list of fields using the geometric field.
-          field_position2=0
-          DO field_idx=1,GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_FIELDS_USING
-            FIELD2=>GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING(field_idx)%PTR
-            IF(FIELD2%USER_NUMBER==FIELD%USER_NUMBER) THEN
-              field_position2=field_idx
-              EXIT
-            ENDIF
-          ENDDO !field_idx
-          IF(field_position2/=0) THEN
-            ALLOCATE(NEW_FIELDS_USING(GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_FIELDS_USING+1),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new fields using",ERR,ERROR,*999)
+          IF(ASSOCIATED(GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS)) THEN
+            !Delete this field from the list of fields using the geometric field.
+            field_position2=0
             DO field_idx=1,GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_FIELDS_USING
-              IF(field_idx<field_position2) THEN
-                NEW_FIELDS_USING(field_idx)%PTR=>GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING(field_idx)%PTR
-              ELSE IF(field_idx>field_position2) THEN
-                NEW_FIELDS_USING(field_idx-1)%PTR=>GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING(field_idx)%PTR
+              FIELD2=>GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING(field_idx)%PTR
+              IF(FIELD2%USER_NUMBER==FIELD%USER_NUMBER) THEN
+                field_position2=field_idx
+                EXIT
               ENDIF
             ENDDO !field_idx
-            GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_FIELDS_USING=GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS% &
-              & NUMBER_OF_FIELDS_USING-1
-            IF(ASSOCIATED(GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING)) &
-              & DEALLOCATE(GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING)
-            GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING=>NEW_FIELDS_USING
-          ELSE
-            !??? Error
+            IF(field_position2/=0) THEN
+              ALLOCATE(NEW_FIELDS_USING(GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_FIELDS_USING+1),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new fields using",ERR,ERROR,*999)
+              DO field_idx=1,GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_FIELDS_USING
+                IF(field_idx<field_position2) THEN
+                  NEW_FIELDS_USING(field_idx)%PTR=>GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING(field_idx)%PTR
+                ELSE IF(field_idx>field_position2) THEN
+                  NEW_FIELDS_USING(field_idx-1)%PTR=>GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING(field_idx)%PTR
+                ENDIF
+              ENDDO !field_idx
+              GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_FIELDS_USING=GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS% &
+                & NUMBER_OF_FIELDS_USING-1
+              IF(ASSOCIATED(GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING)) &
+                & DEALLOCATE(GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING)
+              GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING=>NEW_FIELDS_USING
+            ELSE
+              !??? Error
+            ENDIF
           ENDIF
         ENDIF
 !!TODO: move to field finalise
@@ -3690,7 +3692,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: dof_idx
+    INTEGER(INTG) :: dof,dof_idx
     REAL(DP) :: VALUE
     REAL(DP), POINTER :: FIELD_FROM_PARAMETERS(:)
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: FIELD_DOMAIN_MAPPING
@@ -3714,13 +3716,20 @@ CONTAINS
                 IF(ASSOCIATED(FIELD_DOMAIN_MAPPING)) THEN
                   !Get the from parameter set data
                   CALL DISTRIBUTED_VECTOR_DATA_GET(FIELD_FROM_PARAMETER_SET%PARAMETERS,FIELD_FROM_PARAMETERS,ERR,ERROR,*999)
-                  !Set the field dofs
-                  DO dof_idx=1,FIELD_DOMAIN_MAPPING%NUMBER_OF_LOCAL
-                    VALUE=FIELD_FROM_PARAMETERS(dof_idx)
-                    CALL DISTRIBUTED_VECTOR_VALUES_ADD(FIELD_TO_PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
+                  !Add the boundary field dofs
+                  DO dof_idx=1,FIELD_DOMAIN_MAPPING%NUMBER_OF_BOUNDARY
+                    dof=FIELD_DOMAIN_MAPPING%BOUNDARY_LIST(dof_idx)
+                    VALUE=FIELD_FROM_PARAMETERS(dof)
+                    CALL DISTRIBUTED_VECTOR_VALUES_ADD(FIELD_TO_PARAMETER_SET%PARAMETERS,dof,VALUE,ERR,ERROR,*999)
                   ENDDO !dof_idx
                   !Start the to parameter set transfer
                   CALL DISTRIBUTED_VECTOR_UPDATE_START(FIELD_TO_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)                  !
+                  !Add the internal field dofs
+                  DO dof_idx=1,FIELD_DOMAIN_MAPPING%NUMBER_OF_INTERNAL
+                    dof=FIELD_DOMAIN_MAPPING%INTERNAL_LIST(dof_idx)
+                    VALUE=FIELD_FROM_PARAMETERS(dof)
+                    CALL DISTRIBUTED_VECTOR_VALUES_ADD(FIELD_TO_PARAMETER_SET%PARAMETERS,dof,VALUE,ERR,ERROR,*999)
+                  ENDDO !dof_idx
                   !Finish the to parameter set transfer
                   CALL DISTRIBUTED_VECTOR_UPDATE_FINISH(FIELD_TO_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)
                   !Restore the from parameter set transfer
@@ -3778,7 +3787,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: dof_idx
+    INTEGER(INTG) :: dof,dof_idx
     REAL(DP) :: VALUE
     REAL(DP), POINTER :: FIELD_FROM_PARAMETERS(:)
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: FIELD_DOMAIN_MAPPING
@@ -3802,13 +3811,20 @@ CONTAINS
                 IF(ASSOCIATED(FIELD_DOMAIN_MAPPING)) THEN
                   !Get the from parameter set data
                   CALL DISTRIBUTED_VECTOR_DATA_GET(FIELD_FROM_PARAMETER_SET%PARAMETERS,FIELD_FROM_PARAMETERS,ERR,ERROR,*999)
-                  !Set the field dofs
-                  DO dof_idx=1,FIELD_DOMAIN_MAPPING%NUMBER_OF_LOCAL
-                    VALUE=FIELD_FROM_PARAMETERS(dof_idx)
-                    CALL DISTRIBUTED_VECTOR_VALUES_SET(FIELD_TO_PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
+                  !Set the boundary field dofs
+                  DO dof_idx=1,FIELD_DOMAIN_MAPPING%NUMBER_OF_BOUNDARY
+                    dof=FIELD_DOMAIN_MAPPING%BOUNDARY_LIST(dof_idx)
+                    VALUE=FIELD_FROM_PARAMETERS(dof)
+                    CALL DISTRIBUTED_VECTOR_VALUES_SET(FIELD_TO_PARAMETER_SET%PARAMETERS,dof,VALUE,ERR,ERROR,*999)
                   ENDDO !dof_idx
                   !Start the to parameter set transfer
                   CALL DISTRIBUTED_VECTOR_UPDATE_START(FIELD_TO_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)                  
+                  !Set the internal field dofs
+                  DO dof_idx=1,FIELD_DOMAIN_MAPPING%NUMBER_OF_INTERNAL
+                    dof=FIELD_DOMAIN_MAPPING%INTERNAL_LIST(dof_idx)
+                    VALUE=FIELD_FROM_PARAMETERS(dof)
+                    CALL DISTRIBUTED_VECTOR_VALUES_SET(FIELD_TO_PARAMETER_SET%PARAMETERS,dof,VALUE,ERR,ERROR,*999)
+                  ENDDO !dof_idx
                   !Finish the to parameter set transfer
                   CALL DISTRIBUTED_VECTOR_UPDATE_FINISH(FIELD_TO_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)
                   !Restore the from parameter set data
