@@ -4070,18 +4070,18 @@ CONTAINS
                     DO ni=1,BASIS%NUMBER_OF_XI
                       !This assumes that the xi directions are aligned with the coordinate directions
                       DELTA_COORD(ni)=MESH_SIZE(ni)/REAL(NUMBER_ELEMENTS_XI(ni),DP)
-                    ENDDO !ni
+                    ENDDO !ni    
                     DO np3=1,TOTAL_NUMBER_OF_NODES_XI(3)
                       DO np2=1,TOTAL_NUMBER_OF_NODES_XI(2)
                         DO np1=1,TOTAL_NUMBER_OF_NODES_XI(1)
-                          np=np1+(np2-1)*TOTAL_NUMBER_OF_NODES_XI(1)+(np3-1)*TOTAL_NUMBER_OF_NODES_XI(2)
+                          np=np1+(np2-1)*TOTAL_NUMBER_OF_NODES_XI(1)+(np3-1)*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
                           INITIAL_POSITION(1)=MY_ORIGIN(1)+REAL(np1-1,DP)*DELTA_COORD(1)
                           INITIAL_POSITION(2)=MY_ORIGIN(2)+REAL(np2-1,DP)*DELTA_COORD(2)
                           INITIAL_POSITION(3)=MY_ORIGIN(3)+REAL(np3-1,DP)*DELTA_COORD(3)
                           CALL NODE_INITIAL_POSITION_SET(np,INITIAL_POSITION(1:NUMBER_OF_DIMENSIONS),NODES,ERR,ERROR,*999)
                         ENDDO !np1
                       ENDDO !np2
-                    ENDDO !np3
+                    ENDDO !np3	    
                     CALL NODES_CREATE_FINISH(REGION,ERR,ERROR,*999)
                     !Create the mesh
                     CALL MESH_CREATE_START(USER_NUMBER,REGION,SIZE(NUMBER_ELEMENTS_XI,1),MESH,ERR,ERROR,*999)
