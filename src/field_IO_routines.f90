@@ -1971,7 +1971,7 @@ CONTAINS
           &NUM_OF_SCALING_FACTOR_SETS, LIST_COMP_SCALE, my_computational_node_number, FILE_ID, ERR,ERROR, *)
     !Argument variables  
     TYPE(FIELD_IO_ELEMENTALL_INFO_SET), INTENT(INOUT) :: LOCAL_PROCESS_ELEMENTAL_INFO_SET  !<LOCAL_PROCESS_NODAL_INFO_SET           
-    INTEGER(INTG), INTENT(IN) :: LOCAL_ELEMENTAL_NUMBER !<element number
+    INTEGER(INTG), INTENT(IN) :: LOCAL_ELEMENTAL_NUMBER !<element number in my emelemt IO list
     INTEGER(INTG), INTENT(INOUT) ::  MAX_NODE_CPMP_INDEX !<MAX_NODE_INDEX
     INTEGER(INTG), INTENT(INOUT) :: NUM_OF_SCALING_FACTOR_SETS !<NUM_OF_SCALING_FACTOR_SETS
     INTEGER(INTG), INTENT(INOUT) :: LIST_COMP_SCALE(:)
@@ -2023,6 +2023,7 @@ CONTAINS
         &STAT=ERR)
     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate LIST_SCALE_FACTORS in exelem header",ERR,ERROR,*999)
      
+    !collect scale factor information 
     DO comp_idx=1,LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(LOCAL_ELEMENTAL_NUMBER)%NUMBER_OF_COMPONENTS    
        !calculate the number of fields
        !IF (.NOT.ASSOCIATED(field_ptr, target=LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(LOCAL_ELEMENTAL_NUMBER)%COMPONENTS(comp_idx)%PTR%FIELD)) THEN
@@ -2200,7 +2201,7 @@ CONTAINS
        ENDIF        
        LINE=TRIM(LABEL)//"."                          
        BASIS=>LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(LOCAL_ELEMENTAL_NUMBER)%COMPONENTS(comp_idx)%PTR%DOMAIN%&
-           &TOPOLOGY%ELEMENTS%ELEMENTS(comp_idx)%BASIS
+           &TOPOLOGY%ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%BASIS
        SELECT CASE(BASIS%TYPE)
          CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
             LABEL=FIELD_IO_BASIS_LHTP_FAMILY_LABEL(BASIS, num_scl, num_node, FIELD_IO_SCALE_FACTORS_PROPERTY_TYPE, ERR,ERROR)
@@ -2226,15 +2227,15 @@ CONTAINS
           ELSE   
              scl_idx= SUM(GROUP_SCALE_FACTORS(1:LIST_COMP_SCALE(comp_idx)-1))
           ENDIF   
-          BASIS=>DOMAIN_ELEMENTS%ELEMENTS(LOCAL_ELEMENTAL_NUMBER)%BASIS    
+          BASIS=>DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%BASIS    
           DO nn=1,BASIS%NUMBER_OF_NODES
              LINE="      "//TRIM(NUMBER_TO_VSTRING(nn,"*",ERR,ERROR))//".  #Values="//&
                  &TRIM(NUMBER_TO_VSTRING(BASIS%NUMBER_OF_DERIVATIVES(nn),"*",ERR,ERROR))
              CALL FIELD_IO_FORTRAN_FILE_WRITE_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)                     
-             np=DOMAIN_ELEMENTS%ELEMENTS(LOCAL_ELEMENTAL_NUMBER)%ELEMENT_NODES(nn)               
+             np=DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%ELEMENT_NODES(nn)               
              LINE="       Value indices:  "             
              DO mk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
-                nk=DOMAIN_ELEMENTS%ELEMENTS(LOCAL_ELEMENTAL_NUMBER)%ELEMENT_DERIVATIVES(mk,nn)
+                nk=DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%ELEMENT_DERIVATIVES(mk,nn)
                 !ny2=DOMAIN_NODES%NODES(np)%DOF_INDEX(nk)
                 !GROUP_DERIVATIVES(mk)=ny2
                 LINE=LINE//TRIM(NUMBER_TO_VSTRING(nk, "*",ERR,ERROR))
@@ -3933,7 +3934,8 @@ CONTAINS
           SELECT CASE(VARIABLE%VARIABLE_TYPE)
             CASE(FIELD_STANDARD_VARIABLE_TYPE)
              IF(LABEL_TYPE==FIELD_IO_VARIABLE_LABEL) THEN
-                FIELD_IO_LABEL_FIELD_INFO_GET="fiber,  standand variable type"
+                !FIELD_IO_LABEL_FIELD_INFO_GET="fiber,  standand variable type"   ! kmith
+                FIELD_IO_LABEL_FIELD_INFO_GET="fibres, anatomical, fibre"    !kmith		
              ELSE IF (LABEL_TYPE==FIELD_IO_COMPONENT_LABEL) THEN
                 FIELD_IO_LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
              ENDIF      
@@ -3970,7 +3972,8 @@ CONTAINS
           SELECT CASE(VARIABLE%VARIABLE_TYPE)
             CASE(FIELD_STANDARD_VARIABLE_TYPE)
              IF(LABEL_TYPE==FIELD_IO_VARIABLE_LABEL) THEN
-                FIELD_IO_LABEL_FIELD_INFO_GET="general_variabe,  field,  string"
+                !FIELD_IO_LABEL_FIELD_INFO_GET="general_variabe,  field,  string"  ! kmith
+                FIELD_IO_LABEL_FIELD_INFO_GET="general,  field,  rectangular cartesian"  ! kmith		
              ELSE IF (LABEL_TYPE==FIELD_IO_COMPONENT_LABEL) THEN
                 FIELD_IO_LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
              ENDIF      
@@ -4007,7 +4010,8 @@ CONTAINS
           SELECT CASE(VARIABLE%VARIABLE_TYPE)
             CASE(FIELD_STANDARD_VARIABLE_TYPE)
              IF(LABEL_TYPE==FIELD_IO_VARIABLE_LABEL) THEN
-                FIELD_IO_LABEL_FIELD_INFO_GET="material,  field,  standand variable type"
+                !FIELD_IO_LABEL_FIELD_INFO_GET="material,  field,  standand variable type"   ! kmith
+                FIELD_IO_LABEL_FIELD_INFO_GET="material,  field,  rectangular cartesian"     ! kmith		 
              ELSE IF (LABEL_TYPE==FIELD_IO_COMPONENT_LABEL) THEN
                 FIELD_IO_LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
              ENDIF      
@@ -4351,7 +4355,7 @@ CONTAINS
        IF (.NOT.ASSOCIATED(field_ptr, target=LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)% &
             &COMPONENTS(comp_idx)%PTR%FIELD)) THEN
           NUM_OF_FIELDS=NUM_OF_FIELDS+1
-          field_ptr=>LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)%COMPONENTS (comp_idx)%PTR%FIELD
+          field_ptr=>LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)%COMPONENTS(comp_idx)%PTR%FIELD
        ENDIF         
        
        !calculate the number of variables
