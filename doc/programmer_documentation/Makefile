@@ -9,8 +9,8 @@ clean:
 	$(RM) *.html
 
 single:
-	$(JAVA) $(JFLAG) lib/xalan.jar -in toplevel.xml -out single.html  -xsl nwalsh/xhtml/docbook.xsl
+	$(JAVA) $(JFLAG) lib/xalan.jar -in xml/toplevel.xml -out html/single.html  -xsl nwalsh/xhtml/docbook.xsl
 
 chunk:
-	$(JAVA) $(JFLAG) lib/xalan.jar -in toplevel.xml  -xsl nwalsh/xhtml/chunk.xsl -param chunk.section.depth 0 -param section.autolabel 1
+	$(JAVA) $(JFLAG) lib/xalan.jar -in xml/toplevel.xml -out html/index.html -xsl nwalsh/xhtml/chunk.xsl -param chunk.section.depth 0 -param section.autolabel 1
 	
