@@ -1949,7 +1949,7 @@ CONTAINS
           FIELD_IO_BASIS_LHTP_FAMILY_LABEL=TRIM(FIELD_IO_BASIS_LHTP_FAMILY_LABEL)//", #Scale factors="//TRIM(NUMBER_TO_VSTRING&
                &(num_scl,"*",ERR,ERROR))
        CASE (FIELD_IO_SCALE_FACTORS_PROPERTY_TYPE)
-          FIELD_IO_BASIS_LHTP_FAMILY_LABEL=TRIM(FIELD_IO_BASIS_LHTP_FAMILY_LABEL)//", no modify, standard node based"
+          FIELD_IO_BASIS_LHTP_FAMILY_LABEL=TRIM(FIELD_IO_BASIS_LHTP_FAMILY_LABEL)//", no modify, standard node based."
        CASE DEFAULT
           CALL FLAG_ERROR("Invalid interpolation type",ERR,ERROR,*999)
     END SELECT   
