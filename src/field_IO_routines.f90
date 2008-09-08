@@ -2269,7 +2269,6 @@ CONTAINS
     CALL EXITS("FIELD_IO_EXPORT_ELEMENTAL_GROUP_HEADER_FORTRAN")
     RETURN 1       
   END SUBROUTINE FIELD_IO_EXPORT_ELEMENTAL_GROUP_HEADER_FORTRAN  
-  
   !
   !================================================================================================================================
   !  
@@ -4355,7 +4354,7 @@ CONTAINS
        IF (.NOT.ASSOCIATED(field_ptr, target=LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)% &
             &COMPONENTS(comp_idx)%PTR%FIELD)) THEN
           NUM_OF_FIELDS=NUM_OF_FIELDS+1
-          field_ptr=>LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)%COMPONENTS(comp_idx)%PTR%FIELD
+          field_ptr=>LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(LOCAL_NODAL_NUMBER)%COMPONENTS (comp_idx)%PTR%FIELD
        ENDIF         
        
        !calculate the number of variables
