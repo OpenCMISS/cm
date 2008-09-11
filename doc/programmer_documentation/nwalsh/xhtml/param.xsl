@@ -123,7 +123,7 @@ set       toc,title
 <xsl:param name="html.cellpadding" select="''"/>
 <xsl:param name="html.cellspacing" select="''"/>
 <xsl:param name="html.cleanup" select="1"/>
-<xsl:param name="html.ext" select="'.html'"/>
+<xsl:param name="html.ext" select="'.xhtml'"/>
 <xsl:param name="html.extra.head.links" select="0"/>
 <xsl:param name="html.longdesc" select="1"/>
 <xsl:param name="html.longdesc.link" select="$html.longdesc"/>

@@ -1,5 +1,15 @@
-<?xml version="1.0" encoding="ISO-8859-1"?>
-<!DOCTYPE book [
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+                    "../nwalsh/docbookx.dtd"
+[
+<!ENTITY % MATHML.prefixed "INCLUDE">
+<!ENTITY % MATHML.prefix "mml">
+<!ENTITY % equation.content "(alt?, (graphic+|mediaobject+|mml:math))">
+<!ENTITY % inlineequation.content 
+                "(alt?, (inlinegraphic+|inlinemediaobject+|mml:math))">
+<!ENTITY % mathml PUBLIC "-//W3C//DTD MathML 2.0//EN"
+        "../nwalsh/mathml2/mathml2.dtd">
+%mathml;
 <!ENTITY introduction SYSTEM "introduction.xml">
 <!ENTITY concepts SYSTEM "concepts.xml">
 <!ENTITY installation SYSTEM "installation.xml">

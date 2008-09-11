@@ -8,7 +8,7 @@
     <para>
       CMISS is an interactive computer program for Continuum Mechanics, Image analysis, Signal processing 
       and SystemIdentification.
-      It is a mathematical modelling environment that allows the application of finite element analysis, 
+      It provides a mathematical modelling environment that allows the application of finite element analysis, 
       boundary element and collocation techniques to a variety of complex bioengineering problems. 
     </para>
     <para>

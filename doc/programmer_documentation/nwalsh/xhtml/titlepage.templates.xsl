@@ -1838,6 +1838,22 @@
 </xsl:template>
 
 <xsl:template name="section.titlepage.before.recto">
+  <!-- This part is the customised part for the return to top link -->
+  <xsl:variable name="level">
+    <xsl:call-template name="section.level"/>
+  </xsl:variable>
+  <xsl:variable name="chunkfn">
+    <xsl:apply-templates mode="chunk-filename" select="."/>
+  </xsl:variable>
+
+  <xsl:if test="$level &gt; $chunk.section.depth">
+    <p class="returntotop">
+      <a href="{$chunkfn}">
+        <xsl:text>Return to top</xsl:text>
+      </a>
+    </p>
+  </xsl:if>
+  <!-- END of customised part-->
 </xsl:template>
 
 <xsl:template name="section.titlepage.before.verso">
