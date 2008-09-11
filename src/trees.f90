@@ -785,6 +785,7 @@ CONTAINS
               ELSE
                 IF(ASSOCIATED(Z,Z%PARENT%LEFT)) THEN
                   Z=>Z%PARENT
+                  X=>Z
                   !Rotate the tree right at Z
                   Y=>X%LEFT
                   X%LEFT=>Y%RIGHT
