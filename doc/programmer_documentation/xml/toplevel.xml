@@ -17,6 +17,8 @@
 <!ENTITY examples SYSTEM "examples.xml">
 <!ENTITY library_commands SYSTEM "library_commands.xml">
 <!ENTITY style SYSTEM "style.xml">
+<!ENTITY basis_call SYSTEM "code_segments/basis_call.xml">
+<!ENTITY laplace_example SYSTEM "code_segments/laplace_example.xml">
 ]>
 <book>
   <title>OpenCMISS Programmer Documentation</title>
