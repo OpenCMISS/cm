@@ -28,8 +28,8 @@
       However, the CPU-to-memory connection will eventually become a bottleneck. 
     </para>
      <para>
-      The distributed memory systems increase the CPU and memory scalibility over shared memory system, 
-      but it is much harder to program. The MPI standard is used for message passing.  
+      Distributed memory systems have increased CPU and memory scalibility compared to shared memory systems, 
+      but are much harder to program. The MPI standard is used for message passing.  
     </para>
   </sect1>
   <sect1>
