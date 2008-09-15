@@ -7,7 +7,7 @@
     <title>CMISS</title>
     <para>
       CMISS is an interactive computer program for Continuum Mechanics, Image analysis, Signal processing 
-      and SystemIdentification.
+      and System Identification.
       It provides a mathematical modelling environment that allows the application of finite element analysis, 
       boundary element and collocation techniques to a variety of complex bioengineering problems. 
     </para>
@@ -16,7 +16,7 @@
      cmgui is a graphical front end with advanced 3D display and modelling capabilities. 
      It is the open source project written in C/C++.   
      cm is a computational backend that may be run remotely on powerful workstations or supercomputers. 
-     cm is developed under Fortran 77 and has some licensing liminitions.
+     cm is developed under Fortran 77 and has some licensing limitations.
     </para>
   </sect1>
   <sect1>
