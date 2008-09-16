@@ -9,8 +9,14 @@ clean:
 	$(RM) *.html
 
 single:
+ifdef IMPORT_DOXYGEN
+	$(JAVA) $(JFLAG) lib/doxyToDoc.jar xml/library_commands.xml_template ../doxygen/xml
+endif
 	$(JAVA) $(JFLAG) lib/xalan.jar -in xml/toplevel.xml -out html/single.xhtml  -xsl nwalsh/xhtml/docbook.xsl
 
 chunk:
+ifdef IMPORT_DOXYGEN
+	$(JAVA) $(JFLAG) lib/doxyToDoc.jar xml/library_commands.xml_template ../doxygen/xml
+endif
 	$(JAVA) $(JFLAG) lib/xalan.jar -in xml/toplevel.xml -out html/index.xhtml -xsl nwalsh/xhtml/chunk.xsl -param chunk.section.depth 0 -param section.autolabel 1
 	

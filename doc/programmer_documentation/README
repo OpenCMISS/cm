@@ -1,0 +1,12 @@
+1. For single html page
+   In Windows - run "singleHtml.bat"
+   In Linux - run "singleHtml.sh"
+   If make is installed, run "make single"  
+2. For multiple html pages
+   In Windows - run "chunkHtml.bat"
+   In Linux - run "chunkHtml.sh"
+   If make is installed, run "make chunk"
+3. To import doxygen library commands into docbook:
+   i.   modify the Doyfile doxygen folder, set "GENERATE_XML=YES"
+   ii.  run doxygen to generate documents in xml format. 
+   iii. Under programmer documentation, run "make chunk IMPORT_DOXYGEN=true" or "make single IMPORT_DOXYGEN=true" 
