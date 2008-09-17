@@ -103,7 +103,8 @@
  !Start the creation of the equations for the equations set
 <emphasis role="strong">CALL</emphasis> <emphasis role="strong">EQUATIONS_SET_EQUATIONS_CREATE_START</emphasis>(EQUATIONS_SET,<emphasis role="strong">ERR</emphasis>,ERROR,<emphasis>*999)</emphasis>
 !Set the equations matrices sparsity <emphasis role="strong">type</emphasis>
-<emphasis role="strong">CALL</emphasis> <emphasis role="strong">EQUATIONS_SET_SPARSITY_TYPE_SET</emphasis>(EQUATIONS_SET,EQUATIONS_SET_SPARSE_MATRICES, &amp; &amp; <emphasis role="strong">ERR</emphasis>,ERROR,<emphasis>*999)</emphasis>
+<emphasis role="strong">CALL</emphasis> <emphasis role="strong">EQUATIONS_SET_SPARSITY_TYPE_SET</emphasis>(EQUATIONS_SET,EQUATIONS_SET_SPARSE_MATRICES, &amp; 
+    &amp; <emphasis role="strong">ERR</emphasis>,ERROR,<emphasis>*999)</emphasis>
 !Set the equations output <emphasis role="strong">type</emphasis>
 <emphasis role="strong">CALL</emphasis> <emphasis role="strong">EQUATIONS_SET_OUTPUT_TYPE_SET</emphasis>(EQUATIONS_SET,EQUATIONS_SET_TIMING_OUTPUT, &amp;
     &amp; <emphasis role="strong">ERR</emphasis>,ERROR,<emphasis>*999)</emphasis>

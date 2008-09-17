@@ -11,8 +11,11 @@
     <listitem>Base system(Diagnostics, I?O etc.)</listitem>
   </itemizedlist>
   <mediaobject>
-    <imageobject>
-      <imagedata fileref="../images/openCMISS_topStructure.JPG" format="JPG" scale="90"/>
+    <imageobject role="xhtml">
+      <imagedata fileref="../images/openCMISS_topStructure.JPG" format="JPG" scale="90" scalefit="1"/>
+    </imageobject>
+    <imageobject role="fo">
+      <imagedata fileref="../images/openCMISS_topStructure.JPG" format="JPG" scale="50" scalefit="1"/>
     </imageobject>
   </mediaobject>
   <section id='basis'>
@@ -79,8 +82,11 @@
       There is a global (world) region (number 0) that has the global (world) coordinate system.
     </para>
     <mediaobject>
-      <imageobject>
+      <imageobject role="xhtml">
         <imagedata fileref="../images/region_definition.JPG" format="JPG" scale="90"/>
+      </imageobject>
+      <imageobject role="fo">
+        <imagedata fileref="../images/region_definition.JPG" format="JPG" scale="50"/>
       </imageobject>
     </mediaobject>
     <para>Region has the following attributes</para>
@@ -98,8 +104,11 @@
       <listitem>Daughter regions pointers</listitem>
     </itemizedlist>
     <mediaobject>
-      <imageobject>
+      <imageobject role="xhtml">
         <imagedata fileref="../images/region_structure.JPG" format="JPG" scale="90"/>
+      </imageobject>
+      <imageobject role="fo">
+        <imagedata fileref="../images/region_structure.JPG" format="JPG" scale="50"/>
       </imageobject>
     </mediaobject>
     <section id='nodes'>
@@ -141,8 +150,11 @@
         <listitem>Decomposition pointers</listitem>
       </itemizedlist>
       <mediaobject>
-        <imageobject>
+        <imageobject role="xhtml">
           <imagedata fileref="../images/mesh_structure.JPG" format="JPG" scale="90"/>
+        </imageobject>
+        <imageobject role="fo">
+          <imagedata fileref="../images/mesh_structure.JPG" format="JPG" scale="50"/>
         </imageobject>
       </mediaobject>
       <section id='mesh_topology'>
@@ -152,8 +164,11 @@
           A new mesh component is required for each different form of interpolation e.g., one mesh component is bilinear Lagrange and another is biquadratic Lagrange.
         </para>
         <mediaobject>
-          <imageobject>
+          <imageobject role="xhtml">
             <imagedata fileref="../images/meshTopology_definition.JPG" format="JPG" scale="90"/>
+          </imageobject>
+          <imageobject role="fo">
+            <imagedata fileref="../images/meshTopology_definition.JPG" format="JPG" scale="50"/>
           </imageobject>
         </mediaobject>
         <para>Mesh topology has the following attributes:</para>
@@ -165,8 +180,11 @@
           <listitem>DOFs pointers</listitem>
         </itemizedlist>
         <mediaobject>
-          <imageobject>
+          <imageobject role="xhtml">
             <imagedata fileref="../images/meshTopology_structure.JPG" format="JPG" scale="90"/>
+          </imageobject>
+          <imageobject role="fo">
+            <imagedata fileref="../images/meshTopology_structure.JPG" format="JPG" scale="50"/>
           </imageobject>
         </mediaobject>
       </section>
@@ -190,8 +208,11 @@
           <listitem>Domains pointers(list of domain which has the same size as the number of components in the mesh)</listitem>
         </itemizedlist>
         <mediaobject>
-          <imageobject>
+          <imageobject role="xhtml">
             <imagedata fileref="../images/meshDecomposition_structure.JPG" format="JPG" scale="90"/>
+          </imageobject>
+          <imageobject role="fo">
+            <imagedata fileref="../images/meshDecomposition_structure.JPG" format="JPG" scale="50"/>
           </imageobject>
         </mediaobject>
         <section id='domain'>
@@ -209,8 +230,11 @@
             <listitem>Domain topology pointer(elements, nodes, DOFs)</listitem>
           </itemizedlist>
           <mediaobject>
-            <imageobject>
+            <imageobject role="xhtml">
               <imagedata fileref="../images/meshDecompositionDomain_structure.JPG" format="JPG" scale="90"/>
+            </imageobject>
+            <imageobject role="fo">
+              <imagedata fileref="../images/meshDecompositionDomain_structure.JPG" format="JPG" scale="50"/>
             </imageobject>
           </mediaobject>
           <section id='domain_mapping'>
@@ -236,8 +260,11 @@
               <listitem>List of adjacent domains</listitem>
             </itemizedlist>
             <mediaobject>
-              <imageobject>
+              <imageobject role="xhtml">
                 <imagedata fileref="../images/meshDecompositionDomainMapping_structure.JPG" format="JPG" scale="90"/>
+              </imageobject>
+              <imageobject role="fo">
+                <imagedata fileref="../images/meshDecompositionDomainMapping_structure.JPG" format="JPG" scale="50"/>
               </imageobject>
             </mediaobject>
           </section>
@@ -273,8 +300,11 @@
         <listitem>Create values cache</listitem>
       </itemizedlist>
       <mediaobject>
-        <imageobject>
+        <imageobject role="xhtml">
           <imagedata fileref="../images/field_structure.JPG" format="JPG" scale="90"/>
+        </imageobject>
+        <imageobject role="fo">
+          <imagedata fileref="../images/field_structure.JPG" format="JPG" scale="50"/>
         </imageobject>
       </mediaobject>
       <section id='field_variable'>
@@ -299,8 +329,11 @@
           <listitem>Components</listitem>
         </itemizedlist>
         <mediaobject>
-          <imageobject>
+          <imageobject role="xhtml">
             <imagedata fileref="../images/fieldVariable_structure.JPG" format="JPG" scale="90"/>
+          </imageobject>
+          <imageobject role="fo">
+            <imagedata fileref="../images/fieldVariable_structure.JPG" format="JPG" scale="50"/>
           </imageobject>
         </mediaobject>
         <section id='field_variable_component'>
@@ -324,8 +357,11 @@
         <title>Parameter set</title>
         <para>Parameter set stores values for each field variable component.</para>
         <mediaobject>
-          <imageobject>
+          <imageobject role="xhtml">
             <imagedata fileref="../images/field_parameter_set_definition.JPG" format="JPG" scale="90"/>
+          </imageobject>
+          <imageobject role="fo">
+            <imagedata fileref="../images/field_parameter_set_definition.JPG" format="JPG" scale="50"/>
           </imageobject>
         </mediaobject>
         <para>Parameter set has the following Attributes:</para>
@@ -363,8 +399,11 @@
       </mml:math>      
       <para>will be represented as:</para>
       <mediaobject>
-        <imageobject>
+        <imageobject role="xhtml">
           <imagedata fileref="../images/fieldEquationsets-matrix.JPG" format="JPG" scale="90"/>
+        </imageobject>
+        <imageobject role="fo">
+          <imagedata fileref="../images/fieldEquationsets-matrix.JPG" format="JPG" scale="50"/>
         </imageobject>
       </mediaobject>
       <para>Equations Set has the following attributes:</para>
@@ -388,8 +427,11 @@
         <listitem>Equations pointer</listitem>
       </itemizedlist>
       <mediaobject>
-        <imageobject>
+        <imageobject role="xhtml">
           <imagedata fileref="../images/fieldEquationsets-structure.JPG" format="JPG" scale="90"/>
+        </imageobject>
+        <imageobject role="fo">
+          <imagedata fileref="../images/fieldEquationsets-structure.JPG" format="JPG" scale="50"/>
         </imageobject>
       </mediaobject>
       <section id='equations'>
@@ -400,20 +442,29 @@
         </para>
         <para>e.g. Laplace(FEM): 2 variables, 1 component</para>
         <mediaobject>
-          <imageobject>
+          <imageobject role="xhtml">
             <imagedata fileref="../images/fieldEquationsetsEquations-mappingFEM.JPG" format="JPG" scale="90"/>
+          </imageobject>
+          <imageobject role="fo">
+            <imagedata fileref="../images/fieldEquationsetsEquations-mappingFEM.JPG" format="JPG" scale="50"/>
           </imageobject>
         </mediaobject>
         <para>e.g. Laplace(BEM): 2 variables, 1 component</para>
         <mediaobject>
-          <imageobject>
+          <imageobject role="xhtml">
             <imagedata fileref="../images/fieldEquationsetsEquations-mappingBEM.JPG" format="JPG" scale="90"/>
+          </imageobject>
+          <imageobject role="fo">
+            <imagedata fileref="../images/fieldEquationsetsEquations-mappingBEM.JPG" format="JPG" scale="50"/>
           </imageobject>
         </mediaobject>
         <para>e.g. Heat equation(explicit time/FEM space): 2 variables, 1 component</para>
         <mediaobject>
-          <imageobject>
+          <imageobject role="xhtml">
             <imagedata fileref="../images/fieldEquationsetsEquations-mappingHeat.JPG" format="JPG" scale="90"/>
+          </imageobject>
+          <imageobject role="fo">
+            <imagedata fileref="../images/fieldEquationsetsEquations-mappingHeat.JPG" format="JPG" scale="50"/>
           </imageobject>
         </mediaobject>
         <para>TODO matrix distribution</para>
@@ -431,8 +482,11 @@
           <listitem>Equations Matrices</listitem>
         </itemizedlist>
         <mediaobject>
-          <imageobject>
+          <imageobject role="xhtml">
             <imagedata fileref="../images/fieldEquationsetsEquations-structure.JPG" format="JPG" scale="90"/>
+          </imageobject>
+          <imageobject role="fo">
+            <imagedata fileref="../images/fieldEquationsetsEquations-structure.JPG" format="JPG" scale="50"/>
           </imageobject>
         </mediaobject>
       </section>
@@ -458,8 +512,11 @@
       <listitem>Soultions pointer</listitem>
     </itemizedlist>
     <mediaobject>
-      <imageobject>
+      <imageobject role="xhtml">
         <imagedata fileref="../images/problem_structure.JPG" format="JPG" scale="90"/>
+      </imageobject>
+      <imageobject role="fo">
+        <imagedata fileref="../images/problem_structure.JPG" format="JPG" scale="50"/>
       </imageobject>
     </mediaobject>
     <section>
@@ -492,8 +549,11 @@
           <listitem>Solver matrices</listitem>
         </itemizedlist>
         <mediaobject>
-          <imageobject>
+          <imageobject role="xhtml">
             <imagedata fileref="../images/problemSolutionSolver_structure.JPG" format="JPG" scale="90"/>
+          </imageobject>
+          <imageobject role="fo">
+            <imagedata fileref="../images/problemSolutionSolver_structure.JPG" format="JPG" scale="50"/>
           </imageobject>
         </mediaobject>
       </section>
