@@ -386,6 +386,7 @@
         openCMISS is designed to generate equations sets with a number of "equations" matrices.
       </para>
       <para>e.g, damped mass spring system</para>
+      <inlineequation>
       <mml:math>
         <mml:mrow>
           <mml:mi>M&uuml;</mml:mi>
@@ -396,7 +397,8 @@
           <mml:mo>=</mml:mo>
           <mml:mi>f</mml:mi>
         </mml:mrow>
-      </mml:math>      
+      </mml:math> 
+      </inlineequation>     
       <para>will be represented as:</para>
       <mediaobject>
         <imageobject role="xhtml">
