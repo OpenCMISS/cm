@@ -33,14 +33,6 @@
 </xsl:template>
 
 <!-- "Support" for MathML -->
-  
-<xsl:template match="inlineequation/mml:math">
-  <fo:instream-foreign-object>
-  <xsl:copy>
-    <xsl:apply-templates mode="copy-all"/>
-  </xsl:copy>
-  </fo:instream-foreign-object>
-</xsl:template>  
 
 <xsl:template match="mml:*" xmlns:mml="http://www.w3.org/1998/Math/MathML">
   <xsl:copy>

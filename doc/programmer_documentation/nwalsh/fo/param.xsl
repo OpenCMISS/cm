@@ -59,7 +59,7 @@
 </xsl:param>
 <xsl:param name="body.margin.bottom" select="'0.5in'"/>
 <xsl:param name="body.margin.top" select="'0.5in'"/>
-<xsl:param name="body.start.indent" select="'0pt'"/>
+<xsl:param name="body.start.indent" select="'4pc'"/>
 <xsl:param name="body.end.indent" select="'0pt'"/>
 <xsl:param name="bridgehead.in.toc" select="0"/>
 <xsl:param name="callout.defaultcolumn" select="'60'"/>
@@ -567,25 +567,25 @@ set       toc,title
 <xsl:param name="section.label.includes.component.label" select="0"/>
 <xsl:attribute-set name="section.title.level1.properties">
   <xsl:attribute name="font-size">
-    <xsl:value-of select="$body.font.master * 1.4"/>
+    <xsl:value-of select="$body.font.master * 2.0736"/>
     <xsl:text>pt</xsl:text>
   </xsl:attribute>
 </xsl:attribute-set>
 <xsl:attribute-set name="section.title.level2.properties">
   <xsl:attribute name="font-size">
-    <xsl:value-of select="$body.font.master * 1.3"/>
+    <xsl:value-of select="$body.font.master * 1.728"/>
     <xsl:text>pt</xsl:text>
   </xsl:attribute>
 </xsl:attribute-set>
 <xsl:attribute-set name="section.title.level3.properties">
   <xsl:attribute name="font-size">
-    <xsl:value-of select="$body.font.master * 1.2"/>
+    <xsl:value-of select="$body.font.master * 1.44"/>
     <xsl:text>pt</xsl:text>
   </xsl:attribute>
 </xsl:attribute-set>
 <xsl:attribute-set name="section.title.level4.properties">
   <xsl:attribute name="font-size">
-    <xsl:value-of select="$body.font.master * 1.1"/>
+    <xsl:value-of select="$body.font.master * 1.2"/>
     <xsl:text>pt</xsl:text>
   </xsl:attribute>
 </xsl:attribute-set>
