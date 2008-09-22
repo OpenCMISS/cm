@@ -18,6 +18,9 @@
    </target>
 
    <target name="run">
-     <java jar="lib/doxyToDoc.jar" fork="true"/>
+     <java jar="lib/doxyToDoc.jar" fork="true">
+       <arg value="xml/library_commands.xml_template"></arg>
+       <arg value="xml"></arg>
+     </java>
    </target>
 </project>
