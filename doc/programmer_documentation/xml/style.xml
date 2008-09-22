@@ -3,14 +3,14 @@
   This is an attempt to document the programming "style" for use with openCMISS.
   <itemizedlist>
     <listitem>Within a module all named constants and procedure names should be prefixed by a name indicating that module so as to maintain a namespace.</listitem>
-    <listitem>All dynamic arrays should be ALLOCATABLE rather than POINTER unless full pointer functionality is required.</listitem>
+    <listitem>All dynamic arrays should be <code>ALLOCATABLE</code> rather than <code>POINTER</code> unless full pointer functionality is required.</listitem>
     <listitem>A double space should be used for an indent. Tabs should not be used to indent code.</listitem>
-    <listitem>All pointers should be checked to see if they are ASSOCIATED before de-referencing them.</listitem>
-    <listitem>If there is just a single statement following an IF clause use the inline form of the IF statement and do not use THEN and ENDIF.</listitem>
+    <listitem>All pointers should be checked to see if they are <code>ASSOCIATED</code> before de-referencing them.</listitem>
+    <listitem>If there is just a single statement following an <code>IF</code> clause use the inline form of the <code>IF</code> statement and do not use <code>THEN</code> and <code>ENDIF</code>.</listitem>
     <listitem>There should be a space before the first continuation character and a space after the second continuation character when continuing lines.</listitem>
-    <listitem>Use standard loop variable names e.g., nn, component_idx, when looping rather than temporary variable names.</listitem>
-    <listitem>When using case statements put in all known values of the the case variable and use a CALL FLAG_ERROR("Not implemented", ... statement if the code for the case variable has yet to be coded.</listitem>
-    <listitem>Use a !================... line between subroutines and functions</listitem>
-    <listitem>For dummy array arguments the dimension qualifier should be with the array name i.e., use INTEGER(INTG) :: FRED(N) rather than INTEGER(INTG), DIMENSION(N) :: FRED.</listitem>
+    <listitem>Use standard loop variable names e.g., <code>nn</code>, <code>component_idx</code>, when looping rather than temporary variable names.</listitem>
+    <listitem>When using case statements put in all known values of the the case variable and use a <code>CALL FLAG_ERROR("Not implemented", ...</code> statement if the code for the case variable has yet to be coded.</listitem>
+    <listitem>Use a <code>!================</code>... line between subroutines and functions</listitem>
+    <listitem>For dummy array arguments the dimension qualifier should be with the array name i.e., use <code>INTEGER(INTG) :: FRED(N)</code> rather than <code>INTEGER(INTG), DIMENSION(N) :: FRED</code>.</listitem>
   </itemizedlist>
 </chapter>
