@@ -1,10 +1,16 @@
 package org.abi.doc;
 
+import java.io.IOException;
+import java.io.StringWriter;
 import java.util.Iterator;
 
 import org.xml.sax.Attributes;
+import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
+
+import com.sun.org.apache.xml.internal.serialize.OutputFormat;
+import com.sun.org.apache.xml.internal.serialize.XMLSerializer;
 
 /**
  * Read doxygen xml files using SAX. Extract functions out.
@@ -44,7 +50,11 @@ public class DoxygenHandler extends DefaultHandler {
 		if (name.equals("memberdef") && functionStarted)
 		{
 			functionStarted = false;
-			resultBuffer.append(getFunctionDocbookXML(functionElement));
+			try {
+				resultBuffer.append(getFunctionDocbookXML(functionElement));
+			} catch (IOException e) {
+				// TODO log
+			}
 			functionElement = null;
 		}
 		if (functionStarted)
@@ -90,6 +100,7 @@ public class DoxygenHandler extends DefaultHandler {
 				}	
 			}
 		}
+
 	}
 
 	@Override
@@ -120,44 +131,50 @@ public class DoxygenHandler extends DefaultHandler {
 
 	/**
 	 * Write the xml results into docbook files. 
-	 * TODO use xml writer?
 	 * @param element
 	 * @return
 	 */
-	private String getFunctionDocbookXML(FunctionElement element)
+	private String getFunctionDocbookXML(FunctionElement element) throws IOException, SAXException
 	{
-		StringBuffer buf = new StringBuffer();
-		buf.append("      <command>");
-		buf.append(element.getName());
-		buf.append("</command>\n");
-		buf.append("      <itemizedlist>\n");
-		buf.append("        <listitem>Description:");
-		buf.append(element.getDescription() != null ? element.getDescription() : "");
-		buf.append("</listitem>\n");
-		buf.append("        <listitem>Parameters:\n");
-		buf.append("          <itemizedlist>\n");
+		OutputFormat of = new OutputFormat("XML","ISO-8859-1",true);
+		of.setOmitXMLDeclaration(true);
+		StringWriter writer = new StringWriter();
+		XMLSerializer serializer = new XMLSerializer(writer,of);
+		ContentHandler hd = serializer.asContentHandler();
+		hd.startElement("","","command",null);
+		addCharacters(hd, element.getName());
+		hd.endElement("", "", "command");
+		hd.startElement("", "", "itemizedlist", null);
+		hd.startElement("", "", "listitem", null);
+		addCharacters(hd, "Description: ");
+		addCharacters(hd, element.getDescription());
+		hd.endElement("", "", "listitem");
+		hd.startElement("", "", "listitem", null);
+		addCharacters(hd,"Parameters");
+		hd.startElement("", "", "itemizedlist", null);
 		Iterator<ParameterElement> iter = element.getParams().iterator();
 		while(iter.hasNext())
 		{
 			ParameterElement pe = iter.next();
-			buf.append("            <listitem>");
-
-			buf.append(pe.getName());
-			buf.append(": ");
-			buf.append(pe.getDescription()!=null ? escapeXML(pe.getDescription()) : "");
-			buf.append("</listitem>\n");
+			hd.startElement("", "", "listitem", null);
+			addCharacters(hd, pe.getName());
+			addCharacters(hd, ": ");
+			addCharacters(hd, pe.getDescription());
+			hd.endElement("", "", "listitem");
 		}
-		buf.append("          </itemizedlist>\n");
-		buf.append("        </listitem>\n");
-		buf.append("      </itemizedlist>\n");
-		return buf.toString();
+		hd.endElement("", "", "itemizedlist");
+		hd.endElement("", "", "listitem");
+		hd.endElement("", "", "itemizedlist");
+		
+		return writer.toString();
 	}
-
-	private String escapeXML(String text)
+	
+	private void addCharacters(ContentHandler hd, String text) throws SAXException
 	{
-		String newText = text.replace("<", "&lt;");
-		newText = newText.replace(">", "&gt;");
-		return newText;
+		if (text != null)
+		{
+			hd.characters(text.toCharArray(), 0, text.length());
+		}
 	}
 
 }
