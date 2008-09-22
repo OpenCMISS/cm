@@ -1,0 +1,23 @@
+<!-- For build and run in eclipse--> 
+<project>
+  <target name="clean">
+    <delete dir="build"/>
+  </target>
+
+ <target name="compile">
+   <mkdir dir="build/classes"/>
+   <javac srcdir="src" destdir="build/classes"/>
+  </target>
+
+  <target name="jar" depends="compile">
+    <jar destfile="lib/doxyToDoc.jar" basedir="build/classes">
+      <manifest>
+        <attribute name="Main-Class" value="org.abi.doc.DoxygenToDocbook"/>
+      </manifest>
+    </jar>
+   </target>
+
+   <target name="run">
+     <java jar="lib/doxyToDoc.jar" fork="true"/>
+   </target>
+</project>

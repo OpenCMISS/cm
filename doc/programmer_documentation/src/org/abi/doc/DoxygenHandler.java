@@ -89,9 +89,7 @@ public class DoxygenHandler extends DefaultHandler {
 					elementStarted = false;
 				}	
 			}
-
 		}
-
 	}
 
 	@Override
