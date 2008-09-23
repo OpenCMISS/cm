@@ -6,6 +6,7 @@ import java.util.List;
 public class FunctionElement {
 	private String name;
 	private String description;
+	private String args;
 	private List<ParameterElement> params = new ArrayList<ParameterElement>();
 
 	public String getName() {
@@ -30,6 +31,14 @@ public class FunctionElement {
 
 	public List<ParameterElement> getParams() {
 		return params;
+	}
+
+	public String getArgs() {
+		return args;
+	}
+
+	public void setArgs(String args) {
+		this.args = args;
 	}
 }
 

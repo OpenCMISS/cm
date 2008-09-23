@@ -25,6 +25,7 @@ public class DoxygenHandler extends DefaultHandler {
 	private boolean paramStarted = false;
 
 	private FunctionElement functionElement;
+	private InterfaceElement interfaceElement;
 	private ParameterElement parameterElement;
 
 	private StringBuffer textBuffer;
@@ -50,6 +51,7 @@ public class DoxygenHandler extends DefaultHandler {
 		if (name.equals("memberdef") && functionStarted)
 		{
 			functionStarted = false;
+			elementStarted = false;
 			try {
 				resultBuffer.append(getFunctionDocbookXML(functionElement));
 			} catch (IOException e) {
@@ -69,6 +71,11 @@ public class DoxygenHandler extends DefaultHandler {
 				else if (name.equals("briefdescription") )
 				{
 					functionElement.setDescription(textBuffer.toString().trim());
+					elementStarted = false;
+				}
+				else if (name.equals("argsstring") )
+				{
+					functionElement.setArgs(textBuffer.toString().trim());
 					elementStarted = false;
 				}
 			}
@@ -100,6 +107,17 @@ public class DoxygenHandler extends DefaultHandler {
 				}	
 			}
 		}
+		if (name.equals("innerclass"))
+		{
+			interfaceElement.setName(textBuffer.toString().trim());
+			elementStarted = false;
+			try {
+				resultBuffer.append(getInterfaceDocbookXML(interfaceElement));
+			} catch (IOException e) {
+				// TODO log
+			}
+			interfaceElement = null;
+		}
 
 	}
 
@@ -115,7 +133,7 @@ public class DoxygenHandler extends DefaultHandler {
 		if (functionStarted)
 		{
 			// Inside a function
-			if (name.equals("name") || name.equals("briefdescription") 
+			if (name.equals("name") || name.equals("briefdescription") || name.equals("argsstring") 
 					|| name.equals("type") || name.equals("defname"))
 			{
 				textBuffer = new StringBuffer();
@@ -126,6 +144,13 @@ public class DoxygenHandler extends DefaultHandler {
 				paramStarted = true;
 				parameterElement = new ParameterElement();
 			}
+		}
+		
+		if (name.equals("innerclass"))
+		{
+			textBuffer = new StringBuffer();
+			elementStarted = true;
+			interfaceElement = new InterfaceElement();
 		}
 	}
 
@@ -143,6 +168,7 @@ public class DoxygenHandler extends DefaultHandler {
 		ContentHandler hd = serializer.asContentHandler();
 		hd.startElement("","","command",null);
 		addCharacters(hd, element.getName());
+		addCharacters(hd, element.getArgs());
 		hd.endElement("", "", "command");
 		hd.startElement("", "", "itemizedlist", null);
 		hd.startElement("", "", "listitem", null);
@@ -165,6 +191,27 @@ public class DoxygenHandler extends DefaultHandler {
 		hd.endElement("", "", "itemizedlist");
 		hd.endElement("", "", "listitem");
 		hd.endElement("", "", "itemizedlist");
+		
+		return writer.toString();
+	}
+	
+	/**
+	 * Write the xml results into docbook files. 
+	 * @param element
+	 * @return
+	 */
+	private String getInterfaceDocbookXML(InterfaceElement element) throws IOException, SAXException
+	{
+		OutputFormat of = new OutputFormat("XML","ISO-8859-1",true);
+		of.setOmitXMLDeclaration(true);
+		StringWriter writer = new StringWriter();
+		XMLSerializer serializer = new XMLSerializer(writer,of);
+		ContentHandler hd = serializer.asContentHandler();
+		hd.startElement("","","command",null);
+		hd.startElement("","","para",null);
+		addCharacters(hd, element.getName());
+		hd.endElement("", "", "para");
+		hd.endElement("", "", "command");
 		
 		return writer.toString();
 	}

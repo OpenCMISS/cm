@@ -30,6 +30,7 @@ ifdef IMPORT_DOXYGEN
 	javac -classpath src src/org/abi/doc/DoxygenToDocbook.java -d build/classes
 	jar cvfm lib/doxyToDoc.jar src/Mainfest -C build/classes .
 	$(RM) -r build
+	$(JAVA) $(JFLAG) lib/doxyToDoc.jar xml/library_commands.xml_template ../doxygen/xml
 endif
 	$(JAVA) $(JFLAG) lib/xalan.jar -in xml/toplevel.xml -out html/index.xhtml -xsl customized_style/xhtml/customized-chunk.xsl -param chunk.section.depth 0 -param section.autolabel 1
 	
@@ -41,6 +42,7 @@ ifdef IMPORT_DOXYGEN
 	javac -classpath src src/org/abi/doc/DoxygenToDocbook.java -d build/classes
 	jar cvfm lib/doxyToDoc.jar src/Mainfest -C build/classes .
 	$(RM) -r build
+	$(JAVA) $(JFLAG) lib/doxyToDoc.jar xml/library_commands.xml_template ../doxygen/xml
 endif
 	$(JAVA) $(JFLAG) lib/xalan.jar -in xml/toplevel.xml -out pdf/programmer_doc.fo -xsl customized_style/fo/customized-fo.xsl -param section.autolabel 1 -param paper.type A4
 	$(JAVA) $(JFLAG) lib/fop.jar pdf/programmer_doc.fo pdf/programmer_doc.pdf   
