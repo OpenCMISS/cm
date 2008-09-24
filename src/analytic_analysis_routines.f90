@@ -179,7 +179,7 @@ CONTAINS
           END SELECT
         ENDDO
       ENDDO
-      DEALLOCATE(VALUE_BUFFER)
+      IF(ALLOCATED(VALUE_BUFFER)) DEALLOCATE(VALUE_BUFFER)
     ELSE
        CALL FLAG_ERROR("The field is not associated!",ERR,ERROR,*999)     
     ENDIF
