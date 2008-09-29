@@ -1171,6 +1171,7 @@ MODULE TYPES
   !>Contains information on the analytic setup for the equations set.
   TYPE EQUATIONS_SET_ANALYTIC_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
+    INTEGER(INTG) :: EQUATION_NUMBER !<The equation identifier
     LOGICAL :: ANALYTIC_FINISHED !<Is .TRUE. if the analytic setup for the problem has finished being created, .FALSE. if not.
   END TYPE EQUATIONS_SET_ANALYTIC_TYPE
 
