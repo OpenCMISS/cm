@@ -112,9 +112,50 @@ MODULE GENERATED_MESH_ROUTINES
   
   PUBLIC GENERATED_MESH_BASIS_SET,GENERATED_MESH_EXTENT_SET,GENERATED_MESH_NUMBER_OF_ELEMENTS_SET,GENERATED_MESH_ORIGIN_SET, &
     & GENERATED_MESH_TYPE_SET
+    
+  PUBLIC GENERATED_MESH_BASIS_GET,GENERATED_MESH_EXTENT_GET,GENERATED_MESH_NUMBER_OF_ELEMENTS_GET,GENERATED_MESH_ORIGIN_GET,&
+    & GENERATED_MESH_TYPE_GET
 
 
 CONTAINS
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the basis of a generated mesh.
+  FUNCTION GENERATED_MESH_BASIS_GET(GENERATED_MESH,ERR,ERROR)
+    !Argument variables
+    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh to get the basis of
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    TYPE(BASIS_TYPE) :: GENERATED_MESH_BASIS_GET !<The basis of mesh to generate \see GENERATED_MESH_ROUTINES_GeneratedMeshBasis,GENERATED_MESH_ROUTINES
+    !Local Variables
+
+    CALL ENTERS("GENERATED_MESH_BASIS_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(GENERATED_MESH)) THEN
+      SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
+      CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
+        IF(ASSOCIATED(GENERATED_MESH%REGULAR_MESH)) THEN 
+          GENERATED_MESH_BASIS_GET=GENERATED_MESH%REGULAR_MESH%BASIS
+        ELSE
+          CALL FLAG_ERROR("Regular generated mesh is not associated",ERR,ERROR,*999)
+        END IF
+      CASE DEFAULT
+        CALL FLAG_ERROR("Generated mesh type is either invalid or not implemented",ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Generated mesh is already associated",ERR,ERROR,*999)
+    ENDIF
+ 
+    CALL EXITS("GENERATED_MESH_BASIS_GET")
+    RETURN
+999 CALL ERRORS("GENERATED_MESH_BASIS_GET",ERR,ERROR)
+    CALL EXITS("GENERATED_MESH_BASIS_GET")
+    RETURN
+  END FUNCTION GENERATED_MESH_BASIS_GET
 
   !
   !================================================================================================================================
@@ -409,6 +450,41 @@ CONTAINS
   
   !
   !================================================================================================================================
+  !
+
+  !>Gets the extent of a generated mesh.
+  FUNCTION GENERATED_MESH_EXTENT_GET(GENERATED_MESH,ERR,ERROR)
+
+    !Argument variables
+    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh to get the type of
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Funtion result
+    REAL(DP), POINTER :: GENERATED_MESH_EXTENT_GET(:)
+    !Local Variables
+
+    CALL ENTERS("GENERATED_MESH_EXTENT_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(GENERATED_MESH)) THEN
+      SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
+      CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
+        GENERATED_MESH_EXTENT_GET=GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT
+      CASE DEFAULT
+        CALL FLAG_ERROR("Generated mesh type is either invalid or not implemented",ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Generated mesh is already associated",ERR,ERROR,*999)
+    ENDIF
+ 
+    CALL EXITS("GENERATED_MESH_EXTENT_GET")
+    RETURN
+999 CALL ERRORS("GENERATED_MESH_EXTENT_GET",ERR,ERROR)
+    CALL EXITS("GENERATED_MESH_EXTENT_GET")
+    RETURN   
+  END FUNCTION GENERATED_MESH_EXTENT_GET
+  
+  !
+  !================================================================================================================================
   ! 
    
   !>Sets/changes the max extent of a generated mesh. 
@@ -544,6 +620,41 @@ CONTAINS
     CALL EXITS("GENERATED_MESH_INITIALISE")
     RETURN 1   
   END SUBROUTINE GENERATED_MESH_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the extent of a generated mesh.
+  FUNCTION GENERATED_MESH_NUMBER_OF_ELEMENTS_GET(GENERATED_MESH,ERR,ERROR)
+
+    !Argument variables
+    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh to set the type of
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    INTEGER(INTG), POINTER :: GENERATED_MESH_NUMBER_OF_ELEMENTS_GET(:)
+    !Local Variables
+
+    CALL ENTERS("GENERATED_MESH_NUMBER_OF_ELEMENTS_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(GENERATED_MESH)) THEN
+      SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
+      CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
+        GENERATED_MESH_NUMBER_OF_ELEMENTS_GET=GENERATED_MESH%REGULAR_MESH%NUMBER_OF_ELEMENTS_XI
+      CASE DEFAULT
+        CALL FLAG_ERROR("Generated mesh type is either invalid or not implemented",ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Generated mesh is already associated",ERR,ERROR,*999)
+    ENDIF
+ 
+    CALL EXITS("GENERATED_MESH_NUMBER_OF_ELEMENTS_GET")
+    RETURN
+999 CALL ERRORS("GENERATED_MESH_NUMBER_OF_ELEMENTS_GET",ERR,ERROR)
+    CALL EXITS("GENERATED_MESH_NUMBER_OF_ELEMENTS_GET")
+    RETURN 
+  END FUNCTION GENERATED_MESH_NUMBER_OF_ELEMENTS_GET
   
   !
   !================================================================================================================================
@@ -596,7 +707,6 @@ CONTAINS
       IF(GENERATED_MESH%GENERATED_MESH_FINISHED) THEN
         CALL FLAG_ERROR("Generated mesh has been finished",ERR,ERROR,*999)
       ELSE
-        !TODO should basis be associated with generated mesh rather than regular type?
         SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
         CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
           IF(ASSOCIATED(GENERATED_MESH%REGULAR_MESH)) THEN 
@@ -619,6 +729,41 @@ CONTAINS
     CALL EXITS("GENERATED_MESH_NUMBER_OF_ELEMENTS_SET_PTR")
     RETURN 1   
   END SUBROUTINE GENERATED_MESH_NUMBER_OF_ELEMENTS_SET_PTR
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the origin of a generated mesh.
+  FUNCTION GENERATED_MESH_ORIGIN_GET(GENERATED_MESH,ERR,ERROR)
+
+    !Argument variables
+    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh to get the type of
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    REAL(DP), POINTER :: GENERATED_MESH_ORIGIN_GET(:)
+    !Local Variables
+
+    CALL ENTERS("GENERATED_MESH_ORIGIN_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(GENERATED_MESH)) THEN
+      SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
+      CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
+        GENERATED_MESH_ORIGIN_GET=GENERATED_MESH%REGULAR_MESH%ORIGIN 
+      CASE DEFAULT
+        CALL FLAG_ERROR("Generated mesh type is either invalid or not implemented",ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Generated mesh is already associated",ERR,ERROR,*999)
+    ENDIF
+ 
+    CALL EXITS("GENERATED_MESH_ORIGIN_GET")
+    RETURN
+999 CALL ERRORS("GENERATED_MESH_ORIGIN_GET",ERR,ERROR)
+    CALL EXITS("GENERATED_MESH_ORIGIN_GET")
+    RETURN
+  END FUNCTION GENERATED_MESH_ORIGIN_GET
   
   !
   !================================================================================================================================
@@ -940,6 +1085,36 @@ CONTAINS
     CALL EXITS("GENERATED_MESH_REGULAR_INITIALISE")
     RETURN 1
   END SUBROUTINE GENERATED_MESH_REGULAR_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the type of a generated mesh.
+  FUNCTION GENERATED_MESH_TYPE_GET(GENERATED_MESH,ERR,ERROR)
+
+    !Argument variables
+    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh to set the type of
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    INTEGER(INTG) :: GENERATED_MESH_TYPE_GET !<The type of mesh to generate \see GENERATED_MESH_ROUTINES_GeneratedMeshTypes,GENERATED_MESH_ROUTINES
+    !Local Variables
+
+    CALL ENTERS("GENERATED_MESH_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(GENERATED_MESH)) THEN
+      GENERATED_MESH_TYPE_GET=GENERATED_MESH%GENERATED_TYPE
+    ELSE
+      CALL FLAG_ERROR("Generated mesh is already associated",ERR,ERROR,*999)
+    ENDIF
+ 
+    CALL EXITS("GENERATED_MESH_TYPE_GET")
+    RETURN
+999 CALL ERRORS("GENERATED_MESH_TYPE_GET",ERR,ERROR)
+    CALL EXITS("GENERATED_MESH_TYPE_GET")
+    RETURN 
+  END FUNCTION GENERATED_MESH_TYPE_GET
   
   !
   !================================================================================================================================
