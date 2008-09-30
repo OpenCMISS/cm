@@ -219,7 +219,11 @@ MODULE FIELD_ROUTINES
   PUBLIC FIELD_VALUES_SET_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE,FIELD_INITIAL_CONDITIONS_SET_TYPE,FIELD_ANALYTIC_SET_TYPE
 
   PUBLIC FIELD_NO_SCALING,FIELD_UNIT_SCALING,FIELD_ARC_LENGTH_SCALING,FIELD_HARMONIC_MEAN_SCALING, FIELD_ARITHMETIC_MEAN_SCALING
-    
+  
+  PUBLIC FIELD_COMPONENT_MESH_COMPONENT_GET,FIELD_COMPONENT_INTERPOLATION_GET,FIELD_DEPENDENT_TYPE_GET, &
+    & FIELD_GEOMETRIC_FIELD_GET,FIELD_MESH_DECOMPOSITION_GET,FIELD_NUMBER_OF_COMPONENTS_GET,FIELD_NUMBER_OF_VARIABLES_GET,  &
+    & FIELD_SCALING_TYPE_GET,FIELD_TYPE_GET 
+     
   PUBLIC FIELD_CREATE_FINISH,FIELD_CREATE_START,FIELD_DESTROY,FIELDS_FINALISE,FIELDS_INITIALISE, &
     & FIELD_COMPONENT_MESH_COMPONENT_SET,FIELD_COMPONENT_INTERPOLATION_SET,FIELD_DEPENDENT_TYPE_SET, &
     & FIELD_GEOMETRIC_FIELD_SET,FIELD_GEOMETRIC_PARAMETERS_UPDATE_FROM_INITIAL_MESH, &
@@ -235,6 +239,55 @@ MODULE FIELD_ROUTINES
     & FIELD_PARAMETER_SET_UPDATE_NODE,FIELD_SCALING_TYPE_SET,FIELD_TYPE_SET
 
 CONTAINS
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the interpolation type for a field variable component identified by a pointer.
+  FUNCTION FIELD_COMPONENT_INTERPOLATION_GET(FIELD,FIELD_VARIABLE_NUMBER,FIELD_COMPONENT_NUMBER,ERR,ERROR)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to set the interpolation for
+    INTEGER(INTG), INTENT(IN) :: FIELD_VARIABLE_NUMBER !<The field variable number of the field variable component to set
+    INTEGER(INTG), INTENT(IN) :: FIELD_COMPONENT_NUMBER !<The field component number of the field variable component to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    INTEGER(INTG) :: FIELD_COMPONENT_INTERPOLATION_GET !<The interpolation type to get \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("FIELD_COMPONENT_INTERPOLATION_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+      IF(FIELD_VARIABLE_NUMBER>=1.AND.FIELD_VARIABLE_NUMBER<=FIELD%NUMBER_OF_VARIABLES) THEN
+        IF(FIELD_COMPONENT_NUMBER>=1.AND.FIELD_COMPONENT_NUMBER<=FIELD%CREATE_VALUES_CACHE%NUMBER_OF_COMPONENTS) THEN
+          FIELD_COMPONENT_INTERPOLATION_GET=FIELD%CREATE_VALUES_CACHE%INTERPOLATION_TYPE(FIELD_COMPONENT_NUMBER,FIELD_VARIABLE_NUMBER)
+        ELSE
+          LOCAL_ERROR="Component number "//TRIM(NUMBER_TO_VSTRING(FIELD_COMPONENT_NUMBER,"*",ERR,ERROR))// &
+            & " is invalid for variable number "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE_NUMBER,"*",ERR,ERROR))// &
+            & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
+            & TRIM(NUMBER_TO_VSTRING(FIELD%CREATE_VALUES_CACHE%NUMBER_OF_COMPONENTS,"*",ERR,ERROR))// &
+            & " components"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="Variable number "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE_NUMBER,"*",ERR,ERROR))// &
+          & " is invalid for field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
+          & TRIM(NUMBER_TO_VSTRING(FIELD%NUMBER_OF_VARIABLES,"*",ERR,ERROR))//" variables"
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("FIELD_COMPONENT_INTERPOLATION_GET")
+    RETURN
+999 CALL ERRORS("FIELD_COMPONENT_INTERPOLATION_GET",ERR,ERROR)
+    CALL EXITS("FIELD_COMPONENT_INTERPOLATION_GET")
+    RETURN
+  END FUNCTION FIELD_COMPONENT_INTERPOLATION_GET
   
   !
   !================================================================================================================================
@@ -331,6 +384,55 @@ CONTAINS
     CALL EXITS("FIELD_COMPONENT_INTERPOLATION_SET_PTR")
     RETURN 1
   END SUBROUTINE FIELD_COMPONENT_INTERPOLATION_SET_PTR
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the mesh component number for a field variable component identified by a pointer to a field and a field variable number.
+  FUNCTION FIELD_COMPONENT_MESH_COMPONENT_GET(FIELD,FIELD_VARIABLE_NUMBER,FIELD_COMPONENT_NUMBER,ERR,ERROR)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to set the mesh component for
+    INTEGER(INTG), INTENT(IN) :: FIELD_VARIABLE_NUMBER !<The field variable number to set the field variable component for
+    INTEGER(INTG), INTENT(IN) :: FIELD_COMPONENT_NUMBER !<The field component number to set the field variable component for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    INTEGER(INTG) :: FIELD_COMPONENT_MESH_COMPONENT_GET !<The mesh component to set for the specified field variable component
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("FIELD_COMPONENT_MESH_COMPONENT_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+      IF(FIELD_VARIABLE_NUMBER>=1.AND.FIELD_VARIABLE_NUMBER<=FIELD%NUMBER_OF_VARIABLES) THEN
+        IF(FIELD_COMPONENT_NUMBER>=1.AND.FIELD_COMPONENT_NUMBER<=FIELD%CREATE_VALUES_CACHE%NUMBER_OF_COMPONENTS) THEN
+          FIELD_COMPONENT_MESH_COMPONENT_GET=FIELD%CREATE_VALUES_CACHE%MESH_COMPONENT_NUMBER(FIELD_COMPONENT_NUMBER,FIELD_VARIABLE_NUMBER)
+        ELSE
+          LOCAL_ERROR="Component number "//TRIM(NUMBER_TO_VSTRING(FIELD_COMPONENT_NUMBER,"*",ERR,ERROR))// &
+            & " is invalid for variable number "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE_NUMBER,"*",ERR,ERROR))// &
+            & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
+            & TRIM(NUMBER_TO_VSTRING(FIELD%CREATE_VALUES_CACHE%NUMBER_OF_COMPONENTS,"*",ERR,ERROR))// &
+            & " components"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="Variable number "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE_NUMBER,"*",ERR,ERROR))// &
+          & " is invalid for field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
+          & TRIM(NUMBER_TO_VSTRING(FIELD%NUMBER_OF_VARIABLES,"*",ERR,ERROR))//" variables"
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("FIELD_COMPONENT_MESH_COMPONENT_GET")
+    RETURN
+999 CALL ERRORS("FIELD_COMPONENT_MESH_COMPONENT_GET",ERR,ERROR)
+    CALL EXITS("FIELD_COMPONENT_MESH_COMPONENT_GET")
+    RETURN
+  END FUNCTION FIELD_COMPONENT_MESH_COMPONENT_GET
   
   !
   !================================================================================================================================
@@ -1009,6 +1111,36 @@ CONTAINS
     CALL EXITS("FIELD_CREATE_VALUES_CACHE_INITIALISE")
     RETURN 1
   END SUBROUTINE FIELD_CREATE_VALUES_CACHE_INITIALISE
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the dependent type for a field indentified by a pointer.
+  FUNCTION FIELD_DEPENDENT_TYPE_GET(FIELD,ERR,ERROR)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to set/change the dependent type for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    INTEGER(INTG) :: FIELD_DEPENDENT_TYPE_GET !<The dependent type to get/change \see FIELD_ROUTINES_DependentTypes,FIELD_ROUTINES
+    !Local Variables
+
+    CALL ENTERS("FIELD_DEPENDENT_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+      FIELD_DEPENDENT_TYPE_GET=FIELD%DEPENDENT_TYPE
+    ELSE
+      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("FIELD_DEPENDENT_TYPE_GET")
+    RETURN
+999 CALL ERRORS("FIELD_DEPENDENT_TYPE_GET",ERR,ERROR)
+    CALL EXITS("FIELD_DEPENDENT_TYPE_GET")
+    RETURN 
+  END FUNCTION FIELD_DEPENDENT_TYPE_GET
 
   !
   !================================================================================================================================
@@ -1213,6 +1345,36 @@ CONTAINS
     CALL EXITS("FIELD_DESTROY")
     RETURN 1
   END SUBROUTINE FIELD_DESTROY
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the field dimension for a field identified by a pointer.
+  FUNCTION FIELD_DIMENSION_GET(FIELD,ERR,ERROR)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to set/change the dimension for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    INTEGER(INTG) :: FIELD_DIMENSION_GET !<The field dimension to get \see FIELD_ROUTINES_DimensionTypes,FIELD_ROUTINES
+    !Local Variables
+
+    CALL ENTERS("FIELD_DIMENSION_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+      FIELD_DIMENSION_GET=FIELD%DIMENSION
+    ELSE
+      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("FIELD_DIMENSION_GET")
+    RETURN
+999 CALL ERRORS("FIELD_DIMENSION_GET",ERR,ERROR)
+    CALL EXITS("FIELD_DIMENSION_GET")
+    RETURN 
+  END FUNCTION FIELD_DIMENSION_GET
   
   !
   !================================================================================================================================
@@ -2676,6 +2838,37 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Gets the geometric field for a field identified by a pointer.
+  FUNCTION FIELD_GEOMETRIC_FIELD_GET(FIELD,ERR,ERROR)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to set the geometric field for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    TYPE(FIELD_TYPE) :: FIELD_GEOMETRIC_FIELD_GET !<A pointer to the geometric field
+    !Local Variables
+
+   
+    CALL ENTERS("FIELD_GEOMETRIC_FIELD_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+      FIELD_GEOMETRIC_FIELD_GET=FIELD%GEOMETRIC_FIELD
+    ELSE
+      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("FIELD_GEOMETRIC_FIELD_GET")
+    RETURN
+999 CALL ERRORS("FIELD_GEOMETRIC_FIELD_GET",ERR,ERROR)
+    CALL EXITS("FIELD_GEOMETRIC_FIELD_GET")
+    RETURN 
+  END FUNCTION FIELD_GEOMETRIC_FIELD_GET
+
+  !
+  !================================================================================================================================
+  !
+
   !>Sets/changes the geometric field for a field identified by a user number.
   SUBROUTINE FIELD_GEOMETRIC_FIELD_SET_NUMBER(USER_NUMBER,REGION,GEOMETRIC_FIELD,ERR,ERROR,*)
 
@@ -3336,6 +3529,37 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Gets the mesh decomposition for a field indentified by a pointer.
+  FUNCTION FIELD_MESH_DECOMPOSITION_GET(FIELD,ERR,ERROR)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to set the decomposition for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    TYPE(DECOMPOSITION_TYPE) :: FIELD_MESH_DECOMPOSITION_GET !<A pointer to the mesh decomposition to get
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("FIELD_MESH_DECOMPOSITION_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+      FIELD_MESH_DECOMPOSITION_GET=FIELD%DECOMPOSITION
+    ELSE
+      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("FIELD_MESH_DECOMPOSITION_GET")
+    RETURN
+999 CALL ERRORS("FIELD_MESH_DECOMPOSITION_GET",ERR,ERROR)
+    CALL EXITS("FIELD_MESH_DECOMPOSITION_GET")
+    RETURN
+  END FUNCTION FIELD_MESH_DECOMPOSITION_GET
+  
+  !
+  !================================================================================================================================
+  !
+
   !>Sets/changes the mesh decomposition for a field identified by a user number.
   SUBROUTINE FIELD_MESH_DECOMPOSITION_SET_NUMBER(USER_NUMBER,REGION,MESH_DECOMPOSITION,ERR,ERROR,*)
 
@@ -3476,6 +3700,36 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Gets the number of field components for a field identified by a pointer.
+  FUNCTION FIELD_NUMBER_OF_COMPONENTS_GET(FIELD,ERR,ERROR)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to sget the number of components
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    INTEGER(INTG) :: FIELD_NUMBER_OF_COMPONENTS_GET !<The number of components to be get.
+    !Local Variables
+
+    CALL ENTERS("FIELD_NUMBER_OF_COMPONENTS_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+        FIELD_NUMBER_OF_COMPONENTS_GET=FIELD%CREATE_VALUES_CACHE%NUMBER_OF_COMPONENTS 
+    ELSE
+      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("FIELD_NUMBER_OF_COMPONENTS_GET")
+    RETURN
+999 CALL ERRORS("FIELD_NUMBER_OF_COMPONENTS_GET",ERR,ERROR)
+    CALL EXITS("FIELD_NUMBER_OF_COMPONENTS_GET")
+    RETURN
+  END FUNCTION FIELD_NUMBER_OF_COMPONENTS_GET
+  
+  !
+  !================================================================================================================================
+  !
+
   !>Sets/changes the number of field components for a field variable identified by a user and variable number.
   SUBROUTINE FIELD_NUMBER_OF_COMPONENTS_SET_NUMBER(USER_NUMBER,REGION,NUMBER_OF_COMPONENTS,ERR,ERROR,*)
 
@@ -3593,6 +3847,36 @@ CONTAINS
     CALL EXITS("FIELD_NUMBER_OF_COMPONENTS_SET_PTR")
     RETURN 1
   END SUBROUTINE FIELD_NUMBER_OF_COMPONENTS_SET_PTR
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the number of variables for a field identified by a pointer.
+  FUNCTION FIELD_NUMBER_OF_VARIABLES_GET(FIELD,ERR,ERROR)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to get the number of variables for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    INTEGER(INTG) :: FIELD_NUMBER_OF_VARIABLES_GET !<The number of variables to get for the field
+    !Local Variables
+
+    CALL ENTERS("FIELD_NUMBER_OF_VARIABLES_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+      FIELD_NUMBER_OF_VARIABLES_GET=FIELD%NUMBER_OF_VARIABLES
+    ELSE
+      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("FIELD_NUMBER_OF_VARIABLES_GET")
+    RETURN
+999 CALL ERRORS("FIELD_NUMBER_OF_VARIABLES_GET",ERR,ERROR)
+    CALL EXITS("FIELD_NUMBER_OF_VARIABLES_GET")
+    RETURN
+  END FUNCTION FIELD_NUMBER_OF_VARIABLES_GET
   
   !
   !================================================================================================================================
@@ -5180,6 +5464,37 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Gets the scaling type for a field identified by a pointer.
+  FUNCTION FIELD_SCALING_TYPE_GET(FIELD,ERR,ERROR)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to set the scaling type for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    INTEGER(INTG) :: FIELD_SCALING_TYPE_GET !<The scaling type to get \see FIELD_ROUTINES_ScalingTypes,FIELD_ROUTINES
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("FIELD_SCALING_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+      FIELD_SCALING_TYPE_GET=FIELD%SCALINGS%SCALING_TYPE
+    ELSE
+      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("FIELD_SCALING_TYPE_GET")
+    RETURN
+999 CALL ERRORS("FIELD_SCALING_TYPE_GET",ERR,ERROR)
+    CALL EXITS("FIELD_SCALING_TYPE_GET")
+    RETURN
+  END FUNCTION FIELD_SCALING_TYPE_GET
+  
+  !
+  !================================================================================================================================
+  !
+
   !>Sets/changes the scaling type for a field identified by a user number on a region.
   SUBROUTINE FIELD_SCALING_TYPE_SET_NUMBER(USER_NUMBER,REGION,SCALING_TYPE,ERR,ERROR,*)
 
@@ -5248,6 +5563,37 @@ CONTAINS
     CALL EXITS("FIELD_SCALING_TYPE_SET_PTR")
     RETURN 1
   END SUBROUTINE FIELD_SCALING_TYPE_SET_PTR
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the field type for a field identified by a pointer.
+  FUNCTION FIELD_TYPE_GET(FIELD,ERR,ERROR)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to set the type for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    INTEGER(INTG) :: FIELD_TYPE_GET !<The field type to get \see FIELD_ROUTINES_FieldTypes,FIELD_ROUTINES
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("FIELD_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+      FIELD_TYPE_GET=FIELD%TYPE
+    ELSE
+      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("FIELD_TYPE_GET")
+    RETURN
+999 CALL ERRORS("FIELD_TYPE_GET",ERR,ERROR)
+    CALL EXITS("FIELD_TYPE_GET")
+    RETURN
+  END FUNCTION FIELD_TYPE_GET
   
   !
   !================================================================================================================================

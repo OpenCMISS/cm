@@ -244,6 +244,9 @@ MODULE BASIS_ROUTINES
     & BASIS_INTERPOLATION_XI_SET,BASIS_NUMBER_OF_XI_SET,BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_SET,BASIS_QUADRATURE_ORDER_SET,&
     & BASIS_QUADRATURE_TYPE_SET,BASIS_TYPE_SET,BASIS_CREATE_START,BASIS_CREATE_FINISH,BASIS_DESTROY, &
     & BASES_FINALISE,BASIS_USER_NUMBER_FIND,BASES_INITIALISE
+    
+  PUBLIC BASIS_COLLAPSED_XI_GET,BASIS_INTERPOLATION_XI_GET,BASIS_NUMBER_OF_XI_GET,BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_GET, &
+    & BASIS_QUADRATURE_ORDER_GET,BASIS_QUADRATURE_TYPE_GET,BASIS_TYPE_GET
       
 CONTAINS
 
@@ -856,6 +859,38 @@ CONTAINS
 999 CALL ERRORS("BASIS_INTERPOLATE_XI_DP",ERR,ERROR)
     CALL EXITS("BASIS_INTERPOLATE_XI_DP")
   END FUNCTION BASIS_INTERPOLATE_XI_DP
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets/changes the interpolation type in each xi directions for a basis identified by a pointer.
+  FUNCTION BASIS_INTERPOLATION_XI_GET(BASIS,ERR,ERROR)
+
+    !Argument variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis to get the interpolation xi
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    INTEGER(INTG), POINTER :: BASIS_INTERPOLATION_XI_GET(:) !<The interpolation xi parameters for each Xi direction \see BASIS_ROUTINES_InterpolationSpecifications
+    !Local Variables
+    
+    CALL ENTERS("BASIS_INTERPOLATION_XI_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(BASIS)) THEN
+      !Get the interpolation xi
+      BASIS_INTERPOLATION_XI_GET=BASIS%INTERPOLATION_XI  
+    ELSE
+      CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("BASIS_INTERPOLATION_XI_GET")
+    RETURN
+999 CALL ERRORS("BASIS_INTERPOLATION_XI_GET",ERR,ERROR)
+    CALL EXITS("BASIS_INTERPOLATION_XI_GET")
+    RETURN
+  END FUNCTION BASIS_INTERPOLATION_XI_GET
+  
 
   !
   !================================================================================================================================
@@ -1861,6 +1896,36 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Gets the number of xi directions for a basis identified by a pointer.
+  FUNCTION BASIS_NUMBER_OF_XI_GET(BASIS,ERR,ERROR)
+
+    !Argument variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function to change
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    INTEGER(INTG) :: BASIS_NUMBER_OF_XI_GET !<The number of Xi directions to set.
+    !Local Variables
+    
+    CALL ENTERS("BASIS_NUMBER_OF_XI_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(BASIS)) THEN
+      BASIS_NUMBER_OF_XI_GET=BASIS%NUMBER_OF_XI
+    ELSE
+      CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("BASIS_NUMBER_OF_XI_GET")
+    RETURN
+999 CALL ERRORS("BASIS_NUMBER_OF_XI_GET",ERR,ERROR)
+    CALL EXITS("BASIS_NUMBER_OF_XI_GET")
+    RETURN
+  END FUNCTION BASIS_NUMBER_OF_XI_GET 
+
+  !
+  !================================================================================================================================
+  !
+
   !>Sets/changes the number of xi directions where the basis is identified by user number.
   SUBROUTINE BASIS_NUMBER_OF_XI_SET_NUMBER(USER_NUMBER,NUMBER_OF_XI,ERR,ERROR,*)
 
@@ -2408,6 +2473,40 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE BASIS_QUADRATURE_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the number of Gauss points in each xi direction on a basis quadrature identified by a pointer.
+  FUNCTION BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_GET(BASIS,ERR,ERROR)
+
+    !Argument variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    INTEGER(INTG), POINTER :: BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_GET(:) !<The number of Gauss in each Xi direction
+    !Local Variables
+   
+    CALL ENTERS("BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(BASIS)) THEN
+      IF(ASSOCIATED(BASIS%QUADRATURE%BASIS)) THEN          
+        BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_GET=BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI
+      ELSE
+        CALL FLAG_ERROR("Quadrature basis is not associated",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+    ENDIF
+      
+    CALL EXITS("BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_GET")
+    RETURN
+999 CALL ERRORS("BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_GET",ERR,ERROR)
+    CALL EXITS("BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_GET")
+    RETURN
+  END FUNCTION BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_GET
     
   !
   !================================================================================================================================
@@ -2527,6 +2626,40 @@ CONTAINS
   !
   !================================================================================================================================
   !
+
+  !>Get the order of a quadrature for a basis quadrature identified by a pointer.
+  FUNCTION BASIS_QUADRATURE_ORDER_GET(BASIS,ERR,ERROR)
+
+    !Argument variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    INTEGER(INTG) :: BASIS_QUADRATURE_ORDER_GET
+    !Local Variables
+    
+    CALL ENTERS("BASIS_QUADRATURE_ORDER_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(BASIS)) THEN
+      IF(ASSOCIATED(BASIS%QUADRATURE%BASIS)) THEN
+        BASIS_QUADRATURE_ORDER_GET=BASIS%QUADRATURE%GAUSS_ORDER
+      ELSE
+        CALL FLAG_ERROR("Quadrature basis is not associated",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+    ENDIF
+      
+    CALL EXITS("BASIS_QUADRATURE_ORDER_GET")
+    RETURN
+999 CALL ERRORS("BASIS_QUADRATURE_ORDER_GET",ERR,ERROR)
+    CALL EXITS("BASIS_QUADRATURE_ORDER_GET")
+    RETURN
+  END FUNCTION BASIS_QUADRATURE_ORDER_GET
+
+  !
+  !================================================================================================================================
+  !
   
   !>Sets/changes the order of a quadrature for a basis quadrature identified by a user number.
   SUBROUTINE BASIS_QUADRATURE_ORDER_SET_NUMBER(USER_NUMBER,ORDER,ERR,ERROR,*)
@@ -2598,6 +2731,40 @@ CONTAINS
     CALL EXITS("BASIS_QUADRATURE_ORDER_SET_PTR")
     RETURN 1
   END SUBROUTINE BASIS_QUADRATURE_ORDER_SET_PTR
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>get the quadrature type on a basis identified by a pointer.
+  FUNCTION BASIS_QUADRATURE_TYPE_GET(BASIS,ERR,ERROR)
+
+    !Argument variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    INTEGER(INTG) :: BASIS_QUADRATURE_TYPE_GET !<The quadrature type to be get \see BASIS_ROUTINES_QuadratureTypes
+    !Local Variables
+    
+    CALL ENTERS("BASIS_QUADRATURE_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(BASIS)) THEN
+      IF(ASSOCIATED(BASIS%QUADRATURE%BASIS)) THEN
+        BASIS_QUADRATURE_TYPE_GET=BASIS%QUADRATURE%TYPE
+      ELSE
+        CALL FLAG_ERROR("Basis quadrature basis is not associated",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("BASIS_QUADRATURE_TYPE_GET")
+    RETURN
+999 CALL ERRORS("BASIS_QUADRATURE_TYPE_GET",ERR,ERROR)
+    CALL EXITS("BASIS_QUADRATURE_TYPE_GET")
+    RETURN
+  END FUNCTION BASIS_QUADRATURE_TYPE_GET
 
   !
   !================================================================================================================================
@@ -3777,6 +3944,36 @@ CONTAINS
     CALL EXITS("BASIS_SUB_BASIS_CREATE")
     RETURN 1
   END SUBROUTINE BASIS_SUB_BASIS_CREATE
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>get the type for a basis is identified by a a pointer.
+  FUNCTION BASIS_TYPE_GET(BASIS,ERR,ERROR)
+
+    !Argument variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis to get
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    INTEGER(INTG) :: BASIS_TYPE_GET !<The type of the basis to be get. \see BASIS_ROUTINES_BasisTypes
+    !Local Variables
+    
+    CALL ENTERS("BASIS_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(BASIS)) THEN
+      BASIS_TYPE_GET=BASIS%TYPE
+    ELSE
+      CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("BASIS_TYPE_GET")
+    RETURN
+999 CALL ERRORS("BASIS_TYPE_GET",ERR,ERROR)
+    CALL EXITS("BASIS_TYPE_GET")
+    RETURN
+  END FUNCTION BASIS_TYPE_GET
 
   !
   !================================================================================================================================
@@ -3852,6 +4049,36 @@ CONTAINS
     CALL EXITS("BASIS_TYPE_SET_PTR")
     RETURN 1
   END SUBROUTINE BASIS_TYPE_SET_PTR
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the collapsed xi flags for a basis is identified by a a pointer.
+  FUNCTION BASIS_COLLAPSED_XI_GET(BASIS,ERR,ERROR)
+
+    !Argument variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    INTEGER(INTG), POINTER :: BASIS_COLLAPSED_XI_GET(:) !<BASIS_COLLAPSED_XI_GET(ni). The collapse parameter for each Xi direction. \see BASIS_ROUTINES_XiCollapse
+    !Local Variables
+    
+    CALL ENTERS("BASIS_COLLAPSED_XI_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(BASIS)) THEN
+      BASIS_COLLAPSED_XI_GET=BASIS%COLLAPSED_XI
+    ELSE
+      CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("BASIS_COLLAPSED_XI_GET")
+    RETURN
+999 CALL ERRORS("BASIS_COLLAPSED_XI_GET",ERR,ERROR)
+    CALL EXITS("BASIS_COLLAPSED_XI_GET")
+    RETURN
+  END FUNCTION BASIS_COLLAPSED_XI_GET
 
   !
   !================================================================================================================================

@@ -98,6 +98,11 @@ MODULE PROBLEM_ROUTINES
     MODULE PROCEDURE PROBLEM_DESTROY_NUMBER
     MODULE PROCEDURE PROBLEM_DESTROY_PTR
   END INTERFACE !PROBLEM_DESTROY
+  
+  INTERFACE PROBLEM_SPECIFICATION_GET
+    MODULE PROCEDURE PROBLEM_SPECIFICATION_GET_NUMBER
+    MODULE PROCEDURE PROBLEM_SPECIFICATION_GET_PTR
+  END INTERFACE !PROBLEM_SPECIFICATION_GET
 
   INTERFACE PROBLEM_SPECIFICATION_SET
     MODULE PROCEDURE PROBLEM_SPECIFICATION_SET_NUMBER
@@ -1199,6 +1204,90 @@ CONTAINS
     CALL EXITS("PROBLEM_SOLVER_GET")
     RETURN 1
   END SUBROUTINE PROBLEM_SOLVER_GET
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the problem specification i.e., problem class, type  and subtype for a problem identified by a user number.
+  SUBROUTINE PROBLEM_SPECIFICATION_GET_NUMBER(USER_NUMBER,PROBLEM_CLASS,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the problem to set the specification for.
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_CLASS !<The problem class to get.
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_EQUATION_TYPE !<The problem equation to get.
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_SUBTYPE !<The problem subtype.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+
+    CALL ENTERS("PROBLEM_SPECIFICATION_GET_NUMBER",ERR,ERROR,*999)
+
+    CALL PROBLEM_USER_NUMBER_FIND(USER_NUMBER,PROBLEM,ERR,ERROR,*999)
+    CALL PROBLEM_SPECIFICATION_GET(PROBLEM,PROBLEM_CLASS,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*999)
+           
+    CALL EXITS("PROBLEM_SPECIFICATION_GET_NUMBER")
+    RETURN
+999 CALL ERRORS("PROBLEM_SPECIFICATION_GET_NUMBER",ERR,ERROR)
+    CALL EXITS("PROBLEM_SPECIFICATION_GET_NUMBER")
+    RETURN 1
+  END SUBROUTINE PROBLEM_SPECIFICATION_GET_NUMBER
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the problem specification i.e., problem class, type and subtype for a problem identified by a pointer.
+  SUBROUTINE PROBLEM_SPECIFICATION_GET_PTR(PROBLEM,PROBLEM_CLASS,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the specification for.
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_CLASS !<The problem class to set.
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_EQUATION_TYPE !<The problem equation type to set.
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_SUBTYPE !<The problem subtype to set.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("PROBLEM_SPECIFICATION_GET_PTR",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(PROBLEM)) THEN
+      IF(PROBLEM%PROBLEM_FINISHED) THEN
+        PROBLEM_CLASS=PROBLEM%CLASS
+        SELECT CASE(PROBLEM_CLASS)
+        CASE(PROBLEM_ELASTICITY_CLASS)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(PROBLEM_FLUID_MECHANICS_CLASS)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(PROBLEM_ELECTROMAGNETICS_CLASS)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(PROBLEM_CLASSICAL_FIELD_CLASS)
+          CALL CLASSICAL_FIELD_PROBLEM_CLASS_TYPE_GET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*999)
+        CASE(PROBLEM_MODAL_CLASS)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(PROBLEM_FITTING_CLASS)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(PROBLEM_OPTIMISATION_CLASS)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE DEFAULT
+          LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(PROBLEM_CLASS,"*",ERR,ERROR))//" is not valid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("Problem has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PROBLEM_SPECIFICATION_GET_PTR")
+    RETURN
+999 CALL ERRORS("PROBLEM_SPECIFICATION_GET_PTR",ERR,ERROR)
+    CALL EXITS("PROBLEM_SPECIFICATION_GET_PTR")
+    RETURN 1
+  END SUBROUTINE PROBLEM_SPECIFICATION_GET_PTR
 
   !
   !================================================================================================================================
