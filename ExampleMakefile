@@ -533,7 +533,6 @@ OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/equations_set_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/field_IO_routines.o\
-	$(OBJECT_DIR)/finite_elasticity_routines.o \
 	$(OBJECT_DIR)/fluid_mechanics_routines.o \
 	$(OBJECT_DIR)/f90c_f.o \
 	$(OBJECT_DIR)/f90c_c.o \
@@ -541,7 +540,6 @@ OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/Laplace_equations_routines.o \
-	$(OBJECT_DIR)/linear_elasticity_routines.o \
 	$(OBJECT_DIR)/lists.o \
 	$(OBJECT_DIR)/maths.o \
 	$(OBJECT_DIR)/matrix_vector.o \
@@ -713,10 +711,8 @@ $(OBJECT_DIR)/domain_mappings.o		:	$(MAIN_SOURCE_DIR)/domain_mappings.f90 \
 $(OBJECT_DIR)/elasticity_routines.o	:	$(MAIN_SOURCE_DIR)/elasticity_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/finite_elasticity_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/linear_elasticity_routines.o \
 	$(OBJECT_DIR)/problem_constants.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
@@ -806,27 +802,6 @@ $(OBJECT_DIR)/field_IO_routines.o	:	$(MAIN_SOURCE_DIR)/field_IO_routines.f90 \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 
-$(OBJECT_DIR)/finite_elasticity_routines.o		:	$(MAIN_SOURCE_DIR)/finite_elasticity_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_mapping_routines.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/solution_mapping_routines.o \
-	$(OBJECT_DIR)/solver_routines.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
-
 $(OBJECT_DIR)/fluid_mechanics_routines.o	:	$(MAIN_SOURCE_DIR)/fluid_mechanics_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -865,27 +840,6 @@ $(OBJECT_DIR)/Laplace_equations_routines.o	:	$(MAIN_SOURCE_DIR)/Laplace_equation
 	$(OBJECT_DIR)/solution_mapping_routines.o	\
 	$(OBJECT_DIR)/solver_routines.o	\
 	$(OBJECT_DIR)/timer_f.o	\
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/linear_elasticity_routines.o		:	$(MAIN_SOURCE_DIR)/linear_elasticity_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_mapping_routines.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/solution_mapping_routines.o \
-	$(OBJECT_DIR)/solver_routines.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/timer_f.o \
 	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/lists.o	:	$(MAIN_SOURCE_DIR)/lists.f90 \
