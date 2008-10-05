@@ -6,7 +6,7 @@
       To obtain the openCMISS source you need to check it out from the subversion repository. 
       There are two parts to openCMISS to obtain - openCMISS itself and the various libraries it needs.
     </para>
-    <para>In your root openCMISS directory, make the <filename>opencmiss</filename> and <filename>opemcmissextra</filename> directories.</para>
+    <para>In your root openCMISS directory, make the <filename>opencmiss</filename> and <filename>opemcmissextras</filename> directories.</para>
     <section>
       <title>Obtain the Code</title>
       <para>The openCMISS repository is at https://opencmiss.svn.sourceforge.net/svnroot/opencmiss/cm</para>
@@ -17,7 +17,7 @@
     <section>
       <title>Obtain the Libraries</title>
       <para>The openCMISS libraries repository is at http://www.physiome.ox.ac.uk/svn/opencmissextras/cm</para>
-      <para>To check out the main trunk of the various libraries required with openCMISS issue the following command in the <filename>opencmissextra</filename> directory:</para>
+      <para>To check out the main trunk of the various libraries required with openCMISS issue the following command in the <filename>opencmissextras</filename> directory:</para>
       <code>svn co http://www.physiome.ox.ac.uk/svn/opencmissextras/cm/trunk/external/architecture cm/external/architecture</code>
     </section>
     <para>
@@ -34,10 +34,17 @@
       <listitem>rs6000-32-aix-debug</listitem>
     </itemizedlist>
     <para>
-      Currently, the svn repository for openCMISS libraries is down. An alternative location for the libraries is at hpc. 
-      Go to <filename>\\bioengsmb\cmiss\opencmissextras\cm</filename> and copy the necessary files. 
+      Currently, the svn repository for openCMISS libraries is down. An alternative location for the libraries within the ABI is on hpc. Go to <filename>\\bioengsmb\cmiss\opencmissextras\cm</filename> and copy the necessary files. 
       The folder structure is the same as svn repository. 
     </para>
+  </section>
+  <section>
+    <title>Programmer documentation</title>
+    <para>
+      This programmer documentation is written using <link href="http://www.docbook.org/">DocBook</link> with the source located in the <filename>opencmiss/cm/doc/programmer_documentation/</filename> folder. The source XML code can be transformed into either chunked or combined documents in PDF or HTML format. The <filename>Makefile</filename> can be used to perform the transformation using <code>make single</code> or <code>make chunk</code> in the above folder.
+    </para>
+    <note title="TODO"><para>PDFs can be generated ...</para></note>
+    <note title="TODO"><para>Doxygen can be included ...</para></note>
   </section>
   <section>
     <title>Project Set up</title>
@@ -46,9 +53,9 @@
       <section>
         <title>Set environment</title>
         <para>Set environment variable to point to openCMISS</para>
-        <code>setenv OPENCMISS_ROOT=&lt;path to your opencmiss folder&gt;</code>
+        <code>setenv OPENCMISS_ROOT &lt;path to your opencmiss folder&gt;</code> or <code>export OPENCMISS_ROOT=&lt;path to your opencmiss folder&gt;</code>.
         <para>Set environment variable to point to openCMISS-extras</para>
-        <code>setenv OPENCMISSEXTRAS_ROOT=&lt;path to your opencmissextras folder&gt;</code>
+        <code>setenv OPENCMISSEXTRAS_ROOT &lt;path to your opencmissextras folder&gt;</code> or <code>export OPENCMISSEXTRAS_ROOT=&lt;path to your opencmissextras folder&gt;</code>
       </section>
       <section>
         <title>Set MPI</title>
@@ -69,9 +76,9 @@
       <section>
         <title>Set environment</title>
         <para>Set environment variable to point to opencmiss</para>
-        <code>setenv OPENCMISS_ROOT=&lt;path to your opencmiss folder&gt;</code>
-        <para>Set environment variable to point to opencmiss-extras</para>
-        <code>setenv OPENCMISSEXTRAS_ROOT=&lt;path to your opencmissextras folder&gt;</code>
+        <code>setenv OPENCMISS_ROOT &lt;path to your opencmiss folder&gt;</code> or <code>export OPENCMISS_ROOT=&lt;path to your opencmiss folder&gt;</code>.
+        <para>Set environment variable to point to openCMISS-extras</para>
+        <code>setenv OPENCMISSEXTRAS_ROOT &lt;path to your opencmissextras folder&gt;</code> or <code>export OPENCMISSEXTRAS_ROOT=&lt;path to your opencmissextras folder&gt;</code>
         <para>It is also helpful to add the following</para>
         <code>
           <para>setenv PATH ${OPENCMISSEXTRAS_ROOT}/cm/external/${archname}/bin:${PATH}</para>
