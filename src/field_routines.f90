@@ -3372,7 +3372,7 @@ CONTAINS
 		            MY_EXTENT=0.0_DP
 		            MY_ORIGIN(1:REGULAR_MESH%MESH_DIMENSION)=REGULAR_MESH%ORIGIN
 		            MY_EXTENT(1:REGULAR_MESH%MESH_DIMENSION)=REGULAR_MESH%MAXIMUM_EXTENT
-		            MESH_SIZE=MY_EXTENT-MY_ORIGIN
+		            MESH_SIZE=MY_EXTENT
 		            DO ni=1,REGULAR_MESH%BASIS%NUMBER_OF_XI
 		              !This assumes that the xi directions are aligned with the coordinate directions
 		              DELTA_COORD(ni)=MESH_SIZE(ni)/REAL(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni),DP)
