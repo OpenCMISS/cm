@@ -19,29 +19,37 @@
       <para>The openCMISS libraries repository is at http://www.physiome.ox.ac.uk/svn/opencmissextras/cm</para>
       <para>To check out the main trunk of the various libraries required with openCMISS issue the following command in the <filename>opencmissextras</filename> directory:</para>
       <code>svn co http://www.physiome.ox.ac.uk/svn/opencmissextras/cm/trunk/external/architecture cm/external/architecture</code>
-    </section>
-    <para>
+      <para>
       where architecture is the appropriate architecture for the machine. Possible architectures are:
-    </para>
-    <itemizedlist>
-      <listitem>i386-win32</listitem>
-      <listitem>i386-win32-debug</listitem>
-      <listitem>i686-linux</listitem>
-      <listitem>i686-linux-debug</listitem>
-      <listitem>x86_64-linux</listitem>
-      <listitem>x86_64-linux-debug</listitem>
-      <listitem>rs6000-32-aix</listitem>
-      <listitem>rs6000-32-aix-debug</listitem>
-    </itemizedlist>
-    <para>
-      Currently, the svn repository for openCMISS libraries is down. An alternative location for the libraries within the ABI is on hpc. Go to <filename>\\bioengsmb\cmiss\opencmissextras\cm</filename> and copy the necessary files. 
-      The folder structure is the same as svn repository. 
-    </para>
+      </para>
+      <itemizedlist>
+        <listitem>i386-win32</listitem>
+        <listitem>i386-win32-debug</listitem>
+        <listitem>i686-linux</listitem>
+        <listitem>i686-linux-debug</listitem>
+        <listitem>x86_64-linux</listitem>
+        <listitem>x86_64-linux-debug</listitem>
+        <listitem>rs6000-32-aix</listitem>
+        <listitem>rs6000-32-aix-debug</listitem>
+      </itemizedlist>
+      <para>
+        Currently, the svn repository for openCMISS libraries is down. An alternative location for the libraries within the ABI is on hpc. Go to <filename>\\bioengsmb\cmiss\opencmissextras\cm</filename> and copy the necessary files. 
+        The folder structure is the same as svn repository. 
+      </para>
+    </section>
+    <section>
+      <title>Makefile Structure</title>
+      <para>
+        The top level makefile will eventually build a library. 
+        In the examples directory there are separate compilable "applications" with individual makefiles. 
+        However, the library stuff isn't there as we need to code the bindings.  
+      </para>
+    </section>
   </section>
   <section>
     <title>Programmer documentation</title>
     <para>
-      This programmer documentation is written using <link href="http://www.docbook.org/">DocBook</link> with the source located in the <filename>opencmiss/cm/doc/programmer_documentation/</filename> folder. The source XML code can be transformed into either chunked or combined documents in PDF or HTML format. The <filename>Makefile</filename> can be used to perform the transformation using <code>make single</code> or <code>make chunk</code> in the above folder.
+      This programmer documentation is written using <ulink url="http://www.docbook.org/">DocBook</ulink> with the source located in the <filename>opencmiss/cm/doc/programmer_documentation/</filename> folder. The source XML code can be transformed into either chunked or combined documents in PDF or HTML format. The <filename>Makefile</filename> can be used to perform the transformation using <code>make single</code> or <code>make chunk</code> in the above folder.
     </para>
     <note title="TODO"><para>PDFs can be generated ...</para></note>
     <note title="TODO"><para>Doxygen can be included ...</para></note>
@@ -181,6 +189,10 @@
         </itemizedlist>
         <para>For Linux</para>
         <para>TODO</para>
+        <para>
+           N.B: PetSc uses X, so make sure in linux environment, libX11-dev package is installed.
+           Also make sure blas and lapack (-dev) packages are installed. 
+        </para>
       </section>
       <section>
         <title>Step2: Compile PETSC</title>
