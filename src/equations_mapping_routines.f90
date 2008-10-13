@@ -45,6 +45,7 @@ MODULE EQUATIONS_MAPPING_ROUTINES
 
   USE BASE_ROUTINES
   USE DOMAIN_MAPPINGS
+  USE EQUATIONS_SET_CONSTANTS
   USE FIELD_ROUTINES
   USE ISO_VARYING_STRING
   USE KINDS
@@ -113,16 +114,34 @@ CONTAINS
                   EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%VARIABLE=>DEPENDENT_FIELD% &
                     & VARIABLE_TYPE_MAP(variable_type)%PTR
                 ENDDO !variable_type
-                !Calculate the number of variable type maps and initialise
-                DO matrix_idx=1,EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES
-                  variable_type=EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(matrix_idx)
-                  EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES= &
-                    & EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES+1
-                ENDDO !matrix_idx
-                IF(EQUATIONS_MAPPING%RHS_VARIABLE_TYPE/=0) THEN
-                  EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(EQUATIONS_MAPPING%RHS_VARIABLE_TYPE)% &
-                    & NUMBER_OF_EQUATIONS_MATRICES=-1
-                  EQUATIONS_MAPPING%RHS_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(EQUATIONS_MAPPING%RHS_VARIABLE_TYPE)%PTR
+                IF(EQUATIONS_SET%LINEARITY==EQUATIONS_SET_LINEAR) THEN
+                  !Calculate the number of variable type maps and initialise
+                  DO matrix_idx=1,EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES
+                    variable_type=EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(matrix_idx)
+                    EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES= &
+                      & EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES+1
+                  ENDDO !matrix_idx
+                  IF(EQUATIONS_MAPPING%RHS_VARIABLE_TYPE/=0) THEN
+                    EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(EQUATIONS_MAPPING%RHS_VARIABLE_TYPE)% &
+                      & NUMBER_OF_EQUATIONS_MATRICES=-1
+                    EQUATIONS_MAPPING%RHS_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(EQUATIONS_MAPPING%RHS_VARIABLE_TYPE)%PTR
+                  ENDIF
+                ELSE
+                  IF(EQUATIONS_MAPPING%RESIDUAL_VARIABLE_TYPE/=0) THEN
+                    EQUATIONS_MAPPING%RESIDUAL_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(EQUATIONS_MAPPING% &
+                      & RESIDUAL_VARIABLE_TYPE)%PTR
+                    EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(EQUATIONS_MAPPING%RESIDUAL_VARIABLE_TYPE)% &
+                      & NUMBER_OF_EQUATIONS_MATRICES=0
+                    IF(EQUATIONS_MAPPING%RHS_VARIABLE_TYPE/=0) THEN                      
+                      EQUATIONS_MAPPING%RHS_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(EQUATIONS_MAPPING%RHS_VARIABLE_TYPE)%PTR
+                      EQUATIONS_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(EQUATIONS_MAPPING%RHS_VARIABLE_TYPE)% &
+                        & NUMBER_OF_EQUATIONS_MATRICES=0
+                    ELSE
+                      CALL FLAG_ERROR("Equations mapping RHS variable type is not set.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Equations mapping residual variable type is not set.",ERR,ERROR,*999)
+                  ENDIF
                 ENDIF
                 EQUATIONS_MAPPING%NUMBER_OF_MATRIX_VARIABLES=0
                 !Allocate and initialise the variable to equations matrices maps
@@ -221,30 +240,39 @@ CONTAINS
                   EQUATIONS_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(matrix_idx)%COLUMN_DOFS_MAPPING=> &
                     & DEPENDENT_VARIABLE%DOMAIN_MAPPING
                 ENDDO !matrix_idx
-                !Check that the number of rows are consistent across the matrices and RHS vector.
-                NUMBER_OF_ROWS=EQUATIONS_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(1)%VARIABLE%NUMBER_OF_DOFS
-                TOTAL_NUMBER_OF_ROWS=EQUATIONS_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(1)%VARIABLE%TOTAL_NUMBER_OF_DOFS
-                DO matrix_idx=2,EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES
-                  IF(EQUATIONS_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(matrix_idx)%VARIABLE%NUMBER_OF_DOFS/=NUMBER_OF_ROWS) THEN
-                    LOCAL_ERROR="Invalid equations set up. The number of rows in equations matrix 1 ("// &
-                      & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_ROWS,"*",ERR,ERROR))// &
-                      & ") does not match the number of rows in equations matrix "// &
-                      & TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))//" ("// &
-                      & TRIM(NUMBER_TO_VSTRING(EQUATIONS_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(matrix_idx)%VARIABLE% &
-                      & NUMBER_OF_DOFS,"*",ERR,ERROR))//")."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                IF(EQUATIONS_SET%LINEARITY==EQUATIONS_SET_LINEAR) THEN
+                  !Check that the number of rows are consistent across the matrices and RHS vector.
+                  NUMBER_OF_ROWS=EQUATIONS_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(1)%VARIABLE%NUMBER_OF_DOFS
+                  TOTAL_NUMBER_OF_ROWS=EQUATIONS_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(1)%VARIABLE%TOTAL_NUMBER_OF_DOFS
+                  DO matrix_idx=2,EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES
+                    IF(EQUATIONS_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(matrix_idx)%VARIABLE%NUMBER_OF_DOFS/=NUMBER_OF_ROWS) THEN
+                      LOCAL_ERROR="Invalid equations set up. The number of rows in equations matrix 1 ("// &
+                        & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_ROWS,"*",ERR,ERROR))// &
+                        & ") does not match the number of rows in equations matrix "// &
+                        & TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))//" ("// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(matrix_idx)%VARIABLE% &
+                        & NUMBER_OF_DOFS,"*",ERR,ERROR))//")."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                    IF(EQUATIONS_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(matrix_idx)%VARIABLE%TOTAL_NUMBER_OF_DOFS/= &
+                      & TOTAL_NUMBER_OF_ROWS) THEN
+                      LOCAL_ERROR="Invalid equations set up. The total number of rows in equations matrix 1 ("// &
+                        & TRIM(NUMBER_TO_VSTRING(TOTAL_NUMBER_OF_ROWS,"*",ERR,ERROR))// &
+                        & ") does not match the total number of rows in equations matrix "// &
+                        & TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))//" ("// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(matrix_idx)%VARIABLE% &
+                        & TOTAL_NUMBER_OF_DOFS,"*",ERR,ERROR))//")."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                  ENDDO !matrix_idx
+                ELSE
+                  IF(EQUATIONS_MAPPING%RESIDUAL_VARIABLE_TYPE/=0) THEN
+                    NUMBER_OF_ROWS=EQUATIONS_MAPPING%RESIDUAL_VARIABLE%NUMBER_OF_DOFS
+                    TOTAL_NUMBER_OF_ROWS=EQUATIONS_MAPPING%RESIDUAL_VARIABLE%TOTAL_NUMBER_OF_DOFS
+                  ELSE
+                    CALL FLAG_ERROR("Residual variable type has not been set.",ERR,ERROR,*999)
                   ENDIF
-                  IF(EQUATIONS_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(matrix_idx)%VARIABLE%TOTAL_NUMBER_OF_DOFS/= &
-                    & TOTAL_NUMBER_OF_ROWS) THEN
-                    LOCAL_ERROR="Invalid equations set up. The total number of rows in equations matrix 1 ("// &
-                      & TRIM(NUMBER_TO_VSTRING(TOTAL_NUMBER_OF_ROWS,"*",ERR,ERROR))// &
-                      & ") does not match the total number of rows in equations matrix "// &
-                      & TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))//" ("// &
-                      & TRIM(NUMBER_TO_VSTRING(EQUATIONS_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(matrix_idx)%VARIABLE% &
-                      & TOTAL_NUMBER_OF_DOFS,"*",ERR,ERROR))//")."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  ENDIF
-                ENDDO !matrix_idx
+                ENDIF
                 IF(EQUATIONS_MAPPING%RHS_VARIABLE_TYPE/=0) THEN
                   IF(EQUATIONS_MAPPING%RHS_VARIABLE%NUMBER_OF_DOFS/=NUMBER_OF_ROWS) THEN
                     LOCAL_ERROR="Invalid equations set up. The number of rows in the equations matrix 1 ("// &
@@ -286,8 +314,13 @@ CONTAINS
                     CALL FLAG_ERROR("Source field is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ENDIF
-                !For now make the rows dofs domain mapping the same as the first matrix variable domain mapping
-                EQUATIONS_MAPPING%ROW_DOFS_MAPPING=>EQUATIONS_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(1)%VARIABLE%DOMAIN_MAPPING
+                IF(EQUATIONS_SET%LINEARITY==EQUATIONS_SET_LINEAR) THEN
+                  !For now make the rows dofs domain mapping the same as the first matrix variable domain mapping
+                  EQUATIONS_MAPPING%ROW_DOFS_MAPPING=>EQUATIONS_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(1)%VARIABLE%DOMAIN_MAPPING
+                ELSE
+                  !For now make the rows dofs domain mapping the same as the residual variable domain mapping
+                  EQUATIONS_MAPPING%ROW_DOFS_MAPPING=>EQUATIONS_MAPPING%RESIDUAL_VARIABLE%DOMAIN_MAPPING
+                ENDIF
               ELSE
                 CALL FLAG_ERROR("Dependent field decomposition is not associated.",ERR,ERROR,*999)
               ENDIF
@@ -453,14 +486,31 @@ CONTAINS
             DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
             IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
               IF(DEPENDENT_FIELD%NUMBER_OF_VARIABLES==1) THEN
-                CALL FLAG_ERROR("Dependent field only has one variable which cannot be mapped to both a global matrix "// &
-                  & "and rhs vector",ERR,ERROR,*999)
+                IF(EQUATIONS_SET%LINEARITY==EQUATIONS_SET_LINEAR) THEN
+                  CALL FLAG_ERROR("Dependent field only has one variable which cannot be mapped to both a global matrix "// &
+                    & "and rhs vector",ERR,ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("Dependent field only has one variable which cannot be ampped to both the residual "// &
+                    & "and rhs vector",ERR,ERROR,*999)
+                ENDIF           
               ELSE IF(DEPENDENT_FIELD%NUMBER_OF_VARIABLES==2) THEN
-                EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES=1
-                EQUATIONS_MAPPING%RHS_VARIABLE_TYPE=DEPENDENT_FIELD%VARIABLE_TYPE_MAP(2)%PTR%VARIABLE_TYPE
+                IF(EQUATIONS_SET%LINEARITY==EQUATIONS_SET_LINEAR) THEN
+                  EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES=1
+                  EQUATIONS_MAPPING%RHS_VARIABLE_TYPE=DEPENDENT_FIELD%VARIABLE_TYPE_MAP(2)%PTR%VARIABLE_TYPE
+                ELSE
+                  EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES=0
+                  EQUATIONS_MAPPING%RESIDUAL_VARIABLE_TYPE=DEPENDENT_FIELD%VARIABLE_TYPE_MAP(1)%PTR%VARIABLE_TYPE
+                  EQUATIONS_MAPPING%RHS_VARIABLE_TYPE=DEPENDENT_FIELD%VARIABLE_TYPE_MAP(2)%PTR%VARIABLE_TYPE
+                ENDIF
               ELSE
-                EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES=DEPENDENT_FIELD%NUMBER_OF_VARIABLES-1
-                EQUATIONS_MAPPING%RHS_VARIABLE_TYPE=DEPENDENT_FIELD%VARIABLE_TYPE_MAP(2)%PTR%VARIABLE_TYPE
+                IF(EQUATIONS_SET%LINEARITY==EQUATIONS_SET_LINEAR) THEN
+                  EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES=DEPENDENT_FIELD%NUMBER_OF_VARIABLES-1
+                  EQUATIONS_MAPPING%RHS_VARIABLE_TYPE=DEPENDENT_FIELD%VARIABLE_TYPE_MAP(2)%PTR%VARIABLE_TYPE
+                ELSE
+                  EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES=DEPENDENT_FIELD%NUMBER_OF_VARIABLES-2
+                  EQUATIONS_MAPPING%RESIDUAL_VARIABLE_TYPE=DEPENDENT_FIELD%VARIABLE_TYPE_MAP(1)%PTR%VARIABLE_TYPE
+                  EQUATIONS_MAPPING%RHS_VARIABLE_TYPE=DEPENDENT_FIELD%VARIABLE_TYPE_MAP(2)%PTR%VARIABLE_TYPE
+                ENDIF
               ENDIF
               ALLOCATE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE,STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations mapping create values cache",ERR,ERROR,*999)
@@ -473,13 +523,21 @@ CONTAINS
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations mapping create values cache matrix coefficients", &
                 & ERR,ERROR,*999)
               EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES=0
-              EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(1)=DEPENDENT_FIELD%VARIABLE_TYPE_MAP(1)%PTR% &
-                & VARIABLE_TYPE
-              DO matrix_idx=2,EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES
-                EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(matrix_idx)= &
-                  & DEPENDENT_FIELD%VARIABLE_TYPE_MAP(matrix_idx+1)%PTR%VARIABLE_TYPE
-              ENDDO !matrix_idx
-              EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS=1.0_DP !Equations matrices are added by default
+              IF(EQUATIONS_SET%LINEARITY==EQUATIONS_SET_LINEAR) THEN
+                EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(1)=DEPENDENT_FIELD%VARIABLE_TYPE_MAP(1)%PTR% &
+                  & VARIABLE_TYPE
+                DO matrix_idx=2,EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES
+                  EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(matrix_idx)= &
+                    & DEPENDENT_FIELD%VARIABLE_TYPE_MAP(matrix_idx+1)%PTR%VARIABLE_TYPE
+                ENDDO !matrix_idx
+                EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS=1.0_DP !Equations matrices are added by default
+              ELSE
+                DO matrix_idx=1,EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES
+                  EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(matrix_idx)= &
+                    & DEPENDENT_FIELD%VARIABLE_TYPE_MAP(matrix_idx+2)%PTR%VARIABLE_TYPE
+                ENDDO !matrix_idx
+                EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS=1.0_DP !Equations matrices are added by default
+              ENDIF
             ELSE
               CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
             ENDIF
@@ -628,6 +686,8 @@ CONTAINS
     !Local Variables
     INTEGER(INTG), ALLOCATABLE :: OLD_MATRIX_VARIABLE_TYPES(:)
     REAL(DP), ALLOCATABLE :: OLD_MATRIX_COEFFICIENTS(:)
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("EQUATIONS_MAPPING_MATRICES_NUMBER_SET",ERR,ERROR,*999)
@@ -637,56 +697,76 @@ CONTAINS
         CALL FLAG_ERROR("Equations mapping has been finished",ERR,ERROR,*999)
       ELSE
         IF(ASSOCIATED(EQUATIONS_MAPPING%CREATE_VALUES_CACHE)) THEN
-          !Check number of matrices to create is valid
-          IF(EQUATIONS_MAPPING%RHS_VARIABLE_TYPE==0) THEN
-            IF(NUMBER_OF_EQUATIONS_MATRICES<1.OR.NUMBER_OF_EQUATIONS_MATRICES>FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
-              LOCAL_ERROR="The requested number of matrices ("// &
-                & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_EQUATIONS_MATRICES,"*",ERR,ERROR))// &
-                & ") is invalid. For problems without a equations set RHS the number must be between >= 1 and <= "// &
-                & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            ENDIF
-          ELSE            
-            IF(NUMBER_OF_EQUATIONS_MATRICES<1.OR.NUMBER_OF_EQUATIONS_MATRICES>=FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
-              LOCAL_ERROR="The requested number of matrices ("// &
-                & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_EQUATIONS_MATRICES,"*",ERR,ERROR))// &
-                & ") is invalid. For problems with a equations set RHS the number must be between >= 1 and < "// &
-                & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            ENDIF
-          ENDIF
-          !If we need to reallocate and reset all the create_values cache arrays and change the number of matrices
-          IF(NUMBER_OF_EQUATIONS_MATRICES/=EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES) THEN
-            ALLOCATE(OLD_MATRIX_VARIABLE_TYPES(EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old matrix variable types",ERR,ERROR,*999)
-            ALLOCATE(OLD_MATRIX_COEFFICIENTS(EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old matrix coefficients",ERR,ERROR,*999)
-            OLD_MATRIX_VARIABLE_TYPES=EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES
-            OLD_MATRIX_COEFFICIENTS=EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS
-            DEALLOCATE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES)
-            DEALLOCATE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS)
-            ALLOCATE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(NUMBER_OF_EQUATIONS_MATRICES),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix variable types",ERR,ERROR,*999)
-            ALLOCATE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(NUMBER_OF_EQUATIONS_MATRICES),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix coefficients",ERR,ERROR,*999)
-            IF(NUMBER_OF_EQUATIONS_MATRICES>EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES) THEN
-              EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(1:EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES)= &
-                & OLD_MATRIX_VARIABLE_TYPES
-              EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES+1: &
-                & NUMBER_OF_EQUATIONS_MATRICES)=OLD_MATRIX_VARIABLE_TYPES(1)
-              EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(1:EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES)= &
-                & OLD_MATRIX_COEFFICIENTS
-              EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES+1: &
-                & NUMBER_OF_EQUATIONS_MATRICES)=OLD_MATRIX_COEFFICIENTS(1)
+          EQUATIONS=>EQUATIONS_MAPPING%EQUATIONS
+          IF(ASSOCIATED(EQUATIONS)) THEN
+            EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+            IF(ASSOCIATED(EQUATIONS_SET)) THEN            
+              !Check number of matrices to create is valid
+              IF(EQUATIONS_SET%LINEARITY==EQUATIONS_SET_LINEAR) THEN
+                IF(EQUATIONS_MAPPING%RHS_VARIABLE_TYPE==0) THEN
+                  IF(NUMBER_OF_EQUATIONS_MATRICES<1.OR.NUMBER_OF_EQUATIONS_MATRICES>FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
+                    LOCAL_ERROR="The requested number of matrices ("// &
+                      & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_EQUATIONS_MATRICES,"*",ERR,ERROR))// &
+                      & ") is invalid. For problems without a equations set RHS the number must be between >= 1 and <= "// &
+                      & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
+                ELSE            
+                  IF(NUMBER_OF_EQUATIONS_MATRICES<1.OR.NUMBER_OF_EQUATIONS_MATRICES>=FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
+                    LOCAL_ERROR="The requested number of matrices ("// &
+                      & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_EQUATIONS_MATRICES,"*",ERR,ERROR))// &
+                      & ") is invalid. For problems with a equations set RHS the number must be between >= 1 and < "// &
+                      & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
+                ENDIF
+              ELSE
+                IF(NUMBER_OF_EQUATIONS_MATRICES<0.OR.NUMBER_OF_EQUATIONS_MATRICES>FIELD_NUMBER_OF_VARIABLE_TYPES-2) THEN
+                  LOCAL_ERROR="The requested number of matrices ("// &
+                    & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_EQUATIONS_MATRICES,"*",ERR,ERROR))// &
+                    & ") is invalid. For nonlinear problems the number must be between >= 0 and <= "// &
+                    & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES-2,"*",ERR,ERROR))
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+              ENDIF
+              !If we need to reallocate and reset all the create_values cache arrays and change the number of matrices
+              IF(NUMBER_OF_EQUATIONS_MATRICES/=EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES) THEN
+                ALLOCATE(OLD_MATRIX_VARIABLE_TYPES(EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old matrix variable types",ERR,ERROR,*999)
+                ALLOCATE(OLD_MATRIX_COEFFICIENTS(EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old matrix coefficients",ERR,ERROR,*999)
+                OLD_MATRIX_VARIABLE_TYPES=EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES
+                OLD_MATRIX_COEFFICIENTS=EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS
+                DEALLOCATE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES)
+                DEALLOCATE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS)
+                ALLOCATE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(NUMBER_OF_EQUATIONS_MATRICES),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix variable types",ERR,ERROR,*999)
+                ALLOCATE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(NUMBER_OF_EQUATIONS_MATRICES),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix coefficients",ERR,ERROR,*999)
+                IF(NUMBER_OF_EQUATIONS_MATRICES>EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES) THEN
+                  EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(1:EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES)= &
+                    & OLD_MATRIX_VARIABLE_TYPES
+                  EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES+1: &
+                    & NUMBER_OF_EQUATIONS_MATRICES)=OLD_MATRIX_VARIABLE_TYPES(1)
+                  EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(1:EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES)= &
+                    & OLD_MATRIX_COEFFICIENTS
+                  EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES+1: &
+                    & NUMBER_OF_EQUATIONS_MATRICES)=OLD_MATRIX_COEFFICIENTS(1)
+                ELSE
+                  EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(1:NUMBER_OF_EQUATIONS_MATRICES)= &
+                    & OLD_MATRIX_VARIABLE_TYPES(1:NUMBER_OF_EQUATIONS_MATRICES)
+                  EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(1:NUMBER_OF_EQUATIONS_MATRICES)= &
+                    & OLD_MATRIX_COEFFICIENTS(1:NUMBER_OF_EQUATIONS_MATRICES)
+                ENDIF
+                EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES=NUMBER_OF_EQUATIONS_MATRICES
+                IF(ALLOCATED(OLD_MATRIX_VARIABLE_TYPES)) DEALLOCATE(OLD_MATRIX_VARIABLE_TYPES)
+                IF(ALLOCATED(OLD_MATRIX_COEFFICIENTS)) DEALLOCATE(OLD_MATRIX_COEFFICIENTS)
+              ENDIF
             ELSE
-              EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(1:NUMBER_OF_EQUATIONS_MATRICES)= &
-                & OLD_MATRIX_VARIABLE_TYPES(1:NUMBER_OF_EQUATIONS_MATRICES)
-              EQUATIONS_MAPPING%CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(1:NUMBER_OF_EQUATIONS_MATRICES)= &
-                & OLD_MATRIX_COEFFICIENTS(1:NUMBER_OF_EQUATIONS_MATRICES)
+              CALL FLAG_ERROR("Equations equations set is not associated",ERR,ERROR,*999)
             ENDIF
-            EQUATIONS_MAPPING%NUMBER_OF_EQUATIONS_MATRICES=NUMBER_OF_EQUATIONS_MATRICES
-            IF(ALLOCATED(OLD_MATRIX_VARIABLE_TYPES)) DEALLOCATE(OLD_MATRIX_VARIABLE_TYPES)
-            IF(ALLOCATED(OLD_MATRIX_COEFFICIENTS)) DEALLOCATE(OLD_MATRIX_COEFFICIENTS)
+          ELSE
+            CALL FLAG_ERROR("Equations mapping equations is not associated",ERR,ERROR,*999)
           ENDIF
         ELSE
           CALL FLAG_ERROR("Equations mapping create values cache is not associated",ERR,ERROR,*999)

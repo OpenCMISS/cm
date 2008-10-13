@@ -86,6 +86,8 @@ MODULE EQUATIONS_SET_CONSTANTS
   !Problem subtypes
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NO_SUBTYPE=0
   !Elasticity class
+  !  Linear elasticity
+  !  Finite elasticity
   !Fluid mechanics class
   !Electromagnetics class
   !Classical field class
@@ -142,6 +144,14 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NONLINEAR=2 !<The problem is non-linear. \see EQUATIONS_SET_CONSTANTS_LinearityTypes,EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NONLINEAR_BCS=3 !<The problem has non-linear boundary conditions. \see EQUATIONS_SET_CONSTANTS_LinearityTypes,EQUATIONS_SET_CONSTANTS
   !>@}
+
+  !> \addtogroup EQUATIONS_SET_CONSTANTS_NonLinearJacobianTypes EQUATIONS_SET_CONSTANTS::NonlinearJacobianTypes
+  !> \brief The Jacobian types for nonlinear equations sets
+  !> \see EQUATIONS_SET_CONSTANTS
+  !>@{
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NO_JACOBIAN=1 !<No Jacobian will not be calculated for the nonlinear equations set \see EQUATIONS_SET_CONSTANTS_NonlinearJacobianTypes,EQUATIONS_SET_CONSTANTS
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_CALCULATE_JACOBIAN=2 !<The Jacobian will be calcualted for the nonlinear equations set \see EQUATIONS_SET_CONSTANTS_NonlinearJacobianTypes,EQUATIONS_SET_CONSTANTS
+  
   
   !> \addtogroup EQUATIONS_SET_CONSTANTS_TimeDepedenceTypes EQUATIONS_SET_CONSTANTS::TimeDepedenceTypes
   !> \brief The problem time dependence type parameters
