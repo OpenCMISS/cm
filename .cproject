@@ -17,7 +17,7 @@
 <folderInfo id="cdt.managedbuild.config.xlc.exe.debug.1385299570." name="/" resourcePath="">
 <toolChain id="cdt.managedbuild.toolchain.xlc.exe.debug.73066813" name="XL C/C++ Tool Chain" superClass="cdt.managedbuild.toolchain.xlc.exe.debug">
 <targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.XCOFF32" id="cdt.managedbuild.target.xlc.platform.exe.debug.632763281" name="Debug Platform" osList="all" superClass="cdt.managedbuild.target.xlc.platform.exe.debug"/>
-<builder autoBuildTarget="all" buildPath="${workspace_loc:/OpenCMISS/Debug}" cleanBuildTarget="clean" enableAutoBuild="false" enableCleanBuild="true" enabledIncrementalBuild="true" id="org.eclipse.cdt.manangedbuilder.xlc.builder.exe.debug.1338605236" incrementalBuildTarget="all" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="org.eclipse.cdt.manangedbuilder.xlc.builder.exe.debug"/>
+<builder buildPath="${workspace_loc:/OpenCMISS/Debug}" id="photran.managedbuild.target.gnu.builder.exe.debug.2131633622" name="Gnu Make" superClass="photran.managedbuild.target.gnu.builder.exe.debug"/>
 <tool id="cdt.managedbuild.tool.xlc.cpp.compiler.exe.debug.1211080415" name="XL C++ Compiler" superClass="cdt.managedbuild.tool.xlc.cpp.compiler.exe.debug"/>
 <tool id="cdt.managedbuild.tool.xlc.c.compiler.exe.debug.1614238155" name="XL C Compiler" superClass="cdt.managedbuild.tool.xlc.c.compiler.exe.debug">
 <inputType id="cdt.managedbuild.tool.xlc.c.compiler.input.798223784" superClass="cdt.managedbuild.tool.xlc.c.compiler.input"/>
