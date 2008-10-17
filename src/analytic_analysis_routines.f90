@@ -93,7 +93,6 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: var_idx,comp_idx,node_idx,dev_idx,NUM_OF_NODAL_DEV, pow_idx
     TYPE(VARYING_STRING) :: STRING_DATA
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES_MAPPING
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
     REAL(DP), ALLOCATABLE :: VALUE_BUFFER(:)
     REAL(DP) :: RMS_PERCENT, RMS_ABSOLUTE, RMS_RELATIVE, INTEGRAL_NUM, INTEGRAL_ANA
@@ -128,9 +127,9 @@ CONTAINS
               CALL WRITE_STRING_VECTOR(FILE_ID,1,1,5,5,5,VALUE_BUFFER, &
                 CHAR('("     '//NUMBER_TO_VSTRING(node_idx,"*",ERR,ERROR)//'",5(X,D13.4))'),'(20X,5(X,D13.4))', &
                 & ERR,ERROR,*999)
-            ENDDO
-          ENDDO 
-        ENDDO
+            ENDDO !dev_idx
+          ENDDO !node_idx
+        ENDDO !comp_idx
         
         CALL ANALYTIC_ANALYSIS_RMS_PERCENT_ERROR_GET(FIELD,var_idx,RMS_PERCENT,ERR,ERROR,*999)
         CALL WRITE_STRING_VALUE(FILE_ID,"RMS error (Percent) = ",RMS_PERCENT,ERR,ERROR,*999)
@@ -139,7 +138,7 @@ CONTAINS
         CALL ANALYTIC_ANALYSIS_RMS_RELATIVE_ERROR_GET(FIELD,var_idx,RMS_RELATIVE,ERR,ERROR,*999)
         CALL WRITE_STRING_VALUE(FILE_ID,"RMS error (Relative) = ",RMS_RELATIVE,ERR,ERROR,*999)
         
-      ENDDO
+      ENDDO !var_dix
  
       DO var_idx=1,FIELD%NUMBER_OF_VARIABLES
       ! Integral error
@@ -167,8 +166,8 @@ CONTAINS
           CASE DEFAULT
             CALL FLAG_ERROR("Invalid power value!",ERR,ERROR,*999)     
           END SELECT
-        ENDDO
-      ENDDO
+        ENDDO ! pow_idx
+      ENDDO !var_idx
       IF(ALLOCATED(VALUE_BUFFER)) DEALLOCATE(VALUE_BUFFER)
     ELSE
        CALL FLAG_ERROR("The field is not associated!",ERR,ERROR,*999)     
@@ -346,9 +345,9 @@ CONTAINS
 	        CASE DEFAULT
 	          CALL FLAG_ERROR("Not valid power number",ERR,ERROR,*999)
 	        END SELECT
-	      ENDDO
-        ENDDO 
-      ENDDO 
+	      ENDDO !dev_idx
+        ENDDO !node_idx
+      ENDDO !comp_idx
     ELSE
       CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
     ENDIF 
@@ -396,9 +395,9 @@ CONTAINS
             CASE DEFAULT
               CALL FLAG_ERROR("Not valid power number",ERR,ERROR,*999)
             END SELECT
-          ENDDO
-        ENDDO 
-      ENDDO 
+          ENDDO !dev_idx
+        ENDDO !node_idx
+      ENDDO !comp_idx
     ELSE
       CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
     ENDIF 
@@ -740,10 +739,10 @@ CONTAINS
           DO dev_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
             CALL ANALYTIC_ANALYSIS_NODE_PERCENT_ERROR_GET(FIELD,VARIABLE_NUMBER,comp_idx,node_idx,dev_idx,PERCENT_ERROR_VALUE,ERR,ERROR,*999)
             VALUE=VALUE+PERCENT_ERROR_VALUE**2/(DOMAIN_NODES%NUMBER_OF_NODES*DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES)
-          ENDDO
-        ENDDO 
+          ENDDO !dev_idx
+        ENDDO !node_idx
         VALUE=SQRT(VALUE)
-      ENDDO 
+      ENDDO !comp_idx
     ELSE
       CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
     ENDIF 
@@ -781,13 +780,13 @@ CONTAINS
       DO comp_idx=1,FIELD%VARIABLES(VARIABLE_NUMBER)%NUMBER_OF_COMPONENTS
         DOMAIN_NODES=>FIELD%VARIABLES(VARIABLE_NUMBER)%COMPONENTS(comp_idx)%DOMAIN%TOPOLOGY%NODES
         DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-          !DO dev_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+          DO dev_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
             CALL ANALYTIC_ANALYSIS_NODE_ABSOLUTE_ERROR_GET(FIELD,VARIABLE_NUMBER,comp_idx,node_idx,1,ABSOLUTE_ERROR_VALUE,ERR,ERROR,*999)
             VALUE=VALUE+ABSOLUTE_ERROR_VALUE**2/(DOMAIN_NODES%NUMBER_OF_NODES*DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES)
-          !ENDDO
-        ENDDO 
+          ENDDO !dev_idx
+        ENDDO !node_idx
         VALUE=SQRT(VALUE)
-      ENDDO 
+      ENDDO !comp_idx
     ELSE
       CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
     ENDIF 
@@ -827,10 +826,10 @@ CONTAINS
           DO dev_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
             CALL ANALYTIC_ANALYSIS_NODE_RELATIVE_ERROR_GET(FIELD,VARIABLE_NUMBER,comp_idx,node_idx,dev_idx,RELATIVE_ERROR_VALUE,ERR,ERROR,*999)
             VALUE=VALUE+RELATIVE_ERROR_VALUE**2/(DOMAIN_NODES%NUMBER_OF_NODES*DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES)
-          ENDDO
-        ENDDO 
+          ENDDO !dev_idx
+        ENDDO !node_idx
         VALUE=SQRT(VALUE)
-      ENDDO 
+      ENDDO !comp_idx
     ELSE
       CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
     ENDIF 

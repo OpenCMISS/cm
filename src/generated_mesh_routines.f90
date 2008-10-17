@@ -860,15 +860,13 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: origin_idx
-    LOGICAL :: BASIS_OK,ELEMENTS_OK
     TYPE(GENERATED_MESH_REGULAR_TYPE), POINTER :: REGULAR_MESH
     TYPE(BASIS_TYPE), POINTER :: BASIS
     INTEGER(INTG), ALLOCATABLE :: NUMBER_ELEMENTS_XI(:)
     TYPE(REGION_TYPE), POINTER :: REGION 
     TYPE(NODES_TYPE), POINTER :: NODES
-    INTEGER(INTG) :: ni,ne,ne1,ne2,ne3,NN,nn1,nn2,nn3,np,np1,np2,np3,TOTAL_NUMBER_OF_NODES_XI(3),TOTAL_NUMBER_ELEMENTS_XI(3), &
+    INTEGER(INTG) :: ni,ne,ne1,ne2,ne3,NN,nn1,nn2,nn3,np,TOTAL_NUMBER_OF_NODES_XI(3),TOTAL_NUMBER_ELEMENTS_XI(3), &
       & TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_ELEMENTS,NUMBER_OF_DIMENSIONS
     INTEGER(INTG), ALLOCATABLE :: ELEMENT_NODES(:)
     TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
@@ -1070,7 +1068,6 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("GENERATED_MESH_REGULAR_INITIALISE",ERR,ERROR,*999)
 
@@ -1215,13 +1212,11 @@ CONTAINS
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the mesh to find
-    TYPE(REGION_TYPE), POINTER :: REGION !<The region containing the mesh
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<On return, a pointer to the generated mesh of the specified user number. In no generated mesh with the specified user number exists the pointer is returned NULL.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: generated_mesh_idx
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("GENERATED_MESH_USER_NUMBER_FIND",ERR,ERROR,*999)
 
