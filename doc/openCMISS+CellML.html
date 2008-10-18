@@ -526,11 +526,29 @@ This initial test code will use the CellML API code generation service (CCGS) to
 !Details
 The [[Basic Simulation Application]] will form the basis of the code used by openCMISS and is all that is required from the [[CellML + Fortran 95]] sub-project to allow the [[openCMISS + CellML]] sub-project to get underway. However, it may be worthwhile to come back to this and evaluate the relative performance of using generated C code compared to generated Fortran 95 code.</pre>
 </div>
-<div title="Build CellML API" modifier="andre" created="200807251710" modified="200809300828" tags="task" changecount="8" tt_scope="CellML + Fortran 95" tt_priority="2" tt_user="andre" tt_status="InProgress">
+<div title="Build CellML API" modifier="andre" created="200807251710" modified="200810181656" tags="task" changecount="20" tt_scope="CellML + Fortran 95" tt_priority="2" tt_user="andre" tt_status="InProgress">
 <pre>Need to get the [[CellML API]] to build and install using the openCMISS build environment. This will be successful once the test code that comes with the API can build and execute successfully with a range of models.
 !Progress
 !!30 September 2008
-Will use the 1.4 release of the API until that proves unsatisfactory.</pre>
+Will use the 1.4 release of the API until that proves unsatisfactory.
+!!8 October 2008
+1.5rc1 has now been released so will change to that. Has the DAE support but not yet merged in the RDF code.
+!!18 October 2008
+1.5rc1 was released unchanged as 1.5, using that.
+{{{
+~/bob$ mkdir -p basicSimulationApplication/CellML-DOM-API/src
+~/bob$ cd basicSimulationApplication/CellML-DOM-API/src
+~/bob/basicSimulationApplication/CellML-DOM-API/src$ wget http://www.cellml.org/downloads/cellml_api/releases/1.5/CellML_DOM_API-1.5.tar.bz2
+~/bob/basicSimulationApplication/CellML-DOM-API/src$ tar xvjf CellML_DOM_API-1.5.tar.bz2
+~/bob/basicSimulationApplication/CellML-DOM-API/src$ cd ..
+~/bob/basicSimulationApplication/CellML-DOM-API$ mkdir -p build/1.5
+~/bob/basicSimulationApplication/CellML-DOM-API$ cd build/1.5
+~/bob/basicSimulationApplication/CellML-DOM-API/build/1.5$ ../../src/CellML_DOM_API-1.5/configure --prefix $HOME/bob/basicSimulationApplication/CellML-DOM-API --enable-corba=no --enable-context=no --enable-ccgs --enable-cis=no --enable-server=no --enable-static --enable-shared=no --enable-annotools --enable-cuses --enable-cevas --enable-vacss --enable-malaes --enable-examples
+~/bob/basicSimulationApplication/CellML-DOM-API/build/1.5$ make
+~/bob/basicSimulationApplication/CellML-DOM-API/build/1.5$ make check
+## Currently fails, see tracker item 1421
+~/bob/basicSimulationApplication/CellML-DOM-API/build/1.5$ make install
+}}}</pre>
 </div>
 <div title="CCGS" modifier="DavidNickerson" created="200807251645" changecount="1">
 <pre>The ~CellML Code Generation Service, which is now essentially a high level wrapper around several services sitting on top of the core [[CellML API]]. It has recently become quite sophisticated in the range of mathematical formulations it can process although we'll need to perform some testing to ensure that the methods used within the CCGS result in acceptable performance in large scale tissue simulations.</pre>
@@ -1013,9 +1031,15 @@ InProgress
 OnHold
 Complete</pre>
 </div>
-<div title="StyleSheet" modifier="DavidNickerson" created="200807251551" modified="200807251619" changecount="6">
+<div title="StyleSheet" modifier="andre" created="200807251551" modified="200810181654" changecount="11">
 <pre>.bob {
   color: #ff0000;
+}
+
+.commandListing {
+  font-family: monospace;
+  white-space: pre;
+  overflow: auto;
 }</pre>
 </div>
 <div title="TTMigrateTasks0304Plugin" modifier="PhilHawksworth" created="200803110000" tags="systemConfig">
@@ -1972,11 +1996,13 @@ I am initially aiming to be generating C code from the CellML models, but perhap
 !!Optimised dynamic evaluation //vs// generating and compiling code
 Given that the [[CCGS]] supports a finite set of MathML operators and we know what they all are is it possible to develop a system for the efficient dynamic evaluation of a model's variables with performance comparable to using the generated and compiled code? This is an intermediate and lower level idea than the [[FieldML + CellML]] sub-project, in which the dynamic evaluation would essentially be achieved through the use of computed fields, which would be a good fall-back option to have in the openCMISS arsenal but one which is unlikely to provide the performance required for large scale tissue simulations.</pre>
 </div>
-<div title="openCMISS build environment" modifier="DavidNickerson" created="200807241532" modified="200807251730" tags="task" changecount="12" tt_scope="CellML + Fortran 95" tt_user="andre" tt_status="InProgress" tt_priority="1">
+<div title="openCMISS build environment" modifier="andre" created="200807241532" modified="200810181553" tags="task" changecount="14" tt_scope="CellML + Fortran 95" tt_user="andre" tt_status="Complete" tt_priority="1">
 <pre>Need to establish and set up the openCMISS build environment(s).
 !Progress
 !!24 July 2008
-Have checked out the {{{openCMISS.cm}}} source code :)</pre>
+Have checked out the {{{openCMISS.cm}}} source code :)
+!!18 October 2008
+Have the Intel Fortran compiler for Linux (and the MKL libraries) installed and able to build the example applications from the {{{openCMISS/opencmiss/cm/examples}}} folder.</pre>
 </div>
 <div title="settings" modifier="PhilHawksworth" created="200803251627" tags="systemConfig excludeLists excludeSearch">
 <pre>//{{{
