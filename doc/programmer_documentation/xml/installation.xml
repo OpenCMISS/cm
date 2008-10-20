@@ -101,12 +101,6 @@
         <para>Download Intel Fotran Compiler from <ulink url='http://www.intel.com/cd/software/products/asmo-na/eng/282048.htm'>here</ulink>.</para>
         <para>Extract the file and follow the <filename>install.htm</filename> to install</para>
       </section>
-	    <section>
-        <title>Install MPI</title>
-        <para>Download MPICH2 from <ulink url='http://www.mcs.anl.gov/research/projects/mpich2/'>here.</ulink></para>
-        <para>Extract the file and follow the <filename>README</filename> to install.</para>
-        <para>Remember to set the path as suggested.</para>
-      </section>
       <section>
         <title>Compile</title>
         <para>To build an example project:</para>
