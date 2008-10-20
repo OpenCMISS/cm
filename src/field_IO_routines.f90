@@ -3933,8 +3933,8 @@ CONTAINS
           SELECT CASE(VARIABLE%VARIABLE_TYPE)
             CASE(FIELD_STANDARD_VARIABLE_TYPE)
              IF(LABEL_TYPE==FIELD_IO_VARIABLE_LABEL) THEN
-                !FIELD_IO_LABEL_FIELD_INFO_GET="fiber,  standand variable type"   ! kmith
-                FIELD_IO_LABEL_FIELD_INFO_GET="fibres, anatomical, fibre"    !kmith		
+                !FIELD_IO_LABEL_FIELD_INFO_GET="fiber,  standand variable type"   
+                FIELD_IO_LABEL_FIELD_INFO_GET="fibres, anatomical, fibre"    	
              ELSE IF (LABEL_TYPE==FIELD_IO_COMPONENT_LABEL) THEN
                 FIELD_IO_LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
              ENDIF      
@@ -3971,8 +3971,8 @@ CONTAINS
           SELECT CASE(VARIABLE%VARIABLE_TYPE)
             CASE(FIELD_STANDARD_VARIABLE_TYPE)
              IF(LABEL_TYPE==FIELD_IO_VARIABLE_LABEL) THEN
-                !FIELD_IO_LABEL_FIELD_INFO_GET="general_variabe,  field,  string"  ! kmith
-                FIELD_IO_LABEL_FIELD_INFO_GET="general,  field,  rectangular cartesian"  ! kmith		
+                !FIELD_IO_LABEL_FIELD_INFO_GET="general_variabe,  field,  string"  
+                FIELD_IO_LABEL_FIELD_INFO_GET="general,  field,  rectangular cartesian"  		
              ELSE IF (LABEL_TYPE==FIELD_IO_COMPONENT_LABEL) THEN
                 FIELD_IO_LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
              ENDIF      
@@ -4009,8 +4009,8 @@ CONTAINS
           SELECT CASE(VARIABLE%VARIABLE_TYPE)
             CASE(FIELD_STANDARD_VARIABLE_TYPE)
              IF(LABEL_TYPE==FIELD_IO_VARIABLE_LABEL) THEN
-                !FIELD_IO_LABEL_FIELD_INFO_GET="material,  field,  standand variable type"   ! kmith
-                FIELD_IO_LABEL_FIELD_INFO_GET="material,  field,  rectangular cartesian"     ! kmith		 
+                !FIELD_IO_LABEL_FIELD_INFO_GET="material,  field,  standand variable type"   
+                FIELD_IO_LABEL_FIELD_INFO_GET="material,  field,  rectangular cartesian"     		 
              ELSE IF (LABEL_TYPE==FIELD_IO_COMPONENT_LABEL) THEN
                 FIELD_IO_LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
              ENDIF      
