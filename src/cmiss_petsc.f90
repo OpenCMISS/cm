@@ -1,5 +1,5 @@
 !> \file
-!> $Id: cmiss_petsc.f90 27 2007-07-24 16:52:51Z cpb $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module is a CMISS buffer module to the PETSc library.
 !>
@@ -116,6 +116,12 @@ MODULE CMISS_PETSC
   MatStructure, PARAMETER :: PETSC_SAME_NONZERO_PATTERN = SAME_NONZERO_PATTERN
   MatStructure, PARAMETER :: PETSC_DIFFERENT_NONZERO_PATTERN = DIFFERENT_NONZERO_PATTERN
 
+  !MatColoring types
+  MatColoringType, PARAMETER :: PETSC_MATCOLORING_NATURAL = MATCOLORING_NATURAL
+  MatColoringType, PARAMETER :: PETSC_MATCOLORING_SL = MATCOLORING_SL
+  MatColoringType, PARAMETER :: PETSC_MATCOLORING_LF = MATCOLORING_LF
+  MatColoringType, PARAMETER :: PETSC_MATCOLORING_ID = MATCOLORING_ID
+  
   !PC types
   PCType, PARAMETER ::  PETSC_PCNONE = PCNONE
   PCType, PARAMETER ::  PETSC_PCJACOBI = PCJACOBI
@@ -181,6 +187,11 @@ MODULE CMISS_PETSC
       IS indexset
       PetscInt ierr
     END SUBROUTINE ISDestroy
+    
+    SUBROUTINE ISColoringDestroy(iscoloring,ierr)
+      ISColoring iscoloring
+      PetscInt ierr
+    END SUBROUTINE ISColoringDestroy
     
     SUBROUTINE ISLocalToGlobalMappingApply(ctx,type,nin,idxin,nout,idxout,ierr)
       ISLocalToGlobalMapping ctx
@@ -355,6 +366,23 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE MatDestroy
     
+    SUBROUTINE MatFDColoringCreate(A,iscoloring,fdcoloring,ierr)
+      Mat A
+      ISColoring iscoloring
+      MatFDColoring fdcoloring
+      PetscInt ierr
+    END SUBROUTINE MatFDColoringCreate
+    
+    SUBROUTINE MatFDColoringDestroy(fdcoloring,ierr)
+      MatFDColoring fdcoloring
+      PetscInt ierr
+    END SUBROUTINE MatFDColoringDestroy
+    
+    SUBROUTINE MatFDColoringSetFromOptions(fdcoloring,ierr)
+      MatFDColoring fdcoloring
+      PetscInt ierr
+    END SUBROUTINE MatFDColoringSetFromOptions
+    
     SUBROUTINE MatGetArray(A,mat_data,mat_offset,ierr)
       Mat A
       PetscScalar mat_data(1)
@@ -362,11 +390,18 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE MatGetArray
     
-   SUBROUTINE MatGetArrayF90(A,mat_data,ierr)
+    SUBROUTINE MatGetArrayF90(A,mat_data,ierr)
       Mat A
       PetscScalar, POINTER :: mat_data(:,:)
       PetscInt ierr
     END SUBROUTINE MatGetArrayF90
+    
+    SUBROUTINE MatGetColoring(A,coloring_type,iscoloring,ierr)
+      Mat A
+      MatColoringType coloring_type
+      ISColoring iscoloring 
+      PetscInt ierr
+    END SUBROUTINE MatGetColoring
     
     SUBROUTINE MatGetOwnershipRange(A,firstrow,lastrow,ierr)
       Mat A
@@ -545,19 +580,20 @@ MODULE CMISS_PETSC
       SNES snes
       Vec f
       EXTERNAL ffunction
-      TYPE(SOLVER_TYPE), POINTER :: ctx
+      TYPE(SOLUTION_TYPE), POINTER :: ctx
       PetscInt ierr
     END SUBROUTINE SNESSetFunction
 
-    SUBROUTINE SNESSetJacobian(snes,A,B,Jfunction,ctx,ierr)
-      USE TYPES
-      SNES snes
-      Mat A
-      Mat B      
-      EXTERNAL Jfunction
-      TYPE(SOLVER_TYPE), POINTER :: ctx
-      PetscInt ierr
-    END SUBROUTINE SNESSetJacobian
+    !Can't have a definition here as we have multiple contexts
+    !SUBROUTINE SNESSetJacobian(snes,A,B,Jfunction,ctx,ierr)
+    !  USE TYPES
+    !  SNES snes
+    !  Mat A
+    !  Mat B      
+    !  EXTERNAL Jfunction
+    !  TYPE(SOLVER_TYPE), POINTER :: ctx
+    !  PetscInt ierr
+    !END SUBROUTINE SNESSetJacobian
 
     SUBROUTINE SNESSetTolerances(snes,abstol,rtol,stol,maxit,maxf,ierr)
       SNES snes
@@ -795,6 +831,11 @@ MODULE CMISS_PETSC
 
   END INTERFACE
 
+  INTERFACE PETSC_SNESSETJACOBIAN
+    MODULE PROCEDURE PETSC_SNESSETJACOBIAN_SOLVER  
+    MODULE PROCEDURE PETSC_SNESSETJACOBIAN_MATFDCOLORING
+  END INTERFACE !PETSC_SNESSETJACOBIAN
+
   PUBLIC PETSC_ADD_VALUES,PETSC_INSERT_VALUES,PETSC_COMM_WORLD,PETSC_COMM_SELF,PETSC_DECIDE,PETSC_DEFAULT_INTEGER, &
     & PETSC_DEFAULT_DOUBLE_PRECISION,PETSC_NULL_CHARACTER,PETSC_NULL_DOUBLE,PETSC_NULL_INTEGER,PETSC_NULL_SCALAR, &
     & PETSC_SCATTER_FORWARD,PETSC_SCATTER_REVERSE
@@ -810,6 +851,8 @@ MODULE CMISS_PETSC
   PUBLIC PETSC_SAME_PRECONDITIONER,PETSC_SAME_NONZERO_PATTERN,PETSC_DIFFERENT_NONZERO_PATTERN
 
   PUBLIC PETSC_ISINITIALISE,PETSC_ISFINALISE,PETSC_ISDESTROY
+
+  PUBLIC PETSC_ISCOLORINGINITIALISE,PETSC_ISCOLORINGFINALISE,PETSC_ISCOLORINGDESTROY
   
   PUBLIC PETSC_ISLOCALTOGLOBALMAPPINGINITIALISE,PETSC_ISLOCALTOGLOBALMAPPINGFINALISE,PETSC_ISLOCALTOGLOBALMAPPINGAPPLY, &
     & PETSC_ISLOCALTOGLOBALMAPPINGAPPLYIS,PETSC_ISLOCALTOGLOBALMAPPINGCREATE,PETSC_ISLOCALTOGLOBALMAPPINGDESTROY
@@ -827,11 +870,14 @@ MODULE CMISS_PETSC
   PUBLIC MAT_COLUMN_ORIENTED,MAT_COLUMNS_SORTED,MAT_ROWS_SORTED,MAT_FINAL_ASSEMBLY,MAT_FLUSH_ASSEMBLY, &
     & MAT_NO_NEW_NONZERO_LOCATIONS
 
+  PUBLIC PETSC_MATCOLORING_NATURAL,PETSC_MATCOLORING_SL,PETSC_MATCOLORING_LF,PETSC_MATCOLORING_ID
+
   PUBLIC PETSC_MATINITIALISE,PETSC_MATFINALISE,PETSC_MATASSEMBLYBEGIN,PETSC_MATASSEMBLYEND,PETSC_MATCREATE, &
     & PETSC_MATCREATEMPIAIJ,PETSC_MATCREATEMPIDENSE,PETSC_MATCREATESEQAIJ,PETSC_MATCREATESEQDENSE,PETSC_MATDESTROY, &
-    & PETSC_MATGETARRAY,PETSC_MATGETOWNERSHIPRANGE,PETSC_MATGETVALUES,PETSC_MATRESTOREARRAY,PETSC_MATSETLOCALTOGLOBALMAPPING, &
-    & PETSC_MATSETOPTION,PETSC_MATSETSIZES,PETSC_MATSETVALUE,PETSC_MATSETVALUES,PETSC_MATSETVALUELOCAL,PETSC_MATSETVALUESLOCAL, &
-    & PETSC_MATVIEW,PETSC_MATZEROENTRIES
+    & PETSC_MATFDCOLORINGCREATE,PETSC_MATFDCOLORINGDESTROY,PETSC_MATFDCOLORINGFINALISE,PETSC_MATFDCOLORINGINITIALISE, &
+    & PETSC_MATFDCOLORINGSETFROMOPTIONS,PETSC_MATGETARRAY,PETSC_MATGETCOLORING,PETSC_MATGETOWNERSHIPRANGE,PETSC_MATGETVALUES, &
+    & PETSC_MATRESTOREARRAY,PETSC_MATSETLOCALTOGLOBALMAPPING,PETSC_MATSETOPTION,PETSC_MATSETSIZES,PETSC_MATSETVALUE, &
+    & PETSC_MATSETVALUES,PETSC_MATSETVALUELOCAL,PETSC_MATSETVALUESLOCAL,PETSC_MATVIEW,PETSC_MATZEROENTRIES
   
   PUBLIC PETSC_PCINITIALISE,PETSC_PCFINALISE,PETSC_PCSETTYPE
 
@@ -975,7 +1021,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !Finalise the PETSc IS structure and destroy the KSP
+  !Finalise the PETSc IS structure and destroy the IS
   SUBROUTINE PETSC_ISFINALISE(IS_,ERR,ERROR,*)
 
     !Argument Variables
@@ -1052,22 +1098,102 @@ CONTAINS
   END SUBROUTINE PETSC_ISDESTROY
     
   !
+  !
+  !================================================================================================================================
+  !
+
+  !Finalise the PETSc ISColoring structure and destroy the ISColoring
+  SUBROUTINE PETSC_ISCOLORINGFINALISE(ISCOLORING,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_ISCOLORING_TYPE), INTENT(INOUT) :: ISCOLORING !<The ISColoring to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_ISCOLORINGFINALISE",ERR,ERROR,*999)
+
+    IF(ISCOLORING%ISCOLORING/=PETSC_NULL) THEN
+      CALL PETSC_ISCOLORINGDESTROY(ISCOLORING,ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_ISCOLORINGFINALISE")
+    RETURN
+999 CALL ERRORS("PETSC_ISCOLORINGFINALISE",ERR,ERROR)
+    CALL EXITS("PETSC_ISCOLORINGFINALISE")
+    RETURN 1
+  END SUBROUTINE PETSC_ISCOLORINGFINALISE
+    
+  !
+  !================================================================================================================================
+  !
+  
+  !Initialise the PETSc ISColoring structure
+  SUBROUTINE PETSC_ISCOLORINGINITIALISE(ISCOLORING,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_ISCOLORING_TYPE), INTENT(INOUT) :: ISCOLORING !<The ISColoring to initialise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_ISCOLORINGINITIALISE",ERR,ERROR,*999)
+
+    ISCOLORING%ISCOLORING=PETSC_NULL
+    
+    CALL EXITS("PETSC_ISCOLORINGINITIALISE")
+    RETURN
+999 CALL ERRORS("PETSC_ISCOLORINGINITIALISE",ERR,ERROR)
+    CALL EXITS("PETSC_ISCOLORINGINITIALISE")
+    RETURN 1
+  END SUBROUTINE PETSC_ISCOLORINGINITIALISE
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc ISColoringDestroy routine.
+  SUBROUTINE PETSC_ISCOLORINGDESTROY(ISCOLORING,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_ISCOLORING_TYPE), INTENT(IN) :: ISCOLORING !<The index set coloring
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_ISCOLORINGDESTROY",ERR,ERROR,*999)
+
+    CALL ISColoringDestroy(ISCOLORING%ISCOLORING,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in ISColoringDestroy",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_ISCOLORINGDESTROY")
+    RETURN
+999 CALL ERRORS("PETSC_ISCOLORINGDESTROY",ERR,ERROR)
+    CALL EXITS("PETSC_ISCOLORINGDESTROY")
+    RETURN 1
+  END SUBROUTINE PETSC_ISCOLORINGDESTROY
+    
   !================================================================================================================================
   !
 
   !Finalise the PETSc ISLocalToGlobalMapping structure and destroy the KSP
-  SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGFINALISE(ISLOCALTOGLOBALMAPPING_,ERR,ERROR,*)
+  SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGFINALISE(ISLOCALTOGLOBALMAPPING,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE), INTENT(INOUT) :: ISLOCALTOGLOBALMAPPING_ !<The ISLocalToGlobalMapping to finalise
+    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE), INTENT(INOUT) :: ISLOCALTOGLOBALMAPPING !<The ISLocalToGlobalMapping to finalise
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_ISLOCALTOGLOBALMAPPINGFINALISE",ERR,ERROR,*999)
 
-    IF(ISLOCALTOGLOBALMAPPING_%ISLOCALTOGLOBALMAPPING_/=PETSC_NULL) THEN
-      CALL PETSC_ISLOCALTOGLOBALMAPPINGDESTROY(ISLOCALTOGLOBALMAPPING_,ERR,ERROR,*999)
+    IF(ISLOCALTOGLOBALMAPPING%ISLOCALTOGLOBALMAPPING/=PETSC_NULL) THEN
+      CALL PETSC_ISLOCALTOGLOBALMAPPINGDESTROY(ISLOCALTOGLOBALMAPPING,ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("PETSC_ISLOCALTOGLOBALMAPPINGFINALISE")
@@ -1082,17 +1208,17 @@ CONTAINS
   !
   
   !Initialise the PETSc ISLocalToGlobalMapping structure
-  SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGINITIALISE(ISLOCALTOGLOBALMAPPING_,ERR,ERROR,*)
+  SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGINITIALISE(ISLOCALTOGLOBALMAPPING,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE), INTENT(INOUT) :: ISLOCALTOGLOBALMAPPING_ !<The ISLocalToGlobalMapping to initialise
+    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE), INTENT(INOUT) :: ISLOCALTOGLOBALMAPPING !<The ISLocalToGlobalMapping to initialise
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_ISLOCALTOGLOBALMAPPINGINITIALISE",ERR,ERROR,*999)
 
-    ISLOCALTOGLOBALMAPPING_%ISLOCALTOGLOBALMAPPING_=PETSC_NULL
+    ISLOCALTOGLOBALMAPPING%ISLOCALTOGLOBALMAPPING=PETSC_NULL
     
     CALL EXITS("PETSC_ISLOCALTOGLOBALMAPPINGINITIALISE")
     RETURN
@@ -1121,7 +1247,7 @@ CONTAINS
 
     CALL ENTERS("PETSC_ISLOCALTOGLOBALMAPPINGAPPLY",ERR,ERROR,*999)
 
-    CALL ISLocalToGlobalMappingApply(CTX%ISLOCALTOGLOBALMAPPING_,TYPE,NIN,IDXIN,NOUT,IDXOUT,ERR)
+    CALL ISLocalToGlobalMappingApply(CTX%ISLOCALTOGLOBALMAPPING,TYPE,NIN,IDXIN,NOUT,IDXOUT,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
@@ -1153,7 +1279,7 @@ CONTAINS
 
     CALL ENTERS("PETSC_ISLOCALTOGLOBALMAPPINGAPPLYIS",ERR,ERROR,*999)
 
-    CALL ISLocalToGlobalMappingApplyIS(CTX%ISLOCALTOGLOBALMAPPING_,ISIN%IS_,ISOUT%IS_,ERR)
+    CALL ISLocalToGlobalMappingApplyIS(CTX%ISLOCALTOGLOBALMAPPING,ISIN%IS_,ISOUT%IS_,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
@@ -1186,7 +1312,7 @@ CONTAINS
 
     CALL ENTERS("PETSC_ISLOCALTOGLOBALMAPPINGCREATE",ERR,ERROR,*999)
 
-    CALL ISLocalToGlobalMappingCreate(COMMUNICATOR,N,GLOBALNUM,CTX%ISLOCALTOGLOBALMAPPING_,ERR)
+    CALL ISLocalToGlobalMappingCreate(COMMUNICATOR,N,GLOBALNUM,CTX%ISLOCALTOGLOBALMAPPING,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
@@ -1216,7 +1342,7 @@ CONTAINS
 
     CALL ENTERS("PETSC_ISLOCALTOGLOBALMAPPINGDESTROY",ERR,ERROR,*999)
 
-    CALL ISLocalToGlobalMappingDestroy(CTX%ISLOCALTOGLOBALMAPPING_,ERR)
+    CALL ISLocalToGlobalMappingDestroy(CTX%ISLOCALTOGLOBALMAPPING,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
@@ -1960,6 +2086,148 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc MatFDColoringCreate routine.
+  SUBROUTINE PETSC_MATFDCOLORINGCREATE(A,ISCOLORING,FDCOLORING,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The PETSc matrix to create the FD coloring for
+    TYPE(PETSC_ISCOLORING_TYPE), INTENT(IN) :: ISCOLORING !<The index set coloring to create the finite difference coloring for
+    TYPE(PETSC_MATFDCOLORING_TYPE), INTENT(OUT) :: FDCOLORING !<On exit, the matrix finite difference coloring
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATFDCOLORINGCREATE",ERR,ERROR,*999)
+
+    CALL MatFDColoringCreate(A%MAT,ISCOLORING%ISCOLORING,FDCOLORING%MATFDCOLORING,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatFDColoringCreate",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_MATFDCOLORINGCREATE")
+    RETURN
+999 CALL ERRORS("PETSC_MATFDCOLORINGCREATE",ERR,ERROR)
+    CALL EXITS("PETSC_MATFDCOLORINGCREATE")
+    RETURN 1
+  END SUBROUTINE PETSC_MATFDCOLORINGCREATE
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatFDColoringDestroy routine.
+  SUBROUTINE PETSC_MATFDCOLORINGDESTROY(MATFDCOLORING,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MATFDCOLORING_TYPE), INTENT(INOUT) :: MATFDCOLORING !<The matrix finite difference coloring to destroy
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATFDCOLORINGDESTROY",ERR,ERROR,*999)
+
+    CALL MatFDColoringDestroy(MATFDCOLORING%MATFDCOLORING,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatFDColoringDestroy",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_MATFDCOLORINGDESTROY")
+    RETURN
+999 CALL ERRORS("PETSC_MATFDCOLORINGDESTROY",ERR,ERROR)
+    CALL EXITS("PETSC_MATFDCOLORINGDESTROY")
+    RETURN 1
+  END SUBROUTINE PETSC_MATFDCOLORINGDESTROY
+    
+  !
+  !================================================================================================================================
+  !
+
+  !Finalise the PETSc MatFDColoring structure and destroy the MatFDColoring
+  SUBROUTINE PETSC_MATFDCOLORINGFINALISE(MATFDCOLORING,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MATFDCOLORING_TYPE), INTENT(INOUT) :: MATFDCOLORING !<The MatFDColoring to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATFDCOLORINGFINALISE",ERR,ERROR,*999)
+
+    IF(MATFDCOLORING%MATFDCOLORING/=PETSC_NULL) THEN
+      CALL PETSC_MATFDCOLORINGDESTROY(MATFDCOLORING,ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_MATFDCOLORINGFINALISE")
+    RETURN
+999 CALL ERRORS("PETSC_MATFDCOLORINGFINALISE",ERR,ERROR)
+    CALL EXITS("PETSC_MATFDCOLORINGFINALISE")
+    RETURN 1
+  END SUBROUTINE PETSC_MATFDCOLORINGFINALISE
+    
+  !
+  !================================================================================================================================
+  !
+  
+  !Initialise the PETSc MatFDColoring structure
+  SUBROUTINE PETSC_MATFDCOLORINGINITIALISE(MATFDCOLORING,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MATFDCOLORING_TYPE), INTENT(INOUT) :: MATFDCOLORING !<The MatFDColoring to initialise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATFDCOLORINGINITIALISE",ERR,ERROR,*999)
+
+    MATFDCOLORING%MATFDCOLORING=PETSC_NULL
+    
+    CALL EXITS("PETSC_MATFDCOLORINGINITIALISE")
+    RETURN
+999 CALL ERRORS("PETSC_MATFDCOLORINGINITIALISE",ERR,ERROR)
+    CALL EXITS("PETSC_MATFDCOLORINGINITIALISE")
+    RETURN 1
+  END SUBROUTINE PETSC_MATFDCOLORINGINITIALISE
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatFDColoringSetFromOptions routine.
+  SUBROUTINE PETSC_MATFDCOLORINGSETFROMOPTIONS(MATFDCOLORING,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MATFDCOLORING_TYPE), INTENT(INOUT) :: MATFDCOLORING !<The matrix finite difference coloring to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATFDCOLORINGSETFROMOPTIONS",ERR,ERROR,*999)
+
+    CALL MatFDColoringSetFromOptions(MATFDCOLORING%MATFDCOLORING,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatFDColoringSetFromOptions",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_MATFDCOLORINGSETFROMOPTIONS")
+    RETURN
+999 CALL ERRORS("PETSC_MATFDCOLORINGSETFROMOPTIONS",ERR,ERROR)
+    CALL EXITS("PETSC_MATFDCOLORINGSETFROMOPTIONS")
+    RETURN 1
+  END SUBROUTINE PETSC_MATFDCOLORINGSETFROMOPTIONS
+    
+  !
+  !================================================================================================================================
+  !
+
   !>Buffer routine to the PETSc MatGetArray routine.
   SUBROUTINE PETSC_MATGETARRAY(A,ARRAY,ERR,ERROR,*)
 
@@ -1991,6 +2259,38 @@ CONTAINS
     CALL EXITS("PETSC_MATGETARRAY")
     RETURN 1
   END SUBROUTINE PETSC_MATGETARRAY
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatGetColoring routine.
+  SUBROUTINE PETSC_MATGETCOLORING(A,COLORING_TYPE,ISCOLORING,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to get the ownership range of
+    MatColoringType, INTENT(IN) :: COLORING_TYPE !<The coloring type
+    TYPE(PETSC_ISCOLORING_TYPE), INTENT(OUT) :: ISCOLORING !<On exit, the index set coloring
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATGETCOLORING",ERR,ERROR,*999)
+
+    CALL MatGetColoring(A%MAT,COLORING_TYPE,ISCOLORING%ISCOLORING,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatGetColoring",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_MATGETCOLORING")
+    RETURN
+999 CALL ERRORS("PETSC_MATGETCOLORING",ERR,ERROR)
+    CALL EXITS("PETSC_MATGETCOLORING")
+    RETURN 1
+  END SUBROUTINE PETSC_MATGETCOLORING
     
   !
   !================================================================================================================================
@@ -2157,7 +2457,7 @@ CONTAINS
 
     CALL ENTERS("PETSC_MATSETLOCALTOGLOBALMAPPING",ERR,ERROR,*999)
 
-    CALL MatSetLocalToGlobalMapping(A%MAT,CTX%ISLOCALTOGLOBALMAPPING_,ERR)
+    CALL MatSetLocalToGlobalMapping(A%MAT,CTX%ISLOCALTOGLOBALMAPPING,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
@@ -2839,7 +3139,7 @@ CONTAINS
     TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the function for
     TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: F !<The residual vector
     EXTERNAL FFUNCTION !<The external function to call
-    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the function
+    TYPE(SOLUTION_TYPE), POINTER :: CTX !<The solver data to pass to the function
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -2861,12 +3161,47 @@ CONTAINS
     RETURN 1
   END SUBROUTINE PETSC_SNESSETFUNCTION
     
+    
   !
   !================================================================================================================================
   !
 
-  !>Buffer routine to the PETSc SNESSetJacobian routine.
-  SUBROUTINE PETSC_SNESSETJACOBIAN(SNES_,A,B,JFUNCTION,CTX,ERR,ERROR,*)
+  !>Buffer routine to the PETSc SNESSetJacobian routine for MatFDColoring contexts.
+  SUBROUTINE PETSC_SNESSETJACOBIAN_MATFDCOLORING(SNES_,A,B,JFUNCTION,CTX,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the function for
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The Jacobian matrix
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: B !<The Jacobian preconditioning matrix
+    EXTERNAL JFUNCTION !<The external function to call
+    TYPE(PETSC_MATFDCOLORING_TYPE) :: CTX !<The MatFDColoring data to pass to the function
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_SNESSETJACOBIAN_MATFDCOLORING",ERR,ERROR,*999)
+
+    CALL SNESSetJacobian(SNES_%SNES_,A%MAT,B%MAT,JFUNCTION,CTX%MATFDCOLORING,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in SNESSetJacobian",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_SNESSETJACOBIAN_MATFDCOLORING")
+    RETURN
+999 CALL ERRORS("PETSC_SNESSETJACOBIAN_MATFDCOLORING",ERR,ERROR)
+    CALL EXITS("PETSC_SNESSETJACOBIAN_MATFDCOLORING")
+    RETURN 1
+  END SUBROUTINE PETSC_SNESSETJACOBIAN_MATFDCOLORING
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSetJacobian routine for solver contexts.
+  SUBROUTINE PETSC_SNESSETJACOBIAN_SOLVER(SNES_,A,B,JFUNCTION,CTX,ERR,ERROR,*)
 
     !Argument Variables
     TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the function for
@@ -2878,7 +3213,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("PETSC_SNESSETJACOBIAN",ERR,ERROR,*999)
+    CALL ENTERS("PETSC_SNESSETJACOBIAN_SOLVER",ERR,ERROR,*999)
 
     CALL SNESSetJacobian(SNES_%SNES_,A%MAT,B%MAT,JFUNCTION,CTX,ERR)
     IF(ERR/=0) THEN
@@ -2888,13 +3223,13 @@ CONTAINS
       CALL FLAG_ERROR("PETSc error in SNESSetJacobian",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("PETSC_SNESSETJACOBIAN")
+    CALL EXITS("PETSC_SNESSETJACOBIAN_SOLVER")
     RETURN
-999 CALL ERRORS("PETSC_SNESSETJACOBIAN",ERR,ERROR)
-    CALL EXITS("PETSC_SNESSETJACOBIAN")
+999 CALL ERRORS("PETSC_SNESSETJACOBIAN_SOLVER",ERR,ERROR)
+    CALL EXITS("PETSC_SNESSETJACOBIAN_SOLVER")
     RETURN 1
-  END SUBROUTINE PETSC_SNESSETJACOBIAN
-    
+  END SUBROUTINE PETSC_SNESSETJACOBIAN_SOLVER
+
   !
   !================================================================================================================================
   !
@@ -3893,7 +4228,7 @@ CONTAINS
 
     CALL ENTERS("PETSC_VECSETLOCALTOGLOBALMAPPING",ERR,ERROR,*999)
 
-    CALL VecSetLocalToGlobalMapping(X%VEC,CTX%ISLOCALTOGLOBALMAPPING_,ERR)
+    CALL VecSetLocalToGlobalMapping(X%VEC,CTX%ISLOCALTOGLOBALMAPPING,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)

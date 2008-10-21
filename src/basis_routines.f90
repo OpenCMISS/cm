@@ -1,5 +1,5 @@
 !> \file
-!> $Id: basis_routines.f90 29 2007-08-09 16:19:43Z cpb $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module contains all basis function routines.
 !>

@@ -1,5 +1,5 @@
 !> \file
-!> $Id: types.f90 28 2007-07-27 08:35:14Z cpb $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module contains all type definitions in order to avoid cyclic module references.
 !>
@@ -843,11 +843,11 @@ MODULE TYPES
     TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field for this field variable.
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region for this field variable.
     INTEGER(INTG) :: MAX_NUMBER_OF_INTERPOLATION_PARAMETERS !<The maximum number of interpolation parameters in an element for a field variable. 
-    INTEGER(INTG) :: NUMBER_OF_DOFS !<Number of degress of freedom for this field variable. Old CMISS name NYNR(0,0,nc,nr,nx).
-    INTEGER(INTG) :: TOTAL_NUMBER_OF_DOFS !<Total number (global) of degrees of freedom for this field variable. Old CMISS name NYNR(0,0,nc,nr,nx).
+    INTEGER(INTG) :: NUMBER_OF_DOFS !<Number of local degress of freedom for this field variable (excluding ghosted dofs). Old CMISS name NYNR(0,0,nc,nr,nx).
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_DOFS !<Number of local degrees of freedom for this field variable (including ghosted dofs). Old CMISS name NYNR(0,0,nc,nr,nx).
+    INTEGER(INTG) :: NUMBER_OF_GLOBAL_DOFS !<Number of global degrees of freedom for this field variable. Old CMISS name NYNR(0,0,nc,nr,nx).
     INTEGER(INTG) :: GLOBAL_DOF_OFFSET !<The offset of the start of the global dofs for this variable in the list of global field dofs.
     INTEGER(INTG), ALLOCATABLE :: DOF_LIST(:) !<DOF_LIST(i). The list of (local) field dofs in this field variable. Old CMISS name NYNR(1..,0,nc,nr,nx).
-    INTEGER(INTG), ALLOCATABLE :: GLOBAL_DOF_LIST(:) !<GLOBAL_DOF_LIST(i). The list of global field dofs in this field variable. Old CMISS name NYNR(1..,0,nc,nr,nx).
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING !<Domain mapping for this variable. Only allocated if the field is a dependent field. May have to reconsider this as we now have a domain mapping for the field as a whole and for each variable of the field. The variable domain mapping to is allow a global matrix/vector mapping to be obtained from the field variable.
     INTEGER(INTG) :: NUMBER_OF_COMPONENTS !<The number of components in the field variable.
     TYPE(FIELD_VARIABLE_COMPONENT_TYPE), ALLOCATABLE :: COMPONENTS(:) !<COMPONENTS(component_idx). The array of field variable components.
@@ -956,7 +956,7 @@ MODULE TYPES
   !>Contains information about an equations matrix
   TYPE EQUATIONS_MATRIX_TYPE
     INTEGER(INTG) :: MATRIX_NUMBER !<The number of the equations matrix
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES !<A pointer to the equations matrices for the equation matrix.
+    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES !<A pointer to the equations matrices for the equation matrix.
     INTEGER(INTG) :: STORAGE_TYPE !<The storage (sparsity) type for this matrix
     INTEGER(INTG) :: STRUCTURE_TYPE !<The structure (sparsity) type for this matrix
     INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in this global matrix
@@ -971,15 +971,44 @@ MODULE TYPES
 
   !>Contains information on the Jacobian matrix for nonlinear problems
   TYPE EQUATIONS_JACOBIAN_TYPE
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
     INTEGER(INTG) :: STORAGE_TYPE !<The storage (sparsity) type for this matrix
     INTEGER(INTG) :: STRUCTURE_TYPE !<The structure (sparsity) type for this matrix
     INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in this global matrix
+    LOGICAL :: JACOBIAN_CALCULATION_TYPE !<The type of how the Jacobian is calculated \see EQUATIONS_SET_CONSTANTS_JacobianCalculationTypes,EQUATIONS_SET_CONSTANTS
     LOGICAL :: UPDATE_JACOBIAN !<Is .TRUE. if this Jacobian matrix is to be updated
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: JACOBIAN !<A pointer to the distributed jacobian matrix data
-    TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_JACOBIAN !<The element matrix for this Jacobian matrix.
-    TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_RESIDUAL !<An element residual vector for nonlinear problems when Jacobians are calculated. Old CMISS name RE2.
+    TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_JACOBIAN !<The element matrix for this Jacobian matrix. This is not used if the Jacobian is not supplied.
+    TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_RESIDUAL !<An element residual vector for nonlinear problems when Jacobians are calculated. This is not used if the Jacobian is not supplied. Old CMISS name RE2.
   END TYPE EQUATIONS_JACOBIAN_TYPE
+
+  TYPE EQUATIONS_MATRICES_LINEAR_TYPE
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    INTEGER(INTG) :: NUMBER_OF_LINEAR_MATRICES !<The number of equations matrices defined for the problem.
+    TYPE(EQUATIONS_MATRIX_PTR_TYPE), ALLOCATABLE :: MATRICES(:) !<MATRICES(matrix_idx)%PTR contains the information on the matrix_id
+  END TYPE EQUATIONS_MATRICES_LINEAR_TYPE
+
+  TYPE EQUATIONS_MATRICES_NONLINEAR_TYPE
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN !<A pointer to the Jacobian matrix for nonlinear equations
+    LOGICAL :: UPDATE_RESIDUAL !<Is .TRUE. if the equtions rhs vector is to be updated
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RESIDUAL !<A pointer to the distributed residual vector for nonlinear equations
+    TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_RESIDUAL !<The element residual information for nonlinear equations. Old CMISS name RE1
+  END TYPE EQUATIONS_MATRICES_NONLINEAR_TYPE
+
+  TYPE EQUATIONS_MATRICES_RHS_TYPE
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    LOGICAL :: UPDATE_VECTOR !<Is .TRUE. if the equtions rhs vector is to be updated
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the distributed global rhs vector data \todo rename this RHS_VECTOR
+    TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_VECTOR !<The element rhs information
+  END TYPE EQUATIONS_MATRICES_RHS_TYPE
+  
+  TYPE EQUATIONS_MATRICES_SOURCE_TYPE
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    LOGICAL :: UPDATE_VECTOR !<Is .TRUE. if the equtions rhs vector is to be updated
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the distributed source vector data \todo rename this SOURCE_VECTOR
+    TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_VECTOR !<The element source information
+  END TYPE EQUATIONS_MATRICES_SOURCE_TYPE
   
   !>Contains information on the equations matrices and rhs vector
   TYPE EQUATIONS_MATRICES_TYPE
@@ -987,21 +1016,15 @@ MODULE TYPES
     LOGICAL :: EQUATIONS_MATRICES_FINISHED !<Is .TRUE. if the equations matrices have finished being created, .FALSE. if not.
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping for the equations matrices.
     TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING !<A pointer to the solution mapping for the equations matrices
-    INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of rows in the distributed equations matrices and vectors
-    INTEGER(INTG) :: TOTAL_NUMBER_OF_ROWS !<The total number of rows in the distributed equations matrices and vectors
-    !Linear matrices
-    INTEGER(INTG) :: NUMBER_OF_MATRICES !<The number of equations matrices defined for the problem.
-    TYPE(EQUATIONS_MATRIX_PTR_TYPE), ALLOCATABLE :: MATRICES(:) !<MATRICES(matrix_idx)%PTR contains the information on the matrix_idx'th equations matrix
-    !Nonlinear matrices and vectors
-    TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN !<A pointer to the Jacobian matrix for nonlinear equations
-    LOGICAL :: UPDATE_RESIDUAL !<Is .TRUE. if the equtions rhs vector is to be updated
-    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RESIDUAL !<A pointer to the distributed residual vector for nonlinear equations
-    TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_RESIDUAL !<The element residual information for nonlinear equations. Old CMISS name RE1
-    !Right hand side vector
-    LOGICAL :: UPDATE_VECTOR !<Is .TRUE. if the equtions rhs vector is to be updated
-    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the distributed global rhs vector data \todo rename this RHS_VECTOR
-    TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_VECTOR !<The element rhs information
-   END TYPE EQUATIONS_MATRICES_TYPE
+    INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of local rows (excluding ghost rows) in the distributed equations matrices and vectors
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_ROWS !<The number of local rows (including ghost rows) in the distributed equations matrices and vectors
+    INTEGER(INTG) :: NUMBER_OF_GLOBAL_ROWS !<The number of global rows in the distributed equations matrices and vectors
+    !Equations matrices components
+    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
+    TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: RHS_VECTOR    
+    TYPE(EQUATIONS_MATRICES_SOURCE_TYPE), POINTER :: SOURCE_VECTOR  
+  END TYPE EQUATIONS_MATRICES_TYPE
 
   !
   !================================================================================================================================
@@ -1019,17 +1042,12 @@ MODULE TYPES
     INTEGER(INTG) :: VARIABLE_INDEX !<The variable index for this variable to equations matrices map
     INTEGER(INTG) :: VARIABLE_TYPE !<The variable type for this variable to equations matrices map
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE !<A pointer to the field variable for this variable to equations matrices map
-    INTEGER(INTG) :: NUMBER_OF_EQUATIONS_MATRICES !<The number of equations matrices this variable type is mapped to. If the number is -1 the variable is mapped to the RHS vector. If the number is zero then this variable type is not involved in the equations set and the rest of the type is not allocated.
+    INTEGER(INTG) :: NUMBER_OF_LINEAR_EQUATIONS_MATRICES !<The number of linear equations matrices this variable type is mapped to. If the number is -1 the variable is mapped to the RHS vector. If the number is zero then this variable type is not involved in the equations set and the rest of the type is not allocated.
     INTEGER(INTG), ALLOCATABLE :: EQUATIONS_MATRIX_NUMBERS(:) !<EQUATIONS_MATRIX_NUMBERS(i). The equations matrix number for the i'th matrix that this variable type is mapped to.
     TYPE(VARIABLE_TO_EQUATIONS_COLUMN_MAP_TYPE), ALLOCATABLE :: DOF_TO_COLUMNS_MAPS(:) !<DOF_TO_COLUMNS_MAPS(i). The variable dof to equations columns for the i'th equations matrix.
     INTEGER(INTG), ALLOCATABLE :: DOF_TO_ROWS_MAP(:) !<DOF_TO_ROWS_MAP(dof_idx). The row number that the dof_idx'th variable dof is mapped to.
   END TYPE VARIABLE_TO_EQUATIONS_MATRICES_MAP_TYPE
 
-  TYPE SOURCE_EQUATIONS_MATRICES_MAP_TYPE
-    INTEGER(INTG), ALLOCATABLE :: EQUATIONS_ROW_TO_SOURCE_DOF_MAP(:) !<EQUATIONS_ROW_TO_SOURCE_DOF_MAP(row_idx). The mapping from the row_idx'th row of the equations to the source dof.
-    INTEGER(INTG), ALLOCATABLE :: SOURCE_DOF_TO_EQUATIONS_ROW_MAP(:) !<SOURCE_DOF_TO_EQUATIONS_ROW_MAP(source_dof_idx). The mapping from the source_dof_idx'th source dof to the equations row.   
-  END TYPE SOURCE_EQUATIONS_MATRICES_MAP_TYPE
-  
   TYPE EQUATIONS_MATRIX_TO_VARIABLE_MAP_TYPE
     INTEGER(INTG) :: MATRIX_NUMBER !<The equations matrix number
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX !<A pointer to the equations matrix
@@ -1041,38 +1059,94 @@ MODULE TYPES
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: COLUMN_DOFS_MAPPING !<A pointer to the column dofs domain mapping for the matrix variable
   END TYPE EQUATIONS_MATRIX_TO_VARIABLE_MAP_TYPE
 
-  TYPE EQUATIONS_ROW_TO_VARIABLE_MAP_TYPE
-    INTEGER(INTG), ALLOCATABLE :: ROW_TO_DOFS_MAP(:) !<ROW_TO_DOFS_MAP(i). The variable dof number for the i'th variable that this equations row is mapped to.s .TRUE. if the equations mapping has finished being created, .FALSE. if not.
-   INTEGER(INTG) :: ROW_TO_RHS_DOF !<The RHS variable dof number that this row is mapped to. If there is no RHS vector in this equations set the variable dof number is zero.
-  END TYPE EQUATIONS_ROW_TO_VARIABLE_MAP_TYPE
+  TYPE EQUATIONS_MAPPING_LINEAR_TYPE
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping
+    INTEGER(INTG) :: NUMBER_OF_LINEAR_EQUATIONS_MATRICES !<The number of linear equations matrices in this mapping
+    INTEGER(INTG) :: NUMBER_OF_LINEAR_MATRIX_VARIABLES !<The number of dependent variables involved in the linear equations matrix mapping
+    INTEGER(INTG), ALLOCATABLE :: MATRIX_VARIABLE_TYPES(:) !<MATRIX_VARIABLE_TYPES(i). The variable type of the i'th variable type involved in the equations matrix mapping.
+!!TODO: just make this the size of the number of matrix variables rather than the field number of variable types and merge matrix variable types above???
+    TYPE(VARIABLE_TO_EQUATIONS_MATRICES_MAP_TYPE), ALLOCATABLE :: VARIABLE_TO_EQUATIONS_MATRICES_MAPS(:) !<VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type_idx). The equations matrices mapping for the variable_type_idx'th variable type.
+    TYPE(EQUATIONS_MATRIX_TO_VARIABLE_MAP_TYPE), ALLOCATABLE :: EQUATIONS_MATRIX_TO_VARIABLE_MAPS(:) !<EQUATIONS_MATRIX_TO_VARIABLE_MAPS(matrix_idx). The mappings for the matrix_idx'th equations matrix.
+    INTEGER(INTG), ALLOCATABLE :: EQUATIONS_ROW_TO_VARIABLE_DOF_MAPS(:,:) !<EQUATIONS_ROW_TO_VARIABLE_DOFS_MAPS(row_idx,variable_type_idx). The row mappings for the row_idx'th row of the equations matrices to the variable_type_idx'th variable. 
+  END TYPE EQUATIONS_MAPPING_LINEAR_TYPE
+  
+  TYPE EQUATIONS_JACOBIAN_TO_VARIABLE_MAP_TYPE
+    INTEGER(INTG) :: VARIABLE_TYPE !<The dependent variable type mapped to this equations matrix
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE !<A pointer to the field variable that is mapped to this equations matrix
+    TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN !<A pointer to the equations matrix
+    INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in this equations matrix.
+    REAL(DP) :: JACOBIAN_COEFFICIENT !<The multiplicative coefficent for the matrix in the equation set
+    INTEGER(INTG), ALLOCATABLE :: EQUATIONS_COLUMN_TO_DOF_VARIABLE_MAP(:) !<COLUMN_TO_DOF_MAP(column_idx). The variable DOF that the column_idx'th column of this equations matrix is mapped to.
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: COLUMN_DOFS_MAPPING !<A pointer to the column dofs domain mapping for the matrix variable
+  END TYPE EQUATIONS_JACOBIAN_TO_VARIABLE_MAP_TYPE
+  
+  !>Contains the mapping for a dependent variable type to the nonlinear Jacobian matrix
+  TYPE VARIABLE_TO_EQUATIONS_JACOBIAN_MAP_TYPE
+    INTEGER(INTG) :: VARIABLE_TYPE !<The variable type for this variable to equations matrices map
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE !<A pointer to the field variable for this variable to equations matrices map
+    INTEGER(INTG), ALLOCATABLE :: DOF_TO_COLUMNS_MAP(:) !<DOF_TO_COLUMNS_MAP(dof_idx). The Jacobian column number for dof_idx'th variable dof
+    INTEGER(INTG), ALLOCATABLE :: DOF_TO_ROWS_MAP(:) !<DOF_TO_ROWS_MAP(dof_idx). The row number that the dof_idx'th variable dof is mapped to.
+  END TYPE VARIABLE_TO_EQUATIONS_JACOBIAN_MAP_TYPE
 
+  TYPE EQUATIONS_MAPPING_NONLINEAR_TYPE
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping
+    TYPE(VARIABLE_TO_EQUATIONS_JACOBIAN_MAP_TYPE) :: VARIABLE_TO_JACOBIAN_MAP
+    TYPE(EQUATIONS_JACOBIAN_TO_VARIABLE_MAP_TYPE) :: JACOBIAN_TO_VARIABLE_MAP
+    INTEGER(INTG) :: RESIDUAL_VARIABLE_TYPE
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: RESIDUAL_VARIABLE !<A pointer to the variable that is mapped to the residual vector for nonlinear problems.
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RESIDUAL_VARIABLE_MAPPING !<A pointer to the residual variable domain mapping
+    REAL(DP) :: RESIDUAL_COEFFICIENT !<The multiplicative coefficient applied to the residual vector
+    INTEGER(INTG), ALLOCATABLE :: RESIDUAL_DOF_TO_EQUATIONS_ROW_MAP(:) !<RESIDUAL_DOF_TO_EQUATIONS_ROW_MAP(residual_dof_idx). The mapping from the residual_dof_idx'th residual dof in the residual variable to the equations row.   
+    INTEGER(INTG), ALLOCATABLE :: EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP(:) !<EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP(row_idx). The mapping from the row_idx'th row of the equations to the source dof.   
+  END TYPE EQUATIONS_MAPPING_NONLINEAR_TYPE
+
+  TYPE EQUATIONS_MAPPING_RHS_TYPE
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping
+    INTEGER(INTG) :: RHS_VARIABLE_TYPE !<The variable type number mapped to the RHS vector
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: RHS_VARIABLE !<A pointer to the variable that is mapped to the RHS vector
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RHS_VARIABLE_MAPPING !<A pointer to the RHS variable domain mapping
+    REAL(DP) :: RHS_COEFFICIENT !<The multiplicative coefficient applied to the RHS vector
+    INTEGER(INTG), ALLOCATABLE :: RHS_DOF_TO_EQUATIONS_ROW_MAP(:) !<RHS_DOF_TO_EQUATIONS_ROW_MAP(residual_dof_idx). The mapping from the rhs_dof_idx'th RHS dof in the rhs variable to the equations row.   
+    INTEGER(INTG), ALLOCATABLE :: EQUATIONS_ROW_TO_RHS_DOF_MAP(:) !<EQUATIONS_ROW_TO_RHS_DOF_MAP(row_idx). The mapping from the row_idx'th row of the equations to the RHS dof.   
+  END TYPE EQUATIONS_MAPPING_RHS_TYPE
+  
+  TYPE EQUATIONS_MAPPING_SOURCE_TYPE
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping
+    INTEGER(INTG) :: SOURCE_VARIABLE_TYPE !<The variable type number mapped from the source vector
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: SOURCE_VARIABLE !<A pointer to the source variable 
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: SOURCE_VARIABLE_MAPPING !<A pointer to the domain mapping for the source variable.
+    REAL(DP) :: SOURCE_COEFFICIENT !<The multiplicative coefficient applied to the source vector
+    INTEGER(INTG), ALLOCATABLE :: SOURCE_DOF_TO_EQUATIONS_ROW_MAP(:) !<SOURCE_DOF_TO_EQUATIONS_ROW_MAP(source_dof_idx). The mapping from the source_dof_idx'th source dof in the source variable to the equations row.   
+    INTEGER(INTG), ALLOCATABLE :: EQUATIONS_ROW_TO_SOURCE_DOF_MAP(:) !<EQUATIONS_ROW_TO_SOURCE_DOF_MAP(row_idx). The mapping from the row_idx'th row of the equations to the source dof.
+  END TYPE EQUATIONS_MAPPING_SOURCE_TYPE
+  
   TYPE EQUATIONS_MAPPING_CREATE_VALUES_CACHE_TYPE
+    INTEGER(INTG) :: NUMBER_OF_LINEAR_EQUATIONS_MATRICES !<The number of linear matrices in the equations mapping
     INTEGER(INTG), ALLOCATABLE :: MATRIX_VARIABLE_TYPES(:) !<MATRIX_VARIABLE_TYPES(matrix_idx). The dependent variable type mapped to the matrix_idx'th equations matrix.
     REAL(DP), ALLOCATABLE :: MATRIX_COEFFICIENTS(:) !<MATRIX_COEFFICIENTS(matrix_idx). The coefficient of the matrix_idx'th matrix in the equations set.
+    INTEGER(INTG) :: RESIDUAL_VARIABLE_TYPE !<The dependent variable type mapped to the residual vector
+    REAL(DP) :: RESIDUAL_COEFFICIENT !<The coefficient multiplying the residual vector.
+    INTEGER(INTG) :: RHS_VARIABLE_TYPE !<The dependent variable type mapped to the rhs vector
+    REAL(DP) :: RHS_COEFFICIENT !<The coefficient multiplying the RHS vector.
+    INTEGER(INTG) :: SOURCE_VARIABLE_TYPE !<The source variable type mapped to the source vector
+    REAL(DP) :: SOURCE_COEFFICIENT !<The coefficient multiplying the source vector.
   END TYPE EQUATIONS_MAPPING_CREATE_VALUES_CACHE_TYPE
 
   TYPE EQUATIONS_MAPPING_TYPE
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations for this equations mapping
     LOGICAL :: EQUATIONS_MAPPING_FINISHED !<Is .TRUE. if the equations mapping has finished being created, .FALSE. if not.
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES !<A pointer to the equations matrices associated with this equations mapping.
-    INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of (local) rows in the equations matrices
-    INTEGER(INTG) :: TOTAL_NUMBER_OF_ROWS !<The total number of rows in the equations matrices
-    INTEGER(INTG) :: NUMBER_OF_EQUATIONS_MATRICES !<The number of equations matrices in this mapping
-    INTEGER(INTG) :: NUMBER_OF_MATRIX_VARIABLES !<The number of dependent variables involved in the equations matrix mapping
-    INTEGER(INTG), ALLOCATABLE :: MATRIX_VARIABLE_TYPES(:) !<MATRIX_VARIABLE_TYPES(i). The variable type of the i'th variable type involved in the equations matrix mapping.
-!!TODO: just make this the size of the number of matrix variables rather than the field number of variable types and merge matrix variable types above???
-    TYPE(VARIABLE_TO_EQUATIONS_MATRICES_MAP_TYPE), ALLOCATABLE :: VARIABLE_TO_EQUATIONS_MATRICES_MAPS(:) !<VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type_idx). The equations matrices mapping for the variable_type_idx'th variable type.
-    TYPE(EQUATIONS_MATRIX_TO_VARIABLE_MAP_TYPE), ALLOCATABLE :: EQUATIONS_MATRIX_TO_VARIABLE_MAPS(:) !<EQUATIONS_MATRIX_TO_VARIABLE_MAPS(matrix_idx). The mappings for the matrix_idx'th equations matrix.
-    TYPE(SOURCE_EQUATIONS_MATRICES_MAP_TYPE), POINTER :: SOURCE_MAPPINGS !<A pointer to the mappings between the source and equations matrices if there is a source vector in the equations set.
-    TYPE(EQUATIONS_ROW_TO_VARIABLE_MAP_TYPE), ALLOCATABLE :: EQUATIONS_ROW_TO_VARIABLES_MAPS(:) !<EQUATIONS_ROW_TO_VARIABLES_MAPS(row_idx). The mapping from the row_idx'th row in the equations set to the dependent variables dof.
-    INTEGER(INTG) :: RHS_VARIABLE_TYPE !<The variable type number mapped to the RHS vector
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: RHS_VARIABLE !<A pointer to the variable that is mapped to the RHS vector
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RHS_VARIABLE_MAPPING !<A pointer to the RHS variable domain mapping
-    INTEGER(INTG) :: RESIDUAL_VARIABLE_TYPE !<The variable type number mapped to the residual vector for nonlinear problems
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: RESIDUAL_VARIABLE !<A pointer to the variable that is mapped to the residual vector for nonlinear problems.
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RESIDUAL_VARIABLE_MAPPING !<A pointer to the residual variable domain mapping
+    !Row mappings
+    INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of local rows (excluding ghost rows) in the equations matrices
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_ROWS !<The number of local rows (including ghost rows) in the equations matrices
+    INTEGER(INTG) :: NUMBER_OF_GLOBAL_ROWS !<The number of global rows in the equations matrices
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ROW_DOFS_MAPPING !<The domain mapping for the equations rows
-    
+    !Equations mapping components
+    TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
+    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
+    TYPE(EQUATIONS_MAPPING_RHS_TYPE), POINTER :: RHS_MAPPING
+    TYPE(EQUATIONS_MAPPING_SOURCE_TYPE), POINTER :: SOURCE_MAPPING
+    !Create values cache
     TYPE(EQUATIONS_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE !<The create values cache for the equations mapping
   END TYPE EQUATIONS_MAPPING_TYPE
 
@@ -1240,32 +1314,21 @@ MODULE TYPES
   TYPE SOLVER_MATRIX_PTR_TYPE
     TYPE(SOLVER_MATRIX_TYPE), POINTER :: PTR
   END TYPE SOLVER_MATRIX_PTR_TYPE
-
-  !>Contains information on the solver Jacobian for nonlinear problems
-  TYPE SOLVER_JACOBIAN_TYPE
-    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES !<A pointer to the solver matrices for this solver Jacobian
-    LOGICAL :: UPDATE_JACOBIAN !<Is .TRUE. if the solver Jacobian is to be updated
-    INTEGER(INTG) :: STORAGE_TYPE !<The storage type for the solver Jacobian
-    INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in the distributed solver Jacobian
-    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: JACOBIAN !<A pointer to the distributed solver Jacobian
-  END TYPE SOLVER_JACOBIAN_TYPE
   
   !>Contains information on the solver matrices and rhs vector
   TYPE SOLVER_MATRICES_TYPE
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the problem solver
     LOGICAL :: SOLVER_MATRICES_FINISHED !<Is .TRUE. if the solver matrices have finished being created, .FALSE. if not.
     TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING !<A pointer to the solution mapping for these solver matrices
-    INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of rows in the distributed solution matrix for this computational node
-    INTEGER(INTG) :: TOTAL_NUMBER_OF_ROWS !<The total number of rows in the distributed solution matrix
+    INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of (local) rows in the distributed solution matrix for this computational node
+    INTEGER(INTG) :: NUMBER_OF_GLOBAL_ROWS !<The number of global rows in the distributed solution matrix
     INTEGER(INTG) :: LIBRARY_TYPE !<The library type for the solver matrices
     !Linear matrices
     INTEGER(INTG) :: NUMBER_OF_MATRICES !<The number of solver matrices defined for the problem
     TYPE(SOLVER_MATRIX_PTR_TYPE), ALLOCATABLE :: MATRICES(:) !<MATRICES(matrix_idx)%PTR contains the information on the matrix_idx'th solver matrix
     !Nonlinear matrices and vectors
-    TYPE(SOLVER_JACOBIAN_TYPE), POINTER :: JACOBIAN !<A pointer to the Jacobian for nonlinear problems.
     LOGICAL :: UPDATE_RESIDUAL !<Is .TRUE. if the residual vector is to be updated
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RESIDUAL !<A pointer to the distributed residual vector for nonlinear problems
-    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: NONLINEAR_SOLUTION !<A pointer to the distributed solution vector for nonlinear problems
     !Right hand side vector
     LOGICAL :: UPDATE_RHS_VECTOR !<Is .TRUE. if the RHS vector is to be updated
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RHS_VECTOR !<A pointer to the distributed RHS vector for the solver matrices
@@ -1310,10 +1373,13 @@ MODULE TYPES
   TYPE NONLINEAR_LINESEARCH_SOLVER_TYPE
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer to the nonlinear solver
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the nonlinear solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG) :: JACOBIAN_CALCULATION_TYPE !<The type of calculation used for the Jacobian \see SOLVER_ROUTINES_JacobianCalculationTypes,SOLVER_ROUTINES
     INTEGER(INTG) :: LINESEARCH_TYPE !<The line search type \see SOLVER_ROUTINES_NonlinearLineSearchTypes,SOLVER_ROUTINES
     REAL(DP) :: LINESEARCH_ALPHA !<The line search alpha
     REAL(DP) :: LINESEARCH_MAXSTEP !<The line search maximum step
     REAL(DP) :: LINESEARCH_STEPTOLERANCE !<The line search step tolerance
+    TYPE(PETSC_ISCOLORING_TYPE) :: JACOBIAN_ISCOLORING !<The Jacobian matrix index set colouring
+    TYPE(PETSC_MATFDCOLORING_TYPE) :: JACOBIAN_FDCOLORING !<The Jacobian matrix finite difference colouring
     TYPE(PETSC_SNES_TYPE) :: SNES !<The PETSc nonlinear solver object
   END TYPE NONLINEAR_LINESEARCH_SOLVER_TYPE
   
@@ -1377,7 +1443,7 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: SOLVER_COLS(:) !<SOLVER_COLS(i). The solver column number for the i'th solver column that this column is mapped to
     REAL(DP), ALLOCATABLE :: COUPLING_COEFFICIENTS(:) !<COUPLING_COEFFICIENTS(i). The coupling coefficients for the i'th solver column that this column is mapped to.
   END TYPE EQUATIONS_COL_TO_SOLVER_COLS_MAP_TYPE
-  
+
   TYPE EQUATIONS_TO_SOLVER_MAPS_TYPE    
     INTEGER(INTG) :: EQUATIONS_MATRIX_NUMBER !<The equations matrix number being mapped.
     INTEGER(INTG) :: SOLVER_MATRIX_NUMBER !<The solver matrix number being mapped.
@@ -1390,6 +1456,19 @@ MODULE TYPES
   TYPE EQUATIONS_TO_SOLVER_MAPS_PTR_TYPE
     TYPE(EQUATIONS_TO_SOLVER_MAPS_TYPE), POINTER :: PTR !<A pointer to the equations to solver maps
   END TYPE EQUATIONS_TO_SOLVER_MAPS_PTR_TYPE
+  
+  TYPE JACOBIAN_COL_TO_SOLVER_COLS_MAP_TYPE
+    INTEGER(INTG) :: NUMBER_OF_SOLVER_COLS !<The number of solver cols this Jacobian column is mapped to
+    INTEGER(INTG), ALLOCATABLE :: SOLVER_COLS(:) !<SOLVER_COLS(i). The solver column number for the i'th solver column that this column is mapped to
+    REAL(DP), ALLOCATABLE :: COUPLING_COEFFICIENTS(:) !<COUPLING_COEFFICIENTS(i). The coupling coefficients for the i'th solver column that this column is mapped to.
+  END TYPE JACOBIAN_COL_TO_SOLVER_COLS_MAP_TYPE
+  
+  TYPE JACOBIAN_TO_SOLVER_MAP_TYPE    
+    INTEGER(INTG) :: SOLVER_MATRIX_NUMBER !<The solver matrix number being mapped.
+    TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN_MATRIX !<A pointer to the Jacobian matrix being mapped.
+    TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX !<A pointer to the solver matrix being mapped.
+    TYPE(JACOBIAN_COL_TO_SOLVER_COLS_MAP_TYPE), ALLOCATABLE :: JACOBIAN_COL_SOLVER_COLS_MAP(:) !<JACOBIAN_COL_SOLVER_COL_MAP(column_idx). The mapping from the column_idx'th column of the Jacobian matrix to the solver matrix columns.
+  END TYPE JACOBIAN_TO_SOLVER_MAP_TYPE
 
   !>Contains information on the mappings between field variable dofs in an equation set and the solver matrix columns (solver dofs) \todo rename solver col to be solver dof here
   TYPE VARIABLE_TO_SOLVER_COL_MAP_TYPE
@@ -1406,8 +1485,9 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: VARIABLE_TYPES(:) !<VARIABLE_TYPES(variable_idx). The variable type for the variable_idx'th variable that is mapped to the solver matrix.
     TYPE(FIELD_VARIABLE_PTR_TYPE), ALLOCATABLE :: VARIABLES(:) !<VARIABLES(variable_idx). VARIABLES(variable_idx)%PTR points to the variable_idx'th variable that is mapped to the solver matrix.
     TYPE(VARIABLE_TO_SOLVER_COL_MAP_TYPE), ALLOCATABLE :: VARIABLE_TO_SOLVER_COL_MAPS(:) !<VARIABLE_TO_SOLVER_COL_MAPS(variable_idx). The mappings from the variable dofs to the solver dofs for the variable_idx'th variable in the equations set that is mapped to the solver matrix.
-    INTEGER(INTG) :: NUMBER_OF_EQUATIONS_MATRICES !<The number of equations matrices mapped to this solver matrix
-    TYPE(EQUATIONS_TO_SOLVER_MAPS_PTR_TYPE), ALLOCATABLE :: EQUATIONS_TO_SOLVER_MATRIX_MAPS(:) !<EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx). The maps from the equations_idx'th equations matrix to solver matrix
+    INTEGER(INTG) :: NUMBER_OF_LINEAR_EQUATIONS_MATRICES !<The number of linear equations matrices mapped to this solver matrix
+    TYPE(EQUATIONS_TO_SOLVER_MAPS_PTR_TYPE), ALLOCATABLE :: EQUATIONS_TO_SOLVER_MATRIX_MAPS(:) !<EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx). The maps from the equations_idx'th linear equations matrix to solver matrix
+    TYPE(JACOBIAN_TO_SOLVER_MAP_TYPE), POINTER :: JACOBIAN_TO_SOLVER_MATRIX_MAP !<The map from the Jacobian matrix to the solver matrix
   END TYPE EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM_TYPE
 
   !>Contains information on the equations to solver matrix mappings when indexing by equations matrix number
@@ -1417,6 +1497,10 @@ MODULE TYPES
     TYPE(EQUATIONS_TO_SOLVER_MAPS_PTR_TYPE), ALLOCATABLE :: EQUATIONS_TO_SOLVER_MATRIX_MAPS(:) !<EQUATIONS_TO_SOLVER_MATRIX_MAPS(solver_matrix_idx). The maps from the equation matrix to the solver_matrix_idx'th solver matrix
   END TYPE EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM_TYPE
 
+  TYPE EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM_TYPE
+    TYPE(JACOBIAN_TO_SOLVER_MAP_TYPE), POINTER :: JACOBIAN_TO_SOLVER_MATRIX_MAP
+  END TYPE EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM_TYPE
+  
   !>Contains information on the mapping from the equations rows in an equations set to the solver rows 
   TYPE EQUATIONS_ROW_TO_SOLVER_ROWS_MAP_TYPE
     INTEGER(INTG) :: NUMBER_OF_SOLVER_ROWS !<The number of solver rows this equations row is mapped to
@@ -1431,26 +1515,30 @@ MODULE TYPES
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations in this equations set
     TYPE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM_TYPE), ALLOCATABLE :: EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(:) !<EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx). The mappings from the equations matrices in this equation set to the solver_matrix_idx'th solver_matrix
     TYPE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM_TYPE), ALLOCATABLE :: EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM(:) !<EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM(equations_matrix_idx). The mappings from the equation_matrix_idx'th equations matrix in this equation set to the solver_matrices.
+    TYPE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM_TYPE), POINTER :: EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM !<The mappings from the Jacobian matrix in this equation set to the solver_matrices.
     TYPE(EQUATIONS_ROW_TO_SOLVER_ROWS_MAP_TYPE), ALLOCATABLE :: EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(:) !<EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_idx). The mappings from the equations_row_idx'th equations row to the solver matrices rows.
   END TYPE EQUATIONS_SET_TO_SOLVER_MAP_TYPE
 
   !>Contains information about the mapping from a solver matrix column to equations matrices and variables
   TYPE SOLVER_COL_TO_EQUATIONS_MAP_TYPE
-    INTEGER(INTG) :: NUMBER_OF_EQUATIONS_MATRICES !<The number of equations matrices the solver column is mapped to in this equations set
+    INTEGER(INTG) :: NUMBER_OF_LINEAR_EQUATIONS_MATRICES !<The number of linear equations matrices the solver column is mapped to in this equations set
     INTEGER(INTG), ALLOCATABLE :: EQUATIONS_MATRIX_NUMBERS(:) !<EQUATIONS_MATRIX_NUMBERS(i). The i'th equations matrix number in theequations that the solver column is mapped to
     INTEGER(INTG), ALLOCATABLE :: EQUATIONS_COL_NUMBERS(:) !<EQUATIONS_COL_NUMBERS(i). The i'th equations column number in the equation set the solver column is mapped to.
     REAL(DP), ALLOCATABLE :: COUPLING_COEFFICIENTS(:) !<COUPLING_COEFFICIENTS(i). The i'th coupling coefficient for solver column mapping
+!!TODO: Maybe split this into a linear and a nonlinear part? The only problem is that would probably use about the same memory???
+    INTEGER(INTG) :: JACOBIAN_COL_NUMBER !<The Jacbian column number in the equations set that the solver column is mapped to.
+    REAL(DP) :: JACOBIAN_COUPLING_COEFFICIENT !<The coupling coefficient for the solver column to Jacobian column mapping.
   END TYPE SOLVER_COL_TO_EQUATIONS_MAP_TYPE
 
-  !>Contains information about mapping the solver column (solver dof) to the field variable dofs in the equations set.
-  TYPE SOLVER_COL_TO_VARIABLE_MAP_TYPE
+  !>Contains information about mapping the solver dof to the field variable dofs in the equations set.
+  TYPE SOLVER_DOF_TO_VARIABLE_MAP_TYPE
     INTEGER(INTG) :: NUMBER_OF_EQUATIONS_SETS !<The number of equations sets this column is mapped to
     INTEGER(INTG), ALLOCATABLE :: EQUATIONS_SET_INDICES(:) !<EQUATIONS_SET_INDICES(i). The equations set index of the i'th equations set that this solver column is mapped to.
     TYPE(FIELD_VARIABLE_PTR_TYPE), ALLOCATABLE :: VARIABLE(:) !<VARIABLE(i).VARIABLE(i)%PTR is a pointer to the field variable that the column is mapped to in the i'th equation set
     INTEGER(INTG), ALLOCATABLE :: VARIABLE_DOF(:) !<VARIABLE_DOF(i). The variable dof number that the column is mapped to in the i'th equations set
     REAL(DP), ALLOCATABLE :: VARIABLE_COEFFICIENT(:) !<VARIABLE_COEFFICIENT(i). The mulitplicative coefficient for the mapping to the i'th equations set
     REAL(DP), ALLOCATABLE :: ADDITIVE_CONSTANT(:) !<ADDITIVE_CONSTANT(i). The additive constant for the mapping to the i'th equations set
-  END TYPE SOLVER_COL_TO_VARIABLE_MAP_TYPE
+  END TYPE SOLVER_DOF_TO_VARIABLE_MAP_TYPE
   
   !>Contains information about the mappings from a solver matrix to the equations in an equations set
   TYPE SOLVER_COL_TO_EQUATIONS_SET_MAP_TYPE
@@ -1465,10 +1553,11 @@ MODULE TYPES
     TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX !<A pointer to the solver matrix being mappind
     INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in this distributed solver matrix
     TYPE(SOLVER_COL_TO_EQUATIONS_SET_MAP_TYPE), ALLOCATABLE :: SOLVER_COL_TO_EQUATIONS_SET_MAPS(:) !<SOLVER_TO_EQUATIONS_SET_MAP(equations_set_idx). The solver columns to equations matrix maps for the col_idx'th column set.
-    INTEGER(INTG) :: NUMBER_OF_DOFS !<The number of (local) dofs in the solver vector associated with this solver matrix
-    INTEGER(INTG) :: TOTAL_NUMBER_OF_DOFS !<The total number of (global) dofs in the solver vector associated with this solver matrix.
+    INTEGER(INTG) :: NUMBER_OF_DOFS !<The number of local dofs (excluding ghost values) in the solver vector associated with this solver matrix
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_DOFS !<The number of local dofs (including ghost values) in the solver vector associated with this solver matrix
+    INTEGER(INTG) :: NUMBER_OF_GLOBAL_DOFS !<The number of global dofs in the solver vector associated with this solver matrix.
 !!TODO: should this be index by solver dof rather than column???
-    TYPE(SOLVER_COL_TO_VARIABLE_MAP_TYPE), ALLOCATABLE :: SOLVER_COL_TO_VARIABLE_MAPS(:) !<SOLVER_COL_TO_EQUATIONS_MAPS(col_idx). The mappings from the col_idx'th column of the solver matrix to the field variables in the equations set.
+    TYPE(SOLVER_DOF_TO_VARIABLE_MAP_TYPE), ALLOCATABLE :: SOLVER_DOF_TO_VARIABLE_MAPS(:) !<SOLVER_DOF_TO_EQUATIONS_MAPS(dof_idx). The mappings from the dof_idx'th solver dof to the field variables in the equations set.
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: COLUMN_DOFS_MAPPING !<The domain mapping for solver matrix column dofs
   END TYPE SOLVER_COL_TO_EQUATIONS_SETS_MAP_TYPE
 
@@ -1483,21 +1572,23 @@ MODULE TYPES
   !>Contains information about the cached create values for a solution mapping
   TYPE SOLUTION_MAPPING_CREATE_VALUES_CACHE_TYPE    
     INTEGER(INTG), ALLOCATABLE :: MATRIX_VARIABLE_TYPES(:,:,:) !<MATRIX_VARIABLE_TYPES(0:..,equations_set_idx,matrix_idx). The list of matrix variable types in the equations_set_idx'th equations set for the matrix_idx'th solver matrix. MATRIX_VARIABLE_TYPES(0,equations_set_idx,matrix_idx) is the number of variable types in the equations_set_idx'th equations set mapped to the matrix_idx'th solver matrix and MATRIX_VARIABLE_TYPES(1..,equations_set_idx,matrix_idx) is the list of the variable types in the equations set.
-  END TYPE SOLUTION_MAPPING_CREATE_VALUES_CACHE_TYPE
+   INTEGER, ALLOCATABLE :: RESIDUAL_VARIABLE_TYPE(:) !<RESIDUAL_VARIABLE_TYPE(equations_set_idx). The variable type that is mapped to the solution residual for the equations_set_idx'th equations set.
+   INTEGER, ALLOCATABLE :: RHS_VARIABLE_TYPE(:) !<RHS_VARIABLE_TYPE(equations_set_idx). The variable type that is mapped to the solution RHS for the equations_set_idx'th equations set
+   INTEGER, ALLOCATABLE :: SOURCE_VARIABLE_TYPE(:) !<SOURCE_VARIABLE_TYPE(equations_set_idx). The source variable type that is mapped to the RHS for the equations_set_idx'th equations set.
+ END TYPE SOLUTION_MAPPING_CREATE_VALUES_CACHE_TYPE
 
   !>Contains information on the solution mapping between the global equation sets and the solver matrices.
   TYPE SOLUTION_MAPPING_TYPE
-    TYPE(SOLUTION_TYPE), POINTER ::SOLUTION !<A pointer to the solution for this mapping.
+    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the solution for this mapping.
     LOGICAL :: SOLUTION_MAPPING_FINISHED !<Is .TRUE. if the solution mapping has finished being created, .FALSE. if not.
     INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of (local) rows in the solver matrices
-    INTEGER(INTG) :: TOTAL_NUMBER_OF_ROWS !<The total number of rows in the solver matrices
+    INTEGER(INTG) :: NUMBER_OF_GLOBAL_ROWS !<The number of global rows in the solver matrices
     INTEGER(INTG) :: NUMBER_OF_SOLVER_MATRICES !<The number of solution matrices in this mapping.
     INTEGER(INTG) :: NUMBER_OF_EQUATIONS_SETS !<The number of equations sets in the solution mapping.
     TYPE(EQUATIONS_SET_PTR_TYPE), ALLOCATABLE :: EQUATIONS_SETS(:) !<The list of equations sets that are in this solution mapping
     TYPE(EQUATIONS_SET_TO_SOLVER_MAP_TYPE), ALLOCATABLE :: EQUATIONS_SET_TO_SOLVER_MAP(:) !<EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx). The mapping from the equations_set_idx'the equations set to the solver matrices.
     TYPE(SOLVER_COL_TO_EQUATIONS_SETS_MAP_TYPE), ALLOCATABLE :: SOLVER_COL_TO_EQUATIONS_SETS_MAP(:) !<SOLVER_TO_EQUATIONS_SET_MAP(solver_matrix_idx). The mapping from the solver_matrix_idx'th solver matrix to the equations set. 
     TYPE(SOLVER_ROW_TO_EQUATIONS_SET_MAP_TYPE), ALLOCATABLE :: SOLVER_ROW_TO_EQUATIONS_SET_MAPS(:) !<SOLVER_ROW_TO_EQUATIONS_SET_MAPS(row_idx). The mappings from the row_idx'th solver row to the equations set rows.
-    LOGICAL :: HAVE_JACOBIAN !<Is .TRUE. if the Jacobian exists for nonlinear problems.
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ROW_DOFS_MAPPING !<The domain mapping for the solver rows.
     TYPE(SOLUTION_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE !<The create values cache for the solution mapping
   END TYPE SOLUTION_MAPPING_TYPE
@@ -1572,7 +1663,7 @@ MODULE TYPES
     TYPE(SOLUTION_PTR_TYPE), ALLOCATABLE :: SOLUTIONS(:) !<A pointer to the solution information for the problem.
   END TYPE PROBLEM_TYPE
   
-  !>A buffer type to allow for an array of pointers to a PROBLEM_TYPE.
+  !>A buffer type to allow for an array of pointers to a PROBLEM_TYPE \see TYPES:PROBLEM_TYPE
   TYPE PROBLEM_PTR_TYPE
     TYPE(PROBLEM_TYPE), POINTER :: PTR !<The pointer to the problem.
   END TYPE PROBLEM_PTR_TYPE
