@@ -103,9 +103,15 @@ ifneq ($(DEBUG),false)
   FFLAGS += $(strip $(DBGCF_FLGS) $(DBGF_FLGS))
   CPPFLAGS += -DDEBUG
 else
-  CFLAGS += $(strip $(OPTCFE_FLGS) $(OPTCF_FLGS) $(OPTC_FLGS))
-  FFLAGS += $(strip $(OPTCFE_FLGS) $(OPTCF_FLGS) $(OPTF_FLGS))
-  ELFLAGS += $(OPTCFE_FLGS)
+  ifneq ($(MPIPROF),false)
+    CFLAGS += $(strip $(DBGCF_FLGS) $(DBGC_FLGS))
+    FFLAGS += $(strip $(DBGCF_FLGS) $(DBGF_FLGS))
+    CPPFLAGS += -DDEBUG
+  else
+    CFLAGS += $(strip $(OPTCFE_FLGS) $(OPTCF_FLGS) $(OPTC_FLGS))
+    FFLAGS += $(strip $(OPTCFE_FLGS) $(OPTCF_FLGS) $(OPTF_FLGS))
+    ELFLAGS += $(OPTCFE_FLGS)
+  endif
 endif
 ifneq ($(MP),false)
   CFLAGS += $(MP_FLGS)

@@ -89,7 +89,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: column_idx,dof_idx,equations_column,equations_matrix,equations_matrix_idx,equations_set_idx, &
       & global_dof,global_field_dof,global_row,jacobian_column,local_dof,LINEAR_EQUATIONS_MATRIX_OFFSET,local_row, &
-      & matrix_number,myrank_local_dof,NUMBER_OF_COLUMNS,NUMBER_OF_LINEAR_EQUATIONS_MATRICES,NUMBER_OF_GLOBAL_SOLVER_COLS, &
+      & matrix_number,myrank,myrank_local_dof,NUMBER_OF_COLUMNS,NUMBER_OF_LINEAR_EQUATIONS_MATRICES,NUMBER_OF_GLOBAL_SOLVER_COLS, &
       & LOCAL_SOLVER_DOF_OFFSET,NUMBER_OF_GHOST_SOLVER_DOFS,NUMBER_OF_GLOBAL_SOLVER_ROWS,NUMBER_OF_LOCAL_SOLVER_COLS, &
       & NUMBER_OF_LOCAL_SOLVER_DOFS,NUMBER_OF_LOCAL_SOLVER_ROWS,NUMBER_OF_VARIABLES,rank,rank_idx,row_idx,SOLVER_DOF, &
       & solver_matrix_idx,TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS,variable_idx,variable_type
@@ -121,6 +121,7 @@ CONTAINS
           !
           !Calculate the row mappings.
           !We do not have any couplings defined at the moment there is only a 1-1 mapping.
+          myrank=COMPUTATIONAL_ENVIRONMENT%MY_COMPUTATIONAL_NODE_NUMBER
           NUMBER_OF_GLOBAL_SOLVER_ROWS=0
           NUMBER_OF_LOCAL_SOLVER_ROWS=0                                 
           DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
@@ -163,7 +164,8 @@ CONTAINS
                                   !For now assume 1-1 mapping between rows and dofs.
                                   global_dof=global_row                                  
                                   global_field_dof=DEPENDENT_VARIABLE%GLOBAL_DOF_OFFSET+global_dof
-                                  INCLUDE_ROW=FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(global_field_dof)==EQUATIONS_SET_NOT_FIXED
+                                  INCLUDE_ROW= &
+                                    & FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(global_field_dof)==EQUATIONS_SET_NOT_FIXED
                                 ELSE IF(ASSOCIATED(LINEAR_MAPPING)) THEN
                                   !Loop over the variables in the equations set. Don't include the row in the solver matrices if
                                   !all the variable dofs associated with this equations row are fixed.
@@ -185,7 +187,7 @@ CONTAINS
                                 ENDIF
                                 IF(INCLUDE_ROW) THEN
                                   NUMBER_OF_GLOBAL_SOLVER_ROWS=NUMBER_OF_GLOBAL_SOLVER_ROWS+1
-                                  IF(rank==COMPUTATIONAL_ENVIRONMENT%MY_COMPUTATIONAL_NODE_NUMBER) &
+                                  IF(rank==myrank) &
                                     & NUMBER_OF_LOCAL_SOLVER_ROWS=NUMBER_OF_LOCAL_SOLVER_ROWS+1 !1-1 mapping
                                 ENDIF !include row
                               ENDIF !rank dof
@@ -248,7 +250,7 @@ CONTAINS
               NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
               DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
               FIXED_CONDITIONS=>EQUATIONS_SET%FIXED_CONDITIONS
-              IF(rank==COMPUTATIONAL_ENVIRONMENT%MY_COMPUTATIONAL_NODE_NUMBER) THEN
+              IF(rank==myrank) THEN
                 !Initialise the equations set to solver map
                 CALL SOLUTION_MAPPING_EQUATIONS_SET_TO_SOLVER_MAP_INITIALISE(SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                   & equations_set_idx),ERR,ERROR,*999)
@@ -264,7 +266,8 @@ CONTAINS
                   !Allocate the equations set to solver maps for equations matrix (em) indexing
                   ALLOCATE(SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM( &
                     & LINEAR_MAPPING%NUMBER_OF_LINEAR_EQUATIONS_MATRICES),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations set to solver map equations to solver matrix maps em.", &
+                  IF(ERR/=0) &
+                    & CALL FLAG_ERROR("Could not allocate equations set to solver map equations to solver matrix maps em.", &
                     & ERR,ERROR,*999)
                 ENDIF
                 IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
@@ -338,7 +341,7 @@ CONTAINS
                     ROW_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(NUMBER_OF_GLOBAL_SOLVER_ROWS)%DOMAIN_NUMBER(1)=rank
                     ROW_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(NUMBER_OF_GLOBAL_SOLVER_ROWS)%LOCAL_TYPE(1)=DOMAIN_LOCAL_INTERNAL
                     !If this is my rank then set up the solver->equations and equations->solver row mappings
-                    IF(rank==COMPUTATIONAL_ENVIRONMENT%MY_COMPUTATIONAL_NODE_NUMBER) THEN
+                    IF(rank==myrank) THEN
                       !Set up the solver row -> equations row mappings. 1-1 mapping as no coupling at the moment
                       !Initialise
                       CALL SOLUTION_MAPPING_SOLVER_ROW_TO_EQUATIONS_SET_MAP_INITIALISE(SOLUTION_MAPPING% &
@@ -349,7 +352,8 @@ CONTAINS
                       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate row to equations set map equations set.",ERR,ERROR,*999)
                       ALLOCATE(SOLUTION_MAPPING%SOLVER_ROW_TO_EQUATIONS_SET_MAPS(NUMBER_OF_LOCAL_SOLVER_ROWS)% &
                         & EQUATIONS_ROW_NUMBER(1),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate row to equations set map equations row number.",ERR,ERROR,*999)
+                      IF(ERR/=0) &
+                        & CALL FLAG_ERROR("Could not allocate row to equations set map equations row number.",ERR,ERROR,*999)
                       ALLOCATE(SOLUTION_MAPPING%SOLVER_ROW_TO_EQUATIONS_SET_MAPS(NUMBER_OF_LOCAL_SOLVER_ROWS)% &
                         & COUPLING_COEFFICIENTS(1),STAT=ERR)
                       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate row to equations set map coupling coefficients.", &
@@ -385,7 +389,7 @@ CONTAINS
                         & local_row)%COUPLING_COEFFICIENTS(1)=1.0_DP
                     ENDIF !rank==my rank
                   ELSE
-                    IF(rank==COMPUTATIONAL_ENVIRONMENT%MY_COMPUTATIONAL_NODE_NUMBER) THEN
+                    IF(rank==myrank) THEN
                       !Set up the equations row -> solver row mappings
                       !Initialise
                       CALL SOLUTION_MAPPING_EQUATIONS_ROW_TO_SOLVER_ROWS_MAP_INITIALISE(SOLUTION_MAPPING% &
@@ -483,19 +487,19 @@ CONTAINS
                       SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                         & solver_matrix_idx)%VARIABLES(variable_idx)%PTR=>DEPENDENT_VARIABLE
                       !Allocate the variable to solver col maps arrays
-                      ALLOCATE(SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
-                        & solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_idx)%COLUMN_NUMBERS(DEPENDENT_VARIABLE% &
-                        & TOTAL_NUMBER_OF_DOFS),STAT=ERR)
+                      ALLOCATE(SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                        & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_idx)% &
+                        & COLUMN_NUMBERS(DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
                       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variables to solver column maps column numbers.", &
                         & ERR,ERROR,*999)
-                      ALLOCATE(SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
-                        & solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_idx)%COUPLING_COEFFICIENTS(DEPENDENT_VARIABLE% &
-                        & TOTAL_NUMBER_OF_DOFS),STAT=ERR)
+                      ALLOCATE(SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                        & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_idx)% &
+                        & COUPLING_COEFFICIENTS(DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
                       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variables to solver column maps coupling coefficients.", &
                         & ERR,ERROR,*999)
-                      ALLOCATE(SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
-                        & solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_idx)%ADDITIVE_CONSTANTS(DEPENDENT_VARIABLE% &
-                        & TOTAL_NUMBER_OF_DOFS),STAT=ERR)
+                      ALLOCATE(SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                        & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_idx)% &
+                        & ADDITIVE_CONSTANTS(DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
                       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variables to solver column maps additive constants.", &
                         & ERR,ERROR,*999)
                       !Setup
@@ -519,7 +523,7 @@ CONTAINS
                         MYRANK_DOF=.FALSE.
                         DO rank_idx=1,COL_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_dof)%NUMBER_OF_DOMAINS
                           IF(COL_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_dof)%DOMAIN_NUMBER(rank_idx)== &
-                            & COMPUTATIONAL_ENVIRONMENT%MY_COMPUTATIONAL_NODE_NUMBER) THEN
+                            & myrank) THEN
                             MYRANK_DOF=.TRUE.
                             EXIT
                           ENDIF
@@ -528,7 +532,7 @@ CONTAINS
                         IF(FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(global_field_dof)==EQUATIONS_SET_NOT_FIXED) THEN
                           NUMBER_OF_GLOBAL_SOLVER_COLS=NUMBER_OF_GLOBAL_SOLVER_COLS+1
                           IF(MYRANK_DOF) TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS=TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS+1
-                          IF(rank==COMPUTATIONAL_ENVIRONMENT%MY_COMPUTATIONAL_NODE_NUMBER) &
+                          IF(rank==myrank) &
                             & NUMBER_OF_LOCAL_SOLVER_COLS=NUMBER_OF_LOCAL_SOLVER_COLS+1
                         ENDIF !field dof not fixed
                       ENDIF !rank dof
@@ -557,7 +561,7 @@ CONTAINS
 !!TODO: what is the real number of domains for a solution???
             CALL DOMAIN_MAPPINGS_MAPPING_INITIALISE(SOLUTION_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)% &
               & COLUMN_DOFS_MAPPING,COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES,ERR,ERROR,*999)            
-            COL_DOMAIN_MAPPING=>SOLUTION_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%COLUMN_DOFS_MAPPING            
+            COL_DOMAIN_MAPPING=>SOLUTION_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%COLUMN_DOFS_MAPPING
             ALLOCATE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(NUMBER_OF_GLOBAL_SOLVER_COLS),STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column dofs mapping global to local.",ERR,ERROR,*999)
             COL_DOMAIN_MAPPING%NUMBER_OF_GLOBAL=NUMBER_OF_GLOBAL_SOLVER_COLS
@@ -567,11 +571,11 @@ CONTAINS
             LOCAL_SOLVER_DOF_OFFSET=NUMBER_OF_LOCAL_SOLVER_COLS
             !Loop over the ranks to ensure that the lowest ranks have the lowest numbered solver variables
 !!TODO: see how slow this is. At the moment we go through number of ranks*number of globals. We could presort the global nys into a list for each rank. This would take additional memory.
+            NUMBER_OF_LOCAL_SOLVER_DOFS=0
+            NUMBER_OF_GHOST_SOLVER_DOFS=0
             DO rank=0,COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES-1
               NUMBER_OF_LOCAL_SOLVER_COLS=0
               TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS=0
-              NUMBER_OF_LOCAL_SOLVER_DOFS=0
-              NUMBER_OF_GHOST_SOLVER_DOFS=0
               DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
                 !The pointers below have been checked for association above.
                 EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
@@ -688,8 +692,7 @@ CONTAINS
                     RANK_DOF=.FALSE.
                     DO rank_idx=1,COL_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_dof)%NUMBER_OF_DOMAINS
                       IF(COL_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_dof)%DOMAIN_NUMBER(rank_idx)==rank &
-                        & .AND.COL_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_dof)%LOCAL_TYPE(rank_idx)/= &
-                        & DOMAIN_LOCAL_GHOST) THEN
+                        & .AND.COL_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_dof)%LOCAL_TYPE(rank_idx)/=DOMAIN_LOCAL_GHOST) THEN
                         RANK_DOF=.TRUE.
                         local_dof=COL_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_dof)%LOCAL_NUMBER(rank_idx)
                         EXIT
@@ -698,8 +701,7 @@ CONTAINS
                     IF(RANK_DOF) THEN
                       MYRANK_DOF=.FALSE.
                       DO rank_idx=1,COL_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_dof)%NUMBER_OF_DOMAINS
-                        IF(COL_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_dof)%DOMAIN_NUMBER(rank_idx)== &
-                          & COMPUTATIONAL_ENVIRONMENT%MY_COMPUTATIONAL_NODE_NUMBER) THEN
+                        IF(COL_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_dof)%DOMAIN_NUMBER(rank_idx)==myrank) THEN
                           MYRANK_DOF=.TRUE.
                           myrank_local_dof=COL_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_dof)%LOCAL_NUMBER(rank_idx)
                           EXIT
@@ -711,7 +713,7 @@ CONTAINS
                         NUMBER_OF_GLOBAL_SOLVER_COLS=NUMBER_OF_GLOBAL_SOLVER_COLS+1
                         IF(MYRANK_DOF) THEN
                           TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS=TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS+1
-                          IF(rank==COMPUTATIONAL_ENVIRONMENT%MY_COMPUTATIONAL_NODE_NUMBER) THEN
+                          IF(rank==myrank) THEN
                             NUMBER_OF_LOCAL_SOLVER_COLS=NUMBER_OF_LOCAL_SOLVER_COLS+1
                             NUMBER_OF_LOCAL_SOLVER_DOFS=NUMBER_OF_LOCAL_SOLVER_DOFS+1
                             SOLVER_DOF=NUMBER_OF_LOCAL_SOLVER_DOFS
@@ -1007,12 +1009,12 @@ CONTAINS
           IF(SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(row_idx)% &
             & NUMBER_OF_SOLVER_ROWS>0) THEN
             CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(row_idx)%NUMBER_OF_SOLVER_ROWS,5,5,SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-              & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(row_idx)%SOLVER_ROWS, &
+              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(row_idx)%NUMBER_OF_SOLVER_ROWS,5,5,SOLUTION_MAPPING% &
+              & EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(row_idx)%SOLVER_ROWS, &
               & '("        Solver row numbers    :",5(X,I13))','(31X,5(X,I13))',ERR,ERROR,*999)
             CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(row_idx)%NUMBER_OF_SOLVER_ROWS,5,5,SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-              & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(row_idx)%COUPLING_COEFFICIENTS, &
+              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(row_idx)%NUMBER_OF_SOLVER_ROWS,5,5,SOLUTION_MAPPING% &
+              & EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(row_idx)%COUPLING_COEFFICIENTS, &
               & '("        Coupling coefficients :",5(X,E13.6))','(31X,5(X,E13.6))',ERR,ERROR,*999)
           ENDIF
         ENDDO !row_idx
@@ -1023,14 +1025,14 @@ CONTAINS
       DO solver_matrix_idx=1,SOLUTION_MAPPING%NUMBER_OF_SOLVER_MATRICES
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Solver matrix : ",solver_matrix_idx,ERR,ERROR,*999)
         CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  Solver columns to equations sets columns mappings:",ERR,ERROR,*999)        
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of columns = ",SOLUTION_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
-          & solver_matrix_idx)%NUMBER_OF_COLUMNS,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of columns = ",SOLUTION_MAPPING% &
+          & SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%NUMBER_OF_COLUMNS,ERR,ERROR,*999)
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of DOFs = ",SOLUTION_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
           & solver_matrix_idx)%NUMBER_OF_DOFS,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Total number of DOFs = ",SOLUTION_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
-          & solver_matrix_idx)%TOTAL_NUMBER_OF_DOFS,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of global DOFs = ",SOLUTION_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
-          & solver_matrix_idx)%NUMBER_OF_GLOBAL_DOFS,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Total number of DOFs = ",SOLUTION_MAPPING% &
+          & SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%TOTAL_NUMBER_OF_DOFS,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of global DOFs = ",SOLUTION_MAPPING% &
+          & SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%NUMBER_OF_GLOBAL_DOFS,ERR,ERROR,*999)
         DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Equations set index : ",equations_set_idx,ERR,ERROR,*999)          
           CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  Column mappings:",ERR,ERROR,*999)        
