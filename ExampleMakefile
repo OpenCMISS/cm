@@ -61,6 +61,41 @@ include $(GLOBAL_ROOT)/utils/Makefile.inc
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
+ifndef MPI
+  MPI := mpich2
+endif
+
+ifeq ($(MPI),mpich2)
+  MPI := mpich2
+else
+  ifeq ($(MPI),intel)
+    ifeq ($(OPERATING_SYSTEM),linux)
+      ifdef I_MPI_ROOT
+        MPI := intel
+      else
+        $(error Intel MPI libraries not setup)
+      endif
+    else
+      $(error can only use intel mpi with Linux)
+    endif
+  else
+    $(error unknown MPI type - $(MPI))
+  endif
+endif
+
+ifeq ($(MPIPROF),true)
+  ifeq ($(MPI),intel)
+    ifndef VT_ROOT
+      $(error intel trace collector not setup)
+    endif
+    ifndef VT_ADD_LIBS
+      $(error intel trace collector not setup)
+    endif
+  endif
+endif
+
+#----------------------------------------------------------------------------------------------------------------------------------
+
 BASE_EXAMPLE_NAME = $(EXAMPLE_NAME)Example
 
 EXAMPLE_ROOT = $(GLOBAL_ROOT)/examples/$(EXAMPLE_NAME)
@@ -81,8 +116,13 @@ F_INCLUDE_DIRS := $(MODULE_DIR)
 #----------------------------------------------------------------------------------------------------------------------------------
 # compiling commands
 
-MPIFC = mpif90
-MPICC = mpicc
+ifeq ($(MPI),mpich2)
+  MPIFC = mpif90
+  MPICC = mpicc
+else
+  MPIFC = mpiifort
+  MPICC = mpiicc
+endif
 FC = $(MPIFC)
 CC = $(MPICC)
 AR = ar
@@ -154,9 +194,9 @@ ifeq ($(OPERATING_SYSTEM),linux)
   #endif
 
   #Use Intel compilers if available (icc -V sends output to STDERR and exits with error).
-  #ifneq (,$(shell icc -V 2>&1 | grep -i intel))
-  #  CC = icc
-  #endif
+  ifneq (,$(shell icc -V 2>&1 | grep -i intel))
+    CC = icc
+  endif
   ifneq (,$(shell ifort -V 2>&1 | grep -i intel))
     FC = ifort
   endif
@@ -187,10 +227,18 @@ ifeq ($(OPERATING_SYSTEM),linux)
   endif
   ifeq ($(CC),icc)
     # Turn on all warnings
-    C_FLGS += -warn all
+    C_FLGS += -Wall
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
-        C_FLGS += -xP# for sse3 (90nm Pentium 4 series)
+        ifneq ($(shell grep Duo /proc/cpuinfo 2>/dev/null),)
+          ifneq ($(shell grep "Core(TM)2" /proc/cpuinfo 2>/dev/null),)
+            C_FLGS += -xT# Core2 Duo	
+          else
+            C_FLGS += -x0# Core Duo
+          endif        
+        else
+          C_FLGS += -xP# for sse3 (90nm Pentium 4 series)
+        endif
       else
         C_FLGS += -xW# Pentium4 compatible (?sse2)
       endif
@@ -203,8 +251,16 @@ ifeq ($(OPERATING_SYSTEM),linux)
     DBGC_FLGS += -O0
     OPTC_FLGS = -O3 -ansi_alias
     ifneq ($(PROF),false)
-      F_FLGS += -g -pg
+      C_FLGS += -g -pg -tcollect
       ELFLAGS += -pg
+    endif
+    ifneq ($(MPIPROF),false)
+      ifeq ($(MPI),mpich2)
+        C_FLAGS += -Wl,--export-dyanmic
+        DBGC_FLAGS += -Wl,--export-dyanmic
+      else
+        C_FLAGS += -tcollect
+      endif
     endif
   endif
   ifeq ($(filter-out xlc%,$(CC)),)# xlc* C compiler
@@ -263,7 +319,15 @@ ifeq ($(OPERATING_SYSTEM),linux)
     F_FLGS += -cpp -warn all 
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
-        F_FLGS += -xP# for sse3 (90nm Pentium 4 series)
+        ifneq ($(shell grep Duo /proc/cpuinfo 2>/dev/null),)
+          ifneq ($(shell grep "Core(TM)2" /proc/cpuinfo 2>/dev/null),)
+            F_FLGS += -xT# Core2 Duo	
+          else
+            F_FLGS += -x0# Core Duo
+          endif        
+        else
+          F_FLGS += -xP# for sse3 (90nm Pentium 4 series)
+        endif
       else
         F_FLGS += -xW# Pentium4 compatible (?sse2)
       endif
@@ -276,12 +340,16 @@ ifeq ($(OPERATING_SYSTEM),linux)
     DBGF_FLGS += -O0 -check all -traceback -debug all
     OPTF_FLGS = -O3
     ifneq ($(PROF),false)
-      F_FLGS += -g -pg
+      F_FLGS += -g -pg -tcollect
       ELFLAGS += -pg
     endif
     ifneq ($(MPIPROF),false)
-      F_FLAGS += -Wl,--export-dyanmic
-      DBGF_FLAGS += -Wl,--export-dyanmic
+      ifeq ($(MPI),mpich2)
+        F_FLAGS += -Wl,--export-dyanmic
+        DBGF_FLAGS += -Wl,--export-dyanmic
+      else
+        F_FLAGS += -tcollect
+      endif
     endif
 #    MP_FLGS = -openmp
     ELFLAGS += -nofor_main -traceback
@@ -397,10 +465,10 @@ PARMETIS_LIBRARIES = -lparmetis -lmetis
 PARMETIS_LIB_PATH =#
 PARMETIS_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/ )
+  PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/ )
+    PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/ )
   else# windows
     PARMETIS_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
   endif
@@ -413,15 +481,15 @@ PETSC_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   ifeq ($(DEBUG),false)
     ifeq ($(MPIPROF),true)
-      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)-debug/lib/linux-gnu-c-debug/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)-debug/bmake/linux-gnu-c-debug/ )
+      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/linux-gnu-c-debug/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/bmake/linux-gnu-c-debug/ )
     else
-      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/linux-gnu-c-opt/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/bmake/linux-gnu-c-opt/ )
+      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/linux-gnu-c-opt/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/bmake/linux-gnu-c-opt/ )
     endif
   else
-    PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/linux-gnu-c-debug/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/bmake/linux-gnu-c-debug/ )
+    PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/linux-gnu-c-debug/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/bmake/linux-gnu-c-debug/ )
   endif
   ifeq ($(ABI),64)
     PETSC_LIB_PATH +=  $(addprefix -L, /usr/X11R6/lib64/ )
@@ -430,20 +498,20 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
     PETSC_LIB_PATH +=  $(addprefix -L, /usr/X11R6/lib/ )
     PETSC_LIB_PATH +=  $(addprefix -L, /usr/lib/ )
   endif
-  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/ )
-  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/include/ )
+  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/ )
+  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     ifeq ($(DEBUG),false)
-      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/aix5.3.0.0-c-opt/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/bmake/aix5.3.0.0-c-opt/ )
+      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/aix5.3.0.0-c-opt/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/bmake/aix5.3.0.0-c-opt/ )
     else
-      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/aix5.3.0.0-c-debug/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/bmake/aix5.3.0.0-c-debug/ )
+      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/aix5.3.0.0-c-debug/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/bmake/aix5.3.0.0-c-debug/ )
     endif
     PETSC_LIB_PATH +=  $(addprefix -L, /usr/X11R6/lib/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/include/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/include/ )
   else# windows
     PETSC_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     PETSC_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -455,11 +523,27 @@ MPI_LIB_PATH =#
 MPI_LIBRARIES =#
 MPI_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  ifeq ($(MPIPROF),true)
-    MPI_LIBRARIES += -lmpe_f2cmpi -llmpe -lmpe
+  ifeq ($(MPI),mpich2)
+    ifeq ($(MPIPROF),true)
+      MPI_LIBRARIES += -lmpe_f2cmpi -llmpe -lmpe
+    endif
+    MPI_LIBRARIES += -lmpichf90 -lmpich -lpthread -lrt
+    MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/ )
+  else
+    ifeq ($(MPIPROF),true)
+      MPI_INCLUDE_PATH += $(addprefix -I, $(VT_ROOT)/include/ )
+      MPI_LIB_PATH += $(addprefix -L, $(VT_LIB_DIR) )
+      MPI_LIBRARIES += -lVT $(VT_ADD_LIBS)
+    endif
+    MPI_LIBRARIES += -lmpi -lmpiif -lmpigi -lrt -lpthread -ldl
+    ifeq ($(ABI),64)
+      MPI_INCLUDE_PATH += $(addprefix -I, $(I_MPI_ROOT)/include64/ )
+      MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib64/ )
+    else
+      MPI_INCLUDE_PATH += $(addprefix -I, $(I_MPI_ROOT)/include/ )
+      MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib/ )
+    endif
   endif
-  MPI_LIBRARIES += -lmpichf90 -lmpich -lpthread -lrt
-  MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     MPI_LIBRARIES = -lmpi
@@ -1139,6 +1223,7 @@ help:
 	@echo "Options: (The former is the default unless specified.)"
 	@echo
 	@echo "	(DEBUG=|OPT=)"
+	@echo " MPI=(mpich2|intel)"
 	@echo "	PROF=(true|)"
 	@echo "	MPIPROF=(true|)"
 	@echo "	ABI=(32|64)"
