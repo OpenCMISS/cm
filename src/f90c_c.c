@@ -1,5 +1,5 @@
 /* \file
- * $Id: f90c_c.c 27 2007-07-24 16:52:51Z cpb $
+ * $Id$
  * \author Chris Bradley
  * \brief This file provides c utility routines for the f90_c module.
  *.
@@ -47,7 +47,7 @@ File: f90_c.c
 
 This file provides c utility routines for the f90_c module.
 
-$Id: f90c_c.c 27 2007-07-24 16:52:51Z cpb $
+$Id$
 
 Functions included:
 

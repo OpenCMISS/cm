@@ -1,0 +1,105 @@
+<chapter>
+  <title>OpenCMISS Concepts</title>
+  <sect1>
+    <title>Regions</title>
+    <para>
+      Regions are one of the primary objects in openCMISS. 
+      Regions are hierarchical in nature in that a region can have one parent region and a number of daughter sub-regions. 
+      Daughter regions are related in space to parent regions by an origin and an orientation of the regions coordinate system.
+      Daughter regions may only have the same or fewer dimensions as the parent region.
+      There is a global (world) region (number 0) that has the global (world) coordinate system.
+    </para>
+  </sect1>
+  <sect1>
+    <title>Basis Functions</title>
+    <para>
+      Basis functions are the key item to specify the field approximation/interpolation and the linking of nodes and elements to form a mesh.
+      Currently, it has two types: Lagrange-Hermite tensor product and Simplex.
+    </para>
+    <para>
+      Lagrange-Hermite tensor product can be further divided into linear to cubic lagrange, cubic and quadratic hermite. 
+      It can be arbitrarily collapsed (two or more nodes in the same location) in any one direction or in any two directions to give a degenerate basis.
+    </para>
+    <para>
+      Simplex basic functions could contain line, triangular and tetrahedral elements. 
+      It could be linear, quadratic or cubic.
+      Arbitrary Gaussian quadrature can integrate from 1st to 5th order (3rd  order for lines at the moment).
+      Can only have the same order in each direction at the moment.
+      Specifying a basis function automatically generates all necessary line and face basis functions as sub-bases of the basis function.
+    </para>
+  </sect1>
+  <sect1>
+    <title>Coordinate Systems</title>
+    <para>
+      Regions are one of the primary objects in openCMISS. 
+      Regions are hierarchical in nature in that a region can have one parent region and a number of daughter sub-regions. 
+      Daughter regions are related in space to parent regions by an origin and an orientation of the regions coordinate system.
+      Daughter regions may only have the same or fewer dimensions as the parent region.
+      There is a global (world) region (number 0) that has the global (world) coordinate system.
+    </para>
+  </sect1>
+  <sect1>
+    <title>Nodes</title>
+  </sect1>
+  <sect1>
+    <title>Meshes</title>
+    <para>
+      Meshes are topological constructs within a region which fields use to define themselves.
+      Meshes are made up of a number of mesh components.
+      Mesh components are made up from nodes, elements and basis functions.
+      A new mesh component is required for each different form of interpolation e.g., one mesh component is bilinear Lagrange and another is biquadratic Lagrange.
+      All mesh components in a mesh must “conform”, that is have the same number of elements, Xi directions etc. etc. 
+    </para>
+  </sect1>
+  <sect1>
+    <title>Decompositions</title>
+  </sect1>
+  <sect1>
+    <title>Fields</title>
+    <para>
+      Fields are the central object for storing information and framing the problem.
+      Fields have a number of field variables i.e., u, ∂u/∂n, ∂u/∂t, ∂2u/∂t2.
+      Each field variable has a number of components.
+      A field is defined on a decomposed mesh.
+      Each field variable component is defined on a decomposed mesh component.
+    </para>
+  </sect1>
+  <sect1>
+    <title>Equations Sets</title>
+    <para>
+      Aim to have multiple classes
+      e.g. Elasticity, Fluid mechanics, Electromagnetics, General field problems, Fitting, Optimisation.
+      Different equations within each class
+      e.g. Bidomain, Navier-stokes etc.
+      Different solution techniques 
+      e.g. FEM, BEM, FD, GFEM.
+      Associated with a region
+      Built using the fields defined on the region.
+    </para>
+  </sect1>
+  <sect1>
+    <title>Equations Sets Fields</title>
+  </sect1>
+  <sect1>
+    <title>Problems</title>
+    <para>
+      Aim to have multiple classes
+      e.g. Elasticity, Fluid mechanics, Electromagnetics, General field problems, Fitting, Optimisation.
+      Different equations within each class
+      e.g. Bidomain, Navier-stokes etc.
+      Coupled problems
+      Multiple problems in the same region
+      Multiple regions together solving one problem
+      Have a number of solutions (each with their solver) inside a problem control loop.
+    </para>
+  </sect1>
+  <sect1>
+    <title>Solutions</title>
+  </sect1>
+  <sect1>
+    <title>Solvers</title>
+  </sect1>
+  <sect1>
+    <title>Control</title>
+  </sect1>
+</chapter>

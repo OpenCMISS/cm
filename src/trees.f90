@@ -1,5 +1,5 @@
 !> \file
-!> $Id: trees.f90 2 2007-07-27 08:35:14Z cpb $
+!> $Id$
 !> \author Chris Bradley
 !> \brief Implements trees of base types.
 !>
@@ -785,6 +785,7 @@ CONTAINS
               ELSE
                 IF(ASSOCIATED(Z,Z%PARENT%LEFT)) THEN
                   Z=>Z%PARENT
+                  X=>Z
                   !Rotate the tree right at Z
                   Y=>X%LEFT
                   X%LEFT=>Y%RIGHT

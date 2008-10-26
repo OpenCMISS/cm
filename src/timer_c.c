@@ -1,5 +1,5 @@
 /* \file
- * $Id: timer_c.c 27 2007-07-24 16:52:51Z cpb $
+ * $Id$
  * \author Chris Bradley
  * \brief This file provides c utility routines for the timer module.
  *.

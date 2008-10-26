@@ -1,5 +1,5 @@
 !> \file
-!> $Id: problem_routines.f90 28 2007-07-27 08:35:14Z cpb $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module handles all problem routines.
 !>
@@ -99,6 +99,11 @@ MODULE PROBLEM_ROUTINES
     MODULE PROCEDURE PROBLEM_DESTROY_NUMBER
     MODULE PROCEDURE PROBLEM_DESTROY_PTR
   END INTERFACE !PROBLEM_DESTROY
+  
+  INTERFACE PROBLEM_SPECIFICATION_GET
+    MODULE PROCEDURE PROBLEM_SPECIFICATION_GET_NUMBER
+    MODULE PROCEDURE PROBLEM_SPECIFICATION_GET_PTR
+  END INTERFACE !PROBLEM_SPECIFICATION_GET
 
   INTERFACE PROBLEM_SPECIFICATION_SET
     MODULE PROCEDURE PROBLEM_SPECIFICATION_SET_NUMBER
@@ -119,6 +124,8 @@ MODULE PROBLEM_ROUTINES
   
   PUBLIC PROBLEM_SOLUTIONS_CREATE_START,PROBLEM_SOLUTIONS_CREATE_FINISH,PROBLEM_SOLUTION_EQUATIONS_SET_ADD
 
+  PUBLIC PROBLEM_SOLUTION_JACOBIAN_EVALUATE,PROBLEM_SOLUTION_RESIDUAL_EVALUATE
+  
   PUBLIC PROBLEM_SOLVER_CREATE_START,PROBLEM_SOLVER_CREATE_FINISH,PROBLEM_SOLVER_DESTROY,PROBLEM_SOLVER_GET
    
   PUBLIC PROBLEM_SOLVE
@@ -598,6 +605,132 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Evaluates the Jacobian for a nonlinear problem solution.
+  SUBROUTINE PROBLEM_SOLUTION_JACOBIAN_EVALUATE(SOLUTION,ERR,ERROR,*)
+
+   !Argument variables
+    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the solution to evaluate the Jacobian for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: equations_set_idx
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("PROBLEM_SOLUTION_JACOBIAN_EVALUATE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLUTION)) THEN
+      IF(SOLUTION%SOLUTION_FINISHED) THEN
+        SOLUTION_MAPPING=>SOLUTION%SOLUTION_MAPPING
+        IF(ASSOCIATED(SOLUTION_MAPPING)) THEN
+          SOLVER=>SOLUTION%SOLVER
+          IF(ASSOCIATED(SOLVER)) THEN
+            !Copy the current solution vector to the depenent field
+            CALL SOLVER_VARIABLES_UPDATE(SOLVER,ERR,ERROR,*999)
+            !Make sure the equations sets are up to date
+            DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
+              EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+              IF(SOLUTION%LINEARITY==PROBLEM_SOLUTION_NONLINEAR) THEN
+                !Assemble the equations for linear problems
+                CALL EQUATIONS_SET_JACOBIAN_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
+              ELSE
+                LOCAL_ERROR="Cannot evaluate the Jacobian for equations set index "// &
+                  & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))// &
+                  & " as it is not a nonlinear equations set."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ENDDO !equations_set_idx
+            !Assemble the solver matrices
+            CALL SOLVER_MATRICES_ASSEMBLE(SOLVER,ERR,ERROR,*999)          
+          ELSE
+            CALL FLAG_ERROR("Solution solver is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Solution mapping is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solution has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solution is not associated.",ERR,ERROR,*999)
+    ENDIF    
+    
+    CALL EXITS("PROBLEM_SOLUTION_JACOBIAN_EVALUATE")
+    RETURN
+999 CALL ERRORS("PROBLEM_SOLUTION_JACOBIAN_EVALUATE",ERR,ERROR)
+    CALL EXITS("PROBLEM_SOLUTION_JACOBIAN_EVALUATE")
+    RETURN 1
+  END SUBROUTINE PROBLEM_SOLUTION_JACOBIAN_EVALUATE
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluates the residual for a nonlinear problem solution.
+  SUBROUTINE PROBLEM_SOLUTION_RESIDUAL_EVALUATE(SOLUTION,ERR,ERROR,*)
+
+   !Argument variables
+    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the solution to evaluate the residual for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: equations_set_idx
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("PROBLEM_SOLUTION_RESIDUAL_EVALUATE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLUTION)) THEN
+      IF(SOLUTION%SOLUTION_FINISHED) THEN
+        SOLUTION_MAPPING=>SOLUTION%SOLUTION_MAPPING
+        IF(ASSOCIATED(SOLUTION_MAPPING)) THEN
+          SOLVER=>SOLUTION%SOLVER
+          IF(ASSOCIATED(SOLVER)) THEN
+            !Copy the current solution vector to the depenent field
+            CALL SOLVER_VARIABLES_UPDATE(SOLVER,ERR,ERROR,*999)
+            !Make sure the equations sets are up to date
+            DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
+              EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+              IF(SOLUTION%LINEARITY==PROBLEM_SOLUTION_NONLINEAR) THEN
+                !Assemble the equations for linear problems
+                CALL EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
+              ELSE
+                LOCAL_ERROR="Cannot evaluate a residual for equations set index "// &
+                  & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))// &
+                  & " as it is not a nonlinear equations set."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ENDDO !equations_set_idx
+            !Assemble the solver matrices
+            CALL SOLVER_MATRICES_ASSEMBLE(SOLVER,ERR,ERROR,*999)          
+          ELSE
+            CALL FLAG_ERROR("Solution solver is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Solution mapping is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solution has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solution is not associated.",ERR,ERROR,*999)
+    ENDIF    
+    
+    CALL EXITS("PROBLEM_SOLUTION_RESIDUAL_EVALUATE")
+    RETURN
+999 CALL ERRORS("PROBLEM_SOLUTION_RESIDUAL_EVALUATE",ERR,ERROR)
+    CALL EXITS("PROBLEM_SOLUTION_RESIDUAL_EVALUATE")
+    RETURN 1
+  END SUBROUTINE PROBLEM_SOLUTION_RESIDUAL_EVALUATE
+
+  !
+  !================================================================================================================================
+  !
+
   !>Sets up the specifices for a problem.
   SUBROUTINE PROBLEM_SETUP(PROBLEM,SETUP_TYPE,ACTION_TYPE,ERR,ERROR,*)
 
@@ -688,7 +821,6 @@ CONTAINS
   END SUBROUTINE PROBLEM_SOLVE
 
   !
-  !
   !================================================================================================================================
   !
 
@@ -710,27 +842,29 @@ CONTAINS
     IF(ASSOCIATED(SOLUTION)) THEN
       IF(SOLUTION%SOLUTION_FINISHED) THEN
         SOLUTION_MAPPING=>SOLUTION%SOLUTION_MAPPING
-        IF(ASSOCIATED(SOLUTION_MAPPING)) THEN
-          IF(SOLUTION%LINEARITY==PROBLEM_SOLUTION_LINEAR) THEN
-            !Assemble the equations for linear problems
-            !Make sure the equations sets are up to date
-            DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
-              EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-              CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)
+        IF(ASSOCIATED(SOLUTION_MAPPING)) THEN          
+          !Make sure the equations sets are up to date
+          DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
+            EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+            CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)
+            IF(SOLUTION%LINEARITY==PROBLEM_SOLUTION_LINEAR) THEN
+              !Assemble the equations for linear problems
               CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
-            ENDDO !equations_set_idx
-          ENDIF
+            ENDIF
+          ENDDO !equations_set_idx          
           SOLVER=>SOLUTION%SOLVER
           IF(ASSOCIATED(SOLVER)) THEN
             !Solve
             CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
             !Update depenent field with solution
             CALL SOLVER_VARIABLES_UPDATE(SOLVER,ERR,ERROR,*999)
-            !Back-substitute to find flux values
-            DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
-              EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-              CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,ERR,ERROR,*999)
-            ENDDO !equations_set_idx
+            !Back-substitute to find flux values for linear problems
+            IF(SOLUTION%LINEARITY==PROBLEM_SOLUTION_LINEAR) THEN
+              DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+                CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,ERR,ERROR,*999)
+              ENDDO !equations_set_idx
+            ENDIF
           ELSE
             CALL FLAG_ERROR("Solution solver is not associated.",ERR,ERROR,*999)
           ENDIF
@@ -1203,6 +1337,90 @@ CONTAINS
     CALL EXITS("PROBLEM_SOLVER_GET")
     RETURN 1
   END SUBROUTINE PROBLEM_SOLVER_GET
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the problem specification i.e., problem class, type  and subtype for a problem identified by a user number.
+  SUBROUTINE PROBLEM_SPECIFICATION_GET_NUMBER(USER_NUMBER,PROBLEM_CLASS,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the problem to set the specification for.
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_CLASS !<The problem class to get.
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_EQUATION_TYPE !<The problem equation to get.
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_SUBTYPE !<The problem subtype.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+
+    CALL ENTERS("PROBLEM_SPECIFICATION_GET_NUMBER",ERR,ERROR,*999)
+
+    CALL PROBLEM_USER_NUMBER_FIND(USER_NUMBER,PROBLEM,ERR,ERROR,*999)
+    CALL PROBLEM_SPECIFICATION_GET(PROBLEM,PROBLEM_CLASS,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*999)
+           
+    CALL EXITS("PROBLEM_SPECIFICATION_GET_NUMBER")
+    RETURN
+999 CALL ERRORS("PROBLEM_SPECIFICATION_GET_NUMBER",ERR,ERROR)
+    CALL EXITS("PROBLEM_SPECIFICATION_GET_NUMBER")
+    RETURN 1
+  END SUBROUTINE PROBLEM_SPECIFICATION_GET_NUMBER
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the problem specification i.e., problem class, type and subtype for a problem identified by a pointer.
+  SUBROUTINE PROBLEM_SPECIFICATION_GET_PTR(PROBLEM,PROBLEM_CLASS,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the specification for.
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_CLASS !<The problem class to set.
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_EQUATION_TYPE !<The problem equation type to set.
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_SUBTYPE !<The problem subtype to set.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("PROBLEM_SPECIFICATION_GET_PTR",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(PROBLEM)) THEN
+      IF(PROBLEM%PROBLEM_FINISHED) THEN
+        PROBLEM_CLASS=PROBLEM%CLASS
+        SELECT CASE(PROBLEM_CLASS)
+        CASE(PROBLEM_ELASTICITY_CLASS)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(PROBLEM_FLUID_MECHANICS_CLASS)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(PROBLEM_ELECTROMAGNETICS_CLASS)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(PROBLEM_CLASSICAL_FIELD_CLASS)
+          CALL CLASSICAL_FIELD_PROBLEM_CLASS_TYPE_GET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*999)
+        CASE(PROBLEM_MODAL_CLASS)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(PROBLEM_FITTING_CLASS)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(PROBLEM_OPTIMISATION_CLASS)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE DEFAULT
+          LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(PROBLEM_CLASS,"*",ERR,ERROR))//" is not valid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("Problem has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PROBLEM_SPECIFICATION_GET_PTR")
+    RETURN
+999 CALL ERRORS("PROBLEM_SPECIFICATION_GET_PTR",ERR,ERROR)
+    CALL EXITS("PROBLEM_SPECIFICATION_GET_PTR")
+    RETURN 1
+  END SUBROUTINE PROBLEM_SPECIFICATION_GET_PTR
 
   !
   !================================================================================================================================
@@ -1380,3 +1598,62 @@ CONTAINS
   !
   
 END MODULE PROBLEM_ROUTINES
+
+!
+!================================================================================================================================
+!
+
+!>Called from the PETSc SNES solvers to evaluate the Jacobian for a Newton like nonlinear solver
+SUBROUTINE PROBLEM_SOLUTION_JACOBIAN_EVALUATE_PETSC(SNES,A,B,FLAG,CTX)
+
+  USE BASE_ROUTINES
+  USE KINDS
+  USE PROBLEM_ROUTINES
+  USE TYPES
+  
+  !Argument variables
+  INTEGER(INTG) :: SNES(*) !<The PETSc SNES type
+  INTEGER(INTG) :: A(*) !<The PETSc A Mat type
+  INTEGER(INTG) :: B(*) !<The PETSc B Mat type
+  INTEGER(INTG) :: FLAG !<The PETSC MatStructure flag
+  TYPE(SOLUTION_TYPE), POINTER :: CTX !<The passed through context
+  !Local Variables
+  INTEGER(INTG) :: ERR=0
+  TYPE(VARYING_STRING) :: ERROR
+  
+  CALL PROBLEM_SOLUTION_JACOBIAN_EVALUATE(CTX,ERR,ERROR,*999)
+  
+  RETURN
+999 CALL FLAG_WARNING("Error evaluating nonlinear Jacobian.",ERR,ERROR,*998)
+998 RETURN    
+END SUBROUTINE PROBLEM_SOLUTION_JACOBIAN_EVALUATE_PETSC
+        
+!
+!================================================================================================================================
+!
+
+!>Called from the PETSc SNES solvers to evaluate the residual for a Newton like nonlinear solver
+SUBROUTINE PROBLEM_SOLUTION_RESIDUAL_EVALUATE_PETSC(SNES,X,F,CTX)
+
+  USE BASE_ROUTINES
+  USE KINDS
+  USE PROBLEM_ROUTINES
+  USE TYPES
+  
+  !Argument variables
+  INTEGER(INTG) :: SNES(*) !<The PETSc SNES type
+  INTEGER(INTG) :: X(*) !<The PETSc X Vec type
+  INTEGER(INTG) :: F(*) !<The PETSc F Vec type
+  TYPE(SOLUTION_TYPE), POINTER :: CTX !<The passed through context
+  !Local Variables
+  INTEGER(INTG) :: ERR=0
+  TYPE(VARYING_STRING) :: ERROR
+  
+  CALL PROBLEM_SOLUTION_RESIDUAL_EVALUATE(CTX,ERR,ERROR,*999)
+  
+  RETURN
+999 CALL FLAG_WARNING("Error evaluating nonlinear residual.",ERR,ERROR,*998)
+998 RETURN    
+END SUBROUTINE PROBLEM_SOLUTION_RESIDUAL_EVALUATE_PETSC
+        
+ 

@@ -1,5 +1,5 @@
 !> \file
-!> $Id: equations_set_routines.f90 28 2007-07-27 08:35:14Z cpb $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module handles all equations set routines.
 !>
@@ -60,6 +60,7 @@ MODULE EQUATIONS_SET_ROUTINES
   USE LISTS
   USE MATRIX_VECTOR
   USE MPI
+  USE NODE_ROUTINES
   USE STRINGS
   USE TIMER
   USE TYPES
@@ -96,7 +97,7 @@ MODULE EQUATIONS_SET_ROUTINES
 
   PUBLIC EQUATIONS_SET_FIXED_CONDITIONS_APPLY,EQUATIONS_SET_FIXED_CONDITIONS_CREATE_START, &
     & EQUATIONS_SET_FIXED_CONDITIONS_CREATE_FINISH,EQUATIONS_SET_FIXED_CONDITIONS_DESTROY, &
-    & EQUATIONS_SET_FIXED_CONDITIONS_SET_DOF
+    & EQUATIONS_SET_FIXED_CONDITIONS_SET_DOF,EQUATIONS_SET_FIXED_CONDITIONS_SET_NODE
 
   PUBLIC EQUATIONS_SET_MATERIALS_COMPONENT_INTERPOLATION_SET,EQUATIONS_SET_MATERIALS_COMPONENT_MESH_COMPONENT_SET, &
     & EQUATIONS_SET_MATERIALS_CREATE_START,EQUATIONS_SET_MATERIALS_CREATE_FINISH,EQUATIONS_SET_MATERIALS_DESTROY, &
@@ -105,6 +106,10 @@ MODULE EQUATIONS_SET_ROUTINES
   PUBLIC EQUATIONS_SET_DEPENDENT_COMPONENT_MESH_COMPONENT_SET,EQUATIONS_SET_DEPENDENT_CREATE_START, &
     & EQUATIONS_SET_DEPENDENT_CREATE_FINISH,EQUATIONS_SET_DEPENDENT_DESTROY,EQUATIONS_SET_DEPENDENT_DEPENDENT_FIELD_GET, &
     & EQUATIONS_SET_DEPENDENT_SCALING_SET
+ 
+  PUBLIC EQUATIONS_SET_ANALYTIC_CREATE_START,EQUATIONS_SET_ANALYTIC_CREATE_FINISH,EQUATIONS_SET_ANAYLITIC_EQUATION_NUMBER_SET
+
+  PUBLIC EQUATIONS_SET_JACOBIAN_EVALUATE,EQUATIONS_SET_RESIDUAL_EVALUATE
   
   PUBLIC EQUATIONS_SET_SOURCE_CREATE_START,EQUATIONS_SET_SOURCE_CREATE_FINISH,EQUATIONS_SET_SOURCE_DESTROY, &
     & EQUATIONS_SET_SOURCE_SCALING_SET
@@ -192,6 +197,41 @@ CONTAINS
     CALL EXITS("EQUATIONS_SET_ANALYTIC_CREATE_START")
     RETURN 1
   END SUBROUTINE EQUATIONS_SET_ANALYTIC_CREATE_START
+  
+  !
+  !================================================================================================================================
+  !
+
+!!MERGE: what is this doing???
+  
+  !>Sets/changes the analytic equation number.
+  SUBROUTINE EQUATIONS_SET_ANAYLITIC_EQUATION_NUMBER_SET(EQUATIONS_SET,EQUATION_NUMBER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the number
+    INTEGER(INTG), INTENT(IN) :: EQUATION_NUMBER !<The equation number to set 
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("EQUATIONS_SET_ANAYLITIC_EQUATION_NUMBER_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED) THEN
+        CALL FLAG_ERROR("Equations set analytic has been finished",ERR,ERROR,*999)
+      ELSE
+        EQUATIONS_SET%ANALYTIC%EQUATION_NUMBER=EQUATION_NUMBER
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_ANAYLITIC_EQUATION_NUMBER_SET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_ANAYLITIC_EQUATION_NUMBER_SET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_ANAYLITIC_EQUATION_NUMBER_SET")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_ANAYLITIC_EQUATION_NUMBER_SET
 
   !
   !================================================================================================================================
@@ -336,8 +376,7 @@ CONTAINS
             CASE(EQUATIONS_SET_NONLINEAR)
               SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
               CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
-                !CALL EQUATIONS_SET_ASSEMBLE_STATIC_NONLINEAR_FEM(EQUATIONS_SET,ERR,ERROR,*999)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL EQUATIONS_SET_ASSEMBLE_STATIC_NONLINEAR_FEM(EQUATIONS_SET,ERR,ERROR,*999)
               CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
@@ -355,6 +394,7 @@ CONTAINS
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE(EQUATIONS_SET_NONLINEAR_BCS)
+
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The equations set linearity of "// &
@@ -559,6 +599,175 @@ CONTAINS
   !
   !================================================================================================================================
   !
+  
+  !>Assembles the equations stiffness matrix, residuals and rhs for a nonlinear static equations set using the finite element method.
+  SUBROUTINE EQUATIONS_SET_ASSEMBLE_STATIC_NONLINEAR_FEM(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to assemble the equations for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: element_idx,ne,NUMBER_OF_TIMES
+    REAL(SP) :: ELEMENT_USER_ELAPSED,ELEMENT_SYSTEM_ELAPSED,USER_ELAPSED,USER_TIME1(1),USER_TIME2(1),USER_TIME3(1),USER_TIME4(1), &
+      & USER_TIME5(1),USER_TIME6(1),SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),SYSTEM_TIME3(1),SYSTEM_TIME4(1), &
+      & SYSTEM_TIME5(1),SYSTEM_TIME6(1)
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    
+    CALL ENTERS("EQUATIONS_SET_ASSEMBLE_STATIC_NONLINEAR_FEM",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+      IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+        EQUATIONS=>EQUATIONS_SET%EQUATIONS
+        IF(ASSOCIATED(EQUATIONS)) THEN
+          EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+          IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_SET_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME1,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME1,ERR,ERROR,*999)
+            ENDIF
+            !Start the transfer of the solution values that have been set as part of the boundary conditions
+            CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+            !Problem interpolation setup
+            CALL EQUATIONS_INTERPOLATION_INITIALISE(EQUATIONS,ERR,ERROR,*999)
+            !Initialise the matrices and rhs vector
+            CALL EQUATIONS_MATRICES_VALUES_INITIALISE(EQUATIONS_MATRICES,0.0_DP,ERR,ERROR,*999)
+            !Assemble the elements
+            !Allocate the element matrices 
+            CALL EQUATIONS_MATRICES_ELEMENT_INITIALISE(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ELEMENTS_MAPPING=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+              & MAPPINGS%ELEMENTS
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_SET_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME2,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME2,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME2(1)-USER_TIME1(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME2(1)-SYSTEM_TIME1(1)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for equations setup and initialisation = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for equations setup and initialisation = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+              ELEMENT_USER_ELAPSED=0.0_SP
+              ELEMENT_SYSTEM_ELAPSED=0.0_SP
+            ENDIF
+            NUMBER_OF_TIMES=0
+            !Loop over the internal elements
+            DO element_idx=1,ELEMENTS_MAPPING%NUMBER_OF_INTERNAL
+              ne=ELEMENTS_MAPPING%INTERNAL_LIST(element_idx)
+              NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
+              CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_SET_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDDO !element_idx                  
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_SET_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME3,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME3,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME3(1)-USER_TIME2(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME3(1)-SYSTEM_TIME2(1)
+              ELEMENT_USER_ELAPSED=USER_ELAPSED
+              ELEMENT_SYSTEM_ELAPSED=SYSTEM_ELAPSED
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for internal equations assembly = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for internal equations assembly = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+             ENDIF
+            !Finish the transfer of the solution values.
+            CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_SET_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME4,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME4,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME4(1)-USER_TIME3(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME4(1)-SYSTEM_TIME3(1)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for parameter transfer completion = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for parameter transfer completion = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)              
+            ENDIF
+            !Loop over the boundary and ghost elements
+!!TODO: sort out combining boundary and ghost list
+            DO element_idx=1,ELEMENTS_MAPPING%NUMBER_OF_BOUNDARY
+              ne=ELEMENTS_MAPPING%BOUNDARY_LIST(element_idx)
+              NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
+              CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_SET_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDDO !element_idx
+            DO element_idx=1,ELEMENTS_MAPPING%NUMBER_OF_GHOST
+              ne=ELEMENTS_MAPPING%GHOST_LIST(element_idx)
+              NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
+              CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_SET_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDDO !element_idx          
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_SET_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME5,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME5,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME5(1)-USER_TIME4(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME5(1)-SYSTEM_TIME4(1)
+              ELEMENT_USER_ELAPSED=ELEMENT_USER_ELAPSED+USER_ELAPSED
+              ELEMENT_SYSTEM_ELAPSED=ELEMENT_SYSTEM_ELAPSED+USER_ELAPSED
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for boundary+ghost equations assembly = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for boundary+ghost equations assembly = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+              IF(NUMBER_OF_TIMES>0) THEN
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Average element user time for equations assembly = ", &
+                  & ELEMENT_USER_ELAPSED/NUMBER_OF_TIMES,ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Average element system time for equations assembly = ", &
+                  & ELEMENT_SYSTEM_ELAPSED/NUMBER_OF_TIMES,ERR,ERROR,*999)
+              ENDIF
+            ENDIF
+            !Finalise the element matrices
+            CALL EQUATIONS_MATRICES_ELEMENT_FINALISE(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            !Finalise the problem interpolation
+            CALL EQUATIONS_INTERPOLATION_FINALISE(EQUATIONS%INTERPOLATION,ERR,ERROR,*999)
+            !Output equations matrices and RHS vector if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_SET_MATRIX_OUTPUT) THEN
+              CALL EQUATIONS_MATRICES_OUTPUT(GENERAL_OUTPUT_TYPE,EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDIF
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_SET_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME6,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME6,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME6(1)-USER_TIME1(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME6(1)-SYSTEM_TIME1(1)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for equations assembly = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total system time for equations assembly = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Equations matrices is not associated",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Equations is not associated",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Dependent field is not associated",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_ASSEMBLE_STATIC_NONLINEAR_FEM")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_ASSEMBLE_STATIC_NONLINEAR_FEM",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_ASSEMBLE_STATIC_NONLINEAR_FEM")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_ASSEMBLE_STATIC_NONLINEAR_FEM
+
+  !
+  !================================================================================================================================
+  !
 
   !>Backsubstitutes with an equations set to calculate unknown right hand side vectors
   SUBROUTINE EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,ERR,ERROR,*)
@@ -571,18 +780,23 @@ CONTAINS
     INTEGER(INTG) :: equations_column_idx,equations_column_number,equations_matrix_idx,equations_row_number, &
       & EQUATIONS_STORAGE_TYPE,field_dof,rhs_boundary_condition,rhs_field_dof,rhs_variable_dof,variable_dof
     INTEGER(INTG), POINTER :: COLUMN_INDICES(:),ROW_INDICES(:)
-    REAL(DP) :: DEPENDENT_VALUE,MATRIX_VALUE,RHS_VALUE
-    REAL(DP), POINTER :: DEPENDENT_PARAMETERS(:),EQUATIONS_MATRIX_DATA(:)
+    REAL(DP) :: DEPENDENT_VALUE,MATRIX_VALUE,RHS_VALUE,SOURCE_VALUE
+    REAL(DP), POINTER :: DEPENDENT_PARAMETERS(:),EQUATIONS_MATRIX_DATA(:),SOURCE_VECTOR_DATA(:)
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: COLUMN_DOMAIN_MAPPING
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: EQUATIONS_DISTRIBUTED_MATRIX
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: SOURCE_DISTRIBUTED_VECTOR
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
+    TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
+    TYPE(EQUATIONS_MAPPING_RHS_TYPE), POINTER :: RHS_MAPPING
+    TYPE(EQUATIONS_MAPPING_SOURCE_TYPE), POINTER :: SOURCE_MAPPING
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
+    TYPE(EQUATIONS_MATRICES_SOURCE_TYPE), POINTER :: SOURCE_VECTOR
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX
     TYPE(EQUATIONS_SET_FIXED_CONDITIONS_TYPE), POINTER :: FIXED_CONDITIONS
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE,RHS_VARIABLE
-    TYPE(SOURCE_EQUATIONS_MATRICES_MAP_TYPE), POINTER :: SOURCE_MAPPINGS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("EQUATIONS_SET_BACKSUBSTITUTE",ERR,ERROR,*999)
@@ -597,146 +811,178 @@ CONTAINS
           IF(ASSOCIATED(EQUATIONS)) THEN
             EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
             IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
-              EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-              IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-                FIXED_CONDITIONS=>EQUATIONS_SET%FIXED_CONDITIONS
-                IF(ASSOCIATED(FIXED_CONDITIONS)) THEN
-                  SOURCE_MAPPINGS=>EQUATIONS_MAPPING%SOURCE_MAPPINGS
-                  IF(ASSOCIATED(SOURCE_MAPPINGS)) THEN
-!!TODO: source term
-                  ENDIF
-                  RHS_VARIABLE=>EQUATIONS_MAPPING%RHS_VARIABLE
-                  IF(ASSOCIATED(RHS_VARIABLE)) THEN                                 
-                    !Loop over the equations matrices
-                    DO equations_matrix_idx=1,EQUATIONS_MATRICES%NUMBER_OF_MATRICES
-                      DEPENDENT_VARIABLE=>EQUATIONS_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(equations_matrix_idx)%VARIABLE
-                      IF(ASSOCIATED(DEPENDENT_VARIABLE)) THEN
-                        EQUATIONS_MATRIX=>EQUATIONS_MATRICES%MATRICES(equations_matrix_idx)%PTR
-                        IF(ASSOCIATED(EQUATIONS_MATRIX)) THEN
-                          COLUMN_DOMAIN_MAPPING=>EQUATIONS_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(equations_matrix_idx)% &
-                            & COLUMN_DOFS_MAPPING
-                          IF(ASSOCIATED(COLUMN_DOMAIN_MAPPING)) THEN
-                            EQUATIONS_DISTRIBUTED_MATRIX=>EQUATIONS_MATRIX%MATRIX
-                            IF(ASSOCIATED(EQUATIONS_DISTRIBUTED_MATRIX)) THEN
-                              CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_GET(EQUATIONS_DISTRIBUTED_MATRIX,EQUATIONS_STORAGE_TYPE, &
-                                & ERR,ERROR,*999)
-                              CALL DISTRIBUTED_MATRIX_DATA_GET(EQUATIONS_DISTRIBUTED_MATRIX,EQUATIONS_MATRIX_DATA, &
-                                & ERR,ERROR,*999)
-                              SELECT CASE(EQUATIONS_STORAGE_TYPE)
-                              CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)                                    
-                                !Loop over the rows in the equations set
-                                DO equations_row_number=1,EQUATIONS_MAPPING%NUMBER_OF_ROWS
-!!TODO: what if the equations set doesn't have a RHS vector???
-                                  RHS_VALUE=0.0_DP
-                                  rhs_variable_dof=EQUATIONS_MAPPING%EQUATIONS_ROW_TO_VARIABLES_MAPS(equations_row_number)% &
-                                    & ROW_TO_RHS_DOF
-                                  rhs_field_dof=RHS_VARIABLE%DOF_LIST(rhs_variable_dof)
-                                  rhs_boundary_condition=FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(rhs_field_dof)
-                                  SELECT CASE(rhs_boundary_condition)
-                                  CASE(EQUATIONS_SET_NOT_FIXED)
-                                    !Back substitute
-                                    !Loop over the local columns of the equations matrix                                      
-                                    DO equations_column_idx=1,COLUMN_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
-                                      equations_column_number=COLUMN_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(equations_column_idx)
-                                      variable_dof=equations_column_idx
-                                      field_dof=DEPENDENT_VARIABLE%DOF_LIST(variable_dof)
-                                      MATRIX_VALUE=EQUATIONS_MATRIX_DATA(equations_row_number+(equations_column_number-1)* &
-                                        & EQUATIONS_MATRICES%NUMBER_OF_ROWS)
-                                      DEPENDENT_VALUE=DEPENDENT_PARAMETERS(field_dof)                                        
-                                      RHS_VALUE=RHS_VALUE+MATRIX_VALUE*DEPENDENT_VALUE
-                                    ENDDO !equations_column_idx
-                                  CASE(EQUATIONS_SET_FIXED_BOUNDARY_CONDITION)
-                                    !Do nothing
-                                  CASE(EQUATIONS_SET_MIXED_BOUNDARY_CONDITION)
-                                    !Robin or is it Cauchy??? boundary conditions
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                  CASE DEFAULT
-                                    LOCAL_ERROR="The global boundary condition of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
-                                      & " for RHS field dof number "//TRIM(NUMBER_TO_VSTRING(rhs_field_dof,"*",ERR,ERROR))// &
-                                      & " is invalid."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  END SELECT
-                                  CALL FIELD_PARAMETER_SET_UPDATE_DOF(DEPENDENT_FIELD,FIELD_VALUES_SET_TYPE,rhs_field_dof, &
-                                    & RHS_VALUE,ERR,ERROR,*999)
-                                ENDDO !equations_row_number
-                              CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
-                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                              CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                      
-                              CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
-                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                              CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
-                                CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(EQUATIONS_DISTRIBUTED_MATRIX,ROW_INDICES, &
-                                  & COLUMN_INDICES,ERR,ERROR,*999)
-                                !Loop over the rows in the equations set
-                                DO equations_row_number=1,EQUATIONS_MAPPING%NUMBER_OF_ROWS
-!!TODO: what if the equations set doesn't have a RHS vector???
-                                  RHS_VALUE=0.0_DP
-                                  rhs_variable_dof=EQUATIONS_MAPPING%EQUATIONS_ROW_TO_VARIABLES_MAPS(equations_row_number)% &
-                                    & ROW_TO_RHS_DOF
-                                  rhs_field_dof=RHS_VARIABLE%DOF_LIST(rhs_variable_dof)
-                                  rhs_boundary_condition=FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(rhs_field_dof)
-                                  SELECT CASE(rhs_boundary_condition)
-                                  CASE(EQUATIONS_SET_NOT_FIXED)
-                                    !Back substitute
-                                    !Loop over the local columns of the equations matrix                                      
-                                    DO equations_column_idx=ROW_INDICES(equations_row_number), &
-                                      ROW_INDICES(equations_row_number+1)-1
-                                      equations_column_number=COLUMN_INDICES(equations_column_idx)
-                                      variable_dof=equations_column_idx-ROW_INDICES(equations_row_number)+1
-                                      field_dof=DEPENDENT_VARIABLE%DOF_LIST(variable_dof)
-                                      MATRIX_VALUE=EQUATIONS_MATRIX_DATA(equations_column_idx)
-                                      DEPENDENT_VALUE=DEPENDENT_PARAMETERS(field_dof)
-                                      RHS_VALUE=RHS_VALUE+MATRIX_VALUE*DEPENDENT_VALUE
-                                    ENDDO !equations_column_idx
-                                  CASE(EQUATIONS_SET_FIXED_BOUNDARY_CONDITION)
-                                    !Do nothing
-                                  CASE(EQUATIONS_SET_MIXED_BOUNDARY_CONDITION)
-                                    !Robin or is it Cauchy??? boundary conditions
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                  CASE DEFAULT
-                                    LOCAL_ERROR="The global boundary condition of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
-                                      & " for RHS field dof number "//TRIM(NUMBER_TO_VSTRING(rhs_field_dof,"*",ERR,ERROR))// &
-                                      & " is invalid."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  END SELECT
-                                  CALL FIELD_PARAMETER_SET_UPDATE_DOF(DEPENDENT_FIELD,FIELD_VALUES_SET_TYPE,rhs_field_dof, &
-                                    & RHS_VALUE,ERR,ERROR,*999)
-                                ENDDO !equations_row_number
-                              CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                        
-                              CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
-                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                      
-                              CASE DEFAULT
-                                LOCAL_ERROR="The matrix storage type of "// &
-                                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                              END SELECT
-                              CALL DISTRIBUTED_MATRIX_DATA_RESTORE(EQUATIONS_DISTRIBUTED_MATRIX,EQUATIONS_MATRIX_DATA, &
-                                & ERR,ERROR,*999)
-                            ELSE
-                              CALL FLAG_ERROR("Equations matrix distributed matrix is not associated.",ERR,ERROR,*999)
+              LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
+              IF(ASSOCIATED(LINEAR_MATRICES)) THEN
+                EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
+                IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
+                  LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
+                  IF(ASSOCIATED(LINEAR_MAPPING)) THEN
+                    RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
+                    SOURCE_MAPPING=>EQUATIONS_MAPPING%SOURCE_MAPPING
+                    IF(ASSOCIATED(RHS_MAPPING)) THEN
+                      FIXED_CONDITIONS=>EQUATIONS_SET%FIXED_CONDITIONS
+                      IF(ASSOCIATED(FIXED_CONDITIONS)) THEN
+                        IF(ASSOCIATED(SOURCE_MAPPING)) THEN
+                          SOURCE_VECTOR=>EQUATIONS_MATRICES%SOURCE_VECTOR
+                          IF(ASSOCIATED(SOURCE_VECTOR)) THEN
+                            SOURCE_DISTRIBUTED_VECTOR=>SOURCE_VECTOR%VECTOR
+                            IF(ASSOCIATED(SOURCE_DISTRIBUTED_VECTOR)) THEN
+                              CALL DISTRIBUTED_VECTOR_DATA_GET(SOURCE_DISTRIBUTED_VECTOR,SOURCE_VECTOR_DATA,ERR,ERROR,*999)
+                             ELSE
+                              CALL FLAG_ERROR("Source distributed vector is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Equations column domain mapping is not associated.",ERR,ERROR,*999)
+                            CALL FLAG_ERROR("Source vector is not associated.",ERR,ERROR,*999)
                           ENDIF
+                        ENDIF
+                        RHS_VARIABLE=>RHS_MAPPING%RHS_VARIABLE
+                        IF(ASSOCIATED(RHS_VARIABLE)) THEN                                 
+                          !Loop over the equations matrices
+                          DO equations_matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
+                            DEPENDENT_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(equations_matrix_idx)%VARIABLE
+                            IF(ASSOCIATED(DEPENDENT_VARIABLE)) THEN
+                              EQUATIONS_MATRIX=>LINEAR_MATRICES%MATRICES(equations_matrix_idx)%PTR
+                              IF(ASSOCIATED(EQUATIONS_MATRIX)) THEN
+                                COLUMN_DOMAIN_MAPPING=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(equations_matrix_idx)% &
+                                  & COLUMN_DOFS_MAPPING
+                                IF(ASSOCIATED(COLUMN_DOMAIN_MAPPING)) THEN
+                                  EQUATIONS_DISTRIBUTED_MATRIX=>EQUATIONS_MATRIX%MATRIX
+                                  IF(ASSOCIATED(EQUATIONS_DISTRIBUTED_MATRIX)) THEN
+                                    CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_GET(EQUATIONS_DISTRIBUTED_MATRIX,EQUATIONS_STORAGE_TYPE, &
+                                      & ERR,ERROR,*999)
+                                    CALL DISTRIBUTED_MATRIX_DATA_GET(EQUATIONS_DISTRIBUTED_MATRIX,EQUATIONS_MATRIX_DATA, &
+                                      & ERR,ERROR,*999)
+                                    SELECT CASE(EQUATIONS_STORAGE_TYPE)
+                                    CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)                                    
+                                      !Loop over the non ghosted rows in the equations set
+                                      DO equations_row_number=1,EQUATIONS_MAPPING%NUMBER_OF_ROWS
+                                        RHS_VALUE=0.0_DP
+                                        rhs_variable_dof=RHS_MAPPING%EQUATIONS_ROW_TO_RHS_DOF_MAP(equations_row_number)
+                                        rhs_field_dof=RHS_VARIABLE%DOF_LIST(rhs_variable_dof)
+                                        rhs_boundary_condition=FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(rhs_field_dof)
+                                        SELECT CASE(rhs_boundary_condition)
+                                        CASE(EQUATIONS_SET_NOT_FIXED)
+                                          !Back substitute
+                                          !Loop over the local columns of the equations matrix
+                                          DO equations_column_idx=1,COLUMN_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
+                                            equations_column_number=COLUMN_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(equations_column_idx)
+                                            variable_dof=equations_column_idx
+                                            field_dof=DEPENDENT_VARIABLE%DOF_LIST(variable_dof)
+                                            MATRIX_VALUE=EQUATIONS_MATRIX_DATA(equations_row_number+(equations_column_number-1)* &
+                                              & EQUATIONS_MATRICES%TOTAL_NUMBER_OF_ROWS)
+                                            DEPENDENT_VALUE=DEPENDENT_PARAMETERS(field_dof)                                        
+                                            RHS_VALUE=RHS_VALUE+MATRIX_VALUE*DEPENDENT_VALUE
+                                          ENDDO !equations_column_idx
+                                        CASE(EQUATIONS_SET_FIXED_BOUNDARY_CONDITION)
+                                          !Do nothing
+                                        CASE(EQUATIONS_SET_MIXED_BOUNDARY_CONDITION)
+                                          !Robin or is it Cauchy??? boundary conditions
+                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                        CASE DEFAULT
+                                          LOCAL_ERROR="The global boundary condition of "// &
+                                            & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
+                                            & " for RHS field dof number "//TRIM(NUMBER_TO_VSTRING(rhs_field_dof,"*",ERR,ERROR))// &
+                                            & " is invalid."
+                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        END SELECT
+                                        IF(ASSOCIATED(SOURCE_MAPPING)) THEN
+                                          SOURCE_VALUE=SOURCE_VECTOR_DATA(equations_row_number)
+                                          RHS_VALUE=RHS_VALUE-SOURCE_VALUE
+                                        ENDIF
+                                        CALL FIELD_PARAMETER_SET_UPDATE_DOF(DEPENDENT_FIELD,FIELD_VALUES_SET_TYPE,rhs_field_dof, &
+                                          & RHS_VALUE,ERR,ERROR,*999)
+                                      ENDDO !equations_row_number
+                                    CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
+                                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                    CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+                                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                      
+                                    CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
+                                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                    CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+                                      CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(EQUATIONS_DISTRIBUTED_MATRIX,ROW_INDICES, &
+                                        & COLUMN_INDICES,ERR,ERROR,*999)
+                                      !Loop over the non-ghosted rows in the equations set
+                                      DO equations_row_number=1,EQUATIONS_MAPPING%NUMBER_OF_ROWS
+                                        RHS_VALUE=0.0_DP
+                                        rhs_variable_dof=RHS_MAPPING%EQUATIONS_ROW_TO_RHS_DOF_MAP(equations_row_number)
+                                        rhs_field_dof=RHS_VARIABLE%DOF_LIST(rhs_variable_dof)
+                                        rhs_boundary_condition=FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(rhs_field_dof)
+                                        SELECT CASE(rhs_boundary_condition)
+                                        CASE(EQUATIONS_SET_NOT_FIXED)
+                                          !Back substitute
+                                          !Loop over the local columns of the equations matrix                                      
+                                          DO equations_column_idx=ROW_INDICES(equations_row_number), &
+                                            ROW_INDICES(equations_row_number+1)-1
+                                            equations_column_number=COLUMN_INDICES(equations_column_idx)
+                                            variable_dof=equations_column_idx-ROW_INDICES(equations_row_number)+1
+                                            field_dof=DEPENDENT_VARIABLE%DOF_LIST(variable_dof)
+                                            MATRIX_VALUE=EQUATIONS_MATRIX_DATA(equations_column_idx)
+                                            DEPENDENT_VALUE=DEPENDENT_PARAMETERS(field_dof)
+                                            RHS_VALUE=RHS_VALUE+MATRIX_VALUE*DEPENDENT_VALUE
+                                          ENDDO !equations_column_idx
+                                        CASE(EQUATIONS_SET_FIXED_BOUNDARY_CONDITION)
+                                          !Do nothing
+                                        CASE(EQUATIONS_SET_MIXED_BOUNDARY_CONDITION)
+                                          !Robin or is it Cauchy??? boundary conditions
+                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                        CASE DEFAULT
+                                          LOCAL_ERROR="The global boundary condition of "// &
+                                            & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
+                                            & " for RHS field dof number "//TRIM(NUMBER_TO_VSTRING(rhs_field_dof,"*",ERR,ERROR))// &
+                                            & " is invalid."
+                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        END SELECT
+                                        IF(ASSOCIATED(SOURCE_MAPPING)) THEN
+                                          SOURCE_VALUE=SOURCE_VECTOR_DATA(equations_row_number)
+                                          RHS_VALUE=RHS_VALUE-SOURCE_VALUE
+                                        ENDIF
+                                        CALL FIELD_PARAMETER_SET_UPDATE_DOF(DEPENDENT_FIELD,FIELD_VALUES_SET_TYPE,rhs_field_dof, &
+                                          & RHS_VALUE,ERR,ERROR,*999)
+                                      ENDDO !equations_row_number
+                                    CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+                                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                        
+                                    CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
+                                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                      
+                                    CASE DEFAULT
+                                      LOCAL_ERROR="The matrix storage type of "// &
+                                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
+                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    END SELECT
+                                    CALL DISTRIBUTED_MATRIX_DATA_RESTORE(EQUATIONS_DISTRIBUTED_MATRIX,EQUATIONS_MATRIX_DATA, &
+                                      & ERR,ERROR,*999)
+                                  ELSE
+                                    CALL FLAG_ERROR("Equations matrix distributed matrix is not associated.",ERR,ERROR,*999)
+                                  ENDIF
+                                ELSE
+                                  CALL FLAG_ERROR("Equations column domain mapping is not associated.",ERR,ERROR,*999)
+                                ENDIF
+                              ELSE
+                                CALL FLAG_ERROR("Equations equations matrix is not associated.",ERR,ERROR,*999)
+                              ENDIF
+                            ELSE
+                              CALL FLAG_ERROR("Dependent variable is not associated.",ERR,ERROR,*999)
+                            ENDIF
+                          ENDDO !equations_matrix_idx
                         ELSE
-                          CALL FLAG_ERROR("Equations equations matrix is not associated.",ERR,ERROR,*999)
+                          CALL FLAG_ERROR("RHS variable is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                        IF(ASSOCIATED(SOURCE_MAPPING)) THEN
+                          CALL DISTRIBUTED_VECTOR_DATA_RESTORE(SOURCE_DISTRIBUTED_VECTOR,SOURCE_VECTOR_DATA,ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Dependent variable is not associated.",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Fixed conditions are not associated.",ERR,ERROR,*999)
                       ENDIF
-                    ENDDO !equations_matrix_idx
+                    ELSE
+                      CALL FLAG_ERROR("Equations mapping RHS mappings is not associated.",ERR,ERROR,*999)
+                    ENDIF
                   ELSE
-                    CALL FLAG_ERROR("RHS variable is not associated.",ERR,ERROR,*999)
+                    CALL FLAG_ERROR("Equations mapping linear mapping is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Fixed conditions are not associated.",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Equations mapping is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations mapping is not associated.",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
               CALL FLAG_ERROR("Equations matrices is not associated.",ERR,ERROR,*999)
@@ -759,7 +1005,7 @@ CONTAINS
     ELSE
       CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
     ENDIF
-    
+          
     CALL EXITS("EQUATIONS_SET_BACKSUBSTITUTE")
     RETURN
 999 CALL ERRORS("EQUATIONS_SET_BACKSUBSTITUTE",ERR,ERROR)    
@@ -1046,6 +1292,9 @@ CONTAINS
     TYPE(ELEMENT_VECTOR_TYPE), POINTER :: ELEMENT_VECTOR
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
+    TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: RHS_VECTOR
+    TYPE(EQUATIONS_MATRICES_SOURCE_TYPE), POINTER :: SOURCE_VECTOR
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("EQUATIONS_SET_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
@@ -1053,7 +1302,7 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%CLASS)
       CASE(EQUATIONS_SET_ELASTICITY_CLASS)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL ELASTICITY_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_ELECTROMAGNETICS_CLASS)
@@ -1071,40 +1320,67 @@ CONTAINS
         IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_SET_ELEMENT_MATRIX_OUTPUT) THEN
           EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
           IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
-            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite element stiffness matrices:",ERR,ERROR,*999)
+            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite element stiffness matrices:",ERR,ERROR,*999)          
             CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Element number = ",ELEMENT_NUMBER,ERR,ERROR,*999)
-            CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Number of element matrices = ",EQUATIONS_MATRICES%NUMBER_OF_MATRICES, &
-              & ERR,ERROR,*999)
-            DO matrix_idx=1,EQUATIONS_MATRICES%NUMBER_OF_MATRICES
-              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Element matrix : ",matrix_idx,ERR,ERROR,*999)
-              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update matrix = ",EQUATIONS_MATRICES%MATRICES(matrix_idx)%PTR% &
-                & UPDATE_MATRIX,ERR,ERROR,*999)
-              ELEMENT_MATRIX=>EQUATIONS_MATRICES%MATRICES(matrix_idx)%PTR%ELEMENT_MATRIX
-              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",ELEMENT_MATRIX%NUMBER_OF_ROWS,ERR,ERROR,*999)
-              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of columns = ",ELEMENT_MATRIX%NUMBER_OF_COLUMNS,ERR,ERROR,*999)
-              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",ELEMENT_MATRIX%MAX_NUMBER_OF_ROWS, &
-                & ERR,ERROR,*999)
-              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of columns = ",ELEMENT_MATRIX%MAX_NUMBER_OF_COLUMNS, &
-                & ERR,ERROR,*999)
-              CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_ROWS,8,8,ELEMENT_MATRIX%ROW_DOFS, &
-                & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
-              CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_COLUMNS,8,8,ELEMENT_MATRIX%COLUMN_DOFS, &
-                & '("  Column dofs  :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
-              CALL WRITE_STRING_MATRIX(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_ROWS,1,1,ELEMENT_MATRIX% &
-                & NUMBER_OF_COLUMNS,8,8,ELEMENT_MATRIX%MATRIX(1:ELEMENT_MATRIX%NUMBER_OF_ROWS,1:ELEMENT_MATRIX% &
-                & NUMBER_OF_COLUMNS),WRITE_STRING_MATRIX_NAME_AND_INDICES,'("  Matrix','(",I2,",:)',' :",8(X,E13.6))', &
-                & '(16X,8(X,E13.6))',ERR,ERROR,*999)        
-            ENDDO !matrix_idx
-            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Element RHS vector :",ERR,ERROR,*999)
-            CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update vector = ",EQUATIONS_MATRICES%UPDATE_VECTOR,ERR,ERROR,*999)
-            ELEMENT_VECTOR=>EQUATIONS_MATRICES%ELEMENT_VECTOR
-            CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",ELEMENT_VECTOR%NUMBER_OF_ROWS,ERR,ERROR,*999)
-            CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS, &
-              & ERR,ERROR,*999)
-            CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%ROW_DOFS, &
-              & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
-            CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%VECTOR, &
-              & '("  Vector(:)    :",8(X,E13.6))','(16X,8(X,E13.6))',ERR,ERROR,*999)
+            LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
+            IF(ASSOCIATED(LINEAR_MATRICES)) THEN
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Linear matrices:",ERR,ERROR,*999)                        
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Number of element matrices = ",LINEAR_MATRICES% &
+                & NUMBER_OF_LINEAR_MATRICES,ERR,ERROR,*999)
+              DO matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Element matrix : ",matrix_idx,ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update matrix = ",LINEAR_MATRICES%MATRICES(matrix_idx)%PTR% &
+                  & UPDATE_MATRIX,ERR,ERROR,*999)
+                IF(LINEAR_MATRICES%MATRICES(matrix_idx)%PTR%UPDATE_MATRIX) THEN
+                  ELEMENT_MATRIX=>LINEAR_MATRICES%MATRICES(matrix_idx)%PTR%ELEMENT_MATRIX
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",ELEMENT_MATRIX%NUMBER_OF_ROWS,ERR,ERROR,*999)
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of columns = ",ELEMENT_MATRIX%NUMBER_OF_COLUMNS, &
+                    & ERR,ERROR,*999)
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",ELEMENT_MATRIX%MAX_NUMBER_OF_ROWS, &
+                    & ERR,ERROR,*999)
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of columns = ",ELEMENT_MATRIX% &
+                    & MAX_NUMBER_OF_COLUMNS,ERR,ERROR,*999)
+                  CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_ROWS,8,8,ELEMENT_MATRIX%ROW_DOFS, &
+                    & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
+                  CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_COLUMNS,8,8,ELEMENT_MATRIX% &
+                    & COLUMN_DOFS,'("  Column dofs  :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
+                  CALL WRITE_STRING_MATRIX(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_ROWS,1,1,ELEMENT_MATRIX% &
+                    & NUMBER_OF_COLUMNS,8,8,ELEMENT_MATRIX%MATRIX(1:ELEMENT_MATRIX%NUMBER_OF_ROWS,1:ELEMENT_MATRIX% &
+                    & NUMBER_OF_COLUMNS),WRITE_STRING_MATRIX_NAME_AND_INDICES,'("  Matrix','(",I2,",:)',' :",8(X,E13.6))', &
+                    & '(16X,8(X,E13.6))',ERR,ERROR,*999)
+                ENDIF
+              ENDDO !matrix_idx
+            ENDIF
+            RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
+            IF(ASSOCIATED(RHS_VECTOR)) THEN
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Element RHS vector :",ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update vector = ",RHS_VECTOR%UPDATE_VECTOR,ERR,ERROR,*999)
+              IF(RHS_VECTOR%UPDATE_VECTOR) THEN
+                ELEMENT_VECTOR=>RHS_VECTOR%ELEMENT_VECTOR
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",ELEMENT_VECTOR%NUMBER_OF_ROWS,ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS, &
+                  & ERR,ERROR,*999)
+                CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%ROW_DOFS, &
+                  & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
+                CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%VECTOR, &
+                  & '("  Vector(:)    :",8(X,E13.6))','(16X,8(X,E13.6))',ERR,ERROR,*999)
+              ENDIF
+            ENDIF
+            SOURCE_VECTOR=>EQUATIONS_MATRICES%SOURCE_VECTOR
+            IF(ASSOCIATED(SOURCE_VECTOR)) THEN
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Element source vector :",ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update vector = ",SOURCE_VECTOR%UPDATE_VECTOR,ERR,ERROR,*999)
+              IF(SOURCE_VECTOR%UPDATE_VECTOR) THEN
+                ELEMENT_VECTOR=>SOURCE_VECTOR%ELEMENT_VECTOR
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",ELEMENT_VECTOR%NUMBER_OF_ROWS,ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS, &
+                  & ERR,ERROR,*999)
+                CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%ROW_DOFS, &
+                  & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
+                CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%VECTOR, &
+                  & '("  Vector(:)    :",8(X,E13.6))','(16X,8(X,E13.6))',ERR,ERROR,*999)
+              ENDIF
+            ENDIF
           ELSE
             CALL FLAG_ERROR("Equation matrices is not associated.",ERR,ERROR,*999)
           ENDIF
@@ -1123,6 +1399,238 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE EQUATIONS_SET_FINITE_ELEMENT_CALCULATE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluates the element Jacobian for the given element number for a finite element equations set.
+  SUBROUTINE EQUATIONS_SET_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to evaluate the Jacobian for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code 
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(ELEMENT_MATRIX_TYPE), POINTER :: ELEMENT_MATRIX
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("EQUATIONS_SET_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      SELECT CASE(EQUATIONS_SET%CLASS)
+      CASE(EQUATIONS_SET_ELASTICITY_CLASS)
+        CALL ELASTICITY_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_ELECTROMAGNETICS_CLASS)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
+        CALL CLASSICAL_FIELD_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_MODAL_CLASS)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))//" is not valid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+      EQUATIONS=>EQUATIONS_SET%EQUATIONS
+      IF(ASSOCIATED(EQUATIONS)) THEN
+        IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_SET_ELEMENT_MATRIX_OUTPUT) THEN
+          EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+          IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite element Jacobian matrix:",ERR,ERROR,*999)          
+            CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Element number = ",ELEMENT_NUMBER,ERR,ERROR,*999)
+            NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
+            IF(ASSOCIATED(NONLINEAR_MATRICES)) THEN
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Element Jacobian:",ERR,ERROR,*999)          
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update Jacobian = ",NONLINEAR_MATRICES%JACOBIAN%UPDATE_JACOBIAN, &
+                & ERR,ERROR,*999)
+              IF(NONLINEAR_MATRICES%JACOBIAN%UPDATE_JACOBIAN) THEN
+                ELEMENT_MATRIX=>NONLINEAR_MATRICES%JACOBIAN%ELEMENT_JACOBIAN
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",ELEMENT_MATRIX%NUMBER_OF_ROWS,ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of columns = ",ELEMENT_MATRIX%NUMBER_OF_COLUMNS, &
+                  & ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",ELEMENT_MATRIX%MAX_NUMBER_OF_ROWS, &
+                  & ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of columns = ",ELEMENT_MATRIX% &
+                  & MAX_NUMBER_OF_COLUMNS,ERR,ERROR,*999)
+                CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_ROWS,8,8,ELEMENT_MATRIX%ROW_DOFS, &
+                  & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
+                CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_COLUMNS,8,8,ELEMENT_MATRIX% &
+                  & COLUMN_DOFS,'("  Column dofs  :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
+                CALL WRITE_STRING_MATRIX(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_ROWS,1,1,ELEMENT_MATRIX% &
+                  & NUMBER_OF_COLUMNS,8,8,ELEMENT_MATRIX%MATRIX(1:ELEMENT_MATRIX%NUMBER_OF_ROWS,1:ELEMENT_MATRIX% &
+                  & NUMBER_OF_COLUMNS),WRITE_STRING_MATRIX_NAME_AND_INDICES,'("  Matrix','(",I2,",:)',' :",8(X,E13.6))', &
+                  & '(16X,8(X,E13.6))',ERR,ERROR,*999)
+!!TODO: Write out the element residual???
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Equations matrices nonlinear matrices is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Equation matrices is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF    
+       
+    CALL EXITS("EQUATIONS_SET_FINITE_ELEMENT_JACOBIAN_EVALUATE")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_FINITE_ELEMENT_JACOBIAN_EVALUATE")
+    RETURN 1
+    
+  END SUBROUTINE EQUATIONS_SET_FINITE_ELEMENT_JACOBIAN_EVALUATE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluates the element residual and rhs vector for the given element number for a finite element equations set.
+  SUBROUTINE EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to evaluate the residual for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code 
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: matrix_idx
+    TYPE(ELEMENT_MATRIX_TYPE), POINTER :: ELEMENT_MATRIX
+    TYPE(ELEMENT_VECTOR_TYPE), POINTER :: ELEMENT_VECTOR
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
+    TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: RHS_VECTOR
+    TYPE(EQUATIONS_MATRICES_SOURCE_TYPE), POINTER :: SOURCE_VECTOR
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      SELECT CASE(EQUATIONS_SET%CLASS)
+      CASE(EQUATIONS_SET_ELASTICITY_CLASS)
+        CALL ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_ELECTROMAGNETICS_CLASS)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
+        CALL CLASSICAL_FIELD_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_MODAL_CLASS)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))//" is not valid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+      EQUATIONS=>EQUATIONS_SET%EQUATIONS
+      IF(ASSOCIATED(EQUATIONS)) THEN
+        IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_SET_ELEMENT_MATRIX_OUTPUT) THEN
+          EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+          IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite element residual matrices and vectors:",ERR,ERROR,*999)          
+            CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Element number = ",ELEMENT_NUMBER,ERR,ERROR,*999)
+            LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
+            IF(ASSOCIATED(LINEAR_MATRICES)) THEN
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Linear matrices:",ERR,ERROR,*999)                        
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Number of element matrices = ",LINEAR_MATRICES% &
+                & NUMBER_OF_LINEAR_MATRICES,ERR,ERROR,*999)
+              DO matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Element matrix : ",matrix_idx,ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update matrix = ",LINEAR_MATRICES%MATRICES(matrix_idx)%PTR% &
+                  & UPDATE_MATRIX,ERR,ERROR,*999)
+                IF(LINEAR_MATRICES%MATRICES(matrix_idx)%PTR%UPDATE_MATRIX) THEN
+                  ELEMENT_MATRIX=>LINEAR_MATRICES%MATRICES(matrix_idx)%PTR%ELEMENT_MATRIX
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",ELEMENT_MATRIX%NUMBER_OF_ROWS,ERR,ERROR,*999)
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of columns = ",ELEMENT_MATRIX%NUMBER_OF_COLUMNS, &
+                    & ERR,ERROR,*999)
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",ELEMENT_MATRIX%MAX_NUMBER_OF_ROWS, &
+                    & ERR,ERROR,*999)
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of columns = ",ELEMENT_MATRIX% &
+                    & MAX_NUMBER_OF_COLUMNS,ERR,ERROR,*999)
+                  CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_ROWS,8,8,ELEMENT_MATRIX%ROW_DOFS, &
+                    & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
+                  CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_COLUMNS,8,8,ELEMENT_MATRIX% &
+                    & COLUMN_DOFS,'("  Column dofs  :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
+                  CALL WRITE_STRING_MATRIX(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_ROWS,1,1,ELEMENT_MATRIX% &
+                    & NUMBER_OF_COLUMNS,8,8,ELEMENT_MATRIX%MATRIX(1:ELEMENT_MATRIX%NUMBER_OF_ROWS,1:ELEMENT_MATRIX% &
+                    & NUMBER_OF_COLUMNS),WRITE_STRING_MATRIX_NAME_AND_INDICES,'("  Matrix','(",I2,",:)',' :",8(X,E13.6))', &
+                    & '(16X,8(X,E13.6))',ERR,ERROR,*999)
+                ENDIF
+              ENDDO !matrix_idx
+            ENDIF
+            NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
+            IF(ASSOCIATED(NONLINEAR_MATRICES)) THEN
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Element residual vector:",ERR,ERROR,*999)                        
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update vector = ",NONLINEAR_MATRICES%UPDATE_RESIDUAL,ERR,ERROR,*999)
+              IF(NONLINEAR_MATRICES%UPDATE_RESIDUAL) THEN
+                ELEMENT_VECTOR=>NONLINEAR_MATRICES%ELEMENT_RESIDUAL
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",ELEMENT_VECTOR%NUMBER_OF_ROWS,ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS, &
+                  & ERR,ERROR,*999)
+                CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%ROW_DOFS, &
+                  & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
+                CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%VECTOR, &
+                  & '("  Vector(:)    :",8(X,E13.6))','(16X,8(X,E13.6))',ERR,ERROR,*999)
+              ENDIF
+            ENDIF
+            RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
+            IF(ASSOCIATED(RHS_VECTOR)) THEN
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Element RHS vector :",ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update vector = ",RHS_VECTOR%UPDATE_VECTOR,ERR,ERROR,*999)
+              IF(RHS_VECTOR%UPDATE_VECTOR) THEN
+                ELEMENT_VECTOR=>RHS_VECTOR%ELEMENT_VECTOR
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",ELEMENT_VECTOR%NUMBER_OF_ROWS,ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS, &
+                  & ERR,ERROR,*999)
+                CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%ROW_DOFS, &
+                  & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
+                CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%VECTOR, &
+                  & '("  Vector(:)    :",8(X,E13.6))','(16X,8(X,E13.6))',ERR,ERROR,*999)
+              ENDIF
+            ENDIF
+            SOURCE_VECTOR=>EQUATIONS_MATRICES%SOURCE_VECTOR
+            IF(ASSOCIATED(SOURCE_VECTOR)) THEN
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Element source vector :",ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update vector = ",SOURCE_VECTOR%UPDATE_VECTOR,ERR,ERROR,*999)
+              IF(SOURCE_VECTOR%UPDATE_VECTOR) THEN
+                ELEMENT_VECTOR=>SOURCE_VECTOR%ELEMENT_VECTOR
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",ELEMENT_VECTOR%NUMBER_OF_ROWS,ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS, &
+                  & ERR,ERROR,*999)
+                CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%ROW_DOFS, &
+                  & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
+                CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%VECTOR, &
+                  & '("  Vector(:)    :",8(X,E13.6))','(16X,8(X,E13.6))',ERR,ERROR,*999)
+              ENDIF
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Equation matrices is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF    
+       
+    CALL EXITS("EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE")
+    RETURN 1
+    
+  END SUBROUTINE EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE
 
   !
   !================================================================================================================================
@@ -1777,6 +2285,107 @@ CONTAINS
     CALL EXITS("EQUATIONS_SET_FIXED_CONDITIONS_SET_DOF1")
     RETURN 1
   END SUBROUTINE EQUATIONS_SET_FIXED_CONDITIONS_SET_DOF1
+  
+  
+  !
+  !================================================================================================================================
+  !
+
+!!MERGE: Check we are only setting local nodes.
+  
+  !>Sets a fixed condition for the equation set on the specified node. TODO update global condition as well. 
+  SUBROUTINE EQUATIONS_SET_FIXED_CONDITIONS_SET_NODE(EQUATIONS_SET,SET_TYPE,DERIVATIVE_NUMBER,NODE_NUMBER,COMPONENT_NUMBER, &
+    & VARIABLE_NUMBER,CONDITION,VALUE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the fixed condition for
+    INTEGER(INTG), INTENT(IN) :: SET_TYPE !<The field parameter set type
+    INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBER !<The derivative to set the fixed condition at
+    INTEGER(INTG), INTENT(IN) :: NODE_NUMBER !<The node_number to set the fixed condition at
+    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<The component number to set the fixed condition at
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<The variable number to set the fixed condition at
+    INTEGER(INTG), INTENT(IN) :: CONDITION !<The fixed condition to set
+    REAL(DP), INTENT(IN) :: VALUE !<The value of the fixed condition to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: local_ny,global_ny,GLOBAL_NODE_NUMBER
+    LOGICAL :: NODE_EXISTS
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DEPENDENT_DOFS_MAPPING
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    TYPE(EQUATIONS_SET_FIXED_CONDITIONS_TYPE), POINTER :: FIXED_CONDITIONS
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+ 
+    CALL ENTERS("EQUATIONS_SET_FIXED_CONDITIONS_SET_NODE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      FIXED_CONDITIONS=>EQUATIONS_SET%FIXED_CONDITIONS
+      IF(ASSOCIATED(FIXED_CONDITIONS)) THEN
+        IF(FIXED_CONDITIONS%FIXED_CONDITIONS_FINISHED) THEN
+          CALL FLAG_ERROR("Fixed conditions have been finished for this equations set.",ERR,ERROR,*999)
+        ELSE
+          IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
+            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+            IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+              DEPENDENT_DOFS_MAPPING=>DEPENDENT_FIELD%MAPPINGS%DOMAIN_MAPPING
+              IF(ASSOCIATED(DEPENDENT_DOFS_MAPPING)) THEN
+                !!TODO: set by global dof index???
+                CALL NODE_CHECK_EXISTS(NODE_NUMBER,DEPENDENT_FIELD%REGION,NODE_EXISTS,GLOBAL_NODE_NUMBER,ERR,ERROR,*999)
+                IF(.NOT.NODE_EXISTS) THEN
+                  CALL FLAG_ERROR("Invalid node number.",ERR,ERROR,*999)
+                ELSE
+                  local_ny=DEPENDENT_FIELD%VARIABLES(VARIABLE_NUMBER)%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                      & NODE_PARAM2DOF_MAP(DERIVATIVE_NUMBER,NODE_NUMBER,0)
+                  IF(local_ny>0.AND.local_ny<=DEPENDENT_DOFS_MAPPING%TOTAL_NUMBER_OF_LOCAL) THEN
+                    global_ny=DEPENDENT_DOFS_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
+                    SELECT CASE(CONDITION)
+                    CASE(EQUATIONS_SET_NOT_FIXED)
+                      FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(global_ny)=EQUATIONS_SET_NOT_FIXED
+                    CASE(EQUATIONS_SET_FIXED_BOUNDARY_CONDITION)
+                      FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(global_ny)=EQUATIONS_SET_FIXED_BOUNDARY_CONDITION
+                      CALL DISTRIBUTED_VECTOR_VALUES_SET(FIXED_CONDITIONS%BOUNDARY_CONDITIONS,local_ny, &
+                        & EQUATIONS_SET_FIXED_BOUNDARY_CONDITION,ERR,ERROR,*999)
+                      CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,SET_TYPE,ERR,ERROR,*999)
+                      CALL FIELD_PARAMETER_SET_UPDATE_NODE(DEPENDENT_FIELD,SET_TYPE,DERIVATIVE_NUMBER, &
+                        & GLOBAL_NODE_NUMBER,COMPONENT_NUMBER,VARIABLE_NUMBER,VALUE,ERR,ERROR,*999)
+                      CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,SET_TYPE,ERR,ERROR,*999)
+                    CASE(EQUATIONS_SET_MIXED_BOUNDARY_CONDITION)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CASE DEFAULT
+                      LOCAL_ERROR="The specified condition of "//TRIM(NUMBER_TO_VSTRING(CONDITION,"*",ERR,ERROR))// &
+                        & " is invalid."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    END SELECT
+                  ELSE
+                    LOCAL_ERROR="The specified dof of "//TRIM(NUMBER_TO_VSTRING(local_ny,"*",ERR,ERROR))// &
+                      & "is invalid. The allowed range is 1 to "// &
+                      & TRIM(NUMBER_TO_VSTRING(DEPENDENT_DOFS_MAPPING%TOTAL_NUMBER_OF_LOCAL,"*",ERR,ERROR))//"."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("The dependent field dofs mapping is not associated",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("The dependent field is not associated",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The problem dependent has not been finished",ERR,ERROR,*999)              
+          ENDIF
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Equations set fixed conditions are not associated",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_FIXED_CONDITIONS_SET_NODE")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_FIXED_CONDITIONS_SET_NODE",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_FIXED_CONDITIONS_SET_NODE")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_FIXED_CONDITIONS_SET_NODE
 
   !
   !================================================================================================================================
@@ -2780,7 +3389,6 @@ CONTAINS
         EQUATIONS_SET%EQUATIONS%EQUATIONS_SET=>EQUATIONS_SET
         EQUATIONS_SET%EQUATIONS%OUTPUT_TYPE=EQUATIONS_SET_NO_OUTPUT
         EQUATIONS_SET%EQUATIONS%SPARSITY_TYPE=EQUATIONS_SET_SPARSE_MATRICES
-        EQUATIONS_SET%EQUATIONS%NONLINEAR_JACOBIAN_TYPE=EQUATIONS_SET_NO_JACOBIAN
         NULLIFY(EQUATIONS_SET%EQUATIONS%INTERPOLATION)
         NULLIFY(EQUATIONS_SET%EQUATIONS%LINEAR_DATA)
         NULLIFY(EQUATIONS_SET%EQUATIONS%NONLINEAR_DATA)
@@ -2891,8 +3499,6 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
  
     CALL ENTERS("EQUATIONS_SET_JACOBIAN_EVALUATE_STATIC_FEM",ERR,ERROR,*999)
 
@@ -2913,87 +3519,89 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Evaluates the Jacobain element matrix for a finite element
-  SUBROUTINE EQUATIONS_SET_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
 
-    !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to evaluate the residual for
-    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to evaluate the residual for
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(ELEMENT_MATRIX_TYPE), POINTER :: ELEMENT_MATRIX
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
- 
-    CALL ENTERS("EQUATIONS_SET_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR,*999)
 
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%CLASS)
-      CASE(EQUATIONS_SET_ELASTICITY_CLASS)
-        CALL ELASTICITY_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
-      CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE(EQUATIONS_SET_ELECTROMAGNETICS_CLASS)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE(EQUATIONS_SET_MODAL_CLASS)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE DEFAULT
-        LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))//" is not valid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-      EQUATIONS=>EQUATIONS_SET%EQUATIONS
-      IF(ASSOCIATED(EQUATIONS)) THEN
-        IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_SET_ELEMENT_MATRIX_OUTPUT) THEN
-          EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
-          IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
-            IF(ASSOCIATED(EQUATIONS_MATRICES%JACOBIAN)) THEN
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite element Jacobian matrix",ERR,ERROR,*999)
-              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Element number = ",ELEMENT_NUMBER,ERR,ERROR,*999)
-              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update Jacobian = ",EQUATIONS_MATRICES%JACOBIAN% &
-                & UPDATE_JACOBIAN,ERR,ERROR,*999)
-              ELEMENT_MATRIX=>EQUATIONS_MATRICES%JACOBIAN%ELEMENT_JACOBIAN
-              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",ELEMENT_MATRIX%NUMBER_OF_ROWS,ERR,ERROR,*999)
-              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of columns = ",ELEMENT_MATRIX%NUMBER_OF_COLUMNS,ERR,ERROR,*999)
-              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",ELEMENT_MATRIX%MAX_NUMBER_OF_ROWS, &
-                & ERR,ERROR,*999)
-              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of columns = ",ELEMENT_MATRIX%MAX_NUMBER_OF_COLUMNS, &
-                & ERR,ERROR,*999)
-              CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_ROWS,8,8,ELEMENT_MATRIX%ROW_DOFS, &
-                & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
-              CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_COLUMNS,8,8,ELEMENT_MATRIX%COLUMN_DOFS, &
-                & '("  Column dofs  :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
-              CALL WRITE_STRING_MATRIX(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_ROWS,1,1,ELEMENT_MATRIX% &
-                & NUMBER_OF_COLUMNS,8,8,ELEMENT_MATRIX%MATRIX(1:ELEMENT_MATRIX%NUMBER_OF_ROWS,1:ELEMENT_MATRIX% &
-                & NUMBER_OF_COLUMNS),WRITE_STRING_MATRIX_NAME_AND_INDICES,'("  Matrix','(",I2,",:)',' :",8(X,E13.6))', &
-                & '(16X,8(X,E13.6))',ERR,ERROR,*999)
-            ELSE
-              CALL FLAG_ERROR("Element matrices Jacobian is not associated.",ERR,ERROR,*999)
-            ENDIF
-           ELSE
-            CALL FLAG_ERROR("Equation matrices is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF    
-       
-    CALL EXITS("EQUATIONS_SET_FINITE_ELEMENT_JACOBIAN_EVALUATE")
-    RETURN
-999 CALL ERRORS("EQUATIONS_SET_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR)
-    CALL EXITS("EQUATIONS_SET_FINITE_ELEMENT_JACOBIAN_EVALUATE")
-    RETURN 1
-  END SUBROUTINE EQUATIONS_SET_FINITE_ELEMENT_JACOBIAN_EVALUATE
 
- !
-  !================================================================================================================================
-  !
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   !>Sets/changes the output type for the equations set.
   SUBROUTINE EQUATIONS_SET_EQUATIONS_OUTPUT_TYPE_SET(EQUATIONS_SET,OUTPUT_TYPE,ERR,ERROR,*)
@@ -3134,8 +3742,6 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
  
     CALL ENTERS("EQUATIONS_SET_RESIDUAL_EVALUATE_STATIC_FEM",ERR,ERROR,*999)
 
@@ -3156,86 +3762,88 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Evaluates the residual for an equations set.
-  SUBROUTINE EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
 
-    !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to evaluate the residual for
-    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to evaluate the residual for
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(ELEMENT_VECTOR_TYPE), POINTER :: ELEMENT_VECTOR
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
- 
-    CALL ENTERS("EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR,*999)
 
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%CLASS)
-      CASE(EQUATIONS_SET_ELASTICITY_CLASS)
-        CALL ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
-      CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE(EQUATIONS_SET_ELECTROMAGNETICS_CLASS)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE(EQUATIONS_SET_MODAL_CLASS)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE DEFAULT
-        LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))//" is not valid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-      EQUATIONS=>EQUATIONS_SET%EQUATIONS
-      IF(ASSOCIATED(EQUATIONS)) THEN
-        IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_SET_ELEMENT_MATRIX_OUTPUT) THEN
-          EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
-          IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
-            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite element residual vectors:",ERR,ERROR,*999)
-            CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Element number = ",ELEMENT_NUMBER,ERR,ERROR,*999)
-            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Element residual vector :",ERR,ERROR,*999)
-            CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update vector = ",EQUATIONS_MATRICES%UPDATE_RESIDUAL,ERR,ERROR,*999)
-            ELEMENT_VECTOR=>EQUATIONS_MATRICES%ELEMENT_RESIDUAL
-            CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",ELEMENT_VECTOR%NUMBER_OF_ROWS,ERR,ERROR,*999)
-            CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS, &
-              & ERR,ERROR,*999)
-            CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%ROW_DOFS, &
-              & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
-            CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%VECTOR, &
-              & '("  Vector(:)    :",8(X,E13.6))','(16X,8(X,E13.6))',ERR,ERROR,*999)
-            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Element RHS vector :",ERR,ERROR,*999)
-            CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update vector = ",EQUATIONS_MATRICES%UPDATE_VECTOR,ERR,ERROR,*999)
-            ELEMENT_VECTOR=>EQUATIONS_MATRICES%ELEMENT_VECTOR
-            CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",ELEMENT_VECTOR%NUMBER_OF_ROWS,ERR,ERROR,*999)
-            CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS, &
-              & ERR,ERROR,*999)
-            CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%ROW_DOFS, &
-              & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
-            CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%VECTOR, &
-              & '("  Vector(:)    :",8(X,E13.6))','(16X,8(X,E13.6))',ERR,ERROR,*999)
-          ELSE
-            CALL FLAG_ERROR("Equation matrices is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF    
-       
-    CALL EXITS("EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE")
-    RETURN
-999 CALL ERRORS("EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR)
-    CALL EXITS("EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE")
-    RETURN 1
-  END SUBROUTINE EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE
 
-  !
-  !================================================================================================================================
-  !
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   !>Finish the creation of a source for an equation set.
   SUBROUTINE EQUATIONS_SET_SOURCE_CREATE_FINISH(EQUATIONS_SET,ERR,ERROR,*)
