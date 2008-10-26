@@ -1,5 +1,5 @@
 !> \file
-!> $Id: finite_elasticity_routines.f90 28 2007-07-27 08:35:14Z cpb $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module handles all finite elasticity routines.
 !>
@@ -535,7 +535,7 @@ CONTAINS
         ns=ns+1    
 	DO xi_idx=1,NXIT,1
           derivative_idx=INT((xi_idx*xi_idx+xi_idx+2+0.01_DP)/2.0_DP)  !2,4,7 
-          DFDXI(ns,xi_idx)=BASIS_LHTP_BASIS_EVALUATE(BASIS,nn_idx,nk_idx,derivative_idx,XI,ERR,ERROR) !df/dxi 
+!          DFDXI(ns,xi_idx)=BASIS_LHTP_BASIS_EVALUATE(BASIS,nn_idx,nk_idx,derivative_idx,XI,ERR,ERROR) !df/dxi 
 	ENDDO
       ENDDO
     ENDDO
@@ -761,7 +761,7 @@ CONTAINS
               IF(ASSOCIATED(EQUATIONS)) THEN
                 !Create the equations mapping.
                 CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
-                CALL EQUATIONS_MAPPING_MATRICES_NUMBER_SET(EQUATIONS_MAPPING,0,ERR,ERROR,*999)
+                CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(EQUATIONS_MAPPING,0,ERR,ERROR,*999)
                 CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_NORMAL_VARIABLE_TYPE,ERR,ERROR,*999)
                 CALL EQUATIONS_MAPPING_CREATE_FINISH(EQUATIONS_MAPPING,ERR,ERROR,*999)
                 !Create the equations matrices

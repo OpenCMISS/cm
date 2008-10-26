@@ -1,0 +1,2 @@
+java -jar lib/xalan.jar -in xml/toplevel.xml -out pdf/programmer_doc.fo -xsl nwalsh/fo/docbook.xsl -param section.autolabel 1 -param paper.type A4
+java -jar lib/fop.jar pdf/programmer_doc.fo pdf/programmer_doc.pdf 
