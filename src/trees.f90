@@ -1,5 +1,5 @@
 !> \file
-!> $Id: trees.f90 2 2007-07-27 08:35:14Z cpb $
+!> $Id$
 !> \author Chris Bradley
 !> \brief Implements trees of base types.
 !>

@@ -1,7 +1,7 @@
 !> \file
-!> $Id: analytic_analysis_routines.f90 28 2008-09-02 15:35:14Z cpb $
+!> $Id$
 !> \author Ting Yu
-!> \brief This module handles all Analytic solutions.
+!> \brief This module handles all analytic analysis routines.
 !>
 !> \section LICENSE
 !>
@@ -40,7 +40,7 @@
 !> the terms of any one of the MPL, the GPL or the LGPL.
 !>
 
-!>This module handles all Laplace equations routines.
+!>This module handles all analytic analysis routines.
 MODULE ANALYTIC_ANALYSIS_ROUTINES
 
   USE CONSTANTS
@@ -82,7 +82,7 @@ CONTAINS
   !================================================================================================================================
   !  
 
-  !> Calculate the analytic analysis data. 
+  !>Calculate the analytic analysis data. 
   SUBROUTINE ANALYTIC_ANALYSIS_CALCULATE(FIELD,FILE_ID,ERR,ERROR,*)
   
     !Argument variables 
@@ -451,7 +451,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Get integral relative error value for the field
+  !>Get integral relative error value for the field.
   SUBROUTINE ANALYTIC_ANALYSIS_INTEGRAL_RELATIVE_ERROR_GET(FIELD,VARIABLE_NUMBER,POWER,VALUE,ERR,ERROR,*)
   
     !Argument variables   
@@ -485,7 +485,7 @@ CONTAINS
     RETURN 1
   END SUBROUTINE ANALYTIC_ANALYSIS_INTEGRAL_RELATIVE_ERROR_GET
   
-   !
+  !
   !================================================================================================================================
   !
 

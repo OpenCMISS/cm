@@ -1,5 +1,5 @@
 !> \file
-!> $Id: lists.f90 28 2007-07-27 08:35:14Z cpb $
+!> $Id$
 !> \author Chris Bradley
 !> \brief Implements lists of base types.
 !> \todo Fix up and have this module use the sorting module for sorts

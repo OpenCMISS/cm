@@ -1,5 +1,5 @@
 !> \file
-!> $Id: parallel_IO.f90 1 2009-02-19 13:57:57Z cpb $
+!> $Id$
 !> \author Heye Zhang
 !> \brief ThiS module handles parallel Io. Using mpi2 and parall print function, 
 !> formatted text and binary IO are supported in openCMISS  

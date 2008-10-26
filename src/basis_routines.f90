@@ -1,5 +1,5 @@
 !> \file
-!> $Id: basis_routines.f90 29 2007-08-09 16:19:43Z cpb $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module contains all basis function routines.
 !>
@@ -864,6 +864,8 @@ CONTAINS
   !================================================================================================================================
   !
 
+!!MERGE: Think about return result. Shouldn't return a pointer.
+  
   !>Gets/changes the interpolation type in each xi directions for a basis identified by a pointer.
   FUNCTION BASIS_INTERPOLATION_XI_GET(BASIS,ERR,ERROR)
 
@@ -1898,6 +1900,8 @@ CONTAINS
   !================================================================================================================================
   !
 
+!!MERGE: Make a subroutine for the get.
+  
   !>Gets the number of xi directions for a basis identified by a pointer.
   FUNCTION BASIS_NUMBER_OF_XI_GET(BASIS,ERR,ERROR)
 
@@ -2480,6 +2484,8 @@ CONTAINS
   !================================================================================================================================
   !
 
+!!MERGE: Make a subroutine.
+  
   !>Get the number of Gauss points in each xi direction on a basis quadrature identified by a pointer.
   FUNCTION BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_GET(BASIS,ERR,ERROR)
 
@@ -2631,6 +2637,8 @@ CONTAINS
   !================================================================================================================================
   !
 
+!!MERGE: Make a subroutine
+  
   !>Get the order of a quadrature for a basis quadrature identified by a pointer.
   FUNCTION BASIS_QUADRATURE_ORDER_GET(BASIS,ERR,ERROR)
 
@@ -2739,6 +2747,8 @@ CONTAINS
   !
   !================================================================================================================================
   !
+
+!!MERGE: Make a subroutine
   
   !>get the quadrature type on a basis identified by a pointer.
   FUNCTION BASIS_QUADRATURE_TYPE_GET(BASIS,ERR,ERROR)
@@ -3953,6 +3963,8 @@ CONTAINS
   !================================================================================================================================
   !
 
+!!MERGE: Make a subroutine
+  
   !>get the type for a basis is identified by a a pointer.
   FUNCTION BASIS_TYPE_GET(BASIS,ERR,ERROR)
 
@@ -4058,6 +4070,8 @@ CONTAINS
   !================================================================================================================================
   !
 
+!!MERGE: Make a subroutine
+  
   !>Gets the collapsed xi flags for a basis is identified by a a pointer.
   FUNCTION BASIS_COLLAPSED_XI_GET(BASIS,ERR,ERROR)
 

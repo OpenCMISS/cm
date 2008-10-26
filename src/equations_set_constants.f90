@@ -1,5 +1,5 @@
 !> \file
-!> $Id: equations_set_constants.f90 28 2007-07-27 08:35:14Z cpb $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module handles all constants shared across equations set routines.
 !>
@@ -86,6 +86,8 @@ MODULE EQUATIONS_SET_CONSTANTS
   !Problem subtypes
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NO_SUBTYPE=0
   !Elasticity class
+  !  Linear elasticity
+  !  Finite elasticity
   !Fluid mechanics class
   !Electromagnetics class
   !Classical field class
@@ -93,6 +95,9 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE=1
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_GENERALISED_LAPLACE_SUBTYPE=2
   !  Poisson equation
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_CONSTANT_SOURCE_POISSON_SUBTYPE=1
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_LINEAR_SOURCE_POISSON_SUBTYPE=2
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_QUADRATIC_SOURCE_POISSON_SUBTYPE=2
   !  Helmholtz equation
   !  Wave equation
   !  Diffusion equation
@@ -142,6 +147,16 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NONLINEAR=2 !<The problem is non-linear. \see EQUATIONS_SET_CONSTANTS_LinearityTypes,EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NONLINEAR_BCS=3 !<The problem has non-linear boundary conditions. \see EQUATIONS_SET_CONSTANTS_LinearityTypes,EQUATIONS_SET_CONSTANTS
   !>@}
+
+  !> \addtogroup EQUATIONS_SET_CONSTANTS_JacobianCalculationTypes EQUATIONS_SET_CONSTANTS::JacobianCalculationTypes
+  !> \brief The Jacobian types for nonlinear equations sets
+  !> \see EQUATIONS_SET_CONSTANTS
+  !>@{
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_JACOBIAN_NOT_CALCULATED=1 !<The Jacobian values will not be calculated for the nonlinear equations set \see EQUATIONS_SET_CONSTANTS_JacobianCalculationTypes,EQUATIONS_SET_CONSTANTS
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_JACOBIAN_ANALTYIC_CALCULATED=2 !<The Jacobian values will be calculated analytically for the nonlinear equations set \see EQUATIONS_SET_CONSTANTS_JacobianCalculationTypes,EQUATIONS_SET_CONSTANTS
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_JACOBIAN_FD_CALCULATED=3 !<The Jacobian values will be calcualted using finite differences for the nonlinear equations set \see EQUATIONS_SET_CONSTANTS_JacobianCalculationTypes,EQUATIONS_SET_CONSTANTS
+  !>@}
+  
   
   !> \addtogroup EQUATIONS_SET_CONSTANTS_TimeDepedenceTypes EQUATIONS_SET_CONSTANTS::TimeDepedenceTypes
   !> \brief The problem time dependence type parameters

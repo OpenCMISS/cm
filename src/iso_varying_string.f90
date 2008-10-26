@@ -1,5 +1,5 @@
 !> \file
-!> $Id: iso_varying_string.f90 27 2007-07-24 16:52:51Z cpb $
+!> $Id$
 !> \author Rich Townsend <rhdt@bartol.udel.edu>
 
 ! ******************************************************************************

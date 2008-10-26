@@ -1,5 +1,5 @@
 !> \file
-!> $Id: binary_file_f.f90 27 2007-07-24 16:52:51Z cpb $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module handles the reading and writing of binary files.
 !> \todo Fix naming convention and update to current code standard.
