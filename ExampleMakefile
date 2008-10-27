@@ -254,12 +254,12 @@ ifeq ($(OPERATING_SYSTEM),linux)
       C_FLGS += -g -pg -tcollect
       ELFLAGS += -pg
     endif
-    ifneq ($(MPIPROF),false)
+    ifeq ($(MPIPROF),true)
       ifeq ($(MPI),mpich2)
-        C_FLAGS += -Wl,--export-dyanmic
-        DBGC_FLAGS += -Wl,--export-dyanmic
+        C_FLGS += -Wl,--export-dyanmic
+        DBGC_FLGS += -Wl,--export-dyanmic
       else
-        C_FLAGS += -tcollect
+        C_FLGS += -tcollect
       endif
     endif
   endif
@@ -343,12 +343,12 @@ ifeq ($(OPERATING_SYSTEM),linux)
       F_FLGS += -g -pg -tcollect
       ELFLAGS += -pg
     endif
-    ifneq ($(MPIPROF),false)
+    ifeq ($(MPIPROF),true)
       ifeq ($(MPI),mpich2)
-        F_FLAGS += -Wl,--export-dyanmic
-        DBGF_FLAGS += -Wl,--export-dyanmic
+        F_FLAS += -Wl,--export-dyanmic
+        DBGF_FLGS += -Wl,--export-dyanmic
       else
-        F_FLAGS += -tcollect
+        F_FLGS += -tcollect
       endif
     endif
 #    MP_FLGS = -openmp
@@ -480,16 +480,21 @@ PETSC_LIB_PATH =#
 PETSC_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   ifeq ($(DEBUG),false)
-    ifeq ($(MPIPROF),true)
-      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/linux-gnu-c-debug/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/bmake/linux-gnu-c-debug/ )
-    else
+    ifeq ($(MPI),mpich2)
       PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/linux-gnu-c-opt/ )
       PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/bmake/linux-gnu-c-opt/ )
+    else
+      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/linux-gnu-c-opt/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/bmake/linux-gnu-c-opt/ )
     endif
   else
-    PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/linux-gnu-c-debug/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/bmake/linux-gnu-c-debug/ )
+    ifeq ($(MPI),mpich2)
+      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/linux-gnu-c-debug/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/bmake/linux-gnu-c-debug/ )
+    else
+      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/linux-gnu-c-debug/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/bmake/linux-gnu-c-debug/ )
+    endif
   endif
   ifeq ($(ABI),64)
     PETSC_LIB_PATH +=  $(addprefix -L, /usr/X11R6/lib64/ )
@@ -498,8 +503,13 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
     PETSC_LIB_PATH +=  $(addprefix -L, /usr/X11R6/lib/ )
     PETSC_LIB_PATH +=  $(addprefix -L, /usr/lib/ )
   endif
-  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/ )
-  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/include/ )
+  ifeq ($(MPI),mpich2)
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/include/ )
+  else
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/include/ )
+  endif
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     ifeq ($(DEBUG),false)
@@ -601,6 +611,7 @@ $(OBJECT_DIR)/%.o : $(EXAMPLE_SOURCE_DIR)/%.c
 
 
 OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
+	$(OBJECT_DIR)/analytic_analysis_routines.o \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
 	$(OBJECT_DIR)/blas.o \
@@ -627,6 +638,7 @@ OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/fluid_mechanics_routines.o \
 	$(OBJECT_DIR)/f90c_f.o \
 	$(OBJECT_DIR)/f90c_c.o \
+	$(OBJECT_DIR)/generated_mesh_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -693,6 +705,17 @@ ifeq ($(OPERATING_SYSTEM),aix)
 
 endif
 
+$(OBJECT_DIR)/analytic_analysis_routines.o  : $(MAIN_SOURCE_DIR)/analytic_analysis_routines.f90 \
+	$(OBJECT_DIR)/constants.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/matrix_vector.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/timer_f.o \
+	$(OBJECT_DIR)/types.o
+
 $(OBJECT_DIR)/base_routines.o	:	$(MAIN_SOURCE_DIR)/base_routines.f90 \
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -728,6 +751,7 @@ $(OBJECT_DIR)/cmiss.o		:	$(MAIN_SOURCE_DIR)/cmiss.f90 \
 	$(OBJECT_DIR)/computational_environment.o \
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/coordinate_routines.o \
+	$(OBJECT_DIR)/generated_mesh_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/problem_routines.o \
@@ -860,6 +884,7 @@ $(OBJECT_DIR)/equations_set_routines.o		:	$(MAIN_SOURCE_DIR)/equations_set_routi
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/lists.o \
 	$(OBJECT_DIR)/matrix_vector.o \
+	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/timer_f.o \
 	$(OBJECT_DIR)/types.o
@@ -871,6 +896,7 @@ $(OBJECT_DIR)/field_routines.o		:	$(MAIN_SOURCE_DIR)/field_routines.f90 \
 	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/domain_mappings.o \
+	$(OBJECT_DIR)/generated_mesh_routines.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
@@ -933,6 +959,18 @@ $(OBJECT_DIR)/input_output.o	:	$(MAIN_SOURCE_DIR)/input_output.f90 \
 	$(OBJECT_DIR)/kinds.o	\
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/strings.o
+
+$(OBJECT_DIR)/generated_mesh_routines.o	:	$(MAIN_SOURCE_DIR)/generated_mesh_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/coordinate_routines.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/mesh_routines.o \
+	$(OBJECT_DIR)/node_routines.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/iso_varying_string.o		:	$(MAIN_SOURCE_DIR)/iso_varying_string.f90 
 
@@ -1149,6 +1187,7 @@ $(OBJECT_DIR)/types.o		:	$(MAIN_SOURCE_DIR)/types.f90 \
 	$(OBJECT_DIR)/trees.o
 
 $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o		:	$(EXAMPLE_SOURCE_DIR)/$(BASE_EXAMPLE_NAME).f90 \
+	$(OBJECT_DIR)/analytic_analysis_routines.o \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
 	$(OBJECT_DIR)/cmiss.o \
@@ -1254,3 +1293,4 @@ help:
 	@echo "	externallibs"
 	@echo "		Compile the external libraries."
 	@echo
+

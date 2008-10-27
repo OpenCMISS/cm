@@ -1,0 +1,1923 @@
+<!--Some parts in this file is auto generated from doxygen.-->
+<chapter>
+  <title>Library Commands</title>
+  <!-- TODO: link to doxygen or should we embedded doxgen page directly?-->
+  <section>
+    <title>Top level</title>
+    <section>
+      <title>cmiss</title>
+      <command>CMISS_FINALISE</command>
+      <itemizedlist>
+        <listitem>Description:Finalises CMISS.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>ERR: The error string</listitem>
+            <listitem>ERROR: The error code</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>CMISS_INITIALISE</command>
+      <itemizedlist>
+        <listitem>Description:Initialises CMISS.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>CMISS_WRITE_ERROR</command>
+      <itemizedlist>
+        <listitem>Description:Writes the error string to screen.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+
+    </section>
+  </section>
+  <section>
+    <title>Basis functions</title>
+      <command>BASES_FINALISE</command>
+      <itemizedlist>
+        <listitem>Description:Finalises the bases and deallocates all memory.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>BASES_INITIALISE</command>
+      <itemizedlist>
+        <listitem>Description:Initialises the bases.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>BASIS_CREATE_FINISH</command>
+      <itemizedlist>
+        <listitem>Description:Finishes the creation of a new basis.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>BASIS: A pointer to the basis to finish the creation of</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>BASIS_CREATE_START</command>
+      <itemizedlist>
+        <listitem>Description:Starts the creation of a new basis.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>USER_NUMBER: The user number of the basis to start the creation of</listitem>
+            <listitem>BASIS: A pointer to the created basis. Must not be associated on entry.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>BASIS_NUMBER_OF_NODES_GET</command>
+      <itemizedlist>
+        <listitem>Description:Returns the number of local nodes in the specified basis.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>BASIS: A pointer to the basis to get the number of nodes</listitem>
+            <listitem>NUMBER_OF_NODES: On exit, the number of local nodes in the basis</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>BASIS_USER_NUMBER_FIND</command>
+      <itemizedlist>
+        <listitem>Description:Finds and returns in BASIS a pointer to the basis with the number given in USER_NUMBER. If no basis with that number exits BASIS is left nullified.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>USER_NUMBER: The user number of the basis to find.</listitem>
+            <listitem>BASIS: On exit, a pointer to the found basis. If no basis with the given user number exists the pointer is NULL.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+
+  </section>
+  <section>
+    <title>Coordinate Systems</title>
+      <command>COORDINATE_METRICS_CALCULATE</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>COORDINATE_SYSTEM: </listitem>
+            <listitem>JACOBIAN_TYPE: </listitem>
+            <listitem>METRICS: </listitem>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>COORDINATE_SYSTEM_FOCUS_GET</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>COORDINATE_SYSTEM: </listitem>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>COORDINATE_SYSTEM_CREATE_START</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>USER_NUMBER: </listitem>
+            <listitem>COORDINATE_SYSTEM: </listitem>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>COORDINATE_SYSTEM_CREATE_FINISH</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>COORDINATE_SYSTEM: </listitem>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>COORDINATE_DERIVATIVE_NORM</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>COORDINATE_SYSTEM: </listitem>
+            <listitem>PART_DERIV_INDEX: </listitem>
+            <listitem>INTERPOLATED_POINT: </listitem>
+            <listitem>DERIV_NORM: </listitem>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>COORDINATE_INTERPOLATION_ADJUST</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>COORDINATE_SYSTEM: </listitem>
+            <listitem>PARTIAL_DERIVATIVE_INDEX: </listitem>
+            <listitem>VALUE: </listitem>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>COORDINATE_INTERPOLATION_PARAMETERS_ADJUST</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>COORDINATE_SYSTEM: </listitem>
+            <listitem>INTERPOLATION_PARAMETERS: </listitem>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>COORDINATE_SYSTEM_USER_NUMBER_FIND</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>USER_NUMBER: </listitem>
+            <listitem>COORDINATE_SYSTEM: </listitem>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>COORDINATE_SYSTEMS_FINALISE</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>COORDINATE_SYSTEMS_INITIALISE</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+
+  </section>
+  <section>
+    <title>Regions</title>
+      <command>REGION_COORDINATE_SYSTEM_GET</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>REGION: </listitem>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>REGION_CREATE_FINISH</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>REGION: </listitem>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>REGION_CREATE_START</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>USER_NUMBER: </listitem>
+            <listitem>REGION: </listitem>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>REGION_LABEL_GET</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>REGION: </listitem>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>REGION_SUB_REGION_CREATE_START</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>USER_NUMBER: </listitem>
+            <listitem>PARENT_REGION: </listitem>
+            <listitem>SUB_REGION: </listitem>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>REGION_SUB_REGION_CREATE_FINISH</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>REGION: </listitem>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>REGION_USER_NUMBER_FIND</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>USER_NUMBER: </listitem>
+            <listitem>REGION: </listitem>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>REGIONS_INITIALISE</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>REGIONS_FINALISE</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+
+    <section>
+      <title>Node</title>
+      <command>NODE_CHECK_EXISTS</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>USER_NUMBER: </listitem>
+            <listitem>REGION: </listitem>
+            <listitem>NODE_EXISTS: </listitem>
+            <listitem>GLOBAL_NUMBER: </listitem>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>NODE_DESTROY</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>NODE: </listitem>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>NODE_INITIAL_POSITION_SET</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>GLOBAL_NUMBER: </listitem>
+            <listitem>INITIAL_POSITION: </listitem>
+            <listitem>NODES: </listitem>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>NODE_NUMBER_SET</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>GLOBAL_NUMBER: </listitem>
+            <listitem>USER_NUMBER: </listitem>
+            <listitem>NODES: </listitem>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>NODES_CREATE_FINISH</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>REGION: </listitem>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>NODES_CREATE_START</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>NUMBER_OF_NODES: </listitem>
+            <listitem>REGION: </listitem>
+            <listitem>NODES: </listitem>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>NODES_FINALISE</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>REGION: </listitem>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>NODES_INITIALISE</command>
+      <itemizedlist>
+        <listitem>Description:</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>REGION: </listitem>
+            <listitem>ERR: </listitem>
+            <listitem>ERROR: </listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+
+    </section>
+    <section>
+      <title>Mesh</title>
+      <command>DECOMPOSITION_CREATE_FINISH</command>
+      <itemizedlist>
+        <listitem>Description:Finishes the creation of a domain decomposition on a given mesh.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>MESH: A pointer to the mesh to decompose.</listitem>
+            <listitem>DECOMPOSITION: A pointer to the decomposition to finish creating</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>DECOMPOSITION_CREATE_START</command>
+      <itemizedlist>
+        <listitem>Description:Starts the creation of a domain decomposition for a given mesh.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>USER_NUMBER: The user number of the decomposition</listitem>
+            <listitem>MESH: A pointer to the mesh to decompose</listitem>
+            <listitem>DECOMPOSITION: On return a pointer to the created decomposition. Must not be associated on entry.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>DECOMPOSITION_DESTROY</command>
+      <itemizedlist>
+        <listitem>Description:Destroys a domain decomposition identified by a user number and deallocates all memory.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>USER_NUMBER: The user number of the decomposition to destroy.</listitem>
+            <listitem>MESH: A pointer to the mesh containing the decomposition.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>DECOMPOSITION_NUMBER_OF_DOMAINS_SET</command>
+      <itemizedlist>
+        <listitem>Description:Sets/changes the number of domains for a decomposition.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>DECOMPOSITION: A pointer to the decomposition to set the number of domains for.</listitem>
+            <listitem>NUMBER_OF_DOMAINS: The number of domains to set.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>DECOMPOSITION_TYPE_SET</command>
+      <itemizedlist>
+        <listitem>Description:Sets/changes the decomposition type for a decomposition.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>DECOMPOSITION: A pointer to the decomposition to set the type for</listitem>
+            <listitem>TYPE: The decomposition type to set MESH_ROUTINES::DecompositionTypes,MESH_ROUTINES</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>DECOMPOSITION_USER_NUMBER_FIND</command>
+      <itemizedlist>
+        <listitem>Description:Finds and returns in DECOMPOSITION a pointer to the decomposition identified by USER_NUMBER in the given MESH. If no decomposition with that USER_NUMBER exists DECOMPOSITION is left nullified.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>USER_NUMBER: The user number of the decomposition to find</listitem>
+            <listitem>MESH: A pointer to the mesh containing the decomposition to find</listitem>
+            <listitem>DECOMPOSITION: On return a pointer to the decomposition with the specified user number. If no decomposition with that user number exists then DECOMPOSITION is returned NULL.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>DECOMPOSITIONS_FINALISE</command>
+      <itemizedlist>
+        <listitem>Description:Finalises the domain decompositions for a given mesh.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>MESH: A pointer to the mesh to finalise the decomposition for</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>DECOMPOSITIONS_INITIALISE</command>
+      <itemizedlist>
+        <listitem>Description:Initialises the domain decompositions for a given mesh.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>MESH: A pointer to the mesh to initialise the decompositions for</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>MESH_CREATE_FINISH</command>
+      <itemizedlist>
+        <listitem>Description:Finishes the process of creating a mesh on a region.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>REGION: A pointer to the region containing the mesh</listitem>
+            <listitem>MESH: A pointer to the mesh to finish creating</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>MESH_CREATE_REGULAR</command>
+      <itemizedlist>
+        <listitem>Description:Creates the regular mesh with the given USER_NUMBER in the specifed REGION. The mesh starts at the ORIGIN(:) and has a maximum extent position of MAXIMUM_EXTENT(:) with the NUMBER_OF_ELEMENTS(:) in each direction. Each element is of the specified BASIS type. A pointer to the finished mesh is returned in MESH.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>USER_NUMBER: The user number of the mesh to create</listitem>
+            <listitem>REGION: A pointer to the region containing the mesh</listitem>
+            <listitem>ORIGIN: ORIGIN(i). ORIGIN(i) contains the i'th coordinate in the region of the origin of the regular mesh.</listitem>
+            <listitem>MAXIMUM_EXTENT: MAXIMUM_EXTENT(i). MAXIMUM_EXTENT(i) contains the i'th extent (or size) of the regular mesh.</listitem>
+            <listitem>NUMBER_ELEMENTS_XI: NUMBER_ELEMENTS_XI(i). NUMBER_ELEMENTS_XI(i) contains the number of elements in the i'th direction</listitem>
+            <listitem>BASIS: A pointer to the basis to use for each element in the regular mesh</listitem>
+            <listitem>MESH: On return, a pointer to the generated mesh</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>MESH_CREATE_START</command>
+      <itemizedlist>
+        <listitem>Description:Starts the process of creating a mesh defined by a user number with the specified NUMBER_OF_DIMENSIONS in the region identified by REGION.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>USER_NUMBER: The user number of the mesh to create</listitem>
+            <listitem>REGION: A pointer to the region to create the mesh on</listitem>
+            <listitem>NUMBER_OF_DIMENSIONS: The number of dimensions in the mesh.</listitem>
+            <listitem>MESH: On exit, a pointer to the created mesh. Must not be associated on entry.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>MESH_DESTROY</command>
+      <itemizedlist>
+        <listitem>Description:Destroys the mesh identified by a user number on the given region and deallocates all memory.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>USER_NUMBER: The user number of the mesh to destroy</listitem>
+            <listitem>REGION: A pointer to the region containing the mesh</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>MESH_TOPOLOGY_ELEMENTS_CREATE_FINISH</command>
+      <itemizedlist>
+        <listitem>Description:Finishes the process of creating elements for a specified mesh component in a mesh topology.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>MESH: A pointer to the mesh to finish creating the elements for</listitem>
+            <listitem>MESH_COMPONENT_NUMBER: The mesh component number to finish creating the elements for</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>MESH_TOPOLOGY_ELEMENTS_CREATE_START</command>
+      <itemizedlist>
+        <listitem>Description:Starts the process of creating elements in the mesh component identified by MESH and component_idx. The elements will be created with a default basis of BASIS. ELEMENTS is the returned pointer to the MESH_ELEMENTS data structure.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>MESH: A pointer to the mesh to start creating the elements on</listitem>
+            <listitem>MESH_COMPONENT_NUMBER: The mesh component number</listitem>
+            <listitem>BASIS: A pointer to the default basis to use</listitem>
+            <listitem>ELEMENTS: On return, a pointer to the created mesh elements</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_SET</command>
+      <itemizedlist>
+        <listitem>Description:Changes/sets the basis for a mesh element identified by a given global number.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>GLOBAL_NUMBER: The global number of the element to set the basis for</listitem>
+            <listitem>ELEMENTS: A pointer to the elements to set the basis for  before number?</listitem>
+            <listitem>BASIS: A pointer to the basis to set</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET</command>
+      <itemizedlist>
+        <listitem>Description:Changes/sets the element nodes for a mesh element identified by a given global number.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>GLOBAL_NUMBER: The global number of the element to set the nodes for</listitem>
+            <listitem>ELEMENTS: A pointer to the elements to set  before number?</listitem>
+            <listitem>USER_ELEMENT_NODES: USER_ELEMENT_NODES(i). USER_ELEMENT_NODES(i) is the i'th user node number for the element</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>MESH_TOPOLOGY_ELEMENTS_NUMBER_SET</command>
+      <itemizedlist>
+        <listitem>Description:Changes/sets the user number for a global element identified by a given global number.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>GLOBAL_NUMBER: The global number of the elements to set.</listitem>
+            <listitem>USER_NUMBER: The user number of the element to set</listitem>
+            <listitem>ELEMENTS: A pointer to the elements to set the user number for  This should be the first parameter.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>MESHES_FINALISE</command>
+      <itemizedlist>
+        <listitem>Description:Finalises the meshes in the given region.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>REGION: A pointer to the region to finalise the meshes for.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>MESHES_INITIALISE</command>
+      <itemizedlist>
+        <listitem>Description:Initialises the meshes for the given region.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>REGION: A pointer to the region to initialise the meshes for.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+
+    </section>
+    <section>
+      <title>Field</title>
+      <command>FIELD_CREATE_FINISH</command>
+      <itemizedlist>
+        <listitem>Description:Finishes the creation of a field on a region.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>REGION: A pointer to the region containing the field</listitem>
+            <listitem>FIELD: A pointer to the field to finish the creation of</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_CREATE_START</command>
+      <itemizedlist>
+        <listitem>Description:Starts the creation of a field defined by a user number in the specified region.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>USER_NUMBER: The user number for the field</listitem>
+            <listitem>REGION: A pointer to the region in which to create the field</listitem>
+            <listitem>FIELD: On return a pointer to the field being created</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_DESTROY</command>
+      <itemizedlist>
+        <listitem>Description:Destroys a field identified by a pointer to a field.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>FIELD: A pointer to the field to destroy</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_INTERPOLATE_GAUSS</command>
+      <itemizedlist>
+        <listitem>Description:Interpolates a field at a gauss point to give an interpolated point. PARTIAL_DERIVATIVE_TYPE controls which partial derivatives are evaluated. If it is NO_PART_DERIV then only the field values are interpolated. If it is FIRST_PART_DERIV then the field values and first partial derivatives are interpolated. If it is SECOND_PART_DERIV the the field values and first and second partial derivatives are evaluated. Old CMISS name XEXG, ZEXG.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>PARTIAL_DERIVATIVE_TYPE: The partial derivative type of the provided field interpolation</listitem>
+            <listitem>QUADRATURE_SCHEME: The quadrature scheme of the Gauss points BASIS_ROUTINES::QuadratureSchemes,BASIS_ROUTINES</listitem>
+            <listitem>GAUSS_POINT_NUMBER: The number of the Gauss point to interpolate the field at</listitem>
+            <listitem>INTERPOLATED_POINT: The pointer to the interpolated point which will contain the field interpolation information at the specified Gauss point</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_INTERPOLATE_XI</command>
+      <itemizedlist>
+        <listitem>Description:Interpolates a field at a xi location to give an interpolated point. XI is the element location to be interpolated at. PARTIAL_DERIVATIVE_TYPE controls which partial derivatives are evaluated. If it is NO_PART_DERIV then only the field values are interpolated. If it is FIRST_PART_DERIV then the field values and first partial derivatives are interpolated. If it is SECOND_PART_DERIV the the field values and first and second partial derivatives are evaluated. Old CMISS name PXI.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>PARTIAL_DERIVATIVE_TYPE: The partial derivative type of the provide field interpolation</listitem>
+            <listitem>XI: XI(ni). The ni'th Xi coordinate to evaluate the field at</listitem>
+            <listitem>INTERPOLATED_POINT: The pointer to the interpolated point which will contain the field interpolation information at the specified Xi point</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_INTERPOLATED_POINT_FINALISE</command>
+      <itemizedlist>
+        <listitem>Description:Finalises the interpolated point and deallocates all memory.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>INTERPOLATED_POINT: A pointer to the interpolated point to finalise</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_INTERPOLATED_POINT_INITIALISE</command>
+      <itemizedlist>
+        <listitem>Description:Initialises the interpolated point for an interpolation parameters.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>INTERPOLATION_PARAMETERS: A pointer to the interpolation parameters to initialise the interpolated point for</listitem>
+            <listitem>INTERPOLATED_POINT: On exit, A pointer to the interpolated point that has been initialised</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_INTERPOLATED_POINT_METRICS_CALCULATE</command>
+      <itemizedlist>
+        <listitem>Description:Calculates the interpolated point metrics and the associated interpolated point.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>JACOBIAN_TYPE: The Jacobian type of the calculation COORDINATE_ROUTINES_JacobianTypes,COORDINATE_ROUTINES</listitem>
+            <listitem>INTERPOLATED_POINT_METRICS: A pointer to the interpolated point metrics</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_INTERPOLATED_POINT_METRICS_FINALISE</command>
+      <itemizedlist>
+        <listitem>Description:Finalises the interpolated point metrics and deallocates all memory.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>INTERPOLATED_POINT_METRICS: A pointer to the interpolated point metrics to finalise</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_INTERPOLATED_POINT_METRICS_INITIALISE</command>
+      <itemizedlist>
+        <listitem>Description:Initialises the interpolated point metrics for an interpolated point.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>INTERPOLATED_POINT: </listitem>
+            <listitem>INTERPOLATED_POINT_METRICS: On exit, a pointer to the interpolated point metrics that have been initialised</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET</command>
+      <itemizedlist>
+        <listitem>Description:Gets the interpolation parameters for a particular element. Old CMISS name XPXE, ZPZE.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>PARAMETER_SET_NUMBER: The field parameter set number to get the element parameters for</listitem>
+            <listitem>ELEMENT_NUMBER: The element number to get the element parameters for</listitem>
+            <listitem>INTERPOLATION_PARAMETERS: A pointer to the interpolation parameters</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_INTERPOLATION_PARAMETERS_FINALISE</command>
+      <itemizedlist>
+        <listitem>Description:Finalises the interpolation parameters and deallocates all memory.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>INTERPOLATION_PARAMETERS: A pointer to the interpolation parameters to finalise</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_INTERPOLATION_PARAMETERS_INITIALISE</command>
+      <itemizedlist>
+        <listitem>Description:Initialises the interpolation parameters for a field variable.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>FIELD: A pointer to the field to initialise the interpolation parameters for</listitem>
+            <listitem>VARIABLE_NUMBER: The field variable number to initialise the interpolation parameters for</listitem>
+            <listitem>INTERPOLATION_PARAMETERS: On exit, a pointer to the initialised interpolation parameters.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_INTERPOLATION_PARAMETERS_LINE_GET</command>
+      <itemizedlist>
+        <listitem>Description:Gets the interpolation parameters for a particular line. Old CMISS name XPXE, ZPZE.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>PARAMETER_SET_NUMBER: The field parameter set number to get the line parameters for</listitem>
+            <listitem>LINE_NUMBER: The line number to get the line parameters for</listitem>
+            <listitem>INTERPOLATION_PARAMETERS: A pointer to the interpolation parameters</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_GEOMETRIC_PARAMETERS_UPDATE_FROM_INITIAL_MESH</command>
+      <itemizedlist>
+        <listitem>Description:Updates the geometric field parameters from the initial nodal positions of the mesh. Any derivative values for the nodes are calculated from an average straight line approximation.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>FIELD: A pointer to the field to update the geometric parameters for</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_NEXT_NUMBER_FIND</command>
+      <itemizedlist>
+        <listitem>Description:Finds the next available user number for the fields defined on the given region.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>REGION: A pointer to the region</listitem>
+            <listitem>NEXT_NUMBER: On exit, the next field user number in the region</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_PARAMETER_SET_ADD</command>
+      <itemizedlist>
+        <listitem>Description:Adds the parameter set from one parameter set type to another parameter set type.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>FIELD: A pointer to the field to add the parameter sets for</listitem>
+            <listitem>FIELD_FROM_SET_TYPE: The field parameter set identifier to add the parameters from</listitem>
+            <listitem>FIELD_TO_SET_TYPE: The field parameter set identifier to add the parameters to</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_PARAMETER_SET_COPY</command>
+      <itemizedlist>
+        <listitem>Description:Copys the parameter set from one parameter set type to another parameter set type.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>FIELD: A pointer to the field to copy the parameters set for</listitem>
+            <listitem>FIELD_FROM_SET_TYPE: The field parameter set identifier to copy the parameters from</listitem>
+            <listitem>FIELD_TO_SET_TYPE: The field parameter set identifier to copy the parameters to</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_PARAMETER_SET_CREATE</command>
+      <itemizedlist>
+        <listitem>Description:Creates a new parameter set of type set type for a field.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>FIELD: A pointer to the field to create the parameter set for</listitem>
+            <listitem>FIELD_SET_TYPE: The field parameter set identifier</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_PARAMETER_SET_GET</command>
+      <itemizedlist>
+        <listitem>Description:Returns a pointer to the specified field parameter set array. The pointer must be restored with a call to FIELD_PARAMETER_SET_RESTORE call. Note: the values can be used for read operations but a FIELD_PARAMETER_SET_UPDATE call must be used to change any values.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>FIELD: A pointer to the field to get the parameter set from</listitem>
+            <listitem>FIELD_SET_TYPE: The field parameter set identifier</listitem>
+            <listitem>PARAMETERS: On exit, a pointer to the field parameter set data</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_PARAMETER_SET_RESTORE</command>
+      <itemizedlist>
+        <listitem>Description:Restores the specified field parameter set array that was obtained with FIELD_PARAMETER_SET_GET.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>FIELD: A pointer to the field to restore the parameter set from</listitem>
+            <listitem>FIELD_SET_TYPE: The field parameter set identifier</listitem>
+            <listitem>PARAMETERS: The pointer to the field parameter set data obtained with the parameter set get call</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_PARAMETER_SET_UPDATE_CONSTANT</command>
+      <itemizedlist>
+        <listitem>Description:Updates the given parameter set with the given value for the constant of the field variable component.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>FIELD: A pointer to the field to update</listitem>
+            <listitem>FIELD_SET_TYPE: The field parameter set identifier</listitem>
+            <listitem>COMPONENT_NUMBER: The field variable component number to update</listitem>
+            <listitem>VARIABLE_NUMBER: The field variable to update</listitem>
+            <listitem>VALUE: The value to update to</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_PARAMETER_SET_UPDATE_DOF</command>
+      <itemizedlist>
+        <listitem>Description:Updates the given parameter set with the given value for a particular dof of the field.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>FIELD: A pointer to the field to update</listitem>
+            <listitem>FIELD_SET_TYPE: The field parameter set identifier</listitem>
+            <listitem>DOF_NUMBER: The dof number to update</listitem>
+            <listitem>VALUE: The value to update to</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_PARAMETER_SET_UPDATE_ELEMENT</command>
+      <itemizedlist>
+        <listitem>Description:Updates the given parameter set with the given value for a particular element of the field variable component.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>FIELD: A pointer to the field to update</listitem>
+            <listitem>FIELD_SET_TYPE: The field parameter set identifier</listitem>
+            <listitem>ELEMENT_NUMBER: The element number to update</listitem>
+            <listitem>COMPONENT_NUMBER: The field variable component to update</listitem>
+            <listitem>VARIABLE_NUMBER: The field variable to update</listitem>
+            <listitem>*: </listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_PARAMETER_SET_UPDATE_FINISH</command>
+      <itemizedlist>
+        <listitem>Description:Finishes the the parameter set update for a field.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>FIELD: A pointer to the field to finish the update for</listitem>
+            <listitem>FIELD_SET_TYPE: The field parameter set identifier to finish the update for</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_PARAMETER_SET_UPDATE_NODE</command>
+      <itemizedlist>
+        <listitem>Description:Updates the given parameter set with the given value for a particular node and derivative of the field variable component.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>FIELD: A pointer to the field to update</listitem>
+            <listitem>FIELD_SET_TYPE: The field parameter set identifier</listitem>
+            <listitem>DERIVATIVE_NUMBER: The node derivative number to update</listitem>
+            <listitem>NODE_NUMBER: The node number to update</listitem>
+            <listitem>COMPONENT_NUMBER: The field variable component number to update</listitem>
+            <listitem>VARIABLE_NUMBER: The field variable to update</listitem>
+            <listitem>*: </listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELD_PARAMETER_SET_UPDATE_START</command>
+      <itemizedlist>
+        <listitem>Description:Starts the the parameter set update for a field.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>FIELD: A pointer to the field to start the update for</listitem>
+            <listitem>FIELD_SET_TYPE: The field parameter set identifier to update</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELDS_FINALISE</command>
+      <itemizedlist>
+        <listitem>Description:Finalises the fields for the given region and deallocates all memory.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>REGION: A pointer to the region to finalise the fields for</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>FIELDS_INITIALISE</command>
+      <itemizedlist>
+        <listitem>Description:Initialises the fields for the given region.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>REGION: A pointer to the region to initialise the fields for</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+
+    </section>
+    <section>
+      <title>Equations Set</title>
+      <command>EQUATIONS_SET_ASSEMBLE</command>
+      <itemizedlist>
+        <listitem>Description:Assembles the equations for an equations set.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to initialise the analytic solution for.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_BACKSUBSTITUTE</command>
+      <itemizedlist>
+        <listitem>Description:Backsubstitutes with an equations set to calculate unknown right hand side vectors.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to backsubstitute</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_CREATE_FINISH</command>
+      <itemizedlist>
+        <listitem>Description:Finishes the process of creating an equation set on a region.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to finish creating</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_CREATE_START</command>
+      <itemizedlist>
+        <listitem>Description:Starts the process of creating an equations set defined by USER_NUMBER in the region identified by REGION.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>USER_NUMBER: The user number of the equations set</listitem>
+            <listitem>REGION: A pointer to the region to create the equations set on</listitem>
+            <listitem>GEOM_FIBRE_FIELD: A pointer to the either the geometry or, in appropriate, the fibre field for the equation set</listitem>
+            <listitem>EQUATIONS_SET: On return, a pointer to the equations set</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_DESTROY</command>
+      <itemizedlist>
+        <listitem>Description:Destroys an equations set identified by a user number on the give region and deallocates all memory.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>USER_NUMBER: The user number of the equations set to destroy</listitem>
+            <listitem>REGION: The region of the equations set to destroy</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_FIXED_CONDITIONS_APPLY</command>
+      <itemizedlist>
+        <listitem>Description:Applies the fixed conditions in an equation set to the dependent field in an equations set.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to apply the fixed conditions for.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_FIXED_CONDITIONS_CREATE_FINISH</command>
+      <itemizedlist>
+        <listitem>Description:Finish the creation of fixed conditions for an equation set.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to create the fixed conditions for.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_FIXED_CONDITIONS_CREATE_START</command>
+      <itemizedlist>
+        <listitem>Description:Start the creation of fixed conditions for a problem.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to start the creation of the fixed conditions for</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_FIXED_CONDITIONS_DESTROY</command>
+      <itemizedlist>
+        <listitem>Description:Destroy the fixed conditions for an equations set and deallocate all memory.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to destroy the fixed conditions for</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_MATERIALS_COMPONENT_INTERPOLATION_SET</command>
+      <itemizedlist>
+        <listitem>Description:Sets/changes the field component interpolation for a materials field of a problem.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to set the materials component interpolation for</listitem>
+            <listitem>COMPONENT_NUMBER: The component of the material field to set the interpolation for</listitem>
+            <listitem>INTERPOLATION_TYPE: The interpolation type to set</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_MATERIALS_COMPONENT_MESH_COMPONENT_SET</command>
+      <itemizedlist>
+        <listitem>Description:Sets/changes the field component mesh component for a materials field of a problem.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to set the materials field component mesh component for</listitem>
+            <listitem>COMPONENT_NUMBER: The component number of the equations set materials field to set the mesh component for</listitem>
+            <listitem>MESH_COMPONENT_NUMBER: The mesh component number to set</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_MATERIALS_CREATE_FINISH</command>
+      <itemizedlist>
+        <listitem>Description:Finish the creation of materials for an equations set.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to finish the creation of the materials field for</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_MATERIALS_CREATE_START</command>
+      <itemizedlist>
+        <listitem>Description:Start the creation of materials for a problem.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to start the creation of the materials field for</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_MATERIALS_DESTROY</command>
+      <itemizedlist>
+        <listitem>Description:Destroy the materials for an equations set.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to destroy the materials for</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_MATERIALS_SCALING_SET</command>
+      <itemizedlist>
+        <listitem>Description:Sets/changes the field scaling for a materials field of an equations set.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to set the scaling on the material field</listitem>
+            <listitem>SCALING_TYPE: The scaling type to set</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_DEPENDENT_COMPONENT_MESH_COMPONENT_SET</command>
+      <itemizedlist>
+        <listitem>Description:Sets/changes the field component mesh component for a dependent field of an equations set.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to set the dependent field component mesh component</listitem>
+            <listitem>VARIABLE_NUMBER: The dependent field variable number to set  this should be variable type???</listitem>
+            <listitem>COMPONENT_NUMBER: The dependent field component number to set</listitem>
+            <listitem>*: </listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_DEPENDENT_CREATE_FINISH</command>
+      <itemizedlist>
+        <listitem>Description:Finish the creation of a dependent variables for an equations set.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to finish the creation of</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_DEPENDENT_CREATE_START</command>
+      <itemizedlist>
+        <listitem>Description:Start the creation of dependent variables for an equations set.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to start the creation of a dependent field on</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_DEPENDENT_DEPENDENT_FIELD_GET</command>
+      <itemizedlist>
+        <listitem>Description:Returns a pointer to the dependent field of the dependent variables for an equations set.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equation set to get the dependent field for</listitem>
+            <listitem>DEPENDENT_FIELD: On return, a pointer to the dependent field for the equations set. Must not be associated on entry.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_DEPENDENT_DESTROY</command>
+      <itemizedlist>
+        <listitem>Description:Destroy the dependent variables for an equations sety.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: The pointer to the equations set to destroy</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_DEPENDENT_SCALING_SET</command>
+      <itemizedlist>
+        <listitem>Description:Sets/changes the field scaling for a dependent field of an equations set.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to the dependent field scaling for.</listitem>
+            <listitem>SCALING_TYPE: The scaling type to set.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_EQUATIONS_CREATE_FINISH</command>
+      <itemizedlist>
+        <listitem>Description:Finish the creation of equations for the equations set.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to finish the creation of the equations for.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_EQUATIONS_CREATE_START</command>
+      <itemizedlist>
+        <listitem>Description:Start the creation of equations for the equation set.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to create equations for</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_EQUATIONS_SPARSITY_TYPE_SET</command>
+      <itemizedlist>
+        <listitem>Description:Sets/changes the sparsity type for the equations set.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations to set the sparsity type for</listitem>
+            <listitem>SPARSITY_TYPE: The sparsity type to set EQUATIONS_ROUTINES_SparsityTypes,PROBLEM_ROUTINES</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_EQUATIONS_OUTPUT_TYPE_SET</command>
+      <itemizedlist>
+        <listitem>Description:Sets/changes the output type for the equations set.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to set the output type for</listitem>
+            <listitem>OUTPUT_TYPE: The output type to set EQUATIONS_ROUTINES_OutputTypes,EQUATIONS_ROUTINES</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_SOURCE_CREATE_FINISH</command>
+      <itemizedlist>
+        <listitem>Description:Finish the creation of a source for an equation set.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to start the creation of a souce for</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_SOURCE_CREATE_START</command>
+      <itemizedlist>
+        <listitem>Description:Start the creation of a source for an equations set.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to start the creation of a source for</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_SOURCE_DESTROY</command>
+      <itemizedlist>
+        <listitem>Description:Destroy the source for an equations set.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to destroy the source for</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SET_SOURCE_SCALING_SET</command>
+      <itemizedlist>
+        <listitem>Description:Sets/changes the field scaling for a source field of an equations set.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to set the scaling on the source field</listitem>
+            <listitem>SCALING_TYPE: The scaling type to set</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SETS_FINALISE</command>
+      <itemizedlist>
+        <listitem>Description:Finalises all equations sets on a region and deallocates all memory.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>REGION: A pointer to the region to finalise the problems for.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>EQUATIONS_SETS_INITIALISE</command>
+      <itemizedlist>
+        <listitem>Description:Intialises all equations sets on a region.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>REGION: A pointer to the region to initialise the equations sets for</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+
+    </section>
+  </section>
+  <section>
+    <title>Problems</title>
+      <command>PROBLEM_CREATE_FINISH</command>
+      <itemizedlist>
+        <listitem>Description:Finishes the process of creating a problem.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>PROBLEM: A pointer to the problem to finish creating.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>PROBLEM_CREATE_START</command>
+      <itemizedlist>
+        <listitem>Description:Starts the process of creating a problem defined by USER_NUMBER.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>USER_NUMBER: The user number of the problem to create</listitem>
+            <listitem>PROBLEM: On return, a pointer to the created problem. Must not be associated on entry.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>PROBLEM_CONTROL_CREATE_FINISH</command>
+      <itemizedlist>
+        <listitem>Description:Finish the creation of the control for the problem.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>PROBLEM: A pointer to the problem to finish the control for</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>PROBLEM_CONTROL_CREATE_START</command>
+      <itemizedlist>
+        <listitem>Description:Start the creation of a problem control for a problem.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>PROBLEM: A pointer to the problem to start the creation of a control for.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>PROBLEM_CONTROL_DESTROY</command>
+      <itemizedlist>
+        <listitem>Description:Destroy the control for a problem.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>PROBLEM: A pointer to the problem to destroy the control for.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>PROBLEM_SOLVE</command>
+      <itemizedlist>
+        <listitem>Description:Solves a problem.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>PROBLEM: A pointer to the problem to solve.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>PROBLEM_SOLUTIONS_CREATE_FINISH</command>
+      <itemizedlist>
+        <listitem>Description:Finish the creation of solutions for a problem.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>PROBLEM: A pointer to the problem</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>PROBLEM_SOLUTIONS_CREATE_START</command>
+      <itemizedlist>
+        <listitem>Description:Start the creation of a solution for the problem.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>PROBLEM: A pointer to the problem to create a solution for</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string !&lt;The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>PROBLEM_SOLUTION_EQUATIONS_SET_ADD</command>
+      <itemizedlist>
+        <listitem>Description:Adds an equations set to a problem solution.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>PROBLEM: A pointer to the problem to add the equations set to a solution</listitem>
+            <listitem>SOLUTION_INDEX: The solution index in the problem to add the equations set to</listitem>
+            <listitem>EQUATIONS_SET: A pointer to the equations set to add</listitem>
+            <listitem>EQUATIONS_SET_INDEX: On return, the index of the equations set that has been added.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>PROBLEM_SOLVER_CREATE_FINISH</command>
+      <itemizedlist>
+        <listitem>Description:Finish the creation of the solver for the problem solutions.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>PROBLEM: A pointer to the problem to finish the solvers for</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>PROBLEM_SOLVER_CREATE_START</command>
+      <itemizedlist>
+        <listitem>Description:Start the creation of a problem solver for a problem.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>PROBLEM: A pointer to the problem to start the creation of a solution for.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>PROBLEM_SOLVER_DESTROY</command>
+      <itemizedlist>
+        <listitem>Description:Destroy the solvers for a problem.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>PROBLEM: A pointer to the problem to destroy the solver for.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>PROBLEM_SOLVER_GET</command>
+      <itemizedlist>
+        <listitem>Description:Returns a pointer to the solver for a solution on a problme.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>PROBLEM: A pointer to the problem to get the solver for.</listitem>
+            <listitem>SOLUTION_INDEX: The solution index to get the solver for.</listitem>
+            <listitem>SOLVER: On return, a pointer to the solver. Must not be associated on entry.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>PROBLEMS_FINALISE</command>
+      <itemizedlist>
+        <listitem>Description:Finalises all problems and deallocates all memory.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>PROBLEMS_INITIALISE</command>
+      <itemizedlist>
+        <listitem>Description:Intialises all problems.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+
+    <section>
+      <title>Solver</title>
+      <command>SOLVER_CREATE_FINISH</command>
+      <itemizedlist>
+        <listitem>Description:Finishes the process of creating a solver for a problem solution.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>SOLVER: A pointer the solver to finish the creation of.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>SOLVER_CREATE_START</command>
+      <itemizedlist>
+        <listitem>Description:Starts the process of creating a solver for a problem solution.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>SOLUTION: A pointer to the solution to create the solver for.</listitem>
+            <listitem>SOLVE_TYPE: The type of solver to create SOLVER_ROUTINES::SolverTypes,SOLVER_ROUTINES</listitem>
+            <listitem>SOLVER: On exit, a pointer to the problem solver.</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>SOLVER_DESTROY</command>
+      <itemizedlist>
+        <listitem>Description:Destroy a problem solver.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>SOLVER: A pointer the solver to destroy</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>SOLVER_LIBRARY_SET</command>
+      <itemizedlist>
+        <listitem>Description:Sets/changes the type of library to use for the solver.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>SOLVER: A pointer the solver to set the type of</listitem>
+            <listitem>SOLVER_LIBRARY: The type of library to use for the solver SOLVER_ROUTINES::SolverLibraries,SOLVER_ROUTINES</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>SOLVER_LINEAR_DIRECT_TYPE_SET</command>
+      <itemizedlist>
+        <listitem>Description:Sets/changes the type of direct linear solver.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>SOLVER: A pointer the problem solver to set the direct linear solver type</listitem>
+            <listitem>DIRECT_SOLVER_TYPE: The type of direct linear solver to set SOLVER_ROUTINES::DirectLinearSolverTypes,SOLVER_ROUTINES</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>SOLVER_LINEAR_ITERATIVE_ABSOLUTE_TOLERANCE_SET</command>
+      <itemizedlist>
+        <listitem>Description:Sets/changes the maximum absolute tolerance for an iterative linear solver.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>SOLVER: A pointer the problem solver to set</listitem>
+            <listitem>ABSOLUTE_TOLERANCE: The absolute tolerance to set</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>SOLVER_LINEAR_ITERATIVE_DIVERGENCE_TOLERANCE_SET</command>
+      <itemizedlist>
+        <listitem>Description:Sets/changes the maximum divergence tolerance for an iterative linear solver.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>SOLVER: A pointer the problem solver to set</listitem>
+            <listitem>DIVERGENCE_TOLERANCE: The divergence tolerance to set</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>SOLVER_LINEAR_ITERATIVE_MAXIMUM_ITERATIONS_SET</command>
+      <itemizedlist>
+        <listitem>Description:Sets/changes the maximum number of iterations for an iterative linear solver.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>SOLVER: A pointer the problem solver to set the maximum number of iterations</listitem>
+            <listitem>MAXIMUM_ITERATIONS: The maximum number of iterations</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>SOLVER_LINEAR_ITERATIVE_PRECONDITIONER_TYPE_SET</command>
+      <itemizedlist>
+        <listitem>Description:Sets/changes the type of preconditioner for an iterative linear solver.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>SOLVER: A pointer the problem solver to set the iterative linear solver type</listitem>
+            <listitem>ITERATIVE_PRECONDITIONER_TYPE: The type of iterative preconditioner to set SOLVER_ROUTINES::IterativeLinearSolverTypes,SOLVER_ROUTINES</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>SOLVER_LINEAR_ITERATIVE_RELATIVE_TOLERANCE_SET</command>
+      <itemizedlist>
+        <listitem>Description:Sets/changes the relative tolerance for an iterative linear solver.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>SOLVER: A pointer the solver to set</listitem>
+            <listitem>RELATIVE_TOLERANCE: The relative tolerance to set</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>SOLVER_LINEAR_ITERATIVE_TYPE_SET</command>
+      <itemizedlist>
+        <listitem>Description:Sets/changes the type of iterative linear solver.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>SOLVER: A pointer the solver to set the iterative linear solver type</listitem>
+            <listitem>ITERATIVE_SOLVER_TYPE: The type of iterative linear solver to set SOLVER_ROUTINES::IterativeLinearSolverTypes,SOLVER_ROUTINES</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>SOLVER_LINEAR_TYPE_SET</command>
+      <itemizedlist>
+        <listitem>Description:Sets/changes the type of linear solver.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>SOLVER: A pointer the solver to set the linear solver type</listitem>
+            <listitem>LINEAR_SOLVER_TYPE: The type of linear solver to set SOLVER_ROUTINES::LinearSolverTypes,SOLVER_ROUTINES</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>SOLVER_OUTPUT_TYPE_SET</command>
+      <itemizedlist>
+        <listitem>Description:Sets/changes the output type for a solver.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>SOLVER: A pointer the problem solver to set the iterative linear solver type</listitem>
+            <listitem>OUTPUT_TYPE: The type of solver output to be set SOLVER_ROUTINES::OutputTypes,SOLVER_ROUTINES</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>SOLVER_SPARSITY_TYPE_SET</command>
+      <itemizedlist>
+        <listitem>Description:Sets/changes the sparsity type for a solver.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>SOLVER: A pointer the problem solver to set the iterative linear solver type</listitem>
+            <listitem>SPARSITY_TYPE: The type of solver sparsity to be set SOLVER_ROUTINES::SparsityTypes,SOLVER_ROUTINES</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>SOLVER_SOLVE</command>
+      <itemizedlist>
+        <listitem>Description:Solve the problem.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>SOLVER: A pointer the solver to solve</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <command>SOLVER_VARIABLES_UPDATE</command>
+      <itemizedlist>
+        <listitem>Description:Updates the dependent variables from the solver solution.</listitem>
+        <listitem>Parameters:
+          <itemizedlist>
+            <listitem>SOLVER: A pointer the solver to update the variables from</listitem>
+            <listitem>ERR: The error code</listitem>
+            <listitem>ERROR: The error string</listitem>
+            <listitem>*: </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+
+    </section>
+  </section>
+</chapter>

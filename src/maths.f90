@@ -25,7 +25,7 @@
 !> of Oxford are Copyright (C) 2007 by the University of Auckland and
 !> the University of Oxford. All Rights Reserved.
 !>
-!> Contributor(s):
+!> Contributor(s): Kumar Mithraratne
 !>
 !> Alternatively, the contents of this file may be used under the terms of
 !> either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -121,6 +121,16 @@ MODULE MATHS
     MODULE PROCEDURE L2NORM_DP
   END INTERFACE !L2NORM
 
+  INTERFACE MATRIX_PRODUCT
+    MODULE PROCEDURE MATRIX_PRODUCT_SP
+    MODULE PROCEDURE MATRIX_PRODUCT_DP
+  END INTERFACE !MATRIX_PRODUCT
+  
+  INTERFACE MATRIX_TRANSPOSE
+    MODULE PROCEDURE MATRIX_TRANSPOSE_SP
+    MODULE PROCEDURE MATRIX_TRANSPOSE_DP
+  END INTERFACE !MATRIX_TRANSPOSE 
+
   INTERFACE NORMALISE
     MODULE PROCEDURE NORMALISE_SP
     MODULE PROCEDURE NORMALISE_DP
@@ -131,8 +141,9 @@ MODULE MATHS
     MODULE PROCEDURE SOLVE_SMALL_LINEAR_SYSTEM_DP
   END INTERFACE !SOLVE_SMALL_LINEAR_SYSTEM
 
-  PUBLIC CROSS_PRODUCT,D_CROSS_PRODUCT,DETERMINANT,EIGENVALUE,EIGENVECTOR,INVERT,L2NORM,NORMALISE,SOLVE_SMALL_LINEAR_SYSTEM
-
+  PUBLIC CROSS_PRODUCT,D_CROSS_PRODUCT,DETERMINANT,EIGENVALUE,EIGENVECTOR,INVERT,L2NORM,MATRIX_PRODUCT,MATRIX_TRANSPOSE,NORMALISE,SOLVE_SMALL_LINEAR_SYSTEM
+  
+  
 CONTAINS
 
   !
@@ -1751,6 +1762,152 @@ CONTAINS
 
     RETURN
   END FUNCTION L2NORM_DP
+
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE MATRIX_PRODUCT_SP(A,B,C,ERR,ERROR,*)
+  
+    !#### Subroutine: MATRIX_PRODUCT_SP
+    !###  Description:
+    !###    Calculates and returns the matrix-prouct of the single precision matrix A*B in C.
+    !###  Parent-function: MATRIX_PRODUCT
+    !Author: Kumar Mithraratne
+    
+    !Argument variables
+    REAL(SP), INTENT(IN) :: A(3,3),B(3,3)
+    REAL(SP), INTENT(OUT) :: C(3,3)
+    INTEGER(INTG), INTENT(OUT) :: ERR
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    !Local variables
+    INTEGER(INTG) :: i,j,k 
+    
+    CALL ENTERS("MATRIX_PRODUCT_SP",ERR,ERROR,*999)
+
+    DO i=1,3,1
+      DO j=1,3,1
+        C(i,j)=0.0_SP
+	DO k=1,3,1	      
+	  C(i,j)=C(i,j)+A(i,k)*B(k,j) 
+	ENDDO  	    
+      ENDDO
+    ENDDO
+
+    CALL EXITS("MATRIX_PRODUCT_SP")
+    RETURN
+999 CALL ERRORS("MATRIX_PRODUCT_SP",ERR,ERROR)
+    CALL EXITS("MATRIX_PRODUCT_SP")
+    RETURN 1
+  END SUBROUTINE MATRIX_PRODUCT_SP
+
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE MATRIX_PRODUCT_DP(A,B,C,ERR,ERROR,*)
+  
+    !#### Subroutine: MATRIX_PRODUCT_DP
+    !###  Description:
+    !###    Calculates and returns the matrix-prouct of the double precision matrix A*B in C.
+    !###  Parent-function: MATRIX_PRODUCT
+    !Author: Kumar Mithraratne
+        
+    !Argument variables
+    REAL(DP), INTENT(IN) :: A(3,3),B(3,3)
+    REAL(DP), INTENT(OUT) :: C(3,3)
+    INTEGER(INTG), INTENT(OUT) :: ERR
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    !Local variables
+    INTEGER(INTG) :: i,j,k 
+        
+    CALL ENTERS("MATRIX_PRODUCT_DP",ERR,ERROR,*999)
+
+    DO i=1,3,1
+      DO j=1,3,1
+        C(i,j)=0.0_DP
+	DO k=1,3,1	      
+	  C(i,j)=C(i,j)+A(i,k)*B(k,j) 
+	ENDDO  	    
+      ENDDO
+    ENDDO
+
+    CALL EXITS("MATRIX_PRODUCT_DP")
+    RETURN
+999 CALL ERRORS("MATRIX_PRODUCT_DP",ERR,ERROR)
+    CALL EXITS("MATRIX_PRODUCT_DP")
+    RETURN 1
+  END SUBROUTINE MATRIX_PRODUCT_DP
+
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE MATRIX_TRANSPOSE_SP(A,AT,ERR,ERROR,*)
+  
+    !#### Subroutine: MATRIX_TRANSPOSE_SP
+    !###  Description:
+    !###    Returns the transpose of a single precision matrix Ain AT.
+    !###  Parent-function: MATRIX_TRANSPOSE
+    !Author: Kumar Mithraratne
+        
+    !Argument variables
+    REAL(SP), INTENT(IN) :: A(3,3)
+    REAL(SP), INTENT(OUT) :: AT(3,3)
+    INTEGER(INTG), INTENT(OUT) :: ERR
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    !Local variables
+    INTEGER(INTG) :: i,j
+    
+    CALL ENTERS("MATRIX_TRANSPOSE_SP",ERR,ERROR,*999)
+
+    DO i=1,3,1
+      DO j=1,3,1
+	AT(i,j)=A(j,i)
+      ENDDO
+    ENDDO
+
+    CALL EXITS("MATRIX_TRANSPOSE_SP")
+    RETURN
+999 CALL ERRORS("MATRIX_TRANSPOSE_SP",ERR,ERROR)
+    CALL EXITS("MATRIX_TRANSPOSE_SP")
+    RETURN 1
+  END SUBROUTINE MATRIX_TRANSPOSE_SP
+
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE MATRIX_TRANSPOSE_DP(A,AT,ERR,ERROR,*)
+  
+    !#### Subroutine: MATRIX_TRANSPOSE_DP
+    !###  Description:
+    !###    Returns the transpose of a double precision matrix Ain AT.
+    !###  Parent-function: MATRIX_TRANSPOSE
+    !Author: Kumar Mithraratne
+        
+    !Argument variables
+    REAL(DP), INTENT(IN) :: A(3,3)
+    REAL(DP), INTENT(OUT) :: AT(3,3)
+    INTEGER(INTG), INTENT(OUT) :: ERR
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    !Local variables
+    INTEGER(INTG) :: i,j
+        
+    CALL ENTERS("MATRIX_TRANSPOSE_DP",ERR,ERROR,*999)
+
+    DO i=1,3,1
+      DO j=1,3,1
+	AT(i,j)=A(j,i)
+      ENDDO
+    ENDDO
+
+    CALL EXITS("MATRIX_TRANSPOSE_DP")
+    RETURN
+999 CALL ERRORS("MATRIX_TRANSPOSE_DP",ERR,ERROR)
+    CALL EXITS("MATRIX_TRANSPOSE_DP")
+    RETURN 1
+  END SUBROUTINE MATRIX_TRANSPOSE_DP
 
   !
   !================================================================================================================================

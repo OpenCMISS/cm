@@ -68,8 +68,8 @@
 !> This module contains all type definitions in order to avoid cyclic module references.
 MODULE TYPES
 
-  USE CONSTANTS
   USE CMISS_PETSC_TYPES
+  USE CONSTANTS
   USE KINDS
   USE ISO_VARYING_STRING
   USE TREES
@@ -286,6 +286,7 @@ MODULE TYPES
     LOGICAL :: MESH_FINISHED !<Is .TRUE. if the mesh has finished being created, .FALSE. if not.
     TYPE(MESHES_TYPE), POINTER :: MESHES !<A pointer to the meshes for this mesh.
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing this mesh.
+    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh generate this mesh.
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS !<The number of dimensions (Xi directions) for this mesh.
     INTEGER(INTG) :: NUMBER_OF_COMPONENTS !<The number of mesh components in this mesh.
     LOGICAL :: MESH_EMBEDDED !<Is .TRUE. if the mesh is embedded in another mesh, .FALSE. if not.
@@ -330,11 +331,25 @@ MODULE TYPES
   !>Contains information on a generated mesh
   TYPE GENERATED_MESH_TYPE
     INTEGER(INTG) :: USER_NUMBER
+    INTEGER(INTG) :: GLOBAL_NUMBER
+    LOGICAL :: GENERATED_MESH_FINISHED !<Is .TRUE. if the generated mesh has finished being created, .FALSE. if not.
     TYPE(REGION_TYPE), POINTER :: REGION
     INTEGER(INTG) :: GENERATED_TYPE
     TYPE(GENERATED_MESH_REGULAR_TYPE), POINTER :: REGULAR_MESH
     TYPE(MESH_TYPE), POINTER :: MESH
   END TYPE GENERATED_MESH_TYPE
+  
+  !>A buffer type to allow for an array of pointers to a GENERATED_MESH_TYPE.
+  TYPE GENERATED_MESH_PTR_TYPE
+    TYPE(GENERATED_MESH_TYPE), POINTER :: PTR !<The pointer to the generated mesh.
+  END TYPE GENERATED_MESH_PTR_TYPE
+       
+  !>Contains information on the generated meshes defined on a region.
+  TYPE GENERATED_MESHES_TYPE
+    INTEGER(INTG) :: NUMBER_OF_GENERATED_MESHES !<The number of generated meshes defined.
+    TYPE(GENERATED_MESH_PTR_TYPE), POINTER :: GENERATED_MESHES(:) !<The array of pointers to the generated meshes.
+  END TYPE GENERATED_MESHES_TYPE
+  
 
   !
   !================================================================================================================================
@@ -1024,7 +1039,7 @@ MODULE TYPES
     TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
     TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: RHS_VECTOR    
     TYPE(EQUATIONS_MATRICES_SOURCE_TYPE), POINTER :: SOURCE_VECTOR  
-  END TYPE EQUATIONS_MATRICES_TYPE
+   END TYPE EQUATIONS_MATRICES_TYPE
 
   !
   !================================================================================================================================
@@ -1140,6 +1155,9 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of local rows (excluding ghost rows) in the equations matrices
     INTEGER(INTG) :: TOTAL_NUMBER_OF_ROWS !<The number of local rows (including ghost rows) in the equations matrices
     INTEGER(INTG) :: NUMBER_OF_GLOBAL_ROWS !<The number of global rows in the equations matrices
+    INTEGER(INTG) :: RESIDUAL_VARIABLE_TYPE !<The variable type number mapped to the residual vector for nonlinear problems
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: RESIDUAL_VARIABLE !<A pointer to the variable that is mapped to the residual vector for nonlinear problems.
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RESIDUAL_VARIABLE_MAPPING !<A pointer to the residual variable domain mapping
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ROW_DOFS_MAPPING !<The domain mapping for the equations rows
     !Equations mapping components
     TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
@@ -1251,9 +1269,12 @@ MODULE TYPES
     TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD !<A pointer to the source field for the equations set if one is defined. If no source is defined the pointer is NULL.
   END TYPE EQUATIONS_SET_SOURCE_TYPE
 
+!!MERGE: change equation_number?
+  
   !>Contains information on the analytic setup for the equations set.
   TYPE EQUATIONS_SET_ANALYTIC_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
+    INTEGER(INTG) :: EQUATION_NUMBER !<The equation identifier
     LOGICAL :: ANALYTIC_FINISHED !<Is .TRUE. if the analytic setup for the problem has finished being created, .FALSE. if not.
   END TYPE EQUATIONS_SET_ANALYTIC_TYPE
 
@@ -1314,6 +1335,15 @@ MODULE TYPES
   TYPE SOLVER_MATRIX_PTR_TYPE
     TYPE(SOLVER_MATRIX_TYPE), POINTER :: PTR
   END TYPE SOLVER_MATRIX_PTR_TYPE
+
+  !>Contains information on the solver Jacobian for nonlinear problems
+  TYPE SOLVER_JACOBIAN_TYPE
+    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES !<A pointer to the solver matrices for this solver Jacobian
+    LOGICAL :: UPDATE_JACOBIAN !<Is .TRUE. if the solver Jacobian is to be updated
+    INTEGER(INTG) :: STORAGE_TYPE !<The storage type for the solver Jacobian
+    INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in the distributed solver Jacobian
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: JACOBIAN !<A pointer to the distributed solver Jacobian
+  END TYPE SOLVER_JACOBIAN_TYPE
   
   !>Contains information on the solver matrices and rhs vector
   TYPE SOLVER_MATRICES_TYPE
@@ -1589,6 +1619,7 @@ MODULE TYPES
     TYPE(EQUATIONS_SET_TO_SOLVER_MAP_TYPE), ALLOCATABLE :: EQUATIONS_SET_TO_SOLVER_MAP(:) !<EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx). The mapping from the equations_set_idx'the equations set to the solver matrices.
     TYPE(SOLVER_COL_TO_EQUATIONS_SETS_MAP_TYPE), ALLOCATABLE :: SOLVER_COL_TO_EQUATIONS_SETS_MAP(:) !<SOLVER_TO_EQUATIONS_SET_MAP(solver_matrix_idx). The mapping from the solver_matrix_idx'th solver matrix to the equations set. 
     TYPE(SOLVER_ROW_TO_EQUATIONS_SET_MAP_TYPE), ALLOCATABLE :: SOLVER_ROW_TO_EQUATIONS_SET_MAPS(:) !<SOLVER_ROW_TO_EQUATIONS_SET_MAPS(row_idx). The mappings from the row_idx'th solver row to the equations set rows.
+    LOGICAL :: HAVE_JACOBIAN !<Is .TRUE. if the Jacobian exists for nonlinear problems.
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ROW_DOFS_MAPPING !<The domain mapping for the solver rows.
     TYPE(SOLUTION_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE !<The create values cache for the solution mapping
   END TYPE SOLUTION_MAPPING_TYPE

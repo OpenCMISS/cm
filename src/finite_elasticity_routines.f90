@@ -25,7 +25,7 @@
 !> of Oxford are Copyright (C) 2007 by the University of Auckland and
 !> the University of Oxford. All Rights Reserved.
 !>
-!> Contributor(s):
+!> Contributor(s): Kumar Mithraratne
 !>
 !> Alternatively, the contents of this file may be used under the terms of
 !> either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -55,6 +55,7 @@ MODULE FINITE_ELASTICITY_ROUTINES
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
   USE KINDS
+  USE MATHS  
   USE MATRIX_VECTOR
   USE PROBLEM_CONSTANTS
   USE SOLUTION_MAPPING_ROUTINES
@@ -130,13 +131,160 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-     
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: field_interpolation_parameters_undef, & 
+      & field_interpolation_parameters_def,field_interpolation_parameters_fibre, &
+      & field_interpolation_parameters_material,field_interpolation_parameters_hydrostatic        
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: interpolated_point_hydrostatic,interpolated_point_undef, &
+      &interpolated_point_def,interpolated_point_fibre,interpolated_point_material 
+    TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD,undef_field,def_field,fibre_field,material_field,hydrostatic_field             
+    TYPE(REGION_TYPE), POINTER :: REGION
+    INTEGER(INTG) :: dof_idx,gauss_point_idx,NUMBER_OF_DOFS,NEXT_NUMBER,NXI,xi_idx,NGT,nj_idx,ns,i,j,TOTAL_DOFS
+    INTEGER(INTG), ALLOCATABLE :: NGXI(:)  
+    REAL(DP) :: CAUCHY_TENSOR(3,3),DZDNU(3,3),Jznu,Jxxi,WG
+    REAL(DP), ALLOCATABLE :: DFDZ(:,:),RE(:),XI(:),XIG(:,:)  
+       
     CALL ENTERS("FINITE_ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)  
+	!WRITE(*,*) ' Calculating Residulas *****'  
+	
+	REGION=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%REGION
+	DECOMPOSITION=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%DECOMPOSITION	
+	GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+	
+	!undef field	
+        undef_field=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+        CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(undef_field,1,field_interpolation_parameters_undef,ERR,ERROR,*999)
+        CALL FIELD_INTERPOLATED_POINT_INITIALISE(field_interpolation_parameters_undef,interpolated_point_undef,ERR,ERROR,*999)
+	CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(1,ELEMENT_NUMBER,field_interpolation_parameters_undef,ERR,ERROR,*999)        
+        !QUADRATURE_SCHEME_UNDEF=field_interpolation_parameters_undef%BASES(1)%PTR%QUADRATURE%TYPE      	
+	NXI=field_interpolation_parameters_undef%BASES(1)%PTR%NUMBER_OF_XI
+	ALLOCATE(NGXI(NXI))
+	NGT=1
+	DO xi_idx=1,NXI,1
+	  NGXI(xi_idx)=field_interpolation_parameters_undef%BASES(1)%PTR%QUADRATURE%NUMBER_OF_GAUSS_XI(xi_idx)
+	  NGT=NGT*NGXI(xi_idx)
+	ENDDO
+	ALLOCATE(XIG(NXI,NGT))
+	ALLOCATE(XI(NXI))
+ 
+        !def field
+	CALL FIELD_NEXT_NUMBER_FIND(REGION,NEXT_NUMBER,ERR,ERROR,*999)
+        CALL FIELD_CREATE_START(NEXT_NUMBER,REGION,def_field,ERR,ERROR,*999)
+	def_field%DECOMPOSITION=>DECOMPOSITION
+	def_field%GEOMETRIC_FIELD=>GEOMETRIC_FIELD
+        CALL FIELD_CREATE_FINISH(undef_field%REGION,def_field,ERR,ERROR,*999)
+	NUMBER_OF_DOFS=EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLES(1)%NUMBER_OF_DOFS			
+        DO dof_idx=1,NUMBER_OF_DOFS,1
+	  def_field%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(dof_idx)= &
+	    & undef_field%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(dof_idx)+ &
+	    & EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%PARAMETER_SETS%PARAMETER_SETS(2)%PTR%PARAMETERS%CMISS%DATA_DP(dof_idx) 
+	                                             !??? should be %PARAMETER_SETS(1) - kmith
+	ENDDO	
+        CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(def_field,1,field_interpolation_parameters_def,ERR,ERROR,*999)
+        CALL FIELD_INTERPOLATED_POINT_INITIALISE(field_interpolation_parameters_def,interpolated_point_def,ERR,ERROR,*999)
+	CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(1,ELEMENT_NUMBER,field_interpolation_parameters_def,ERR,ERROR,*999)        
+         
+	!hydrostatic pressure field
+	CALL FIELD_NEXT_NUMBER_FIND(REGION,NEXT_NUMBER,ERR,ERROR,*999)                     !get next field number
+	CALL FIELD_CREATE_START(NEXT_NUMBER,REGION,hydrostatic_field,ERR,ERROR,*999)       !create field called hydrostatic_field
+	CALL FIELD_TYPE_SET(NEXT_NUMBER,REGION,FIELD_GENERAL_TYPE,ERR,ERROR,*999)          !set type to FIELD_GENERAL_TYPE : see field_routine constants
+	CALL FIELD_MESH_DECOMPOSITION_SET(NEXT_NUMBER,REGION,DECOMPOSITION,ERR,ERROR,*999) !associate a decomposition (geometric_field decomposition)
+	CALL FIELD_GEOMETRIC_FIELD_SET(NEXT_NUMBER,REGION,GEOMETRIC_FIELD,ERR,ERROR,*999)  !associate a geomtery (geomteric_field)
+	CALL FIELD_NUMBER_OF_COMPONENTS_SET(NEXT_NUMBER,REGION,1,ERR,ERROR,*999)           !set no. of field components to 1, -i.e. scalar 
+        CALL FIELD_COMPONENT_INTERPOLATION_SET(NEXT_NUMBER,1,1,REGION, &                   !set interpolation to FIELD_ELEMENT_BASED_INTERPOLATION : 
+	  & FIELD_ELEMENT_BASED_INTERPOLATION,ERR,ERROR,*999)                              !see field_routine constants 	
+	CALL FIELD_CREATE_FINISH(undef_field%REGION,hydrostatic_field,ERR,ERROR,*999)
+	hydrostatic_field%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(1)=-5.0_DP !set the value to -5.0 : initial guess.
+	  
+        !fibre field
+	fibre_field=>EQUATIONS_SET%GEOMETRY%FIBRE_FIELD
+        CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(fibre_field,1,field_interpolation_parameters_fibre,ERR,ERROR,*999)
+        CALL FIELD_INTERPOLATED_POINT_INITIALISE(field_interpolation_parameters_fibre,interpolated_point_fibre,ERR,ERROR,*999)
+	CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(1,ELEMENT_NUMBER,field_interpolation_parameters_fibre,ERR,ERROR,*999)        
+		
+        !material field	
+	material_field=>EQUATIONS_SET%MATERIALS%MATERIAL_FIELD
+        CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(material_field,1,field_interpolation_parameters_material,ERR,ERROR,*999)
+        CALL FIELD_INTERPOLATED_POINT_INITIALISE(field_interpolation_parameters_material,interpolated_point_material,ERR,ERROR,*999)
+	CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(1,ELEMENT_NUMBER,field_interpolation_parameters_material,ERR,ERROR,*999)        
+        
+	TOTAL_DOFS=undef_field%VARIABLES(1)%NUMBER_OF_DOFS+hydrostatic_field%VARIABLES(1)%NUMBER_OF_DOFS
+	ALLOCATE(RE(TOTAL_DOFS)) 
+	ns=0              	    
+        DO nj_idx=1,3,1
+	  DO dof_idx=1,undef_field%VARIABLES(1)%COMPONENTS(nj_idx)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS,1
+	    ns=ns+1
+	    RE(ns)=0.0_DP
+	    !EQUATIONS_SET%EQUATIONS%EQUATIONS_MATRICES%ELEMENT_VECTOR%VECTOR(ns)=0.0_DP
+	    DO gauss_point_idx=1,NGT,1          
+	      !WRITE(*,'(2(i5))') ELEMENT_NUMBER,gauss_point_idx  		  
+	      DO xi_idx=1,NXI,1		
+	        XIG(xi_idx,gauss_point_idx)=interpolated_point_undef%INTERPOLATION_PARAMETERS%BASES(1)%PTR%QUADRATURE%SCHEMES(1)% &
+	          & PTR%GAUSS_POSITIONS(xi_idx,gauss_point_idx)	        	
+	        XI(xi_idx)=XIG(xi_idx,gauss_point_idx)	    	  
+	      ENDDO	
+	      WG=interpolated_point_undef%INTERPOLATION_PARAMETERS%BASES(1)%PTR%QUADRATURE%SCHEMES(1)%PTR%GAUSS_WEIGHTS(gauss_point_idx)
+	      
+	      CALL FIELD_INTERPOLATE_XI(PART_DERIV_S1,XI,interpolated_point_undef,ERR,ERROR,*999)
+	      CALL FIELD_INTERPOLATE_XI(PART_DERIV_S1,XI,interpolated_point_def,ERR,ERROR,*999)	  
+	      CALL FIELD_INTERPOLATE_XI(PART_DERIV_S1,XI,interpolated_point_fibre,ERR,ERROR,*999)	  
+	      CALL FIELD_INTERPOLATE_XI(PART_DERIV_S1,XI,interpolated_point_material,ERR,ERROR,*999)
+		
+	      CALL FINITE_ELASTICITY_GAUSS_DEFORMATION_GRADEINT_TENSOR(interpolated_point_def,interpolated_point_fibre, &
+	        & interpolated_point_undef,ELEMENT_NUMBER,gauss_point_idx,DZDNU,Jxxi,Jznu,ERR,ERROR,*999)    
+	
+              CALL FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR(hydrostatic_field,interpolated_point_material,CAUCHY_TENSOR,DZDNU,ERR,ERROR,*999)
+		         	  
+	      CALL FINITE_ELASTICITY_GAUSS_DFDZ(interpolated_point_def,DFDZ,XI,ERR,ERROR,*999)	        	  
+	  	  	  
+	      i=nj_idx
+	      DO j=1,3,1
+		!EQUATIONS_SET%EQUATIONS%EQUATIONS_MATRICES%ELEMENT_VECTOR%VECTOR(ns)= &
+		!  & EQUATIONS_SET%EQUATIONS%EQUATIONS_MATRICES%ELEMENT_VECTOR%VECTOR(ns)+ &
+		!  & WG*Jxxi*Jznu*(CAUCHY_TENSOR(i,j)*DFDZ(dof_idx,j))	
+		RE(ns)=RE(ns)+WG*Jxxi*Jznu*(CAUCHY_TENSOR(i,j)*DFDZ(dof_idx,j))   
+	      ENDDO				
+	  	  	      
+	      DEALLOCATE(DFDZ)    	             
+            ENDDO !gauss_idx
+		
+	  ENDDO !dof_idx	
+	ENDDO !nj_idx
+	
+	ns=19
+	WRITE(*,'(i5,f12.7)') ns,RE(ns) !EQUATIONS_SET%EQUATIONS%EQUATIONS_MATRICES%ELEMENT_VECTOR%VECTOR(ns)
+		
+	!Hydrostatic pressure equation/s
+	DO dof_idx=ns+1,TOTAL_DOFS,1	    
+	  ns=ns+1
+	  RE(ns)=0.0_DP
+	   
+	  DO gauss_point_idx=1,NGT,1          	  
+	    DO xi_idx=1,NXI,1		
+	      XIG(xi_idx,gauss_point_idx)=interpolated_point_undef%INTERPOLATION_PARAMETERS%BASES(1)%PTR%QUADRATURE%SCHEMES(1)% &
+	        & PTR%GAUSS_POSITIONS(xi_idx,gauss_point_idx)	        	
+	      XI(xi_idx)=XIG(xi_idx,gauss_point_idx)	    	  
+	    ENDDO	
+	    WG=interpolated_point_undef%INTERPOLATION_PARAMETERS%BASES(1)%PTR%QUADRATURE%SCHEMES(1)%PTR%GAUSS_WEIGHTS(gauss_point_idx)
+	      
+	    CALL FIELD_INTERPOLATE_XI(PART_DERIV_S1,XI,interpolated_point_undef,ERR,ERROR,*999)
+	    CALL FIELD_INTERPOLATE_XI(PART_DERIV_S1,XI,interpolated_point_def,ERR,ERROR,*999)	  
+	    CALL FIELD_INTERPOLATE_XI(PART_DERIV_S1,XI,interpolated_point_fibre,ERR,ERROR,*999)	  
+		
+	    CALL FINITE_ELASTICITY_GAUSS_DEFORMATION_GRADEINT_TENSOR(interpolated_point_def,interpolated_point_fibre, &
+	      & interpolated_point_undef,ELEMENT_NUMBER,gauss_point_idx,DZDNU,Jxxi,Jznu,ERR,ERROR,*999)    
+	  
+	    RE(ns)=RE(ns)+WG*Jxxi*1.0_DP*(Jznu-1.0_DP)
+	    
+	  ENDDO
+	ENDDO
+	!WRITE(*,'(i5,f14.9)') ns,RE(25)
+	
       ELSE
         CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
       ENDIF
@@ -150,6 +298,279 @@ CONTAINS
     CALL EXITS("FINITE_ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE")
     RETURN 1
   END SUBROUTINE FINITE_ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Evaluates the deformation gradient tensor at a given Gauss point
+  SUBROUTINE FINITE_ELASTICITY_GAUSS_DEFORMATION_GRADEINT_TENSOR(INTERPOLATED_POINT_DEF,INTERPOLATED_POINT_FIBRE, &
+    & INTERPOLATED_POINT_UNDEF,ELEMENT_NUMBER,GAUSS_PT_NUMBER,DZDNU,Jxxi,Jznu,ERR,ERROR,*)    
+
+    !Argument variables
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT_DEF,INTERPOLATED_POINT_FIBRE,INTERPOLATED_POINT_UNDEF    
+    INTEGER(INTG) :: ELEMENT_NUMBER,GAUSS_PT_NUMBER      
+    REAL(DP) :: DZDNU(3,3),Jxxi,Jznu    
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string   
+    !Local Variables
+    INTEGER(INTG) :: derivative_idx,nj_idx,xi_idx 
+    REAL(DP) :: DNUDX(3,3),DNUDXI(3,3),DXDNU(3,3),DXIDNU(3,3),DXDXI(3,3),DZDXI(3,3),Jnuxi
+    INTEGER(INTG) :: i,j    
+
+    CALL ENTERS("FINITE_ELASTICITY_GAUSS_DEFORMATION_GRADEINT_TENSOR",ERR,ERROR,*999)
+    	 
+    DO nj_idx=1,3,1
+      DO xi_idx=1,3,1
+        derivative_idx=INT((xi_idx*xi_idx+xi_idx+2+0.01_DP)/2.0_DP)  !2,4,7      
+        DXDXI(nj_idx,xi_idx)=interpolated_point_undef%VALUES(nj_idx,derivative_idx)  !dx/dxi
+        DZDXI(nj_idx,xi_idx)=interpolated_point_def%VALUES(nj_idx,derivative_idx) !dz/dxi
+      ENDDO	  
+    ENDDO 
+
+    CALL FINITE_ELASTICITY_GAUSS_DXDNU(INTERPOLATED_POINT_FIBRE,DXDNU,DXDXI,ERR,ERROR,*999)
+
+    CALL MATRIX_TRANSPOSE(DXDNU,DNUDX,ERR,ERROR,*999) !dx/dnu is orthogonal. Therefore transpose is inverse
+          	  
+    CALL MATRIX_PRODUCT(DNUDX,DXDXI,DNUDXI,ERR,ERROR,*999) ! dnu/dxi = dnu/dx * dx/dxi
+    CALL INVERT(DNUDXI,DXIDNU,Jnuxi,ERR,ERROR,*999) ! dxi/dnu 
+	  
+    CALL MATRIX_PRODUCT(DZDXI,DXIDNU,DZDNU,ERR,ERROR,*999) ! dz/dnu = dz/dxi * dxi/dnu  (deformation gradient tensor, F)	
+            
+    Jxxi=DETERMINANT(DXDXI,ERR,ERROR)
+    Jznu=DETERMINANT(DZDNU,ERR,ERROR)
+              
+    CALL EXITS("FINITE_ELASTICITY_GAUSS_DEFORMATION_GRADEINT_TENSOR")
+    RETURN
+999 CALL ERRORS("FINITE_ELASTICITY_GAUSS_DEFORMATION_GRADEINT_TENSOR",ERR,ERROR)
+    CALL EXITS("FINITE_ELASTICITY_GAUSS_DEFORMATION_GRADEINT_TENSOR")
+    RETURN 1
+  END SUBROUTINE FINITE_ELASTICITY_GAUSS_DEFORMATION_GRADEINT_TENSOR
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Evaluates dx/dnu(undeformed-material cs) tensor at a given Gauss point
+  SUBROUTINE FINITE_ELASTICITY_GAUSS_DXDNU(INTERPOLATED_POINT,DXDNU,DXDXI,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT    
+    REAL(DP) :: DXDNU(:,:),DXDXI(:,:)    
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: fibre_idx,i,j,nj_idx 
+    INTEGER(INTG) :: vector(3) = (/1,2,3/)
+    REAL(DP) :: A(3),ANGLE(3),B(3),C(3),DXDNU1(3,3),DXDNU2(3,3),DXDNU3(3,3),R(3,3), &
+      & R1(3,3),R2(3,3),R3(3,3)
+
+    CALL ENTERS("FINITE_ELASTICITY_GAUSS_DXDNU",ERR,ERROR,*999)
+        
+    !First calculate default dx/dnu
+    DO nj_idx=1,3,1 	
+      A(nj_idx)=DXDXI(nj_idx,1) !default material_1 dir.
+    ENDDO 
+    CALL CROSS_PRODUCT(DXDXI(vector,1),DXDXI(vector,2),C,ERR,ERROR,*999) !default material_3 dir.    
+    CALL CROSS_PRODUCT(C,A,B,ERR,ERROR,*999) ! default material_2 dir.      
+    
+    DO nj_idx=1,3,1 	
+      DXDNU(nj_idx,1)=A(nj_idx)/L2NORM(A) 
+      DXDNU(nj_idx,2)=B(nj_idx)/L2NORM(B)      
+      DXDNU(nj_idx,3)=C(nj_idx)/L2NORM(C)        
+    ENDDO 
+    
+    !The normalised DXDNU contains the transformation(rotaion) from spatial CS -> material CS 
+    DO i=1,3,1
+      DO j=1,3,1
+        R(i,j)=DXDNU(i,j) 
+      ENDDO
+    ENDDO
+    
+    !Now transform(rotate) the default material CS to align with spatial CS.
+    !This does not have to be done. Since both CSs are ortonomral, v1-v2-v3 
+    !end up having coordinates (1,0,0), (0,1,0) and (0,0,1)
+    !Then rotate by angles specified (old CMISS - ipfibr file values)     
+    DO fibre_idx=1,3,1     
+      ANGLE(fibre_idx)=INTERPOLATED_POINT%VALUES(fibre_idx,1)
+    ENDDO
+     
+    DO i=1,3,1
+      DO j=1,3,1
+        R1(i,j)=0.0_DP 
+        R2(i,j)=0.0_DP 
+        R3(i,j)=0.0_DP 
+	IF (i==j) THEN
+	  R1(i,j)=1.0_DP
+	  R2(i,j)=1.0_DP	  
+	  R3(i,j)=1.0_DP
+	ENDIF  	  		
+      ENDDO
+    ENDDO
+        
+    R3(1,1)=cos(ANGLE(1))    !angles are in radians
+    R3(1,2)=-sin(ANGLE(1))
+    R3(2,1)=sin(ANGLE(1))
+    R3(2,2)=cos(ANGLE(1))
+    R2(1,1)=cos(ANGLE(2))
+    R2(1,3)=sin(ANGLE(2))
+    R2(3,1)=-sin(ANGLE(2))
+    R2(3,3)=cos(ANGLE(2))
+    R1(2,2)=cos(ANGLE(3))
+    R1(2,3)=-sin(ANGLE(3))
+    R1(3,2)=sin(ANGLE(3))
+    R1(3,3)=cos(ANGLE(3))
+    
+    CALL MATRIX_PRODUCT(R3,DXDNU,DXDNU3,ERR,ERROR,*999)   !rotate about v3 => v1'-v2'-v3
+    CALL MATRIX_PRODUCT(R2,DXDNU3,DXDNU2,ERR,ERROR,*999)  !rotate about v2' => v1''-v2'-v3'     
+    CALL MATRIX_PRODUCT(R1,DXDNU2,DXDNU1,ERR,ERROR,*999)  !rotate about v1'' => v1''-v2''-v3''
+    
+    !Inverse-rotate v1''-v2''-v3''
+    CALL MATRIX_PRODUCT(R,DXDNU1,DXDNU,ERR,ERROR,*999)  
+            
+    CALL EXITS("FINITE_ELASTICITY_GAUSS_DXDNU")
+    RETURN
+999 CALL ERRORS("FINITE_ELASTICITY_GAUSS_DXDNU",ERR,ERROR)
+    CALL EXITS("FINITE_ELASTICITY_GAUSS_DXDNU")
+    RETURN 1
+  END SUBROUTINE FINITE_ELASTICITY_GAUSS_DXDNU
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluates the Cauchy stress tensor at a given Gauss point
+  SUBROUTINE FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR(FIELD,INTERPOLATED_POINT,CAUCHY_TENSOR,DZDNU,ERR,ERROR,*)
+
+    !Argument variables    
+    TYPE(FIELD_TYPE), POINTER :: FIELD    
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT 
+    REAL(DP), INTENT(OUT) :: CAUCHY_TENSOR(:,:)
+    REAL(DP), INTENT(IN) ::  DZDNU(:,:)
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: i,j    
+    REAL(DP) :: AZL(3,3),C(0:1,0:1),DZDNUT(3,3),PIOLA_TENSOR(3,3),TEMP(3,3),Jznu,P 
+        
+    CALL ENTERS("FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR",ERR,ERROR,*999)
+	
+    C(1,0)=INTERPOLATED_POINT%VALUES(1,1)
+    C(0,1)=INTERPOLATED_POINT%VALUES(2,1)
+    P=FIELD%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(1)
+    
+    CALL MATRIX_TRANSPOSE(DZDNU,DZDNUT,ERR,ERROR,*999)    
+    CALL MATRIX_PRODUCT(DZDNUT,DZDNU,AZL,ERR,ERROR,*999) ! AZL = F'*F (deformed covariant or right cauchy defromation tensor, C)	    
+        
+    PIOLA_TENSOR(1,1)=2.0_DP*(C(1,0)+C(0,1)*(AZL(2,2)+AZL(3,3))+P*(AZL(2,2)*AZL(3,3)-AZL(2,3)*AZL(3,2)))
+    PIOLA_TENSOR(1,2)=2.0_DP*(       C(0,1)*(-AZL(2,1))        +P*(AZL(2,3)*AZL(3,1)-AZL(2,1)*AZL(3,3)))
+    PIOLA_TENSOR(1,3)=2.0_DP*(       C(0,1)*(-AZL(3,1))        +P*(AZL(2,1)*AZL(3,2)-AZL(2,2)*AZL(3,1)))            
+    PIOLA_TENSOR(2,1)=PIOLA_TENSOR(1,2)
+    PIOLA_TENSOR(2,2)=2.0_DP*(C(1,0)+C(0,1)*(AZL(3,3)+AZL(1,1))+P*(AZL(1,1)*AZL(3,3)-AZL(1,3)*AZL(3,1)))
+    PIOLA_TENSOR(2,3)=2.0_DP*(       C(0,1)*(-AZL(3,2))        +P*(AZL(1,2)*AZL(3,1)-AZL(1,1)*AZL(3,2)))    
+    PIOLA_TENSOR(3,1)=PIOLA_TENSOR(1,3)       
+    PIOLA_TENSOR(3,2)=PIOLA_TENSOR(2,3) 
+    PIOLA_TENSOR(3,3)=2.0_DP*(C(1,0)+C(0,1)*(AZL(1,1)+AZL(2,2))+P*(AZL(1,1)*AZL(2,2)-AZL(1,2)*AZL(2,1)))    
+
+    Jznu=DETERMINANT(DZDNU,ERR,ERROR)
+
+    CALL MATRIX_PRODUCT(DZDNU,PIOLA_TENSOR,TEMP,ERR,ERROR,*999)     
+    CALL MATRIX_PRODUCT(TEMP,DZDNUT,CAUCHY_TENSOR,ERR,ERROR,*999)     
+
+    DO i=1,3,1
+      DO j=1,3,1
+        CAUCHY_TENSOR(i,j)=CAUCHY_TENSOR(i,j)/Jznu
+      ENDDO
+    ENDDO
+      
+    CALL EXITS("FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR")
+    RETURN
+999 CALL ERRORS("FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR",ERR,ERROR)
+    CALL EXITS("FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR")
+    RETURN 1
+  END SUBROUTINE FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR
+
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluates df/dz (derivative of interpolation function wrt deformed coord) matrix at a given Gauss point
+  SUBROUTINE FINITE_ELASTICITY_GAUSS_DFDZ(INTERPOLATED_POINT,DFDZ,XI,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT       
+    REAL(DP), ALLOCATABLE :: DFDZ(:,:),XI(:)     
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string    
+    !Local Variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS
+    INTEGER(INTG) :: derivative_idx,NJT,nj_idx,nk_idx,NKT,nn_idx,NNT,ns,NST,NXIT,xi_idx 
+    REAL(DP), ALLOCATABLE :: DFDXI(:,:),DXIDZ(:,:),DZDXI(:,:)
+    REAL(DP) :: Jzxi
+ 
+    CALL ENTERS("FINITE_ELASTICITY_GAUSS_DFDZ",ERR,ERROR,*999)
+
+    BASIS=>INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%BASES(1)%PTR
+    NJT=INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD%VARIABLES(1)%NUMBER_OF_COMPONENTS
+    NNT=INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%BASES(1)%PTR%NUMBER_OF_NODES
+    NKT=INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%BASES(1)%PTR%MAXIMUM_NUMBER_OF_DERIVATIVES
+    NXIT=INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%BASES(1)%PTR%NUMBER_OF_XI
+    !NST=INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%BASES(1)%PTR%NUMBER_OF_ELEMENT_PARAMETERS
+    
+    ALLOCATE(DXIDZ(NXIT,NJT))
+    ALLOCATE(DZDXI(NJT,NXIT))    
+    NST=0
+    DO nn_idx=1,NNT,1
+      DO nk_idx=1,NKT,1
+        NST=NST+1    
+      ENDDO
+    ENDDO
+    ALLOCATE(DFDZ(NST,NJT))
+    ALLOCATE(DFDXI(NST,NXIT))
+
+    ns=0
+    DO nn_idx=1,NNT,1
+      DO nk_idx=1,NKT,1
+        ns=ns+1    
+	DO xi_idx=1,NXIT,1
+          derivative_idx=INT((xi_idx*xi_idx+xi_idx+2+0.01_DP)/2.0_DP)  !2,4,7 
+!          DFDXI(ns,xi_idx)=BASIS_LHTP_BASIS_EVALUATE(BASIS,nn_idx,nk_idx,derivative_idx,XI,ERR,ERROR) !df/dxi 
+	ENDDO
+      ENDDO
+    ENDDO
+
+    DO nj_idx=1,NJT,1
+      DO xi_idx=1,NXIT,1
+        derivative_idx=INT((xi_idx*xi_idx+xi_idx+2+0.01_DP)/2.0_DP)  !2,4,7      
+        DZDXI(nj_idx,xi_idx)=INTERPOLATED_POINT%VALUES(nj_idx,derivative_idx) !dz/dxi
+      ENDDO	  
+    ENDDO 
+    CALL INVERT(DZDXI,DXIDZ,Jzxi,ERR,ERROR,*999) !dxi/dz 
+    
+    DO nj_idx=1,NJT,1
+      ns=0
+      DO nn_idx=1,NNT,1
+        DO nk_idx=1,NKT,1
+          ns=ns+1 
+    	  DFDZ(ns,nj_idx)=0.0_DP 
+    	  DO xi_idx=1,NXIT,1  
+            DFDZ(ns,nj_idx)=DFDZ(ns,nj_idx)+DFDXI(ns,xi_idx)*DXIDZ(xi_idx,nj_idx)
+          ENDDO
+        ENDDO
+      ENDDO		  
+    ENDDO	    
+    
+    DEALLOCATE(DFDXI)
+    DEALLOCATE(DXIDZ)
+    DEALLOCATE(DZDXI)    
+
+    CALL EXITS("FINITE_ELASTICITY_GAUSS_DFDZ")
+    RETURN
+999 CALL ERRORS("FINITE_ELASTICITY_GAUSS_DFDZ",ERR,ERROR)
+    CALL EXITS("FINITE_ELASTICITY_GAUSS_DFDZ")
+    RETURN 1
+  END SUBROUTINE FINITE_ELASTICITY_GAUSS_DFDZ
 
   !
   !================================================================================================================================

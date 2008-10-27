@@ -49,6 +49,7 @@ MODULE SOLVER_ROUTINES
   USE CONSTANTS
   USE DISTRIBUTED_MATRIX_VECTOR
   USE EQUATIONS_SET_CONSTANTS
+  !USE EQUATIONS_SET_ROUTINES
   USE FIELD_ROUTINES
   USE KINDS
   USE INPUT_OUTPUT
@@ -125,7 +126,6 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_ITERATIVE_ADDITIVE_SCHWARZ_PRECONDITIONER=6 !<Additive Schwrz preconditioner type \see SOLVER_ROUTINES_IterativePreconditionerTypes,SOLVER_ROUTINES
   !>@}
 
- 
   !> \addtogroup SOLVER_ROUTINES_NonlinearSolverTypes SOLVER_ROUTINES::NonlinearSolverTypes
   !> \brief The types of nonlinear solvers
   !> \see SOLVER_ROUTINES
@@ -142,7 +142,7 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NONLINEAR_NO_LINESEARCH=2 !<No line search for Newton line search nonlinear solves \see SOLVER_ROUTINES_NonlinearLineSearchTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NONLINEAR_QUADRATIC_LINESEARCH=3 !<Quadratic search for Newton line search nonlinear solves \see SOLVER_ROUTINES_NonlinearLineSearchTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NONLINEAR_CUBIC_LINESEARCH=4!<Cubic search for Newton line search nonlinear solves \see SOLVER_ROUTINES_NonlinearLineSearchTypes,SOLVER_ROUTINES
- !>@}
+  !>@}
   !> \addtogroup SOLVER_ROUTINES_JacobianCalculationTypes SOLVER_ROUTINES::JacobianCalculationTypes
   !> \brief The Jacobian calculation types for a nonlinear solver 
   !> \see SOLVER_ROUTINES
@@ -152,7 +152,6 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NONLINEAR_JACOBIAN_FD_CALCULATED=3 !<The Jacobian values will be calcualted using finite differences for the nonlinear equations set \see SOLVER_ROUTINES_JacobianCalculationTypes,SOLVER_ROUTINES
   !>@}
   
-
   !> \addtogroup SOLVER_ROUTINES_OutputTypes SOLVER_ROUTINES::OutputTypes
   !> \brief The types of output
   !> \see SOLVER_ROUTINES
@@ -1715,6 +1714,8 @@ CONTAINS
                         !Check for convergence
                         CALL PETSC_KSPGETCONVERGEDREASON(LINEAR_ITERATIVE_SOLVER%KSP,CONVERGED_REASON,ERR,ERROR,*999)
                         SELECT CASE(CONVERGED_REASON)
+                        CASE(PETSC_KSP_DIVERGED_NULL)
+                          CALL FLAG_WARNING("Linear iterative solver did not converge. PETSc diverged null.",ERR,ERROR,*999)
                         CASE(PETSC_KSP_DIVERGED_ITS)
                           CALL FLAG_WARNING("Linear iterative solver did not converge. PETSc diverged its.",ERR,ERROR,*999)
                         CASE(PETSC_KSP_DIVERGED_DTOL)
@@ -1729,6 +1730,11 @@ CONTAINS
                             & ERR,ERROR,*999)
                         CASE(PETSC_KSP_DIVERGED_INDEFINITE_PC)
                           CALL FLAG_WARNING("Linear iterative solver did not converge. PETSc diverged indefinite PC.", &
+                            & ERR,ERROR,*999)
+                        CASE(PETSC_KSP_DIVERGED_NAN)
+                          CALL FLAG_WARNING("Linear iterative solver did not converge. PETSc diverged NaN.",ERR,ERROR,*999)
+                        CASE(PETSC_KSP_DIVERGED_INDEFINITE_MAT)
+                          CALL FLAG_WARNING("Linear iterative solver did not converge. PETSc diverged indefinite mat.", &
                             & ERR,ERROR,*999)
                         END SELECT
                         IF(SOLVER%OUTPUT_TYPE>=SOLVER_SOLVER_OUTPUT) THEN
@@ -1747,11 +1753,11 @@ CONTAINS
                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged ATol",ERR,ERROR,*999)
                           CASE(PETSC_KSP_CONVERGED_ITS)
                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged its",ERR,ERROR,*999)
-                          CASE(PETSC_KSP_CONVERGED_QCG_NEG_CURVE)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged QCG neg curve", &
+                          CASE(PETSC_KSP_CONVERGED_CG_NEG_CURVE)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged CG neg curve", &
                               & ERR,ERROR,*999)
-                          CASE(PETSC_KSP_CONVERGED_QCG_CONSTRAINED)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged QCG constrained", &
+                          CASE(PETSC_KSP_CONVERGED_CG_CONSTRAINED)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged CG constrained", &
                               & ERR,ERROR,*999)
                           CASE(PETSC_KSP_CONVERGED_STEP_LENGTH)
                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged step length",ERR,ERROR,*999)
@@ -3855,7 +3861,7 @@ CONTAINS
    
   END SUBROUTINE SOLVER_NONLINEAR_SOLVE
         
- !
+  !
   !================================================================================================================================
   !
 
@@ -4077,7 +4083,7 @@ CONTAINS
    
   END SUBROUTINE SOLVER_NONLINEAR_TRUSTREGION_INITIALISE
 
-   !
+  !
   !================================================================================================================================
   !
 

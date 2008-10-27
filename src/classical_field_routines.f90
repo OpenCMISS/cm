@@ -63,12 +63,51 @@ MODULE CLASSICAL_FIELD_ROUTINES
   !Module variables
 
   !Interfaces
+  
+  PUBLIC CLASSICAL_FIELD_EQUATIONS_SET_CLASS_TYPE_GET,CLASSICAL_FIELD_PROBLEM_CLASS_TYPE_GET
 
+  PUBLIC CLASSICAL_FIELD_FINITE_ELEMENT_JACOBIAN_EVALUATE,CLASSICAL_FIELD_FINITE_ELEMENT_RESIDUAL_EVALUATE
+  
   PUBLIC CLASSICAL_FIELD_EQUATIONS_SET_CLASS_TYPE_SET,CLASSICAL_FIELD_FINITE_ELEMENT_CALCULATE, &
-    & CLASSICAL_FIELD_FINITE_ELEMENT_JACOBIAN_EVALUATE,CLASSICAL_FIELD_FINITE_ELEMENT_RESIDUAL_EVALUATE,&
     & CLASSICAL_FIELD_EQUATIONS_SET_SETUP,CLASSICAL_FIELD_PROBLEM_CLASS_TYPE_SET,CLASSICAL_FIELD_PROBLEM_SETUP
   
 CONTAINS
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the problem type and subtype for a classical field equation set class.
+  SUBROUTINE CLASSICAL_FIELD_EQUATIONS_SET_CLASS_TYPE_GET(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE, &
+    & ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_TYPE !<The equation type
+    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_SUBTYPE !<The equation subtype
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    
+    CALL ENTERS("CLASSICAL_FIELD_EQUATIONS_SET_CLASS_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF (EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS) THEN
+        EQUATIONS_TYPE=EQUATIONS_SET%TYPE
+        EQUATIONS_SUBTYPE=EQUATIONS_SET%SUBTYPE
+      ELSE
+        CALL FLAG_ERROR("Equations set is not the classical field type",ERR,ERROR,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("CLASSICAL_FIELD_EQUATIONS_SET_CLASS_TYPE_GET")
+    RETURN
+999 CALL ERRORS("CLASSICAL_FIELD_EQUATIONS_SET_CLASS_TYPE_GET",ERR,ERROR)
+    CALL EXITS("CLASSICAL_FIELD_EQUATIONS_SET_CLASS_TYPE_GET")
+    RETURN 1
+  END SUBROUTINE CLASSICAL_FIELD_EQUATIONS_SET_CLASS_TYPE_GET
 
   !
   !================================================================================================================================
@@ -327,8 +366,43 @@ CONTAINS
     CALL EXITS("CLASSICAL_FIELD_EQUATIONS_SET_SETUP")
     RETURN 1
   END SUBROUTINE CLASSICAL_FIELD_EQUATIONS_SET_SETUP
+  
+  !
+  !================================================================================================================================
+  !
 
- !
+  !>Gets the problem type and subtype for a classical field problem class.
+  SUBROUTINE CLASSICAL_FIELD_PROBLEM_CLASS_TYPE_GET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_EQUATION_TYPE !<The problem type
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_SUBTYPE !<The proboem subtype
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    
+    CALL ENTERS("CLASSICAL_FIELD_PROBLEM_CLASS_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(PROBLEM)) THEN
+      IF(PROBLEM%CLASS==PROBLEM_CLASSICAL_FIELD_CLASS) THEN
+        PROBLEM_EQUATION_TYPE=PROBLEM%TYPE
+        PROBLEM_SUBTYPE=PROBLEM%SUBTYPE
+      ELSE
+        CALL FLAG_ERROR("Problem is not classical field class",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Problem is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("CLASSICAL_FIELD_PROBLEM_CLASS_TYPE_GET")
+    RETURN
+999 CALL ERRORS("CLASSICAL_FIELD_PROBLEM_CLASS_TYPE_GET",ERR,ERROR)
+    CALL EXITS("CLASSICAL_FIELD_PROBLEM_CLASS_TYPE_GET")
+    RETURN 1
+  END SUBROUTINE CLASSICAL_FIELD_PROBLEM_CLASS_TYPE_GET
+
+  !
   !================================================================================================================================
   !
 
