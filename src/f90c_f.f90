@@ -1,5 +1,5 @@
 !> \file
-!> $Id: f90c_f.f90 27 2007-07-24 16:52:51Z cpb $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module handles calling C from Fortran90 and vise versa. It needs to be linked with the f90c_c.c module.
 !>

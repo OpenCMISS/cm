@@ -1,5 +1,5 @@
 !> \file
-!> $Id: solver_matrices_routines.f90 28 2007-07-27 08:35:14Z cpb $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module handles all solver matrix and rhs routines.
 !>
@@ -48,6 +48,7 @@ MODULE SOLVER_MATRICES_ROUTINES
   USE ISO_VARYING_STRING
   USE KINDS
   USE MATRIX_VECTOR
+  USE PROBLEM_CONSTANTS
   USE STRINGS
   USE TYPES
 
@@ -83,6 +84,7 @@ CONTAINS
     INTEGER(INTG) :: DUMMY_ERR,matrix_idx,NUMBER_OF_NON_ZEROS
     INTEGER(INTG), POINTER :: COLUMN_INDICES(:),ROW_INDICES(:)
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ROW_DOMAIN_MAP,COLUMN_DOMAIN_MAP
+    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION
     TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
@@ -101,53 +103,67 @@ CONTAINS
         IF(ASSOCIATED(SOLVER)) THEN
           SOLUTION_MAPPING=>SOLVER%SOLUTION_MAPPING
           IF(ASSOCIATED(SOLUTION_MAPPING)) THEN
-            !Now create the individual solver matrices
-            ROW_DOMAIN_MAP=>SOLUTION_MAPPING%ROW_DOFS_MAPPING
-            IF(ASSOCIATED(ROW_DOMAIN_MAP)) THEN
-              DO matrix_idx=1,SOLVER_MATRICES%NUMBER_OF_MATRICES
-                SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(matrix_idx)%PTR
-                IF(ASSOCIATED(SOLVER_MATRIX)) THEN
-                  COLUMN_DOMAIN_MAP=>SOLUTION_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(matrix_idx)%COLUMN_DOFS_MAPPING
-                  IF(ASSOCIATED(COLUMN_DOMAIN_MAP)) THEN
-                    !Create the distributed solver matrix
-                    CALL DISTRIBUTED_MATRIX_CREATE_START(ROW_DOMAIN_MAP,COLUMN_DOMAIN_MAP,SOLVER_MATRIX%MATRIX,ERR,ERROR,*999)
-                    CALL DISTRIBUTED_MATRIX_LIBRARY_TYPE_SET(SOLVER_MATRIX%MATRIX,SOLVER_MATRICES%LIBRARY_TYPE,ERR,ERROR,*999)
-                    CALL DISTRIBUTED_MATRIX_DATA_TYPE_SET(SOLVER_MATRIX%MATRIX,MATRIX_VECTOR_DP_TYPE,ERR,ERROR,*999)
-                    CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_SET(SOLVER_MATRIX%MATRIX,SOLVER_MATRIX%STORAGE_TYPE,ERR,ERROR,*999)
-                    !Calculate and set the matrix structure/sparsity pattern
-                    IF(SOLVER_MATRIX%STORAGE_TYPE/=MATRIX_BLOCK_STORAGE_TYPE) THEN
-                      CALL SOLVER_MATRIX_STRUCTURE_CALCULATE(SOLVER_MATRIX,NUMBER_OF_NON_ZEROS,ROW_INDICES, &
-                        & COLUMN_INDICES,ERR,ERROR,*999)                  
-                      CALL DISTRIBUTED_MATRIX_NUMBER_NON_ZEROS_SET(SOLVER_MATRIX%MATRIX,NUMBER_OF_NON_ZEROS, &
+            SOLUTION=>SOLVER%SOLUTION
+            IF(ASSOCIATED(SOLUTION)) THEN
+              !Now create the individual solver matrices
+              ROW_DOMAIN_MAP=>SOLUTION_MAPPING%ROW_DOFS_MAPPING
+              IF(ASSOCIATED(ROW_DOMAIN_MAP)) THEN
+                DO matrix_idx=1,SOLVER_MATRICES%NUMBER_OF_MATRICES
+                  SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(matrix_idx)%PTR
+                  IF(ASSOCIATED(SOLVER_MATRIX)) THEN
+                    COLUMN_DOMAIN_MAP=>SOLUTION_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(matrix_idx)%COLUMN_DOFS_MAPPING
+                    IF(ASSOCIATED(COLUMN_DOMAIN_MAP)) THEN
+                      !Create the distributed solver matrix
+                      CALL DISTRIBUTED_MATRIX_CREATE_START(ROW_DOMAIN_MAP,COLUMN_DOMAIN_MAP,SOLVER_MATRIX%MATRIX,ERR,ERROR,*999)
+                      CALL DISTRIBUTED_MATRIX_LIBRARY_TYPE_SET(SOLVER_MATRIX%MATRIX,SOLVER_MATRICES%LIBRARY_TYPE,ERR,ERROR,*999)
+                      CALL DISTRIBUTED_MATRIX_DATA_TYPE_SET(SOLVER_MATRIX%MATRIX,MATRIX_VECTOR_DP_TYPE,ERR,ERROR,*999)
+                      CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_SET(SOLVER_MATRIX%MATRIX,SOLVER_MATRIX%STORAGE_TYPE,ERR,ERROR,*999)
+                      !Calculate and set the matrix structure/sparsity pattern
+                      IF(SOLVER_MATRIX%STORAGE_TYPE/=MATRIX_BLOCK_STORAGE_TYPE) THEN
+                        CALL SOLVER_MATRIX_STRUCTURE_CALCULATE(SOLVER_MATRIX,NUMBER_OF_NON_ZEROS,ROW_INDICES, &
+                          & COLUMN_INDICES,ERR,ERROR,*999)                  
+                        CALL DISTRIBUTED_MATRIX_NUMBER_NON_ZEROS_SET(SOLVER_MATRIX%MATRIX,NUMBER_OF_NON_ZEROS, &
+                          & ERR,ERROR,*999)
+                        CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_SET(SOLVER_MATRIX%MATRIX,ROW_INDICES,COLUMN_INDICES, &
+                          & ERR,ERROR,*999)
+                        IF(ASSOCIATED(ROW_INDICES)) DEALLOCATE(ROW_INDICES)
+                        IF(ASSOCIATED(COLUMN_INDICES)) DEALLOCATE(COLUMN_INDICES)
+                      ENDIF
+                      CALL DISTRIBUTED_MATRIX_CREATE_FINISH(SOLVER_MATRIX%MATRIX,ERR,ERROR,*999)
+                      !Allocate the distributed solution vector
+                      CALL DISTRIBUTED_VECTOR_CREATE_START(COLUMN_DOMAIN_MAP,SOLVER_MATRIX%SOLVER_VECTOR,ERR,ERROR,*999)
+                      CALL DISTRIBUTED_VECTOR_LIBRARY_TYPE_SET(SOLVER_MATRIX%SOLVER_VECTOR,SOLVER_MATRICES%LIBRARY_TYPE, &
                         & ERR,ERROR,*999)
-                      CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_SET(SOLVER_MATRIX%MATRIX,ROW_INDICES,COLUMN_INDICES, &
-                        & ERR,ERROR,*999)
-                      IF(ASSOCIATED(ROW_INDICES)) DEALLOCATE(ROW_INDICES)
-                      IF(ASSOCIATED(COLUMN_INDICES)) DEALLOCATE(COLUMN_INDICES)
+                      CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(SOLVER_MATRIX%SOLVER_VECTOR,MATRIX_VECTOR_DP_TYPE,ERR,ERROR,*999)
+                      CALL DISTRIBUTED_VECTOR_CREATE_FINISH(SOLVER_MATRIX%SOLVER_VECTOR,ERR,ERROR,*999)
+                    ELSE
+                      CALL FLAG_ERROR("Column domain mapping is not associated.",ERR,ERROR,*999)
                     ENDIF
-                    CALL DISTRIBUTED_MATRIX_CREATE_FINISH(SOLVER_MATRIX%MATRIX,ERR,ERROR,*999)
-                    !Allocate the distributed solution vector
-                    CALL DISTRIBUTED_VECTOR_CREATE_START(COLUMN_DOMAIN_MAP,SOLVER_MATRIX%SOLVER_VECTOR,ERR,ERROR,*999)
-                    CALL DISTRIBUTED_VECTOR_LIBRARY_TYPE_SET(SOLVER_MATRIX%SOLVER_VECTOR,SOLVER_MATRICES%LIBRARY_TYPE, &
-                      & ERR,ERROR,*999)
-                    CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(SOLVER_MATRIX%SOLVER_VECTOR,MATRIX_VECTOR_DP_TYPE,ERR,ERROR,*999)
-                    CALL DISTRIBUTED_VECTOR_CREATE_FINISH(SOLVER_MATRIX%SOLVER_VECTOR,ERR,ERROR,*999)
                   ELSE
-                    CALL FLAG_ERROR("Column domain mapping is not associated.",ERR,ERROR,*999)
+                    CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
                   ENDIF
-                ELSE
-                  CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
+                ENDDO !matrix_idx
+                IF(SOLUTION%LINEARITY==PROBLEM_SOLUTION_NONLINEAR) THEN
+                  !Allocate the nonlinear matrices and vectors                  
+                  !Allocate the distributed residual vector
+                  CALL DISTRIBUTED_VECTOR_CREATE_START(ROW_DOMAIN_MAP,SOLVER_MATRICES%RESIDUAL,ERR,ERROR,*999)
+                  CALL DISTRIBUTED_VECTOR_LIBRARY_TYPE_SET(SOLVER_MATRICES%RESIDUAL,SOLVER_MATRICES%LIBRARY_TYPE,ERR,ERROR,*999)
+                  CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(SOLVER_MATRICES%RESIDUAL,MATRIX_VECTOR_DP_TYPE,ERR,ERROR,*999)
+                  CALL DISTRIBUTED_VECTOR_CREATE_FINISH(SOLVER_MATRICES%RESIDUAL,ERR,ERROR,*999)                  
                 ENDIF
-              ENDDO !matrix_idx
-              !Allocate the distributed rhs vector
-              CALL DISTRIBUTED_VECTOR_CREATE_START(ROW_DOMAIN_MAP,SOLVER_MATRICES%RHS_VECTOR,ERR,ERROR,*999)
-              CALL DISTRIBUTED_VECTOR_LIBRARY_TYPE_SET(SOLVER_MATRICES%RHS_VECTOR,SOLVER_MATRICES%LIBRARY_TYPE,ERR,ERROR,*999)
-              CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(SOLVER_MATRICES%RHS_VECTOR,MATRIX_VECTOR_DP_TYPE,ERR,ERROR,*999)
-              CALL DISTRIBUTED_VECTOR_CREATE_FINISH(SOLVER_MATRICES%RHS_VECTOR,ERR,ERROR,*999)
-              !Finish up
-              SOLVER_MATRICES%SOLVER_MATRICES_FINISHED=.TRUE.
+!!TODO: what to do if there is no RHS
+                !Allocate the distributed rhs vector
+                CALL DISTRIBUTED_VECTOR_CREATE_START(ROW_DOMAIN_MAP,SOLVER_MATRICES%RHS_VECTOR,ERR,ERROR,*999)
+                CALL DISTRIBUTED_VECTOR_LIBRARY_TYPE_SET(SOLVER_MATRICES%RHS_VECTOR,SOLVER_MATRICES%LIBRARY_TYPE,ERR,ERROR,*999)
+                CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(SOLVER_MATRICES%RHS_VECTOR,MATRIX_VECTOR_DP_TYPE,ERR,ERROR,*999)
+                CALL DISTRIBUTED_VECTOR_CREATE_FINISH(SOLVER_MATRICES%RHS_VECTOR,ERR,ERROR,*999)
+                !Finish up
+                SOLVER_MATRICES%SOLVER_MATRICES_FINISHED=.TRUE.
+              ELSE
+                CALL FLAG_ERROR("Row domain mapping is not associated.",ERR,ERROR,*998)
+              ENDIF
             ELSE
-              CALL FLAG_ERROR("Row domain mapping is not associated.",ERR,ERROR,*998)
+              CALL FLAG_ERROR("Solver solution is not associated.",ERR,ERROR,*998)
             ENDIF
           ELSE
             CALL FLAG_ERROR("Solver solution mapping is not associated.",ERR,ERROR,*998)
@@ -266,6 +282,7 @@ CONTAINS
         ENDDO !matrix_idx
         DEALLOCATE(SOLVER_MATRICES%MATRICES)
       ENDIF
+      CALL DISTRIBUTED_VECTOR_DESTROY(SOLVER_MATRICES%RESIDUAL,ERR,ERROR,*999)
       CALL DISTRIBUTED_VECTOR_DESTROY(SOLVER_MATRICES%RHS_VECTOR,ERR,ERROR,*999)
       DEALLOCATE(SOLVER_MATRICES)
     ENDIF
@@ -291,6 +308,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: DUMMY_ERR,equations_matrix_idx,equations_set_idx,matrix_idx
+    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION
     TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING
     TYPE(VARYING_STRING) :: DUMMY_ERROR
 
@@ -302,32 +320,50 @@ CONTAINS
       ELSE
         SOLUTION_MAPPING=>SOLVER%SOLUTION_MAPPING
         IF(ASSOCIATED(SOLUTION_MAPPING)) THEN
-          ALLOCATE(SOLVER%SOLVER_MATRICES,STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver matrices",ERR,ERROR,*999)
-          SOLVER%SOLVER_MATRICES%SOLVER=>SOLVER
-          SOLVER%SOLVER_MATRICES%SOLVER_MATRICES_FINISHED=.FALSE.
-          SOLVER%SOLVER_MATRICES%SOLUTION_MAPPING=>SOLUTION_MAPPING
-          SOLVER%SOLVER_MATRICES%NUMBER_OF_ROWS=SOLUTION_MAPPING%NUMBER_OF_ROWS
-          SOLVER%SOLVER_MATRICES%TOTAL_NUMBER_OF_ROWS=SOLUTION_MAPPING%TOTAL_NUMBER_OF_ROWS
-          SOLVER%SOLVER_MATRICES%LIBRARY_TYPE=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
-          SOLVER%SOLVER_MATRICES%NUMBER_OF_MATRICES=SOLUTION_MAPPING%NUMBER_OF_SOLVER_MATRICES
-          ALLOCATE(SOLVER%SOLVER_MATRICES%MATRICES(SOLUTION_MAPPING%NUMBER_OF_SOLVER_MATRICES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver matrices matrices.",ERR,ERROR,*999)
-          DO matrix_idx=1,SOLUTION_MAPPING%NUMBER_OF_SOLVER_MATRICES
-            NULLIFY(SOLVER%SOLVER_MATRICES%MATRICES(matrix_idx)%PTR)
-            CALL SOLVER_MATRIX_INITIALISE(SOLVER%SOLVER_MATRICES,matrix_idx,ERR,ERROR,*999)
-            DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
-              DO equations_matrix_idx=1,SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(matrix_idx)%NUMBER_OF_EQUATIONS_MATRICES
-                !Add the solver matrix to the solutions mapping
-                SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(matrix_idx)% &
-                  & EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR%SOLVER_MATRIX=>SOLVER%SOLVER_MATRICES% &
-                  & MATRICES(matrix_idx)%PTR
-              ENDDO !equations_matrix_idx
-            ENDDO !equations_set_idx
-          ENDDO !matrix_idx
-          SOLVER%SOLVER_MATRICES%UPDATE_RHS_VECTOR=.TRUE.
-          NULLIFY(SOLVER%SOLVER_MATRICES%RHS_VECTOR)
+          SOLUTION=>SOLVER%SOLUTION
+          IF(ASSOCIATED(SOLUTION)) THEN
+            ALLOCATE(SOLVER%SOLVER_MATRICES,STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver matrices",ERR,ERROR,*999)
+            SOLVER%SOLVER_MATRICES%SOLVER=>SOLVER
+            SOLVER%SOLVER_MATRICES%SOLVER_MATRICES_FINISHED=.FALSE.
+            SOLVER%SOLVER_MATRICES%SOLUTION_MAPPING=>SOLUTION_MAPPING
+            SOLVER%SOLVER_MATRICES%NUMBER_OF_ROWS=SOLUTION_MAPPING%NUMBER_OF_ROWS
+            SOLVER%SOLVER_MATRICES%NUMBER_OF_GLOBAL_ROWS=SOLUTION_MAPPING%NUMBER_OF_GLOBAL_ROWS
+            SOLVER%SOLVER_MATRICES%LIBRARY_TYPE=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
+            SOLVER%SOLVER_MATRICES%NUMBER_OF_MATRICES=SOLUTION_MAPPING%NUMBER_OF_SOLVER_MATRICES
+            ALLOCATE(SOLVER%SOLVER_MATRICES%MATRICES(SOLUTION_MAPPING%NUMBER_OF_SOLVER_MATRICES),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver matrices matrices.",ERR,ERROR,*999)
+            DO matrix_idx=1,SOLUTION_MAPPING%NUMBER_OF_SOLVER_MATRICES
+              NULLIFY(SOLVER%SOLVER_MATRICES%MATRICES(matrix_idx)%PTR)
+              CALL SOLVER_MATRIX_INITIALISE(SOLVER%SOLVER_MATRICES,matrix_idx,ERR,ERROR,*999)
+              DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                IF(ASSOCIATED(SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                  & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP)) THEN
+                  SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                    & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP%SOLVER_MATRIX=> &
+                    & SOLVER%SOLVER_MATRICES%MATRICES(matrix_idx)%PTR
+                ELSE
+                  DO equations_matrix_idx=1,SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                    & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(matrix_idx)%NUMBER_OF_LINEAR_EQUATIONS_MATRICES
+                    !Add the solver matrix to the solutions mapping
+                    SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
+                      & matrix_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR%SOLVER_MATRIX=>SOLVER% &
+                      & SOLVER_MATRICES%MATRICES(matrix_idx)%PTR
+                  ENDDO !equations_matrix_idx
+                ENDIF
+              ENDDO !equations_set_idx
+            ENDDO !matrix_idx
+            IF(SOLUTION%LINEARITY==PROBLEM_SOLUTION_NONLINEAR) THEN
+              SOLVER%SOLVER_MATRICES%UPDATE_RESIDUAL=.TRUE.
+            ELSE
+              SOLVER%SOLVER_MATRICES%UPDATE_RESIDUAL=.FALSE.
+            ENDIF
+            NULLIFY(SOLVER%SOLVER_MATRICES%RESIDUAL)
+            SOLVER%SOLVER_MATRICES%UPDATE_RHS_VECTOR=.TRUE.
+            NULLIFY(SOLVER%SOLVER_MATRICES%RHS_VECTOR)
+          ELSE
+            CALL FLAG_ERROR("Solver solution is not associated.",ERR,ERROR,*999)
+          ENDIF
         ELSE
           CALL FLAG_ERROR("Solver solution mapping is not associated",ERR,ERROR,*999)
         ENDIF
@@ -349,6 +385,8 @@ CONTAINS
   !================================================================================================================================
   !
 
+!!MERGE: ditto
+  
   !>Gets the library type for the solver matrices (and vectors)
   FUNCTION SOLVER_MATRICES_LIBRARY_TYPE_GET(SOLVER_MATRICES,ERR,ERROR)
 
@@ -449,6 +487,10 @@ CONTAINS
             CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
           ENDIF
         ENDDO !matrix_idx
+        IF(ASSOCIATED(SOLVER_MATRICES%RESIDUAL)) THEN
+          CALL WRITE_STRING(ID,"Solver residual vector:",ERR,ERROR,*999)
+          CALL DISTRIBUTED_VECTOR_OUTPUT(ID,SOLVER_MATRICES%RESIDUAL,ERR,ERROR,*999)
+        ENDIF
         IF(ASSOCIATED(SOLVER_MATRICES%RHS_VECTOR)) THEN
           CALL WRITE_STRING(ID,"Solver RHS vector:",ERR,ERROR,*999)
           CALL DISTRIBUTED_VECTOR_OUTPUT(ID,SOLVER_MATRICES%RHS_VECTOR,ERR,ERROR,*999)
@@ -471,6 +513,8 @@ CONTAINS
   !================================================================================================================================
   !
 
+!!MERGE: ditto
+  
   !>Gets the storage type (sparsity) of the solver matrices
   SUBROUTINE SOLVER_MATRICES_STORAGE_TYPE_GET(SOLVER_MATRICES,STORAGE_TYPE,ERR,ERROR,*)
 
@@ -596,14 +640,19 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: equations_column_idx,equations_column_number,DUMMY_ERR,equations_matrix_idx,equations_row_number, &
-      & equations_set_idx,EQUATIONS_STORAGE_TYPE,MAX_COLUMN_INDICES,MAX_COLUMNS_PER_ROW,NUMBER_OF_COLUMNS, &
-      & solver_column_idx,solver_column_number,solver_matrix_idx,solver_row_idx,solver_row_number
+      & equations_set_idx,EQUATIONS_STORAGE_TYPE,jacobian_column_idx,jacobian_column_number,jacobian_row_number, &
+      & MAX_COLUMN_INDICES,MAX_COLUMNS_PER_ROW,NUMBER_OF_COLUMNS,solver_column_idx,solver_column_number,solver_matrix_idx, &
+      & solver_row_idx,solver_row_number
     INTEGER(INTG), POINTER :: COLUMNS(:),EQUATIONS_ROW_INDICES(:),EQUATIONS_COLUMN_INDICES(:)
     REAL(DP) :: SPARSITY
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: DISTRIBUTED_MATRIX,SOLVER_DISTRIBUTED_MATRIX
+    TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN_MATRIX
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
     TYPE(EQUATIONS_TO_SOLVER_MAPS_TYPE), POINTER :: EQUATIONS_TO_SOLVER_MAP
+    TYPE(JACOBIAN_TO_SOLVER_MAP_TYPE), POINTER :: JACOBIAN_TO_SOLVER_MAP
     TYPE(LIST_PTR_TYPE), ALLOCATABLE :: COLUMN_INDICES_LISTS(:)
     TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
@@ -648,25 +697,30 @@ CONTAINS
                     MAX_COLUMN_INDICES=0
                     DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
                       DO equations_matrix_idx=1,SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                        & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%NUMBER_OF_EQUATIONS_MATRICES
+                        & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%NUMBER_OF_LINEAR_EQUATIONS_MATRICES
                         EQUATIONS_TO_SOLVER_MAP=>SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                           & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS( &
                           & equations_matrix_idx)%PTR
                         IF(ASSOCIATED(EQUATIONS_TO_SOLVER_MAP)) THEN
                           EQUATIONS_MATRIX=>EQUATIONS_TO_SOLVER_MAP%EQUATIONS_MATRIX
                           IF(ASSOCIATED(EQUATIONS_MATRIX)) THEN
-                            EQUATIONS_MATRICES=>EQUATIONS_MATRIX%EQUATIONS_MATRICES
-                            IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
-                              DISTRIBUTED_MATRIX=>EQUATIONS_MATRIX%MATRIX
-                              IF(ASSOCIATED(DISTRIBUTED_MATRIX)) THEN
-                                CALL DISTRIBUTED_MATRIX_MAX_COLUMNS_PER_ROW_GET(DISTRIBUTED_MATRIX,MAX_COLUMNS_PER_ROW, &
-                                  & ERR,ERROR,*999)
-                                MAX_COLUMN_INDICES=MAX_COLUMN_INDICES+MAX_COLUMNS_PER_ROW
+                            LINEAR_MATRICES=>EQUATIONS_MATRIX%LINEAR_MATRICES
+                            IF(ASSOCIATED(LINEAR_MATRICES)) THEN
+                              EQUATIONS_MATRICES=>LINEAR_MATRICES%EQUATIONS_MATRICES
+                              IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+                                DISTRIBUTED_MATRIX=>EQUATIONS_MATRIX%MATRIX
+                                IF(ASSOCIATED(DISTRIBUTED_MATRIX)) THEN
+                                  CALL DISTRIBUTED_MATRIX_MAX_COLUMNS_PER_ROW_GET(DISTRIBUTED_MATRIX,MAX_COLUMNS_PER_ROW, &
+                                    & ERR,ERROR,*999)
+                                  MAX_COLUMN_INDICES=MAX_COLUMN_INDICES+MAX_COLUMNS_PER_ROW
+                                ELSE
+                                  CALL FLAG_ERROR("Equations matrix distributed matrix is not associated.",ERR,ERROR,*999)
+                                ENDIF                                
                               ELSE
-                                CALL FLAG_ERROR("Equations matrix distributed matrix is not associated.",ERR,ERROR,*999)
+                                CALL FLAG_ERROR("Linear matrices equations matrices is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Equations matrix equations matrices is not associated.",ERR,ERROR,*999)
+                              CALL FLAG_ERROR("Equations matrix linear matrices is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
                             CALL FLAG_ERROR("Equations matrix is not assocaited.",ERR,ERROR,*999)
@@ -675,6 +729,33 @@ CONTAINS
                           CALL FLAG_ERROR("Equations to solver matrix map is not assocaited.",ERR,ERROR,*999)
                         ENDIF
                       ENDDO !equations_matrix_idx
+                      JACOBIAN_TO_SOLVER_MAP=>SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                        & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP
+                      IF(ASSOCIATED(JACOBIAN_TO_SOLVER_MAP)) THEN
+                        JACOBIAN_MATRIX=>JACOBIAN_TO_SOLVER_MAP%JACOBIAN_MATRIX
+                        IF(ASSOCIATED(JACOBIAN_MATRIX)) THEN
+                          NONLINEAR_MATRICES=>JACOBIAN_MATRIX%NONLINEAR_MATRICES
+                          IF(ASSOCIATED(NONLINEAR_MATRICES)) THEN
+                            EQUATIONS_MATRICES=>NONLINEAR_MATRICES%EQUATIONS_MATRICES
+                            IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+                              DISTRIBUTED_MATRIX=>JACOBIAN_MATRIX%JACOBIAN
+                              IF(ASSOCIATED(DISTRIBUTED_MATRIX)) THEN
+                                CALL DISTRIBUTED_MATRIX_MAX_COLUMNS_PER_ROW_GET(DISTRIBUTED_MATRIX,MAX_COLUMNS_PER_ROW, &
+                                  & ERR,ERROR,*999)
+                                MAX_COLUMN_INDICES=MAX_COLUMN_INDICES+MAX_COLUMNS_PER_ROW
+                              ELSE
+                                CALL FLAG_ERROR("Jacobian distributed matrix is not associated.",ERR,ERROR,*999)
+                              ENDIF
+                            ELSE
+                              CALL FLAG_ERROR("Nonlinear matrices equations matrices is not associated.",ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            CALL FLAG_ERROR("Jacobian matrix nonlinear matrices is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("Jacobian matrix is not assocaited.",ERR,ERROR,*999)
+                        ENDIF
+                      ENDIF
                     ENDDO !equations_set_idx
                     !Set up the column indicies lists
                     DO solver_row_number=1,SOLUTION_MAPPING%NUMBER_OF_ROWS
@@ -686,15 +767,16 @@ CONTAINS
                     ENDDO !solver_row_number
                     !Loop over the equations sets
                     DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
-                      !Loop over the equations matrices mapped to the solver matrix and calculate the column indices by row.
+                      !Loop over the linear equations matrices mapped to the solver matrix and calculate the column indices by row.
                       DO equations_matrix_idx=1,SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                        & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%NUMBER_OF_EQUATIONS_MATRICES
-                        !Note: pointer have been checked above
+                        & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%NUMBER_OF_LINEAR_EQUATIONS_MATRICES
+                        !Note: pointers have been checked above
                         EQUATIONS_TO_SOLVER_MAP=>SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                           & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS( &
                           & equations_matrix_idx)%PTR
                         EQUATIONS_MATRIX=>EQUATIONS_TO_SOLVER_MAP%EQUATIONS_MATRIX
-                        EQUATIONS_MATRICES=>EQUATIONS_MATRIX%EQUATIONS_MATRICES
+                        LINEAR_MATRICES=>EQUATIONS_MATRIX%LINEAR_MATRICES
+                        EQUATIONS_MATRICES=>LINEAR_MATRICES%EQUATIONS_MATRICES
                         DISTRIBUTED_MATRIX=>EQUATIONS_MATRIX%MATRIX
                         CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_GET(DISTRIBUTED_MATRIX,EQUATIONS_STORAGE_TYPE,ERR,ERROR,*999)
                         SELECT CASE(EQUATIONS_STORAGE_TYPE)
@@ -762,6 +844,81 @@ CONTAINS
                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT
                       ENDDO !equations_matrix_idx
+                      !Now add any columns from the Jacobian
+                      JACOBIAN_TO_SOLVER_MAP=>SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                        & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP
+                      IF(ASSOCIATED(JACOBIAN_TO_SOLVER_MAP)) THEN
+                        !Note: pointers have been checked above
+                        JACOBIAN_MATRIX=>JACOBIAN_TO_SOLVER_MAP%JACOBIAN_MATRIX
+                        NONLINEAR_MATRICES=>JACOBIAN_MATRIX%NONLINEAR_MATRICES
+                        EQUATIONS_MATRICES=>NONLINEAR_MATRICES%EQUATIONS_MATRICES
+                        DISTRIBUTED_MATRIX=>JACOBIAN_MATRIX%JACOBIAN
+                        CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_GET(DISTRIBUTED_MATRIX,EQUATIONS_STORAGE_TYPE,ERR,ERROR,*999)
+                        SELECT CASE(EQUATIONS_STORAGE_TYPE)
+                        CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
+                          !Loop over the rows of the Jacobian matrix
+                          DO jacobian_row_number=1,EQUATIONS_MATRICES%NUMBER_OF_ROWS
+                            !Loop over the solution rows this equations row is mapped to
+                            DO solver_row_idx=1,SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(jacobian_row_number)%NUMBER_OF_SOLVER_ROWS
+                              solver_row_number=SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(jacobian_row_number)% &
+                                & SOLVER_ROWS(solver_row_idx)                                              
+                              !Loop over the columns of the Jacobian
+                              DO jacobian_column_number=1,JACOBIAN_MATRIX%NUMBER_OF_COLUMNS
+                                !Loop over the solution columns this equations column is mapped to
+                                DO solver_column_idx=1,JACOBIAN_TO_SOLVER_MAP%JACOBIAN_COL_SOLVER_COLS_MAP( &
+                                  & jacobian_column_number)%NUMBER_OF_SOLVER_COLS
+                                  solver_column_number=JACOBIAN_TO_SOLVER_MAP%JACOBIAN_COL_SOLVER_COLS_MAP( &
+                                    & jacobian_column_number)%SOLVER_COLS(solver_column_idx)
+                                  CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(solver_row_number)%PTR,solver_column_number, &
+                                    & ERR,ERROR,*999)
+                                ENDDO !solver_column_idx
+                              ENDDO !jacobian_column_number
+                            ENDDO !solver_row_idx
+                          ENDDO !jacobian_row_number                          
+                        CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
+                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                      
+                        CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
+                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+                          CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(DISTRIBUTED_MATRIX,EQUATIONS_ROW_INDICES, &
+                            & EQUATIONS_COLUMN_INDICES,ERR,ERROR,*999)
+                          !Loop over the rows of the Jacobian matrix
+                          DO jacobian_row_number=1,EQUATIONS_MATRICES%NUMBER_OF_ROWS
+                            !Loop over the solution rows this equations row is mapped to
+                            DO solver_row_idx=1,SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(jacobian_row_number)%NUMBER_OF_SOLVER_ROWS
+                              solver_row_number=SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(jacobian_row_number)% &
+                                & SOLVER_ROWS(solver_row_idx)
+                              !Loop over the columns of the Jacobian matrix
+                              DO jacobian_column_idx=EQUATIONS_ROW_INDICES(jacobian_row_number), &
+                                & EQUATIONS_ROW_INDICES(jacobian_row_number+1)-1
+                                jacobian_column_number=EQUATIONS_COLUMN_INDICES(jacobian_column_idx)
+                                !Loop over the solution columns this Jacobian column is mapped to
+                                DO solver_column_idx=1,JACOBIAN_TO_SOLVER_MAP%JACOBIAN_COL_SOLVER_COLS_MAP( &
+                                  & jacobian_column_number)%NUMBER_OF_SOLVER_COLS
+                                  solver_column_number=JACOBIAN_TO_SOLVER_MAP%JACOBIAN_COL_SOLVER_COLS_MAP( &
+                                    & jacobian_column_number)%SOLVER_COLS(solver_column_idx)                                   
+                                  CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(solver_row_number)%PTR,solver_column_number, &
+                                    & ERR,ERROR,*999)
+                                ENDDO !solution_column_idx
+                              ENDDO !jacobian_column_idx
+                            ENDDO !solver_row_idx
+                          ENDDO !jacobian_row_number                          
+                        CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                        
+                        CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
+                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CASE DEFAULT
+                          LOCAL_ERROR="The Jacobian storage type of "// &
+                            & TRIM(NUMBER_TO_VSTRING(EQUATIONS_STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        END SELECT
+                      ENDIF
                     ENDDO !equations_set_idx
                     !Loop over the rows to calculate the number of non-zeros and setup the row indicces
                     DO solver_row_number=1,SOLUTION_MAPPING%NUMBER_OF_ROWS
@@ -803,7 +960,7 @@ CONTAINS
                     IF(SOLVER_MATRICES%NUMBER_OF_ROWS*SOLVER_MATRIX%NUMBER_OF_COLUMNS/=0) THEN
                       SPARSITY=REAL(NUMBER_OF_NON_ZEROS,DP)/REAL(SOLVER_MATRICES%NUMBER_OF_ROWS* &
                         & SOLVER_MATRIX%NUMBER_OF_COLUMNS,DP)*100.0_DP
-                      CALL WRITE_STRING_FMT_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Sparsity (%) = ",SPARSITY,"F5.2", ERR,ERROR,*999)
+                      CALL WRITE_STRING_FMT_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Sparsity (%) = ",SPARSITY,"F6.2", ERR,ERROR,*999)
                     ENDIF
                     CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MATRICES%NUMBER_OF_ROWS+1,8,8,ROW_INDICES, &
                       & '("  Row indices    :",8(X,I13))','(18X,8(X,I13))',ERR,ERROR,*999)
@@ -866,6 +1023,7 @@ CONTAINS
     IF(ASSOCIATED(SOLVER_MATRIX)) THEN
       CALL DISTRIBUTED_MATRIX_DESTROY(SOLVER_MATRIX%MATRIX,ERR,ERROR,*999)
       CALL DISTRIBUTED_VECTOR_DESTROY(SOLVER_MATRIX%SOLVER_VECTOR,ERR,ERROR,*999)
+      DEALLOCATE(SOLVER_MATRIX)
     ENDIF
     
     CALL EXITS("SOLVER_MATRIX_FINALISE")
@@ -877,6 +1035,35 @@ CONTAINS
   END SUBROUTINE SOLVER_MATRIX_FINALISE
         
   !
+  !================================================================================================================================
+  !
+
+  !>Forms a solver matrix by initialising the strucuture of the matrix to zero.
+  SUBROUTINE SOLVER_MATRIX_FORM(SOLVER_MATRIX,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX !<A pointer to the solver matrix to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    
+    CALL ENTERS("SOLVER_MATRIX_FORM",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER_MATRIX)) THEN
+      CALL DISTRIBUTED_MATRIX_FORM(SOLVER_MATRIX%MATRIX,ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_MATRIX_FORM")
+    RETURN
+999 CALL ERRORS("SOLVER_MATRIX_FORM",ERR,ERROR)    
+    CALL EXITS("SOLVER_MATRIX_FORM")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_MATRIX_FORM
+        
+    !
   !================================================================================================================================
   !
 

@@ -1,5 +1,5 @@
 !> \file
-!> $Id: problem_constants.f90 28 2007-07-27 08:35:14Z cpb $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module handles all problem wide constants.
 !>
@@ -125,6 +125,14 @@ MODULE PROBLEM_CONSTANTS
   INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_NO_OUTPUT=0 !<No output \see PROBLEM_CONSTANTS_SolutionOutputTypes,PROBLEM_CONSTANTS
   INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_TIMING_OUTPUT=1 !<Timing information output \see PROBLEM_CONSTANTS_SolutionOutputTypes,PROBLEM_CONSTANTS
   INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_MATRIX_OUTPUT=2 !<All below and solution matrices output \see PROBLEM_CONSTANTS_SolutionOutputTypes,PROBLEM_CONSTANTS
+  !>@}
+
+  !> \addtogroup PROBLEM_CONSTANTS_SolutionLinearityTypes PROBLEM_CONSTANTS::SolutionLinearityTypes
+  !> \brief The solution linearity type parameters
+  !> \see PROBLEM_CONSTANTS
+  !>@{
+  INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_LINEAR=1 !<The problem solution is linear. \see PROBLEM_CONSTANTS_SolutionLinearityTypes,PROBLEM_CONSTANTS
+  INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_NONLINEAR=2 !<The problem solution is nonlinear. \see PROBLEM_CONSTANTS_SolutionLinearityTypes,PROBLEM_CONSTANTS
   !>@}
 
 

@@ -1,5 +1,5 @@
 !> \file
-!> $Id: constants.f90 28 2007-07-27 08:35:14Z cpb $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module contains all program wide constants.
 !>

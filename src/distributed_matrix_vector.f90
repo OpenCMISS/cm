@@ -1,5 +1,5 @@
 !> \file
-!> $Id: distributed_matrix_vector.f90 28 2007-07-27 08:35:14Z cpb $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module handles all distributed matrix vector routines.
 !>
@@ -47,7 +47,6 @@ MODULE DISTRIBUTED_MATRIX_VECTOR
   USE CMISS_MPI
   USE CMISS_PETSC
   USE COMP_ENVIRONMENT
-  USE EQUATIONS_SET_CONSTANTS
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
   USE KINDS
@@ -242,9 +241,8 @@ MODULE DISTRIBUTED_MATRIX_VECTOR
   
   PUBLIC DISTRIBUTED_MATRIX_ALL_VALUES_SET,DISTRIBUTED_MATRIX_CREATE_FINISH,DISTRIBUTED_MATRIX_CREATE_START, &
     & DISTRIBUTED_MATRIX_DATA_GET,DISTRIBUTED_MATRIX_DATA_RESTORE,DISTRIBUTED_MATRIX_DATA_TYPE_SET,DISTRIBUTED_MATRIX_DESTROY, &
-    & DISTRIBUTED_MATRIX_DUPLICATE,DISTRIBUTED_MATRIX_LIBRARY_TYPE_SET,DISTRIBUTED_MATRIX_MAX_COLUMNS_PER_ROW_GET, &
-    & DISTRIBUTED_MATRIX_NUMBER_NON_ZEROS_SET,DISTRIBUTED_MATRIX_OUTPUT,DISTRIBUTED_MATRIX_SOLVER_MATRICES_ASSEMBLE, &
-    & DISTRIBUTED_MATRIX_SOLVER_STRUCTURE_CALC_FROM_MAP, &
+    & DISTRIBUTED_MATRIX_DUPLICATE,DISTRIBUTED_MATRIX_FORM,DISTRIBUTED_MATRIX_LIBRARY_TYPE_SET, &
+    & DISTRIBUTED_MATRIX_MAX_COLUMNS_PER_ROW_GET,DISTRIBUTED_MATRIX_NUMBER_NON_ZEROS_SET,DISTRIBUTED_MATRIX_OUTPUT, &
     & DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET,DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_SET,DISTRIBUTED_MATRIX_STORAGE_TYPE_GET, &
     & DISTRIBUTED_MATRIX_STORAGE_TYPE_SET,DISTRIBUTED_MATRIX_UPDATE_START,DISTRIBUTED_MATRIX_UPDATE_FINISH, &
     & DISTRIBUTED_MATRIX_UPDATE_ISFINISHED,DISTRIBUTED_MATRIX_UPDATE_WAITFINISHED,DISTRIBUTED_MATRIX_VALUES_ADD, &
@@ -1262,6 +1260,85 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Forms a distributed matrix by initialising the structure of the matrix to zero
+  SUBROUTINE DISTRIBUTED_MATRIX_FORM(DISTRIBUTED_MATRIX,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: DISTRIBUTED_MATRIX !<A pointer to the distributed matrix to form.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: column_idx,row
+    REAL(DP) :: ZERO_VALUE(1)=0.0_DP
+    TYPE(DISTRIBUTED_MATRIX_PETSC_TYPE), POINTER :: PETSC_MATRIX
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("DISTRIBUTED_MATRIX_FORM",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DISTRIBUTED_MATRIX)) THEN
+      IF(DISTRIBUTED_MATRIX%MATRIX_FINISHED) THEN
+        SELECT CASE(DISTRIBUTED_MATRIX%LIBRARY_TYPE)
+        CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)          
+          IF(ASSOCIATED(DISTRIBUTED_MATRIX%CMISS)) THEN
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          ELSE
+            CALL FLAG_ERROR("Distributed matrix CMISS is not associated",ERR,ERROR,*999)
+          ENDIF
+        CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
+          PETSC_MATRIX=>DISTRIBUTED_MATRIX%PETSC
+          IF(ASSOCIATED(PETSC_MATRIX)) THEN
+            SELECT CASE(PETSC_MATRIX%STORAGE_TYPE)
+            CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
+              CALL PETSC_MATZEROENTRIES(PETSC_MATRIX%MATRIX,ERR,ERROR,*999)
+            CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
+              CALL FLAG_ERROR("Diagonal storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+            CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+              CALL FLAG_ERROR("Column major storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+            CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
+              CALL FLAG_ERROR("Row major storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+            CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)             
+              DO row=1,PETSC_MATRIX%M
+                DO column_idx=1,PETSC_MATRIX%ROW_INDICES(row),PETSC_MATRIX%ROW_INDICES(row+1)-1
+                  CALL PETSC_MATSETVALUES(PETSC_MATRIX%MATRIX,1,PETSC_MATRIX%GLOBAL_ROW_NUMBERS(row),1, &
+                    & PETSC_MATRIX%COLUMN_INDICES(column_idx)-1,ZERO_VALUE,PETSC_INSERT_VALUES, &
+                    & ERR,ERROR,*999) !PETSc uses 0 indicies
+                ENDDO !column_idx
+              ENDDO !row_idx
+            CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+              CALL FLAG_ERROR("Compressed column storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+            CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
+              CALL FLAG_ERROR("Row column storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
+            CASE DEFAULT
+              LOCAL_ERROR="The PETSc matrix storage type of "//TRIM(NUMBER_TO_VSTRING(PETSC_MATRIX%STORAGE_TYPE,"*",ERR,ERROR))// &
+                & " is invalid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+            CALL PETSC_MATASSEMBLYBEGIN(PETSC_MATRIX%MATRIX,MAT_FINAL_ASSEMBLY,ERR,ERROR,*999)
+            CALL PETSC_MATASSEMBLYEND(PETSC_MATRIX%MATRIX,MAT_FINAL_ASSEMBLY,ERR,ERROR,*999)
+          ELSE
+            CALL FLAG_ERROR("Distributed matrix PETSc is not associated",ERR,ERROR,*999)
+          ENDIF
+        CASE DEFAULT
+          LOCAL_ERROR="The distributed matrix library type of "// &
+            & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("The distributed matrix has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ENDIF
+    
+    CALL EXITS("DISTRIBUTED_MATRIX_FORM")
+    RETURN
+999 CALL ERRORS("DISTRIBUTED_MATRIX_FORM",ERR,ERROR)
+    CALL EXITS("DISTRIBUTED_MATRIX_FORM")
+    RETURN 1
+  END SUBROUTINE DISTRIBUTED_MATRIX_FORM
+
+  !
+  !================================================================================================================================
+  !
+
   !>Sets/changes the ghosting type for a distributed matrix
   SUBROUTINE DISTRIBUTED_MATRIX_GHOSTING_TYPE_SET(DISTRIBUTED_MATRIX,GHOSTING_TYPE,ERR,ERROR,*)
 
@@ -1820,582 +1897,6 @@ CONTAINS
     RETURN 1
   END SUBROUTINE DISTRIBUTED_MATRIX_PETSC_INITIALISE
 
-  !
-  !================================================================================================================================
-  !
-
-  !>Assembles a solver matrix by computing the matrix values from the global matrices. By placing the routine the distributed matrix module advantage can be taken of the sparsity structure of the global matrices.
-  SUBROUTINE DISTRIBUTED_MATRIX_SOLVER_MATRICES_ASSEMBLE(SOLVER_MATRICES,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES !<A pointer to the solver matrices to assemble
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: equations_column_idx,equations_column_number,equations_matrix_idx,equations_row_number,equations_set_idx, &
-      & solver_column_idx,solver_column_number,solver_row_idx,solver_row_number,solver_matrix_idx
-    REAL(DP) :: column_coupling_coefficient,row_coupling_coefficient,VALUE
-    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: EQUATIONS_DISTRIBUTED_MATRIX,SOLVER_DISTRIBUTED_MATRIX
-    TYPE(DISTRIBUTED_MATRIX_CMISS_TYPE), POINTER :: EQUATIONS_CMISS_MATRIX
-    TYPE(DISTRIBUTED_MATRIX_PETSC_TYPE), POINTER :: SOLVER_PETSC_MATRIX
-    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
-    TYPE(EQUATIONS_TO_SOLVER_MAPS_TYPE), POINTER :: EQUATIONS_TO_SOLVER_MAP
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING
-    TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("DISTRIBUTED_MATRIX_SOLVER_MATRICES_ASSEMBLE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER_MATRICES)) THEN
-      SOLUTION_MAPPING=>SOLVER_MATRICES%SOLUTION_MAPPING
-      IF(ASSOCIATED(SOLUTION_MAPPING)) THEN
-        !Assemble the solver matrices
-        DO solver_matrix_idx=1,SOLUTION_MAPPING%NUMBER_OF_SOLVER_MATRICES
-          SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(solver_matrix_idx)%PTR
-          IF(ASSOCIATED(SOLVER_MATRIX)) THEN
-            IF(SOLVER_MATRIX%UPDATE_MATRIX) THEN              
-              SOLVER_DISTRIBUTED_MATRIX=>SOLVER_MATRIX%MATRIX
-              IF(ASSOCIATED(SOLVER_DISTRIBUTED_MATRIX)) THEN
-                IF(SOLVER_DISTRIBUTED_MATRIX%MATRIX_FINISHED) THEN
-                  SELECT CASE(SOLVER_DISTRIBUTED_MATRIX%LIBRARY_TYPE)
-                  CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
-                    CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
-                  CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
-                    SOLVER_PETSC_MATRIX=>SOLVER_DISTRIBUTED_MATRIX%PETSC
-                    IF(ASSOCIATED(SOLVER_PETSC_MATRIX)) THEN
-                      !Initialise matrix to zero
-                      CALL PETSC_MATZEROENTRIES(SOLVER_PETSC_MATRIX%MATRIX,ERR,ERROR,*999)
-                      !Loop over the equations sets
-                      DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
-                        !Loop over the equations matrices
-                        DO equations_matrix_idx=1,SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                          & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%NUMBER_OF_EQUATIONS_MATRICES
-                          EQUATIONS_TO_SOLVER_MAP=>SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                            & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS( &
-                            & equations_matrix_idx)%PTR
-                          IF(ASSOCIATED(EQUATIONS_TO_SOLVER_MAP)) THEN
-                            EQUATIONS_MATRIX=>EQUATIONS_TO_SOLVER_MAP%EQUATIONS_MATRIX
-                            IF(ASSOCIATED(EQUATIONS_MATRIX)) THEN
-                              EQUATIONS_MATRICES=>EQUATIONS_MATRIX%EQUATIONS_MATRICES
-                              IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
-                                EQUATIONS_DISTRIBUTED_MATRIX=>EQUATIONS_MATRIX%MATRIX
-                                IF(ASSOCIATED(EQUATIONS_DISTRIBUTED_MATRIX)) THEN
-                                  SELECT CASE(EQUATIONS_DISTRIBUTED_MATRIX%LIBRARY_TYPE)
-                                  CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
-                                    EQUATIONS_CMISS_MATRIX=>EQUATIONS_DISTRIBUTED_MATRIX%CMISS
-                                    IF(ASSOCIATED(EQUATIONS_CMISS_MATRIX)) THEN
-                                      MATRIX=>EQUATIONS_CMISS_MATRIX%MATRIX
-                                      IF(ASSOCIATED(MATRIX)) THEN
-                                        !Move this to matrix module or get rid of matrix module???
-                                        IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_DP_TYPE) THEN
-                                          SELECT CASE(MATRIX%STORAGE_TYPE)
-                                          CASE(MATRIX_BLOCK_STORAGE_TYPE)                                    
-                                            !Loop over the rows of the equations matrix
-                                            DO equations_row_number=1,EQUATIONS_MATRICES%NUMBER_OF_ROWS
-                                              !Loop over the solution rows this equations row is mapped to
-                                              DO solver_row_idx=1,SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                                & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
-                                                solver_row_number=SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                                  & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                                                  & SOLVER_ROWS(solver_row_idx)
-                                                row_coupling_coefficient=SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-                                                  & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                                                  & COUPLING_COEFFICIENTS(solver_row_idx)
-                                                !Loop over the columns of the equations matrix
-                                                DO equations_column_number=1,EQUATIONS_MATRIX%NUMBER_OF_COLUMNS
-                                                  !Loop over the solution columns this equations column is mapped to
-                                                  DO solver_column_idx=1,EQUATIONS_TO_SOLVER_MAP%EQUATIONS_COL_SOLVER_COLS_MAP( &
-                                                    & equations_column_number)%NUMBER_OF_SOLVER_COLS
-                                                    solver_column_number=EQUATIONS_TO_SOLVER_MAP%EQUATIONS_COL_SOLVER_COLS_MAP( &
-                                                      & equations_column_number)%SOLVER_COLS(solver_column_idx)
-                                                    column_coupling_coefficient=EQUATIONS_TO_SOLVER_MAP% &
-                                                      & EQUATIONS_COL_SOLVER_COLS_MAP(equations_column_number)% &
-                                                      & COUPLING_COEFFICIENTS(solver_column_idx)
-                                                    !Add in the solver matrix value
-                                                    VALUE=MATRIX%DATA_DP(equations_row_number+(equations_column_number-1)* &
-                                                      & MATRIX%M)*row_coupling_coefficient*column_coupling_coefficient
-!!Use global numberings
-                                                    !CALL PETSC_MATSETVALUELOCAL(SOLVER_PETSC_MATRIX%MATRIX, &
-                                                    !  & solver_row_number-1,solver_column_number-1,VALUE, &
-                                                    !  & PETSC_ADD_VALUES,ERR,ERROR,*999) !PETSC uses a 0 based index
-                                                    CALL PETSC_MATSETVALUE(SOLVER_PETSC_MATRIX%MATRIX, &
-                                                      & SOLVER_PETSC_MATRIX%GLOBAL_ROW_NUMBERS(solver_row_number), &
-                                                      & solver_column_number-1,VALUE, &
-                                                      & PETSC_ADD_VALUES,ERR,ERROR,*999) !PETSC uses a 0 based index
-                                                  ENDDO !solver_column_idx
-                                                ENDDO !equations_column_number
-                                              ENDDO !solver_row_idx
-                                            ENDDO !equations_row_number
-                                          CASE(MATRIX_DIAGONAL_STORAGE_TYPE)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                          CASE(MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                      
-                                          CASE(MATRIX_ROW_MAJOR_STORAGE_TYPE)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                          CASE(MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
-                                            !Loop over the rows of the equations matrix
-                                            DO equations_row_number=1,EQUATIONS_MATRICES%NUMBER_OF_ROWS
-                                              !Loop over the solution rows this equations row is mapped to
-                                              DO solver_row_idx=1,SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                                & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
-                                                solver_row_number=SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                                  & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                                                  & SOLVER_ROWS(solver_row_idx)
-                                                row_coupling_coefficient=SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-                                                  & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                                                  & COUPLING_COEFFICIENTS(solver_row_idx)
-                                                !Loop over the columns of the equations matrix
-                                                DO equations_column_idx=MATRIX%ROW_INDICES(equations_row_number), &
-                                                  & MATRIX%ROW_INDICES(equations_row_number+1)-1
-                                                  equations_column_number=MATRIX%COLUMN_INDICES(equations_column_idx)
-                                                  !Loop over the solution columns this equations column is mapped to
-                                                  DO solver_column_idx=1,EQUATIONS_TO_SOLVER_MAP%EQUATIONS_COL_SOLVER_COLS_MAP( &
-                                                    & equations_column_number)%NUMBER_OF_SOLVER_COLS
-                                                    solver_column_number=EQUATIONS_TO_SOLVER_MAP%EQUATIONS_COL_SOLVER_COLS_MAP( &
-                                                      & equations_column_number)%SOLVER_COLS(solver_column_idx)
-                                                    column_coupling_coefficient=EQUATIONS_TO_SOLVER_MAP% &
-                                                      & EQUATIONS_COL_SOLVER_COLS_MAP(equations_column_number)% &
-                                                      & COUPLING_COEFFICIENTS(solver_column_idx)
-                                                    !Add in the solver matrix value
-                                                    VALUE=MATRIX%DATA_DP(equations_column_idx)*row_coupling_coefficient* &
-                                                      & column_coupling_coefficient
-!!Use global numberings
-                                                    !CALL PETSC_MATSETVALUELOCAL(SOLVER_PETSC_MATRIX%MATRIX, &
-                                                    !  & solver_row_number-1,solver_column_number-1,VALUE, &
-                                                    !  & PETSC_ADD_VALUES,ERR,ERROR,*999) !PETSC uses a 0 based index
-                                                    CALL PETSC_MATSETVALUE(SOLVER_PETSC_MATRIX%MATRIX, &
-                                                      & SOLVER_PETSC_MATRIX%GLOBAL_ROW_NUMBERS(solver_row_number), &
-                                                      & solver_column_number-1,VALUE, &
-                                                      & PETSC_ADD_VALUES,ERR,ERROR,*999) !PETSC uses a 0 based index
-                                                  ENDDO !solution_column_idx
-                                                ENDDO !equations_column_idx
-                                              ENDDO !solution_row_idx
-                                            ENDDO !equations_row_number
-                                          CASE(MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                        
-                                          CASE(MATRIX_ROW_COLUMN_STORAGE_TYPE)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                      
-                                          CASE DEFAULT
-                                            LOCAL_ERROR="The matrix storage type of "// &
-                                              & TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
-                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                          END SELECT
-                                        ELSE
-                                          LOCAL_ERROR="The matrix data type of "// &
-                                            & TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                                            & " does not correspond to a double precision matrix."
-                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                        ENDIF
-                                      ELSE
-                                        CALL FLAG_ERROR("The equations CMISS matrix matrix is not associated.",ERR,ERROR,*999)
-                                      ENDIF
-                                    ELSE
-                                      CALL FLAG_ERROR("The equations distributed matrix CMISS is not associated",ERR,ERROR,*999)
-                                    ENDIF
-                                  CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                  CASE DEFAULT
-                                    LOCAL_ERROR="The equations distributed matrix library type of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(EQUATIONS_DISTRIBUTED_MATRIX%LIBRARY_TYPE,"*",ERR,ERROR))// &
-                                      & " is invalid."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  END SELECT
-                                ELSE
-                                  CALL FLAG_ERROR("The equations matrix distributed matrix is not associated",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("The equations matrix equations matrices is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("The equations matrix is not associated.",ERR,ERROR,*999)
-                            ENDIF
-                          ELSE
-                            CALL FLAG_ERROR("The equations matrix equations to solver map is not associated.",ERR,ERROR,*999)
-                          ENDIF
-                        ENDDO !equations_matrix_idx
-                      ENDDO !equations_set_idx
-                    ELSE
-                      CALL FLAG_ERROR("Solver distributed matrix PETSc is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                  CASE DEFAULT
-                    LOCAL_ERROR="The solver distributed matrix library type of "// &
-                      & TRIM(NUMBER_TO_VSTRING(SOLVER_DISTRIBUTED_MATRIX%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  END SELECT
-                  !Update the solver matrix values
-                  CALL DISTRIBUTED_MATRIX_UPDATE_START(SOLVER_DISTRIBUTED_MATRIX,ERR,ERROR,*999)
-                  CALL DISTRIBUTED_MATRIX_UPDATE_FINISH(SOLVER_DISTRIBUTED_MATRIX,ERR,ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("The solver distributed matrix has not been finished.",ERR,ERROR,*999)        
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Solver matrix distributed matrix is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ENDIF !Update matrix
-          ELSE
-            CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ENDDO !solver_matrix_idx
-      ELSE
-        CALL FLAG_ERROR("Solver matrix solution mapping is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver matrices is not associated.",ERR,ERROR,*999)
-    ENDIF    
-    
-    CALL EXITS("DISTRIBUTED_MATRIX_SOLVER_MATRICES_ASSEMBLE")
-    RETURN
-999 CALL ERRORS("DISTRIBUTED_MATRIX_SOLVER_MATRICES_ASSEMBLE",ERR,ERROR)
-    CALL EXITS("DISTRIBUTED_MATRIX_SOLVER_MATRICES_ASSEMBLE")
-    RETURN 1
-  END SUBROUTINE DISTRIBUTED_MATRIX_SOLVER_MATRICES_ASSEMBLE
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Calculates and sets the structure of a (distributed) solver matrix from the global to solver map. By placing the routine in the distributed matrix module advantage can be taken of the sparsity structure of the global matrices.
-  SUBROUTINE DISTRIBUTED_MATRIX_SOLVER_STRUCTURE_CALC_FROM_MAP(SOLVER_MATRIX,NUMBER_OF_NON_ZEROS,ROW_INDICES,COLUMN_INDICES, &
-    & ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_MATRIX_TYPE) :: SOLVER_MATRIX !<The solver matrix to calculate the structure for.
-    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_NON_ZEROS !<On return the number of non-zeros in the solver matrix
-    INTEGER(INTG), POINTER :: ROW_INDICES(:) !<On return a pointer to row location indices in compressed row format. The pointers must be NULL on entry and the calling routine is responsible for deallocation.
-    INTEGER(INTG), POINTER :: COLUMN_INDICES(:) !<On return a pointer to the column location indices in compressed row format. The pointers must be NULL on entry and the calling routine is responsible for deallocation.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: equations_column_idx,equations_column_number,solver_column_idx,solver_column_number,DUMMY_ERR, &
-      & equations_matrix_idx,equations_row_number,equations_set_idx,MAX_COLUMN_INDICES,NUMBER_OF_COLUMNS, &
-      & solver_matrix_idx,solver_row_idx,solver_row_number
-    INTEGER(INTG), POINTER :: COLUMNS(:)
-    REAL(DP) :: SPARSITY
-    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: DISTRIBUTED_MATRIX,SOLVER_DISTRIBUTED_MATRIX
-    TYPE(DISTRIBUTED_MATRIX_CMISS_TYPE), POINTER :: CMISS_MATRIX
-    TYPE(DISTRIBUTED_MATRIX_PETSC_TYPE), POINTER :: PETSC_MATRIX
-    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
-    TYPE(EQUATIONS_TO_SOLVER_MAPS_TYPE), POINTER :: EQUATIONS_TO_SOLVER_MAP
-    TYPE(LIST_PTR_TYPE), ALLOCATABLE :: COLUMN_INDICES_LISTS(:)
-    TYPE(MATRIX_TYPE), POINTER :: MATRIX
-    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING
-    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
-    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
-    
-    NULLIFY(COLUMNS)
-    
-    CALL ENTERS("DISTRIBUTED_MATRIX_SOLVER_STRUCTURE_CALC_FROM_MAP",ERR,ERROR,*998)
-
-    NUMBER_OF_NON_ZEROS=0
-    IF(.NOT.ASSOCIATED(ROW_INDICES)) THEN
-      IF(.NOT.ASSOCIATED(COLUMN_INDICES)) THEN
-        SOLVER_DISTRIBUTED_MATRIX=>SOLVER_MATRIX%MATRIX
-        IF(ASSOCIATED(SOLVER_DISTRIBUTED_MATRIX)) THEN
-          IF(SOLVER_DISTRIBUTED_MATRIX%MATRIX_FINISHED) THEN
-            CALL FLAG_ERROR("The solver distributed matrix has already been finished.",ERR,ERROR,*998)        
-          ELSE
-!!TODO: Should be a select case of the storage type for the solver matrix
-!!           IF(SOLVER_DISTRIBUTED_MATRIX%STORAGE_TYPE/=DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE) THEN
-            SOLVER_MATRICES=>SOLVER_MATRIX%SOLVER_MATRICES
-            IF(ASSOCIATED(SOLVER_MATRICES)) THEN
-              SOLUTION_MAPPING=>SOLVER_MATRICES%SOLUTION_MAPPING
-              IF(ASSOCIATED(SOLUTION_MAPPING)) THEN
-                solver_matrix_idx=SOLVER_MATRIX%MATRIX_NUMBER
-                !Allocate lists
-                ALLOCATE(COLUMN_INDICES_LISTS(SOLUTION_MAPPING%NUMBER_OF_ROWS),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column indices lists.",ERR,ERROR,*999)
-                !Allocate row indices
-                ALLOCATE(ROW_INDICES(SOLUTION_MAPPING%NUMBER_OF_ROWS+1),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate row indices.",ERR,ERROR,*999)
-                ROW_INDICES(1)=1
-                !Find the maximum number of column indices
-                MAX_COLUMN_INDICES=0
-                DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
-                  DO equations_matrix_idx=1,SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                    & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%NUMBER_OF_EQUATIONS_MATRICES
-                    EQUATIONS_TO_SOLVER_MAP=>SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                      & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS( &
-                      & equations_matrix_idx)%PTR
-                    IF(ASSOCIATED(EQUATIONS_TO_SOLVER_MAP)) THEN
-                      EQUATIONS_MATRIX=>EQUATIONS_TO_SOLVER_MAP%EQUATIONS_MATRIX
-                      IF(ASSOCIATED(EQUATIONS_MATRIX)) THEN
-                        EQUATIONS_MATRICES=>EQUATIONS_MATRIX%EQUATIONS_MATRICES
-                        IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
-                          DISTRIBUTED_MATRIX=>EQUATIONS_MATRIX%MATRIX
-                          IF(ASSOCIATED(DISTRIBUTED_MATRIX)) THEN
-                            SELECT CASE(DISTRIBUTED_MATRIX%LIBRARY_TYPE)
-                            CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
-                              CMISS_MATRIX=>DISTRIBUTED_MATRIX%CMISS
-                              IF(ASSOCIATED(CMISS_MATRIX)) THEN
-                                MATRIX=>CMISS_MATRIX%MATRIX
-                                IF(ASSOCIATED(MATRIX)) THEN
-!!TODO: move all this to the matrix module???
-                                  MAX_COLUMN_INDICES=MAX_COLUMN_INDICES+MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW
-                                ELSE
-                                  CALL FLAG_ERROR("CMISS matrix matrix is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Distributed matrix CMISS is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
-                              PETSC_MATRIX=>DISTRIBUTED_MATRIX%PETSC
-                              IF(ASSOCIATED(PETSC_MATRIX)) THEN
-                                MAX_COLUMN_INDICES=MAX_COLUMN_INDICES+MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW
-                              ELSE
-                                CALL FLAG_ERROR("Distributed matrix PETSc is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            CASE DEFAULT
-                              LOCAL_ERROR="The distributed matrix library type of "// &
-                                & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                            END SELECT
-                          ELSE
-                            CALL FLAG_ERROR("Equations matrix distributed matrix is not associated.",ERR,ERROR,*999)
-                          ENDIF
-                        ELSE
-                          CALL FLAG_ERROR("Equations matrix equations matrices is not associated.",ERR,ERROR,*999)
-                        ENDIF
-                      ELSE
-                        CALL FLAG_ERROR("Equations matrix is not assocaited.",ERR,ERROR,*999)
-                      ENDIF
-                    ELSE
-                      CALL FLAG_ERROR("Equations to solver matrix map is not assocaited.",ERR,ERROR,*999)
-                    ENDIF
-                  ENDDO !equations_matrix_idx
-                ENDDO !equations_set_idx
-                !Set up the column indicies lists
-                DO solver_row_number=1,SOLUTION_MAPPING%NUMBER_OF_ROWS                          
-                  NULLIFY(COLUMN_INDICES_LISTS(solver_row_number)%PTR)
-                  CALL LIST_CREATE_START(COLUMN_INDICES_LISTS(solver_row_number)%PTR,ERR,ERROR,*999)
-                  CALL LIST_DATA_TYPE_SET(COLUMN_INDICES_LISTS(solver_row_number)%PTR,LIST_INTG_TYPE,ERR,ERROR,*999)
-                  CALL LIST_INITIAL_SIZE_SET(COLUMN_INDICES_LISTS(solver_row_number)%PTR,MAX_COLUMN_INDICES,ERR,ERROR,*999)
-                  CALL LIST_CREATE_FINISH(COLUMN_INDICES_LISTS(solver_row_number)%PTR,ERR,ERROR,*999)
-                ENDDO !solver_row_number
-                !Loop over the equations sets
-                DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
-                  !Loop over the equations matrices mapped to the solver matrix and calculate the column indices by row.
-                  DO equations_matrix_idx=1,SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                    & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%NUMBER_OF_EQUATIONS_MATRICES
-                    !Note: pointer have been checked above
-                    EQUATIONS_TO_SOLVER_MAP=>SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                      & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS( &
-                      & equations_matrix_idx)%PTR
-                    EQUATIONS_MATRIX=>EQUATIONS_TO_SOLVER_MAP%EQUATIONS_MATRIX
-                    EQUATIONS_MATRICES=>EQUATIONS_MATRIX%EQUATIONS_MATRICES
-                    DISTRIBUTED_MATRIX=>EQUATIONS_MATRIX%MATRIX
-                    SELECT CASE(DISTRIBUTED_MATRIX%LIBRARY_TYPE)
-                    CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
-                      CMISS_MATRIX=>DISTRIBUTED_MATRIX%CMISS
-                      MATRIX=>CMISS_MATRIX%MATRIX
-!!TODO: move all this to the matrix module???
-                      SELECT CASE(MATRIX%STORAGE_TYPE)
-                      CASE(MATRIX_BLOCK_STORAGE_TYPE)
-                        !Loop over the rows of the equations matrix
-                        DO equations_row_number=1,EQUATIONS_MATRICES%NUMBER_OF_ROWS
-                          !Loop over the solution rows this equations row is mapped to
-                          DO solver_row_idx=1,SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                            & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
-                            solver_row_number=SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                              & SOLVER_ROWS(solver_row_idx)                                              
-                            !Loop over the columns of the equations matrix
-                            DO equations_column_number=1,EQUATIONS_MATRIX%NUMBER_OF_COLUMNS
-                              !Loop over the solution columns this equations column is mapped to
-                              DO solver_column_idx=1,EQUATIONS_TO_SOLVER_MAP%EQUATIONS_COL_SOLVER_COLS_MAP( &
-                                & equations_column_number)%NUMBER_OF_SOLVER_COLS
-                                solver_column_number=EQUATIONS_TO_SOLVER_MAP%EQUATIONS_COL_SOLVER_COLS_MAP( &
-                                  & equations_column_number)%SOLVER_COLS(solver_column_idx)
-                                CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(solver_row_number)%PTR,solver_column_number, &
-                                  & ERR,ERROR,*999)
-                              ENDDO !solver_column_idx
-                            ENDDO !equations_column_number
-                          ENDDO !solver_row_idx
-                        ENDDO !equations_row_number
-                      CASE(MATRIX_DIAGONAL_STORAGE_TYPE)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                      CASE(MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                      
-                      CASE(MATRIX_ROW_MAJOR_STORAGE_TYPE)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                      CASE(MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
-                        !Loop over the rows of the equations matrix
-                        DO equations_row_number=1,EQUATIONS_MATRICES%NUMBER_OF_ROWS
-                          !Loop over the solution rows this equations row is mapped to
-                          DO solver_row_idx=1,SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                            & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
-                            solver_row_number=SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                              & SOLVER_ROWS(solver_row_idx)
-                            !Loop over the columns of the equations matrix
-                            DO equations_column_idx=MATRIX%ROW_INDICES(equations_row_number), &
-                              & MATRIX%ROW_INDICES(equations_row_number+1)-1
-                              equations_column_number=MATRIX%COLUMN_INDICES(equations_column_idx)
-                              !Loop over the solution columns this equations column is mapped to
-                              DO solver_column_idx=1,EQUATIONS_TO_SOLVER_MAP%EQUATIONS_COL_SOLVER_COLS_MAP( &
-                                & equations_column_number)%NUMBER_OF_SOLVER_COLS
-                                solver_column_number=EQUATIONS_TO_SOLVER_MAP%EQUATIONS_COL_SOLVER_COLS_MAP( &
-                                  & equations_column_number)%SOLVER_COLS(solver_column_idx)                                   
-                                CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(solver_row_number)%PTR,solver_column_number, &
-                                  & ERR,ERROR,*999)
-                              ENDDO !solution_column_idx
-                            ENDDO !equations_column_idx
-                          ENDDO !equations_row_idx
-                        ENDDO !equations_row_number
-                      CASE(MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                        
-                      CASE(MATRIX_ROW_COLUMN_STORAGE_TYPE)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                      
-                      CASE DEFAULT
-                        LOCAL_ERROR="The matrix storage type of "// &
-                          & TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                      END SELECT
-                    CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
-                      PETSC_MATRIX=>DISTRIBUTED_MATRIX%PETSC
-                      SELECT CASE(PETSC_MATRIX%STORAGE_TYPE)
-                      CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
-                        !Loop over the rows of the equations matrix
-                        DO equations_row_number=1,EQUATIONS_MATRICES%NUMBER_OF_ROWS
-                          !Loop over the solution rows this equations row is mapped to
-                          DO solver_row_idx=1,SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                            & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
-                            solver_row_number=SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                              & SOLVER_ROWS(solver_row_idx)
-                            !Loop over the columns of the equations matrix
-                            DO equations_column_number=1,EQUATIONS_MATRIX%NUMBER_OF_COLUMNS
-                              !Loop over the solution columns this equations column is mapped to
-                              DO solver_column_idx=1,EQUATIONS_TO_SOLVER_MAP%EQUATIONS_COL_SOLVER_COLS_MAP( &
-                                & equations_column_number)%NUMBER_OF_SOLVER_COLS
-                                solver_column_number=EQUATIONS_TO_SOLVER_MAP%EQUATIONS_COL_SOLVER_COLS_MAP( &
-                                  & equations_column_number)%SOLVER_COLS(solver_column_idx)
-                                CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(solver_row_number)%PTR,solver_column_number, &
-                                  & ERR,ERROR,*999)
-                              ENDDO !solver_column_idx
-                            ENDDO !equations_column_number
-                          ENDDO !equations_row_idx
-                        ENDDO !equations_row_number
-                      CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                      CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                      
-                      CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                      
-                      CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
-                        !Loop over the rows of the equations matrix
-                        DO equations_row_number=1,EQUATIONS_MATRICES%NUMBER_OF_ROWS
-                          !Loop over the solution rows this equations row is mapped to
-                          DO solver_row_idx=1,SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                            & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
-                            solver_row_number=SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                              & SOLVER_ROWS(solver_row_idx)                              
-                            !Loop over the columns of the equations matrix
-                            DO equations_column_idx=PETSC_MATRIX%ROW_INDICES(equations_row_number), &
-                              & PETSC_MATRIX%ROW_INDICES(equations_row_number+1)-1
-                              equations_column_number=PETSC_MATRIX%COLUMN_INDICES(equations_column_idx)
-                              !Loop over the solution columns this equations column is mapped to
-                              DO solver_column_idx=1,EQUATIONS_TO_SOLVER_MAP%EQUATIONS_COL_SOLVER_COLS_MAP( &
-                                & equations_column_number)%NUMBER_OF_SOLVER_COLS
-                                solver_column_number=EQUATIONS_TO_SOLVER_MAP%EQUATIONS_COL_SOLVER_COLS_MAP( &
-                                  & equations_column_number)%SOLVER_COLS(solver_column_idx)
-                                CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(solver_row_number)%PTR,solver_column_number, &
-                                  & ERR,ERROR,*999)
-                              ENDDO !solver_column_idx
-                            ENDDO !equations_column_idx
-                          ENDDO !solver_row_idx
-                        ENDDO !equations_row_number
-                      CASE(MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                        
-                      CASE(MATRIX_ROW_COLUMN_STORAGE_TYPE)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                      CASE DEFAULT
-                        LOCAL_ERROR="The matrix storage type of "// &
-                          & TRIM(NUMBER_TO_VSTRING(PETSC_MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                      END SELECT
-                    CASE DEFAULT
-                      LOCAL_ERROR="The distributed matrix library type of "// &
-                        & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    END SELECT
-                  ENDDO !equations_matrix_idx
-                ENDDO !equations_set_idx
-                !Loop over the rows to calculate the number of non-zeros and setup the row indicces
-                DO solver_row_number=1,SOLUTION_MAPPING%NUMBER_OF_ROWS
-                  CALL LIST_REMOVE_DUPLICATES(COLUMN_INDICES_LISTS(solver_row_number)%PTR,ERR,ERROR,*999)
-                  CALL LIST_NUMBER_OF_ITEMS_GET(COLUMN_INDICES_LISTS(solver_row_number)%PTR,NUMBER_OF_COLUMNS,ERR,ERROR,*999)
-                  NUMBER_OF_NON_ZEROS=NUMBER_OF_NON_ZEROS+NUMBER_OF_COLUMNS
-                  ROW_INDICES(solver_row_number+1)=NUMBER_OF_NON_ZEROS+1
-                ENDDO !solver_row_number
-                !Allocate and setup the column locations
-                ALLOCATE(COLUMN_INDICES(NUMBER_OF_NON_ZEROS),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column indices",ERR,ERROR,*999)
-                DO solver_row_number=1,SOLUTION_MAPPING%NUMBER_OF_ROWS
-                  CALL LIST_DETACH_AND_DESTROY(COLUMN_INDICES_LISTS(solver_row_number)%PTR,NUMBER_OF_COLUMNS,COLUMNS, &
-                    & ERR,ERROR,*999)
-                  DO solver_column_idx=1,NUMBER_OF_COLUMNS
-                    COLUMN_INDICES(ROW_INDICES(solver_row_number)+solver_column_idx-1)=COLUMNS(solver_column_idx)
-                  ENDDO !solver_column_idx
-                  DEALLOCATE(COLUMNS)
-                ENDDO !solver_row_idx
-                IF(DIAGNOSTICS1) THEN
-                  CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Solver matrix structure:",ERR,ERROR,*999)
-                  CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Solver matrix number : ",SOLVER_MATRIX%MATRIX_NUMBER, &
-                    & ERR,ERROR,*999)
-                  CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of rows = ",SOLVER_MATRICES%NUMBER_OF_ROWS, &
-                    & ERR,ERROR,*999)
-                  CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of columns = ",SOLVER_MATRIX%NUMBER_OF_COLUMNS, &
-                    & ERR,ERROR,*999)
-                  CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of non zeros = ",NUMBER_OF_NON_ZEROS,ERR,ERROR,*999)
-                  IF(SOLVER_MATRICES%NUMBER_OF_ROWS*SOLVER_MATRIX%NUMBER_OF_COLUMNS/=0) THEN
-                    SPARSITY=REAL(NUMBER_OF_NON_ZEROS,DP)/REAL(SOLVER_MATRICES%NUMBER_OF_ROWS* &
-                      & SOLVER_MATRIX%NUMBER_OF_COLUMNS,DP)*100.0_DP
-                    CALL WRITE_STRING_FMT_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Sparsity (%) = ",SPARSITY,"F5.2", ERR,ERROR,*999)
-                  ENDIF
-                  CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MATRICES%NUMBER_OF_ROWS+1,8,8,ROW_INDICES, &
-                    & '("  Row indices    :",8(X,I13))','(18X,8(X,I13))',ERR,ERROR,*999)
-                  CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NUMBER_OF_NON_ZEROS,8,8,COLUMN_INDICES, &
-                    & '("  Column indices :",8(X,I13))','(18X,8(X,I13))', ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Solver matrices solution mapping is not associated",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("Solver matrix solver matrices is not associated",ERR,ERROR,*999)
-            ENDIF
-            !ENDIF
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("Solver matrix distributed matrix is not associated",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Column indices is already associated",ERR,ERROR,*998)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Row indieces is already associated",ERR,ERROR,*998)
-    ENDIF
-    
-    CALL EXITS("DISTRIBUTED_MATRIX_SOLVER_STRUCTURE_CALC_FROM_MAP")
-    RETURN
-999 IF(ASSOCIATED(ROW_INDICES)) DEALLOCATE(ROW_INDICES)
-    IF(ASSOCIATED(COLUMN_INDICES)) DEALLOCATE(COLUMN_INDICES)
-    IF(ASSOCIATED(COLUMNS)) DEALLOCATE(COLUMNS)
-    IF(ALLOCATED(COLUMN_INDICES_LISTS)) THEN
-      DO solver_row_number=1,SOLUTION_MAPPING%NUMBER_OF_ROWS
-        IF(ASSOCIATED(COLUMN_INDICES_LISTS(solver_row_number)%PTR)) &
-          & CALL LIST_DESTROY(COLUMN_INDICES_LISTS(solver_row_number)%PTR,DUMMY_ERR,DUMMY_ERROR,*998)
-      ENDDO !solver_row_number
-      DEALLOCATE(COLUMN_INDICES_LISTS)
-    ENDIF
-998 CALL ERRORS("DISTRIBUTED_MATRIX_SOLVER_STRUCTURE_CALC_FROM_MAP",ERR,ERROR)
-    CALL EXITS("DISTRIBUTED_MATRIX_SOLVER_STRUCTURE_CALC_FROM_MAP")
-    RETURN 1
-  END SUBROUTINE DISTRIBUTED_MATRIX_SOLVER_STRUCTURE_CALC_FROM_MAP
-  
   !
   !================================================================================================================================
   !

@@ -1,5 +1,5 @@
 !> \file
-!> $Id: mesh_routines.f90 28 2007-07-27 08:35:14Z cpb $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module handles all mesh (node and element) routines.
 !>
@@ -548,6 +548,8 @@ CONTAINS
   !================================================================================================================================
   !
 
+!!MERGE: move to user number, should be able to specify lists of elements.
+  
   !>Gets the domain for a given element in a decomposition of a mesh.
   SUBROUTINE DECOMPOSITION_ELEMENT_DOMAIN_GET(DECOMPOSITION,GLOBAL_ELEMENT_NUMBER,DOMAIN_NUMBER,ERR,ERROR,*)
 
@@ -669,6 +671,8 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !!MERGE: ditto
+  
   !>Gets the mesh component number which will be used for the decomposition of a mesh.
   SUBROUTINE DECOMPOSITION_MESH_COMPONENT_NUMBER_GET(DECOMPOSITION,MESH_COMPONENT_NUMBER,ERR,ERROR,*)
 
@@ -752,6 +756,8 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !!MERGE: ditto
+  
   !>Gets the number of domains for a decomposition.
   SUBROUTINE DECOMPOSITION_NUMBER_OF_DOMAINS_GET(DECOMPOSITION,NUMBER_OF_DOMAINS,ERR,ERROR,*)
 
@@ -2003,6 +2009,8 @@ CONTAINS
   !================================================================================================================================
   !
 
+!!MERGE: ditto
+  
   !>Gets the decomposition type for a decomposition.
   FUNCTION DECOMPOSITION_TYPE_GET(DECOMPOSITION,ERR,ERROR)
 
@@ -2367,7 +2375,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: no_adjacent_element,adjacent_element,domain_no,domain_idx,ne,nn,np,NUMBER_OF_DOMAINS, &
+    INTEGER(INTG) :: DUMMY_ERR,no_adjacent_element,adjacent_element,domain_no,domain_idx,ne,nn,np,NUMBER_OF_DOMAINS, &
       & NUMBER_OF_ADJACENT_ELEMENTS,my_computational_node_number,component_idx
     INTEGER(INTG), ALLOCATABLE :: LOCAL_ELEMENT_NUMBERS(:)
     INTEGER(INTG), POINTER :: DOMAINS(:),ADJACENT_ELEMENTS(:)
@@ -2377,6 +2385,7 @@ CONTAINS
     TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
 
     NULLIFY(DOMAINS)
     NULLIFY(ADJACENT_ELEMENTS)
@@ -2409,7 +2418,8 @@ CONTAINS
                 NULLIFY(ADJACENT_ELEMENTS_LIST(domain_idx)%PTR)
                 CALL LIST_CREATE_START(ADJACENT_ELEMENTS_LIST(domain_idx)%PTR,ERR,ERROR,*999)
                 CALL LIST_DATA_TYPE_SET(ADJACENT_ELEMENTS_LIST(domain_idx)%PTR,LIST_INTG_TYPE,ERR,ERROR,*999)
-                CALL LIST_INITIAL_SIZE_SET(ADJACENT_ELEMENTS_LIST(domain_idx)%PTR,INT(MESH%NUMBER_OF_ELEMENTS/2),ERR,ERROR,*999)
+                CALL LIST_INITIAL_SIZE_SET(ADJACENT_ELEMENTS_LIST(domain_idx)%PTR,MAX(INT(MESH%NUMBER_OF_ELEMENTS/2),1), &
+                  & ERR,ERROR,*999)
                 CALL LIST_CREATE_FINISH(ADJACENT_ELEMENTS_LIST(domain_idx)%PTR,ERR,ERROR,*999)
               ENDDO !domain_idx
             
@@ -2568,7 +2578,7 @@ CONTAINS
     RETURN
 999 IF(ASSOCIATED(DOMAINS)) DEALLOCATE(DOMAINS)
     IF(ASSOCIATED(ADJACENT_ELEMENTS)) DEALLOCATE(ADJACENT_ELEMENTS)    
-    IF(ASSOCIATED(DOMAIN%MAPPINGS%ELEMENTS)) CALL DOMAIN_MAPPINGS_ELEMENTS_FINALISE(DOMAIN%MAPPINGS,ERR,ERROR,*998)
+    IF(ASSOCIATED(DOMAIN%MAPPINGS%ELEMENTS)) CALL DOMAIN_MAPPINGS_ELEMENTS_FINALISE(DOMAIN%MAPPINGS,DUMMY_ERR,DUMMY_ERROR,*998)
 998 CALL ERRORS("DOMAIN_MAPPINGS_ELEMENTS_CALCULATE",ERR,ERROR)
     CALL EXITS("DOMAIN_MAPPINGS_ELEMENTS_CALCULATE")
     RETURN 1
@@ -4162,6 +4172,184 @@ CONTAINS
   !================================================================================================================================
   !
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   !>Starts the process of creating a mesh defined by a user number with the specified NUMBER_OF_DIMENSIONS in the region identified by REGION.
   SUBROUTINE MESH_CREATE_START(USER_NUMBER,REGION,NUMBER_OF_DIMENSIONS,MESH,ERR,ERROR,*)
     
@@ -4414,6 +4602,8 @@ CONTAINS
   !================================================================================================================================
   !
 
+!!MERGE: ditto
+  
   !>Gets the number of mesh components for a mesh identified by a pointer.
   FUNCTION MESH_NUMBER_OF_COMPONENTS_GET(MESH,ERR,ERROR)
 
@@ -4553,6 +4743,8 @@ CONTAINS
   !================================================================================================================================
   !
 
+!!MERGE: ditto
+  
   !>Gets the number of elements for a mesh identified by a pointer.
   FUNCTION MESH_NUMBER_OF_ELEMENTS_GET(MESH,ERR,ERROR)
 
@@ -5142,6 +5334,8 @@ CONTAINS
   !================================================================================================================================
   !
 
+!!MERGE: Take user number
+  
   !>Gets the basis for a mesh element identified by a given global number. \todo should take user number
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_GET(GLOBAL_NUMBER,ELEMENTS,BASIS,ERR,ERROR,*)
 
@@ -5262,6 +5456,8 @@ CONTAINS
   !================================================================================================================================
   !
 
+!!MERGE: user number. Dont use a pointer or allocate.
+  
   !>Gets the element nodes for a mesh element identified by a given global number. \todo specify by user number not global number
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_GET(GLOBAL_NUMBER,ELEMENTS,USER_ELEMENT_NODES,ERR,ERROR,*)
 
@@ -5685,6 +5881,8 @@ CONTAINS
   !================================================================================================================================
   !
 
+!!MERGE: ditto.
+  
   !>Gets the user number for a global element identified by a given global number. \todo Check that the user number doesn't already exist.
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_NUMBER_GET(GLOBAL_NUMBER,USER_NUMBER,ELEMENTS,ERR,ERROR,*)
 
