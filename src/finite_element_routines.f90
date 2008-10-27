@@ -1,5 +1,5 @@
 !> \file
-!> $Id: finite_element_routines.f90 27 2007-07-24 16:52:51Z cpb $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module contains all finite element base routines.
 !>

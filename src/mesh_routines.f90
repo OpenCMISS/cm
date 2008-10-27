@@ -1,5 +1,5 @@
 !> \file
-!> $Id: mesh_routines.f90 28 2007-07-27 08:35:14Z cpb $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module handles all mesh (node and element) routines.
 !>
@@ -95,7 +95,7 @@ MODULE MESH_ROUTINES
   
   PUBLIC DECOMPOSITION_ALL_TYPE,DECOMPOSITION_CALCULATED_TYPE,DECOMPOSITION_USER_DEFINED_TYPE
 
-  PUBLIC MESHES_INITIALISE,MESHES_FINALISE,MESH_CREATE_START,MESH_CREATE_FINISH,MESH_DESTROY,MESH_CREATE_REGULAR, &
+  PUBLIC MESHES_INITIALISE,MESHES_FINALISE,MESH_CREATE_START,MESH_CREATE_FINISH,MESH_DESTROY, &
     & MESH_NUMBER_OF_COMPONENTS_SET,MESH_NUMBER_OF_ELEMENTS_SET,MESH_TOPOLOGY_ELEMENTS_CREATE_START, &
     & MESH_TOPOLOGY_ELEMENTS_CREATE_FINISH,MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_SET,MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET, &
     & MESH_TOPOLOGY_ELEMENTS_NUMBER_SET
@@ -548,6 +548,64 @@ CONTAINS
   !================================================================================================================================
   !
 
+!!MERGE: move to user number, should be able to specify lists of elements.
+  
+  !>Gets the domain for a given element in a decomposition of a mesh.
+  SUBROUTINE DECOMPOSITION_ELEMENT_DOMAIN_GET(DECOMPOSITION,GLOBAL_ELEMENT_NUMBER,DOMAIN_NUMBER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<A pointer to the decomposition to set the element domain for
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_ELEMENT_NUMBER !<The global element number to set the domain for.
+    INTEGER(INTG), INTENT(OUT) :: DOMAIN_NUMBER !<The domain of the global element.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables`
+    TYPE(MESH_TYPE), POINTER :: MESH
+    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: MESH_TOPOLOGY
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("DECOMPOSITION_ELEMENT_DOMAIN_GET",ERR,ERROR,*999)
+
+!!TODO: interface should specify user element number ???
+    
+    IF(ASSOCIATED(DECOMPOSITION)) THEN
+      IF(DECOMPOSITION%DECOMPOSITION_FINISHED) THEN
+        MESH=>DECOMPOSITION%MESH
+        IF(ASSOCIATED(MESH)) THEN
+          MESH_TOPOLOGY=>MESH%TOPOLOGY(DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR
+          IF(ASSOCIATED(MESH_TOPOLOGY)) THEN
+            IF(GLOBAL_ELEMENT_NUMBER>0.AND.GLOBAL_ELEMENT_NUMBER<=MESH_TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS) THEN
+              DOMAIN_NUMBER=DECOMPOSITION%ELEMENT_DOMAIN(GLOBAL_ELEMENT_NUMBER)
+            ELSE
+              LOCAL_ERROR="Global element number "//TRIM(NUMBER_TO_VSTRING(GLOBAL_ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                & " is invalid. The limits are 1 to "// &
+                & TRIM(NUMBER_TO_VSTRING(MESH_TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS,"*",ERR,ERROR))
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Decomposition mesh topology is not associated",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Decomposition mesh is not associated",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Decomposition has not been finished",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Decomposition is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DECOMPOSITION_ELEMENT_DOMAIN_GET")
+    RETURN
+999 CALL ERRORS("DECOMPOSITION_ELEMENT_DOMAIN_GET",ERR,ERROR)
+    CALL EXITS("DECOMPOSITION_ELEMENT_DOMAIN_GET")
+    RETURN 1
+  END SUBROUTINE DECOMPOSITION_ELEMENT_DOMAIN_GET
+  
+  !
+  !================================================================================================================================
+  !
+
   !>Sets the domain for a given element in a decomposition of a mesh.
   SUBROUTINE DECOMPOSITION_ELEMENT_DOMAIN_SET(DECOMPOSITION,GLOBAL_ELEMENT_NUMBER,DOMAIN_NUMBER,ERR,ERROR,*)
 
@@ -613,6 +671,46 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !!MERGE: ditto
+  
+  !>Gets the mesh component number which will be used for the decomposition of a mesh.
+  SUBROUTINE DECOMPOSITION_MESH_COMPONENT_NUMBER_GET(DECOMPOSITION,MESH_COMPONENT_NUMBER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<A pointer to the decomposition to get the mesh component for
+    INTEGER(INTG), INTENT(OUT) :: MESH_COMPONENT_NUMBER !<The mesh component number to get
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("DECOMPOSITION_MESH_COMPONENT_NUMBER_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DECOMPOSITION)) THEN     
+      IF(DECOMPOSITION%DECOMPOSITION_FINISHED) THEN
+        IF(ASSOCIATED(DECOMPOSITION%MESH)) THEN
+          MESH_COMPONENT_NUMBER=DECOMPOSITION%MESH_COMPONENT_NUMBER
+        ELSE
+          CALL FLAG_ERROR("Decomposition mesh is not associated",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Decomposition has been finished",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Decomposition is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DECOMPOSITION_MESH_COMPONENT_NUMBER_GET")
+    RETURN
+999 CALL ERRORS("DECOMPOSITION_MESH_COMPONENT_NUMBER_GET",ERR,ERROR)
+    CALL EXITS("DECOMPOSITION_MESH_COMPONENT_NUMBER_GET")
+    RETURN 1
+  END SUBROUTINE DECOMPOSITION_MESH_COMPONENT_NUMBER_GET
+  
+  
+  !
+  !================================================================================================================================
+  !
+
   !>Sets/changes the mesh component number which will be used for the decomposition of a mesh.
   SUBROUTINE DECOMPOSITION_MESH_COMPONENT_NUMBER_SET(DECOMPOSITION,MESH_COMPONENT_NUMBER,ERR,ERROR,*)
 
@@ -653,6 +751,42 @@ CONTAINS
     CALL EXITS("DECOMPOSITION_MESH_COMPONENT_NUMBER_SET")
     RETURN 1
   END SUBROUTINE DECOMPOSITION_MESH_COMPONENT_NUMBER_SET
+  
+  !
+  !================================================================================================================================
+  !
+
+  !!MERGE: ditto
+  
+  !>Gets the number of domains for a decomposition.
+  SUBROUTINE DECOMPOSITION_NUMBER_OF_DOMAINS_GET(DECOMPOSITION,NUMBER_OF_DOMAINS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<A pointer to the decomposition to get the number of domains for.
+    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_DOMAINS !<The number of domains to get.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("DECOMPOSITION_NUMBER_OF_DOMAINS_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DECOMPOSITION)) THEN
+      IF(DECOMPOSITION%DECOMPOSITION_FINISHED) THEN
+        CALL FLAG_ERROR("Decomposition has been finished",ERR,ERROR,*999)
+      ELSE
+        NUMBER_OF_DOMAINS=DECOMPOSITION%NUMBER_OF_DOMAINS
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Decomposition is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DECOMPOSITION_NUMBER_OF_DOMAINS_GET")
+    RETURN
+999 CALL ERRORS("DECOMPOSITION_NUMBER_OF_DOMAINS_GET",ERR,ERROR)
+    CALL EXITS("DECOMPOSITION_NUMBER_OF_DOMAINS_GET")
+    RETURN 1
+  END SUBROUTINE DECOMPOSITION_NUMBER_OF_DOMAINS_GET
+  
 
   !
   !================================================================================================================================
@@ -1870,6 +2004,38 @@ CONTAINS
     CALL EXITS("DECOMPOSITION_TOPOLOGY_LINES_INITIALISE")
     RETURN 1
   END SUBROUTINE DECOMPOSITION_TOPOLOGY_LINES_INITIALISE
+  
+  !
+  !================================================================================================================================
+  !
+
+!!MERGE: ditto
+  
+  !>Gets the decomposition type for a decomposition.
+  FUNCTION DECOMPOSITION_TYPE_GET(DECOMPOSITION,ERR,ERROR)
+
+    !Argument variables
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<A pointer to the decomposition to get the type for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    INTEGER(INTG) :: DECOMPOSITION_TYPE_GET !<The decomposition type to get \see MESH_ROUTINES_DecompositionTypes,MESH_ROUTINES
+    !Local Variables
+
+    CALL ENTERS("DECOMPOSITION_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DECOMPOSITION)) THEN
+      DECOMPOSITION_TYPE_GET=DECOMPOSITION%DECOMPOSITION_TYPE
+    ELSE
+      CALL FLAG_ERROR("Decomposition is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DECOMPOSITION_TYPE_GET")
+    RETURN
+999 CALL ERRORS("DECOMPOSITION_TYPE_GET",ERR,ERROR)
+    CALL EXITS("DECOMPOSITION_TYPE_GET")
+    RETURN
+  END FUNCTION DECOMPOSITION_TYPE_GET
   
   !
   !================================================================================================================================
@@ -4006,183 +4172,183 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Creates the regular mesh with the given USER_NUMBER in the specifed REGION. The mesh starts at the ORIGIN(:) and has a maximum extent position of MAXIMUM_EXTENT(:) with the NUMBER_OF_ELEMENTS(:) in each direction. Each element is of the specified BASIS type. A pointer to the finished mesh is returned in MESH. \todo move to generated mesh routines
-  SUBROUTINE MESH_CREATE_REGULAR(USER_NUMBER,REGION,ORIGIN,MAXIMUM_EXTENT,NUMBER_ELEMENTS_XI,BASIS,MESH,ERR,ERROR,*)
 
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the mesh to create
-    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the mesh
-    REAL(DP), INTENT(IN) :: ORIGIN(:) !<ORIGIN(i). ORIGIN(i) contains the i'th coordinate in the region of the origin of the regular mesh.
-    REAL(DP), INTENT(IN) :: MAXIMUM_EXTENT(:) !<MAXIMUM_EXTENT(i). MAXIMUM_EXTENT(i) contains the i'th extent (or size) of the regular mesh.
-    INTEGER(INTG), INTENT(IN) :: NUMBER_ELEMENTS_XI(:) !<NUMBER_ELEMENTS_XI(i). NUMBER_ELEMENTS_XI(i) contains the number of elements in the i'th direction 
-    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis to use for each element in the regular mesh
-    TYPE(MESH_TYPE), POINTER :: MESH !<On return, a pointer to the generated mesh
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: ni,ne,ne1,ne2,ne3,NN,nn1,nn2,nn3,np,np1,np2,np3,TOTAL_NUMBER_OF_NODES_XI(3),TOTAL_NUMBER_ELEMENTS_XI(3), &
-      & TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_ELEMENTS,NUMBER_OF_DIMENSIONS
-    INTEGER(INTG), ALLOCATABLE :: ELEMENT_NODES(:)
-    REAL(DP) :: INITIAL_POSITION(3),DELTA_COORD(3),MY_ORIGIN(3),MY_EXTENT(3),MESH_SIZE(3)
-    LOGICAL :: BASIS_OK,ELEMENTS_OK
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
-    TYPE(NODES_TYPE), POINTER :: NODES
 
-    CALL ENTERS("MESH_CREATE_REGULAR",ERR,ERROR,*999)
 
-    NULLIFY(MESH)
-    IF(ASSOCIATED(REGION)) THEN
-      IF(ASSOCIATED(REGION%COORDINATE_SYSTEM)) THEN
-        !Determine the coordinate system and create the regular mesh for that system
-        SELECT CASE(REGION%COORDINATE_SYSTEM%TYPE)
-        CASE(COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
-          NUMBER_OF_DIMENSIONS=REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
-          IF(SIZE(ORIGIN)==NUMBER_OF_DIMENSIONS) THEN
-            IF(SIZE(MAXIMUM_EXTENT)==NUMBER_OF_DIMENSIONS) THEN
-              IF(ASSOCIATED(BASIS)) THEN
-                SELECT CASE(BASIS%TYPE)
-                CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
-                  IF(BASIS%NUMBER_OF_XI==SIZE(NUMBER_ELEMENTS_XI,1)) THEN
-                    ELEMENTS_OK=ALL(NUMBER_ELEMENTS_XI>0)
-                    IF(.NOT.ELEMENTS_OK) CALL FLAG_ERROR("Must have 1 or more elements in all directions",ERR,ERROR,*999)
-                    BASIS_OK=ALL(BASIS%COLLAPSED_XI==BASIS_NOT_COLLAPSED)
-                    IF(.NOT.BASIS_OK) CALL FLAG_ERROR("Degenerate (collapsed) basis not implemented",ERR,ERROR,*999)
-                    !Calculate sizes
-                    TOTAL_NUMBER_OF_NODES=1
-                    TOTAL_NUMBER_OF_ELEMENTS=1
-                    TOTAL_NUMBER_OF_NODES_XI=1
-                    TOTAL_NUMBER_ELEMENTS_XI=0
-                    DELTA_COORD=0.0_DP
-                    DO ni=1,BASIS%NUMBER_OF_XI
-                      TOTAL_NUMBER_OF_NODES_XI(ni)=(BASIS%NUMBER_OF_NODES_XI(ni)-2)*NUMBER_ELEMENTS_XI(ni)+ &
-                        & NUMBER_ELEMENTS_XI(ni)+1
-                      TOTAL_NUMBER_ELEMENTS_XI(ni)=NUMBER_ELEMENTS_XI(ni)
-                      TOTAL_NUMBER_OF_NODES=TOTAL_NUMBER_OF_NODES*TOTAL_NUMBER_OF_NODES_XI(ni)
-                      TOTAL_NUMBER_OF_ELEMENTS=TOTAL_NUMBER_OF_ELEMENTS*TOTAL_NUMBER_ELEMENTS_XI(ni)
-                    ENDDO !ni
-                    !Create the default node set
-                    CALL NODES_CREATE_START(TOTAL_NUMBER_OF_NODES,REGION,NODES,ERR,ERROR,*999)
-                    MY_ORIGIN=0.0_DP
-                    MY_EXTENT=0.0_DP
-                    MY_ORIGIN(1:NUMBER_OF_DIMENSIONS)=ORIGIN
-                    MY_EXTENT(1:NUMBER_OF_DIMENSIONS)=MAXIMUM_EXTENT
-                    MESH_SIZE=MY_EXTENT-MY_ORIGIN
-                    DO ni=1,BASIS%NUMBER_OF_XI
-                      !This assumes that the xi directions are aligned with the coordinate directions
-                      DELTA_COORD(ni)=MESH_SIZE(ni)/REAL(NUMBER_ELEMENTS_XI(ni),DP)
-                    ENDDO !ni    
-                    DO np3=1,TOTAL_NUMBER_OF_NODES_XI(3)
-                      DO np2=1,TOTAL_NUMBER_OF_NODES_XI(2)
-                        DO np1=1,TOTAL_NUMBER_OF_NODES_XI(1)
-                          np=np1+(np2-1)*TOTAL_NUMBER_OF_NODES_XI(1)+(np3-1)*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
-                          INITIAL_POSITION(1)=MY_ORIGIN(1)+REAL(np1-1,DP)*DELTA_COORD(1)
-                          INITIAL_POSITION(2)=MY_ORIGIN(2)+REAL(np2-1,DP)*DELTA_COORD(2)
-                          INITIAL_POSITION(3)=MY_ORIGIN(3)+REAL(np3-1,DP)*DELTA_COORD(3)
-                          CALL NODE_INITIAL_POSITION_SET(np,INITIAL_POSITION(1:NUMBER_OF_DIMENSIONS),NODES,ERR,ERROR,*999)
-                        ENDDO !np1
-                      ENDDO !np2
-                    ENDDO !np3	    
-                    CALL NODES_CREATE_FINISH(REGION,ERR,ERROR,*999)
-                    !Create the mesh
-                    CALL MESH_CREATE_START(USER_NUMBER,REGION,SIZE(NUMBER_ELEMENTS_XI,1),MESH,ERR,ERROR,*999)
-                    !Create the elements
-                    CALL MESH_NUMBER_OF_ELEMENTS_SET(MESH,TOTAL_NUMBER_OF_ELEMENTS,ERR,ERROR,*999)
-                    CALL MESH_TOPOLOGY_ELEMENTS_CREATE_START(MESH,1,BASIS,MESH_ELEMENTS,ERR,ERROR,*999)
-                    !Set the elements for the regular mesh
-                    ALLOCATE(ELEMENT_NODES(BASIS%NUMBER_OF_NODES),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element nodes",ERR,ERROR,*999)                
-                    !Step in the xi(3) direction
-                    DO ne3=1,TOTAL_NUMBER_ELEMENTS_XI(3)+1
-                      DO ne2=1,TOTAL_NUMBER_ELEMENTS_XI(2)+1
-                        DO ne1=1,TOTAL_NUMBER_ELEMENTS_XI(1)+1
-                          IF(BASIS%NUMBER_OF_XI<3.OR.ne3<=TOTAL_NUMBER_ELEMENTS_XI(3)) THEN
-                            IF(BASIS%NUMBER_OF_XI<2.OR.ne2<=TOTAL_NUMBER_ELEMENTS_XI(2)) THEN
-                              IF(ne1<=TOTAL_NUMBER_ELEMENTS_XI(1)) THEN
-                                ne=ne1
-                                np=1+(ne1-1)*(BASIS%NUMBER_OF_NODES_XI(1)-1)
-                                IF(BASIS%NUMBER_OF_XI>1) THEN
-                                  ne=ne+(ne2-1)*TOTAL_NUMBER_ELEMENTS_XI(1)
-                                  np=np+(ne2-1)*TOTAL_NUMBER_OF_NODES_XI(1)*(BASIS%NUMBER_OF_NODES_XI(2)-1)
-                                  IF(BASIS%NUMBER_OF_XI>2) THEN
-                                    ne=ne+(ne3-1)*TOTAL_NUMBER_ELEMENTS_XI(1)*TOTAl_NUMBER_ELEMENTS_XI(2)
-                                    np=np+(ne3-1)*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)* &
-                                      & (BASIS%NUMBER_OF_NODES_XI(3)-1)
-                                  ENDIF
-                                ENDIF
-                                nn=0
-                                DO nn1=1,BASIS%NUMBER_OF_NODES_XI(1)
-                                  nn=nn+1
-                                  ELEMENT_NODES(nn)=np+(nn1-1)                              
-                                ENDDO !nn1
-                                IF(BASIS%NUMBER_OF_XI>1) THEN
-                                  DO nn2=2,BASIS%NUMBER_OF_NODES_XI(2)
-                                    DO nn1=1,BASIS%NUMBER_OF_NODES_XI(1)
-                                      nn=nn+1
-                                      ELEMENT_NODES(nn)=np+(nn1-1)+(nn2-1)*TOTAL_NUMBER_OF_NODES_XI(1)
-                                    ENDDO !nn1
-                                  ENDDO !nn2
-                                  IF(BASIS%NUMBER_OF_XI>2) THEN
-                                    DO nn3=2,BASIS%NUMBER_OF_NODES_XI(3)
-                                      DO nn2=1,BASIS%NUMBER_OF_NODES_XI(2)
-                                        DO nn1=1,BASIS%NUMBER_OF_NODES_XI(1)
-                                          nn=nn+1
-                                          ELEMENT_NODES(nn)=np+(nn1-1)+(nn2-1)*TOTAL_NUMBER_OF_NODES_XI(1)+ &
-                                            & (nn3-1)*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
-                                        ENDDO !nn1
-                                      ENDDO !nn2
-                                    ENDDO !nn3
-                                  ENDIF
-                                ENDIF
-                                CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET(ne,MESH_ELEMENTS,ELEMENT_NODES, &
-                                  & ERR,ERROR,*999)
-                              ENDIF
-                            ENDIF
-                          ENDIF
-                        ENDDO !ne1
-                      ENDDO !ne2
-                    ENDDO !ne3
-                    CALL MESH_TOPOLOGY_ELEMENTS_CREATE_FINISH(MESH,1,ERR,ERROR,*999)
-                    !Finish the mesh
-                    CALL MESH_CREATE_FINISH(REGION,MESH,ERR,ERROR,*999)
-                  ELSE
-                    CALL FLAG_ERROR("The number of xi directions of the given basis does not match the size of &
-                      &the number of elements for the mesh",ERR,ERROR,*999)
-                  ENDIF
-                CASE(BASIS_SIMPLEX_TYPE)                  
-                  CALL FLAG_ERROR("Regular meshes with simplex basis types is not implemented",ERR,ERROR,*999)
-                CASE DEFAULT
-                  CALL FLAG_ERROR("Basis type is either invalid or not implemented",ERR,ERROR,*999)
-                END SELECT
-              ELSE
-                CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("Size of the mesh extent does not match the region number of dimensions",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("Size of origin does not match the region number of dimensions",ERR,ERROR,*999)
-          ENDIF
-        CASE DEFAULT
-          CALL FLAG_ERROR("Non rectangular cartesian coordinate systems are not implemented",ERR,ERROR,*999)
-        END SELECT
-      ELSE
-        CALL FLAG_ERROR("Region coordinate system is not associated",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("MESH_CREATE_REGULAR")
-    RETURN
-999 IF(ALLOCATED(ELEMENT_NODES)) DEALLOCATE(ELEMENT_NODES)
-    CALL ERRORS("MESH_CREATE_REGULAR",ERR,ERROR)
-    CALL EXITS("MESH_CREATE_REGULAR")
-    RETURN 1   
-  END SUBROUTINE MESH_CREATE_REGULAR
-  
-  !
-  !================================================================================================================================
-  !
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   !>Starts the process of creating a mesh defined by a user number with the specified NUMBER_OF_DIMENSIONS in the region identified by REGION.
   SUBROUTINE MESH_CREATE_START(USER_NUMBER,REGION,NUMBER_OF_DIMENSIONS,MESH,ERR,ERROR,*)
@@ -4436,6 +4602,39 @@ CONTAINS
   !================================================================================================================================
   !
 
+!!MERGE: ditto
+  
+  !>Gets the number of mesh components for a mesh identified by a pointer.
+  FUNCTION MESH_NUMBER_OF_COMPONENTS_GET(MESH,ERR,ERROR)
+
+    !Argument variables
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to set the number of components for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    INTEGER(INTG) :: MESH_NUMBER_OF_COMPONENTS_GET !<The number of components to get.
+    !Local Variables
+    
+    CALL ENTERS("MESH_NUMBER_OF_COMPONENTS_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(MESH)) THEN
+      MESH_NUMBER_OF_COMPONENTS_GET=MESH%NUMBER_OF_COMPONENTS
+    ELSE
+      CALL FLAG_ERROR("Mesh is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("MESH_NUMBER_OF_COMPONENTS_GET")
+    RETURN
+999 CALL ERRORS("MESH_NUMBER_OF_COMPONENTS_GET",ERR,ERROR)    
+    CALL EXITS("MESH_NUMBER_OF_COMPONENTS_GET")
+    RETURN
+  END FUNCTION MESH_NUMBER_OF_COMPONENTS_GET
+  
+
+  !
+  !================================================================================================================================
+  !
+
   !>Changes/sets the number of mesh components for a mesh identified by a given user number on a region.
   SUBROUTINE MESH_NUMBER_OF_COMPONENTS_SET_NUMBER(USER_NUMBER,REGION,NUMBER_OF_COMPONENTS,ERR,ERROR,*)
 
@@ -4539,6 +4738,42 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE MESH_NUMBER_OF_COMPONENTS_SET_PTR
+
+  !
+  !================================================================================================================================
+  !
+
+!!MERGE: ditto
+  
+  !>Gets the number of elements for a mesh identified by a pointer.
+  FUNCTION MESH_NUMBER_OF_ELEMENTS_GET(MESH,ERR,ERROR)
+
+    !Argument variables
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to get the number of elements for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function result
+    INTEGER(INTG) :: MESH_NUMBER_OF_ELEMENTS_GET !<The number of elements to get
+    !Local Variables
+
+    CALL ENTERS("MESH_NUMBER_OF_ELEMENTS_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(MESH)) THEN
+      IF(MESH%MESH_FINISHED) THEN
+        MESH_NUMBER_OF_ELEMENTS_GET=MESH%NUMBER_OF_ELEMENTS
+      ELSE
+        CALL FLAG_ERROR("Mesh has not been finished",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Mesh is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("MESH_NUMBER_OF_ELEMENTS_GET")
+    RETURN
+999 CALL ERRORS("MESH_NUMBER_OF_ELEMENTS_GET",ERR,ERROR)    
+    CALL EXITS("MESH_NUMBER_OF_ELEMENTS_GET")
+    RETURN
+  END FUNCTION MESH_NUMBER_OF_ELEMENTS_GET
 
   !
   !================================================================================================================================
@@ -4790,7 +5025,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Changes/sets the basis for a global element identified by a given global number. \todo use user number.
+  !>Changes/sets the basis for a global element identified by a given global number. \todo use user number. \todo get method?
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_BASIS_SET(GLOBAL_NUMBER,ELEMENTS,BASIS,ERR,ERROR,*)
 
     !Argument variables
@@ -5094,6 +5329,52 @@ CONTAINS
     CALL EXITS("MESH_TOPOLOGY_ELEMENT_INITIALISE")
     RETURN 1
   END SUBROUTINE MESH_TOPOLOGY_ELEMENT_INITIALISE
+  
+  !
+  !================================================================================================================================
+  !
+
+!!MERGE: Take user number
+  
+  !>Gets the basis for a mesh element identified by a given global number. \todo should take user number
+  SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_GET(GLOBAL_NUMBER,ELEMENTS,BASIS,ERR,ERROR,*)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number of the element to get the basis for
+    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS !<A pointer to the elements to get the basis for \todo before number?
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis to get
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(MESH_ELEMENT_TYPE), POINTER :: ELEMENT
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(ELEMENTS)) THEN
+      IF(ELEMENTS%ELEMENTS_FINISHED) THEN
+        CALL FLAG_ERROR("Elements have been finished",ERR,ERROR,*999)
+      ELSE
+        IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=ELEMENTS%NUMBER_OF_ELEMENTS) THEN
+          ELEMENT=>ELEMENTS%ELEMENTS(GLOBAL_NUMBER)
+          BASIS=>ELEMENT%BASIS
+        ELSE
+          LOCAL_ERROR="Global element number "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
+            & " is invalid. The limits are 1 to "//TRIM(NUMBER_TO_VSTRING(ELEMENTS%NUMBER_OF_ELEMENTS,"*",ERR,ERROR))
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Elements is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_GET")
+    RETURN
+999 CALL ERRORS("MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_GET",ERR,ERROR)    
+    CALL EXITS("MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_GET")
+    RETURN 1
+    
+  END SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_GET
 
   !
   !================================================================================================================================
@@ -5170,6 +5451,52 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_SET
+  
+  !
+  !================================================================================================================================
+  !
+
+!!MERGE: user number. Dont use a pointer or allocate.
+  
+  !>Gets the element nodes for a mesh element identified by a given global number. \todo specify by user number not global number
+  SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_GET(GLOBAL_NUMBER,ELEMENTS,USER_ELEMENT_NODES,ERR,ERROR,*)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number of the element to set the nodes for
+    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS !<A pointer to the elements to set \todo before number?
+    INTEGER(INTG), POINTER :: USER_ELEMENT_NODES(:) !<USER_ELEMENT_NODES(i). USER_ELEMENT_NODES(i) is the i'th user node number for the element
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(ELEMENTS)) THEN
+      IF(ELEMENTS%ELEMENTS_FINISHED) THEN
+        CALL FLAG_ERROR("Elements have been finished",ERR,ERROR,*999)
+      ELSE
+        IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=ELEMENTS%NUMBER_OF_ELEMENTS) THEN
+          ALLOCATE(USER_ELEMENT_NODES(ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%BASIS%NUMBER_OF_NODES),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate user element nodes",ERR,ERROR,*999)
+          USER_ELEMENT_NODES=ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%USER_ELEMENT_NODES
+        ELSE
+          LOCAL_ERROR="Global element number "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
+            & " is invalid. The limits are 1 to "//TRIM(NUMBER_TO_VSTRING(ELEMENTS%NUMBER_OF_ELEMENTS,"*",ERR,ERROR))
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Elements is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_GET")
+    RETURN
+999 CALL ERRORS("MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_GET",ERR,ERROR)    
+    CALL EXITS("MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_GET")
+    RETURN 1
+    
+  END SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_GET
 
   !
   !================================================================================================================================
@@ -5549,6 +5876,50 @@ CONTAINS
     CALL EXITS("MESH_TOPOLOGY_ELEMENTS_INITIALISE")
     RETURN 1
   END SUBROUTINE MESH_TOPOLOGY_ELEMENTS_INITIALISE
+  
+  !
+  !================================================================================================================================
+  !
+
+!!MERGE: ditto.
+  
+  !>Gets the user number for a global element identified by a given global number. \todo Check that the user number doesn't already exist.
+  SUBROUTINE MESH_TOPOLOGY_ELEMENTS_NUMBER_GET(GLOBAL_NUMBER,USER_NUMBER,ELEMENTS,ERR,ERROR,*)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number of the elements to get.
+    INTEGER(INTG), INTENT(OUT) :: USER_NUMBER !<The user number of the element to get
+    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS !<A pointer to the elements to get the user number for \todo This should be the first parameter.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MESH_TOPOLOGY_ELEMENTS_NUMBER_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(ELEMENTS)) THEN
+      IF(ELEMENTS%ELEMENTS_FINISHED) THEN
+        CALL FLAG_ERROR("Elements have been finished",ERR,ERROR,*999)
+      ELSE
+        IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=ELEMENTS%NUMBER_OF_ELEMENTS) THEN
+          USER_NUMBER=ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%USER_NUMBER
+        ELSE
+          LOCAL_ERROR="Global element number "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
+            & " is invalid. The limits are 1 to "//TRIM(NUMBER_TO_VSTRING(ELEMENTS%NUMBER_OF_ELEMENTS,"*",ERR,ERROR))
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Elements is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("MESH_TOPOLOGY_ELEMENTS_NUMBER_GET")
+    RETURN
+999 CALL ERRORS("MESH_TOPOLOGY_ELEMENTS_NUMBER_GET",ERR,ERROR)    
+    CALL EXITS("MESH_TOPOLOGY_ELEMENTS_NUMBER_GET")
+    RETURN 1
+   
+  END SUBROUTINE MESH_TOPOLOGY_ELEMENTS_NUMBER_GET
 
   !
   !================================================================================================================================

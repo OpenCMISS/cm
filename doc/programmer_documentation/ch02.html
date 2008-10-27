@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Chapter 2. OpenCMISS Concepts</title><meta content="DocBook XSL Stylesheets V1.68.1" name="generator" /><link rel="start" href="index.html" title="OpenCMISS Programmer Documentation" /><link rel="up" href="index.html" title="OpenCMISS Programmer Documentation" /><link rel="prev" href="ch01.html" title="Chapter 1. Introduction" /><link rel="next" href="ch03.html" title="Chapter 3. Obtaining the Code and Setting up the development environment" /></head><body><div class="navheader"><table summary="Navigation header" width="100%"><tr><th align="center" colspan="3">Chapter 2. OpenCMISS Concepts</th></tr><tr><td align="left" width="20%"><a accesskey="p" href="ch01.html">Prev</a> </td><th align="center" width="60%"> </th><td align="right" width="20%"> <a accesskey="n" href="ch03.html">Next</a></td></tr></table><hr /></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a id="N1001D" />Chapter 2. OpenCMISS Concepts</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="sect1"><a href="ch02.html#N10020">1. Regions</a></span></dt><dt><span class="sect1"><a href="ch02.html#N10025">2. Basis Functions</a></span></dt><dt><span class="sect1"><a href="ch02.html#N1002E">3. Coordinate Systems</a></span></dt><dt><span class="sect1"><a href="ch02.html#N10033">4. Nodes</a></span></dt><dt><span class="sect1"><a href="ch02.html#N10036">5. Meshes</a></span></dt><dt><span class="sect1"><a href="ch02.html#N1003B">6. Decompositions</a></span></dt><dt><span class="sect1"><a href="ch02.html#N1003E">7. Fields</a></span></dt><dt><span class="sect1"><a href="ch02.html#N10043">8. Equations Sets</a></span></dt><dt><span class="sect1"><a href="ch02.html#N10048">9. Equations Sets Fields</a></span></dt><dt><span class="sect1"><a href="ch02.html#N1004B">10. Problems</a></span></dt><dt><span class="sect1"><a href="ch02.html#N10050">11. Solutions</a></span></dt><dt><span class="sect1"><a href="ch02.html#N10053">12. Solvers</a></span></dt><dt><span class="sect1"><a href="ch02.html#N10056">13. Control</a></span></dt></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="N10020" />1. Regions</h2></div></div></div><p>
+      Regions are one of the primary objects in openCMISS. 
+      Regions are hierarchical in nature in that a region can have one parent region and a number of daughter sub-regions. 
+      Daughter regions are related in space to parent regions by an origin and an orientation of the regions coordinate system.
+      Daughter regions may only have the same or fewer dimensions as the parent region.
+      There is a global (world) region (number 0) that has the global (world) coordinate system.
+    </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="N10025" />2. Basis Functions</h2></div></div></div><p>
+      Basis functions are the key item to specify the field approximation/interpolation and the linking of nodes and elements to form a mesh.
+      Currently, it has two types: Lagrange-Hermite tensor product and Simplex.
+    </p><p>
+      Lagrange-Hermite tensor product can be further divided into linear to cubic lagrange, cubic and quadratic hermite. 
+      It can be arbitrarily collapsed (two or more nodes in the same location) in any one direction or in any two directions to give a degenerate basis.
+    </p><p>
+      Simplex basic functions could contain line, triangular and tetrahedral elements. 
+      It could be linear, quadratic or cubic.
+      Arbitrary Gaussian quadrature can integrate from 1st to 5th order (3rd  order for lines at the moment).
+      Can only have the same order in each direction at the moment.
+      Specifying a basis function automatically generates all necessary line and face basis functions as sub-bases of the basis function.
+    </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="N1002E" />3. Coordinate Systems</h2></div></div></div><p>
+      Regions are one of the primary objects in openCMISS. 
+      Regions are hierarchical in nature in that a region can have one parent region and a number of daughter sub-regions. 
+      Daughter regions are related in space to parent regions by an origin and an orientation of the regions coordinate system.
+      Daughter regions may only have the same or fewer dimensions as the parent region.
+      There is a global (world) region (number 0) that has the global (world) coordinate system.
+    </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="N10033" />4. Nodes</h2></div></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="N10036" />5. Meshes</h2></div></div></div><p>
+      Meshes are topological constructs within a region which fields use to define themselves.
+      Meshes are made up of a number of mesh components.
+      Mesh components are made up from nodes, elements and basis functions.
+      A new mesh component is required for each different form of interpolation e.g., one mesh component is bilinear Lagrange and another is biquadratic Lagrange.
+      All mesh components in a mesh must “conform”, that is have the same number of elements, Xi directions etc. etc. 
+    </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="N1003B" />6. Decompositions</h2></div></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="N1003E" />7. Fields</h2></div></div></div><p>
+      Fields are the central object for storing information and framing the problem.
+      Fields have a number of field variables i.e., u, ∂u/∂n, ∂u/∂t, ∂2u/∂t2.
+      Each field variable has a number of components.
+      A field is defined on a decomposed mesh.
+      Each field variable component is defined on a decomposed mesh component.
+    </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="N10043" />8. Equations Sets</h2></div></div></div><p>
+      Aim to have multiple classes
+      e.g. Elasticity, Fluid mechanics, Electromagnetics, General field problems, Fitting, Optimisation.
+      Different equations within each class
+      e.g. Bidomain, Navier-stokes etc.
+      Different solution techniques 
+      e.g. FEM, BEM, FD, GFEM.
+      Associated with a region
+      Built using the fields defined on the region.
+    </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="N10048" />9. Equations Sets Fields</h2></div></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="N1004B" />10. Problems</h2></div></div></div><p>
+      Aim to have multiple classes
+      e.g. Elasticity, Fluid mechanics, Electromagnetics, General field problems, Fitting, Optimisation.
+      Different equations within each class
+      e.g. Bidomain, Navier-stokes etc.
+      Coupled problems
+      Multiple problems in the same region
+      Multiple regions together solving one problem
+      Have a number of solutions (each with their solver) inside a problem control loop.
+    </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="N10050" />11. Solutions</h2></div></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="N10053" />12. Solvers</h2></div></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="N10056" />13. Control</h2></div></div></div></div></div><div class="navfooter"><hr /><table summary="Navigation footer" width="100%"><tr><td align="left" width="40%"><a accesskey="p" href="ch01.html">Prev</a> </td><td align="center" width="20%"> </td><td align="right" width="40%"> <a accesskey="n" href="ch03.html">Next</a></td></tr><tr><td valign="top" align="left" width="40%">Chapter 1. Introduction </td><td align="center" width="20%"><a accesskey="h" href="index.html">Home</a></td><td valign="top" align="right" width="40%"> Chapter 3. Obtaining the Code and Setting up the development environment</td></tr></table></div></body></html>

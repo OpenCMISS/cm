@@ -1,5 +1,5 @@
 !> \file
-!> $Id: parallel_IO.f90 1 2009-02-19 13:57:57Z cpb $
+!> $Id$
 !> \author Heye Zhang
 !> \brief ThiS module handles parallel Io. Using mpi2 and parall print function, 
 !> formatted text and binary IO are supported in openCMISS  
@@ -330,16 +330,16 @@ CONTAINS
          SECTION_START=.FALSE.    
          FILE_END=.FALSE. 
           
-         DO WHILE(FILE_END==.FALSE.)    
+         DO WHILE(.NOT.FILE_END)    
             CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
             
             !check the beginning of field section in exnode files
-            IF(SECTION_START==.FALSE..AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
+            IF((.NOT.SECTION_START).AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
                SECTION_START=.TRUE.               
             ENDIF   
                        
             !check whether it is a new header for another group of elements
-            IF(SECTION_START==.TRUE..AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
+            IF(SECTION_START.AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
                
                !collect header information
                pos=INDEX(LINE,CMISS_KEYWORD_FIELDS)               
@@ -423,10 +423,10 @@ CONTAINS
        CALL MPI_BCAST(FILE_END,1,MPI_LOGICAL,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
        CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)                                                     
        
-       IF(FILE_END==.TRUE.) THEN
+       IF(FILE_END) THEN
           idx_exnode=idx_exnode+1
           INQUIRE(UNIT=FILE_ID, OPENED=FILE_OPEN) 
-          IF(FILE_OPEN==.TRUE.) CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
+          IF(FILE_OPEN) CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
           IF(idx_exnode>=NUMBER_OF_EXNODE_FILES) EXIT
        ENDIF
 
@@ -435,7 +435,7 @@ CONTAINS
        !goto the start of mesh part
        IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
           
-          IF(FILE_END==.TRUE.) THEN             
+          IF(FILE_END) THEN             
              FILE_ID=1030+idx_exnode             
              !checking the next file
              FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnode,"*",ERR,ERROR))//".exnode"
@@ -446,7 +446,7 @@ CONTAINS
              !idx_exnode=idx_exnode+1
           ENDIF
                     
-          IF(FILE_END==.FALSE..AND.SECTION_START==.FALSE.)  THEN
+          IF((.NOT.FILE_END).AND.(.NOT.SECTION_START))  THEN
              !find a new header
              DO WHILE(VERIFY(CMISS_KEYWORD_FIELDS,LINE)/=0)
                 CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)                
@@ -455,7 +455,7 @@ CONTAINS
           ENDIF
                     
           !have not touched the end
-          IF(FILE_END==.FALSE..AND.SECTION_START==.TRUE..AND.NODE_SECTION==.FALSE.) THEN
+          IF((.NOT.FILE_END).AND.SECTION_START.AND.(.NOT.NODE_SECTION)) THEN
              pos=INDEX(LINE,CMISS_KEYWORD_FIELDS)
              LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_FIELDS)-1)
              !number_of_fields=STRING_TO_INTEGER(LINE, ERR, ERROR)             
@@ -558,7 +558,7 @@ CONTAINS
        IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
                               
           !have not touched the end
-          IF(FILE_END==.FALSE..AND.SECTION_START==.TRUE..AND.NODE_SECTION==.TRUE.) THEN
+          IF((.NOT.FILE_END).AND.SECTION_START.AND.NODE_SECTION) THEN
              
              IF(VERIFY(CMISS_KEYWORD_NODE, LINE)==0) THEN
                 pos=INDEX(LINE,CMISS_KEYWORD_NODE)
@@ -597,7 +597,7 @@ CONTAINS
                 CALL FLAG_ERROR("The position of nodal information in exenode files is not correct",ERR, ERROR,*999)
                 NODE_SECTION=.FALSE.
              ENDIF !(VERIFY(CMISS_KEYWORD_NODE , LINE)==0)
-             IF(FILE_END==.FALSE.) THEN
+             IF(.NOT.FILE_END) THEN
                 CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
                 IF(VERIFY(CMISS_KEYWORD_NODE, LINE)/=0) NODE_SECTION=.FALSE.
              ENDIF   
@@ -635,7 +635,7 @@ CONTAINS
                 ENDIF   
              ENDDO
              
-             IF(NODE_IN_DOMAIN==.TRUE.) THEN
+             IF(NODE_IN_DOMAIN) THEN
                 IF(idx_comp1>=NUMBER_OF_COMPONENTS) THEN
                    DO idx_dev=1, total_number_of_devs-LIST_DEV_POS(idx_comp1)+1
                       idx_dev1=idx_dev1+1
@@ -892,7 +892,7 @@ CONTAINS
        GOTO 999                 
     ENDIF
     
-    IF(REGION%REGION_FINISHED==.FALSE.) THEN
+    IF(.NOT.REGION%REGION_FINISHED) THEN
        CALL FLAG_ERROR("region is not finished",ERR,ERROR,*999)
        GOTO 999         
     ENDIF
@@ -924,11 +924,11 @@ CONTAINS
       NUMBER_OF_COMPONENTS=0
       FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelem,"*",ERR,ERROR))//".exelem"
       INQUIRE(FILE=CHAR(FILE_NAME), EXIST=FILE_EXIST)
-      IF(FILE_EXIST==.FALSE.) THEN
+      IF(.NOT.FILE_EXIST) THEN
          CALL FLAG_ERROR("exelem files can be found, pls check again",ERR,ERROR,*999)
          !GOTO 999                       
       ENDIF 
-      DO WHILE(FILE_EXIST==.TRUE.)
+      DO WHILE(FILE_EXIST)
          
          FILE_ID=1030+idx_exelem
          CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)         
@@ -936,18 +936,18 @@ CONTAINS
          FIELD_SECTION=.FALSE.
          
          CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR,*999) 
-         DO WHILE(FILE_END==.FALSE.)                                                                                                    
+         DO WHILE(.NOT.FILE_END)                                                                                                    
             
             !check the beginning of element section
-            IF(START_OF_ELEMENT_SECTION==.FALSE..AND.(VERIFY(CMISS_KEYWORD_SHAPE,LINE)==0)) THEN
+            IF((.NOT.START_OF_ELEMENT_SECTION).AND.(VERIFY(CMISS_KEYWORD_SHAPE,LINE)==0)) THEN
                START_OF_ELEMENT_SECTION=.TRUE.               
             ENDIF   
             
             !count how many elements            
-            IF(START_OF_ELEMENT_SECTION==.TRUE..AND.(VERIFY(CMISS_KEYWORD_ELEMENT,LINE)==0)) idx_elem=idx_elem+1
+            IF(START_OF_ELEMENT_SECTION.AND.(VERIFY(CMISS_KEYWORD_ELEMENT,LINE)==0)) idx_elem=idx_elem+1
             
             !check whether they have same numbers of fields
-            IF(START_OF_ELEMENT_SECTION==.TRUE..AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
+            IF(START_OF_ELEMENT_SECTION.AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
                idx_field=0
                idx_comp=0
                FIELD_SECTION=.TRUE.
@@ -970,7 +970,7 @@ CONTAINS
             ENDIF !START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0  
             
             !check whether they have same numbers of field components
-            IF(FIELD_SECTION==.TRUE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.(VERIFY(CMISS_KEYWORD_COMPONENTS,LINE)==0)) THEN               
+            IF(FIELD_SECTION.AND.START_OF_ELEMENT_SECTION.AND.(VERIFY(CMISS_KEYWORD_COMPONENTS,LINE)==0)) THEN               
                idx_field=idx_field+1               
                pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)
                LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENTS)-1)                                             
@@ -1040,18 +1040,18 @@ CONTAINS
       idx_node=0
       FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnode,"*",ERR,ERROR))//".exnode"
       INQUIRE(FILE=CHAR(FILE_NAME), EXIST=FILE_EXIST)
-      IF(FILE_EXIST==.FALSE.) THEN
+      IF(.NOT.FILE_EXIST) THEN
          CALL FLAG_ERROR("exnode files can be found, pls check again",ERR,ERROR,*999)
          !GOTO 999                       
       ENDIF 
-      DO WHILE(FILE_EXIST==.TRUE.)      
+      DO WHILE(FILE_EXIST)      
          FILE_ID=1030+idx_exnode
          CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
          FILE_END=.FALSE.
          
-         DO WHILE(FILE_END==.FALSE.)    
+         DO WHILE(.NOT.FILE_END)    
             CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-            IF(FILE_END==.FALSE..AND.VERIFY(CMISS_KEYWORD_NODE,LINE)==0) idx_node=idx_node+1            
+            IF((.NOT.FILE_END).AND.VERIFY(CMISS_KEYWORD_NODE,LINE)==0) idx_node=idx_node+1            
          ENDDO !(FILE_END==.FALSE.)                 
          
          CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)         
@@ -1084,9 +1084,9 @@ CONTAINS
          FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnode,"*",ERR,ERROR))//".exnode"
          CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)                  
          FILE_END=.FALSE.
-         DO WHILE(FILE_END==.FALSE.)    
+         DO WHILE(.NOT.FILE_END)    
             CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-            IF(FILE_END==.FALSE..AND.VERIFY(CMISS_KEYWORD_NODE,LINE)==0) THEN
+            IF((.NOT.FILE_END).AND.VERIFY(CMISS_KEYWORD_NODE,LINE)==0) THEN
                pos=INDEX(LINE,CMISS_KEYWORD_NODE)               
                LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_NODE)-1)
                USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(idx_node)=STRING_TO_INTEGER(LINE, ERR, ERROR)
@@ -1141,16 +1141,16 @@ CONTAINS
          FIELD_SECTION=.FALSE.    
          FILE_END=.FALSE. 
           
-         DO WHILE(FILE_END==.FALSE.)    
+         DO WHILE(.NOT.FILE_END)    
             CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
             
             !check the beginning of element section
-            IF(START_OF_ELEMENT_SECTION==.FALSE..AND.(VERIFY(CMISS_KEYWORD_SHAPE,LINE)==0)) THEN
+            IF((.NOT.START_OF_ELEMENT_SECTION).AND.(VERIFY(CMISS_KEYWORD_SHAPE,LINE)==0)) THEN
                START_OF_ELEMENT_SECTION=.TRUE.               
             ENDIF   
                        
             !check whether it is a new header for another group of elements
-            IF(START_OF_ELEMENT_SECTION==.TRUE..AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
+            IF(START_OF_ELEMENT_SECTION.AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
                
                !collect header information
                pos=INDEX(LINE,CMISS_KEYWORD_FIELDS)               
@@ -1286,14 +1286,14 @@ CONTAINS
          FILE_END=.FALSE.  
 
          
-         DO WHILE(FILE_END==.FALSE.)    
+         DO WHILE(.NOT.FILE_END)    
             CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
             
-            IF(START_OF_ELEMENT_SECTION==.FALSE..AND.(VERIFY(CMISS_KEYWORD_SHAPE,LINE)==0)) THEN
+            IF((.NOT.START_OF_ELEMENT_SECTION).AND.(VERIFY(CMISS_KEYWORD_SHAPE,LINE)==0)) THEN
                START_OF_ELEMENT_SECTION=.TRUE.               
             ENDIF   
 
-            IF(START_OF_ELEMENT_SECTION==.TRUE..AND.(VERIFY(CMISS_KEYWORD_ELEMENT,LINE)==0)) THEN
+            IF(START_OF_ELEMENT_SECTION.AND.(VERIFY(CMISS_KEYWORD_ELEMENT,LINE)==0)) THEN
                pos=INDEX(LINE,CMISS_KEYWORD_ELEMENT)
                LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_ELEMENT)-1)
                SHAPE_INDEX(:)=0
@@ -1348,10 +1348,10 @@ CONTAINS
        CALL MPI_BCAST(FILE_END,1,MPI_LOGICAL,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
        CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)                                              
        
-       IF(FILE_END==.TRUE.) THEN
+       IF(FILE_END) THEN
           idx_exelem=idx_exelem+1
           INQUIRE(UNIT=FILE_ID, OPENED=FILE_OPEN) 
-          IF(FILE_OPEN==.TRUE.) CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
+          IF(FILE_OPEN) CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
           IF(idx_exelem>=NUMBER_OF_EXELEM_FILES) EXIT
        ENDIF
               
@@ -1366,7 +1366,7 @@ CONTAINS
           !   START_OF_ELEMENT_SECTION=.TRUE.
           !ENDIF
           
-          IF(FILE_END==.TRUE.) THEN
+          IF(FILE_END) THEN
              FILE_ID=1030+idx_exelem             
              !checking the next file             
              FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelem,"*",ERR,ERROR))//".exelem"
@@ -1377,7 +1377,7 @@ CONTAINS
           ENDIF        
           
           
-          IF(FILE_END==.FALSE..AND.START_OF_ELEMENT_SECTION==.FALSE.) THEN !..AND.SECTION_START==.FALSE.) THEN    
+          IF((.NOT.FILE_END).AND.(.NOT.START_OF_ELEMENT_SECTION)) THEN !..AND.SECTION_START==.FALSE.) THEN    
              !find a new header
              DO WHILE(VERIFY(CMISS_KEYWORD_SCALE_FACTOR_SETS,LINE)/=0)
                 CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)    
@@ -1386,7 +1386,7 @@ CONTAINS
           ENDIF
                                         
           !have not touched the end
-          IF(FILE_END==.FALSE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.SECTION_START==.FALSE.) THEN
+          IF((.NOT.FILE_END).AND.START_OF_ELEMENT_SECTION.AND.(.NOT.SECTION_START)) THEN
              SECTION_START=.TRUE.
              !CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,LINE,ERR,ERROR,*999)
              !CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,FILE_NAME,ERR,ERROR,*999)
@@ -1467,7 +1467,7 @@ CONTAINS
              !CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,LINE,ERR,ERROR,*999)
           ENDIF  !FILE_END==.FALSE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.SECTION_START==.TRUE.                              
           
-          IF(FILE_END==.FALSE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.SECTION_START==.TRUE.) THEN                          
+          IF((.NOT.FILE_END).AND.START_OF_ELEMENT_SECTION.AND.SECTION_START) THEN                          
              
              pos=INDEX(LINE,CMISS_KEYWORD_ELEMENT)
              LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_ELEMENT)-1)
@@ -1487,7 +1487,7 @@ CONTAINS
                 CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)                
              ENDDO
              
-             IF(FILE_END==.FALSE.) THEN
+             IF(.NOT.FILE_END) THEN
                 CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)             
                 IF(VERIFY(CMISS_KEYWORD_SCALE_FACTOR_SETS,LINE)==0) SECTION_START=.TRUE.
              ENDIF   
@@ -1685,11 +1685,11 @@ CONTAINS
   !    NUMBER_OF_FILES=0
   !    FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_FILES,"*",ERR,ERROR))//".exelem"
   !    INQUIRE(FILE=CHAR(FILE_NAME), EXIST=FILE_EXIST)
-  !    IF(FILE_EXIST==.FALSE.) THEN
+  !    IF(.NOT.FILE_EXIST) THEN
   !       CALL FLAG_ERROR("no file can be found, pls check again",ERR,ERROR,*999)
   !       GOTO 999                       
   !    ENDIF 
-  !    DO WHILE(FILE_EXIST==.TRUE.)
+  !    DO WHILE(FILE_EXIST)
   !       FILE_STATUS="OLD"
   !       FILE_ID=1030+NUMBER_OF_FILES
   !       CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)         
@@ -1711,7 +1711,7 @@ CONTAINS
   !                      EXIT
   !                   ENDIF        
   !                ENDDO 
-  !                IF(SWITCH_BASIS==.FALSE.) THEN
+  !                IF(.NOT.SWITCH_BASIS) THEN
   !                   ALLOCATE(LIST_STR1(NUMBER_OF_BASES), STAT=ERR)
   !                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate character buffer in reading basis",ERR,ERROR,*999)
   !                   LIST_STR1(:)=LIST_STR(:)
@@ -1949,7 +1949,7 @@ CONTAINS
           FIELD_IO_BASIS_LHTP_FAMILY_LABEL=TRIM(FIELD_IO_BASIS_LHTP_FAMILY_LABEL)//", #Scale factors="//TRIM(NUMBER_TO_VSTRING&
                &(num_scl,"*",ERR,ERROR))
        CASE (FIELD_IO_SCALE_FACTORS_PROPERTY_TYPE)
-          FIELD_IO_BASIS_LHTP_FAMILY_LABEL=TRIM(FIELD_IO_BASIS_LHTP_FAMILY_LABEL)//", no modify, standard node based"
+          FIELD_IO_BASIS_LHTP_FAMILY_LABEL=TRIM(FIELD_IO_BASIS_LHTP_FAMILY_LABEL)//", no modify, standard node based."
        CASE DEFAULT
           CALL FLAG_ERROR("Invalid interpolation type",ERR,ERROR,*999)
     END SELECT   
@@ -1971,7 +1971,7 @@ CONTAINS
           &NUM_OF_SCALING_FACTOR_SETS, LIST_COMP_SCALE, my_computational_node_number, FILE_ID, ERR,ERROR, *)
     !Argument variables  
     TYPE(FIELD_IO_ELEMENTALL_INFO_SET), INTENT(INOUT) :: LOCAL_PROCESS_ELEMENTAL_INFO_SET  !<LOCAL_PROCESS_NODAL_INFO_SET           
-    INTEGER(INTG), INTENT(IN) :: LOCAL_ELEMENTAL_NUMBER !<element number
+    INTEGER(INTG), INTENT(IN) :: LOCAL_ELEMENTAL_NUMBER !<element number in my elemental IO list
     INTEGER(INTG), INTENT(INOUT) ::  MAX_NODE_CPMP_INDEX !<MAX_NODE_INDEX
     INTEGER(INTG), INTENT(INOUT) :: NUM_OF_SCALING_FACTOR_SETS !<NUM_OF_SCALING_FACTOR_SETS
     INTEGER(INTG), INTENT(INOUT) :: LIST_COMP_SCALE(:)
@@ -2023,6 +2023,7 @@ CONTAINS
         &STAT=ERR)
     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate LIST_SCALE_FACTORS in exelem header",ERR,ERROR,*999)
      
+    !collect scale factor information 
     DO comp_idx=1,LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(LOCAL_ELEMENTAL_NUMBER)%NUMBER_OF_COMPONENTS    
        !calculate the number of fields
        !IF (.NOT.ASSOCIATED(field_ptr, target=LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(LOCAL_ELEMENTAL_NUMBER)%COMPONENTS(comp_idx)%PTR%FIELD)) THEN
@@ -2060,7 +2061,7 @@ CONTAINS
           MAX_NODE_CPMP_INDEX=comp_idx
           MAX_NUM_NODES=BASIS%NUMBER_OF_NODES
        ENDIF   
-       IF(BASIS%DEGENERATE==.FALSE.)  THEN
+       IF(.NOT.BASIS%DEGENERATE)  THEN
           IF(comp_idx==1) THEN
              NUM_OF_SCALING_FACTOR_SETS=NUM_OF_SCALING_FACTOR_SETS+1
              LIST_SCALE_FACTORS(NUM_OF_SCALING_FACTOR_SETS)=comp_idx
@@ -2077,7 +2078,7 @@ CONTAINS
                    EXIT
                 ENDIF                   
              ENDDO!scl_idx1
-             IF(SWITCH==.FALSE.) THEN
+             IF(.NOT.SWITCH) THEN
                 NUM_OF_SCALING_FACTOR_SETS=NUM_OF_SCALING_FACTOR_SETS+1
                 LIST_SCALE_FACTORS(NUM_OF_SCALING_FACTOR_SETS)=comp_idx
              ENDIF                 
@@ -2200,7 +2201,7 @@ CONTAINS
        ENDIF        
        LINE=TRIM(LABEL)//"."                          
        BASIS=>LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(LOCAL_ELEMENTAL_NUMBER)%COMPONENTS(comp_idx)%PTR%DOMAIN%&
-           &TOPOLOGY%ELEMENTS%ELEMENTS(comp_idx)%BASIS
+           &TOPOLOGY%ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%BASIS
        SELECT CASE(BASIS%TYPE)
          CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
             LABEL=FIELD_IO_BASIS_LHTP_FAMILY_LABEL(BASIS, num_scl, num_node, FIELD_IO_SCALE_FACTORS_PROPERTY_TYPE, ERR,ERROR)
@@ -2220,21 +2221,21 @@ CONTAINS
        LINE="     #Nodes= "//TRIM(NUMBER_TO_VSTRING(num_node,"*",ERR,ERROR))
        CALL FIELD_IO_FORTRAN_FILE_WRITE_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)      
 
-       IF(BASIS%DEGENERATE==.FALSE.) THEN
+       IF(.NOT.BASIS%DEGENERATE) THEN
           IF(LIST_COMP_SCALE(comp_idx)==1) THEN
              scl_idx=0
           ELSE   
              scl_idx= SUM(GROUP_SCALE_FACTORS(1:LIST_COMP_SCALE(comp_idx)-1))
           ENDIF   
-          BASIS=>DOMAIN_ELEMENTS%ELEMENTS(LOCAL_ELEMENTAL_NUMBER)%BASIS    
+          BASIS=>DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%BASIS    
           DO nn=1,BASIS%NUMBER_OF_NODES
              LINE="      "//TRIM(NUMBER_TO_VSTRING(nn,"*",ERR,ERROR))//".  #Values="//&
                  &TRIM(NUMBER_TO_VSTRING(BASIS%NUMBER_OF_DERIVATIVES(nn),"*",ERR,ERROR))
              CALL FIELD_IO_FORTRAN_FILE_WRITE_STRING(FILE_ID, LINE, LEN_TRIM(LINE), ERR,ERROR,*999)                     
-             np=DOMAIN_ELEMENTS%ELEMENTS(LOCAL_ELEMENTAL_NUMBER)%ELEMENT_NODES(nn)               
+             np=DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%ELEMENT_NODES(nn)               
              LINE="       Value indices:  "             
              DO mk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
-                nk=DOMAIN_ELEMENTS%ELEMENTS(LOCAL_ELEMENTAL_NUMBER)%ELEMENT_DERIVATIVES(mk,nn)
+                nk=DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%ELEMENT_DERIVATIVES(mk,nn)
                 !ny2=DOMAIN_NODES%NODES(np)%DOF_INDEX(nk)
                 !GROUP_DERIVATIVES(mk)=ny2
                 LINE=LINE//TRIM(NUMBER_TO_VSTRING(nk, "*",ERR,ERROR))
@@ -2268,7 +2269,6 @@ CONTAINS
     CALL EXITS("FIELD_IO_EXPORT_ELEMENTAL_GROUP_HEADER_FORTRAN")
     RETURN 1       
   END SUBROUTINE FIELD_IO_EXPORT_ELEMENTAL_GROUP_HEADER_FORTRAN  
-  
   !
   !================================================================================================================================
   !  
@@ -2318,7 +2318,7 @@ CONTAINS
        CALL FLAG_ERROR("the elemental information set does not contain any nodes",ERR,ERROR,*999)            
     ENDIF
 
-    IF(LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(1)%SAME_HEADER==.TRUE.) THEN
+    IF(LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(1)%SAME_HEADER) THEN
        CALL FLAG_ERROR("the first header flag of elemental information set should be false",ERR,ERROR,*999)            
     ENDIF
     
@@ -2365,7 +2365,7 @@ CONTAINS
        ENDIF   
 
        !check whether need to write out the nodal information header  
-       IF(LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_idx)%SAME_HEADER==.FALSE.) THEN
+       IF(.NOT.LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_idx)%SAME_HEADER) THEN
           !print * ,"elem_idx:", elem_idx, "in", my_computational_node_number
            !write out the nodal header
            CALL FIELD_IO_EXPORT_ELEMENTAL_GROUP_HEADER_FORTRAN(LOCAL_PROCESS_ELEMENTAL_INFO_SET, elem_idx, MAX_NODE_CPMP_INDEX, &
@@ -2421,7 +2421,7 @@ CONTAINS
        BASIS=>LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_idx)%COMPONENTS(MAX_NODE_CPMP_INDEX)%PTR%DOMAIN%MESH%&
           &TOPOLOGY(LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_idx)%COMPONENTS(MAX_NODE_CPMP_INDEX)%PTR%&
           &MESH_COMPONENT_NUMBER)%PTR%ELEMENTS%ELEMENTS(global_number)%BASIS
-       IF(BASIS%DEGENERATE==.FALSE.) THEN
+       IF(.NOT.BASIS%DEGENERATE) THEN
           ALLOCATE(NODAL_NUMBER(BASIS%NUMBER_OF_NODES),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate list of nodal numbering when writing out exelem",ERR,ERROR,*999)                
           
@@ -2491,7 +2491,7 @@ CONTAINS
                            
              !CALL DISTRIBUTED_VECTOR_DATA_GET(LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_idx)%COMPONENTS(comp_idx)%PTR%FIELD%SCALINGS%SCALINGS(LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(elem_idx)%COMPONENTS(comp_idx)%PTR% &
              !&SCALING_INDEX)%SCALE_FACTORS,SCALE_FACTORS,ERR,ERROR,*999)                         
-             IF(BASIS%DEGENERATE==.FALSE.) THEN
+             IF(.NOT.BASIS%DEGENERATE) THEN
                  DO nn=1,BASIS%NUMBER_OF_NODES
                    np=DOMAIN_ELEMENTS%ELEMENTS(local_number)%ELEMENT_NODES(nn)
                    DO mk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
@@ -2614,7 +2614,7 @@ CONTAINS
             ENDDO !component_idx
              
             !check whether correspoding two components have the same partial derivatives 
-            IF(SWITCH==.TRUE.) THEN
+            IF(SWITCH) THEN
                DO component_idx=1,LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(nn1)%NUMBER_OF_COMPONENTS                    
                
                   !finding the local numbering for the NODAL_INFO_SET(nn1)   
@@ -2660,7 +2660,7 @@ CONTAINS
          ENDIF !LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%NUMBER_OF_COMPONENTS==LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn+1)%NUMBER_OF_COMPONENTS
           
           !find two elements which have the same output, and then they should put together
-          IF(SWITCH==.TRUE.) THEN
+          IF(SWITCH) THEN
              !exchange the pointer(to the list the components)             
              IF(ALLOCATED(tmp_components)) DEALLOCATE(tmp_components)
              ALLOCATE(tmp_components(LOCAL_PROCESS_ELEMENTAL_INFO_SET%ELEMENTAL_INFO_SET(nn2)%NUMBER_OF_COMPONENTS),STAT=ERR)
@@ -2738,7 +2738,7 @@ CONTAINS
     !                 SWITCH=.TRUE.
     !              ENDIF
     !           ENDDO
-    !           IF(SWITCH==.TRUE.) THEN
+    !           IF(SWITCH) THEN
     !              EXIT
     !           ENDIF  
     !        ENDDO
@@ -2808,7 +2808,7 @@ CONTAINS
                      ENDDO
                      !have one more global node
                      !i hate the codes here, but i have to save the memory 
-                     IF(SWITCH==.FALSE.) THEN
+                     IF(.NOT.SWITCH) THEN
                         IF(LOCAL_PROCESS_ELEMENTAL_INFO_SET%NUMBER_OF_ELEMENTS/=0) THEN
                            !crease a new memory space
                            ALLOCATE(NEW_LIST(LOCAL_PROCESS_ELEMENTAL_INFO_SET%NUMBER_OF_ELEMENTS),STAT=ERR)
@@ -3314,7 +3314,7 @@ CONTAINS
                       ENDDO!nn=1
                       !have one more global node
                       !i hate the codes here, but i have to save the memory 
-                      IF(SWITCH==.FALSE.) THEN
+                      IF(.NOT.SWITCH) THEN
                          IF(LOCAL_PROCESS_NODAL_INFO_SET%NUMBER_OF_NODES/=0) THEN
                             !crease a new memory space
                             ALLOCATE(NEW_LIST(LOCAL_PROCESS_NODAL_INFO_SET%NUMBER_OF_NODES),STAT=ERR)
@@ -3545,7 +3545,7 @@ CONTAINS
              ENDDO !component_idx
              
              !check whether correspoding two components have the same partial derivatives 
-             IF(SWITCH==.TRUE.) THEN
+             IF(SWITCH) THEN
                 DO component_idx=1,LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn1)%NUMBER_OF_COMPONENTS                    
                
                   !finding the local numbering for the NODAL_INFO_SET(nn1)   
@@ -3609,7 +3609,7 @@ CONTAINS
           ENDIF !LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%NUMBER_OF_COMPONENTS==LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn+1)%NUMBER_OF_COMPONENTS
           
           !find two nodes which have the same output, and then they should put together
-          IF(SWITCH==.TRUE.) THEN
+          IF(SWITCH) THEN
              !exchange the pointer(to the list the components)
              IF(ALLOCATED(tmp_components)) DEALLOCATE(tmp_components)
              ALLOCATE(tmp_components(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn2)%NUMBER_OF_COMPONENTS),STAT=ERR)
@@ -3687,7 +3687,7 @@ CONTAINS
     !                 SWITCH=.TRUE.
     !              ENDIF
     !           ENDDO
-    !           IF(SWITCH==.TRUE.) THEN
+    !           IF(SWITCH) THEN
     !              EXIT
     !           ENDIF  
     !        ENDDO
@@ -3933,8 +3933,8 @@ CONTAINS
           SELECT CASE(VARIABLE%VARIABLE_TYPE)
             CASE(FIELD_STANDARD_VARIABLE_TYPE)
              IF(LABEL_TYPE==FIELD_IO_VARIABLE_LABEL) THEN
-                !FIELD_IO_LABEL_FIELD_INFO_GET="fiber,  standand variable type"   
-                FIELD_IO_LABEL_FIELD_INFO_GET="fibres, anatomical, fibre"    	
+                !FIELD_IO_LABEL_FIELD_INFO_GET="fiber,  standand variable type"   ! kmith
+                FIELD_IO_LABEL_FIELD_INFO_GET="fibres, anatomical, fibre"    !kmith		
              ELSE IF (LABEL_TYPE==FIELD_IO_COMPONENT_LABEL) THEN
                 FIELD_IO_LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
              ENDIF      
@@ -3971,8 +3971,8 @@ CONTAINS
           SELECT CASE(VARIABLE%VARIABLE_TYPE)
             CASE(FIELD_STANDARD_VARIABLE_TYPE)
              IF(LABEL_TYPE==FIELD_IO_VARIABLE_LABEL) THEN
-                !FIELD_IO_LABEL_FIELD_INFO_GET="general_variabe,  field,  string"  
-                FIELD_IO_LABEL_FIELD_INFO_GET="general,  field,  rectangular cartesian"  		
+                !FIELD_IO_LABEL_FIELD_INFO_GET="general_variabe,  field,  string"  ! kmith
+                FIELD_IO_LABEL_FIELD_INFO_GET="general,  field,  rectangular cartesian"  ! kmith		
              ELSE IF (LABEL_TYPE==FIELD_IO_COMPONENT_LABEL) THEN
                 FIELD_IO_LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
              ENDIF      
@@ -4009,8 +4009,8 @@ CONTAINS
           SELECT CASE(VARIABLE%VARIABLE_TYPE)
             CASE(FIELD_STANDARD_VARIABLE_TYPE)
              IF(LABEL_TYPE==FIELD_IO_VARIABLE_LABEL) THEN
-                !FIELD_IO_LABEL_FIELD_INFO_GET="material,  field,  standand variable type"   
-                FIELD_IO_LABEL_FIELD_INFO_GET="material,  field,  rectangular cartesian"     		 
+                !FIELD_IO_LABEL_FIELD_INFO_GET="material,  field,  standand variable type"   ! kmith
+                FIELD_IO_LABEL_FIELD_INFO_GET="material,  field,  rectangular cartesian"     ! kmith		 
              ELSE IF (LABEL_TYPE==FIELD_IO_COMPONENT_LABEL) THEN
                 FIELD_IO_LABEL_FIELD_INFO_GET=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
              ENDIF      
@@ -4782,7 +4782,7 @@ CONTAINS
   !     CALL FLAG_ERROR("the nodal information set does not contain any nodes",ERR,ERROR,*999)            
   !  ENDIF
   !
-  !  IF(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(1)%SAME_HEADER==.TRUE.) THEN
+  !  IF(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(1)%SAME_HEADER) THEN
   !     CALL FLAG_ERROR("the first header flag of nodal information set should be false",ERR,ERROR,*999)            
   !  ENDIF
   !  
@@ -4813,7 +4813,7 @@ CONTAINS
   !     global_number=LOCAL_PROCESS_NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn)
   !     
   !     !check whether need to write out the nodal information header  
-  !     IF(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%SAME_HEADER==.FALSE.) THEN
+  !     IF(.NOT.LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%SAME_HEADER) THEN
   !      !write out the nodal header
   !         
   !        CALL FIELD_IO_EXPORT_NODAL_GROUP_HEADER_MPIIO(LOCAL_PROCESS_NODAL_INFO_SET, nn, MAX_NUM_OF_NODAL_DERIVATIVES, &
@@ -4949,7 +4949,7 @@ CONTAINS
   !     CALL FLAG_ERROR("the nodal information set does not contain any nodes",ERR,ERROR,*999)            
   !  ENDIF
   !
-  !  IF(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(1)%SAME_HEADER==.TRUE.) THEN
+  !  IF(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(1)%SAME_HEADER) THEN
   !     CALL FLAG_ERROR("the first header flag of nodal information set should be false",ERR,ERROR,*999)            
   !  ENDIF
   !  
@@ -4985,7 +4985,7 @@ CONTAINS
   !     global_number=LOCAL_PROCESS_NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn)
   !     
   !     !check whether need to write out the nodal information header  
-  !     IF(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%SAME_HEADER==.FALSE.) THEN
+  !     IF(.NOT.LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%SAME_HEADER) THEN
   !      !write out the nodal header
   !         
   !        CALL FIELD_IO_IMPORT_NODAL_GROUP_HEADER_FORTRAN(LOCAL_PROCESS_NODAL_INFO_SET, nn, MAX_NUM_OF_NODAL_DERIVATIVES, &
@@ -5125,7 +5125,7 @@ CONTAINS
        CALL FLAG_ERROR("the nodal information set does not contain any nodes",ERR,ERROR,*999)            
     ENDIF
 
-    IF(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(1)%SAME_HEADER==.TRUE.) THEN
+    IF(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(1)%SAME_HEADER) THEN
        CALL FLAG_ERROR("the first header flag of nodal information set should be false",ERR,ERROR,*999)            
     ENDIF
     
@@ -5157,7 +5157,7 @@ CONTAINS
        global_number=LOCAL_PROCESS_NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn)
        
        !check whether need to write out the nodal information header  
-       IF(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%SAME_HEADER==.FALSE.) THEN
+       IF(.NOT.LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%SAME_HEADER) THEN
         !write out the nodal header
            
           CALL FIELD_IO_EXPORT_NODAL_GROUP_HEADER_FORTRAN(LOCAL_PROCESS_NODAL_INFO_SET, nn, MAX_NUM_OF_NODAL_DERIVATIVES, &
@@ -5348,7 +5348,7 @@ CONTAINS
     
     CALL ENTERS("FIELD_IO_FORTRAN_FILE_READ_STRING", ERR, ERROR, *999)
             
-    READ(FILE_ID, "(A)", IOSTAT=IOS), TEMP_STR
+    READ(FILE_ID, "(A)", IOSTAT=IOS) TEMP_STR
     
     IF(IOS>=0)  THEN
        FILE_END=.FALSE.
@@ -5391,7 +5391,7 @@ CONTAINS
        CALL FLAG_ERROR("leng of string is zero",ERR,ERROR,*999) 
     ENDIF
    
-    WRITE(FILE_ID, "(A)"), CHAR(STRING_DATA) 
+    WRITE(FILE_ID, "(A)") CHAR(STRING_DATA) 
     
     CALL EXITS("FIELD_IO_FORTRAN_FILE_WRITE_STRING")
     RETURN
@@ -5459,7 +5459,7 @@ CONTAINS
     CALL ENTERS("FIELD_IO_FORTRAN_FILE_READ_DP",ERR,ERROR,*999)    
    
     DP_FMT="("//TRIM(NUMBER_TO_VSTRING(LEN_OF_DATA,"*",ERR,ERROR))//"ES)"
-    READ(FILE_ID, CHAR(DP_FMT), IOSTAT=IOS), REAL_DATA(1:LEN_OF_DATA)
+    READ(FILE_ID, CHAR(DP_FMT), IOSTAT=IOS) REAL_DATA(1:LEN_OF_DATA)
 
     IF(IOS>=0)  THEN
        FILE_END=.FALSE.
@@ -5493,7 +5493,7 @@ CONTAINS
     CALL ENTERS("FIELD_IO_FORTRAN_FILE_WRITE_DP",ERR,ERROR,*999)    
    
     DP_FMT="("//TRIM(NUMBER_TO_VSTRING(LEN_OF_DATA,"*",ERR,ERROR))//"ES)"
-    WRITE(FILE_ID, CHAR(DP_FMT)), REAL_DATA(1:LEN_OF_DATA)
+    WRITE(FILE_ID, CHAR(DP_FMT)) REAL_DATA(1:LEN_OF_DATA)
     
     CALL EXITS("FIELD_IO_FORTRAN_FILE_WRITE_DP")
     RETURN
@@ -5558,7 +5558,7 @@ CONTAINS
     CALL ENTERS("FIELD_IO_FORTRAN_FILE_READ_INTG",ERR,ERROR,*999)    
    
     DP_FMT="("//TRIM(NUMBER_TO_VSTRING(LEN_OF_DATA,"*",ERR,ERROR))//"I)"
-    READ(FILE_ID, CHAR(DP_FMT)), INTG_DATA(1:LEN_OF_DATA)
+    READ(FILE_ID, CHAR(DP_FMT)) INTG_DATA(1:LEN_OF_DATA)
     
     CALL EXITS("FIELD_IO_FORTRAN_FILE_READ_INTG")
     RETURN
@@ -5586,7 +5586,7 @@ CONTAINS
     CALL ENTERS("FIELD_IO_FORTRAN_FILE_WRITE_INTG",ERR,ERROR,*999)    
    
     DP_FMT="("//TRIM(NUMBER_TO_VSTRING(LEN_OF_DATA,"*",ERR,ERROR))//"I)"
-    WRITE(FILE_ID, CHAR(DP_FMT)), INTG_DATA(1:LEN_OF_DATA)
+    WRITE(FILE_ID, CHAR(DP_FMT)) INTG_DATA(1:LEN_OF_DATA)
     
     CALL EXITS("FIELD_IO_FORTRAN_FILE_WRITE_INTG")
     RETURN
