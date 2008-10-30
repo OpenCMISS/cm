@@ -1268,13 +1268,11 @@ MODULE TYPES
     LOGICAL :: SOURCE_FINISHED !<Is .TRUE. if the source for the equations set has finished being created, .FALSE. if not.
     TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD !<A pointer to the source field for the equations set if one is defined. If no source is defined the pointer is NULL.
   END TYPE EQUATIONS_SET_SOURCE_TYPE
-
-!!MERGE: change equation_number?
   
   !>Contains information on the analytic setup for the equations set.
   TYPE EQUATIONS_SET_ANALYTIC_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
-    INTEGER(INTG) :: EQUATION_NUMBER !<The equation identifier
+    INTEGER(INTG) :: ANALYTIC_FUNCTION !<The analytic functionidentifier
     LOGICAL :: ANALYTIC_FINISHED !<Is .TRUE. if the analytic setup for the problem has finished being created, .FALSE. if not.
   END TYPE EQUATIONS_SET_ANALYTIC_TYPE
 
