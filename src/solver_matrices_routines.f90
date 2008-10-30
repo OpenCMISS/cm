@@ -513,8 +513,6 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
-!!MERGE: ditto
   
   !>Gets the storage type (sparsity) of the solver matrices
   SUBROUTINE SOLVER_MATRICES_STORAGE_TYPE_GET(SOLVER_MATRICES,STORAGE_TYPE,ERR,ERROR,*)

@@ -48,7 +48,6 @@ MODULE FIELD_ROUTINES
   USE NODE_ROUTINES
   USE COMP_ENVIRONMENT
   USE COORDINATE_ROUTINES
-  USE GENERATED_MESH_ROUTINES
   USE DISTRIBUTED_MATRIX_VECTOR
   USE DOMAIN_MAPPINGS
   USE KINDS
@@ -234,7 +233,6 @@ MODULE FIELD_ROUTINES
     & FIELD_COMPONENT_INTERPOLATION_SET, &
     & FIELD_DEPENDENT_TYPE_SET, &
     & FIELD_GEOMETRIC_FIELD_SET, &
-    & FIELD_GEOMETRIC_PARAMETERS_UPDATE_FROM_INITIAL_MESH, &
     & FIELD_INTERPOLATED_POINT_METRICS_CALCULATE, &
     & FIELD_INTERPOLATE_GAUSS,FIELD_INTERPOLATE_XI, &
     & FIELD_INTERPOLATED_POINT_METRICS_FINALISE, &
@@ -3512,40 +3510,9 @@ CONTAINS
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                 ENDDO !component_idx
-                CALL FIELD_PARAMETER_SET_GET(FIELD,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-                !Normalise the arclength derivative vectors.
-                !!TODO: Don't loop over all components somehow????
-                DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                  DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
-                  DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
-                  DOMAIN_LINES=>DOMAIN%TOPOLOGY%LINES
-                  DO np=1,DOMAIN_NODES%NUMBER_OF_NODES
-                    DO nk=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_DERIVATIVES
-                      nu=DOMAIN_NODES%NODES(np)%PARTIAL_DERIVATIVE_INDEX(nk)
-                      IF(nu==PART_DERIV_S1.OR.nu==PART_DERIV_S2.OR.nu==PART_DERIV_S3) THEN
-                        LENGTH=0.0_DP
-                        VECTOR=0.0_DP
-                        DO component_idx2=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                          ny=FIELD_VARIABLE%COMPONENTS(component_idx2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(nk,np,0)
-                          VECTOR(component_idx2)=GEOMETRIC_PARAMETERS(ny)
-                          LENGTH=LENGTH+VECTOR(component_idx2)**2
-                        ENDDO !component_idx2
-                        LENGTH=SQRT(LENGTH)
-                        IF(LENGTH>ZERO_TOLERANCE) THEN
-                          VECTOR=VECTOR/LENGTH
-                          DO component_idx2=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                            ny=FIELD_VARIABLE%COMPONENTS(component_idx2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(nk,np,0)
-                            CALL FIELD_PARAMETER_SET_UPDATE_DOF(FIELD,FIELD_VALUES_SET_TYPE,ny,VECTOR(component_idx2), &
-                              & ERR,ERROR,*999)
-                          ENDDO !component_idx2
-                        ENDIF
-                      ENDIF
-                    ENDDO !nk
-                  ENDDO !np
-                ENDDO !component_idx
-                CALL FIELD_PARAMETER_SET_RESTORE(FIELD,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-                CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                !CALL FIELD_PARAMETER_SET_RESTORE(FIELD,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+                !CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                !CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
               ELSE
                 LOCAL_ERROR="The standard field variable is not associated for field number "// &
                   & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))

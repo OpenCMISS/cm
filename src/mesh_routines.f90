@@ -2008,24 +2008,25 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
-!!MERGE: ditto
   
   !>Gets the decomposition type for a decomposition.
-  FUNCTION DECOMPOSITION_TYPE_GET(DECOMPOSITION,ERR,ERROR)
+  SUBROUTINE DECOMPOSITION_TYPE_GET(DECOMPOSITION,TYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<A pointer to the decomposition to get the type for
+    INTEGER(INTG) :: TYPE !<The decomposition type to get \see MESH_ROUTINES_DecompositionTypes,MESH_ROUTINES
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Function result
-    INTEGER(INTG) :: DECOMPOSITION_TYPE_GET !<The decomposition type to get \see MESH_ROUTINES_DecompositionTypes,MESH_ROUTINES
     !Local Variables
 
     CALL ENTERS("DECOMPOSITION_TYPE_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DECOMPOSITION)) THEN
-      DECOMPOSITION_TYPE_GET=DECOMPOSITION%DECOMPOSITION_TYPE
+      IF(DECOMPOSITION%DECOMPOSITION_FINISHED) THEN
+        TYPE=DECOMPOSITION%DECOMPOSITION_TYPE
+      ELSE
+        CALL FLAG_ERROR("Decomposition has not finished",ERR,ERROR,*999)
+      ENDIF
     ELSE
       CALL FLAG_ERROR("Decomposition is not associated",ERR,ERROR,*999)
     ENDIF
@@ -2035,7 +2036,7 @@ CONTAINS
 999 CALL ERRORS("DECOMPOSITION_TYPE_GET",ERR,ERROR)
     CALL EXITS("DECOMPOSITION_TYPE_GET")
     RETURN
-  END FUNCTION DECOMPOSITION_TYPE_GET
+  END SUBROUTINE DECOMPOSITION_TYPE_GET
   
   !
   !================================================================================================================================
@@ -4601,24 +4602,25 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
-!!MERGE: ditto
   
   !>Gets the number of mesh components for a mesh identified by a pointer.
-  FUNCTION MESH_NUMBER_OF_COMPONENTS_GET(MESH,ERR,ERROR)
+  SUBROUTINE MESH_NUMBER_OF_COMPONENTS_GET(MESH,NUMBER_OF_COMPONENTS,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to set the number of components for
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to get the number of components for
+    INTEGER(INTG) :: NUMBER_OF_COMPONENTS !<The number of components to get.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Function result
-    INTEGER(INTG) :: MESH_NUMBER_OF_COMPONENTS_GET !<The number of components to get.
     !Local Variables
     
     CALL ENTERS("MESH_NUMBER_OF_COMPONENTS_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(MESH)) THEN
-      MESH_NUMBER_OF_COMPONENTS_GET=MESH%NUMBER_OF_COMPONENTS
+      IF(MESH%MESH_FINISHED) THEN
+        NUMBER_OF_COMPONENTS=MESH%NUMBER_OF_COMPONENTS
+      ELSE
+        CALL FLAG_ERROR("Mesh has not finished",ERR,ERROR,*999)
+      ENDIF
     ELSE
       CALL FLAG_ERROR("Mesh is not associated",ERR,ERROR,*999)
     ENDIF
@@ -4628,7 +4630,7 @@ CONTAINS
 999 CALL ERRORS("MESH_NUMBER_OF_COMPONENTS_GET",ERR,ERROR)    
     CALL EXITS("MESH_NUMBER_OF_COMPONENTS_GET")
     RETURN
-  END FUNCTION MESH_NUMBER_OF_COMPONENTS_GET
+  END SUBROUTINE MESH_NUMBER_OF_COMPONENTS_GET
   
 
   !
@@ -4742,25 +4744,22 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
-!!MERGE: ditto
   
   !>Gets the number of elements for a mesh identified by a pointer.
-  FUNCTION MESH_NUMBER_OF_ELEMENTS_GET(MESH,ERR,ERROR)
+  SUBROUTINE MESH_NUMBER_OF_ELEMENTS_GET(MESH,NUMBER_OF_ELEMENTS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to get the number of elements for
+    INTEGER(INTG) :: NUMBER_OF_ELEMENTS !<The number of elements to get
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Function result
-    INTEGER(INTG) :: MESH_NUMBER_OF_ELEMENTS_GET !<The number of elements to get
     !Local Variables
 
     CALL ENTERS("MESH_NUMBER_OF_ELEMENTS_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(MESH)) THEN
       IF(MESH%MESH_FINISHED) THEN
-        MESH_NUMBER_OF_ELEMENTS_GET=MESH%NUMBER_OF_ELEMENTS
+        NUMBER_OF_ELEMENTS=MESH%NUMBER_OF_ELEMENTS
       ELSE
         CALL FLAG_ERROR("Mesh has not been finished",ERR,ERROR,*999)
       ENDIF
@@ -4773,7 +4772,7 @@ CONTAINS
 999 CALL ERRORS("MESH_NUMBER_OF_ELEMENTS_GET",ERR,ERROR)    
     CALL EXITS("MESH_NUMBER_OF_ELEMENTS_GET")
     RETURN
-  END FUNCTION MESH_NUMBER_OF_ELEMENTS_GET
+  END SUBROUTINE MESH_NUMBER_OF_ELEMENTS_GET
 
   !
   !================================================================================================================================
