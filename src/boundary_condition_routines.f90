@@ -198,8 +198,7 @@ CONTAINS
                   VALUE = ANALYTIC_PARAMETERS(FIELD%VARIABLES(var_idx)%COMPONENTS(comp_idx)%PARAM_TO_DOF_MAP% &
                     & NODE_PARAM2DOF_MAP(dev_idx,node_number,var_idx))
                   CALL BOUNDARY_CONDITION_FIXED_CONDITIONS_SET_NODE(EQUATIONS_SET,FIELD_BOUNDARY_CONDITIONS_SET_TYPE,dev_idx, & 
-                    & DOMAIN_NODES%NODES(node_number)%USER_NUMBER,comp_idx,var_idx,EQUATIONS_SET_FIXED_BOUNDARY_CONDITION,VALUE, &
-                    & ERR,ERROR,*999)
+                    & node_number,comp_idx,var_idx,EQUATIONS_SET_FIXED_BOUNDARY_CONDITION,VALUE,ERR,ERROR,*999)
                 ENDIF       
               ENDDO ! dev_idx
             ENDDO ! node_idx
