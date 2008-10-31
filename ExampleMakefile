@@ -614,6 +614,7 @@ OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/analytic_analysis_routines.o \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/boundary_condition_routines.o \
 	$(OBJECT_DIR)/blas.o \
 	$(OBJECT_DIR)/classical_field_routines.o \
 	$(OBJECT_DIR)/cmiss.o \
@@ -910,12 +911,12 @@ $(OBJECT_DIR)/field_routines.o		:	$(MAIN_SOURCE_DIR)/field_routines.f90 \
 	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/generated_mesh_routines.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/lists.o \
 	$(OBJECT_DIR)/matrix_vector.o \
+	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 
@@ -978,6 +979,7 @@ $(OBJECT_DIR)/generated_mesh_routines.o	:	$(MAIN_SOURCE_DIR)/generated_mesh_rout
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
 	$(OBJECT_DIR)/coordinate_routines.o \
+	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
