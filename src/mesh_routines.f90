@@ -1788,7 +1788,7 @@ CONTAINS
                 IF(component_idx/=DECOMPOSITION%MESH_COMPONENT_NUMBER) THEN
                   DOMAIN=>DECOMPOSITION%DOMAIN(component_idx)%PTR
                   IF(ASSOCIATED(DOMAIN)) THEN
-                    DOMAIN_TOPOLOGY=DOMAIN%TOPOLOGY
+                    DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
                     IF(ASSOCIATED(DOMAIN_TOPOLOGY)) THEN
                       DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
                       IF(ASSOCIATED(DOMAIN_NODES)) THEN
@@ -1844,7 +1844,7 @@ CONTAINS
                               DOMAIN_LINE=>DOMAIN_LINES%LINES(nl)
                               BASIS=>DOMAIN_LINE%BASIS
                               DO nnl=1,BASIS%NUMBER_OF_NODES
-                                np=DOMAIN_LINE%NODES_IN_LINE(nl)
+                                np=DOMAIN_LINE%NODES_IN_LINE(nnl)
                                 DOMAIN_NODE=>DOMAIN_NODES%NODES(np)
                                 DOMAIN_NODE%NUMBER_OF_NODE_LINES=DOMAIN_NODE%NUMBER_OF_NODE_LINES+1
                                 DOMAIN_NODE%NODE_LINES(DOMAIN_NODE%NUMBER_OF_NODE_LINES)=nl
@@ -4706,17 +4706,22 @@ CONTAINS
               DO component_idx=1,MESH%NUMBER_OF_COMPONENTS
                 NEW_TOPOLOGY(component_idx)%PTR=>MESH%TOPOLOGY(component_idx)%PTR
               ENDDO !component_idx
+!!TODO \todo sort out mesh_topology initialise/finalise so that they allocate and deal with this below then call that routine
               DO component_idx=MESH%NUMBER_OF_COMPONENTS+1,NUMBER_OF_COMPONENTS
                 ALLOCATE(NEW_TOPOLOGY(component_idx)%PTR,STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new topology component",ERR,ERROR,*999)
-                NULLIFY(MESH%TOPOLOGY(component_idx)%PTR%ELEMENTS)
-                NULLIFY(MESH%TOPOLOGY(component_idx)%PTR%NODES)
+                NEW_TOPOLOGY(component_idx)%PTR%MESH=>MESH
+                NEW_TOPOLOGY(component_idx)%PTR%MESH_COMPONENT_NUMBER=component_idx
+                NULLIFY(NEW_TOPOLOGY(component_idx)%PTR%ELEMENTS)
+                NULLIFY(NEW_TOPOLOGY(component_idx)%PTR%NODES)
+                NULLIFY(NEW_TOPOLOGY(component_idx)%PTR%DOFS)
                 !Initialise the topology components
-                CALL MESH_TOPOLOGY_ELEMENTS_INITIALISE(MESH%TOPOLOGY(component_idx)%PTR,ERR,ERROR,*999)
-                CALL MESH_TOPOLOGY_NODES_INITIALISE(MESH%TOPOLOGY(component_idx)%PTR,ERR,ERROR,*999)
+                CALL MESH_TOPOLOGY_ELEMENTS_INITIALISE(NEW_TOPOLOGY(component_idx)%PTR,ERR,ERROR,*999)
+                CALL MESH_TOPOLOGY_NODES_INITIALISE(NEW_TOPOLOGY(component_idx)%PTR,ERR,ERROR,*999)
+                CALL MESH_TOPOLOGY_DOFS_INITIALISE(NEW_TOPOLOGY(component_idx)%PTR,ERR,ERROR,*999)
               ENDDO !component_idx
             ENDIF
-            DEALLOCATE(MESH%TOPOLOGY)
+            IF(ASSOCIATED(MESH%TOPOLOGY)) DEALLOCATE(MESH%TOPOLOGY)
             MESH%TOPOLOGY=>NEW_TOPOLOGY
             MESH%NUMBER_OF_COMPONENTS=NUMBER_OF_COMPONENTS
           ENDIF
