@@ -334,6 +334,7 @@ CONTAINS
       IF(ASSOCIATED(EQUATIONS)) THEN
         SELECT CASE(EQUATIONS_SET%SUBTYPE)
         CASE(EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE)
+!!TODO: move these and scale factor adjustment out once generalised Laplace is put in.
           !Store all these in equations matrices/somewhere else?????
           DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
           GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
@@ -392,6 +393,33 @@ CONTAINS
             ENDDO !mh
           ENDDO !ng
           
+          !Scale factor adjustment
+          IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
+            CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEMENT_GET(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+              & DEPENDENT_INTERP_PARAMETERS,ERR,ERROR,*999)
+            mhs=0          
+            DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+              !Loop over element rows
+              DO ms=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                mhs=mhs+1                    
+                nhs=0
+                IF(EQUATIONS_MATRIX%UPDATE_MATRIX) THEN
+                  !Loop over element columns
+                  DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                    DO ns=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                      nhs=nhs+1
+                      EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)* &
+                        & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS%SCALE_FACTORS(ms,mh)* &
+                        & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS%SCALE_FACTORS(ns,nh)
+                    ENDDO !ns
+                  ENDDO !nh
+                ENDIF
+                IF(RHS_VECTOR%UPDATE_VECTOR) RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)* &
+                  & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS%SCALE_FACTORS(ms,mh)
+              ENDDO !ms
+            ENDDO !mh
+          ENDIF
+       
         CASE(EQUATIONS_SET_GENERALISED_LAPLACE_SUBTYPE)
           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
@@ -399,6 +427,8 @@ CONTAINS
             & " is not valid for a Laplace equation type of a classical field equations set class."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
+
+        
       ELSE
         CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
       ENDIF
