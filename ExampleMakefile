@@ -513,11 +513,11 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     ifeq ($(DEBUG),false)
-      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/aix5.3.0.0-c-opt/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/bmake/aix5.3.0.0-c-opt/ )
+      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/aix5.3.0.0/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/bmake/aix5.3.0.0/ )
     else
-      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/aix5.3.0.0-c-debug/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/bmake/aix5.3.0.0-c-debug/ )
+      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/aix5.3.0.0/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/bmake/aix5.3.0.0/ )
     endif
     PETSC_LIB_PATH +=  $(addprefix -L, /usr/X11R6/lib/ )
     PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/ )
@@ -699,6 +699,7 @@ ifeq ($(OPERATING_SYSTEM),aix)
    #Need to disable argument list checking for MPI calls which may have multiple types for the same parameters
    $(OBJECT_DIR)/computational_environment.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
    $(OBJECT_DIR)/distributed_matrix_vector.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
+   $(OBJECT_DIR)/field_IO_routines.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
 
    #Need to disable argument list checking for c interface modules to allow for the c->fortran char->integer string conversion
    $(OBJECT_DIR)/timer_c.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
@@ -1263,6 +1264,10 @@ debug64 opt64: ABI=64
 all: debug opt
 all64: debug64 opt64
 
+# TODO only for linux 64bit for now.
+test:
+	$(CURDIR)/bin/x86_64-linux/$(BASE_EXAMPLE_NAME)-debug 2 2 0 1
+
 #-----------------------------------------------------------------------------
 
 help:
@@ -1309,5 +1314,8 @@ help:
 	@echo
 	@echo "	externallibs"
 	@echo "		Compile the external libraries."
+	@echo
+	@echo "	test"
+	@echo "		Run the executables for test. Linux 64 bit and AnalyticLaplaceExample only for now."
 	@echo
 
