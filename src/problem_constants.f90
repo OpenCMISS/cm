@@ -90,9 +90,12 @@ MODULE PROBLEM_CONSTANTS
   !Electromagnetics class
   !Classical field class
   !  Laplace equation
+!!TODO: We don't really have two problem types here? Maybe a different type with nonlinear boundary conditions???
   INTEGER(INTG), PARAMETER :: PROBLEM_STANDARD_LAPLACE_SUBTYPE=1
   INTEGER(INTG), PARAMETER :: PROBLEM_GENERALISED_LAPLACE_SUBTYPE=2
   !  Poisson equation
+  INTEGER(INTG), PARAMETER :: PROBLEM_LINEAR_SOURCE_POISSON_SUBTYPE=1
+  INTEGER(INTG), PARAMETER :: PROBLEM_NONLINEAR_SOURCE_POISSON_SUBTYPE=2
   !  Helmholtz equation
   !  Wave equation
   !  Diffusion equation

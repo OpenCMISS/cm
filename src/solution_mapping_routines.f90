@@ -1823,7 +1823,7 @@ CONTAINS
                     ELSE
                       LOCAL_ERROR="The specified equations set linearity type of "// &
                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%LINEARITY,"*",ERR,ERROR))// &
-                        & " does not match the solution linearity TYPE of "// &
+                        & " does not match the solution linearity type of "// &
                         & TRIM(NUMBER_TO_VSTRING(SOLUTION%LINEARITY,"*",ERR,ERROR))//"."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF

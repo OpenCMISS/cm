@@ -2243,7 +2243,8 @@ CONTAINS
                                           & COUPLING_COEFFICIENTS(solver_column_idx)
                                         !Add in the solver matrix value
                                         VALUE=JACOBIAN_MATRIX_DATA(jacobian_row_number+(jacobian_column_number-1)* &
-                                          & EQUATIONS_MATRICES%TOTAL_NUMBER_OF_ROWS)*row_coupling_coefficient*column_coupling_coefficient
+                                          & EQUATIONS_MATRICES%TOTAL_NUMBER_OF_ROWS)*row_coupling_coefficient* &
+                                          & column_coupling_coefficient
                                         CALL DISTRIBUTED_MATRIX_VALUES_ADD(SOLVER_DISTRIBUTED_MATRIX,solver_row_number, &
                                           & solver_column_number,VALUE,ERR,ERROR,*999)
                                       ENDDO !solver_column_idx
@@ -2442,7 +2443,8 @@ CONTAINS
                                             & variable_idx)
                                           variable_field_dof=DEPENDENT_VARIABLE%DOF_LIST(variable_dof)
                                           variable_global_dof=DEPENDENT_DOFS_MAPPING%LOCAL_TO_GLOBAL_MAP(variable_field_dof)
-                                          variable_boundary_condition=FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(variable_global_dof)
+                                          variable_boundary_condition=FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS( &
+                                            & variable_global_dof)
                                           IF(variable_boundary_condition==EQUATIONS_SET_FIXED_BOUNDARY_CONDITION) THEN
                                             DO equations_matrix_idx=1,LINEAR_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS( &
                                               & variable_type)%NUMBER_OF_LINEAR_EQUATIONS_MATRICES
@@ -2454,11 +2456,12 @@ CONTAINS
                                               DO equations_row_number2=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
                                                 CALL DISTRIBUTED_MATRIX_VALUES_GET(EQUATIONS_MATRIX%MATRIX,equations_row_number2, &
                                                   & equations_column_number,MATRIX_VALUE,ERR,ERROR,*999)
-                                                DO solver_row_idx=1,SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                                  & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number2)%NUMBER_OF_SOLVER_ROWS
-                                                  solver_row_number=SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                                    & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number2)%SOLVER_ROWS( &
-                                                    & solver_row_idx)
+                                                DO solver_row_idx=1,SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                  & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number2)% &
+                                                  & NUMBER_OF_SOLVER_ROWS
+                                                  solver_row_number=SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                    & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
+                                                    & equations_row_number2)%SOLVER_ROWS(solver_row_idx)
                                                   row_coupling_coefficient=SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                                                     & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number2)% &
                                                     & COUPLING_COEFFICIENTS(solver_row_idx)
@@ -2497,8 +2500,8 @@ CONTAINS
                                     END SELECT
                                     IF(ASSOCIATED(SOURCE_MAPPING)) THEN
                                       !Add in equations source values
-                                      CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_SOURCE_VECTOR,equations_row_number,SOURCE_VALUE, &
-                                        & ERR,ERROR,*999)
+                                      CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_SOURCE_VECTOR,equations_row_number, &
+                                        & SOURCE_VALUE,ERR,ERROR,*999)
                                       !Loop over the solver rows associated with this equations set row
                                       DO solver_row_idx=1,SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                                         & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
@@ -2569,11 +2572,11 @@ CONTAINS
             CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME1,ERR,ERROR,*999)
           ENDIF
           NULLIFY(SOLVER_RESIDUAL_VECTOR)
-          IF(SOLVER_MATRICES%UPDATE_RESIDUAL) THEN
+          IF(SOLVER_MATRICES%UPDATE_RESIDUAL) THEN            
             SOLVER_RESIDUAL_VECTOR=>SOLVER_MATRICES%RESIDUAL
             IF(ASSOCIATED(SOLVER_RESIDUAL_VECTOR)) THEN
-              !Initialise the residual to zero
-              CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(SOLVER_RESIDUAL_VECTOR,0.0_DP,ERR,ERROR,*999)            
+              !Initialise the residual to zero              
+              CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(SOLVER_RESIDUAL_VECTOR,0.0_DP,ERR,ERROR,*999)       
               !Loop over the equations sets
               DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
                 EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
@@ -2617,7 +2620,7 @@ CONTAINS
                                       & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%COUPLING_COEFFICIENTS( &
                                       & solver_row_idx)
                                     VALUE=RESIDUAL_VALUE*row_coupling_coefficient
-                                    !Add in nonlinear residual values
+                                    !Add in nonlinear residual values                                    
                                     CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RESIDUAL_VECTOR,solver_row_number,VALUE, &
                                       & ERR,ERROR,*999)
                                     IF(ASSOCIATED(LINEAR_MAPPING)) THEN
@@ -2877,64 +2880,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Evaluates the Jacobian for a Newton like nonlinear solver
-  SUBROUTINE SOLVER_NONLINEAR_JACOBIAN_EVALUATE(SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to evaluate the Jacobian for
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    
-    CALL ENTERS("SOLVER_NONLINEAR_JACOBIAN_EVALUATE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
- !!TODO:
-      ELSE
-        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_NONLINEAR_JACOBIAN_EVALUATE")
-    RETURN
-999 CALL ERRORS("SOLVER_NONLINEAR_JACOBIAN_EVALUATE",ERR,ERROR)    
-    CALL EXITS("SOLVER_NONLINEAR_JACOBIAN_EVALUATE")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_NONLINEAR_JACOBIAN_EVALUATE
-        
-  !
-  !================================================================================================================================
-  !
-
-  !>Called from the PETSc SNES solvers to evaluate the Jacobian for a Newton like nonlinear solver
-  SUBROUTINE SOLVER_NONLINEAR_JACOBIAN_EVALUATE_PETSC(SNES,X,A,B,FLAG,CTX)
-
-    !Argument variables
-    INTEGER(INTG) :: SNES(*) !<The PETSc SNES type
-    INTEGER(INTG) :: X(*) !<The PETSc X Vec type
-    INTEGER(INTG) :: A(*) !<The PETSc A Mat type
-    INTEGER(INTG) :: B(*) !<The PETSc B Mat type
-    INTEGER(INTG) :: FLAG(*) !<The PETSc matrix structure flag
-    TYPE(SOLVER_TYPE), POINTER :: CTX !<The passed through context
-    !Local Variables
-    INTEGER(INTG) :: ERR
-    TYPE(VARYING_STRING) :: ERROR
-    
-    CALL SOLVER_NONLINEAR_JACOBIAN_EVALUATE(CTX,ERR,ERROR,*999)
-
-    RETURN
-999 CALL FLAG_WARNING("Error evaluating nonlinear Jacobian.",ERR,ERROR,*998)
-998 RETURN    
-  END SUBROUTINE SOLVER_NONLINEAR_JACOBIAN_EVALUATE_PETSC
-        
-  !
-  !================================================================================================================================
-  !
-
   !>Sets/changes the line search alpha for a nonlinear solver
   SUBROUTINE SOLVER_NONLINEAR_LINESEARCH_ALPHA_SET(SOLVER,LINESEARCH_ALPHA,ERR,ERROR,*)
 
@@ -3005,6 +2950,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     EXTERNAL :: SNESDefaultComputeJacobianColor
+    EXTERNAL :: PROBLEM_SOLUTION_JACOBIAN_EVALUATE_PETSC
     EXTERNAL :: PROBLEM_SOLUTION_RESIDUAL_EVALUATE_PETSC
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: JACOBIAN_MATRIX
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RESIDUAL_VECTOR
@@ -3075,15 +3021,20 @@ CONTAINS
                       CALL FLAG_ERROR("Cannot have no Jacobian calculation for a PETSc nonlinear linesearch solver.", &
                         & ERR,ERROR,*999)
                     CASE(SOLVER_NONLINEAR_JACOBIAN_ANALTYIC_CALCULATED)
+                      SOLVER_JACOBIAN%UPDATE_MATRIX=.TRUE. !CMISS will fill in the Jacobian values
                       CALL PETSC_SNESSETJACOBIAN(NONLINEAR_LINESEARCH_SOLVER%SNES,JACOBIAN_MATRIX%PETSC%MATRIX, &
-                        & JACOBIAN_MATRIX%PETSC%MATRIX,SOLVER_NONLINEAR_JACOBIAN_EVALUATE_PETSC,SOLVER,ERR,ERROR,*999)
+                        & JACOBIAN_MATRIX%PETSC%MATRIX,PROBLEM_SOLUTION_JACOBIAN_EVALUATE_PETSC,SOLVER,ERR,ERROR,*999)
                     CASE(SOLVER_NONLINEAR_JACOBIAN_FD_CALCULATED)
+                      SOLVER_JACOBIAN%UPDATE_MATRIX=.FALSE. !Petsc will fill in the Jacobian values
                       CALL DISTRIBUTED_MATRIX_FORM(JACOBIAN_MATRIX,ERR,ERROR,*999)
+                      CALL DISTRIBUTED_MATRIX_OUTPUT(GENERAL_OUTPUT_TYPE,JACOBIAN_MATRIX,ERR,ERROR,*999)
                       CALL PETSC_MATGETCOLORING(JACOBIAN_MATRIX%PETSC%MATRIX,PETSC_MATCOLORING_SL,NONLINEAR_LINESEARCH_SOLVER% &
                         & JACOBIAN_ISCOLORING,ERR,ERROR,*999)
                       CALL PETSC_MATFDCOLORINGCREATE(JACOBIAN_MATRIX%PETSC%MATRIX,NONLINEAR_LINESEARCH_SOLVER% &
                         & JACOBIAN_ISCOLORING,NONLINEAR_LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
                       CALL PETSC_ISCOLORINGDESTROY(NONLINEAR_LINESEARCH_SOLVER%JACOBIAN_ISCOLORING,ERR,ERROR,*999)
+                      CALL PETSC_MATFDCOLORINGSETFUNCTIONSNES(NONLINEAR_LINESEARCH_SOLVER%JACOBIAN_FDCOLORING, &
+                        & PROBLEM_SOLUTION_RESIDUAL_EVALUATE_PETSC,SOLUTION,ERR,ERROR,*999)
                       CALL PETSC_MATFDCOLORINGSETFROMOPTIONS(NONLINEAR_LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
                       CALL PETSC_SNESSETJACOBIAN(NONLINEAR_LINESEARCH_SOLVER%SNES,JACOBIAN_MATRIX%PETSC%MATRIX, &
                         & JACOBIAN_MATRIX%PETSC%MATRIX,SNESDefaultComputeJacobianColor,NONLINEAR_LINESEARCH_SOLVER% &
@@ -3692,84 +3643,6 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE SOLVER_NONLINEAR_RELATIVE_TOLERANCE_SET
-        
-  !
-  !================================================================================================================================
-  !
-
-  !>EvaluateS the residual for a Newton like nonlinear solver
-  SUBROUTINE SOLVER_NONLINEAR_RESIDUAL_EVALUATE(SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to evaluate the residual for
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: equations_set_idx
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION
-    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING
-    
-    CALL ENTERS("SOLVER_NONLINEAR_RESIDUAL_EVALUATE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        SOLUTION=>SOLVER%SOLUTION
-        IF(ASSOCIATED(SOLUTION)) THEN 
-          SOLUTION_MAPPING=>SOLUTION%SOLUTION_MAPPING
-          IF(ASSOCIATED(SOLUTION_MAPPING)) THEN
-            !Copy the current solution vector to the depenent field
-            CALL SOLVER_VARIABLES_UPDATE(SOLVER,ERR,ERROR,*999)
-            !Assemble the equations            
-            DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
-              EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR              
-              !CALL EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
-            ENDDO !equations_set_idx
-            !Assemble the solver matrices
-            CALL SOLVER_MATRICES_ASSEMBLE(SOLVER,ERR,ERROR,*999)
-          ELSE
-            CALL FLAG_ERROR("Solution solution mapping is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("Solver solution is not associated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_NONLINEAR_RESIDUAL_EVALUATE")
-    RETURN
-999 CALL ERRORS("SOLVER_NONLINEAR_RESIDUAL_EVALUATE",ERR,ERROR)    
-    CALL EXITS("SOLVER_NONLINEAR_RESIDUAL_EVALUATE")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_NONLINEAR_RESIDUAL_EVALUATE
-        
-  !
-  !================================================================================================================================
-  !
-
-  !>Called from the PETSc SNES solvers to evaluate the residual for a Newton like nonlinear solver
-  SUBROUTINE SOLVER_NONLINEAR_RESIDUAL_EVALUATE_PETSC(SNES,X,F,CTX)
-
-    !Argument variables
-    INTEGER(INTG) :: SNES(*) !<The PETSc SNES type
-    INTEGER(INTG) :: X(*) !<The PETSc X Vec type
-    INTEGER(INTG) :: F(*) !<The PETSc F Vec type
-    TYPE(SOLVER_TYPE), POINTER :: CTX !<The passed through context
-    !Local Variables
-    INTEGER(INTG) :: ERR=0
-    TYPE(VARYING_STRING) :: ERROR
-    
-    CALL SOLVER_NONLINEAR_RESIDUAL_EVALUATE(CTX,ERR,ERROR,*999)
-
-    RETURN
-999 CALL FLAG_WARNING("Error evaluating nonlinear residual.",ERR,ERROR,*998)
-998 RETURN    
-  END SUBROUTINE SOLVER_NONLINEAR_RESIDUAL_EVALUATE_PETSC
         
   !
   !================================================================================================================================
@@ -4606,7 +4479,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: equations_set_idx,field_dof,solver_dof_idx,solver_matrix_idx,variable_dof
+    INTEGER(INTG) :: DUMMY_ERR,equations_set_idx,field_dof,solver_dof_idx,solver_matrix_idx,variable_dof
     REAL(DP) :: additive_constant,VALUE,variable_coefficient
     REAL(DP), POINTER :: SOLVER_DATA(:)
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: SOLVER_VECTOR
@@ -4616,8 +4489,11 @@ CONTAINS
     TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
     TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
 
-    CALL ENTERS("SOLVER_VARIABLES_UPDATE",ERR,ERROR,*999)
+    NULLIFY(SOLVER_DATA)
+    
+    CALL ENTERS("SOLVER_VARIABLES_UPDATE",ERR,ERROR,*998)
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
@@ -4630,8 +4506,8 @@ CONTAINS
               IF(ASSOCIATED(SOLVER_MATRIX)) THEN
                 SOLVER_VECTOR=>SOLVER_MATRIX%SOLVER_VECTOR
                 IF(ASSOCIATED(SOLVER_VECTOR)) THEN
-                  !Get the solver variables data
-                  CALL DISTRIBUTED_VECTOR_DATA_GET(SOLVER_VECTOR,SOLVER_DATA,ERR,ERROR,*999)
+                  !Get the solver variables data                  
+                  CALL DISTRIBUTED_VECTOR_DATA_GET(SOLVER_VECTOR,SOLVER_DATA,ERR,ERROR,*999)             
                   !Loop over the solver variable dofs
                   DO solver_dof_idx=1,SOLUTION_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%NUMBER_OF_DOFS
                     !Loop over the equations sets associated with this dof
@@ -4680,28 +4556,29 @@ CONTAINS
                     CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                   ENDDO !equations_set_idx
                 ELSE
-                  CALL FLAG_ERROR("Solver vector is not associated.",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Solver vector is not associated.",ERR,ERROR,*998)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*998)
               ENDIF
             ENDDO !solver_matrix_idx
           ELSE
-            CALL FLAG_ERROR("Solver matrices solution mapping is not associated.",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Solver matrices solution mapping is not associated.",ERR,ERROR,*998)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver solver matrices are not associated.",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Solver solver matrices are not associated.",ERR,ERROR,*998)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*998)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
     ENDIF
     
     CALL EXITS("SOLVER_VARIABLES_UPDATE")
     RETURN
-999 CALL ERRORS("SOLVER_VARIABLES_UPDATE",ERR,ERROR)    
+999 IF(ASSOCIATED(SOLVER_DATA)) CALL DISTRIBUTED_VECTOR_DATA_RESTORE(SOLVER_VECTOR,SOLVER_DATA,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("SOLVER_VARIABLES_UPDATE",ERR,ERROR)    
     CALL EXITS("SOLVER_VARIABLES_UPDATE")
     RETURN 1
    
