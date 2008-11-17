@@ -236,7 +236,8 @@ MODULE FIELD_ROUTINES
     & FIELD_GEOMETRIC_FIELD_SET, &
     & FIELD_GEOMETRIC_PARAMETERS_UPDATE_FROM_INITIAL_MESH, &
     & FIELD_INTERPOLATED_POINT_METRICS_CALCULATE, &
-    & FIELD_INTERPOLATE_GAUSS,FIELD_INTERPOLATE_XI, &
+    & FIELD_INTERPOLATE_GAUSS, &
+    & FIELD_INTERPOLATE_XI, &
     & FIELD_INTERPOLATED_POINT_METRICS_FINALISE, &
     & FIELD_INTERPOLATED_POINT_METRICS_INITIALISE, &
     & FIELD_INTERPOLATED_POINT_FINALISE, &
@@ -260,7 +261,8 @@ MODULE FIELD_ROUTINES
     & FIELD_PARAMETER_SET_UPDATE_DOF, &
     & FIELD_PARAMETER_SET_UPDATE_ELEMENT, &
     & FIELD_PARAMETER_SET_UPDATE_NODE, &
-    & FIELD_SCALING_TYPE_SET,FIELD_TYPE_SET
+    & FIELD_SCALING_TYPE_SET, &
+    & FIELD_TYPE_SET
 
 CONTAINS
 
@@ -1632,31 +1634,75 @@ CONTAINS
           CASE(NO_PART_DERIV)
             INTERPOLATED_POINT%PARTIAL_DERIVATIVE_TYPE=NO_PART_DERIV
             DO component_idx=1,INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-              INTERPOLATED_POINT%VALUES(component_idx,1)=BASIS_INTERPOLATE_XI(INTERPOLATION_PARAMETERS% &
-                & BASES(component_idx)%PTR,NO_PART_DERIV,XI,INTERPOLATION_PARAMETERS%PARAMETERS(:,component_idx),ERR,ERROR)
-              IF(ERR/=0) GOTO 999
-              CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,NO_PART_DERIV,INTERPOLATED_POINT%VALUES(component_idx,1), &
-                & ERR,ERROR,*999)
+
+!kmith - 17.10.08: Adding calculation of field value for element-based field variables     
+              !INTERPOLATED_POINT%VALUES(component_idx,1)=BASIS_INTERPOLATE_XI(INTERPOLATION_PARAMETERS% &
+              !  & BASES(component_idx)%PTR,NO_PART_DERIV,XI,INTERPOLATION_PARAMETERS%PARAMETERS(:,component_idx),ERR,ERROR)
+              !IF(ERR/=0) GOTO 999
+              !CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,NO_PART_DERIV,INTERPOLATED_POINT%VALUES(component_idx,1), &
+              !  & ERR,ERROR,*999)
+	      IF(INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD_VARIABLE%COMPONENTS(component_idx)% &
+	        INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN 
+                INTERPOLATED_POINT%VALUES(component_idx,1)=BASIS_INTERPOLATE_XI(INTERPOLATION_PARAMETERS% &
+                  & BASES(component_idx)%PTR,NO_PART_DERIV,XI,INTERPOLATION_PARAMETERS%PARAMETERS(:,component_idx),ERR,ERROR)
+                IF(ERR/=0) GOTO 999
+                CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,NO_PART_DERIV,INTERPOLATED_POINT%VALUES(component_idx,1), &
+                  & ERR,ERROR,*999)
+	      ELSEIF(INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD_VARIABLE%COMPONENTS(component_idx)% &
+	        INTERPOLATION_TYPE==FIELD_ELEMENT_BASED_INTERPOLATION) THEN  
+		INTERPOLATED_POINT%VALUES(component_idx,1)=INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%PARAMETERS(1,component_idx)		
+	      ENDIF		
+!kmith - 17.10.08:
+		
             ENDDO! component_idx
           CASE(FIRST_PART_DERIV)
             INTERPOLATED_POINT%PARTIAL_DERIVATIVE_TYPE=FIRST_PART_DERIV
             DO component_idx=1,INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-              !Handle the first case of no partial derivative
-              INTERPOLATED_POINT%VALUES(component_idx,1)=BASIS_INTERPOLATE_XI(INTERPOLATION_PARAMETERS% &
-                & BASES(component_idx)%PTR,NO_PART_DERIV,XI,INTERPOLATION_PARAMETERS%PARAMETERS(:,component_idx),ERR,ERROR)
-              IF(ERR/=0) GOTO 999
-              CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,NO_PART_DERIV,INTERPOLATED_POINT%VALUES(component_idx,1), &
-                & ERR,ERROR,*999)
-              !Now process all the first partial derivatives
-              DO ni=1,INTERPOLATION_PARAMETERS%BASES(component_idx)%PTR%NUMBER_OF_XI
-                nu=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni)
-                INTERPOLATED_POINT%VALUES(component_idx,nu)=BASIS_INTERPOLATE_XI(INTERPOLATION_PARAMETERS% &
-                  & BASES(component_idx)%PTR,nu,XI,INTERPOLATION_PARAMETERS%PARAMETERS(:,component_idx), &
-                  & ERR,ERROR)
+
+!kmith - 17.10.08: Adding calculation of derivatives for element-based field variables    
+              !!Handle the first case of no partial derivative
+              !INTERPOLATED_POINT%VALUES(component_idx,1)=BASIS_INTERPOLATE_XI(INTERPOLATION_PARAMETERS% &
+              !  & BASES(component_idx)%PTR,NO_PART_DERIV,XI,INTERPOLATION_PARAMETERS%PARAMETERS(:,component_idx),ERR,ERROR)
+              !IF(ERR/=0) GOTO 999
+              !CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,NO_PART_DERIV,INTERPOLATED_POINT%VALUES(component_idx,1), &
+              !  & ERR,ERROR,*999)
+              !!Now process all the first partial derivatives
+              !DO ni=1,INTERPOLATION_PARAMETERS%BASES(component_idx)%PTR%NUMBER_OF_XI
+              !  nu=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni)
+              !  INTERPOLATED_POINT%VALUES(component_idx,nu)=BASIS_INTERPOLATE_XI(INTERPOLATION_PARAMETERS% &
+              !    & BASES(component_idx)%PTR,nu,XI,INTERPOLATION_PARAMETERS%PARAMETERS(:,component_idx), &
+              !    & ERR,ERROR)
+              !  IF(ERR/=0) GOTO 999
+              !  CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,nu,INTERPOLATED_POINT%VALUES(component_idx,nu), &
+              !    & ERR,ERROR,*999)
+              !ENDDO !ni
+	      IF(INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD_VARIABLE%COMPONENTS(component_idx)% &
+	        INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN 
+                !Handle the first case of no partial derivative
+                INTERPOLATED_POINT%VALUES(component_idx,1)=BASIS_INTERPOLATE_XI(INTERPOLATION_PARAMETERS% &
+                  & BASES(component_idx)%PTR,NO_PART_DERIV,XI,INTERPOLATION_PARAMETERS%PARAMETERS(:,component_idx),ERR,ERROR)
                 IF(ERR/=0) GOTO 999
-                CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,nu,INTERPOLATED_POINT%VALUES(component_idx,nu), &
+                CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,NO_PART_DERIV,INTERPOLATED_POINT%VALUES(component_idx,1), &
                   & ERR,ERROR,*999)
-              ENDDO !ni
+                !Now process all the first partial derivatives
+                DO ni=1,INTERPOLATION_PARAMETERS%BASES(component_idx)%PTR%NUMBER_OF_XI
+                  nu=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni)
+                  INTERPOLATED_POINT%VALUES(component_idx,nu)=BASIS_INTERPOLATE_XI(INTERPOLATION_PARAMETERS% &
+                    & BASES(component_idx)%PTR,nu,XI,INTERPOLATION_PARAMETERS%PARAMETERS(:,component_idx), &
+                    & ERR,ERROR)
+                  IF(ERR/=0) GOTO 999
+                  CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,nu,INTERPOLATED_POINT%VALUES(component_idx,nu), &
+                    & ERR,ERROR,*999)
+                ENDDO !ni
+	      ELSEIF(INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD_VARIABLE%COMPONENTS(component_idx)% &
+	        INTERPOLATION_TYPE==FIELD_ELEMENT_BASED_INTERPOLATION) THEN 
+		DO ni=1,3 !TODO: generalise upper bound
+		  nu=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni)
+		  INTERPOLATED_POINT%VALUES(component_idx,nu)=0.0_DP	
+		ENDDO	
+	      ENDIF		
+!kmith - 17.10.08:
+	     
             ENDDO! component_idx
           CASE(SECOND_PART_DERIV)
             DO component_idx=1,INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
@@ -3406,52 +3452,52 @@ CONTAINS
             REGION_NODES=>FIELD%REGION%NODES
             
             IF(ASSOCIATED(MESH)) THEN
-		      IF(ASSOCIATED(MESH%GENERATED_MESH)) THEN
-		        SELECT CASE(MESH%GENERATED_MESH%GENERATED_TYPE)
-		        !TODO
-		        CASE(1) 
-		          REGULAR_MESH=>MESH%GENERATED_MESH%REGULAR_MESH
-		          IF(ASSOCIATED(REGULAR_MESH)) THEN
-		            BASIS=>REGULAR_MESH%BASIS
-		            !Calculate sizes
-		            TOTAL_NUMBER_OF_NODES_XI=1
-		            DO ni=1,BASIS%NUMBER_OF_XI
-		              TOTAL_NUMBER_OF_NODES_XI(ni)=(BASIS%NUMBER_OF_NODES_XI(ni)-2)*REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni)+ &
-		                & REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni)+1
-		            ENDDO !ni
-		            MY_ORIGIN=0.0_DP
-		            MY_EXTENT=0.0_DP
-		            MY_ORIGIN(1:REGULAR_MESH%MESH_DIMENSION)=REGULAR_MESH%ORIGIN
-		            MY_EXTENT(1:REGULAR_MESH%MESH_DIMENSION)=REGULAR_MESH%MAXIMUM_EXTENT
-		            MESH_SIZE=MY_EXTENT
-		            DO ni=1,REGULAR_MESH%BASIS%NUMBER_OF_XI
-		              !This assumes that the xi directions are aligned with the coordinate directions
-		              DELTA_COORD(ni)=MESH_SIZE(ni)/REAL(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni),DP)
-		            ENDDO !ni
-		            DO np3=1,TOTAL_NUMBER_OF_NODES_XI(3)
-		              DO np2=1,TOTAL_NUMBER_OF_NODES_XI(2)
-		                DO np1=1,TOTAL_NUMBER_OF_NODES_XI(1)
-		                  np=np1+(np2-1)*TOTAL_NUMBER_OF_NODES_XI(1)+(np3-1)*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
-		                  INITIAL_POSITION(1)=MY_ORIGIN(1)+REAL(np1-1,DP)*DELTA_COORD(1)
-		                  INITIAL_POSITION(2)=MY_ORIGIN(2)+REAL(np2-1,DP)*DELTA_COORD(2)
-		                  INITIAL_POSITION(3)=MY_ORIGIN(3)+REAL(np3-1,DP)*DELTA_COORD(3)
-		                  CALL NODE_INITIAL_POSITION_SET(np,INITIAL_POSITION(1:REGULAR_MESH%MESH_DIMENSION),REGION_NODES,ERR,ERROR,*999)
-		                ENDDO !np1
-		              ENDDO !np2
-		            ENDDO !np3
-		            CALL NODES_CREATE_FINISH(MESH%REGION,ERR,ERROR,*999)
-		          ELSE
-		            CALL FLAG_ERROR("Regular mesh is not associated",ERR,ERROR,*999)
-		          ENDIF
-		        CASE DEFAULT
-		          CALL FLAG_ERROR("Generated mesh type is either invalid or not implemented",ERR,ERROR,*999)
-		        END SELECT
-		      ELSE
-		        CALL FLAG_ERROR("Generated mesh is not associated",ERR,ERROR,*999)
-		      ENDIF
-		    ELSE
-		      CALL FLAG_ERROR("Mesh is not associated",ERR,ERROR,*999)
-		    ENDIF
+	      IF(ASSOCIATED(MESH%GENERATED_MESH)) THEN
+		SELECT CASE(MESH%GENERATED_MESH%GENERATED_TYPE)
+		!TODO
+		CASE(1) 
+		  REGULAR_MESH=>MESH%GENERATED_MESH%REGULAR_MESH
+                  IF(ASSOCIATED(REGULAR_MESH)) THEN
+	            BASIS=>REGULAR_MESH%BASIS
+		    !Calculate sizes
+		    TOTAL_NUMBER_OF_NODES_XI=1
+	            DO ni=1,BASIS%NUMBER_OF_XI
+		      TOTAL_NUMBER_OF_NODES_XI(ni)=(BASIS%NUMBER_OF_NODES_XI(ni)-2)*REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni)+ &
+		        & REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni)+1
+		    ENDDO !ni
+		    MY_ORIGIN=0.0_DP
+                    MY_EXTENT=0.0_DP
+		    MY_ORIGIN(1:REGULAR_MESH%MESH_DIMENSION)=REGULAR_MESH%ORIGIN
+		    MY_EXTENT(1:REGULAR_MESH%MESH_DIMENSION)=REGULAR_MESH%MAXIMUM_EXTENT
+		    MESH_SIZE=MY_EXTENT
+		    DO ni=1,REGULAR_MESH%BASIS%NUMBER_OF_XI
+		      !This assumes that the xi directions are aligned with the coordinate directions
+		      DELTA_COORD(ni)=MESH_SIZE(ni)/REAL(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni),DP)
+		    ENDDO !ni
+		    DO np3=1,TOTAL_NUMBER_OF_NODES_XI(3)
+		      DO np2=1,TOTAL_NUMBER_OF_NODES_XI(2)
+		        DO np1=1,TOTAL_NUMBER_OF_NODES_XI(1)
+		          np=np1+(np2-1)*TOTAL_NUMBER_OF_NODES_XI(1)+(np3-1)*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
+		          INITIAL_POSITION(1)=MY_ORIGIN(1)+REAL(np1-1,DP)*DELTA_COORD(1)
+		          INITIAL_POSITION(2)=MY_ORIGIN(2)+REAL(np2-1,DP)*DELTA_COORD(2)
+	                  INITIAL_POSITION(3)=MY_ORIGIN(3)+REAL(np3-1,DP)*DELTA_COORD(3)
+		          CALL NODE_INITIAL_POSITION_SET(np,INITIAL_POSITION(1:REGULAR_MESH%MESH_DIMENSION),REGION_NODES,ERR,ERROR,*999)
+		        ENDDO !np1
+		      ENDDO !np2
+		    ENDDO !np3
+		    CALL NODES_CREATE_FINISH(MESH%REGION,ERR,ERROR,*999)
+	          ELSE
+		    CALL FLAG_ERROR("Regular mesh is not associated",ERR,ERROR,*999)
+		  ENDIF
+		CASE DEFAULT
+		  CALL FLAG_ERROR("Generated mesh type is either invalid or not implemented",ERR,ERROR,*999)
+		END SELECT
+	      ELSE
+		CALL FLAG_ERROR("Generated mesh is not associated",ERR,ERROR,*999)
+	      ENDIF
+	    ELSE
+	      CALL FLAG_ERROR("Mesh is not associated",ERR,ERROR,*999)
+            ENDIF
             
             ! TODO remove      
             IF(FIELD%TYPE==FIELD_GEOMETRIC_TYPE) THEN
