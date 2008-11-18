@@ -1306,7 +1306,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx,global_np,global_np1,global_np2,nk,nk1,nk2,nl,nnl,np,np1,np2,ni,ny,&
-      & DERIVATIVES_NUMBER_OF_LINES(8), TOTAL_NUMBER_OF_NODES_XI(3), node_idx(3),ni1,ni2,ni3,nd
+      & DERIVATIVES_NUMBER_OF_LINES(8), TOTAL_NUMBER_OF_NODES_XI(3), node_idx(3),nd
     REAL(DP) :: DELTA(8),DELTA_COORD(3),MY_ORIGIN(3),MY_EXTENT(3),MESH_SIZE(3)
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
@@ -1345,64 +1345,60 @@ CONTAINS
                         DOMAIN=>FIELD_VARIABLE_COMPONENT%DOMAIN
                         DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
                         DOMAIN_LINES=>DOMAIN%TOPOLOGY%LINES
-                        DO ni3=1,TOTAL_NUMBER_OF_NODES_XI(3)
-                          node_idx(3)=ni3
-                          DO ni2=1,TOTAL_NUMBER_OF_NODES_XI(2)
-                            node_idx(2)=ni2
-                            DO ni1=1,TOTAL_NUMBER_OF_NODES_XI(1)
-                              node_idx(1)=ni1
-                              np=node_idx(1)+(node_idx(2)-1)*TOTAL_NUMBER_OF_NODES_XI(1)+(node_idx(3)-1)*TOTAL_NUMBER_OF_NODES_XI(1) &
-                                & *TOTAL_NUMBER_OF_NODES_XI(2)
-                              global_np=DOMAIN_NODES%NODES(np)%GLOBAL_NUMBER
-                              ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,np,0)
-                              CALL FIELD_PARAMETER_SET_UPDATE_DOF(FIELD,FIELD_VALUES_SET_TYPE,ny,MY_ORIGIN(component_idx) &
-                                & +REAL(node_idx(component_idx)-1,DP)*DELTA_COORD(component_idx),ERR,ERROR,*999)
-                              IF(DOMAIN_NODES%NODES(np)%NUMBER_OF_DERIVATIVES>1) THEN
-                                DERIVATIVES_NUMBER_OF_LINES=0
-                                DELTA=0.0_DP
-                                DO nnl=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_LINES
-                                  nl=DOMAIN_NODES%NODES(np)%NODE_LINES(nnl)
-                                  np1=DOMAIN_LINES%LINES(nl)%NODES_IN_LINE(1)
-                                  global_np1=DOMAIN_NODES%NODES(np1)%GLOBAL_NUMBER
-                                  np2=DOMAIN_LINES%LINES(nl)%NODES_IN_LINE(DOMAIN_LINES%LINES(nl)%BASIS%NUMBER_OF_NODES)
-                                  global_np2=DOMAIN_NODES%NODES(np2)%GLOBAL_NUMBER
-                                  nk1=DOMAIN_LINES%LINES(nl)%DERIVATIVES_IN_LINE(2,1)
-                                  nk2=DOMAIN_LINES%LINES(nl)%DERIVATIVES_IN_LINE(2,DOMAIN_LINES%LINES(nl)%BASIS%NUMBER_OF_NODES)
-                                  !TODO: Adjust delta calculation for polar coordinate discontinuities
-                                  !TODO: this is hardhoded bit
-                                  SELECT CASE(component_idx)
-                                    CASE(1)
-                                      nd=MOD(global_np2-global_np1,TOTAL_NUMBER_OF_NODES_XI(component_idx))
-                                    CASE(2)
-                                      nd=MOD(global_np2-global_np1,TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)) &
-                                        & /TOTAL_NUMBER_OF_NODES_XI(1)
-                                    CASE(3)
-                                      nd=(global_np2-global_np1)/(TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2))
-                                    CASE DEFAULT
-                                      CALL FLAG_ERROR("Invalid component number",ERR,ERROR,*999)
-                                  END SELECT
-                                  IF(np1==np) THEN
-                                    DERIVATIVES_NUMBER_OF_LINES(nk1)=DERIVATIVES_NUMBER_OF_LINES(nk1)+1
-                                    DELTA(nk1)=DELTA(nk1)+REAL(nd,DP)*DELTA_COORD(component_idx)
-                                  ELSE IF(np2==np) THEN
-                                    DERIVATIVES_NUMBER_OF_LINES(nk2)=DERIVATIVES_NUMBER_OF_LINES(nk2)+1
-                                    DELTA(nk2)=DELTA(nk2)
-                                    DELTA(nk2)=DELTA(nk2)+REAL(nd,DP)*DELTA_COORD(component_idx)
-                                  ELSE
-                                    !Error???
-                                  ENDIF
-                                ENDDO !nnl
-                                DO nk=1,8
-                                  IF(DERIVATIVES_NUMBER_OF_LINES(nk)>0) THEN
-                                    DELTA(nk)=DELTA(nk)/REAL(DERIVATIVES_NUMBER_OF_LINES(nk),DP)
-                                    ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(nk,np,0)
-                                    CALL FIELD_PARAMETER_SET_UPDATE_DOF(FIELD,FIELD_VALUES_SET_TYPE,ny,DELTA(nk),ERR,ERROR,*999)
-                                  ENDIF
-                                ENDDO !nk
+                        DO np=1,DOMAIN_NODES%NUMBER_OF_NODES
+                          global_np=DOMAIN_NODES%NODES(np)%GLOBAL_NUMBER
+                          node_idx(3)=(global_np-1)/(TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))+1
+                          node_idx(2)=MOD(global_np-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))/ &
+                            & TOTAL_NUMBER_OF_NODES_XI(1)+1
+                          node_idx(1)=MOD(MOD(global_np-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1)), &
+                            & TOTAL_NUMBER_OF_NODES_XI(1))+1
+                          ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,np,0)
+                          CALL FIELD_PARAMETER_SET_UPDATE_DOF(FIELD,FIELD_VALUES_SET_TYPE,ny,MY_ORIGIN(component_idx) &
+                            & +REAL(node_idx(component_idx)-1,DP)*DELTA_COORD(component_idx),ERR,ERROR,*999)
+                          IF(DOMAIN_NODES%NODES(np)%NUMBER_OF_DERIVATIVES>1) THEN
+                            DERIVATIVES_NUMBER_OF_LINES=0
+                            DELTA=0.0_DP
+                            DO nnl=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_LINES
+                              nl=DOMAIN_NODES%NODES(np)%NODE_LINES(nnl)
+                              np1=DOMAIN_LINES%LINES(nl)%NODES_IN_LINE(1)
+                              global_np1=DOMAIN_NODES%NODES(np1)%GLOBAL_NUMBER
+                              np2=DOMAIN_LINES%LINES(nl)%NODES_IN_LINE(DOMAIN_LINES%LINES(nl)%BASIS%NUMBER_OF_NODES)
+                              global_np2=DOMAIN_NODES%NODES(np2)%GLOBAL_NUMBER
+                              nk1=DOMAIN_LINES%LINES(nl)%DERIVATIVES_IN_LINE(2,1)
+                              nk2=DOMAIN_LINES%LINES(nl)%DERIVATIVES_IN_LINE(2,DOMAIN_LINES%LINES(nl)%BASIS%NUMBER_OF_NODES)
+                              !TODO: Adjust delta calculation for polar coordinate discontinuities
+                              !TODO: this is hardhoded bit
+                              SELECT CASE(component_idx)
+                                CASE(1)
+                                  nd=MOD(global_np2-global_np1,TOTAL_NUMBER_OF_NODES_XI(component_idx))
+                                CASE(2)
+                                  nd=MOD(global_np2-global_np1,TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)) &
+                                    & /TOTAL_NUMBER_OF_NODES_XI(1)
+                                CASE(3)
+                                  nd=(global_np2-global_np1)/(TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2))
+                                CASE DEFAULT
+                                  CALL FLAG_ERROR("Invalid component number",ERR,ERROR,*999)
+                              END SELECT
+                              IF(np1==np) THEN
+                                DERIVATIVES_NUMBER_OF_LINES(nk1)=DERIVATIVES_NUMBER_OF_LINES(nk1)+1
+                                DELTA(nk1)=DELTA(nk1)+REAL(nd,DP)*DELTA_COORD(component_idx)
+                              ELSE IF(np2==np) THEN
+                                DERIVATIVES_NUMBER_OF_LINES(nk2)=DERIVATIVES_NUMBER_OF_LINES(nk2)+1
+                                DELTA(nk2)=DELTA(nk2)
+                                DELTA(nk2)=DELTA(nk2)+REAL(nd,DP)*DELTA_COORD(component_idx)
+                              ELSE
+                                !Error???
                               ENDIF
-                           ENDDO !node_idx(1)
-                         ENDDO !node_idx(2)
-                       ENDDO !node_idx(3)
+                            ENDDO !nnl
+                            DO nk=1,8
+                              IF(DERIVATIVES_NUMBER_OF_LINES(nk)>0) THEN
+                                DELTA(nk)=DELTA(nk)/REAL(DERIVATIVES_NUMBER_OF_LINES(nk),DP)
+                                ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(nk,np,0)
+                                CALL FIELD_PARAMETER_SET_UPDATE_DOF(FIELD,FIELD_VALUES_SET_TYPE,ny,DELTA(nk),ERR,ERROR,*999)
+                              ENDIF
+                            ENDDO !nk
+                          ENDIF
+                       ENDDO !np
                       ELSE
                         LOCAL_ERROR="Component number "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
                           & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
