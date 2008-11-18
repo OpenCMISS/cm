@@ -1305,140 +1305,128 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: component_idx,component_idx2,global_np,global_np1,global_np2,nk,nk1,nk2,nl,nnl,np,np1,np2,np3,ni,nu,ny, &
-      & DERIVATIVES_NUMBER_OF_LINES(8), TOTAL_NUMBER_OF_NODES_XI(3)
-    REAL(DP) :: DELTA(8),VECTOR(3),LENGTH, INITIAL_POSITION(3),DELTA_COORD(3),MY_ORIGIN(3),MY_EXTENT(3),MESH_SIZE(3)
-    REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
+    INTEGER(INTG) :: component_idx,global_np,global_np1,global_np2,nk,nk1,nk2,nl,nnl,np,np1,np2,ni,ny,&
+      & DERIVATIVES_NUMBER_OF_LINES(8), TOTAL_NUMBER_OF_NODES_XI(3), node_idx(3),ni1,ni2,ni3,nd
+    REAL(DP) :: DELTA(8),DELTA_COORD(3),MY_ORIGIN(3),MY_EXTENT(3),MESH_SIZE(3)
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
     TYPE(DOMAIN_LINES_TYPE), POINTER :: DOMAIN_LINES
     TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: FIELD_VARIABLE_COMPONENT
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(NODES_TYPE), POINTER :: REGION_NODES
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(GENERATED_MESH_REGULAR_TYPE), POINTER :: REGULAR_MESH
     
     CALL ENTERS("GENERATED_MESHES_GEOMETRIC_PARAMETERS_CALCULATE",ERR,ERROR,*999)
-    
+
     IF(ASSOCIATED(FIELD)) THEN
       IF(FIELD%FIELD_FINISHED) THEN
         IF(ASSOCIATED(FIELD%REGION)) THEN
-          IF(ASSOCIATED(FIELD%REGION%NODES)) THEN
-            REGION_NODES=>FIELD%REGION%NODES
-            IF(ASSOCIATED(GENERATED_MESH)) THEN
-              SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
-                CASE(GENERATED_MESH_REGULAR_MESH_TYPE) 
-                  REGULAR_MESH=>GENERATED_MESH%REGULAR_MESH
-                  IF(ASSOCIATED(REGULAR_MESH)) THEN
-                    BASIS=>REGULAR_MESH%BASIS
-                    !Calculate sizes
-                    TOTAL_NUMBER_OF_NODES_XI=1
-                    DO ni=1,BASIS%NUMBER_OF_XI
-                      TOTAL_NUMBER_OF_NODES_XI(ni)=(BASIS%NUMBER_OF_NODES_XI(ni)-2)*REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni)+ &
-                        & REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni)+1
-                    ENDDO !ni
-                    MY_ORIGIN=0.0_DP
-                    MY_EXTENT=0.0_DP
-                    MY_ORIGIN(1:REGULAR_MESH%MESH_DIMENSION)=REGULAR_MESH%ORIGIN
-                    MY_EXTENT(1:REGULAR_MESH%MESH_DIMENSION)=REGULAR_MESH%MAXIMUM_EXTENT
-                    MESH_SIZE=MY_EXTENT
-                    DO ni=1,REGULAR_MESH%BASIS%NUMBER_OF_XI
-                      !This assumes that the xi directions are aligned with the coordinate directions
-                      DELTA_COORD(ni)=MESH_SIZE(ni)/REAL(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni),DP)
-                    ENDDO !ni
-                    DO np3=1,TOTAL_NUMBER_OF_NODES_XI(3)
-                      DO np2=1,TOTAL_NUMBER_OF_NODES_XI(2)
-                        DO np1=1,TOTAL_NUMBER_OF_NODES_XI(1)
-                          np=np1+(np2-1)*TOTAL_NUMBER_OF_NODES_XI(1)+(np3-1)*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
-                          INITIAL_POSITION(1)=MY_ORIGIN(1)+REAL(np1-1,DP)*DELTA_COORD(1)
-                          INITIAL_POSITION(2)=MY_ORIGIN(2)+REAL(np2-1,DP)*DELTA_COORD(2)
-                          INITIAL_POSITION(3)=MY_ORIGIN(3)+REAL(np3-1,DP)*DELTA_COORD(3)
-                          CALL NODE_INITIAL_POSITION_SET(np,INITIAL_POSITION(1:REGULAR_MESH%MESH_DIMENSION),REGION_NODES,ERR,ERROR,*999)
-                        ENDDO !np1
-                      ENDDO !np2
-                    ENDDO !np3
-                    CALL NODES_CREATE_FINISH(GENERATED_MESH%REGION,ERR,ERROR,*999)
-                  ELSE
-                    CALL FLAG_ERROR("Regular mesh is not associated",ERR,ERROR,*999)
-                  ENDIF
-                CASE DEFAULT
-                  CALL FLAG_ERROR("Generated mesh type is either invalid or not implemented",ERR,ERROR,*999)
-                END SELECT
-              ELSE
-                CALL FLAG_ERROR("Generated mesh is not associated",ERR,ERROR,*999)
-              ENDIF
-                  
-              IF(FIELD%TYPE==FIELD_GEOMETRIC_TYPE) THEN
-                FIELD_VARIABLE=>FIELD%VARIABLE_TYPE_MAP(FIELD_STANDARD_VARIABLE_TYPE)%PTR
-                IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                  DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                    FIELD_VARIABLE_COMPONENT=>FIELD_VARIABLE%COMPONENTS(component_idx)
-                    IF(FIELD_VARIABLE_COMPONENT%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
-                      DOMAIN=>FIELD_VARIABLE_COMPONENT%DOMAIN
-                      DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
-                      DOMAIN_LINES=>DOMAIN%TOPOLOGY%LINES
-                      DO np=1,DOMAIN_NODES%NUMBER_OF_NODES
-                        global_np=DOMAIN_NODES%NODES(np)%GLOBAL_NUMBER
-                        ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,np,0)
-                        CALL FIELD_PARAMETER_SET_UPDATE_DOF(FIELD,FIELD_VALUES_SET_TYPE,ny,REGION_NODES%NODES(global_np)% &
-                          & INITIAL_POSITION(component_idx),ERR,ERROR,*999)
-                        IF(DOMAIN_NODES%NODES(np)%NUMBER_OF_DERIVATIVES>1) THEN
-                          DERIVATIVES_NUMBER_OF_LINES=0
-                          DELTA=0.0_DP
-                          DO nnl=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_LINES
-                            nl=DOMAIN_NODES%NODES(np)%NODE_LINES(nnl)
-                            np1=DOMAIN_LINES%LINES(nl)%NODES_IN_LINE(1)
-                            global_np1=DOMAIN_NODES%NODES(np1)%GLOBAL_NUMBER
-                            np2=DOMAIN_LINES%LINES(nl)%NODES_IN_LINE(DOMAIN_LINES%LINES(nl)%BASIS%NUMBER_OF_NODES)
-                            global_np2=DOMAIN_NODES%NODES(np2)%GLOBAL_NUMBER
-                            nk1=DOMAIN_LINES%LINES(nl)%DERIVATIVES_IN_LINE(2,1)
-                            nk2=DOMAIN_LINES%LINES(nl)%DERIVATIVES_IN_LINE(2,DOMAIN_LINES%LINES(nl)%BASIS%NUMBER_OF_NODES)
-                            !TODO: Adjust delta calculation for polar coordinate discontinuities
-                            IF(np1==np) THEN
-                              DERIVATIVES_NUMBER_OF_LINES(nk1)=DERIVATIVES_NUMBER_OF_LINES(nk1)+1
-                              DELTA(nk1)=DELTA(nk1)+REGION_NODES%NODES(global_np2)%INITIAL_POSITION(component_idx)- &
-                                & REGION_NODES%NODES(global_np1)%INITIAL_POSITION(component_idx)
-                            ELSE IF(np2==np) THEN
-                              DERIVATIVES_NUMBER_OF_LINES(nk2)=DERIVATIVES_NUMBER_OF_LINES(nk2)+1
-                              DELTA(nk2)=DELTA(nk2)+REGION_NODES%NODES(global_np2)%INITIAL_POSITION(component_idx)- &
-                                & REGION_NODES%NODES(global_np1)%INITIAL_POSITION(component_idx)
-                            ELSE
-                              !Error???
-                            ENDIF
-                          ENDDO !nnl
-                          DO nk=1,8
-                            IF(DERIVATIVES_NUMBER_OF_LINES(nk)>0) THEN
-                              DELTA(nk)=DELTA(nk)/REAL(DERIVATIVES_NUMBER_OF_LINES(nk),DP)
-                              ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(nk,np,0)
-                              CALL FIELD_PARAMETER_SET_UPDATE_DOF(FIELD,FIELD_VALUES_SET_TYPE,ny,DELTA(nk),ERR,ERROR,*999)
-                            ENDIF
-                          ENDDO !nk
-                        ENDIF
-                      ENDDO !np
-                    ELSE
-                      LOCAL_ERROR="Component number "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
-                        & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
-                        & " does not have node based interpolation"
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    ENDIF
-                  ENDDO !component_idx
+          IF(ASSOCIATED(GENERATED_MESH)) THEN
+            SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
+              CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
+                REGULAR_MESH=>GENERATED_MESH%REGULAR_MESH
+                MY_ORIGIN=0.0_DP
+                MY_EXTENT=0.0_DP
+                MY_ORIGIN(1:REGULAR_MESH%MESH_DIMENSION)=REGULAR_MESH%ORIGIN
+                MY_EXTENT(1:REGULAR_MESH%MESH_DIMENSION)=REGULAR_MESH%MAXIMUM_EXTENT
+                MESH_SIZE=MY_EXTENT
+                TOTAL_NUMBER_OF_NODES_XI=1
+                DO ni=1,REGULAR_MESH%BASIS%NUMBER_OF_XI
+                  DELTA_COORD(ni)=MESH_SIZE(ni)/REAL(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni),DP)
+                  TOTAL_NUMBER_OF_NODES_XI(ni)=(REGULAR_MESH%BASIS%NUMBER_OF_NODES_XI(ni)-2)*REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni) &
+                    & + REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni)+1
+                ENDDO
+                IF(FIELD%TYPE==FIELD_GEOMETRIC_TYPE) THEN
+                  FIELD_VARIABLE=>FIELD%VARIABLE_TYPE_MAP(FIELD_STANDARD_VARIABLE_TYPE)%PTR
+                  IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                    DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                      FIELD_VARIABLE_COMPONENT=>FIELD_VARIABLE%COMPONENTS(component_idx)
+                      IF(FIELD_VARIABLE_COMPONENT%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
+                        DOMAIN=>FIELD_VARIABLE_COMPONENT%DOMAIN
+                        DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                        DOMAIN_LINES=>DOMAIN%TOPOLOGY%LINES
+                        DO ni3=1,TOTAL_NUMBER_OF_NODES_XI(3)
+                          node_idx(3)=ni3
+                          DO ni2=1,TOTAL_NUMBER_OF_NODES_XI(2)
+                            node_idx(2)=ni2
+                            DO ni1=1,TOTAL_NUMBER_OF_NODES_XI(1)
+                              node_idx(1)=ni1
+                              np=node_idx(1)+(node_idx(2)-1)*TOTAL_NUMBER_OF_NODES_XI(1)+(node_idx(3)-1)*TOTAL_NUMBER_OF_NODES_XI(1) &
+                                & *TOTAL_NUMBER_OF_NODES_XI(2)
+                              global_np=DOMAIN_NODES%NODES(np)%GLOBAL_NUMBER
+                              ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,np,0)
+                              CALL FIELD_PARAMETER_SET_UPDATE_DOF(FIELD,FIELD_VALUES_SET_TYPE,ny,MY_ORIGIN(component_idx) &
+                                & +REAL(node_idx(component_idx)-1,DP)*DELTA_COORD(component_idx),ERR,ERROR,*999)
+                              IF(DOMAIN_NODES%NODES(np)%NUMBER_OF_DERIVATIVES>1) THEN
+                                DERIVATIVES_NUMBER_OF_LINES=0
+                                DELTA=0.0_DP
+                                DO nnl=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_LINES
+                                  nl=DOMAIN_NODES%NODES(np)%NODE_LINES(nnl)
+                                  np1=DOMAIN_LINES%LINES(nl)%NODES_IN_LINE(1)
+                                  global_np1=DOMAIN_NODES%NODES(np1)%GLOBAL_NUMBER
+                                  np2=DOMAIN_LINES%LINES(nl)%NODES_IN_LINE(DOMAIN_LINES%LINES(nl)%BASIS%NUMBER_OF_NODES)
+                                  global_np2=DOMAIN_NODES%NODES(np2)%GLOBAL_NUMBER
+                                  nk1=DOMAIN_LINES%LINES(nl)%DERIVATIVES_IN_LINE(2,1)
+                                  nk2=DOMAIN_LINES%LINES(nl)%DERIVATIVES_IN_LINE(2,DOMAIN_LINES%LINES(nl)%BASIS%NUMBER_OF_NODES)
+                                  !TODO: Adjust delta calculation for polar coordinate discontinuities
+                                  !TODO: this is hardhoded bit
+                                  SELECT CASE(component_idx)
+                                    CASE(1)
+                                      nd=MOD(global_np2-global_np1,TOTAL_NUMBER_OF_NODES_XI(component_idx))
+                                    CASE(2)
+                                      nd=MOD(global_np2-global_np1,TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)) &
+                                        & /TOTAL_NUMBER_OF_NODES_XI(1)
+                                    CASE(3)
+                                      nd=(global_np2-global_np1)/(TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2))
+                                    CASE DEFAULT
+                                      CALL FLAG_ERROR("Invalid component number",ERR,ERROR,*999)
+                                  END SELECT
+                                  IF(np1==np) THEN
+                                    DERIVATIVES_NUMBER_OF_LINES(nk1)=DERIVATIVES_NUMBER_OF_LINES(nk1)+1
+                                    DELTA(nk1)=DELTA(nk1)+REAL(nd,DP)*DELTA_COORD(component_idx)
+                                  ELSE IF(np2==np) THEN
+                                    DERIVATIVES_NUMBER_OF_LINES(nk2)=DERIVATIVES_NUMBER_OF_LINES(nk2)+1
+                                    DELTA(nk2)=DELTA(nk2)
+                                    DELTA(nk2)=DELTA(nk2)+REAL(nd,DP)*DELTA_COORD(component_idx)
+                                  ELSE
+                                    !Error???
+                                  ENDIF
+                                ENDDO !nnl
+                                DO nk=1,8
+                                  IF(DERIVATIVES_NUMBER_OF_LINES(nk)>0) THEN
+                                    DELTA(nk)=DELTA(nk)/REAL(DERIVATIVES_NUMBER_OF_LINES(nk),DP)
+                                    ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(nk,np,0)
+                                    CALL FIELD_PARAMETER_SET_UPDATE_DOF(FIELD,FIELD_VALUES_SET_TYPE,ny,DELTA(nk),ERR,ERROR,*999)
+                                  ENDIF
+                                ENDDO !nk
+                              ENDIF
+                           ENDDO !node_idx(1)
+                         ENDDO !node_idx(2)
+                       ENDDO !node_idx(3)
+                      ELSE
+                        LOCAL_ERROR="Component number "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
+                          & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+                          & " does not have node based interpolation"
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                    ENDDO !component_idx
 !!TODO: do boundary nodes first then start the update to overlap computation and computation.
-                  CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                  ELSE
+                    LOCAL_ERROR="The standard field variable is not associated for field number "// &
+                      & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
                 ELSE
-                  LOCAL_ERROR="The standard field variable is not associated for field number "// &
-                    & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))
+                  LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" is not a geometric field"
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
-              ELSE
-                LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" is not a geometric field"
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              ENDIF
+              CASE DEFAULT
+                CALL FLAG_ERROR("Generated mesh type is either invalid or not implemented",ERR,ERROR,*999)
+              END SELECT
             ELSE
-              LOCAL_ERROR="The region nodes for field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
-                & " are not associated"
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FLAG_ERROR("Generated mesh is not associated",ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The region for field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
