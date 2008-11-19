@@ -141,12 +141,17 @@ CONTAINS
               CALL FLAG_ERROR("The derivativehas not been implemented.",ERR,ERROR,*999)
             END SELECT
 	      CASE(EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_2)
+!TODO Analytical calculation for regular mesh only, need to implement generic analytical calculation,
+!i.e. du/ds1=(du/dxi1)(dxi1/ds1)=(du/dx)*(dx/dxi1)*(dxi1/ds1),du/ds2=(du/dxi2)(dxi2/ds2)=(du/dx)*(dx/dxi2)*(dxi2/ds2)
 	        SELECT CASE(DERIVATIVE_NUMBER)
             CASE(NO_GLOBAL_DERIV)
 	          VALUE=cos(x)*cosh(y)
-	        CASE(GLOBAL_DERIV_S1,GLOBAL_DERIV_S2,GLOBAL_DERIV_S1_S2)
-              VALUE=-sin(x)*cosh(y)*GEOMETRIC_PARAMETERS(NODE_PARAM2DOF_MAP_X(DERIVATIVE_NUMBER,NODE_NUMBER,1))+ &
-                & cos(x)*sinh(y)*GEOMETRIC_PARAMETERS(NODE_PARAM2DOF_MAP_Y(DERIVATIVE_NUMBER,NODE_NUMBER,1))
+	        CASE(GLOBAL_DERIV_S1)
+	          VALUE=-sin(x)*cosh(y)
+	        CASE(GLOBAL_DERIV_S2)
+	          VALUE=cos(x)*sinh(y)
+	        CASE(GLOBAL_DERIV_S1_S2)
+              VALUE=0.0_DP
 	        CASE DEFAULT
               CALL FLAG_ERROR("The derivativehas not been implemented.",ERR,ERROR,*999)
 	        END SELECT
