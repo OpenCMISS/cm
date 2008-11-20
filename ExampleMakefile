@@ -1266,7 +1266,8 @@ all64: debug64 opt64
 
 # TODO only for linux 64bit for now.
 test:
-	$(CURDIR)/bin/x86_64-linux/$(BASE_EXAMPLE_NAME)-debug 2 2 0 1
+# Test for 2x2 mesh using bilinear lagrange basis 
+	$(CURDIR)/bin/x86_64-linux/$(BASE_EXAMPLE_NAME)-debug 2 2 0 1 1
 
 #-----------------------------------------------------------------------------
 
