@@ -151,7 +151,7 @@ CONTAINS
 	        CASE(GLOBAL_DERIV_S2)
 	          VALUE=cos(x)*sinh(y)
 	        CASE(GLOBAL_DERIV_S1_S2)
-              VALUE=0.0_DP
+              VALUE=-sin(x)*sinh(y)
 	        CASE DEFAULT
               CALL FLAG_ERROR("The derivativehas not been implemented.",ERR,ERROR,*999)
 	        END SELECT
