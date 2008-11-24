@@ -2099,6 +2099,10 @@ CONTAINS
           & " are already associated"
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
       ELSE
+        ! Reset the basis quadrature
+        CALL BASIS_QUADRATURE_FINALISE(BASIS,ERR,ERROR,*999)
+        !Initialise the basis quadrature
+        CALL BASIS_QUADRATURE_INITIALISE(BASIS,ERR,ERROR,*999)
         SELECT CASE(BASIS%QUADRATURE%TYPE)
         CASE(BASIS_GAUSS_LEGENDRE_QUADRATURE)            
           !Allocate one scheme and add it to the list of schemes
