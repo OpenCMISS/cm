@@ -101,72 +101,82 @@ CONTAINS
     
     IF(ASSOCIATED(FIELD)) THEN
       DO var_idx=1,FIELD%NUMBER_OF_VARIABLES
-        IF(var_idx==1) STRING_DATA="Dependent variable"
-        IF(var_idx==2) STRING_DATA="Normal Derivative"
-        RMS_PERCENT=0.0_DP
-        RMS_ABSOLUTE=0.0_DP
-        RMS_RELATIVE=0.0_DP
-        INTEGRAL_NUM=0.0_DP
-        INTEGRAL_ANA=0.0_DP
-        CALL WRITE_STRING(FILE_ID,STRING_DATA,ERR,ERROR,*999)
-        STRING_DATA="Node #              Numerical      Analytic      % error      Absolute error Relative error"
-        CALL WRITE_STRING(FILE_ID,STRING_DATA,ERR,ERROR,*999)
-        DO comp_idx=1,FIELD%VARIABLES(var_idx)%NUMBER_OF_COMPONENTS
-          DOMAIN_NODES=>FIELD%VARIABLES(var_idx)%COMPONENTS(comp_idx)%DOMAIN%TOPOLOGY%NODES
-          DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-            NUM_OF_NODAL_DEV=DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-            DO dev_idx=1,NUM_OF_NODAL_DEV 
-              CALL ANALYTIC_ANALYSIS_NODE_NUMERICIAL_VALUE_GET(FIELD,dev_idx,node_idx,comp_idx,var_idx,VALUE_BUFFER(1),ERR,ERROR, &
-                & *999)
-              CALL ANALYTIC_ANALYSIS_NODE_ANALYTIC_VALUE_GET(FIELD,dev_idx,node_idx,comp_idx,var_idx,VALUE_BUFFER(2),ERR,ERROR,*999)
-              CALL ANALYTIC_ANALYSIS_NODE_PERCENT_ERROR_GET(FIELD,dev_idx,node_idx,comp_idx,var_idx,VALUE_BUFFER(3),ERR,ERROR,*999)
-              CALL ANALYTIC_ANALYSIS_NODE_ABSOLUTE_ERROR_GET(FIELD,dev_idx,node_idx,comp_idx,var_idx,VALUE_BUFFER(4),ERR,ERROR,*999)
-              CALL ANALYTIC_ANALYSIS_NODE_RELATIVE_ERROR_GET(FIELD,dev_idx,node_idx,comp_idx,var_idx,VALUE_BUFFER(5),ERR,ERROR,*999)
-              
-              INTEGRAL_ANA=VALUE_BUFFER(2)**3/3+INTEGRAL_ANA
-              CALL WRITE_STRING_VECTOR(FILE_ID,1,1,5,5,5,VALUE_BUFFER, &
-                & CHAR('("     '//NUMBER_TO_VSTRING(node_idx,"*",ERR,ERROR)//'",5(X,D13.4))'),'(20X,5(X,D13.4))', &
-                & ERR,ERROR,*999)
-            ENDDO !dev_idx
-          ENDDO !node_idx
-        ENDDO !comp_idx
-        
-        CALL ANALYTIC_ANALYSIS_RMS_PERCENT_ERROR_GET(FIELD,var_idx,RMS_PERCENT,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(FILE_ID,"RMS error (Percent) = ",RMS_PERCENT,ERR,ERROR,*999)
-        CALL ANALYTIC_ANALYSIS_RMS_ABSOLUTE_ERROR_GET(FIELD,var_idx,RMS_ABSOLUTE,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(FILE_ID,"RMS error (Absolute) = ",RMS_ABSOLUTE,ERR,ERROR,*999)
-        CALL ANALYTIC_ANALYSIS_RMS_RELATIVE_ERROR_GET(FIELD,var_idx,RMS_RELATIVE,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(FILE_ID,"RMS error (Relative) = ",RMS_RELATIVE,ERR,ERROR,*999)
-        
-      ENDDO !var_dix
- 
-      DO var_idx=1,FIELD%NUMBER_OF_VARIABLES
-      ! Integral error
         IF(var_idx==1) THEN
+          STRING_DATA="Dependent variable"
+          RMS_PERCENT=0.0_DP
+          RMS_ABSOLUTE=0.0_DP
+          RMS_RELATIVE=0.0_DP
+          INTEGRAL_NUM=0.0_DP
+          INTEGRAL_ANA=0.0_DP
+          CALL WRITE_STRING(FILE_ID,STRING_DATA,ERR,ERROR,*999)
+          STRING_DATA="Node #              Numerical      Analytic      % error      Absolute error Relative error"
+          CALL WRITE_STRING(FILE_ID,STRING_DATA,ERR,ERROR,*999)
+          DO comp_idx=1,FIELD%VARIABLES(var_idx)%NUMBER_OF_COMPONENTS
+            DOMAIN_NODES=>FIELD%VARIABLES(var_idx)%COMPONENTS(comp_idx)%DOMAIN%TOPOLOGY%NODES
+            DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+              NUM_OF_NODAL_DEV=DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+              DO dev_idx=1,NUM_OF_NODAL_DEV 
+                CALL ANALYTIC_ANALYSIS_NODE_NUMERICIAL_VALUE_GET(FIELD,dev_idx,node_idx,comp_idx,var_idx,VALUE_BUFFER(1),ERR,ERROR, &
+                  & *999)
+                CALL ANALYTIC_ANALYSIS_NODE_ANALYTIC_VALUE_GET(FIELD,dev_idx,node_idx,comp_idx,var_idx,VALUE_BUFFER(2),ERR,ERROR,*999)
+                CALL ANALYTIC_ANALYSIS_NODE_PERCENT_ERROR_GET(FIELD,dev_idx,node_idx,comp_idx,var_idx,VALUE_BUFFER(3),ERR,ERROR,*999)
+                CALL ANALYTIC_ANALYSIS_NODE_ABSOLUTE_ERROR_GET(FIELD,dev_idx,node_idx,comp_idx,var_idx,VALUE_BUFFER(4),ERR,ERROR,*999)
+                CALL ANALYTIC_ANALYSIS_NODE_RELATIVE_ERROR_GET(FIELD,dev_idx,node_idx,comp_idx,var_idx,VALUE_BUFFER(5),ERR,ERROR,*999)
+              
+                INTEGRAL_ANA=VALUE_BUFFER(2)**3/3+INTEGRAL_ANA
+                CALL WRITE_STRING_VECTOR(FILE_ID,1,1,5,5,5,VALUE_BUFFER, &
+                  & CHAR('("     '//NUMBER_TO_VSTRING(node_idx,"*",ERR,ERROR)//'",5(X,D13.4))'),'(20X,5(X,D13.4))', &
+                  & ERR,ERROR,*999)
+              ENDDO !dev_idx
+            ENDDO !node_idx
+          ENDDO !comp_idx
+        
+          CALL ANALYTIC_ANALYSIS_RMS_PERCENT_ERROR_GET(FIELD,var_idx,RMS_PERCENT,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(FILE_ID,"RMS error (Percent) = ",RMS_PERCENT,ERR,ERROR,*999)
+          CALL ANALYTIC_ANALYSIS_RMS_ABSOLUTE_ERROR_GET(FIELD,var_idx,RMS_ABSOLUTE,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(FILE_ID,"RMS error (Absolute) = ",RMS_ABSOLUTE,ERR,ERROR,*999)
+          CALL ANALYTIC_ANALYSIS_RMS_RELATIVE_ERROR_GET(FIELD,var_idx,RMS_RELATIVE,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(FILE_ID,"RMS error (Relative) = ",RMS_RELATIVE,ERR,ERROR,*999)
+       
           STRING_DATA="Dependent variable integral error"
-        ELSE
-          STRING_DATA="Flux integral error"
-        END IF
-        CALL WRITE_STRING(FILE_ID,STRING_DATA,ERR,ERROR,*999)
-        STRING_DATA="Node #              Numerical      Analytic      % error      Absolute error Relative error"
-        CALL WRITE_STRING(FILE_ID,STRING_DATA,ERR,ERROR,*999)
-        DO pow_idx=1,2 
-          CALL ANALYTIC_ANALYSIS_INTEGRAL_NUMERICAL_VALUE_GET(FIELD,var_idx,pow_idx,VALUE_BUFFER(1),ERR,ERROR,*999)
-          CALL ANALYTIC_ANALYSIS_INTEGRAL_ANALYTIC_VALUE_GET(FIELD,var_idx,pow_idx,VALUE_BUFFER(2),ERR,ERROR,*999)
-          CALL ANALYTIC_ANALYSIS_INTEGRAL_PERCENT_ERROR_GET(FIELD,var_idx,pow_idx,VALUE_BUFFER(3),ERR,ERROR,*999)
-          CALL ANALYTIC_ANALYSIS_INTEGRAL_ABSOLUTE_ERROR_GET(FIELD,var_idx,pow_idx,VALUE_BUFFER(4),ERR,ERROR,*999)
-          CALL ANALYTIC_ANALYSIS_INTEGRAL_RELATIVE_ERROR_GET(FIELD,var_idx,pow_idx,VALUE_BUFFER(5),ERR,ERROR,*999)
-          SELECT CASE(pow_idx)
-          CASE(1)
-            CALL WRITE_STRING_VECTOR(FILE_ID,1,1,5,5,5,VALUE_BUFFER,'("  Intgl         ",5(X,D13.4))','(20X,5(X,D13.4))', &
-              & ERR,ERROR,*999)
-          CASE(2)
-            CALL WRITE_STRING_VECTOR(FILE_ID,1,1,5,5,5,VALUE_BUFFER,'("  Int^2         ",5(X,D13.4))','(20X,5(X,D13.4))', &
-              & ERR,ERROR,*999)
-          CASE DEFAULT
-            CALL FLAG_ERROR("Invalid power value!",ERR,ERROR,*999)     
-          END SELECT
-        ENDDO ! pow_idx
+          CALL WRITE_STRING(FILE_ID,STRING_DATA,ERR,ERROR,*999)
+          STRING_DATA="Node #              Numerical      Analytic      % error      Absolute error Relative error"
+          CALL WRITE_STRING(FILE_ID,STRING_DATA,ERR,ERROR,*999)
+          DO pow_idx=1,2 
+            CALL ANALYTIC_ANALYSIS_INTEGRAL_NUMERICAL_VALUE_GET(FIELD,var_idx,pow_idx,VALUE_BUFFER(1),ERR,ERROR,*999)
+            CALL ANALYTIC_ANALYSIS_INTEGRAL_ANALYTIC_VALUE_GET(FIELD,var_idx,pow_idx,VALUE_BUFFER(2),ERR,ERROR,*999)
+            CALL ANALYTIC_ANALYSIS_INTEGRAL_PERCENT_ERROR_GET(FIELD,var_idx,pow_idx,VALUE_BUFFER(3),ERR,ERROR,*999)
+            CALL ANALYTIC_ANALYSIS_INTEGRAL_ABSOLUTE_ERROR_GET(FIELD,var_idx,pow_idx,VALUE_BUFFER(4),ERR,ERROR,*999)
+            CALL ANALYTIC_ANALYSIS_INTEGRAL_RELATIVE_ERROR_GET(FIELD,var_idx,pow_idx,VALUE_BUFFER(5),ERR,ERROR,*999)
+            SELECT CASE(pow_idx)
+            CASE(1)
+              CALL WRITE_STRING_VECTOR(FILE_ID,1,1,5,5,5,VALUE_BUFFER,'("  Intgl         ",5(X,D13.4))','(20X,5(X,D13.4))', &
+                & ERR,ERROR,*999)
+            CASE(2)
+              CALL WRITE_STRING_VECTOR(FILE_ID,1,1,5,5,5,VALUE_BUFFER,'("  Int^2         ",5(X,D13.4))','(20X,5(X,D13.4))', &
+                & ERR,ERROR,*999)
+            CASE DEFAULT
+              CALL FLAG_ERROR("Invalid power value!",ERR,ERROR,*999)     
+            END SELECT
+          ENDDO ! pow_idx
+          
+          STRING_DATA="Node #              Numerical           NID"
+          CALL WRITE_STRING(FILE_ID,STRING_DATA,ERR,ERROR,*999)
+          DO pow_idx=1,2 
+            CALL ANALYTIC_ANALYSIS_NIDS_NUMERICAL_ERROR_GET(FIELD,var_idx,pow_idx,VALUE_BUFFER(1),ERR,ERROR,*999)
+            CALL ANALYTIC_ANALYSIS_NIDS_ERROR_GET(FIELD,var_idx,pow_idx,VALUE_BUFFER(2),ERR,ERROR,*999)
+            SELECT CASE(pow_idx)
+            CASE(1)
+              CALL WRITE_STRING_VECTOR(FILE_ID,1,1,2,2,2,VALUE_BUFFER(1:2),'("  Diff.         ",2(X,D13.4))','(20X,2(X,D13.4))', &
+                & ERR,ERROR,*999)
+            CASE(2)
+              CALL WRITE_STRING_VECTOR(FILE_ID,1,1,2,2,2,VALUE_BUFFER(1:2),'("  Dif^2         ",2(X,D13.4))','(20X,2(X,D13.4))', &
+                & ERR,ERROR,*999)
+            CASE DEFAULT
+              CALL FLAG_ERROR("Invalid power value!",ERR,ERROR,*999)     
+            END SELECT
+          ENDDO ! pow_idx
+        ENDIF
       ENDDO !var_idx
     ELSE
        CALL FLAG_ERROR("The field is not associated!",ERR,ERROR,*999)     
@@ -293,9 +303,10 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    REAL(DP) :: ANALYTIC_VALUE
+    REAL(DP) :: ANALYTIC_VALUE,h,k
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
-    INTEGER(INTG) :: comp_idx,node_idx,dev_idx
+    INTEGER(INTG) :: comp_idx,node_idx,dev_idx,NUMBER_OF_SURROUNDING_ELEMENTS
+    TYPE(GENERATED_MESH_REGULAR_TYPE), POINTER :: REGULAR_MESH
         
     CALL ENTERS("ANALYTIC_ANALYSIS_INTEGRAL_ANALYTIC_VALUE_GET",ERR,ERROR,*999)       
 
@@ -307,14 +318,22 @@ CONTAINS
           DO dev_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
 	        CALL ANALYTIC_ANALYSIS_NODE_ANALYTIC_VALUE_GET(FIELD,dev_idx,node_idx,comp_idx,VARIABLE_NUMBER,ANALYTIC_VALUE, &
 	          & ERR,ERROR,*999)
-	        SELECT CASE(POWER)
-	        CASE(1)
-	          VALUE=VALUE+ANALYTIC_VALUE/2
-	        CASE(2)
-	          VALUE=VALUE+ANALYTIC_VALUE**2/2
-	        CASE DEFAULT
-	          CALL FLAG_ERROR("Not valid power number",ERR,ERROR,*999)
-	        END SELECT
+	        NUMBER_OF_SURROUNDING_ELEMENTS=FIELD%VARIABLES(1)%COMPONENTS(comp_idx)%DOMAIN%TOPOLOGY%NODES%NODES(node_idx)% &
+                & NUMBER_OF_SURROUNDING_ELEMENTS
+            ! Uses Trapezoidal 2D Rule
+!TODO implement integration calculation for 3D
+!TODO what numerical method does cm use??
+            REGULAR_MESH=>FIELD%REGION%MESHES%MESHES(1)%PTR%GENERATED_MESH%REGULAR_MESH
+            h=REGULAR_MESH%MAXIMUM_EXTENT(1)/REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(1)
+            k=REGULAR_MESH%MAXIMUM_EXTENT(2)/REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(2)
+            SELECT CASE(POWER)
+            CASE(1)
+              VALUE=VALUE+ANALYTIC_VALUE*NUMBER_OF_SURROUNDING_ELEMENTS*h*k/4
+            CASE(2)
+              VALUE=VALUE+ANALYTIC_VALUE**2*NUMBER_OF_SURROUNDING_ELEMENTS*h*k/4
+            CASE DEFAULT
+              CALL FLAG_ERROR("Not valid power number",ERR,ERROR,*999)
+            END SELECT
 	      ENDDO !dev_idx
         ENDDO !node_idx
       ENDDO !comp_idx
@@ -344,9 +363,10 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    REAL(DP) :: NUMERICAL_VALUE
+    REAL(DP) :: NUMERICAL_VALUE,h,k
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
-    INTEGER(INTG) :: comp_idx,node_idx,dev_idx
+    INTEGER(INTG) :: comp_idx,node_idx,dev_idx,NUMBER_OF_SURROUNDING_ELEMENTS
+    TYPE(GENERATED_MESH_REGULAR_TYPE), POINTER :: REGULAR_MESH
         
     CALL ENTERS("ANALYTIC_ANALYSIS_INTEGRAL_NUMERICAL_VALUE_GET",ERR,ERROR,*999)       
 
@@ -358,11 +378,19 @@ CONTAINS
           DO dev_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
             CALL ANALYTIC_ANALYSIS_NODE_NUMERICIAL_VALUE_GET(FIELD,dev_idx,node_idx,comp_idx,VARIABLE_NUMBER,NUMERICAL_VALUE, &
               & ERR,ERROR,*999)
+            NUMBER_OF_SURROUNDING_ELEMENTS=FIELD%VARIABLES(1)%COMPONENTS(comp_idx)%DOMAIN%TOPOLOGY%NODES%NODES(node_idx)% &
+                & NUMBER_OF_SURROUNDING_ELEMENTS
+            ! Uses Trapezoidal 2D Rule
+!TODO implement integration calculation for 3D
+!TODO what numerical method does cm use??
+            REGULAR_MESH=>FIELD%REGION%MESHES%MESHES(1)%PTR%GENERATED_MESH%REGULAR_MESH
+            h=REGULAR_MESH%MAXIMUM_EXTENT(1)/REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(1)
+            k=REGULAR_MESH%MAXIMUM_EXTENT(2)/REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(2)
             SELECT CASE(POWER)
             CASE(1)
-              VALUE=VALUE+NUMERICAL_VALUE/2
+              VALUE=VALUE+NUMERICAL_VALUE*NUMBER_OF_SURROUNDING_ELEMENTS*h*k/4
             CASE(2)
-              VALUE=VALUE+NUMERICAL_VALUE**2/2
+              VALUE=VALUE+NUMERICAL_VALUE**2*NUMBER_OF_SURROUNDING_ELEMENTS*h*k/4
             CASE DEFAULT
               CALL FLAG_ERROR("Not valid power number",ERR,ERROR,*999)
             END SELECT
@@ -455,6 +483,110 @@ CONTAINS
     CALL EXITS("ANALYTIC_ANALYSIS_INTEGRAL_RELATIVE_ERROR_GET")
     RETURN 1
   END SUBROUTINE ANALYTIC_ANALYSIS_INTEGRAL_RELATIVE_ERROR_GET
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral absolute error value for the field
+  SUBROUTINE ANALYTIC_ANALYSIS_NIDS_NUMERICAL_ERROR_GET(FIELD,VARIABLE_NUMBER,POWER,VALUE,ERR,ERROR,*)
+  
+    !Argument variables   
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<the field.
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<variable number
+    INTEGER(INTG), INTENT(IN) :: POWER !<power
+    REAL(DP), INTENT(OUT) :: VALUE !<the integral absolute error
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    REAL(DP) :: NUMERICAL_VALUE, ANALYTIC_VALUE,h,k
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    INTEGER(INTG) :: comp_idx,node_idx,dev_idx,NUMBER_OF_SURROUNDING_ELEMENTS
+    TYPE(GENERATED_MESH_REGULAR_TYPE), POINTER :: REGULAR_MESH
+        
+    CALL ENTERS("ANALYTIC_ANALYSIS_NIDS_NUMERICAL_ERROR_GET",ERR,ERROR,*999)       
+
+    IF(ASSOCIATED(FIELD)) THEN
+      VALUE=0.0_DP
+      DO comp_idx=1,FIELD%VARIABLES(VARIABLE_NUMBER)%NUMBER_OF_COMPONENTS
+        DOMAIN_NODES=>FIELD%VARIABLES(VARIABLE_NUMBER)%COMPONENTS(comp_idx)%DOMAIN%TOPOLOGY%NODES
+        DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+          DO dev_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+            CALL ANALYTIC_ANALYSIS_NODE_NUMERICIAL_VALUE_GET(FIELD,dev_idx,node_idx,comp_idx,VARIABLE_NUMBER,NUMERICAL_VALUE, &
+              & ERR,ERROR,*999)
+            CALL ANALYTIC_ANALYSIS_NODE_ANALYTIC_VALUE_GET(FIELD,dev_idx,node_idx,comp_idx,VARIABLE_NUMBER,ANALYTIC_VALUE, &
+              & ERR,ERROR,*999)
+            NUMBER_OF_SURROUNDING_ELEMENTS=FIELD%VARIABLES(1)%COMPONENTS(comp_idx)%DOMAIN%TOPOLOGY%NODES%NODES(node_idx)% &
+                & NUMBER_OF_SURROUNDING_ELEMENTS
+            ! Uses Trapezoidal 2D Rule
+!TODO implement integration calculation for 3D
+!TODO what numerical method does cm use??
+            REGULAR_MESH=>FIELD%REGION%MESHES%MESHES(1)%PTR%GENERATED_MESH%REGULAR_MESH
+            h=REGULAR_MESH%MAXIMUM_EXTENT(1)/REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(1)
+            k=REGULAR_MESH%MAXIMUM_EXTENT(2)/REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(2)
+            SELECT CASE(POWER)
+            CASE(1)
+              VALUE=VALUE+(NUMERICAL_VALUE-ANALYTIC_VALUE)*NUMBER_OF_SURROUNDING_ELEMENTS*h*k/4
+            CASE(2)
+              VALUE=VALUE+(NUMERICAL_VALUE-ANALYTIC_VALUE)**2*NUMBER_OF_SURROUNDING_ELEMENTS*h*k/4
+            CASE DEFAULT
+              CALL FLAG_ERROR("Not valid power number",ERR,ERROR,*999)
+            END SELECT
+          ENDDO !dev_idx
+        ENDDO !node_idx
+      ENDDO !comp_idx
+    ELSE
+      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+    ENDIF 
+    
+    CALL EXITS("ANALYTIC_ANALYSIS_NIDS_NUMERICAL_ERROR_GET")
+    RETURN
+999 CALL ERRORS("ANALYTIC_ANALYSIS_NIDS_NUMERICAL_ERROR_GET",ERR,ERROR)
+    CALL EXITS("ANALYTIC_ANALYSIS_NIDS_NUMERICAL_ERROR_GET")
+    RETURN 1
+  END SUBROUTINE ANALYTIC_ANALYSIS_NIDS_NUMERICAL_ERROR_GET
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral absolute error value for the field
+  SUBROUTINE ANALYTIC_ANALYSIS_NIDS_ERROR_GET(FIELD,VARIABLE_NUMBER,POWER,VALUE,ERR,ERROR,*)
+  
+    !Argument variables   
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<the field.
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<variable number
+    INTEGER(INTG), INTENT(IN) :: POWER !<power
+    REAL(DP), INTENT(OUT) :: VALUE !<the integral absolute error
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    REAL(DP) :: NUMERICAL_VALUE, NUMERICAL_ERROR
+        
+    CALL ENTERS("ANALYTIC_ANALYSIS_NIDS_ERROR_GET",ERR,ERROR,*999)       
+
+    IF(ASSOCIATED(FIELD)) THEN
+      VALUE=0.0_DP
+      CALL ANALYTIC_ANALYSIS_NIDS_NUMERICAL_ERROR_GET(FIELD,VARIABLE_NUMBER,POWER,NUMERICAL_ERROR,ERR,ERROR,*999)
+      CALL ANALYTIC_ANALYSIS_INTEGRAL_NUMERICAL_VALUE_GET(FIELD,VARIABLE_NUMBER,POWER,NUMERICAL_VALUE,ERR,ERROR,*999)
+      SELECT CASE(POWER)
+      CASE(1)
+        VALUE=NUMERICAL_ERROR/NUMERICAL_VALUE
+      CASE(2)
+        VALUE=SQRT(NUMERICAL_ERROR/NUMERICAL_VALUE)
+      CASE DEFAULT
+        CALL FLAG_ERROR("Not valid power number",ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+    ENDIF 
+    
+    CALL EXITS("ANALYTIC_ANALYSIS_NIDS_ERROR_GET")
+    RETURN
+999 CALL ERRORS("ANALYTIC_ANALYSIS_NIDS_ERROR_GET",ERR,ERROR)
+    CALL EXITS("ANALYTIC_ANALYSIS_NIDS_ERROR_GET")
+    RETURN 1
+  END SUBROUTINE ANALYTIC_ANALYSIS_NIDS_ERROR_GET
   
   !
   !================================================================================================================================

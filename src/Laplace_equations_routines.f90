@@ -131,12 +131,17 @@ CONTAINS
         CASE(FIELD_STANDARD_VARIABLE_TYPE)
 	      SELECT CASE(ANALYTIC_FUNCTION)
 	      CASE(EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_1)
+!TODO Analytical calculation for regular mesh only, need to implement generic analytical calculation,
+!i.e. du/ds1=(du/dxi1)(dxi1/ds1)=(du/dx)*(dx/dxi1)*(dxi1/ds1),du/ds2=(du/dxi2)(dxi2/ds2)=(du/dx)*(dx/dxi2)*(dxi2/ds2)	      
 	        SELECT CASE(DERIVATIVE_NUMBER)
             CASE(NO_GLOBAL_DERIV)
               VALUE=x**2+2*x*y-y**2
-            CASE(GLOBAL_DERIV_S1,GLOBAL_DERIV_S2,GLOBAL_DERIV_S1_S2)
-              VALUE=(2*x+2*y)*GEOMETRIC_PARAMETERS(NODE_PARAM2DOF_MAP_X(DERIVATIVE_NUMBER,NODE_NUMBER,1))+(2*x-2*y)* &
-                & GEOMETRIC_PARAMETERS(NODE_PARAM2DOF_MAP_Y(DERIVATIVE_NUMBER,NODE_NUMBER,1))
+            CASE(GLOBAL_DERIV_S1)
+              VALUE=2*x+2*y
+            CASE(GLOBAL_DERIV_S2)
+              VALUE=2*x-2*y
+            CASE(GLOBAL_DERIV_S1_S2)
+              VALUE=2.0_DP
             CASE DEFAULT
               CALL FLAG_ERROR("The derivativehas not been implemented.",ERR,ERROR,*999)
             END SELECT
@@ -178,26 +183,46 @@ CONTAINS
         CASE(FIELD_STANDARD_VARIABLE_TYPE)
           SELECT CASE(ANALYTIC_FUNCTION)
           CASE(EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_1)
+!TODO Analytical calculation for regular mesh only, need to implement generic analytical calculation            
             SELECT CASE(DERIVATIVE_NUMBER)
             CASE(NO_GLOBAL_DERIV)
               VALUE=x**2-2*y**2+z**2
-            CASE(GLOBAL_DERIV_S1,GLOBAL_DERIV_S2,GLOBAL_DERIV_S1_S2,GLOBAL_DERIV_S3,GLOBAL_DERIV_S1_S3,GLOBAL_DERIV_S2_S3, &
-              & GLOBAL_DERIV_S1_S2_S3)
-              VALUE=2*x*GEOMETRIC_PARAMETERS(NODE_PARAM2DOF_MAP_X(DERIVATIVE_NUMBER,NODE_NUMBER,1))- &
-                & 4*y*GEOMETRIC_PARAMETERS(NODE_PARAM2DOF_MAP_Y(DERIVATIVE_NUMBER,NODE_NUMBER,1))+ &
-                & 2*z*GEOMETRIC_PARAMETERS(NODE_PARAM2DOF_MAP_Z(DERIVATIVE_NUMBER,NODE_NUMBER,1))
+            CASE(GLOBAL_DERIV_S1)
+              VALUE=2*x
+            CASE(GLOBAL_DERIV_S2)
+              VALUE=-4*y
+            CASE(GLOBAL_DERIV_S1_S2)
+              VALUE=0.0_DP
+            CASE(GLOBAL_DERIV_S3)
+              VALUE=2*z
+            CASE(GLOBAL_DERIV_S1_S3)
+              VALUE=0.0_DP
+            CASE(GLOBAL_DERIV_S2_S3)
+              VALUE=0.0_DP
+            CASE(GLOBAL_DERIV_S1_S2_S3)
+              VALUE=0.0_DP
             CASE DEFAULT
               CALL FLAG_ERROR("The derivativehas not been implemented.",ERR,ERROR,*999)
             END SELECT            
           CASE(EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_2) 
+!TODO Analytical calculation for regular mesh only, need to implement generic analytical calculation 
             SELECT CASE(DERIVATIVE_NUMBER)
             CASE(NO_GLOBAL_DERIV)
               VALUE=cos(x)*cosh(y)*z
-            CASE(GLOBAL_DERIV_S1,GLOBAL_DERIV_S2,GLOBAL_DERIV_S1_S2,GLOBAL_DERIV_S3,GLOBAL_DERIV_S1_S3,GLOBAL_DERIV_S2_S3, &
-              & GLOBAL_DERIV_S1_S2_S3)
-              VALUE=-sin(x)*cosh(y)*z*GEOMETRIC_PARAMETERS(NODE_PARAM2DOF_MAP_X(DERIVATIVE_NUMBER,NODE_NUMBER,1))+ &
-                & cos(x)*sinh(y)*z*GEOMETRIC_PARAMETERS(NODE_PARAM2DOF_MAP_Y(DERIVATIVE_NUMBER,NODE_NUMBER,1))+ &
-                & cos(x)*cosh(y)*GEOMETRIC_PARAMETERS(NODE_PARAM2DOF_MAP_Z(DERIVATIVE_NUMBER,NODE_NUMBER,1))
+            CASE(GLOBAL_DERIV_S1)
+              VALUE=-sin(x)*cosh(y)*z
+            CASE(GLOBAL_DERIV_S2)
+              VALUE=cos(x)*sinh(y)*z
+            CASE(GLOBAL_DERIV_S1_S2)
+              VALUE=-sin(x)*sinh(y)*z
+            CASE(GLOBAL_DERIV_S3)
+              VALUE=cos(x)*cosh(y)
+            CASE(GLOBAL_DERIV_S1_S3)
+              VALUE=-sin(x)*cosh(y)
+            CASE(GLOBAL_DERIV_S2_S3)
+              VALUE=cos(x)*sinh(y) 
+            CASE(GLOBAL_DERIV_S1_S2_S3)
+              VALUE=-sin(x)*sinh(y)
             CASE DEFAULT
               CALL FLAG_ERROR("The derivativehas not been implemented.",ERR,ERROR,*999)
             END SELECT            
