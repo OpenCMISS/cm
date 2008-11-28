@@ -208,7 +208,7 @@ CONTAINS
 	CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(1,ELEMENT_NUMBER,field_interpolation_parameters_fibre,ERR,ERROR,*999)        
 		
         !material field	
-	material_field=>EQUATIONS_SET%MATERIALS%MATERIAL_FIELD
+	material_field=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
         CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(material_field,1,field_interpolation_parameters_material,ERR,ERROR,*999)
         CALL FIELD_INTERPOLATED_POINT_INITIALISE(field_interpolation_parameters_material,interpolated_point_material,ERR,ERROR,*999)
 	CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(1,ELEMENT_NUMBER,field_interpolation_parameters_material,ERR,ERROR,*999)        
