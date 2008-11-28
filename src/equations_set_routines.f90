@@ -465,7 +465,7 @@ CONTAINS
             !Problem interpolation setup
             CALL EQUATIONS_INTERPOLATION_INITIALISE(EQUATIONS,ERR,ERROR,*999)
             !Initialise the matrices and rhs vector
-            CALL EQUATIONS_MATRICES_VALUES_INITIALISE(EQUATIONS_MATRICES,0.0_DP,ERR,ERROR,*999)
+            CALL EQUATIONS_MATRICES_VALUES_INITIALISE(EQUATIONS_MATRICES,EQUATIONS_MATRICES_LINEAR_ONLY,0.0_DP,ERR,ERROR,*999)
             !Assemble the elements
             !Allocate the element matrices 
             CALL EQUATIONS_MATRICES_ELEMENT_INITIALISE(EQUATIONS_MATRICES,ERR,ERROR,*999)
@@ -634,7 +634,7 @@ CONTAINS
             !Problem interpolation setup
             CALL EQUATIONS_INTERPOLATION_INITIALISE(EQUATIONS,ERR,ERROR,*999)
             !Initialise the matrices and rhs vector
-            CALL EQUATIONS_MATRICES_VALUES_INITIALISE(EQUATIONS_MATRICES,0.0_DP,ERR,ERROR,*999)
+            CALL EQUATIONS_MATRICES_VALUES_INITIALISE(EQUATIONS_MATRICES,EQUATIONS_MATRICES_NONLINEAR_ONLY,0.0_DP,ERR,ERROR,*999)
             !Assemble the elements
             !Allocate the element matrices 
             CALL EQUATIONS_MATRICES_ELEMENT_INITIALISE(EQUATIONS_MATRICES,ERR,ERROR,*999)
@@ -3505,11 +3505,151 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
- 
+    INTEGER(INTG) :: element_idx,ne,NUMBER_OF_TIMES
+    REAL(SP) :: ELEMENT_USER_ELAPSED,ELEMENT_SYSTEM_ELAPSED,USER_ELAPSED,USER_TIME1(1),USER_TIME2(1),USER_TIME3(1),USER_TIME4(1), &
+      & USER_TIME5(1),USER_TIME6(1),SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),SYSTEM_TIME3(1),SYSTEM_TIME4(1), &
+      & SYSTEM_TIME5(1),SYSTEM_TIME6(1)
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+  
     CALL ENTERS("EQUATIONS_SET_JACOBIAN_EVALUATE_STATIC_FEM",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      
+      DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+      IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+        EQUATIONS=>EQUATIONS_SET%EQUATIONS
+        IF(ASSOCIATED(EQUATIONS)) THEN
+          EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+          IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_SET_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME1,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME1,ERR,ERROR,*999)
+            ENDIF
+!!Do we need to transfer parameter sets???
+            !Problem interpolation setup
+            CALL EQUATIONS_INTERPOLATION_INITIALISE(EQUATIONS,ERR,ERROR,*999)
+            !Initialise the matrices and rhs vector
+            CALL EQUATIONS_MATRICES_VALUES_INITIALISE(EQUATIONS_MATRICES,EQUATIONS_MATRICES_JACOBIAN_ONLY,0.0_DP,ERR,ERROR,*999)
+            !Assemble the elements
+            !Allocate the element matrices 
+            CALL EQUATIONS_MATRICES_ELEMENT_INITIALISE(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ELEMENTS_MAPPING=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+              & MAPPINGS%ELEMENTS
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_SET_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME2,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME2,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME2(1)-USER_TIME1(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME2(1)-SYSTEM_TIME1(1)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for equations setup and initialisation = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for equations setup and initialisation = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+              ELEMENT_USER_ELAPSED=0.0_SP
+              ELEMENT_SYSTEM_ELAPSED=0.0_SP
+            ENDIF
+            NUMBER_OF_TIMES=0
+            !Loop over the internal elements
+            DO element_idx=1,ELEMENTS_MAPPING%NUMBER_OF_INTERNAL
+              ne=ELEMENTS_MAPPING%INTERNAL_LIST(element_idx)
+              NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
+              CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_SET_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDDO !element_idx                  
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_SET_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME3,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME3,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME3(1)-USER_TIME2(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME3(1)-SYSTEM_TIME2(1)
+              ELEMENT_USER_ELAPSED=USER_ELAPSED
+              ELEMENT_SYSTEM_ELAPSED=SYSTEM_ELAPSED
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for internal equations assembly = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for internal equations assembly = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+             ENDIF
+            !Finish the transfer of the solution values.
+            CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_SET_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME4,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME4,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME4(1)-USER_TIME3(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME4(1)-SYSTEM_TIME3(1)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for parameter transfer completion = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for parameter transfer completion = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)              
+            ENDIF
+            !Loop over the boundary and ghost elements
+!!TODO: sort out combining boundary and ghost list
+            DO element_idx=1,ELEMENTS_MAPPING%NUMBER_OF_BOUNDARY
+              ne=ELEMENTS_MAPPING%BOUNDARY_LIST(element_idx)
+              NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
+              CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_SET_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDDO !element_idx
+            DO element_idx=1,ELEMENTS_MAPPING%NUMBER_OF_GHOST
+              ne=ELEMENTS_MAPPING%GHOST_LIST(element_idx)
+              NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
+              CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_SET_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDDO !element_idx          
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_SET_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME5,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME5,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME5(1)-USER_TIME4(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME5(1)-SYSTEM_TIME4(1)
+              ELEMENT_USER_ELAPSED=ELEMENT_USER_ELAPSED+USER_ELAPSED
+              ELEMENT_SYSTEM_ELAPSED=ELEMENT_SYSTEM_ELAPSED+USER_ELAPSED
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for boundary+ghost equations assembly = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for boundary+ghost equations assembly = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+              IF(NUMBER_OF_TIMES>0) THEN
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Average element user time for equations assembly = ", &
+                  & ELEMENT_USER_ELAPSED/NUMBER_OF_TIMES,ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Average element system time for equations assembly = ", &
+                  & ELEMENT_SYSTEM_ELAPSED/NUMBER_OF_TIMES,ERR,ERROR,*999)
+              ENDIF
+            ENDIF
+            !Finalise the element matrices
+            CALL EQUATIONS_MATRICES_ELEMENT_FINALISE(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            !Finalise the problem interpolation
+            CALL EQUATIONS_INTERPOLATION_FINALISE(EQUATIONS%INTERPOLATION,ERR,ERROR,*999)
+            !Output equations matrices and RHS vector if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_SET_MATRIX_OUTPUT) THEN
+              CALL EQUATIONS_MATRICES_OUTPUT(GENERAL_OUTPUT_TYPE,EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDIF
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_SET_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME6,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME6,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME6(1)-USER_TIME1(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME6(1)-SYSTEM_TIME1(1)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for equations assembly = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total system time for equations assembly = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Equations matrices is not associated",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Equations is not associated",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Dependent field is not associated",ERR,ERROR,*999)
+      ENDIF            
     ELSE
       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
@@ -3690,7 +3830,7 @@ CONTAINS
 !Problem interpolation setup
             CALL EQUATIONS_INTERPOLATION_INITIALISE(EQUATIONS,ERR,ERROR,*999)
             !Initialise the matrices and rhs vector
-            CALL EQUATIONS_MATRICES_VALUES_INITIALISE(EQUATIONS_MATRICES,0.0_DP,ERR,ERROR,*999)
+            CALL EQUATIONS_MATRICES_VALUES_INITIALISE(EQUATIONS_MATRICES,EQUATIONS_MATRICES_NONLINEAR_ONLY,0.0_DP,ERR,ERROR,*999)
             !Assemble the elements
             !Allocate the element matrices 
             CALL EQUATIONS_MATRICES_ELEMENT_INITIALISE(EQUATIONS_MATRICES,ERR,ERROR,*999)

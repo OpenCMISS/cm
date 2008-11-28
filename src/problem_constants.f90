@@ -139,14 +139,15 @@ MODULE PROBLEM_CONSTANTS
   !>@}
 
 
-  !> \addtogroup PROBLEM_CONSTANTS_SolverOutputTypes PROBLEM_CONSTANTS::SolverOutputTypes
-  !> \brief Solver output types
-  !> \see PROBLEM_CONSTANTS
-  !>@{
-  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_NO_OUTPUT=0 !<No output \see PROBLEM_CONSTANTS_SolverOutputTypes,PROBLEM_CONSTANTS
-  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_TIMING_OUTPUT=1 !<Timing information output \see PROBLEM_CONSTANTS_SolverOutputTypes,PROBLEM_CONSTANTS
-  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_SOLVER_OUTPUT=2 !<All below and solver output \see PROBLEM_CONSTANTS_SolverOutputTypes,PROBLEM_CONSTANTS
-  !>@}
+!  !> \addtogroup PROBLEM_CONSTANTS_SolverOutputTypes PROBLEM_CONSTANTS::SolverOutputTypes
+!  !> \brief Solver output types
+!  !> \see PROBLEM_CONSTANTS
+!  !>@{
+!  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_NO_OUTPUT=0 !<No output \see PROBLEM_CONSTANTS_SolverOutputTypes,PROBLEM_CONSTANTS
+!  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_PROGESS_OUTPUT=1 !<Progress of the solver output e.g. iteration information \see PROBLEM_CONSTANTS_SolverOutputTypes,PROBLEM_CONSTANTS
+!  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_TIMING_OUTPUT=2 !<Timing information output \see PROBLEM_CONSTANTS_SolverOutputTypes,PROBLEM_CONSTANTS
+!  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_SOLVER_OUTPUT=3 !<All below and solver output \see PROBLEM_CONSTANTS_SolverOutputTypes,PROBLEM_CONSTANTS
+!  !>@}
 
   !> \addtogroup PROBLEM_CONSTANTS_SolverSparsityTypes PROBLEM_CONSTANTS::SolverSparsityTypes
   !> \brief Solution output types
