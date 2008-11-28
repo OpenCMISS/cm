@@ -1,3 +1,4 @@
+<!--TODO library version should be dynamically import-->
 <chapter>
   <title>Obtaining the Code and Setting up the Development Environment</title>
   <section>
@@ -191,9 +192,9 @@
         <section>
           <title>For Windows</title>
           <itemizedlist>
-            <listitem>Change to the opencmissextras PETSc directory e.g., if opencmissextras root is E:\opencmissextras and we are compiling PETSC version petsc-2.3.3-p8 then "cd /cygwin/e/opencmissextras/cm/external/packages/PETSc/petsc-2.3.3-p8"</listitem>
+            <listitem>Change to the opencmissextras PETSc directory e.g., if opencmissextras root is E:\opencmissextras and we are compiling PETSC version petsc-2.3.3-p15 then "cd /cygwin/e/opencmissextras/cm/external/packages/PETSc/petsc-2.3.3-p15"</listitem>
             <listitem>If you have MPICH2 version 1.0.7 or greater edit the python/BuildSystem/config/packages/MPI.py file. Find the self.liblist_mpich line. After the line "['fmpich2.lib','mpich2.lib']," add the line "['fmpich2.lib','mpi.lib'],".</listitem>
-            <listitem><code>PETSC_DIR=/cygdrive/e/opencmissextras/cm/external/packages/PETSc/petsc-2.3.3-p8; export PETSC_DIR</code></listitem>
+            <listitem><code>PETSC_DIR=/cygdrive/e/opencmissextras/cm/external/packages/PETSc/petsc-2.3.3-p15; export PETSC_DIR</code></listitem>
             <listitem>
               <para>For a debug install issue the following commands</para>
               <code>
@@ -215,8 +216,8 @@
         <section>
           <title>For AIX5.3</title>
           <itemizedlist>
-            <listitem>Change to the opencmissextras PETSc directory. e.g /people/tyu011/workspace/opencmissextras/cm/external/packages/PETSc/petsc-2.3.3-p8</listitem>
-            <listitem><code>setenv PETSC_DIR /people/tyu011/workspace/opencmissextras/cm/external/packages/PETSc/petsc-2.3.3-p8</code></listitem>
+            <listitem>Change to the opencmissextras PETSc directory. e.g /people/tyu011/workspace/opencmissextras/cm/external/packages/PETSc/petsc-2.3.3-p15</listitem>
+            <listitem><code>setenv PETSC_DIR /people/tyu011/workspace/opencmissextras/cm/external/packages/PETSc/petsc-2.3.3-p15</code></listitem>
             <listitem>In <filename>config</filename> directory, copy the file <filename>aix5.1.0.0.py</filename> and rename it to <filename>aix5.3.0.0.py</filename></listitem>
             <listitem>
               <para>For a debug install issue the following commands</para>
