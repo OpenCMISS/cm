@@ -381,27 +381,28 @@ CONTAINS
    
   END SUBROUTINE SOLVER_MATRICES_INITIALISE
   
-    !
+  !
   !================================================================================================================================
   !
-
-!!MERGE: ditto
   
   !>Gets the library type for the solver matrices (and vectors)
-  FUNCTION SOLVER_MATRICES_LIBRARY_TYPE_GET(SOLVER_MATRICES,ERR,ERROR)
+  SUBROUTINE SOLVER_MATRICES_LIBRARY_TYPE_GET(SOLVER_MATRICES,LIBRARY_TYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES !<A pointer to the solver matrices.
+    INTEGER(INTG), INTENT(OUT) :: LIBRARY_TYPE !<On return, the library type of the specified solver matrices \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Function result
-    INTEGER(INTG) :: SOLVER_MATRICES_LIBRARY_TYPE_GET !<The library type to get \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes
     !Local Variables
 
     CALL ENTERS("SOLVER_MATRICES_LIBRARY_TYPE_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER_MATRICES)) THEN
-      SOLVER_MATRICES_LIBRARY_TYPE_GET=SOLVER_MATRICES%LIBRARY_TYPE
+      IF(SOLVER_MATRICES%SOLVER_MATRICES_FINISHED) THEN
+        LIBRARY_TYPE=SOLVER_MATRICES%LIBRARY_TYPE
+      ELSE
+        CALL FLAG_ERROR("Solver Matrices has not finished",ERR,ERROR,*999)
+      ENDIF
     ELSE
       CALL FLAG_ERROR("Global matrices is not associated",ERR,ERROR,*999)
     ENDIF
@@ -411,7 +412,7 @@ CONTAINS
 999 CALL ERRORS("SOLVER_MATRICES_LIBRARY_TYPE_GET",ERR,ERROR)
     CALL EXITS("SOLVER_MATRICES_LIBRARY_TYPE_GET")
     RETURN
-  END FUNCTION SOLVER_MATRICES_LIBRARY_TYPE_GET
+  END SUBROUTINE SOLVER_MATRICES_LIBRARY_TYPE_GET
   
         
   !
@@ -512,15 +513,13 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
-!!MERGE: ditto
   
   !>Gets the storage type (sparsity) of the solver matrices
   SUBROUTINE SOLVER_MATRICES_STORAGE_TYPE_GET(SOLVER_MATRICES,STORAGE_TYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES !<A pointer to the solver matrices
-    INTEGER(INTG), POINTER :: STORAGE_TYPE(:) !<STORAGE_TYPE(matrix_idx). The storage type for the matrix_idx'th solver matrix
+    INTEGER(INTG), ALLOCATABLE :: STORAGE_TYPE(:) !<STORAGE_TYPE(matrix_idx). The storage type for the matrix_idx'th solver matrix
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -531,8 +530,6 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER_MATRICES)) THEN
       IF(SOLVER_MATRICES%SOLVER_MATRICES_FINISHED) THEN
-        CALL FLAG_ERROR("Solver matrices have been finished.",ERR,ERROR,*999)
-      ELSE
         ALLOCATE(STORAGE_TYPE(SOLVER_MATRICES%NUMBER_OF_MATRICES),STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate storage type list.",ERR,ERROR,*999)
         DO matrix_idx=1,SOLVER_MATRICES%NUMBER_OF_MATRICES
@@ -543,6 +540,8 @@ CONTAINS
             CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
           ENDIF
         ENDDO !matrix_idx
+      ELSE
+        CALL FLAG_ERROR("Solver matrices have not finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Solver matrices is not associated.",ERR,ERROR,*999)

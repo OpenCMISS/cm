@@ -847,11 +847,11 @@ CONTAINS
           !Make sure the equations sets are up to date
           DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
             EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-            CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)
+            CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)	    
             IF(SOLUTION%LINEARITY==PROBLEM_SOLUTION_LINEAR) THEN
               !Assemble the equations for linear problems
               CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
-            ENDIF
+            ENDIF	    
           ENDDO !equations_set_idx          
           SOLVER=>SOLUTION%SOLVER
           IF(ASSOCIATED(SOLVER)) THEN
