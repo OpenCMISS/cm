@@ -873,7 +873,7 @@ CONTAINS
               !Determine the coordinate system and create the regular mesh for that system
               REGULAR_MESH%MESH_DIMENSION=REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
               NUMBER_OF_DIMENSIONS=REGULAR_MESH%MESH_DIMENSION
-              IF (.NOT.ALLOCATED(REGULAR_MESH%ORIGIN)) THEN
+              IF(.NOT.ALLOCATED(REGULAR_MESH%ORIGIN)) THEN
                 ALLOCATE(REGULAR_MESH%ORIGIN(NUMBER_OF_DIMENSIONS),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate origin.",ERR,ERROR,*999)
                 DO origin_idx=1,NUMBER_OF_DIMENSIONS
