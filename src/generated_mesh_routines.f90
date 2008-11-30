@@ -329,7 +329,7 @@ CONTAINS
         GENERATED_MESHES%GENERATED_MESHES=>NEW_GENERATED_MESHES
         GENERATED_MESHES%NUMBER_OF_GENERATED_MESHES=GENERATED_MESHES%NUMBER_OF_GENERATED_MESHES+1
         GENERATED_MESH=>NEW_GENERATED_MESH
-	  ELSE
+      ELSE
         CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
       ENDIF
     ENDIF
@@ -995,9 +995,9 @@ CONTAINS
               CALL FLAG_ERROR("Coordinate type is either invalid or not implemented",ERR,ERROR,*999)
             END SELECT
           ELSE
-		    CALL FLAG_ERROR("Coordiate System is not associated",ERR,ERROR,*999)
-		  ENDIF
-		ELSE
+            CALL FLAG_ERROR("Coordiate System is not associated",ERR,ERROR,*999)
+          ENDIF
+        ELSE
           CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
         ENDIF
       ELSE

@@ -367,9 +367,9 @@ CONTAINS
         DOMAIN_NODES=>FIELD%VARIABLES(VARIABLE_NUMBER)%COMPONENTS(comp_idx)%DOMAIN%TOPOLOGY%NODES
         DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
           DO dev_idx=1,SIZE(DERIVATIVE_NUMBERS)
-	        CALL ANALYTIC_ANALYSIS_NODE_ANALYTIC_VALUE_GET(FIELD,DERIVATIVE_NUMBERS(dev_idx),node_idx,comp_idx,VARIABLE_NUMBER, &
-	          & ANALYTIC_VALUE,ERR,ERROR,*999)
-	        NUMBER_OF_SURROUNDING_ELEMENTS=FIELD%VARIABLES(1)%COMPONENTS(comp_idx)%DOMAIN%TOPOLOGY%NODES%NODES(node_idx)% &
+            CALL ANALYTIC_ANALYSIS_NODE_ANALYTIC_VALUE_GET(FIELD,DERIVATIVE_NUMBERS(dev_idx),node_idx,comp_idx,VARIABLE_NUMBER, &
+              & ANALYTIC_VALUE,ERR,ERROR,*999)
+            NUMBER_OF_SURROUNDING_ELEMENTS=FIELD%VARIABLES(1)%COMPONENTS(comp_idx)%DOMAIN%TOPOLOGY%NODES%NODES(node_idx)% &
                 & NUMBER_OF_SURROUNDING_ELEMENTS
             ! Uses Trapezoidal 2D Rule
 !TODO implement integration calculation for 3D
@@ -385,7 +385,7 @@ CONTAINS
             CASE DEFAULT
               CALL FLAG_ERROR("Not valid power number",ERR,ERROR,*999)
             END SELECT
-	      ENDDO !dev_idx
+          ENDDO !dev_idx
         ENDDO !node_idx
       ENDDO !comp_idx
     ELSE

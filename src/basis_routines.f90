@@ -2782,14 +2782,14 @@ CONTAINS
 
     IF(ASSOCIATED(BASIS)) THEN
       IF(BASIS%BASIS_FINISHED) THEN
-	    IF(ASSOCIATED(BASIS%QUADRATURE%BASIS)) THEN
-	      QUADRATURE_TYPE=BASIS%QUADRATURE%TYPE
-	    ELSE
-	      CALL FLAG_ERROR("Basis quadrature basis is not associated",ERR,ERROR,*999)
-	    ENDIF
-	  ELSE
-	    CALL FLAG_ERROR("Basis has not finished",ERR,ERROR,*999)
-	  ENDIF
+        IF(ASSOCIATED(BASIS%QUADRATURE%BASIS)) THEN
+          QUADRATURE_TYPE=BASIS%QUADRATURE%TYPE
+        ELSE
+          CALL FLAG_ERROR("Basis quadrature basis is not associated",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Basis has not finished",ERR,ERROR,*999)
+      ENDIF
     ELSE
       CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
     ENDIF
