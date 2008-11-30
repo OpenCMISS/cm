@@ -74,7 +74,24 @@ MODULE EQUATIONS_MATRICES_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: EQUATIONS_MATRICES_SPARSE_MATRICES=1 !<Use sparse equations matrices \see EQUATIONS_MATRICES_ROUTINES_EquationsMatricesSparsityTypes,EQUATIONS_MATRICES_ROUTINES
   INTEGER(INTG), PARAMETER :: EQUATIONS_MATRICES_FULL_MATRICES=2 !<Use fully populated equation matrices \see EQUATIONS_MATRICES_ROUTINES_EquationsMatricesSparsityTypes,EQUATIONS_MATRICES_ROUTINES
- !>@}
+  !>@}
+
+  !> \addtogroup EQUATIONS_MATRICES_ROUTINES_SelectMatricesTypes EQUATIONS_MATRICES_ROUTINES::SelectMatricesTypes
+  !> \brief The types of selection available for the equations matrices
+  !> \see SOLVER_ROUTINES
+  !>@{
+  INTEGER(INTG), PARAMETER :: EQUATIONS_MATRICES_ALL=1 !<Select all the equations matrices and vectors \see EQUATIONS_MATRICES_ROUTINES::SelectMatricesTypes,EQUATION_MATRICES_ROUTINES
+  INTEGER(INTG), PARAMETER :: EQUATIONS_MATRICES_LINEAR_ONLY=2 !<Select only the linear equations matrices and vectors \see EQUATIONS_MATRICES_ROUTINES::SelectMatricesTypes,EQUATION_MATRICES_ROUTINES
+  INTEGER(INTG), PARAMETER :: EQUATIONS_MATRICES_NONLINEAR_ONLY=3 !<Select only the nonlinear equations matrices and vectors \see EQUATIONS_MATRICES_ROUTINES::SelectMatricesTypes,EQUATION_MATRICES_ROUTINES
+  INTEGER(INTG), PARAMETER :: EQUATIONS_MATRICES_JACOBIAN_ONLY=4 !<Select only the Jacobian equations matrix \see EQUATIONS_MATRICES_ROUTINES::SelectMatricesTypes,EQUATION_MATRICES_ROUTINES
+  INTEGER(INTG), PARAMETER :: EQUATIONS_MATRICES_RESIDUAL_ONLY=5 !<Select only the residual equations vector \see EQUATIONS_MATRICES_ROUTINES::SelectMatricesTypes,EQUATION_MATRICES_ROUTINES
+  INTEGER(INTG), PARAMETER :: EQUATIONS_MATRICES_RHS_ONLY=6 !<Select only the RHS equations vector \see EQUATIONS_MATRICES_ROUTINES::SelectMatricesTypes,EQUATION_MATRICES_ROUTINES
+  INTEGER(INTG), PARAMETER :: EQUATIONS_MATRICES_SOURCE_ONLY=7 !<Select only the RHS equations vector \see EQUATIONS_MATRICES_ROUTINES::SelectMatricesTypes,EQUATION_MATRICES_ROUTINES
+  INTEGER(INTG), PARAMETER :: EQUATIONS_MATRICES_RHS_RESIDUAL_ONLY=8 !<Select only the RHS and residual equations vectors \see EQUATIONS_MATRICES_ROUTINES::SelectMatricesTypes,EQUATION_MATRICES_ROUTINES
+  INTEGER(INTG), PARAMETER :: EQUATIONS_MATRICES_RHS_SOURCE_ONLY=9 !<Assemble only the RHS and source equations vectors \see EQUATIONS_MATRICES_ROUTINES::SelectMatricesTypes,EQUATION_MATRICES_ROUTINES
+  INTEGER(INTG), PARAMETER :: EQUATIONS_MATRICES_RESIDUAL_SOURCE_ONLY=10 !<Assemble only the residual and source equations vectors\see EQUATIONS_MATRICES_ROUTINES::SelectMatricesTypes,EQUATION_MATRICES_ROUTINES 
+  INTEGER(INTG), PARAMETER :: EQUATIONS_MATRICES_VECTORS_ONLY=11 !<Assemble only the equations vectors \see EQUATIONS_MATRICES_ROUTINES::SelectMatricesTypes,EQUATION_MATRICES_ROUTINES
+  !>@}
 
   !Module types
 
@@ -92,9 +109,15 @@ MODULE EQUATIONS_MATRICES_ROUTINES
   PUBLIC EQUATIONS_MATRICES_ELEMENT_ADD,EQUATIONS_MATRICES_ELEMENT_CALCULATE,EQUATIONS_MATRICES_ELEMENT_INITIALISE, &
     & EQUATIONS_MATRICES_ELEMENT_FINALISE,EQUATIONS_MATRICES_VALUES_INITIALISE
 
+  PUBLIC EQUATIONS_MATRICES_ALL,EQUATIONS_MATRICES_LINEAR_ONLY,EQUATIONS_MATRICES_NONLINEAR_ONLY,EQUATIONS_MATRICES_JACOBIAN_ONLY, &
+    & EQUATIONS_MATRICES_RESIDUAL_ONLY,EQUATIONS_MATRICES_RHS_ONLY,EQUATIONS_MATRICES_SOURCE_ONLY, &
+    & EQUATIONS_MATRICES_RHS_RESIDUAL_ONLY,EQUATIONS_MATRICES_RHS_SOURCE_ONLY,EQUATIONS_MATRICES_RESIDUAL_SOURCE_ONLY, &
+    & EQUATIONS_MATRICES_VECTORS_ONLY
+  
   PUBLIC EQUATIONS_MATRICES_OUTPUT
 
-  PUBLIC EQUATIONS_MATRICES_STORAGE_TYPE_SET,EQUATIONS_MATRICES_STRUCTURE_TYPE_SET
+  PUBLIC EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET,EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET, &
+    & EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET,EQUATIONS_MATRICES_NONLINEAR_STRUCTURE_TYPE_SET
 
 CONTAINS
 
@@ -164,6 +187,7 @@ CONTAINS
               NONLINEAR_MATRICES%JACOBIAN%NUMBER_OF_COLUMNS=NONLINEAR_MAPPING%JACOBIAN_TO_VARIABLE_MAP%NUMBER_OF_COLUMNS
               NONLINEAR_MATRICES%JACOBIAN%JACOBIAN_CALCULATION_TYPE=EQUATIONS_SET_JACOBIAN_FD_CALCULATED
               NONLINEAR_MATRICES%JACOBIAN%UPDATE_JACOBIAN=.TRUE.
+              NONLINEAR_MATRICES%JACOBIAN%FIRST_ASSEMBLY=.TRUE.
               NONLINEAR_MAPPING%JACOBIAN_TO_VARIABLE_MAP%JACOBIAN=>NONLINEAR_MATRICES%JACOBIAN
               NULLIFY(NONLINEAR_MATRICES%JACOBIAN%JACOBIAN)
               CALL EQUATIONS_MATRICES_ELEMENT_MATRIX_INITIALISE(NONLINEAR_MATRICES%JACOBIAN%ELEMENT_JACOBIAN,ERR,ERROR,*999)
@@ -669,49 +693,61 @@ CONTAINS
                 IF(EQUATIONS_MATRIX%UPDATE_MATRIX) THEN
                   FIELD_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(matrix_idx)%VARIABLE
                   DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                    IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN  
-                      ELEMENTS_TOPOLOGY=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS
-                      IF(ELEMENT_NUMBER>=1.AND.ELEMENT_NUMBER<=ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS) THEN
+                    ELEMENTS_TOPOLOGY=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS
+                    IF(ELEMENT_NUMBER>=1.AND.ELEMENT_NUMBER<=ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS) THEN
+                      SELECT CASE(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE)
+                      CASE(FIELD_CONSTANT_INTERPOLATION)
+                        local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP(1)
+                        global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
+                        EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_ROWS=EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_ROWS+1
+                        EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_COLUMNS=EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_COLUMNS+1
+                        EQUATIONS_MATRIX%ELEMENT_MATRIX%ROW_DOFS(EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_ROWS)=local_ny
+                        EQUATIONS_MATRIX%ELEMENT_MATRIX%COLUMN_DOFS(EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_COLUMNS)=global_ny
+                      CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                        local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP(ELEMENT_NUMBER,1)
+                        global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
+                        EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_ROWS=EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_ROWS+1
+                        EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_COLUMNS=EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_COLUMNS+1
+                        EQUATIONS_MATRIX%ELEMENT_MATRIX%ROW_DOFS(EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_ROWS)=local_ny
+                        EQUATIONS_MATRIX%ELEMENT_MATRIX%COLUMN_DOFS(EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_COLUMNS)=global_ny
+                      CASE(FIELD_NODE_BASED_INTERPOLATION)
                         BASIS=>ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%BASIS
                         DO node_idx=1,BASIS%NUMBER_OF_NODES
                           node=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(node_idx)
                           DO derivative_idx=1,BASIS%NUMBER_OF_DERIVATIVES(node_idx)
                             derivative=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(derivative_idx,node_idx)
-                            local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(derivative,node,1)
+                            local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(derivative, &
+                              & node,1)
                             global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
                             EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_ROWS=EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_ROWS+1
                             EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_COLUMNS=EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_COLUMNS+1
                             EQUATIONS_MATRIX%ELEMENT_MATRIX%ROW_DOFS(EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_ROWS)=local_ny
-                            EQUATIONS_MATRIX%ELEMENT_MATRIX%COLUMN_DOFS(EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_COLUMNS)=global_ny
+                            EQUATIONS_MATRIX%ELEMENT_MATRIX%COLUMN_DOFS(EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_COLUMNS)= &
+                              & global_ny
                           ENDDO !derivative_idx
                         ENDDO !node_idx
-                      ELSE
-                        LOCAL_ERROR="Element number "//TRIM(NUMBER_TO_VSTRING(ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                          & " is invalid for component number "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
+                      CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      CASE DEFAULT
+                        LOCAL_ERROR="The interpolation type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
+                          & " is invalid for component number "// &
+                          & TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
                           & " of dependent variable number "// &
-                          & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%VARIABLE_NUMBER,"*",ERR,ERROR))// &
-                          & ". The element number must be between 1 and "// &
-                          & TRIM(NUMBER_TO_VSTRING(ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS,"*",ERR,ERROR))//"."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                      ENDIF
-!kmith - 17.10.08: Adding element-based interpolation		      
-		    ELSEIF (FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_ELEMENT_BASED_INTERPOLATION) THEN 
-		      local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP(1,1)
-		      global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)		    
-                      EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_ROWS=EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_ROWS+1
-                      EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_COLUMNS=EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_COLUMNS+1
-                      EQUATIONS_MATRIX%ELEMENT_MATRIX%ROW_DOFS(EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_ROWS)=local_ny
-                      EQUATIONS_MATRIX%ELEMENT_MATRIX%COLUMN_DOFS(EQUATIONS_MATRIX%ELEMENT_MATRIX%NUMBER_OF_COLUMNS)=global_ny		      		      
-		      !RHS_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS=RHS_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS+1
-!kmith - 17.10.08:		      		      
+                          & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%VARIABLE_NUMBER,"*",ERR,ERROR))//"."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)          
+                      END SELECT
                     ELSE
-                      LOCAL_ERROR="The interpolation type for component number "// &
-                        & TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
+                      LOCAL_ERROR="Element number "//TRIM(NUMBER_TO_VSTRING(ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                        & " is invalid for component number "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
                         & " of dependent variable number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%VARIABLE_NUMBER,"*",ERR,ERROR))// &
-                        & " is not nodally based."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)          
-                    ENDIF	    
+                        & ". The element number must be between 1 and "// &
+                        & TRIM(NUMBER_TO_VSTRING(ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS,"*",ERR,ERROR))//"."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
                   ENDDO !component_idx
                   EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
                 ENDIF
@@ -738,9 +774,24 @@ CONTAINS
                 IF(JACOBIAN_MATRIX%UPDATE_JACOBIAN) THEN
                   FIELD_VARIABLE=>NONLINEAR_MAPPING%JACOBIAN_TO_VARIABLE_MAP%VARIABLE
                   DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                    IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN 
-                      ELEMENTS_TOPOLOGY=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS
-                      IF(ELEMENT_NUMBER>=1.AND.ELEMENT_NUMBER<=ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS) THEN
+                    ELEMENTS_TOPOLOGY=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS
+                    IF(ELEMENT_NUMBER>=1.AND.ELEMENT_NUMBER<=ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS) THEN
+                      SELECT CASE(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE)
+                      CASE(FIELD_CONSTANT_INTERPOLATION)
+                        local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP(1)
+                        global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
+                        JACOBIAN_MATRIX%ELEMENT_JACOBIAN%NUMBER_OF_ROWS=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%NUMBER_OF_ROWS+1
+                        JACOBIAN_MATRIX%ELEMENT_JACOBIAN%NUMBER_OF_COLUMNS=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%NUMBER_OF_COLUMNS+1
+                        JACOBIAN_MATRIX%ELEMENT_JACOBIAN%ROW_DOFS(JACOBIAN_MATRIX%ELEMENT_JACOBIAN%NUMBER_OF_ROWS)=local_ny
+                        JACOBIAN_MATRIX%ELEMENT_JACOBIAN%COLUMN_DOFS(JACOBIAN_MATRIX%ELEMENT_JACOBIAN%NUMBER_OF_COLUMNS)=global_ny
+                      CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                        local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP(ELEMENT_NUMBER,1)
+                        global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
+                        JACOBIAN_MATRIX%ELEMENT_JACOBIAN%NUMBER_OF_ROWS=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%NUMBER_OF_ROWS+1
+                        JACOBIAN_MATRIX%ELEMENT_JACOBIAN%NUMBER_OF_COLUMNS=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%NUMBER_OF_COLUMNS+1
+                        JACOBIAN_MATRIX%ELEMENT_JACOBIAN%ROW_DOFS(JACOBIAN_MATRIX%ELEMENT_JACOBIAN%NUMBER_OF_ROWS)=local_ny
+                        JACOBIAN_MATRIX%ELEMENT_JACOBIAN%COLUMN_DOFS(JACOBIAN_MATRIX%ELEMENT_JACOBIAN%NUMBER_OF_COLUMNS)=global_ny
+                      CASE(FIELD_NODE_BASED_INTERPOLATION)
                         BASIS=>ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%BASIS
                         DO node_idx=1,BASIS%NUMBER_OF_NODES
                           node=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(node_idx)
@@ -755,33 +806,28 @@ CONTAINS
                               & global_ny
                           ENDDO !derivative_idx
                         ENDDO !node_idx
-                      ELSE
-                        LOCAL_ERROR="Element number "//TRIM(NUMBER_TO_VSTRING(ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                          & " is invalid for component number "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
+                      CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      CASE DEFAULT
+                        LOCAL_ERROR="The interpolation type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
+                          & " is invalid for component number "// &
+                          & TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
                           & " of dependent variable number "// &
-                          & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%VARIABLE_NUMBER,"*",ERR,ERROR))// &
-                          & ". The element number must be between 1 and "// &
-                          & TRIM(NUMBER_TO_VSTRING(ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS,"*",ERR,ERROR))//"."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                      ENDIF
-!kmith - 17.10.08: Adding element-based interpolation		      
-                    ELSEIF (FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_ELEMENT_BASED_INTERPOLATION) THEN		      
-                      local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP(1,1)
-		      global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
-                      JACOBIAN_MATRIX%ELEMENT_JACOBIAN%NUMBER_OF_ROWS=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%NUMBER_OF_ROWS+1
-                      JACOBIAN_MATRIX%ELEMENT_JACOBIAN%NUMBER_OF_COLUMNS=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%NUMBER_OF_COLUMNS+1
-                      JACOBIAN_MATRIX%ELEMENT_JACOBIAN%ROW_DOFS(JACOBIAN_MATRIX%ELEMENT_JACOBIAN%NUMBER_OF_ROWS)=local_ny
-                      JACOBIAN_MATRIX%ELEMENT_JACOBIAN%COLUMN_DOFS(JACOBIAN_MATRIX%ELEMENT_JACOBIAN%NUMBER_OF_COLUMNS)= &
-                        & global_ny		      
-!kmith - 17.10.08:	            
-		    ELSE
-                      LOCAL_ERROR="The interpolation type for component number "// &
-                        & TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
+                          & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%VARIABLE_NUMBER,"*",ERR,ERROR))//"."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)          
+                      END SELECT
+                    ELSE
+                      LOCAL_ERROR="Element number "//TRIM(NUMBER_TO_VSTRING(ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                        & " is invalid for component number "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
                         & " of dependent variable number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%VARIABLE_NUMBER,"*",ERR,ERROR))// &
-                        & " is not nodally based."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)          
-                    ENDIF	    
+                        & ". The element number must be between 1 and "// &
+                        & TRIM(NUMBER_TO_VSTRING(ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS,"*",ERR,ERROR))//"."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
                   ENDDO !component_idx
                   JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX=0.0_DP
                 ENDIF
@@ -794,9 +840,18 @@ CONTAINS
             IF(NONLINEAR_MATRICES%UPDATE_RESIDUAL) THEN
               FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLE
               DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN 
-                  ELEMENTS_TOPOLOGY=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS
-                  IF(ELEMENT_NUMBER>=1.AND.ELEMENT_NUMBER<=ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS) THEN
+                ELEMENTS_TOPOLOGY=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS
+                IF(ELEMENT_NUMBER>=1.AND.ELEMENT_NUMBER<=ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS) THEN
+                  SELECT CASE(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE)
+                  CASE(FIELD_CONSTANT_INTERPOLATION)
+                    local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP(1)
+                    NONLINEAR_MATRICES%ELEMENT_RESIDUAL%NUMBER_OF_ROWS=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%NUMBER_OF_ROWS+1
+                    NONLINEAR_MATRICES%ELEMENT_RESIDUAL%ROW_DOFS(NONLINEAR_MATRICES%ELEMENT_RESIDUAL%NUMBER_OF_ROWS)=local_ny
+                  CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                    local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP(ELEMENT_NUMBER,1)
+                    NONLINEAR_MATRICES%ELEMENT_RESIDUAL%NUMBER_OF_ROWS=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%NUMBER_OF_ROWS+1
+                    NONLINEAR_MATRICES%ELEMENT_RESIDUAL%ROW_DOFS(NONLINEAR_MATRICES%ELEMENT_RESIDUAL%NUMBER_OF_ROWS)=local_ny
+                  CASE(FIELD_NODE_BASED_INTERPOLATION)
                     BASIS=>ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%BASIS
                     DO node_idx=1,BASIS%NUMBER_OF_NODES
                       node=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(node_idx)
@@ -807,28 +862,27 @@ CONTAINS
                         NONLINEAR_MATRICES%ELEMENT_RESIDUAL%ROW_DOFS(NONLINEAR_MATRICES%ELEMENT_RESIDUAL%NUMBER_OF_ROWS)=local_ny
                       ENDDO !derivative_idx
                     ENDDO !node_idx
-                  ELSE
-                    LOCAL_ERROR="Element number "//TRIM(NUMBER_TO_VSTRING(ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                      & " is invalid for component number "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
-                      & " of dependent variable number "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%VARIABLE_NUMBER,"*",ERR,ERROR))// &
-                      & ". The element number must be between 1 and "// &
-                      & TRIM(NUMBER_TO_VSTRING(ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS,"*",ERR,ERROR))//"."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  ENDIF
-!kmith - 17.10.08: Adding element-based interpolation             
-		ELSEIF (FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_ELEMENT_BASED_INTERPOLATION) THEN
-		  local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP(1,1)				  
-	          NONLINEAR_MATRICES%ELEMENT_RESIDUAL%NUMBER_OF_ROWS=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%NUMBER_OF_ROWS+1
-		  NONLINEAR_MATRICES%ELEMENT_RESIDUAL%ROW_DOFS(NONLINEAR_MATRICES%ELEMENT_RESIDUAL%NUMBER_OF_ROWS)=local_ny
-!kmith - 17.10.08:                
-		ELSE
-                  LOCAL_ERROR="The interpolation type for component number "// &
-                    & TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
-                    & " of dependent variable number "// &
-                    & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%VARIABLE_NUMBER,"*",ERR,ERROR))// &
-                    & " is not nodally based."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)          
-                ENDIF	
+                  CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CASE DEFAULT
+                    LOCAL_ERROR="The interpolation type of "// &
+                      & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
+                      & " is invalid for component number "// &
+                      & TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
+                      & " of dependent variable number "// &
+                      & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%VARIABLE_NUMBER,"*",ERR,ERROR))//"."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)          
+                  END SELECT
+                ELSE
+                  LOCAL_ERROR="Element number "//TRIM(NUMBER_TO_VSTRING(ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                    & " is invalid for component number "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
+                    & " of dependent variable number "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%VARIABLE_NUMBER,"*",ERR,ERROR))// &
+                    & ". The element number must be between 1 and "// &
+                    & TRIM(NUMBER_TO_VSTRING(ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS,"*",ERR,ERROR))//"."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
               ENDDO !component_idx
               NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR=0.0_DP
             ENDIF
@@ -845,9 +899,18 @@ CONTAINS
             IF(ASSOCIATED(RHS_MAPPING)) THEN
               FIELD_VARIABLE=>RHS_MAPPING%RHS_VARIABLE
               DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN 
-                  ELEMENTS_TOPOLOGY=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS
-                  IF(ELEMENT_NUMBER>=1.AND.ELEMENT_NUMBER<=ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS) THEN
+                ELEMENTS_TOPOLOGY=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS
+                IF(ELEMENT_NUMBER>=1.AND.ELEMENT_NUMBER<=ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS) THEN
+                  SELECT CASE(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE)
+                  CASE(FIELD_CONSTANT_INTERPOLATION)
+                    local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP(1)
+                    RHS_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS=RHS_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS+1
+                    RHS_VECTOR%ELEMENT_VECTOR%ROW_DOFS(RHS_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS)=local_ny
+                  CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                    local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP(ELEMENT_NUMBER,1)
+                    RHS_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS=RHS_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS+1
+                    RHS_VECTOR%ELEMENT_VECTOR%ROW_DOFS(RHS_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS)=local_ny
+                  CASE(FIELD_NODE_BASED_INTERPOLATION)
                     BASIS=>ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%BASIS
                     DO node_idx=1,BASIS%NUMBER_OF_NODES
                       node=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(node_idx)
@@ -858,28 +921,27 @@ CONTAINS
                         RHS_VECTOR%ELEMENT_VECTOR%ROW_DOFS(RHS_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS)=local_ny
                       ENDDO !derivative_idx
                     ENDDO !node_idx
-                  ELSE
-                    LOCAL_ERROR="Element number "//TRIM(NUMBER_TO_VSTRING(ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                      & " is invalid for component number "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
-                      & " of dependent variable number "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%VARIABLE_NUMBER,"*",ERR,ERROR))// &
-                      & ". The element number must be between 1 and "// &
-                      & TRIM(NUMBER_TO_VSTRING(ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS,"*",ERR,ERROR))//"."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  ENDIF		  
-!kmith - 17.10.08: Adding element-based interpolation	                
-		ELSEIF (FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_ELEMENT_BASED_INTERPOLATION) THEN	
-		  local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP(1,1)			  
-		  RHS_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS=RHS_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS+1
-		  RHS_VECTOR%ELEMENT_VECTOR%ROW_DOFS(RHS_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS)=local_ny
-!kmith - 17.10.08:		  
+                  CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CASE DEFAULT
+                    LOCAL_ERROR="The interpolation type of "// &
+                      & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
+                      & " is invalid for component number "// &
+                      & TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
+                      & " of dependent variable number "// &
+                      & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%VARIABLE_NUMBER,"*",ERR,ERROR))//"."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)          
+                  END SELECT
                 ELSE
-                  LOCAL_ERROR="The interpolation type for component number "// &
-                    & TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
-                    & " of dependent variable number "// &
-                    & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%VARIABLE_NUMBER,"*",ERR,ERROR))// &
-                    & " is not nodally based."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)          
-                ENDIF	
+                  LOCAL_ERROR="Element number "//TRIM(NUMBER_TO_VSTRING(ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                    & " is invalid for component number "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
+                    & " of dependent variable number "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%VARIABLE_NUMBER,"*",ERR,ERROR))// &
+                    & ". The element number must be between 1 and "// &
+                    & TRIM(NUMBER_TO_VSTRING(ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS,"*",ERR,ERROR))//"."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
               ENDDO !component_idx
               RHS_VECTOR%ELEMENT_VECTOR%VECTOR=0.0_DP
             ENDIF
@@ -896,9 +958,18 @@ CONTAINS
             IF(ASSOCIATED(SOURCE_MAPPING)) THEN
               FIELD_VARIABLE=>SOURCE_MAPPING%SOURCE_VARIABLE
               DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
-                  ELEMENTS_TOPOLOGY=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS
-                  IF(ELEMENT_NUMBER>=1.AND.ELEMENT_NUMBER<=ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS) THEN
+                ELEMENTS_TOPOLOGY=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS
+                IF(ELEMENT_NUMBER>=1.AND.ELEMENT_NUMBER<=ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS) THEN
+                  SELECT CASE(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE)
+                  CASE(FIELD_CONSTANT_INTERPOLATION)
+                    local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP(1)
+                    SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS=SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS+1
+                    SOURCE_VECTOR%ELEMENT_VECTOR%ROW_DOFS(SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS)=local_ny
+                  CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                    local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP(element_number,1)
+                    SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS=SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS+1
+                    SOURCE_VECTOR%ELEMENT_VECTOR%ROW_DOFS(SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS)=local_ny
+                  CASE(FIELD_NODE_BASED_INTERPOLATION)
                     BASIS=>ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%BASIS
                     DO node_idx=1,BASIS%NUMBER_OF_NODES
                       node=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(node_idx)
@@ -909,21 +980,26 @@ CONTAINS
                         SOURCE_VECTOR%ELEMENT_VECTOR%ROW_DOFS(SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS)=local_ny
                       ENDDO !derivative_idx
                     ENDDO !node_idx
-                  ELSE
-                    LOCAL_ERROR="Element number "//TRIM(NUMBER_TO_VSTRING(ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                      & " is invalid for component number "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
-                      & " of dependent variable number "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%VARIABLE_NUMBER,"*",ERR,ERROR))// &
-                      & ". The element number must be between 1 and "// &
-                      & TRIM(NUMBER_TO_VSTRING(ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS,"*",ERR,ERROR))//"."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  ENDIF
+                  CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CASE DEFAULT
+                    LOCAL_ERROR="The interpolation type of "// &
+                      & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
+                      & " is invalid for component number "// &
+                      & TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
+                          & " of dependent variable number "// &
+                          & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%VARIABLE_NUMBER,"*",ERR,ERROR))//"."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)          
+                  END SELECT
                 ELSE
-                  LOCAL_ERROR="The interpolation type for component number "// &
-                    & TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
-                    & " of dependent variable number "// &
-                    & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%VARIABLE_NUMBER,"*",ERR,ERROR))// &
-                    & " is not nodally based."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)          
+                  LOCAL_ERROR="Element number "//TRIM(NUMBER_TO_VSTRING(ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                    & " is invalid for component number "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
+                    & " of dependent variable number "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%VARIABLE_NUMBER,"*",ERR,ERROR))// &
+                    & ". The element number must be between 1 and "// &
+                    & TRIM(NUMBER_TO_VSTRING(ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS,"*",ERR,ERROR))//"."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ENDDO !component_idx
               SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR=0.0_DP
@@ -1044,7 +1120,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: component_idx,DUMMY_ERR,matrix_idx,MAX_NUMBER_OF_ROWS,MAX_NUMBER_OF_COLUMNS
+    INTEGER(INTG) :: DUMMY_ERR,matrix_idx
     TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN_MATRIX
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
     TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
@@ -1123,19 +1199,10 @@ CONTAINS
               JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIAN
               IF(ASSOCIATED(JACOBIAN_MATRIX)) THEN
                 IF(JACOBIAN_MATRIX%JACOBIAN_CALCULATION_TYPE/=EQUATIONS_SET_JACOBIAN_NOT_CALCULATED) THEN
-!kmith - 17.10.08: Taking element-based interpolation into acount as well		
-                  !JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MAX_NUMBER_OF_ROWS=FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
-                  !  & FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                  !JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MAX_NUMBER_OF_COLUMNS=FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
-                  !  & FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                  MAX_NUMBER_OF_ROWS=0
-		  DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                    MAX_NUMBER_OF_ROWS=MAX_NUMBER_OF_ROWS+FIELD_VARIABLE%COMPONENTS(component_idx)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
-		  ENDDO
-		  MAX_NUMBER_OF_COLUMNS=MAX_NUMBER_OF_ROWS
-                  JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MAX_NUMBER_OF_ROWS=MAX_NUMBER_OF_ROWS
-                  JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MAX_NUMBER_OF_COLUMNS=MAX_NUMBER_OF_COLUMNS	    
-!kmith - 17.10.08:
+                  JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MAX_NUMBER_OF_ROWS=FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
+                    & FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                  JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MAX_NUMBER_OF_COLUMNS=FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
+                    & FIELD_VARIABLE%NUMBER_OF_COMPONENTS
 		  IF(ALLOCATED(JACOBIAN_MATRIX%ELEMENT_JACOBIAN%ROW_DOFS)) THEN
                     CALL FLAG_ERROR("Jacobian element matrix row dofs already allocated.",ERR,ERROR,*999)
                   ELSE
@@ -1158,15 +1225,8 @@ CONTAINS
                       & JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MAX_NUMBER_OF_COLUMNS),STAT=ERR)
                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Jacobian element matrix.",ERR,ERROR,*999)
                   ENDIF
-!kmith - 17.10.08: Taking element-based interpolation into acount as well				  
-                  !JACOBIAN_MATRIX%ELEMENT_RESIDUAL%MAX_NUMBER_OF_ROWS=FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
-                  !  & FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                  MAX_NUMBER_OF_ROWS=0
-		  DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                    MAX_NUMBER_OF_ROWS=MAX_NUMBER_OF_ROWS+FIELD_VARIABLE%COMPONENTS(component_idx)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
-		  ENDDO
-                  JACOBIAN_MATRIX%ELEMENT_RESIDUAL%MAX_NUMBER_OF_ROWS=MAX_NUMBER_OF_ROWS    
-!kmith - 17.10.08:
+                  JACOBIAN_MATRIX%ELEMENT_RESIDUAL%MAX_NUMBER_OF_ROWS=FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
+                    & FIELD_VARIABLE%NUMBER_OF_COMPONENTS
                   IF(ALLOCATED(JACOBIAN_MATRIX%ELEMENT_RESIDUAL%ROW_DOFS)) THEN
                     CALL FLAG_ERROR("Jacobian element residual row dofs already allocated.",ERR,ERROR,*999)
                   ELSE
@@ -1194,15 +1254,8 @@ CONTAINS
             ENDIF
             FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLE
             IF(ASSOCIATED(FIELD_VARIABLE)) THEN	    
-!kmith - 17.10.08: Taking element-based interpolation into acount as well		
-	      !NONLINEAR_MATRICES%ELEMENT_RESIDUAL%MAX_NUMBER_OF_ROWS=FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
-              !  & FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-              MAX_NUMBER_OF_ROWS=0
-	      DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                MAX_NUMBER_OF_ROWS=MAX_NUMBER_OF_ROWS+FIELD_VARIABLE%COMPONENTS(component_idx)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
-	      ENDDO
-	      NONLINEAR_MATRICES%ELEMENT_RESIDUAL%MAX_NUMBER_OF_ROWS=MAX_NUMBER_OF_ROWS
-!kmith - 17.10.08:
+	      NONLINEAR_MATRICES%ELEMENT_RESIDUAL%MAX_NUMBER_OF_ROWS=FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
+                & FIELD_VARIABLE%NUMBER_OF_COMPONENTS
               IF(ALLOCATED(NONLINEAR_MATRICES%ELEMENT_RESIDUAL%ROW_DOFS)) THEN
                 CALL FLAG_ERROR("Residual element vector row dofs already allocated.",ERR,ERROR,*999)        
               ELSE
@@ -1231,15 +1284,8 @@ CONTAINS
           IF(ASSOCIATED(RHS_MAPPING)) THEN
             FIELD_VARIABLE=>RHS_MAPPING%RHS_VARIABLE
             IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-!kmith - 17.10.08: Taking element-based interpolation into acount as well
-              !RHS_VECTOR%ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS=FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
-              !  & FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-              MAX_NUMBER_OF_ROWS=0
-	      DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                MAX_NUMBER_OF_ROWS=MAX_NUMBER_OF_ROWS+FIELD_VARIABLE%COMPONENTS(component_idx)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
-	      ENDDO
-	      RHS_VECTOR%ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS=MAX_NUMBER_OF_ROWS
-!kmith - 17.10.08:
+              RHS_VECTOR%ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS=FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
+                & FIELD_VARIABLE%NUMBER_OF_COMPONENTS
               IF(ALLOCATED(RHS_VECTOR%ELEMENT_VECTOR%ROW_DOFS)) THEN
                 CALL FLAG_ERROR("RHS element vector row dofs already allocated.",ERR,ERROR,*999)        
               ELSE
@@ -1372,6 +1418,7 @@ CONTAINS
                 EQUATIONS_MATRIX%STORAGE_TYPE=MATRIX_BLOCK_STORAGE_TYPE
                 EQUATIONS_MATRIX%STRUCTURE_TYPE=EQUATIONS_MATRIX_NO_STRUCTURE
                 EQUATIONS_MATRIX%UPDATE_MATRIX=.TRUE.
+                EQUATIONS_MATRIX%FIRST_ASSEMBLY=.TRUE.
                 EQUATIONS_MATRIX%NUMBER_OF_COLUMNS=LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(MATRIX_NUMBER)%NUMBER_OF_COLUMNS
                 LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(MATRIX_NUMBER)%EQUATIONS_MATRIX=>EQUATIONS_MATRIX
                 NULLIFY(EQUATIONS_MATRIX%MATRIX)
@@ -1553,6 +1600,7 @@ CONTAINS
             NULLIFY(EQUATIONS_MATRICES%NONLINEAR_MATRICES%JACOBIAN)
             CALL EQUATIONS_JACOBIAN_INITIALISE(EQUATIONS_MATRICES%NONLINEAR_MATRICES,ERR,ERROR,*999)
             EQUATIONS_MATRICES%NONLINEAR_MATRICES%UPDATE_RESIDUAL=.TRUE.
+            EQUATIONS_MATRICES%NONLINEAR_MATRICES%FIRST_ASSEMBLY=.TRUE.
             NULLIFY(EQUATIONS_MATRICES%NONLINEAR_MATRICES%RESIDUAL)
             CALL EQUATIONS_MATRICES_ELEMENT_VECTOR_INITIALISE(EQUATIONS_MATRICES%NONLINEAR_MATRICES%ELEMENT_RESIDUAL,ERR,ERROR,*999)
           ENDIF
@@ -1713,6 +1761,7 @@ CONTAINS
             ALLOCATE(EQUATIONS_MATRICES%RHS_VECTOR,STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations matrices RHS vector.",ERR,ERROR,*999)
             EQUATIONS_MATRICES%RHS_VECTOR%UPDATE_VECTOR=.TRUE.
+            EQUATIONS_MATRICES%RHS_VECTOR%FIRST_ASSEMBLY=.TRUE.
             NULLIFY(EQUATIONS_MATRICES%RHS_VECTOR%VECTOR)
             CALL EQUATIONS_MATRICES_ELEMENT_VECTOR_INITIALISE(EQUATIONS_MATRICES%RHS_VECTOR%ELEMENT_VECTOR,ERR,ERROR,*999)
           ENDIF
@@ -1790,6 +1839,7 @@ CONTAINS
             ALLOCATE(EQUATIONS_MATRICES%SOURCE_VECTOR,STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations matrices source vector.",ERR,ERROR,*999)
             EQUATIONS_MATRICES%SOURCE_VECTOR%UPDATE_VECTOR=.TRUE.
+            EQUATIONS_MATRICES%SOURCE_VECTOR%FIRST_ASSEMBLY=.TRUE.
             NULLIFY(EQUATIONS_MATRICES%SOURCE_VECTOR%VECTOR)
             CALL EQUATIONS_MATRICES_ELEMENT_VECTOR_INITIALISE(EQUATIONS_MATRICES%SOURCE_VECTOR%ELEMENT_VECTOR,ERR,ERROR,*999)
           ENDIF
@@ -1813,8 +1863,8 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets the storage type (sparsity) of the equations matrices
-  SUBROUTINE EQUATIONS_MATRICES_STORAGE_TYPE_SET(EQUATIONS_MATRICES,STORAGE_TYPE,ERR,ERROR,*)
+  !>Sets the storage type (sparsity) of the linear equations matrices
+  SUBROUTINE EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,STORAGE_TYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES !<A pointer to the eqautions matrices
@@ -1827,7 +1877,7 @@ CONTAINS
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("EQUATIONS_MATRICES_STORAGE_TYPE_SET",ERR,ERROR,*999)
+    CALL ENTERS("EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
       IF(EQUATIONS_MATRICES%EQUATIONS_MATRICES_FINISHED) THEN
@@ -1877,23 +1927,88 @@ CONTAINS
       CALL FLAG_ERROR("Equations matrices is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("EQUATIONS_MATRICES_STORAGE_TYPE_SET")
+    CALL EXITS("EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET")
     RETURN
-999 CALL ERRORS("EQUATIONS_MATRICES_STORAGE_TYPE_SET",ERR,ERROR)
-    CALL EXITS("EQUATIONS_MATRICES_STORAGE_TYPE_SET")
+999 CALL ERRORS("EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET")
     RETURN 1
-  END SUBROUTINE EQUATIONS_MATRICES_STORAGE_TYPE_SET
+  END SUBROUTINE EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET
+
+ !
+  !================================================================================================================================
+  !
+
+  !>Sets the storage type (sparsity) of the nonlinear (Jacobian) equations matrices
+  SUBROUTINE EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,STORAGE_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES !<A pointer to the eqautions matrices
+    INTEGER(INTG), INTENT(IN) :: STORAGE_TYPE !< The storage type for the Jacobian equations matrix
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
+    TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN_MATRIX
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+      IF(EQUATIONS_MATRICES%EQUATIONS_MATRICES_FINISHED) THEN
+        CALL FLAG_ERROR("Equations matrices have been finished.",ERR,ERROR,*999)
+      ELSE
+        NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
+        IF(ASSOCIATED(NONLINEAR_MATRICES)) THEN
+          JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIAN
+          IF(ASSOCIATED(JACOBIAN_MATRIX)) THEN
+            SELECT CASE(STORAGE_TYPE)
+            CASE(MATRIX_BLOCK_STORAGE_TYPE)
+              JACOBIAN_MATRIX%STORAGE_TYPE=MATRIX_BLOCK_STORAGE_TYPE
+            CASE(MATRIX_DIAGONAL_STORAGE_TYPE)
+              JACOBIAN_MATRIX%STORAGE_TYPE=MATRIX_DIAGONAL_STORAGE_TYPE        
+            CASE(MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+              JACOBIAN_MATRIX%STORAGE_TYPE=MATRIX_COLUMN_MAJOR_STORAGE_TYPE
+            CASE(MATRIX_ROW_MAJOR_STORAGE_TYPE)
+              JACOBIAN_MATRIX%STORAGE_TYPE=MATRIX_ROW_MAJOR_STORAGE_TYPE
+            CASE(MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+              JACOBIAN_MATRIX%STORAGE_TYPE=MATRIX_COMPRESSED_ROW_STORAGE_TYPE
+            CASE(MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+              JACOBIAN_MATRIX%STORAGE_TYPE=MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE
+            CASE(MATRIX_ROW_COLUMN_STORAGE_TYPE)
+              JACOBIAN_MATRIX%STORAGE_TYPE=MATRIX_ROW_COLUMN_STORAGE_TYPE
+            CASE DEFAULT
+              LOCAL_ERROR="The specified storage type of "//TRIM(NUMBER_TO_VSTRING(STORAGE_TYPE,"*",ERR,ERROR))// &
+                & " for the Jacobian matrix is invalid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+          ELSE
+            CALL FLAG_ERROR("Jacobian matrix is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Equations matrices nonlinear matrices is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations matrices is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET
 
   !
   !================================================================================================================================
   !
 
-  !>Sets the structure (sparsity) of the equations matrices
-  SUBROUTINE EQUATIONS_MATRICES_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES,STRUCTURE_TYPE,ERR,ERROR,*)
+  !>Sets the structure (sparsity) of the linear equations matrices
+  SUBROUTINE EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES,STRUCTURE_TYPE,ERR,ERROR,*)
     
     !Argument variables
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES !<A pointer to the equations matrices
-    INTEGER(INTG), INTENT(IN) :: STRUCTURE_TYPE(:) !<STRUCTURE_TYPE(matrix_idx). The storage type for the matrix_idx'th equations matrix
+    INTEGER(INTG), INTENT(IN) :: STRUCTURE_TYPE(:) !<STRUCTURE_TYPE(matrix_idx). The storage type for the matrix_idx'th linear equations matrix
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1902,7 +2017,7 @@ CONTAINS
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("EQUATIONS_MATRICES_STRUCTURE_TYPE_SET",ERR,ERROR,*999)
+    CALL ENTERS("EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
       IF(EQUATIONS_MATRICES%EQUATIONS_MATRICES_FINISHED) THEN
@@ -1943,12 +2058,67 @@ CONTAINS
       CALL FLAG_ERROR("Equations matrices is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("EQUATIONS_MATRICES_STRUCTURE_TYPE_SET")
+    CALL EXITS("EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET")
     RETURN
-999 CALL ERRORS("EQUATIONS_MATRICES_STRUCTURE_TYPE_SET",ERR,ERROR)
-    CALL EXITS("EQUATIONS_MATRICES_STRUCTURE_TYPE_SET")
+999 CALL ERRORS("EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET")
     RETURN 1
-  END SUBROUTINE EQUATIONS_MATRICES_STRUCTURE_TYPE_SET
+  END SUBROUTINE EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the structure (sparsity) of the nonlinear (Jacobian) equations matrices
+  SUBROUTINE EQUATIONS_MATRICES_NONLINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES,STRUCTURE_TYPE,ERR,ERROR,*)
+    
+    !Argument variables
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES !<A pointer to the equations matrices
+    INTEGER(INTG), INTENT(IN) :: STRUCTURE_TYPE !<STRUCTURE_TYPE. The storage type for the Jacobian equations matrix
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
+    TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN_MATRIX
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("EQUATIONS_MATRICES_NONLINEAR_STRUCTURE_TYPE_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+      IF(EQUATIONS_MATRICES%EQUATIONS_MATRICES_FINISHED) THEN
+        CALL FLAG_ERROR("Equations matrices have been finished.",ERR,ERROR,*999)
+      ELSE
+        NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
+        IF(ASSOCIATED(NONLINEAR_MATRICES)) THEN          
+          JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIAN
+          IF(ASSOCIATED(JACOBIAN_MATRIX)) THEN
+            SELECT CASE(STRUCTURE_TYPE)
+            CASE(EQUATIONS_MATRIX_NO_STRUCTURE)
+              JACOBIAN_MATRIX%STRUCTURE_TYPE=EQUATIONS_MATRIX_NO_STRUCTURE
+            CASE(EQUATIONS_MATRIX_FEM_STRUCTURE)
+              JACOBIAN_MATRIX%STRUCTURE_TYPE=EQUATIONS_MATRIX_FEM_STRUCTURE
+            CASE DEFAULT
+              LOCAL_ERROR="The specified strucutre type of "// &
+                & TRIM(NUMBER_TO_VSTRING(STRUCTURE_TYPE,"*",ERR,ERROR))//" for the Jacobian matrix is invalid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+          ELSE
+            CALL FLAG_ERROR("Equations matrix is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Equations matrices nonlinear matrices is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations matrices is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("EQUATIONS_MATRICES_NONLINEAR_STRUCTURE_TYPE_SET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_MATRICES_NONLINEAR_STRUCTURE_TYPE_SET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_MATRICES_NONLINEAR_STRUCTURE_TYPE_SET")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_MATRICES_NONLINEAR_STRUCTURE_TYPE_SET
   
   !
   !================================================================================================================================
@@ -2041,10 +2211,11 @@ CONTAINS
   !
 
   !>Initialise the values of the equations matrices and vectors to the given value e.g., 0.0_DP
-  SUBROUTINE EQUATIONS_MATRICES_VALUES_INITIALISE(EQUATIONS_MATRICES,VALUE,ERR,ERROR,*)
+  SUBROUTINE EQUATIONS_MATRICES_VALUES_INITIALISE(EQUATIONS_MATRICES,SELECTION_TYPE,VALUE,ERR,ERROR,*)
     
     !Argument variables
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES !<A pointer to the equations matrices to initialise the values for
+    INTEGER(INTG), INTENT(IN) :: SELECTION_TYPE !<The selection of equations matrices to be initialised \see EQUATIONS_MATRICES_ROUTINES::SelectMatricesTypes,EQUATION_MATRICES_ROUTINES
     REAL(DP), INTENT(IN) :: VALUE !<The value to initialise
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -2058,48 +2229,82 @@ CONTAINS
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX
     
     CALL ENTERS("EQUATIONS_MATRICES_VALUES_INITIALISE",ERR,ERROR,*999)
-
+    
     IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
-      LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
-      IF(ASSOCIATED(LINEAR_MATRICES)) THEN
-        DO matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
-          EQUATIONS_MATRIX=>LINEAR_MATRICES%MATRICES(matrix_idx)%PTR
-          IF(ASSOCIATED(EQUATIONS_MATRIX)) THEN
-            IF(EQUATIONS_MATRIX%UPDATE_MATRIX) THEN
-              CALL DISTRIBUTED_MATRIX_ALL_VALUES_SET(EQUATIONS_MATRIX%MATRIX,VALUE,ERR,ERROR,*999)
+      IF(SELECTION_TYPE==EQUATIONS_MATRICES_ALL.OR. &
+        & SELECTION_TYPE==EQUATIONS_MATRICES_LINEAR_ONLY.OR. &
+        & SELECTION_TYPE==EQUATIONS_MATRICES_NONLINEAR_ONLY) THEN
+        LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
+        IF(ASSOCIATED(LINEAR_MATRICES)) THEN
+          DO matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
+            EQUATIONS_MATRIX=>LINEAR_MATRICES%MATRICES(matrix_idx)%PTR
+            IF(ASSOCIATED(EQUATIONS_MATRIX)) THEN
+              IF(EQUATIONS_MATRIX%UPDATE_MATRIX) THEN
+                CALL DISTRIBUTED_MATRIX_ALL_VALUES_SET(EQUATIONS_MATRIX%MATRIX,VALUE,ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Equations matrix is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ENDDO !matrix_idx
+        ENDIF
+      ENDIF
+      IF(SELECTION_TYPE==EQUATIONS_MATRICES_ALL.OR. &
+        & SELECTION_TYPE==EQUATIONS_MATRICES_NONLINEAR_ONLY.OR. &
+        & SELECTION_TYPE==EQUATIONS_MATRICES_JACOBIAN_ONLY) THEN
+        NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
+        IF(ASSOCIATED(NONLINEAR_MATRICES)) THEN
+          JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIAN
+          IF(ASSOCIATED(JACOBIAN_MATRIX)) THEN
+            IF(JACOBIAN_MATRIX%UPDATE_JACOBIAN) THEN
+              CALL DISTRIBUTED_MATRIX_ALL_VALUES_SET(JACOBIAN_MATRIX%JACOBIAN,VALUE,ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Equations matrix is not associated.",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Jacobian matrix is not associated.",ERR,ERROR,*999)
           ENDIF
-        ENDDO !matrix_idx
+        ENDIF
       ENDIF
-      NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
-      IF(ASSOCIATED(NONLINEAR_MATRICES)) THEN
-        JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIAN
-        IF(ASSOCIATED(JACOBIAN_MATRIX)) THEN
-          IF(JACOBIAN_MATRIX%UPDATE_JACOBIAN) THEN
-            CALL DISTRIBUTED_MATRIX_ALL_VALUES_SET(JACOBIAN_MATRIX%JACOBIAN,VALUE,ERR,ERROR,*999)
+      IF(SELECTION_TYPE==EQUATIONS_MATRICES_ALL.OR. &
+        & SELECTION_TYPE==EQUATIONS_MATRICES_NONLINEAR_ONLY.OR. &
+        & SELECTION_TYPE==EQUATIONS_MATRICES_RESIDUAL_ONLY.OR. &
+        & SELECTION_TYPE==EQUATIONS_MATRICES_RHS_RESIDUAL_ONLY.OR. &
+        & SELECTION_TYPE==EQUATIONS_MATRICES_RESIDUAL_SOURCE_ONLY.OR. &
+        & SELECTION_TYPE==EQUATIONS_MATRICES_VECTORS_ONLY) THEN
+        NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
+        IF(ASSOCIATED(NONLINEAR_MATRICES)) THEN
+          IF(NONLINEAR_MATRICES%UPDATE_RESIDUAL) THEN
+            CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(NONLINEAR_MATRICES%RESIDUAL,VALUE,ERR,ERROR,*999)
           ENDIF
-        ELSE
-          CALL FLAG_ERROR("Jacobian matrix is not associated.",ERR,ERROR,*999)
-        ENDIF
-        IF(NONLINEAR_MATRICES%UPDATE_RESIDUAL) THEN
-          CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(NONLINEAR_MATRICES%RESIDUAL,VALUE,ERR,ERROR,*999)
         ENDIF
       ENDIF
-      RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
-      IF(ASSOCIATED(RHS_VECTOR)) THEN
-        IF(RHS_VECTOR%UPDATE_VECTOR) THEN
-          CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(RHS_VECTOR%VECTOR,VALUE,ERR,ERROR,*999)
+      IF(SELECTION_TYPE==EQUATIONS_MATRICES_ALL.OR. &
+        & SELECTION_TYPE==EQUATIONS_MATRICES_LINEAR_ONLY.OR. &
+        & SELECTION_TYPE==EQUATIONS_MATRICES_NONLINEAR_ONLY.OR. &
+        & SELECTION_TYPE==EQUATIONS_MATRICES_RHS_ONLY.OR. &
+        & SELECTION_TYPE==EQUATIONS_MATRICES_RHS_RESIDUAL_ONLY.OR. &
+        & SELECTION_TYPE==EQUATIONS_MATRICES_RHS_SOURCE_ONLY.OR. &
+        & SELECTION_TYPE==EQUATIONS_MATRICES_VECTORS_ONLY) THEN    
+        RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
+        IF(ASSOCIATED(RHS_VECTOR)) THEN
+          IF(RHS_VECTOR%UPDATE_VECTOR) THEN
+            CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(RHS_VECTOR%VECTOR,VALUE,ERR,ERROR,*999)
+          ENDIF
         ENDIF
       ENDIF
-      SOURCE_VECTOR=>EQUATIONS_MATRICES%SOURCE_VECTOR
-      IF(ASSOCIATED(SOURCE_VECTOR)) THEN
-        IF(SOURCE_VECTOR%UPDATE_VECTOR) THEN
-          CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(SOURCE_VECTOR%VECTOR,VALUE,ERR,ERROR,*999)
+      IF(SELECTION_TYPE==EQUATIONS_MATRICES_ALL.OR. &
+        & SELECTION_TYPE==EQUATIONS_MATRICES_LINEAR_ONLY.OR. &
+        & SELECTION_TYPE==EQUATIONS_MATRICES_NONLINEAR_ONLY.OR. &
+        & SELECTION_TYPE==EQUATIONS_MATRICES_SOURCE_ONLY.OR. &
+        & SELECTION_TYPE==EQUATIONS_MATRICES_RHS_SOURCE_ONLY.OR. &
+        & SELECTION_TYPE==EQUATIONS_MATRICES_RESIDUAL_SOURCE_ONLY.OR. &
+        & SELECTION_TYPE==EQUATIONS_MATRICES_VECTORS_ONLY) THEN    
+        SOURCE_VECTOR=>EQUATIONS_MATRICES%SOURCE_VECTOR
+        IF(ASSOCIATED(SOURCE_VECTOR)) THEN
+          IF(SOURCE_VECTOR%UPDATE_VECTOR) THEN
+            CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(SOURCE_VECTOR%VECTOR,VALUE,ERR,ERROR,*999)
+          ENDIF
         ENDIF
       ENDIF
-     ELSE
+    ELSE
       CALL FLAG_ERROR("Equations matrices is not associated.",ERR,ERROR,*999)
     ENDIF
 

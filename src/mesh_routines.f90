@@ -371,7 +371,8 @@ CONTAINS
     INTEGER(INTG) :: number_elem_indicies,elem_index,elem_count,ne,nn,my_computational_node_number,number_computational_nodes, &
       & no_computational_node,ELEMENT_START,ELEMENT_STOP,MY_ELEMENT_START,MY_ELEMENT_STOP,NUMBER_OF_ELEMENTS, &
       & MY_NUMBER_OF_ELEMENTS,MPI_IERROR,MAX_NUMBER_ELEMENTS_PER_NODE,component_idx
-    INTEGER(INTG), ALLOCATABLE :: ELEMENT_PTR(:),ELEMENT_INDICIES(:),ELEMENT_DISTANCE(:),DISPLACEMENTS(:),RECEIVE_COUNTS(:)
+    INTEGER(INTG), ALLOCATABLE :: ELEMENT_COUNT(:),ELEMENT_PTR(:),ELEMENT_INDICIES(:),ELEMENT_DISTANCE(:),DISPLACEMENTS(:), &
+      & RECEIVE_COUNTS(:)
     INTEGER(INTG) :: ELEMENT_WEIGHT(1),WEIGHT_FLAG,NUMBER_FLAG,NUMBER_OF_CONSTRAINTS, &
       & NUMBER_OF_COMMON_NODES,PARMETIS_OPTIONS(0:2)
     REAL(SP) :: UBVEC(1)
@@ -379,6 +380,7 @@ CONTAINS
     REAL(DP) :: NUMBER_ELEMENTS_PER_NODE
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(MESH_TYPE), POINTER :: MESH
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("DECOMPOSITION_ELEMENT_DOMAIN_CALCULATE",ERR,ERROR,*999)
 
@@ -389,14 +391,15 @@ CONTAINS
 
           component_idx=DECOMPOSITION%MESH_COMPONENT_NUMBER
           
+          number_computational_nodes=COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)
+          IF(ERR/=0) GOTO 999
           my_computational_node_number=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
           IF(ERR/=0) GOTO 999
           
           SELECT CASE(DECOMPOSITION%DECOMPOSITION_TYPE)          
           CASE(DECOMPOSITION_ALL_TYPE)
-            !Do nothing
-            
-          CASE(DECOMPOSITION_CALCULATED_TYPE)
+            !Do nothing. Decomposition checked below.          
+           CASE(DECOMPOSITION_CALCULATED_TYPE)
             !Calculate the general decomposition
 
             IF(DECOMPOSITION%NUMBER_OF_DOMAINS==1) THEN
@@ -423,6 +426,10 @@ CONTAINS
                 ELSE
                   ELEMENT_STOP=ELEMENT_START+NINT(NUMBER_ELEMENTS_PER_NODE,INTG)-1
                 ENDIF
+                IF((number_computational_nodes-1-no_computational_node)>(MESH%NUMBER_OF_ELEMENTS-ELEMENT_STOP)) &
+                  & ELEMENT_STOP=MESH%NUMBER_OF_ELEMENTS-(number_computational_nodes-1-no_computational_node)
+                IF(ELEMENT_START>MESH%NUMBER_OF_ELEMENTS) ELEMENT_START=MESH%NUMBER_OF_ELEMENTS
+                IF(ELEMENT_STOP>MESH%NUMBER_OF_ELEMENTS) ELEMENT_STOP=MESH%NUMBER_OF_ELEMENTS
                 DISPLACEMENTS(no_computational_node)=ELEMENT_START-1
                 ELEMENT_DISTANCE(no_computational_node+1)=ELEMENT_STOP !C numbering
                 NUMBER_OF_ELEMENTS=ELEMENT_STOP-ELEMENT_START+1
@@ -494,12 +501,36 @@ CONTAINS
             ENDIF
             
           CASE(DECOMPOSITION_USER_DEFINED_TYPE)
-!!TODO: Check decomposition setup.
-          
+            !Do nothing. Decomposition checked below.          
           CASE DEFAULT
-            CALL FLAG_ERROR("Invalid domain decomposition type",ERR,ERROR,*999)
-            
+            CALL FLAG_ERROR("Invalid domain decomposition type",ERR,ERROR,*999)            
           END SELECT
+
+          !Check decomposition and check that each domain has an element in it.
+          ALLOCATE(ELEMENT_COUNT(0:number_computational_nodes-1),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element count.",ERR,ERROR,*999)
+          ELEMENT_COUNT=0
+          DO elem_index=1,MESH%NUMBER_OF_ELEMENTS
+            no_computational_node=DECOMPOSITION%ELEMENT_DOMAIN(elem_index)
+            IF(no_computational_node>=0.AND.no_computational_node<number_computational_nodes) THEN
+              ELEMENT_COUNT(no_computational_node)=ELEMENT_COUNT(no_computational_node)+1
+            ELSE
+              LOCAL_ERROR="The computational node number of "//TRIM(NUMBER_TO_VSTRING(no_computational_node,"*",ERR,ERROR))// &
+                & " for element number "//TRIM(NUMBER_TO_VSTRING(elem_index,"*",ERR,ERROR))// &
+                & " is invalid. The computational node number must be between 0 and "// &
+                & TRIM(NUMBER_TO_VSTRING(number_computational_nodes-1,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ENDDO !elem_index
+          DO no_computational_node=0,number_computational_nodes-1
+            IF(ELEMENT_COUNT(no_computational_node)==0) THEN
+              LOCAL_ERROR="Invalid decomposition. There are no elements in computational node "// &
+                & TRIM(NUMBER_TO_VSTRING(no_computational_node,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ENDDO !no_computational_node
+          DEALLOCATE(ELEMENT_COUNT)
+          
         ELSE
           CALL FLAG_ERROR("Decomposition mesh topology is not associated",ERR,ERROR,*999)
         ENDIF
@@ -2008,24 +2039,25 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
-!!MERGE: ditto
   
   !>Gets the decomposition type for a decomposition.
-  FUNCTION DECOMPOSITION_TYPE_GET(DECOMPOSITION,ERR,ERROR)
+  SUBROUTINE DECOMPOSITION_TYPE_GET(DECOMPOSITION,TYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<A pointer to the decomposition to get the type for
+    INTEGER(INTG) :: TYPE !<On return, the decomposition type for the specified decomposition \see MESH_ROUTINES_DecompositionTypes,MESH_ROUTINES
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Function result
-    INTEGER(INTG) :: DECOMPOSITION_TYPE_GET !<The decomposition type to get \see MESH_ROUTINES_DecompositionTypes,MESH_ROUTINES
     !Local Variables
 
     CALL ENTERS("DECOMPOSITION_TYPE_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DECOMPOSITION)) THEN
-      DECOMPOSITION_TYPE_GET=DECOMPOSITION%DECOMPOSITION_TYPE
+      IF(DECOMPOSITION%DECOMPOSITION_FINISHED) THEN
+        TYPE=DECOMPOSITION%DECOMPOSITION_TYPE
+      ELSE
+        CALL FLAG_ERROR("Decomposition has not finished",ERR,ERROR,*999)
+      ENDIF
     ELSE
       CALL FLAG_ERROR("Decomposition is not associated",ERR,ERROR,*999)
     ENDIF
@@ -2035,7 +2067,7 @@ CONTAINS
 999 CALL ERRORS("DECOMPOSITION_TYPE_GET",ERR,ERROR)
     CALL EXITS("DECOMPOSITION_TYPE_GET")
     RETURN
-  END FUNCTION DECOMPOSITION_TYPE_GET
+  END SUBROUTINE DECOMPOSITION_TYPE_GET
   
   !
   !================================================================================================================================
@@ -2739,10 +2771,11 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: no_adjacent_element,no_ghost_node,adjacent_element,ghost_node,NUMBER_OF_NODES_PER_DOMAIN, &
-      & domain_idx,domain_idx2,domain_no,nk,np,ny,NUMBER_OF_DOMAINS,MAX_NUMBER_DOMAINS,NUMBER_OF_GHOST_NODES, &
-      & my_computational_node_number,component_idx
-    INTEGER(INTG), ALLOCATABLE :: LOCAL_NODE_NUMBERS(:),LOCAL_DOF_NUMBERS(:),NUMBER_INTERNAL_NODES(:),NUMBER_BOUNDARY_NODES(:)
+    INTEGER(INTG) :: no_adjacent_element,no_computational_node,no_ghost_node,adjacent_element,ghost_node, &
+      & NUMBER_OF_NODES_PER_DOMAIN,domain_idx,domain_idx2,domain_no,nk,np,ny,NUMBER_OF_DOMAINS,MAX_NUMBER_DOMAINS, &
+      & NUMBER_OF_GHOST_NODES,my_computational_node_number,number_computational_nodes,component_idx
+    INTEGER(INTG), ALLOCATABLE :: LOCAL_NODE_NUMBERS(:),LOCAL_DOF_NUMBERS(:),NODE_COUNT(:),NUMBER_INTERNAL_NODES(:), &
+      & NUMBER_BOUNDARY_NODES(:)
     INTEGER(INTG), POINTER :: DOMAINS(:),ALL_DOMAINS(:),GHOST_NODES(:)
     LOGICAL :: BOUNDARY_DOMAIN
     TYPE(LIST_TYPE), POINTER :: ADJACENT_DOMAINS_LIST,ALL_ADJACENT_DOMAINS_LIST
@@ -2753,6 +2786,7 @@ CONTAINS
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES_MAPPING
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOFS_MAPPING
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     NULLIFY(DOMAINS)
     NULLIFY(ALL_DOMAINS)
@@ -2775,6 +2809,8 @@ CONTAINS
                   component_idx=DOMAIN%MESH_COMPONENT_NUMBER
                   MESH_TOPOLOGY=>MESH%TOPOLOGY(component_idx)%PTR
                   
+                  number_computational_nodes=COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)
+                  IF(ERR/=0) GOTO 999
                   my_computational_node_number=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
                   IF(ERR/=0) GOTO 999
                   
@@ -2996,6 +3032,32 @@ CONTAINS
                     DEALLOCATE(GHOST_NODES)
                   ENDDO !domain_idx
                   
+                  !Check decomposition and check that each domain has a node in it.
+                  ALLOCATE(NODE_COUNT(0:number_computational_nodes-1),STAT=ERR)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node count.",ERR,ERROR,*999)
+                  NODE_COUNT=0
+                  DO np=1,MESH_TOPOLOGY%NODES%NUMBER_OF_NODES
+                    no_computational_node=DOMAIN%NODE_DOMAIN(np)
+                    IF(no_computational_node>=0.AND.no_computational_node<number_computational_nodes) THEN
+                      NODE_COUNT(no_computational_node)=NODE_COUNT(no_computational_node)+1
+                    ELSE
+                      LOCAL_ERROR="The computational node number of "// &
+                        & TRIM(NUMBER_TO_VSTRING(no_computational_node,"*",ERR,ERROR))// &
+                        & " for node number "//TRIM(NUMBER_TO_VSTRING(np,"*",ERR,ERROR))// &
+                        & " is invalid. The computational node number must be between 0 and "// &
+                        & TRIM(NUMBER_TO_VSTRING(number_computational_nodes-1,"*",ERR,ERROR))//"."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                  ENDDO !np
+                  DO no_computational_node=0,number_computational_nodes-1
+                    IF(NODE_COUNT(no_computational_node)==0) THEN
+                      LOCAL_ERROR="Invalid decomposition. There are no nodes in computational node "// &
+                        & TRIM(NUMBER_TO_VSTRING(no_computational_node,"*",ERR,ERROR))//"."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                  ENDDO !no_computational_node
+                  DEALLOCATE(NODE_COUNT)
+          
                   DEALLOCATE(GHOST_NODES_LIST)
                   DEALLOCATE(LOCAL_NODE_NUMBERS)
                   
@@ -4157,7 +4219,7 @@ CONTAINS
           & REGION%MESHES%MESHES(mesh_idx)%PTR%GLOBAL_NUMBER,ERR,ERROR,*999)
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of dimensions = ", &
           & REGION%MESHES%MESHES(mesh_idx)%PTR%NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-      ENDDO !problem_idx    
+      ENDDO !mesh_idx    
     ENDIF
     
     CALL EXITS("MESH_CREATE_FINISH")
@@ -4171,184 +4233,6 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   !>Starts the process of creating a mesh defined by a user number with the specified NUMBER_OF_DIMENSIONS in the region identified by REGION.
   SUBROUTINE MESH_CREATE_START(USER_NUMBER,REGION,NUMBER_OF_DIMENSIONS,MESH,ERR,ERROR,*)
@@ -4601,24 +4485,25 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
-!!MERGE: ditto
   
   !>Gets the number of mesh components for a mesh identified by a pointer.
-  FUNCTION MESH_NUMBER_OF_COMPONENTS_GET(MESH,ERR,ERROR)
+  SUBROUTINE MESH_NUMBER_OF_COMPONENTS_GET(MESH,NUMBER_OF_COMPONENTS,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to set the number of components for
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to get the number of components for
+    INTEGER(INTG) :: NUMBER_OF_COMPONENTS !<On return, the number of components in the specified mesh.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Function result
-    INTEGER(INTG) :: MESH_NUMBER_OF_COMPONENTS_GET !<The number of components to get.
     !Local Variables
     
     CALL ENTERS("MESH_NUMBER_OF_COMPONENTS_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(MESH)) THEN
-      MESH_NUMBER_OF_COMPONENTS_GET=MESH%NUMBER_OF_COMPONENTS
+      IF(MESH%MESH_FINISHED) THEN
+        NUMBER_OF_COMPONENTS=MESH%NUMBER_OF_COMPONENTS
+      ELSE
+        CALL FLAG_ERROR("Mesh has not finished",ERR,ERROR,*999)
+      ENDIF
     ELSE
       CALL FLAG_ERROR("Mesh is not associated",ERR,ERROR,*999)
     ENDIF
@@ -4628,8 +4513,7 @@ CONTAINS
 999 CALL ERRORS("MESH_NUMBER_OF_COMPONENTS_GET",ERR,ERROR)    
     CALL EXITS("MESH_NUMBER_OF_COMPONENTS_GET")
     RETURN
-  END FUNCTION MESH_NUMBER_OF_COMPONENTS_GET
-  
+  END SUBROUTINE MESH_NUMBER_OF_COMPONENTS_GET
 
   !
   !================================================================================================================================
@@ -4747,25 +4631,22 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
-!!MERGE: ditto
   
   !>Gets the number of elements for a mesh identified by a pointer.
-  FUNCTION MESH_NUMBER_OF_ELEMENTS_GET(MESH,ERR,ERROR)
+  SUBROUTINE MESH_NUMBER_OF_ELEMENTS_GET(MESH,NUMBER_OF_ELEMENTS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to get the number of elements for
+    INTEGER(INTG) :: NUMBER_OF_ELEMENTS !<On return, the number of elements in the specified mesh
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Function result
-    INTEGER(INTG) :: MESH_NUMBER_OF_ELEMENTS_GET !<The number of elements to get
     !Local Variables
 
     CALL ENTERS("MESH_NUMBER_OF_ELEMENTS_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(MESH)) THEN
       IF(MESH%MESH_FINISHED) THEN
-        MESH_NUMBER_OF_ELEMENTS_GET=MESH%NUMBER_OF_ELEMENTS
+        NUMBER_OF_ELEMENTS=MESH%NUMBER_OF_ELEMENTS
       ELSE
         CALL FLAG_ERROR("Mesh has not been finished",ERR,ERROR,*999)
       ENDIF
@@ -4778,7 +4659,7 @@ CONTAINS
 999 CALL ERRORS("MESH_NUMBER_OF_ELEMENTS_GET",ERR,ERROR)    
     CALL EXITS("MESH_NUMBER_OF_ELEMENTS_GET")
     RETURN
-  END FUNCTION MESH_NUMBER_OF_ELEMENTS_GET
+  END SUBROUTINE MESH_NUMBER_OF_ELEMENTS_GET
 
   !
   !================================================================================================================================

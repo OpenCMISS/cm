@@ -504,8 +504,9 @@ MODULE TYPES
     INTEGER(INTG) :: GLOBAL_N !<The number of global components in the vector
     INTEGER(INTG) :: DATA_SIZE  !<The size of the distributed vector that is held locally by the domain.
     INTEGER(INTG), ALLOCATABLE :: GLOBAL_NUMBERS(:) !<GLOBAL_NUMBERS(i). The PETSc global number corresponding to the i'th local number.
-    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE) :: ISLTGMAPPING !<The local to global mapping for the vector
+    LOGICAL :: USE_OVERRIDE_VECTOR !<Is .TRUE. if the override vector is used instead of the standard vector
     TYPE(PETSC_VEC_TYPE) :: VECTOR !<The PETSc vector
+    TYPE(PETSC_VEC_TYPE) :: OVERRIDE_VECTOR !<The PETSc override vector
   END TYPE DISTRIBUTED_VECTOR_PETSC_TYPE
   
   !>Contains the information for a vector that is distributed across a number of domains.
@@ -542,9 +543,10 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: ROW_INDICES(:) !<ROW_INDICES(i). The row indices for the matrix.
     INTEGER(INTG), ALLOCATABLE :: COLUMN_INDICES(:) !<COLUMN_INDICES(i). The column indices for the matrix.
     INTEGER(INTG), ALLOCATABLE :: GLOBAL_ROW_NUMBERS(:) !<GLOBAL_ROW_NUMBERS(i). The PETSc global row number corresponding to the i'th local row number.
-    REAL(DP), ALLOCATABLE :: DATA_DP(:) !<DATA_DP(i). The real data for the matrix
-    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE) :: ISLTGMAPPING !<The local to global mapping for the vector
+    REAL(DP), ALLOCATABLE :: DATA_DP(:) !<DATA_DP(i). The real data for the matrix. Is this used???
+    LOGICAL :: USE_OVERRIDE_MATRIX !<Is .TRUE. if the override matrix is to be used instead of the standard matrix
     TYPE(PETSC_MAT_TYPE) :: MATRIX !<The PETSc matrix
+    TYPE(PETSC_MAT_TYPE) :: OVERRIDE_MATRIX !<The PETSc override matrix
   END TYPE DISTRIBUTED_MATRIX_PETSC_TYPE
   
   !>Contains the information for a matrix that is distributed across a number of domains.
@@ -779,6 +781,7 @@ MODULE TYPES
     TYPE(BASIS_PTR_TYPE), ALLOCATABLE :: BASES(:) !<BASES(component_idx). An array to hold a pointer to the basis (if any) used for interpolating the component_idx'th component of the field variable.
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_PARAMETERS(:) !<NUMBER_OF_PARAMETERS(component_idx). The number of interpolation parameters used for interpolating the component_idx'th component of the field variable.
     REAL(DP), ALLOCATABLE :: PARAMETERS(:,:) !<PARAMETERS(ns,component_idx). The interpolation parameters used for interpolating the component_idx'th component of the field variable.
+    REAL(DP), ALLOCATABLE :: SCALE_FACTORS(:,:) !<SCALE_FACTORS(ns,component_idx). The scale factors used for scaling then component_idx'th component of the field variable. 
   END TYPE FIELD_INTERPOLATION_PARAMETERS_TYPE
   
   !>Contains the geometric parameters (lines, faces, volumes etc.) for a geometric field decomposition.
@@ -976,6 +979,7 @@ MODULE TYPES
     INTEGER(INTG) :: STRUCTURE_TYPE !<The structure (sparsity) type for this matrix
     INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in this global matrix
     LOGICAL :: UPDATE_MATRIX !<Is .TRUE. if this global matrix is to be updated
+    LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this global matrix has not been assembled
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the distributed global matrix data
     TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_MATRIX !<The element matrix for this glboal matrix
    END TYPE EQUATIONS_MATRIX_TYPE
@@ -993,6 +997,7 @@ MODULE TYPES
     LOGICAL :: JACOBIAN_CALCULATION_TYPE !<The type of how the Jacobian is calculated \see EQUATIONS_SET_CONSTANTS_JacobianCalculationTypes,EQUATIONS_SET_CONSTANTS
     LOGICAL :: UPDATE_JACOBIAN !<Is .TRUE. if this Jacobian matrix is to be updated
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: JACOBIAN !<A pointer to the distributed jacobian matrix data
+    LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this Jacobian matrix has not been assembled
     TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_JACOBIAN !<The element matrix for this Jacobian matrix. This is not used if the Jacobian is not supplied.
     TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_RESIDUAL !<An element residual vector for nonlinear problems when Jacobians are calculated. This is not used if the Jacobian is not supplied. Old CMISS name RE2.
   END TYPE EQUATIONS_JACOBIAN_TYPE
@@ -1006,7 +1011,8 @@ MODULE TYPES
   TYPE EQUATIONS_MATRICES_NONLINEAR_TYPE
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
     TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN !<A pointer to the Jacobian matrix for nonlinear equations
-    LOGICAL :: UPDATE_RESIDUAL !<Is .TRUE. if the equtions rhs vector is to be updated
+    LOGICAL :: UPDATE_RESIDUAL !<Is .TRUE. if the equtions residual vector is to be updated
+    LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this residual vector has not been assembled
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RESIDUAL !<A pointer to the distributed residual vector for nonlinear equations
     TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_RESIDUAL !<The element residual information for nonlinear equations. Old CMISS name RE1
   END TYPE EQUATIONS_MATRICES_NONLINEAR_TYPE
@@ -1014,6 +1020,7 @@ MODULE TYPES
   TYPE EQUATIONS_MATRICES_RHS_TYPE
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
     LOGICAL :: UPDATE_VECTOR !<Is .TRUE. if the equtions rhs vector is to be updated
+    LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this rhs vector has not been assembled
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the distributed global rhs vector data \todo rename this RHS_VECTOR
     TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_VECTOR !<The element rhs information
   END TYPE EQUATIONS_MATRICES_RHS_TYPE
@@ -1021,6 +1028,7 @@ MODULE TYPES
   TYPE EQUATIONS_MATRICES_SOURCE_TYPE
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
     LOGICAL :: UPDATE_VECTOR !<Is .TRUE. if the equtions rhs vector is to be updated
+    LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this source vector has not been assembled
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the distributed source vector data \todo rename this SOURCE_VECTOR
     TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_VECTOR !<The element source information
   END TYPE EQUATIONS_MATRICES_SOURCE_TYPE
@@ -1180,18 +1188,19 @@ MODULE TYPES
     TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<A pointer to the geometric field for the equations.
     TYPE(FIELD_TYPE), POINTER :: FIBRE_FIELD !<A pointer to the fibre field for the equations (if one is defined).
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD !<A pointer to the dependent field for the equations 
-    TYPE(FIELD_TYPE), POINTER :: MATERIAL_FIELD !<A pointer to the material field for the equations (if one is defined).
+    TYPE(FIELD_TYPE), POINTER :: MATERIALS_FIELD !<A pointer to the material field for the equations (if one is defined).
     TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD !<A pointer to the source field for the equations (if one is defined).
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: GEOMETRIC_INTERP_PARAMETERS !<A pointer to the geometric interpolation parameters for the equations.
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: FIBRE_INTERP_PARAMETERS !<A pointer to the fibre interpolation parameters for the equations (if a fibre field is defined). 
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: DEPENDENT_INTERP_PARAMETERS !<A pointer to the dependent interpolation parameters for the equations. 
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: MATERIAL_INTERP_PARAMETERS !<A pointer to the material interpolation parameters for the equations (if a material field is defined). 
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: MATERIALS_INTERP_PARAMETERS !<A pointer to the material interpolation parameters for the equations (if a material field is defined). 
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: SOURCE_INTERP_PARAMETERS !<A pointer to the source interpolation parameters for the equations (if a source field is defined). 
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: GEOMETRIC_INTERP_POINT !<A pointer to the geometric interpolated point information for the equations. 
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: FIBRE_INTERP_POINT !<A pointer to the fibre interpolated point information for the equations (if a fibre field is defined). 
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: DEPENDENT_INTERP_POINT !<A pointer to the dependent interpolated point information for the equations. 
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: MATERIAL_INTERP_POINT !<A pointer to the material interpolated point information for the equations (if a material field is defined). 
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: MATERIALS_INTERP_POINT !<A pointer to the material interpolated point information for the equations (if a material field is defined). 
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: SOURCE_INTERP_POINT !<A pointer to the source interpolated point information for the equations (if a source field is defined).
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: DEPENDENT_INTERP_POINT_METRICS !<A pointer to the dependent interpolated point metrics information 
     TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: GEOMETRIC_INTERP_POINT_METRICS !<A pointer to the geometric interpolated point metrics information 
     TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: FIBRE_INTERP_POINT_METRICS !<A pointer to the fibre interpolated point metrics information 
   END TYPE EQUATIONS_INTERPOLATION_TYPE
@@ -1244,7 +1253,7 @@ MODULE TYPES
   TYPE EQUATIONS_SET_MATERIALS_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
     LOGICAL :: MATERIALS_FINISHED !<Is .TRUE. if the materials for the equations set has finished being created, .FALSE. if not.
-    TYPE(FIELD_TYPE), POINTER :: MATERIAL_FIELD !<A pointer to the material field for the equations set if one is defined. If no material field is defined the pointer is NULL.
+    TYPE(FIELD_TYPE), POINTER :: MATERIALS_FIELD !<A pointer to the materials field for the equations set if one is defined. If no material field is defined the pointer is NULL.
   END TYPE EQUATIONS_SET_MATERIALS_TYPE
 
   !>Contains information on the fixed conditions for the problem.
@@ -1268,13 +1277,11 @@ MODULE TYPES
     LOGICAL :: SOURCE_FINISHED !<Is .TRUE. if the source for the equations set has finished being created, .FALSE. if not.
     TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD !<A pointer to the source field for the equations set if one is defined. If no source is defined the pointer is NULL.
   END TYPE EQUATIONS_SET_SOURCE_TYPE
-
-!!MERGE: change equation_number?
   
   !>Contains information on the analytic setup for the equations set.
   TYPE EQUATIONS_SET_ANALYTIC_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
-    INTEGER(INTG) :: EQUATION_NUMBER !<The equation identifier
+    INTEGER(INTG) :: ANALYTIC_FUNCTION !<The analytic functionidentifier
     LOGICAL :: ANALYTIC_FINISHED !<Is .TRUE. if the analytic setup for the problem has finished being created, .FALSE. if not.
   END TYPE EQUATIONS_SET_ANALYTIC_TYPE
 
@@ -1403,7 +1410,6 @@ MODULE TYPES
   TYPE NONLINEAR_LINESEARCH_SOLVER_TYPE
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer to the nonlinear solver
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the nonlinear solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
-    INTEGER(INTG) :: JACOBIAN_CALCULATION_TYPE !<The type of calculation used for the Jacobian \see SOLVER_ROUTINES_JacobianCalculationTypes,SOLVER_ROUTINES
     INTEGER(INTG) :: LINESEARCH_TYPE !<The line search type \see SOLVER_ROUTINES_NonlinearLineSearchTypes,SOLVER_ROUTINES
     REAL(DP) :: LINESEARCH_ALPHA !<The line search alpha
     REAL(DP) :: LINESEARCH_MAXSTEP !<The line search maximum step
@@ -1426,11 +1432,15 @@ MODULE TYPES
   TYPE NONLINEAR_SOLVER_TYPE
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the problem_solver
     INTEGER(INTG) :: NONLINEAR_SOLVE_TYPE !<The type of nonlinear solver \see SOLVER_ROUTINES_NonlinearSolverTypes,SOLVER_ROUTINES
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_FUNCTION_EVALUATIONS !<The number of function evaluations performed by the nonlinear solver
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_JACOBIAN_EVALUATIONS !<The number of Jacobian evaluations performed by the nonlinear solver
     INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ITERATIONS !<The maximum number of iterations
     INTEGER(INTG) :: MAXIMUM_NUMBER_OF_FUNCTION_EVALUATIONS !<The maximum number of function evaluations
+    INTEGER(INTG) :: JACOBIAN_CALCULATION_TYPE !<The type of calculation used for the Jacobian \see SOLVER_ROUTINES_JacobianCalculationTypes,SOLVER_ROUTINES
     REAL(DP) :: ABSOLUTE_TOLERANCE !<The tolerance between the absolute decrease between the solution norm and the initial guess
     REAL(DP) :: RELATIVE_TOLERANCE !<The tolerance between the relative decrease between the solution norm and the initial guess
     REAL(DP) :: SOLUTION_TOLERANCE !<The tolerance of the change in the norm of the solution
+!!TODO: Put in extra level for nonlinear solvers e.g., Newton methods, BFGS Inverse, SQP etc.
     TYPE(NONLINEAR_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER !<A pointer to the Newton line search solver information
     TYPE(NONLINEAR_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER !<A pointer to the Newton trust region solver information
   END TYPE NONLINEAR_SOLVER_TYPE

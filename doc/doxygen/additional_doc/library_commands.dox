@@ -1,0 +1,52 @@
+/** \file library_commands.dox
+  * \brief How to add support for a programming language
+  */
+
+/** \page library_commands Library Commands
+
+\section sect1 OpenCMISS library structure
+
+  - \ref toplevelsect
+  - \ref basisfunctionsect
+  - \ref coordinatesystemsect
+  - \ref regionsect
+    - \ref nodesect
+    - \ref meshsect
+    - \ref fieldsect
+    - \ref equationssect
+    .
+  - \ref problemssect
+    - \ref solversect
+    .
+  .
+
+\section toplevelsect Top Level - cmiss
+
+\par
+To initialise CMISS, use: \n
+SUBROUTINE \link CMISS::CMISS_INITIALISE CMISS_INITIALISE\endlink (ERR,ERROR,*) \n
+Description: \copydoc CMISS::CMISS_INITIALISE \n
+
+\par
+To finalise CMISS, use:\n
+SUBROUTINE \link CMISS::CMISS_FINALISE CMISS_FINALISE\endlink (ERR,ERROR,*) \n
+Description: \copydoc CMISS::CMISS_FINALISE
+
+\section basisfunctionsect Basis Routines
+
+\section coordinatesystemsect Coordinate System Routines
+
+\section regionsect Region Routines
+
+\subsection nodesect Node Routines
+
+\subsection meshsect Mesh Routines
+
+\subsection fieldsect Field Routines
+
+\subsection equationssect Equations Set Routines
+
+\section problemssect Problems Routines
+\subsection solversect Solver Routines
+
+*/

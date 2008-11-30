@@ -534,10 +534,11 @@ MPI_LIBRARIES =#
 MPI_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   ifeq ($(MPI),mpich2)
+    MPI_LIBRARIES += -lmpichf90
     ifeq ($(MPIPROF),true)
       MPI_LIBRARIES += -lmpe_f2cmpi -llmpe -lmpe
     endif
-    MPI_LIBRARIES += -lmpichf90 -lmpich -lpthread -lrt
+    MPI_LIBRARIES += -lmpich -lpthread -lrt
     MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/ )
   else
     ifeq ($(MPIPROF),true)
@@ -614,6 +615,7 @@ OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/analytic_analysis_routines.o \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/boundary_condition_routines.o \
 	$(OBJECT_DIR)/blas.o \
 	$(OBJECT_DIR)/classical_field_routines.o \
 	$(OBJECT_DIR)/cmiss.o \
@@ -649,6 +651,7 @@ OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/matrix_vector.o \
 	$(OBJECT_DIR)/mesh_routines.o \
 	$(OBJECT_DIR)/node_routines.o \
+	$(OBJECT_DIR)/Poisson_equations_routines.o \
 	$(OBJECT_DIR)/problem_constants.o \
 	$(OBJECT_DIR)/problem_routines.o \
 	$(OBJECT_DIR)/region_routines.o \
@@ -698,6 +701,7 @@ ifeq ($(OPERATING_SYSTEM),aix)
    #Need to disable argument list checking for MPI calls which may have multiple types for the same parameters
    $(OBJECT_DIR)/computational_environment.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
    $(OBJECT_DIR)/distributed_matrix_vector.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
+   $(OBJECT_DIR)/field_IO_routines.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
 
    #Need to disable argument list checking for c interface modules to allow for the c->fortran char->integer string conversion
    $(OBJECT_DIR)/timer_c.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
@@ -734,12 +738,27 @@ $(OBJECT_DIR)/basis_routines.o	:	$(MAIN_SOURCE_DIR)/basis_routines.f90 \
 $(OBJECT_DIR)/blas.o		:	$(MAIN_SOURCE_DIR)/blas.f90 \
 	$(OBJECT_DIR)/kinds.o
 
+$(OBJECT_DIR)/boundary_condition_routines.o  : $(MAIN_SOURCE_DIR)/boundary_condition_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/constants.o \
+	$(OBJECT_DIR)/distributed_matrix_vector.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o	\
+	$(OBJECT_DIR)/node_routines.o	\
+	$(OBJECT_DIR)/strings.o	\
+	$(OBJECT_DIR)/timer_f.o	\
+	$(OBJECT_DIR)/types.o
+
 $(OBJECT_DIR)/classical_field_routines.o		:	$(MAIN_SOURCE_DIR)/classical_field_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/Laplace_equations_routines.o \
+	$(OBJECT_DIR)/Poisson_equations_routines.o \
 	$(OBJECT_DIR)/problem_constants.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o \
@@ -896,12 +915,12 @@ $(OBJECT_DIR)/field_routines.o		:	$(MAIN_SOURCE_DIR)/field_routines.f90 \
 	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/generated_mesh_routines.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/lists.o \
 	$(OBJECT_DIR)/matrix_vector.o \
+	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 
@@ -964,6 +983,7 @@ $(OBJECT_DIR)/generated_mesh_routines.o	:	$(MAIN_SOURCE_DIR)/generated_mesh_rout
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
 	$(OBJECT_DIR)/coordinate_routines.o \
+	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
@@ -979,6 +999,7 @@ $(OBJECT_DIR)/kinds.o	:	$(MAIN_SOURCE_DIR)/kinds.f90
 $(OBJECT_DIR)/Laplace_equations_routines.o	:	$(MAIN_SOURCE_DIR)/Laplace_equations_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/boundary_condition_routines.o \
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/domain_mappings.o \
@@ -1077,6 +1098,27 @@ $(OBJECT_DIR)/node_routines.o		:	$(MAIN_SOURCE_DIR)/node_routines.f90 \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/trees.o \
+	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/Poisson_equations_routines.o	:	$(MAIN_SOURCE_DIR)/Poisson_equations_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/constants.o \
+	$(OBJECT_DIR)/distributed_matrix_vector.o \
+	$(OBJECT_DIR)/domain_mappings.o \
+	$(OBJECT_DIR)/equations_mapping_routines.o \
+	$(OBJECT_DIR)/equations_matrices_routines.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o	\
+	$(OBJECT_DIR)/matrix_vector.o	\
+	$(OBJECT_DIR)/problem_constants.o	\
+	$(OBJECT_DIR)/strings.o	\
+	$(OBJECT_DIR)/solution_mapping_routines.o	\
+	$(OBJECT_DIR)/solver_routines.o	\
+	$(OBJECT_DIR)/timer_f.o	\
 	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/problem_constants.o		:	$(MAIN_SOURCE_DIR)/problem_constants.f90 \
@@ -1246,6 +1288,11 @@ debug64 opt64: ABI=64
 all: debug opt
 all64: debug64 opt64
 
+# TODO only for linux 64bit for now.
+test:
+# Test for 2x2 mesh using bilinear lagrange basis 
+	$(CURDIR)/bin/x86_64-linux/$(BASE_EXAMPLE_NAME)-debug 2 2 0 1 1
+
 #-----------------------------------------------------------------------------
 
 help:
@@ -1292,5 +1339,8 @@ help:
 	@echo
 	@echo "	externallibs"
 	@echo "		Compile the external libraries."
+	@echo
+	@echo "	test"
+	@echo "		Run the executables for test. Linux 64 bit and AnalyticLaplaceExample only for now."
 	@echo
 
