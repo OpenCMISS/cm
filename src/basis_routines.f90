@@ -714,7 +714,7 @@ CONTAINS
         IF(FAMILY_NUMBER==0) THEN
           BASIS=>BASIS_FUNCTIONS%BASES(nb)%PTR
         ELSE
-!!TODO: This only works for one level of sub-bases at the moment
+!!TODO: \todo This only works for one level of sub-bases at the moment
           nsb=1
           DO WHILE(nsb<=BASIS_FUNCTIONS%BASES(nb)%PTR%NUMBER_OF_SUB_BASES.AND..NOT.ASSOCIATED(BASIS))
             SUB_BASIS=>BASIS_FUNCTIONS%BASES(nb)%PTR%SUB_BASES(nsb)%PTR
@@ -873,17 +873,25 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("BASIS_INTERPOLATION_XI_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(BASIS)) THEN
       IF(BASIS%BASIS_FINISHED) THEN
-        INTERPOLATION_XI=BASIS%INTERPOLATION_XI  
+        IF(SIZE(INTERPOLATION_XI,1)>=SIZE(BASIS%INTERPOLATION_XI,1)) THEN
+          INTERPOLATION_XI=BASIS%INTERPOLATION_XI
+        ELSE
+          LOCAL_ERROR="The size of INTERPOLATION_XI is too small. The supplied size is "// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(INTERPOLATION_XI,1),"*",ERR,ERROR))//" and it needs to be >= "// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(BASIS%INTERPOLATION_XI,1),"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
       ELSE
-        CALL FLAG_ERROR("Basis has not been finished yet",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Basis has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Basis is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("BASIS_INTERPOLATION_XI_GET")
@@ -1911,13 +1919,13 @@ CONTAINS
     CALL ENTERS("BASIS_NUMBER_OF_XI_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(BASIS)) THEN
-      IF (BASIS%BASIS_FINISHED) THEN
+      IF(BASIS%BASIS_FINISHED) THEN
         NUMBER_OF_XI=BASIS%NUMBER_OF_XI
       ELSE
-        CALL FLAG_ERROR("Basis has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Basis has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Basis is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("BASIS_NUMBER_OF_XI_GET")
@@ -2099,7 +2107,8 @@ CONTAINS
           & " are already associated"
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
       ELSE
-        ! Reset the basis quadrature
+!!TODO: \todo Sort this properly by having a create values cache.
+        !Reset the basis quadrature
         CALL BASIS_QUADRATURE_FINALISE(BASIS,ERR,ERROR,*999)
         !Initialise the basis quadrature
         CALL BASIS_QUADRATURE_INITIALISE(BASIS,ERR,ERROR,*999)
@@ -2417,7 +2426,7 @@ CONTAINS
           !Set up a default order appropriate for the given interpolation.
           ALLOCATE(BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(BASIS%NUMBER_OF_XI),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of Gauss in each xi direction",ERR,ERROR,*999)
-!!TODO: Set these to something more meaningfull!
+!!TODO: \todo Set these to something more meaningfull!
           SELECT CASE(BASIS%INTERPOLATION_XI(1))
           CASE(BASIS_LINEAR_SIMPLEX_INTERPOLATION)
             SELECT CASE(BASIS%NUMBER_OF_XI)
@@ -2492,25 +2501,33 @@ CONTAINS
 
     !Argument variables
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis
-    INTEGER(INTG), INTENT(OUT) :: QUADRATURE_NUMBER_OF_GAUSS_XI(:) !<The number of Gauss in each Xi direction
+    INTEGER(INTG), INTENT(OUT) :: QUADRATURE_NUMBER_OF_GAUSS_XI(:) !<On return, the number of Gauss in each Xi direction
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-   
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
     CALL ENTERS("BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(BASIS)) THEN
       IF(BASIS%BASIS_FINISHED) THEN
-        IF(ASSOCIATED(BASIS%QUADRATURE%BASIS)) THEN 
-          QUADRATURE_NUMBER_OF_GAUSS_XI=BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI
+        IF(ASSOCIATED(BASIS%QUADRATURE%BASIS)) THEN
+          IF(SIZE(QUADRATURE_NUMBER_OF_GAUSS_XI,1)>=SIZE(BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI,1)) THEN
+            QUADRATURE_NUMBER_OF_GAUSS_XI=BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI
+          ELSE
+            LOCAL_ERROR="The size of QUADRATURE_NUMBER_OF_GAUSS_XI is too small. The supplied size is "// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(QUADRATURE_NUMBER_OF_GAUSS_XI,1),"*",ERR,ERROR))//" and it needs to be >= "// &
+              & TRIM(NUMBER_TO_VSTRING(SIZE(BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI,1),"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
         ELSE
-          CALL FLAG_ERROR("Quadrature basis is not associated",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Quadrature basis is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Basis has not finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Basis has not finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Basis is not associated.",ERR,ERROR,*999)
     ENDIF
       
     CALL EXITS("BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_GET")
@@ -2644,7 +2661,7 @@ CONTAINS
 
     !Argument variables
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis
-    INTEGER(INTG), INTENT(OUT) :: QUADRATURE_ORDER
+    INTEGER(INTG), INTENT(OUT) :: QUADRATURE_ORDER !<On return, the quadrature order for the specified basis.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -2756,7 +2773,7 @@ CONTAINS
 
     !Argument variables
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis
-    INTEGER(INTG), INTENT(OUT) :: QUADRATURE_TYPE !<The quadrature type to be get \see BASIS_ROUTINES_QuadratureTypes
+    INTEGER(INTG), INTENT(OUT) :: QUADRATURE_TYPE !<On return, the quadrature type to be get \see BASIS_ROUTINES_QuadratureTypes
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -3972,7 +3989,7 @@ CONTAINS
 
     !Argument variables
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis to get
-    INTEGER(INTG), INTENT(OUT) :: TYPE !<The type of the basis to be get. \see BASIS_ROUTINES_BasisTypes
+    INTEGER(INTG), INTENT(OUT) :: TYPE !<On return, the type of the specified basis. \see BASIS_ROUTINES_BasisTypes
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -4080,21 +4097,29 @@ CONTAINS
 
     !Argument variables
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis
-    INTEGER(INTG), INTENT(OUT) :: COLLAPSED_XI(:) !<COLLAPSED_XI(ni). The collapse parameter for each Xi direction. \see BASIS_ROUTINES_XiCollapse
+    INTEGER(INTG), INTENT(OUT) :: COLLAPSED_XI(:) !<COLLAPSED_XI(ni). On return, the collapse parameter for each Xi direction. \see BASIS_ROUTINES_XiCollapse
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("BASIS_COLLAPSED_XI_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(BASIS)) THEN
       IF(BASIS%BASIS_FINISHED) THEN
-        COLLAPSED_XI=BASIS%COLLAPSED_XI
+        IF(SIZE(COLLAPSED_XI,1)>=SIZE(BASIS%COLLAPSED_XI)) THEN
+          COLLAPSED_XI=BASIS%COLLAPSED_XI
+        ELSE
+          LOCAL_ERROR="The size of COLLAPSED_XI is too small. The supplied size is "// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(COLLAPSED_XI,1),"*",ERR,ERROR))//" and it needs to be >= "// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(BASIS%COLLAPSED_XI,1),"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
       ELSE
-        CALL FLAG_ERROR("Basis has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Basis has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Basis is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("BASIS_COLLAPSED_XI_GET")
@@ -5124,7 +5149,7 @@ CONTAINS
         CALL WRITE_STRING_FMT_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Weight        : ",W(ng),"F13.5",ERR,ERROR,*999)
       ENDDO !ng
       IF(DIAGNOSTICS2) THEN
-!!TODO: add in integral check
+!!TODO: \todo add in integral check
       ENDIF
     ENDIF
 

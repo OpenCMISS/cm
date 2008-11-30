@@ -97,8 +97,8 @@ MODULE CMISS_PETSC_TYPES
   END TYPE PETSC_SNES_TYPE
   
   TYPE PETSC_VEC_TYPE
-    PetscScalar :: VEC_DATA(1)
-    PetscOffset :: VEC_OFFSET
+    !PetscScalar :: VEC_DATA(1)
+    !PetscOffset :: VEC_OFFSET
     Vec :: VEC
   END TYPE PETSC_VEC_TYPE
   

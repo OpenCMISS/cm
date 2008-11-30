@@ -175,31 +175,14 @@ CONTAINS
     INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(INOUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: INDENT,POSITION
-    CHARACTER(LEN=MAXSTRLEN) :: INDENT_STRING=">>"
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    POSITION=INDEX(ERROR,ERROR_SEPARATOR_CONSTANT)
-    WRITE(*,'(">>ERROR: ",I5,": ",A)') ERR,CHAR(EXTRACT(ERROR,1,POSITION-1))
-    !CPB 20/02/07 aix compiler does not like varying strings so split the remove statement up into two statements
-    LOCAL_ERROR=REMOVE(ERROR,1,POSITION)
-    ERROR=LOCAL_ERROR
-    POSITION=INDEX(ERROR,ERROR_SEPARATOR_CONSTANT)
-    INDENT=4
-    DO WHILE(POSITION/=0)
-      WRITE(*,'(A)') INDENT_STRING(1:INDENT)//CHAR(EXTRACT(ERROR,1,POSITION-1))
-      !CPB 20/02/07 aix compiler does not like varying strings so split the remove statement up into two statements
-      LOCAL_ERROR=REMOVE(ERROR,1,POSITION)
-      ERROR=LOCAL_ERROR
-      POSITION=INDEX(ERROR,ERROR_SEPARATOR_CONSTANT)
-      INDENT=INDENT+2
-    ENDDO
-    WRITE(*,'(A)') INDENT_STRING(1:INDENT)//CHAR(ERROR)
-    ERR=0
-    ERROR=""
-    
-  END SUBROUTINE CMISS_WRITE_ERROR
+    CALL WRITE_ERROR(ERR,ERROR,*999)
 
+    RETURN
+999 RETURN
+
+  END SUBROUTINE CMISS_WRITE_ERROR
+  
   !
   !================================================================================================================================
   !

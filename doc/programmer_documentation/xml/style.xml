@@ -12,5 +12,27 @@
     <listitem>When using case statements put in all known values of the the case variable and use a <code>CALL FLAG_ERROR("Not implemented", ...</code> statement if the code for the case variable has yet to be coded.</listitem>
     <listitem>Use a <code>!================</code>... line between subroutines and functions</listitem>
     <listitem>For dummy array arguments the dimension qualifier should be with the array name i.e., use <code>INTEGER(INTG) :: FRED(N)</code> rather than <code>INTEGER(INTG), DIMENSION(N) :: FRED</code>.</listitem>
+    <listitem>Code should be no more than 132 characters in a line. Use continuation &amp;'s if need be. Add the space before/after each &amp; to distinguish with the complete line.</listitem>
+    <listitem>
+      No need to allocate local arrays if the size of array is known. 
+      e.g. <code>REAL(DP), ALLOCATABLE :: VALUE_BUFFER(:)</code> and then <code>ALLOCATE(VALUE_BUFFER(5),STAT=ERR)</code>
+      can be replaced with <code>REAL(DP)::VALUE_BUFFER(5)</code> 
+    </listitem>
+    <listitem>Use node hierarchy consistently in subroutine calls. i.e., derivative_number,node_number,component_number,variable_number instead of reverse order.</listitem>
+    <listitem>Use subroutines instead of function for Get routines and return the result to the memory supplied by calling program. (i.e. using <code>INTENT(OUT)::A(:)</code> etc)</listitem>
+  </itemizedlist>
+  <para>The following styles are required by IBM Fortran Compiler:</para>
+  <itemizedlist>
+    <listitem>
+      For <code>read/write/print</code> statement, avoid the comma before the data variable. 
+      For example, use <code>READ(FILE_ID, CHAR(DP_FMT), IOSTAT=IOS) REAL_DATA(1:LEN_OF_DATA)</code> instead of <code>READ(FILE_ID, CHAR(DP_FMT), IOSTAT=IOS), REAL_DATA(1:LEN_OF_DATA)</code>
+    </listitem>
+    <listitem>
+      In <code>IF/WHILE</code> statement, if it checks whether a logical value is true or false, 
+      use <code>IF(SOMEVALUE)</code> or <code>IF(.NOT.SOMEVALUE)</code> instead of <code>IF(SOMEVALUE==.TRUE.)</code> or <code>IF(SOMEVALUE==.FALSE.)</code>
+    </listitem>
+    <listitem>
+      For the complete array assignment, use <code>A=B</code> instead of <code>A(:)=B(:)</code>
+    </listitem>
   </itemizedlist>
 </chapter>

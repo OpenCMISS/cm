@@ -1819,7 +1819,7 @@ CONTAINS
                 IF(component_idx/=DECOMPOSITION%MESH_COMPONENT_NUMBER) THEN
                   DOMAIN=>DECOMPOSITION%DOMAIN(component_idx)%PTR
                   IF(ASSOCIATED(DOMAIN)) THEN
-                    DOMAIN_TOPOLOGY=DOMAIN%TOPOLOGY
+                    DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
                     IF(ASSOCIATED(DOMAIN_TOPOLOGY)) THEN
                       DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
                       IF(ASSOCIATED(DOMAIN_NODES)) THEN
@@ -1875,7 +1875,7 @@ CONTAINS
                               DOMAIN_LINE=>DOMAIN_LINES%LINES(nl)
                               BASIS=>DOMAIN_LINE%BASIS
                               DO nnl=1,BASIS%NUMBER_OF_NODES
-                                np=DOMAIN_LINE%NODES_IN_LINE(nl)
+                                np=DOMAIN_LINE%NODES_IN_LINE(nnl)
                                 DOMAIN_NODE=>DOMAIN_NODES%NODES(np)
                                 DOMAIN_NODE%NUMBER_OF_NODE_LINES=DOMAIN_NODE%NUMBER_OF_NODE_LINES+1
                                 DOMAIN_NODE%NODE_LINES(DOMAIN_NODE%NUMBER_OF_NODE_LINES)=nl
@@ -2045,7 +2045,7 @@ CONTAINS
 
     !Argument variables
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<A pointer to the decomposition to get the type for
-    INTEGER(INTG) :: TYPE !<The decomposition type to get \see MESH_ROUTINES_DecompositionTypes,MESH_ROUTINES
+    INTEGER(INTG) :: TYPE !<On return, the decomposition type for the specified decomposition \see MESH_ROUTINES_DecompositionTypes,MESH_ROUTINES
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -4219,7 +4219,7 @@ CONTAINS
           & REGION%MESHES%MESHES(mesh_idx)%PTR%GLOBAL_NUMBER,ERR,ERROR,*999)
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of dimensions = ", &
           & REGION%MESHES%MESHES(mesh_idx)%PTR%NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-      ENDDO !problem_idx    
+      ENDDO !mesh_idx    
     ENDIF
     
     CALL EXITS("MESH_CREATE_FINISH")
@@ -4233,184 +4233,6 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   !>Starts the process of creating a mesh defined by a user number with the specified NUMBER_OF_DIMENSIONS in the region identified by REGION.
   SUBROUTINE MESH_CREATE_START(USER_NUMBER,REGION,NUMBER_OF_DIMENSIONS,MESH,ERR,ERROR,*)
@@ -4669,7 +4491,7 @@ CONTAINS
 
     !Argument variables
     TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to get the number of components for
-    INTEGER(INTG) :: NUMBER_OF_COMPONENTS !<The number of components to get.
+    INTEGER(INTG) :: NUMBER_OF_COMPONENTS !<On return, the number of components in the specified mesh.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -4692,7 +4514,6 @@ CONTAINS
     CALL EXITS("MESH_NUMBER_OF_COMPONENTS_GET")
     RETURN
   END SUBROUTINE MESH_NUMBER_OF_COMPONENTS_GET
-  
 
   !
   !================================================================================================================================
@@ -4769,17 +4590,22 @@ CONTAINS
               DO component_idx=1,MESH%NUMBER_OF_COMPONENTS
                 NEW_TOPOLOGY(component_idx)%PTR=>MESH%TOPOLOGY(component_idx)%PTR
               ENDDO !component_idx
+!!TODO \todo sort out mesh_topology initialise/finalise so that they allocate and deal with this below then call that routine
               DO component_idx=MESH%NUMBER_OF_COMPONENTS+1,NUMBER_OF_COMPONENTS
                 ALLOCATE(NEW_TOPOLOGY(component_idx)%PTR,STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new topology component",ERR,ERROR,*999)
-                NULLIFY(MESH%TOPOLOGY(component_idx)%PTR%ELEMENTS)
-                NULLIFY(MESH%TOPOLOGY(component_idx)%PTR%NODES)
+                NEW_TOPOLOGY(component_idx)%PTR%MESH=>MESH
+                NEW_TOPOLOGY(component_idx)%PTR%MESH_COMPONENT_NUMBER=component_idx
+                NULLIFY(NEW_TOPOLOGY(component_idx)%PTR%ELEMENTS)
+                NULLIFY(NEW_TOPOLOGY(component_idx)%PTR%NODES)
+                NULLIFY(NEW_TOPOLOGY(component_idx)%PTR%DOFS)
                 !Initialise the topology components
-                CALL MESH_TOPOLOGY_ELEMENTS_INITIALISE(MESH%TOPOLOGY(component_idx)%PTR,ERR,ERROR,*999)
-                CALL MESH_TOPOLOGY_NODES_INITIALISE(MESH%TOPOLOGY(component_idx)%PTR,ERR,ERROR,*999)
+                CALL MESH_TOPOLOGY_ELEMENTS_INITIALISE(NEW_TOPOLOGY(component_idx)%PTR,ERR,ERROR,*999)
+                CALL MESH_TOPOLOGY_NODES_INITIALISE(NEW_TOPOLOGY(component_idx)%PTR,ERR,ERROR,*999)
+                CALL MESH_TOPOLOGY_DOFS_INITIALISE(NEW_TOPOLOGY(component_idx)%PTR,ERR,ERROR,*999)
               ENDDO !component_idx
             ENDIF
-            DEALLOCATE(MESH%TOPOLOGY)
+            IF(ASSOCIATED(MESH%TOPOLOGY)) DEALLOCATE(MESH%TOPOLOGY)
             MESH%TOPOLOGY=>NEW_TOPOLOGY
             MESH%NUMBER_OF_COMPONENTS=NUMBER_OF_COMPONENTS
           ENDIF
@@ -4811,7 +4637,7 @@ CONTAINS
 
     !Argument variables
     TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to get the number of elements for
-    INTEGER(INTG) :: NUMBER_OF_ELEMENTS !<The number of elements to get
+    INTEGER(INTG) :: NUMBER_OF_ELEMENTS !<On return, the number of elements in the specified mesh
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
