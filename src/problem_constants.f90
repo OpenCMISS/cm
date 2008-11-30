@@ -90,9 +90,12 @@ MODULE PROBLEM_CONSTANTS
   !Electromagnetics class
   !Classical field class
   !  Laplace equation
+!!TODO: We don't really have two problem types here? Maybe a different type with nonlinear boundary conditions???
   INTEGER(INTG), PARAMETER :: PROBLEM_STANDARD_LAPLACE_SUBTYPE=1
   INTEGER(INTG), PARAMETER :: PROBLEM_GENERALISED_LAPLACE_SUBTYPE=2
   !  Poisson equation
+  INTEGER(INTG), PARAMETER :: PROBLEM_LINEAR_SOURCE_POISSON_SUBTYPE=1
+  INTEGER(INTG), PARAMETER :: PROBLEM_NONLINEAR_SOURCE_POISSON_SUBTYPE=2
   !  Helmholtz equation
   !  Wave equation
   !  Diffusion equation
@@ -136,14 +139,15 @@ MODULE PROBLEM_CONSTANTS
   !>@}
 
 
-  !> \addtogroup PROBLEM_CONSTANTS_SolverOutputTypes PROBLEM_CONSTANTS::SolverOutputTypes
-  !> \brief Solver output types
-  !> \see PROBLEM_CONSTANTS
-  !>@{
-  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_NO_OUTPUT=0 !<No output \see PROBLEM_CONSTANTS_SolverOutputTypes,PROBLEM_CONSTANTS
-  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_TIMING_OUTPUT=1 !<Timing information output \see PROBLEM_CONSTANTS_SolverOutputTypes,PROBLEM_CONSTANTS
-  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_SOLVER_OUTPUT=2 !<All below and solver output \see PROBLEM_CONSTANTS_SolverOutputTypes,PROBLEM_CONSTANTS
-  !>@}
+!  !> \addtogroup PROBLEM_CONSTANTS_SolverOutputTypes PROBLEM_CONSTANTS::SolverOutputTypes
+!  !> \brief Solver output types
+!  !> \see PROBLEM_CONSTANTS
+!  !>@{
+!  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_NO_OUTPUT=0 !<No output \see PROBLEM_CONSTANTS_SolverOutputTypes,PROBLEM_CONSTANTS
+!  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_PROGESS_OUTPUT=1 !<Progress of the solver output e.g. iteration information \see PROBLEM_CONSTANTS_SolverOutputTypes,PROBLEM_CONSTANTS
+!  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_TIMING_OUTPUT=2 !<Timing information output \see PROBLEM_CONSTANTS_SolverOutputTypes,PROBLEM_CONSTANTS
+!  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_SOLVER_OUTPUT=3 !<All below and solver output \see PROBLEM_CONSTANTS_SolverOutputTypes,PROBLEM_CONSTANTS
+!  !>@}
 
   !> \addtogroup PROBLEM_CONSTANTS_SolverSparsityTypes PROBLEM_CONSTANTS::SolverSparsityTypes
   !> \brief Solution output types
