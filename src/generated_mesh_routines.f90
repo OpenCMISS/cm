@@ -418,7 +418,8 @@ CONTAINS
             IF(generated_mesh_idx<generated_mesh_position) THEN
               NEW_GENERATED_MESHES(generated_mesh_idx)%PTR=>GENERATED_MESHES%GENERATED_MESHES(generated_mesh_idx)%PTR
             ELSE IF(generated_mesh_idx>generated_mesh_position) THEN
-              GENERATED_MESHES%GENERATED_MESHES(generated_mesh_idx)%PTR%GLOBAL_NUMBER=GENERATED_MESHES%GENERATED_MESHES(generated_mesh_idx)%PTR%GLOBAL_NUMBER-1
+              GENERATED_MESHES%GENERATED_MESHES(generated_mesh_idx)%PTR%GLOBAL_NUMBER=GENERATED_MESHES% & 
+                & GENERATED_MESHES(generated_mesh_idx)%PTR%GLOBAL_NUMBER-1
               NEW_GENERATED_MESHES(generated_mesh_idx-1)%PTR=>GENERATED_MESHES%GENERATED_MESHES(generated_mesh_idx)%PTR
             ENDIF
           ENDDO !generated_mesh_idx
