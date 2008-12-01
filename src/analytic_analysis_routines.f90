@@ -91,11 +91,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: var_idx,comp_idx,node_idx,dev_idx,NUM_OF_NODAL_DEV, pow_idx
+    INTEGER(INTG) :: var_idx, pow_idx
     TYPE(VARYING_STRING) :: STRING_DATA
-    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
     REAL(DP) :: VALUE_BUFFER(5)
-    REAL(DP) :: RMS_PERCENT, RMS_ABSOLUTE, RMS_RELATIVE, INTEGRAL_NUM, INTEGRAL_ANA
     
     CALL ENTERS("ANALYTIC_ANALYSIS_CALCULATE",ERR,ERROR,*999)
     
@@ -173,7 +171,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: var_idx,comp_idx,node_idx,dev_idx,NUM_OF_NODAL_DEV, pow_idx
+    INTEGER(INTG) :: var_idx,comp_idx,node_idx,dev_idx,NUM_OF_NODAL_DEV
     TYPE(VARYING_STRING) :: STRING_DATA
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
     REAL(DP) :: VALUE_BUFFER(5)
