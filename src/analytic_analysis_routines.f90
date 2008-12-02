@@ -311,7 +311,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<variable number
     INTEGER(INTG), INTENT(IN) :: POWER !<power
     INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBERS(:) !<derivative number
-    REAL(DP), INTENT(OUT) :: VALUE !<the integral absolute error
+    REAL(DP), INTENT(OUT) :: VALUE !<On return, the integral absolute error
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -348,7 +348,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<variable number
     INTEGER(INTG), INTENT(IN) :: POWER !<power
     INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBERS(:) !<derivative number   
-    REAL(DP), INTENT(OUT) :: VALUE !<the integral analytic value
+    REAL(DP), INTENT(OUT) :: VALUE !<On return, the integral analytic value
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -409,7 +409,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<variable number
     INTEGER(INTG), INTENT(IN) :: POWER !<power
     INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBERS(:) !<derivative number
-    REAL(DP), INTENT(OUT) :: VALUE !<the integral numerical value
+    REAL(DP), INTENT(OUT) :: VALUE !<On return, the integral numerical value
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -470,7 +470,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<variable number
     INTEGER(INTG), INTENT(IN) :: POWER !<power
     INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBERS(:) !<derivative number
-    REAL(DP), INTENT(OUT) :: VALUE !<the integral percentage error
+    REAL(DP), INTENT(OUT) :: VALUE !<On return, the integral percentage error
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -511,7 +511,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<variable number
     INTEGER(INTG), INTENT(IN) :: POWER !<power
     INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBERS(:) !<derivative number
-    REAL(DP), INTENT(OUT) :: VALUE !<the integral relative error
+    REAL(DP), INTENT(OUT) :: VALUE !<On return, the integral relative error
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -552,7 +552,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<variable number
     INTEGER(INTG), INTENT(IN) :: POWER !<power
     INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBERS(:) !<derivative number
-    REAL(DP), INTENT(OUT) :: VALUE !<the integral absolute error
+    REAL(DP), INTENT(OUT) :: VALUE !<On return, the integral absolute error
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -615,7 +615,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<variable number
     INTEGER(INTG), INTENT(IN) :: POWER !<power
     INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBERS(:) !<derivative number
-    REAL(DP), INTENT(OUT) :: VALUE !<the integral absolute error
+    REAL(DP), INTENT(OUT) :: VALUE !<On return, the integral absolute error
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -661,7 +661,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: NODE_NUMBER !<node number
     INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<component number
     INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<variable number
-    REAL(DP), INTENT(OUT) :: VALUE !<the absolute error
+    REAL(DP), INTENT(OUT) :: VALUE !<On return, the absolute error
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -700,7 +700,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: NODE_NUMBER !<node number
     INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<component number
     INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<variable number
-    REAL(DP), INTENT(OUT) :: VALUE !<the analytic value
+    REAL(DP), INTENT(OUT) :: VALUE !<On return, the analytic value
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -755,7 +755,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: NODE_NUMBER !<node number
     INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<component number
     INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<variable number
-    REAL(DP), INTENT(OUT) :: VALUE !<the numerical value
+    REAL(DP), INTENT(OUT) :: VALUE !<On return, the numerical value
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -812,7 +812,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: NODE_NUMBER !<node number
     INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<component number
     INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<variable number
-    REAL(DP), INTENT(OUT) :: VALUE !<the percentage error
+    REAL(DP), INTENT(OUT) :: VALUE !<On return, the percentage error
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -857,7 +857,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: NODE_NUMBER !<node number
     INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<component number
     INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<variable number
-    REAL(DP), INTENT(OUT) :: VALUE !<the relative error
+    REAL(DP), INTENT(OUT) :: VALUE !<On return, the relative error
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -897,7 +897,7 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: FIELD !<the field.
     INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<variable number
     INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBERS(:)
-    REAL(DP), INTENT(OUT) :: VALUE !<the rms percentage error
+    REAL(DP), INTENT(OUT) :: VALUE !<On return, the rms percentage error
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -943,7 +943,7 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: FIELD !<the field.
     INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<variable number
     INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBERS(:) 
-    REAL(DP), INTENT(OUT) :: VALUE !<the rms absolute error
+    REAL(DP), INTENT(OUT) :: VALUE !<On return, the rms absolute error
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -988,7 +988,7 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: FIELD !<the field.
     INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<variable number
     INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBERS(:)
-    REAL(DP), INTENT(OUT) :: VALUE !<the rms relative error
+    REAL(DP), INTENT(OUT) :: VALUE !<On return, the rms relative error
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables

@@ -125,13 +125,12 @@ CONTAINS
   !
 
   !>Gets the basis of a generated mesh.
-  FUNCTION GENERATED_MESH_BASIS_GET(GENERATED_MESH,ERR,ERROR)
+  SUBROUTINE GENERATED_MESH_BASIS_GET(GENERATED_MESH,BASIS,ERR,ERROR,*)
     !Argument variables
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh to get the basis of
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<On return, the basis of mesh to generate
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Function result
-    TYPE(BASIS_TYPE) :: GENERATED_MESH_BASIS_GET !<The basis of mesh to generate \see GENERATED_MESH_ROUTINES_GeneratedMeshBasis,GENERATED_MESH_ROUTINES
     !Local Variables
 
     CALL ENTERS("GENERATED_MESH_BASIS_GET",ERR,ERROR,*999)
@@ -140,7 +139,7 @@ CONTAINS
       SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
       CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
         IF(ASSOCIATED(GENERATED_MESH%REGULAR_MESH)) THEN 
-          GENERATED_MESH_BASIS_GET=GENERATED_MESH%REGULAR_MESH%BASIS
+          BASIS=>GENERATED_MESH%REGULAR_MESH%BASIS
         ELSE
           CALL FLAG_ERROR("Regular generated mesh is not associated",ERR,ERROR,*999)
         END IF
@@ -156,7 +155,7 @@ CONTAINS
 999 CALL ERRORS("GENERATED_MESH_BASIS_GET",ERR,ERROR)
     CALL EXITS("GENERATED_MESH_BASIS_GET")
     RETURN
-  END FUNCTION GENERATED_MESH_BASIS_GET
+  END SUBROUTINE GENERATED_MESH_BASIS_GET
 
   !
   !================================================================================================================================
@@ -450,24 +449,29 @@ CONTAINS
   !
 
   !>Gets the extent of a generated mesh.
-  FUNCTION GENERATED_MESH_EXTENT_GET(GENERATED_MESH,ERR,ERROR)
+  SUBROUTINE GENERATED_MESH_EXTENT_GET(GENERATED_MESH,MAX_EXTENT,ERR,ERROR,*)
 
     !Argument variables
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh to get the type of
+    REAL(DP), INTENT(OUT) :: MAX_EXTENT(:) !<On return, maximum extent per axis.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Funtion result
-    REAL(DP), POINTER :: GENERATED_MESH_EXTENT_GET(:)
     !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("GENERATED_MESH_EXTENT_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(GENERATED_MESH)) THEN
       SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
       CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
-        ALLOCATE(GENERATED_MESH_EXTENT_GET(SIZE(GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT)),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate generated mesh extent.",ERR,ERROR,*999)
-        GENERATED_MESH_EXTENT_GET=GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT
+        IF(SIZE(MAX_EXTENT,1)>=SIZE(GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT,1)) THEN
+          MAX_EXTENT=GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT
+        ELSE
+          LOCAL_ERROR="The size of MAX_EXTENT is too small. The supplied size is "// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(MAX_EXTENT,1),"*",ERR,ERROR))//" and it needs to be >= "// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT,1),"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
       CASE DEFAULT
         CALL FLAG_ERROR("Generated mesh type is either invalid or not implemented",ERR,ERROR,*999)
       END SELECT
@@ -480,7 +484,7 @@ CONTAINS
 999 CALL ERRORS("GENERATED_MESH_EXTENT_GET",ERR,ERROR)
     CALL EXITS("GENERATED_MESH_EXTENT_GET")
     RETURN   
-  END FUNCTION GENERATED_MESH_EXTENT_GET
+  END SUBROUTINE GENERATED_MESH_EXTENT_GET
   
   !
   !================================================================================================================================
@@ -621,24 +625,29 @@ CONTAINS
   !
 
   !>Gets the extent of a generated mesh.
-  FUNCTION GENERATED_MESH_NUMBER_OF_ELEMENTS_GET(GENERATED_MESH,ERR,ERROR)
+  SUBROUTINE GENERATED_MESH_NUMBER_OF_ELEMENTS_GET(GENERATED_MESH,NUMBER_OF_ELEMENTS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh to set the type of
+    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_ELEMENTS(:) !<On return, number of elements per axis
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Function result
-    INTEGER(INTG), POINTER :: GENERATED_MESH_NUMBER_OF_ELEMENTS_GET(:)
     !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("GENERATED_MESH_NUMBER_OF_ELEMENTS_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(GENERATED_MESH)) THEN
       SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
       CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
-        ALLOCATE(GENERATED_MESH_NUMBER_OF_ELEMENTS_GET(SIZE(GENERATED_MESH%REGULAR_MESH%NUMBER_OF_ELEMENTS_XI)),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate generated mesh number of elements.",ERR,ERROR,*999)
-        GENERATED_MESH_NUMBER_OF_ELEMENTS_GET=GENERATED_MESH%REGULAR_MESH%NUMBER_OF_ELEMENTS_XI
+        IF(SIZE(NUMBER_OF_ELEMENTS,1)>=SIZE(GENERATED_MESH%REGULAR_MESH%NUMBER_OF_ELEMENTS_XI,1)) THEN
+          NUMBER_OF_ELEMENTS=GENERATED_MESH%REGULAR_MESH%NUMBER_OF_ELEMENTS_XI
+        ELSE
+          LOCAL_ERROR="The size of NUMBER_OF_ELEMENTS is too small. The supplied size is "// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(NUMBER_OF_ELEMENTS,1),"*",ERR,ERROR))//" and it needs to be >= "// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(GENERATED_MESH%REGULAR_MESH%NUMBER_OF_ELEMENTS_XI,1),"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
       CASE DEFAULT
         CALL FLAG_ERROR("Generated mesh type is either invalid or not implemented",ERR,ERROR,*999)
       END SELECT
@@ -651,7 +660,7 @@ CONTAINS
 999 CALL ERRORS("GENERATED_MESH_NUMBER_OF_ELEMENTS_GET",ERR,ERROR)
     CALL EXITS("GENERATED_MESH_NUMBER_OF_ELEMENTS_GET")
     RETURN 
-  END FUNCTION GENERATED_MESH_NUMBER_OF_ELEMENTS_GET
+  END SUBROUTINE GENERATED_MESH_NUMBER_OF_ELEMENTS_GET
   
   !
   !================================================================================================================================
@@ -729,24 +738,29 @@ CONTAINS
   !
 
   !>Get the origin of a generated mesh.
-  FUNCTION GENERATED_MESH_ORIGIN_GET(GENERATED_MESH,ERR,ERROR)
+  SUBROUTINE GENERATED_MESH_ORIGIN_GET(GENERATED_MESH,ORIGIN,ERR,ERROR,*)
 
     !Argument variables
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh to get the type of
+    REAL(DP), INTENT(OUT) :: ORIGIN(:) !<On return, the origin coordinate for each axis  
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Function result
-    REAL(DP), POINTER :: GENERATED_MESH_ORIGIN_GET(:)
     !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("GENERATED_MESH_ORIGIN_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(GENERATED_MESH)) THEN
       SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
       CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
-        ALLOCATE(GENERATED_MESH_ORIGIN_GET(SIZE(GENERATED_MESH%REGULAR_MESH%ORIGIN)),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate generated mesh origin.",ERR,ERROR,*999)
-        GENERATED_MESH_ORIGIN_GET=GENERATED_MESH%REGULAR_MESH%ORIGIN 
+        IF(SIZE(ORIGIN,1)>=SIZE(GENERATED_MESH%REGULAR_MESH%ORIGIN,1)) THEN
+          ORIGIN=GENERATED_MESH%REGULAR_MESH%ORIGIN 
+        ELSE
+          LOCAL_ERROR="The size of ORIGIN is too small. The supplied size is "// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(ORIGIN,1),"*",ERR,ERROR))//" and it needs to be >= "// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(GENERATED_MESH%REGULAR_MESH%ORIGIN,1),"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
       CASE DEFAULT
         CALL FLAG_ERROR("Generated mesh type is either invalid or not implemented",ERR,ERROR,*999)
       END SELECT
@@ -759,7 +773,7 @@ CONTAINS
 999 CALL ERRORS("GENERATED_MESH_ORIGIN_GET",ERR,ERROR)
     CALL EXITS("GENERATED_MESH_ORIGIN_GET")
     RETURN
-  END FUNCTION GENERATED_MESH_ORIGIN_GET
+  END SUBROUTINE GENERATED_MESH_ORIGIN_GET
   
   !
   !================================================================================================================================
@@ -1085,20 +1099,19 @@ CONTAINS
   !
 
   !>Gets the type of a generated mesh.
-  FUNCTION GENERATED_MESH_TYPE_GET(GENERATED_MESH,ERR,ERROR)
+  SUBROUTINE GENERATED_MESH_TYPE_GET(GENERATED_MESH,TYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh to set the type of
+    INTEGER(INTG), INTENT(OUT) :: TYPE !<On return, the type of mesh to generate
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Function result
-    INTEGER(INTG) :: GENERATED_MESH_TYPE_GET !<The type of mesh to generate \see GENERATED_MESH_ROUTINES_GeneratedMeshTypes,GENERATED_MESH_ROUTINES
     !Local Variables
 
     CALL ENTERS("GENERATED_MESH_TYPE_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(GENERATED_MESH)) THEN
-      GENERATED_MESH_TYPE_GET=GENERATED_MESH%GENERATED_TYPE
+      TYPE=GENERATED_MESH%GENERATED_TYPE
     ELSE
       CALL FLAG_ERROR("Generated mesh is already associated",ERR,ERROR,*999)
     ENDIF
@@ -1108,7 +1121,7 @@ CONTAINS
 999 CALL ERRORS("GENERATED_MESH_TYPE_GET",ERR,ERROR)
     CALL EXITS("GENERATED_MESH_TYPE_GET")
     RETURN 
-  END FUNCTION GENERATED_MESH_TYPE_GET
+  END SUBROUTINE GENERATED_MESH_TYPE_GET
   
   !
   !================================================================================================================================
