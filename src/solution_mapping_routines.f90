@@ -709,6 +709,9 @@ CONTAINS
                       IF(FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(global_field_dof)==EQUATIONS_SET_NOT_FIXED) THEN
                         !DOF is not fixed so map the variable/equation dof to a new solution dof
                         NUMBER_OF_GLOBAL_SOLVER_COLS=NUMBER_OF_GLOBAL_SOLVER_COLS+1
+                        !Initialise_sm
+                        CALL DOMAIN_MAPPINGS_MAPPING_GLOBAL_INITIALISE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP( &
+                          & NUMBER_OF_GLOBAL_SOLVER_COLS),ERR,ERROR,*999)
                         IF(MYRANK_DOF) THEN
                           TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS=TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS+1
                           IF(rank==myrank) THEN
@@ -721,9 +724,6 @@ CONTAINS
                           ENDIF
                           !Set up the column domain mappings.
                           !There are no ghosted coLs for the solver matrices so there is only 1 domain for the global to local map.
-                          !Initialise_sm
-                          CALL DOMAIN_MAPPINGS_MAPPING_GLOBAL_INITIALISE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP( &
-                            & NUMBER_OF_GLOBAL_SOLVER_COLS),ERR,ERROR,*999)
                           !Allocate the global to local map arrays
                           ALLOCATE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(NUMBER_OF_GLOBAL_SOLVER_COLS)%LOCAL_NUMBER(1),STAT=ERR)
                           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column domain global to local map local number", &
