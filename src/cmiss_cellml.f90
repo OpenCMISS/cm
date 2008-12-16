@@ -125,6 +125,10 @@ CONTAINS
     RETURN 1
   END SUBROUTINE CELLML_MODELS_CREATE_FINISH
 
+  !> Import the specified CellML model into the given CellML environment object.
+  !! Here we load specified CellML models into the CellML environment object. Will be called for each model required for use with the base source field for which this CellML environment was created.
+  !! - should do some level of validation when the model is loaded
+  !! - see URI notes below...
   SUBROUTINE CELLML_MODEL_IMPORT(MODEL_USER_NUMBER,CELLML,URI,ERR,ERROR,*)
     INTEGER(INTG), INTENT(IN) :: MODEL_USER_NUMBER !<The unique identifier for this model within the given CellML environment object.
     TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object into which we want to import the specified model.
@@ -139,5 +143,53 @@ CONTAINS
     CALL EXITS("CELLML_MODEL_IMPORT")
     RETURN 1
   END SUBROUTINE CELLML_MODEL_IMPORT
+
+  !> Start the creation of the models field for the given CellML environment.
+  !! This will create the models field for the given CellML environment object. The models field is used to associate specific models defined for this CellML environment with each of the degrees of freedom for the (source) field for which this CellML environment is defined.
+  !! - what to do if models field already exists? exists but has a different user number?
+  SUBROUTINE CELLML_MODELS_FIELD_CREATE_START(MODEL_FIELD_USER_NUMBER,CELLML,ERR,ERROR,*)
+    INTEGER(INTG), INTENT(IN) :: MODEL_FIELD_USER_NUMBER !<The unique identifier for the models field to be created for the given CellML environment object.
+    TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object for which we need to create the models field.
+    TYPE(INTG), INTENT(OUT) :: ERR !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
+
+    CALL ENTERS("CELLML_MODELS_FIELD_CREATE_START",ERR,ERROR,*999)
+    CALL EXITS("CELLML_MODELS_FIELD_CREATE_START")
+    RETURN
+999 CALL ERRORS("CELLML_MODELS_FIELD_CREATE_START",ERR,ERROR)
+    CALL EXITS("CELLML_MODELS_FIELD_CREATE_START")
+    RETURN 1
+  END SUBROUTINE CELLML_MODELS_FIELD_CREATE_START
+
+  !> Finish the creation of the models field for the given CellML environment.
+  !! This will finalise the creation of the models field for the given CellML environment object.
+  SUBROUTINE CELLML_MODELS_FIELD_CREATE_FINISH(CELLML,ERR,ERROR,*)
+    TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object for which we need to finish creation of the models field.
+    TYPE(INTG), INTENT(OUT) :: ERR !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
+
+    CALL ENTERS("CELLML_MODELS_FIELD_CREATE_FINISH",ERR,ERROR,*999)
+    CALL EXITS("CELLML_MODELS_FIELD_CREATE_FINISH")
+    RETURN
+999 CALL ERRORS("CELLML_MODELS_FIELD_CREATE_FINISH",ERR,ERROR)
+    CALL EXITS("CELLML_MODELS_FIELD_CREATE_FINISH")
+    RETURN 1
+  END SUBROUTINE CELLML_MODELS_FIELD_CREATE_FINISH
+
+  !> Fetch the models field for the given CellML environment.
+  !! Check the models field is correctly defined and return it for the user to define. The user will be able to use the returned field object to assign models to DOFs.
+  SUBROUTINE CELLML_MODELS_FIELD_GET(CELLML,FIELD,ERR,ERROR,*)
+    TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object from which to get the models field.
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<On successful return will be set to the models field for this CellML environment
+    TYPE(INTG), INTENT(OUT) :: ERR !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
+
+    CALL ENTERS("CELLML_MODELS_FIELD_GET",ERR,ERROR,*999)
+    CALL EXITS("CELLML_MODELS_FIELD_GET")
+    RETURN
+999 CALL ERRORS("CELLML_MODELS_FIELD_GET",ERR,ERROR)
+    CALL EXITS("CELLML_MODELS_FIELD_GET")
+    RETURN 1
+  END SUBROUTINE CELLML_MODELS_FIELD_GET
 
 END MODULE CMISS_CELLML
