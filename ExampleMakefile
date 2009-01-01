@@ -103,10 +103,10 @@ EXAMPLE_ROOT = $(GLOBAL_ROOT)/examples/$(EXAMPLE_NAME)
 BASE_EXE_NAME = $(BASE_EXAMPLE_NAME)
 MAIN_SOURCE_DIR = $(GLOBAL_ROOT)/src
 EXAMPLE_SOURCE_DIR = $(EXAMPLE_ROOT)/src
-OBJECT_DIR := $(EXAMPLE_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+OBJECT_DIR := $(EXAMPLE_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)
 MODULE_DIR := $(OBJECT_DIR)
 EXE_DIR := $(EXAMPLE_ROOT)/bin/$(BIN_ARCH_DIR)
-EXE_NAME := $(BASE_EXE_NAME)$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+EXE_NAME := $(BASE_EXE_NAME)$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)
 EXECUTABLE := $(EXE_DIR)/$(EXE_NAME)
 
 C_INCLUDE_DIRS := $(MAIN_SOURCE_DIR) \
@@ -186,20 +186,19 @@ ifeq ($(OPERATING_SYSTEM),linux)
   olist_args = $1
 
   CC = gcc
-  FC = gfortran 
+  FC = gfortran
 
-  #Use g95 compiler if availabl
-  #ifneq (,$(shell g95 -v 2>&1 | grep -i gcc))
-  #  FC = g95
-  #endif
+  ifeq ($(COMPILER),intel)
 
-  #Use Intel compilers if available (icc -V sends output to STDERR and exits with error).
-  ifneq (,$(shell icc -V 2>&1 | grep -i intel))
-    CC = icc
-  endif
-  ifneq (,$(shell ifort -V 2>&1 | grep -i intel))
-    FC = ifort
-  endif
+    #Use Intel compilers if available (icc -V sends output to STDERR and exits with error).
+    ifneq (,$(shell icc -V 2>&1 | grep -i intel))
+      CC = icc
+    endif
+    ifneq (,$(shell ifort -V 2>&1 | grep -i intel))
+      FC = ifort
+    endif
+
+  endif	
 
   # Set the flags for the various different CC compilers
   ifeq ($(CC),gcc)# gcc
@@ -277,7 +276,11 @@ ifeq ($(OPERATING_SYSTEM),linux)
   ifeq ($(FC),gfortran)
     #FC = /home/users/local/packages/gfortran/irun/bin/gfortran
     # -fstatck-check
-    F_FLGS += -pipe -fno-second-underscore -Wall -x f95-cpp-input 
+    F_FLGS += -pipe -fno-second-underscore -Wall -x f95-cpp-input
+    # for now allow no line length. Should restrict to 132 in future
+    F_FLGS += -ffree-line-length-none
+    # for now change max identifier length. Should restrict to 63 (F2003) in future
+    F_FLGS += -fmax-identifier-length=63
     # Position independent code is actually only required for objects
     # in shared libraries but debug version may be built as shared libraries.
     DBGF_FLGS += -fPIC
@@ -465,7 +468,7 @@ PARMETIS_LIBRARIES = -lparmetis -lmetis
 PARMETIS_LIB_PATH =#
 PARMETIS_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/ )
+  PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/ )
@@ -475,25 +478,25 @@ else
 endif
 
 #PETSc
-PETSC_LIBRARIES = -lpetscsnes -lpetscdm -lpetscksp -lpetscmat -lpetscvec -lpetsc -lMrm -lXmu -lXm -lXt -lX11
+PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscdm -lpetscksp -lpetscmat -lpetscvec -lpetsc -lMrm -lXmu -lXm -lXt -lX11
 PETSC_LIB_PATH =#
 PETSC_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   ifeq ($(DEBUG),false)
     ifeq ($(MPI),mpich2)
-      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/linux-gnu-c-opt/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/bmake/linux-gnu-c-opt/ )
+      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/linux-gnu-c-opt/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/bmake/linux-gnu-c-opt/ )
     else
-      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/linux-gnu-c-opt/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/bmake/linux-gnu-c-opt/ )
+      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/lib/linux-gnu-c-opt/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/bmake/linux-gnu-c-opt/ )
     endif
   else
     ifeq ($(MPI),mpich2)
-      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/linux-gnu-c-debug/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/bmake/linux-gnu-c-debug/ )
+      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/linux-gnu-c-debug/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/bmake/linux-gnu-c-debug/ )
     else
-      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/lib/linux-gnu-c-debug/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/bmake/linux-gnu-c-debug/ )
+      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/lib/linux-gnu-c-debug/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/bmake/linux-gnu-c-debug/ )
     endif
   endif
   ifeq ($(ABI),64)
@@ -504,11 +507,11 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
     PETSC_LIB_PATH +=  $(addprefix -L, /usr/lib/ )
   endif
   ifeq ($(MPI),mpich2)
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/include/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/include/ )
   else
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)/include/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/include/ )
   endif
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
@@ -539,7 +542,7 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
       MPI_LIBRARIES += -lmpe_f2cmpi -llmpe -lmpe
     endif
     MPI_LIBRARIES += -lmpich -lpthread -lrt
-    MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/ )
+    MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
   else
     ifeq ($(MPIPROF),true)
       MPI_INCLUDE_PATH += $(addprefix -I, $(VT_ROOT)/include/ )
@@ -571,14 +574,6 @@ BLAS_LIBRARIES =#
 BLAS_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   BLAS_LIBRARIES = -llapack -lblas 
-  ifeq ($(ABI),64)
-    GFORTRAN_LIB := $(call searchdirs, /usr/lib64, libgfortran* )
-  else
-    GFORTRAN_LIB := $(call searchdirs, /usr/lib, libgfortran* )
-  endif
-  ifneq (,$(GFORTRAN_LIB))
-    BLAS_LIBRARIES += -lgfortran
-  endif
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     BLAS_LIBRARIES = -lessl
@@ -625,6 +620,7 @@ OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/cmiss_petsc_types.o \
 	$(OBJECT_DIR)/computational_environment.o \
 	$(OBJECT_DIR)/constants.o \
+	$(OBJECT_DIR)/control_loop_routines.o \
 	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/domain_mappings.o \
@@ -638,8 +634,6 @@ OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/field_IO_routines.o\
 	$(OBJECT_DIR)/finite_elasticity_routines.o \
 	$(OBJECT_DIR)/fluid_mechanics_routines.o \
-	$(OBJECT_DIR)/f90c_f.o \
-	$(OBJECT_DIR)/f90c_c.o \
 	$(OBJECT_DIR)/generated_mesh_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
@@ -813,12 +807,20 @@ $(OBJECT_DIR)/computational_environment.o		:	$(MAIN_SOURCE_DIR)/computational_en
 $(OBJECT_DIR)/constants.o		:	$(MAIN_SOURCE_DIR)/constants.f90 \
 	$(OBJECT_DIR)/kinds.o
 
+$(OBJECT_DIR)/control_loop_routines.o		:	$(MAIN_SOURCE_DIR)/control_loop_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/problem_constants.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/types.o
+
 $(OBJECT_DIR)/coordinate_routines.o		:	$(MAIN_SOURCE_DIR)/coordinate_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/maths.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
@@ -1127,6 +1129,7 @@ $(OBJECT_DIR)/problem_constants.o		:	$(MAIN_SOURCE_DIR)/problem_constants.f90 \
 $(OBJECT_DIR)/problem_routines.o	:	$(MAIN_SOURCE_DIR)/problem_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/classical_field_routines.o \
+	$(OBJECT_DIR)/control_loop_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/elasticity_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
@@ -1313,6 +1316,7 @@ help:
 	@echo "	PROF=(true|)"
 	@echo "	MPIPROF=(true|)"
 	@echo "	ABI=(32|64)"
+	@echo "	COMPILER=(intel|gnu)"
 	@echo 
 	@echo "Available targets:                            "
 	@echo

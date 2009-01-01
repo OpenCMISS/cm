@@ -994,7 +994,7 @@ MODULE TYPES
     INTEGER(INTG) :: STORAGE_TYPE !<The storage (sparsity) type for this matrix
     INTEGER(INTG) :: STRUCTURE_TYPE !<The structure (sparsity) type for this matrix
     INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in this global matrix
-    LOGICAL :: JACOBIAN_CALCULATION_TYPE !<The type of how the Jacobian is calculated \see EQUATIONS_SET_CONSTANTS_JacobianCalculationTypes,EQUATIONS_SET_CONSTANTS
+    INTEGER(INTG) :: JACOBIAN_CALCULATION_TYPE !<The type of how the Jacobian is calculated \see EQUATIONS_SET_CONSTANTS_JacobianCalculationTypes,EQUATIONS_SET_CONSTANTS
     LOGICAL :: UPDATE_JACOBIAN !<Is .TRUE. if this Jacobian matrix is to be updated
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: JACOBIAN !<A pointer to the distributed jacobian matrix data
     LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this Jacobian matrix has not been assembled
@@ -1056,22 +1056,22 @@ MODULE TYPES
   !
   
   !>Contains the information about the mapping of a variable DOF to an equations matrix column
-  TYPE VARIABLE_TO_EQUATIONS_COLUMN_MAP_TYPE
+  TYPE VAR_TO_EQUATIONS_COLUMN_MAP_TYPE
     INTEGER(INTG), ALLOCATABLE :: COLUMN_DOF(:) !<COLUMN_DOF(dof_idx). The equations column number for this equations matrix that the dof_idx'th variable DOF is mapped to.  
-  END TYPE VARIABLE_TO_EQUATIONS_COLUMN_MAP_TYPE
+  END TYPE VAR_TO_EQUATIONS_COLUMN_MAP_TYPE
 
   !>Contains the mapping for a dependent variable type to the equations matrices
-  TYPE VARIABLE_TO_EQUATIONS_MATRICES_MAP_TYPE
+  TYPE VAR_TO_EQUATIONS_MATRICES_MAP_TYPE
     INTEGER(INTG) :: VARIABLE_INDEX !<The variable index for this variable to equations matrices map
     INTEGER(INTG) :: VARIABLE_TYPE !<The variable type for this variable to equations matrices map
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE !<A pointer to the field variable for this variable to equations matrices map
     INTEGER(INTG) :: NUMBER_OF_LINEAR_EQUATIONS_MATRICES !<The number of linear equations matrices this variable type is mapped to. If the number is -1 the variable is mapped to the RHS vector. If the number is zero then this variable type is not involved in the equations set and the rest of the type is not allocated.
     INTEGER(INTG), ALLOCATABLE :: EQUATIONS_MATRIX_NUMBERS(:) !<EQUATIONS_MATRIX_NUMBERS(i). The equations matrix number for the i'th matrix that this variable type is mapped to.
-    TYPE(VARIABLE_TO_EQUATIONS_COLUMN_MAP_TYPE), ALLOCATABLE :: DOF_TO_COLUMNS_MAPS(:) !<DOF_TO_COLUMNS_MAPS(i). The variable dof to equations columns for the i'th equations matrix.
+    TYPE(VAR_TO_EQUATIONS_COLUMN_MAP_TYPE), ALLOCATABLE :: DOF_TO_COLUMNS_MAPS(:) !<DOF_TO_COLUMNS_MAPS(i). The variable dof to equations columns for the i'th equations matrix.
     INTEGER(INTG), ALLOCATABLE :: DOF_TO_ROWS_MAP(:) !<DOF_TO_ROWS_MAP(dof_idx). The row number that the dof_idx'th variable dof is mapped to.
-  END TYPE VARIABLE_TO_EQUATIONS_MATRICES_MAP_TYPE
+  END TYPE VAR_TO_EQUATIONS_MATRICES_MAP_TYPE
 
-  TYPE EQUATIONS_MATRIX_TO_VARIABLE_MAP_TYPE
+  TYPE EQUATIONS_MATRIX_TO_VAR_MAP_TYPE
     INTEGER(INTG) :: MATRIX_NUMBER !<The equations matrix number
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX !<A pointer to the equations matrix
     INTEGER(INTG) :: VARIABLE_TYPE !<The dependent variable type mapped to this equations matrix
@@ -1080,7 +1080,7 @@ MODULE TYPES
     REAL(DP) :: MATRIX_COEFFICIENT !<The multiplicative coefficent for the matrix in the equation set
     INTEGER(INTG), ALLOCATABLE :: COLUMN_TO_DOF_MAP(:) !<COLUMN_TO_DOF_MAP(column_idx). The variable DOF that the column_idx'th column of this equations matrix is mapped to.
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: COLUMN_DOFS_MAPPING !<A pointer to the column dofs domain mapping for the matrix variable
-  END TYPE EQUATIONS_MATRIX_TO_VARIABLE_MAP_TYPE
+  END TYPE EQUATIONS_MATRIX_TO_VAR_MAP_TYPE
 
   TYPE EQUATIONS_MAPPING_LINEAR_TYPE
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping
@@ -1088,12 +1088,12 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_OF_LINEAR_MATRIX_VARIABLES !<The number of dependent variables involved in the linear equations matrix mapping
     INTEGER(INTG), ALLOCATABLE :: MATRIX_VARIABLE_TYPES(:) !<MATRIX_VARIABLE_TYPES(i). The variable type of the i'th variable type involved in the equations matrix mapping.
 !!TODO: just make this the size of the number of matrix variables rather than the field number of variable types and merge matrix variable types above???
-    TYPE(VARIABLE_TO_EQUATIONS_MATRICES_MAP_TYPE), ALLOCATABLE :: VARIABLE_TO_EQUATIONS_MATRICES_MAPS(:) !<VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type_idx). The equations matrices mapping for the variable_type_idx'th variable type.
-    TYPE(EQUATIONS_MATRIX_TO_VARIABLE_MAP_TYPE), ALLOCATABLE :: EQUATIONS_MATRIX_TO_VARIABLE_MAPS(:) !<EQUATIONS_MATRIX_TO_VARIABLE_MAPS(matrix_idx). The mappings for the matrix_idx'th equations matrix.
+    TYPE(VAR_TO_EQUATIONS_MATRICES_MAP_TYPE), ALLOCATABLE :: VAR_TO_EQUATIONS_MATRICES_MAPS(:) !<VAR_TO_EQUATIONS_MATRICES_MAPS(variable_type_idx). The equations matrices mapping for the variable_type_idx'th variable type.
+    TYPE(EQUATIONS_MATRIX_TO_VAR_MAP_TYPE), ALLOCATABLE :: EQUATIONS_MATRIX_TO_VAR_MAPS(:) !<EQUATIONS_MATRIX_TO_VAR_MAPS(matrix_idx). The mappings for the matrix_idx'th equations matrix.
     INTEGER(INTG), ALLOCATABLE :: EQUATIONS_ROW_TO_VARIABLE_DOF_MAPS(:,:) !<EQUATIONS_ROW_TO_VARIABLE_DOFS_MAPS(row_idx,variable_type_idx). The row mappings for the row_idx'th row of the equations matrices to the variable_type_idx'th variable. 
   END TYPE EQUATIONS_MAPPING_LINEAR_TYPE
   
-  TYPE EQUATIONS_JACOBIAN_TO_VARIABLE_MAP_TYPE
+  TYPE EQUATIONS_JACOBIAN_TO_VAR_MAP_TYPE
     INTEGER(INTG) :: VARIABLE_TYPE !<The dependent variable type mapped to this equations matrix
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE !<A pointer to the field variable that is mapped to this equations matrix
     TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN !<A pointer to the equations matrix
@@ -1101,20 +1101,20 @@ MODULE TYPES
     REAL(DP) :: JACOBIAN_COEFFICIENT !<The multiplicative coefficent for the matrix in the equation set
     INTEGER(INTG), ALLOCATABLE :: EQUATIONS_COLUMN_TO_DOF_VARIABLE_MAP(:) !<COLUMN_TO_DOF_MAP(column_idx). The variable DOF that the column_idx'th column of this equations matrix is mapped to.
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: COLUMN_DOFS_MAPPING !<A pointer to the column dofs domain mapping for the matrix variable
-  END TYPE EQUATIONS_JACOBIAN_TO_VARIABLE_MAP_TYPE
+  END TYPE EQUATIONS_JACOBIAN_TO_VAR_MAP_TYPE
   
   !>Contains the mapping for a dependent variable type to the nonlinear Jacobian matrix
-  TYPE VARIABLE_TO_EQUATIONS_JACOBIAN_MAP_TYPE
+  TYPE VAR_TO_EQUATIONS_JACOBIAN_MAP_TYPE
     INTEGER(INTG) :: VARIABLE_TYPE !<The variable type for this variable to equations matrices map
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE !<A pointer to the field variable for this variable to equations matrices map
     INTEGER(INTG), ALLOCATABLE :: DOF_TO_COLUMNS_MAP(:) !<DOF_TO_COLUMNS_MAP(dof_idx). The Jacobian column number for dof_idx'th variable dof
     INTEGER(INTG), ALLOCATABLE :: DOF_TO_ROWS_MAP(:) !<DOF_TO_ROWS_MAP(dof_idx). The row number that the dof_idx'th variable dof is mapped to.
-  END TYPE VARIABLE_TO_EQUATIONS_JACOBIAN_MAP_TYPE
+  END TYPE VAR_TO_EQUATIONS_JACOBIAN_MAP_TYPE
 
   TYPE EQUATIONS_MAPPING_NONLINEAR_TYPE
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping
-    TYPE(VARIABLE_TO_EQUATIONS_JACOBIAN_MAP_TYPE) :: VARIABLE_TO_JACOBIAN_MAP
-    TYPE(EQUATIONS_JACOBIAN_TO_VARIABLE_MAP_TYPE) :: JACOBIAN_TO_VARIABLE_MAP
+    TYPE(VAR_TO_EQUATIONS_JACOBIAN_MAP_TYPE) :: VAR_TO_JACOBIAN_MAP
+    TYPE(EQUATIONS_JACOBIAN_TO_VAR_MAP_TYPE) :: JACOBIAN_TO_VAR_MAP
     INTEGER(INTG) :: RESIDUAL_VARIABLE_TYPE
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: RESIDUAL_VARIABLE !<A pointer to the variable that is mapped to the residual vector for nonlinear problems.
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RESIDUAL_VARIABLE_MAPPING !<A pointer to the residual variable domain mapping
@@ -1662,6 +1662,62 @@ MODULE TYPES
   !
   !================================================================================================================================
   !
+  ! Control types
+  !
+  
+  TYPE CONTROL_LOOP_SIMPLE_TYPE
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+  END TYPE CONTROL_LOOP_SIMPLE_TYPE
+
+  TYPE CONTROL_LOOP_FIXED_TYPE
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    INTEGER(INTG) :: ITERATION_NUMBER
+    INTEGER(INTG) :: START_ITERATION
+    INTEGER(INTG) :: STOP_ITERATION
+    INTEGER(INTG) :: ITERATION_INCREMENT
+  END TYPE CONTROL_LOOP_FIXED_TYPE
+
+  TYPE CONTROL_LOOP_TIME_TYPE
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    INTEGER(INTG) :: ITERATION_NUMBER
+    INTEGER(INTG) :: CURRENT_TIME
+    INTEGER(INTG) :: START_TIME
+    INTEGER(INTG) :: STOP_TIME
+    INTEGER(INTG) :: TIME_INCREMENT
+  END TYPE CONTROL_LOOP_TIME_TYPE
+
+  TYPE CONTROL_LOOP_WHILE_TYPE
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    INTEGER(INTG) :: ITERATION_NUMBER
+    INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ITERATIONS
+    LOGICAL :: CONTINUE_LOOP
+  END TYPE CONTROL_LOOP_WHILE_TYPE
+
+  !>A buffer type to allow for an array of pointers to a CONTROL_TYPE \see TYPES:CONTROL_TYPE
+  TYPE CONTROL_LOOP_PTR_TYPE
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: PTR !<The pointer to the control loop
+  END TYPE CONTROL_LOOP_PTR_TYPE
+
+  !>Contains information on a control loop
+  TYPE CONTROL_LOOP_TYPE
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer back to the problem for the top level control loop
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: PARENT_LOOP !<A pointer back to the parent control loop if this is a sub loop
+    LOGICAL :: CONTROL_LOOP_FINISHED !<Is .TRUE. if the problem control has finished being created, .FALSE. if not.
+    INTEGER(INTG) :: LOOP_TYPE !<The type of control loop \see PROBLEM_CONSTANTS_ControlTypes,PROBLEM_CONSTANTS
+    INTEGER(INTG) :: CONTROL_LOOP_LEVEL !<The level of the control loop
+    TYPE(CONTROL_LOOP_SIMPLE_TYPE), POINTER :: SIMPLE_LOOP !<A pointer to the simple loop information
+    TYPE(CONTROL_LOOP_FIXED_TYPE), POINTER :: FIXED_LOOP !<A pointer to the fixed loop information
+    TYPE(CONTROL_LOOP_TIME_TYPE), POINTER :: TIME_LOOP !<A pointer to the time loop information
+    TYPE(CONTROL_LOOP_WHILE_TYPE), POINTER :: WHILE_LOOP !<A pointer to the while loop information
+    INTEGER(INTG) :: NUMBER_OF_SUB_LOOPS !<The number of control loops below this loop
+    TYPE(CONTROL_LOOP_PTR_TYPE), ALLOCATABLE :: SUB_LOOPS(:) !<A array of pointers to the loops below this loop.
+    INTEGER(INTG) :: NUMBER_OF_SOLUTIONS !<The number of solutions in this control loop.
+    TYPE(SOLUTION_PTR_TYPE), ALLOCATABLE :: SOLUTIONS(:) !<A pointer to the solution information for this control loop.
+  END TYPE CONTROL_LOOP_TYPE  
+  
+  !
+  !================================================================================================================================
+  !
   ! Problem types
   !
   
@@ -1681,12 +1737,6 @@ MODULE TYPES
     TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the problem solution.
   END TYPE PROBLEM_TIME_DATA_TYPE
 
-  TYPE PROBLEM_CONTROL_TYPE
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer back to the problem
-    LOGICAL :: CONTROL_FINISHED !<Is .TRUE. if the problem control has finished being created, .FALSE. if not.
-    INTEGER(INTG) :: CONTROL_TYPE
-  END TYPE PROBLEM_CONTROL_TYPE
-  
   !>Contains information for a problem.
   TYPE PROBLEM_TYPE
     INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the problem. The user number must be unique.
@@ -1698,8 +1748,8 @@ MODULE TYPES
     INTEGER(INTG) :: TYPE !<The problem specification type identifier
     INTEGER(INTG) :: SUBTYPE !<The problem specification subtype identifier
     
-    TYPE (PROBLEM_CONTROL_TYPE), POINTER :: CONTROL !<A pointer to the control informaton for the problem.
- 
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop informaton for the problem.
+    
     INTEGER(INTG) :: NUMBER_OF_SOLUTIONS !<The number of solutions in the problem.
     TYPE(SOLUTION_PTR_TYPE), ALLOCATABLE :: SOLUTIONS(:) !<A pointer to the solution information for the problem.
   END TYPE PROBLEM_TYPE

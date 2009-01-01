@@ -1282,7 +1282,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: column_idx,row
-    REAL(DP) :: ZERO_VALUE(1)=0.0_DP
     TYPE(DISTRIBUTED_MATRIX_PETSC_TYPE), POINTER :: PETSC_MATRIX
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -1313,16 +1312,16 @@ CONTAINS
               IF(PETSC_MATRIX%USE_OVERRIDE_MATRIX) THEN
                 DO row=1,PETSC_MATRIX%M
                   DO column_idx=PETSC_MATRIX%ROW_INDICES(row),PETSC_MATRIX%ROW_INDICES(row+1)-1
-                    CALL PETSC_MATSETVALUES(PETSC_MATRIX%OVERRIDE_MATRIX,1,PETSC_MATRIX%GLOBAL_ROW_NUMBERS(row),1, &
-                      & PETSC_MATRIX%COLUMN_INDICES(column_idx)-1,ZERO_VALUE,PETSC_INSERT_VALUES, &
+                    CALL PETSC_MATSETVALUE(PETSC_MATRIX%OVERRIDE_MATRIX,PETSC_MATRIX%GLOBAL_ROW_NUMBERS(row), &
+                      & PETSC_MATRIX%COLUMN_INDICES(column_idx)-1,0.0_DP,PETSC_INSERT_VALUES, &
                       & ERR,ERROR,*999) !PETSc uses 0 indicies
                   ENDDO !column_idx
                 ENDDO !row_idx
               ELSE
                 DO row=1,PETSC_MATRIX%M
                   DO column_idx=PETSC_MATRIX%ROW_INDICES(row),PETSC_MATRIX%ROW_INDICES(row+1)-1
-                    CALL PETSC_MATSETVALUES(PETSC_MATRIX%MATRIX,1,PETSC_MATRIX%GLOBAL_ROW_NUMBERS(row),1, &
-                      & PETSC_MATRIX%COLUMN_INDICES(column_idx)-1,ZERO_VALUE,PETSC_INSERT_VALUES, &
+                    CALL PETSC_MATSETVALUE(PETSC_MATRIX%MATRIX,PETSC_MATRIX%GLOBAL_ROW_NUMBERS(row), &
+                      & PETSC_MATRIX%COLUMN_INDICES(column_idx)-1,0.0_DP,PETSC_INSERT_VALUES, &
                       & ERR,ERROR,*999) !PETSc uses 0 indicies
                   ENDDO !column_idx
                 ENDDO !row_idx

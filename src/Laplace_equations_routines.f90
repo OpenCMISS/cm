@@ -129,11 +129,11 @@ CONTAINS
       IF(NUMBER_OF_DIMENSIONS==2) THEN
         SELECT CASE(VARIABLE_NUMBER)
         CASE(FIELD_STANDARD_VARIABLE_TYPE)
-	      SELECT CASE(ANALYTIC_FUNCTION)
-	      CASE(EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_1)
-!TODO Analytical calculation for regular mesh only, need to implement generic analytical calculation,
-!i.e. du/ds1=(du/dxi1)(dxi1/ds1)=(du/dx)*(dx/dxi1)*(dxi1/ds1),du/ds2=(du/dxi2)(dxi2/ds2)=(du/dx)*(dx/dxi2)*(dxi2/ds2)	      
-	        SELECT CASE(DERIVATIVE_NUMBER)
+          SELECT CASE(ANALYTIC_FUNCTION)
+          CASE(EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_1)
+            !TODO Analytical calculation for regular mesh only, need to implement generic analytical calculation,
+            !i.e. du/ds1=(du/dxi1)(dxi1/ds1)=(du/dx)*(dx/dxi1)*(dxi1/ds1),du/ds2=(du/dxi2)(dxi2/ds2)=(du/dx)*(dx/dxi2)*(dxi2/ds2)
+            SELECT CASE(DERIVATIVE_NUMBER)
             CASE(NO_GLOBAL_DERIV)
               VALUE=x**2+2*x*y-y**2
             CASE(GLOBAL_DERIV_S1)
@@ -145,45 +145,45 @@ CONTAINS
             CASE DEFAULT
               CALL FLAG_ERROR("The derivativehas not been implemented.",ERR,ERROR,*999)
             END SELECT
-	      CASE(EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_2)
-!TODO Analytical calculation for regular mesh only, need to implement generic analytical calculation,
-!i.e. du/ds1=(du/dxi1)(dxi1/ds1)=(du/dx)*(dx/dxi1)*(dxi1/ds1),du/ds2=(du/dxi2)(dxi2/ds2)=(du/dx)*(dx/dxi2)*(dxi2/ds2)
-	        SELECT CASE(DERIVATIVE_NUMBER)
+          CASE(EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_2)
+            !TODO Analytical calculation for regular mesh only, need to implement generic analytical calculation,
+            !i.e. du/ds1=(du/dxi1)(dxi1/ds1)=(du/dx)*(dx/dxi1)*(dxi1/ds1),du/ds2=(du/dxi2)(dxi2/ds2)=(du/dx)*(dx/dxi2)*(dxi2/ds2)
+            SELECT CASE(DERIVATIVE_NUMBER)
             CASE(NO_GLOBAL_DERIV)
-	          VALUE=cos(x)*cosh(y)
-	        CASE(GLOBAL_DERIV_S1)
-	          VALUE=-sin(x)*cosh(y)
-	        CASE(GLOBAL_DERIV_S2)
-	          VALUE=cos(x)*sinh(y)
-	        CASE(GLOBAL_DERIV_S1_S2)
-              VALUE=-sin(x)*sinh(y)
-	        CASE DEFAULT
+              VALUE=COS(x)*COSH(y)
+            CASE(GLOBAL_DERIV_S1)
+              VALUE=-SIN(x)*COSH(y)
+            CASE(GLOBAL_DERIV_S2)
+              VALUE=COS(x)*SINH(y)
+            CASE(GLOBAL_DERIV_S1_S2)
+              VALUE=-SIN(x)*SINH(y)
+            CASE DEFAULT
               CALL FLAG_ERROR("The derivativehas not been implemented.",ERR,ERROR,*999)
-	        END SELECT
-	      CASE DEFAULT
+            END SELECT
+          CASE DEFAULT
             CALL FLAG_ERROR("The equation is not implemented.",ERR,ERROR,*999)
-	      END SELECT
-	    CASE(FIELD_NORMAL_VARIABLE_TYPE)
-	      ! TODO fill the calculation
-	      SELECT CASE(ANALYTIC_FUNCTION)
+          END SELECT
+        CASE(FIELD_NORMAL_VARIABLE_TYPE)
+          ! TODO fill the calculation
+          SELECT CASE(ANALYTIC_FUNCTION)
           CASE(EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_1)            
             VALUE=(2*x+2*y)*x+(2*x-2*y)*y
           CASE(EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_2) 
-            VALUE=-sin(x)*cosh(y)*x+cos(x)*sinh(y)*y
+            VALUE=-SIN(x)*COSH(y)*x+COS(x)*SINH(y)*y
           CASE DEFAULT
             CALL FLAG_ERROR("The equation is not implemented.",ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           CALL FLAG_ERROR("This variable type is either not implemented or not valid.",ERR,ERROR,*999)
-        END SELECT  
-	  ELSE IF(NUMBER_OF_DIMENSIONS==3)THEN
-	    NODE_PARAM2DOF_MAP_Z=FIELD%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP
-	    z = GEOMETRIC_PARAMETERS(NODE_PARAM2DOF_MAP_Z(1,NODE_NUMBER,1))
-	    SELECT CASE(VARIABLE_NUMBER)
+        END SELECT
+      ELSE IF(NUMBER_OF_DIMENSIONS==3)THEN
+        NODE_PARAM2DOF_MAP_Z=FIELD%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP
+        z = GEOMETRIC_PARAMETERS(NODE_PARAM2DOF_MAP_Z(1,NODE_NUMBER,1))
+        SELECT CASE(VARIABLE_NUMBER)
         CASE(FIELD_STANDARD_VARIABLE_TYPE)
           SELECT CASE(ANALYTIC_FUNCTION)
           CASE(EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_1)
-!TODO Analytical calculation for regular mesh only, need to implement generic analytical calculation            
+            !TODO Analytical calculation for regular mesh only, need to implement generic analytical calculation            
             SELECT CASE(DERIVATIVE_NUMBER)
             CASE(NO_GLOBAL_DERIV)
               VALUE=x**2-2*y**2+z**2
@@ -203,50 +203,50 @@ CONTAINS
               VALUE=0.0_DP
             CASE DEFAULT
               CALL FLAG_ERROR("The derivativehas not been implemented.",ERR,ERROR,*999)
-            END SELECT            
+            END SELECT
           CASE(EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_2) 
-!TODO Analytical calculation for regular mesh only, need to implement generic analytical calculation 
+            !TODO Analytical calculation for regular mesh only, need to implement generic analytical calculation 
             SELECT CASE(DERIVATIVE_NUMBER)
             CASE(NO_GLOBAL_DERIV)
-              VALUE=cos(x)*cosh(y)*z
+              VALUE=COS(x)*COSH(y)*z
             CASE(GLOBAL_DERIV_S1)
-              VALUE=-sin(x)*cosh(y)*z
+              VALUE=-SIN(x)*COSH(y)*z
             CASE(GLOBAL_DERIV_S2)
-              VALUE=cos(x)*sinh(y)*z
+              VALUE=COS(x)*SINH(y)*z
             CASE(GLOBAL_DERIV_S1_S2)
-              VALUE=-sin(x)*sinh(y)*z
+              VALUE=-SIN(x)*SINH(y)*z
             CASE(GLOBAL_DERIV_S3)
-              VALUE=cos(x)*cosh(y)
+              VALUE=COS(x)*COSH(y)
             CASE(GLOBAL_DERIV_S1_S3)
-              VALUE=-sin(x)*cosh(y)
+              VALUE=-SIN(x)*COSH(y)
             CASE(GLOBAL_DERIV_S2_S3)
-              VALUE=cos(x)*sinh(y) 
+              VALUE=COS(x)*SINH(y) 
             CASE(GLOBAL_DERIV_S1_S2_S3)
-              VALUE=-sin(x)*sinh(y)
+              VALUE=-SIN(x)*SINH(y)
             CASE DEFAULT
               CALL FLAG_ERROR("The derivativehas not been implemented.",ERR,ERROR,*999)
-            END SELECT            
+            END SELECT
           CASE DEFAULT
             CALL FLAG_ERROR("The equation is not implemented.",ERR,ERROR,*999)
           END SELECT
-	    CASE(FIELD_NORMAL_VARIABLE_TYPE)
-	      !TODO fill the calculation
-	      SELECT CASE(ANALYTIC_FUNCTION)
+        CASE(FIELD_NORMAL_VARIABLE_TYPE)
+          !TODO fill the calculation
+          SELECT CASE(ANALYTIC_FUNCTION)
           CASE(EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_1)            
             VALUE=2*x**2-4*y**2+2*z**2
           CASE(EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_2) 
-            VALUE=-sin(x)*cosh(y)*z*x+cos(x)*sinh(y)*z*y+cos(x)*cosh(y)*z
+            VALUE=-SIN(x)*COSH(y)*z*x+COS(x)*SINH(y)*z*y+COS(x)*COSH(y)*z
           CASE DEFAULT
             CALL FLAG_ERROR("The equation is not implemented.",ERR,ERROR,*999)
           END SELECT
-	    CASE DEFAULT
+        CASE DEFAULT
           CALL FLAG_ERROR("This variable type is either not implemented or not valid.",ERR,ERROR,*999)
         END SELECT
-	  ENDIF 
+      ENDIF
     ELSE
       CALL FLAG_ERROR("The field is not associated.",ERR,ERROR,*999)
     ENDIF
-      
+    
     CALL EXITS("LAPLACE_EQUATION_ANALYTIC_CALCULATE")
     RETURN
 999 CALL ERRORS("LAPLACE_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR)
@@ -287,8 +287,8 @@ CONTAINS
         DO comp_idx=1,FIELD%VARIABLES(var_idx)%NUMBER_OF_COMPONENTS
           DOMAIN_NODES=>FIELD%VARIABLES(1)%COMPONENTS(comp_idx)%DOMAIN%TOPOLOGY%NODES
           IF(ASSOCIATED(DOMAIN_NODES)) THEN
-	        NODES_MAPPING=>FIELD%VARIABLES(1)%COMPONENTS(comp_idx)%DOMAIN%MAPPINGS%NODES
-	        SELECT CASE(NODE_TYPE)
+            NODES_MAPPING=>FIELD%VARIABLES(1)%COMPONENTS(comp_idx)%DOMAIN%MAPPINGS%NODES
+            SELECT CASE(NODE_TYPE)
             CASE(DOMAIN_LOCAL_INTERNAL)            
               NODE_TYPE_COUNT=NODES_MAPPING%NUMBER_OF_INTERNAL
             CASE(DOMAIN_LOCAL_BOUNDARY) 
@@ -296,8 +296,8 @@ CONTAINS
             CASE DEFAULT
               CALL FLAG_ERROR("Invalid node type.",ERR,ERROR,*999)
             END SELECT
-	        DO node_idx=1,NODE_TYPE_COUNT
-	          SELECT CASE(NODE_TYPE)
+            DO node_idx=1,NODE_TYPE_COUNT
+              SELECT CASE(NODE_TYPE)
               CASE(DOMAIN_LOCAL_INTERNAL)            
                 node_number=NODES_MAPPING%INTERNAL_LIST(node_idx)
               CASE(DOMAIN_LOCAL_BOUNDARY) 
@@ -305,13 +305,13 @@ CONTAINS
               CASE DEFAULT
                 CALL FLAG_ERROR("Invalid node type.",ERR,ERROR,*999)
               END SELECT
-	          
-	          DO dev_idx=1,DOMAIN_NODES%NODES(node_number)%NUMBER_OF_DERIVATIVES
-	            CALL LAPLACE_EQUATION_ANALYTIC_CALCULATE(FIELD,ANALYTIC_FUNCTION,GEOMETRIC_PARAMETERS,dev_idx,node_number,comp_idx, &
-	              & var_idx,VALUE,ERR,ERROR,*999)	            
-	            CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_ANALYTIC_SET_TYPE,dev_idx,node_number,comp_idx,var_idx,VALUE, &
-	              & ERR,ERROR,*999)   
-	          ENDDO ! dev_idx
+              
+              DO dev_idx=1,DOMAIN_NODES%NODES(node_number)%NUMBER_OF_DERIVATIVES
+                CALL LAPLACE_EQUATION_ANALYTIC_CALCULATE(FIELD,ANALYTIC_FUNCTION,GEOMETRIC_PARAMETERS,dev_idx,node_number,comp_idx, &
+                  & var_idx,VALUE,ERR,ERROR,*999)	            
+                CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_ANALYTIC_SET_TYPE,dev_idx,node_number,comp_idx,var_idx,VALUE, &
+                  & ERR,ERROR,*999)   
+              ENDDO ! dev_idx
             ENDDO ! node_idx
           ELSE
             CALL FLAG_ERROR("Domain nodes are not associated",ERR,ERROR,*999)
@@ -328,7 +328,7 @@ CONTAINS
     CALL EXITS("LAPLACE_EQUATION_ANALYTIC_PARAMETER_SET_UPDATE")
     RETURN 1
   END SUBROUTINE LAPLACE_EQUATION_ANALYTIC_PARAMETER_SET_UPDATE
-
+  
   !
   !================================================================================================================================
   !
@@ -374,7 +374,7 @@ CONTAINS
           RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
           EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
           LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
-          FIELD_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(1)%VARIABLE
+          FIELD_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
           DEPENDENT_BASIS=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
             & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
           GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
@@ -702,14 +702,14 @@ CONTAINS
               CALL LAPLACE_EQUATION_ANALYTIC_PARAMETER_SET_UPDATE(EQUATIONS_SET,GEOMETRIC_PARAMETERS,DOMAIN_LOCAL_BOUNDARY, &
                 & ERR,ERROR,*999)
               
-	          CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,FIELD_ANALYTIC_SET_TYPE,ERR,ERROR,*999)
-	          
+              CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,FIELD_ANALYTIC_SET_TYPE,ERR,ERROR,*999)
+              
 	          ! Set up internal nodes
-	          CALL LAPLACE_EQUATION_ANALYTIC_PARAMETER_SET_UPDATE(EQUATIONS_SET,GEOMETRIC_PARAMETERS,DOMAIN_LOCAL_INTERNAL, &
-	            & ERR,ERROR,*999)
-	          
-	          CALL BOUNDARY_CONDITION_PARAMETER_SET_UPDATE_FROM_ANALYTIC_VALUE(EQUATIONS_SET,ERR,ERROR,*999)
-             
+              CALL LAPLACE_EQUATION_ANALYTIC_PARAMETER_SET_UPDATE(EQUATIONS_SET,GEOMETRIC_PARAMETERS,DOMAIN_LOCAL_INTERNAL, &
+                & ERR,ERROR,*999)
+              
+              CALL BOUNDARY_CONDITION_PARAMETER_SET_UPDATE_FROM_ANALYTIC_VALUE(EQUATIONS_SET,ERR,ERROR,*999)
+              
               CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,FIELD_ANALYTIC_SET_TYPE,ERR,ERROR,*999)
               EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED=.TRUE.
             ELSE
@@ -996,7 +996,7 @@ CONTAINS
                  IF(ASSOCIATED(SOLUTION_MAPPING)) THEN
                    CALL SOLUTION_MAPPING_EQUATIONS_SET_ADD(SOLUTION_MAPPING,SOLUTION%EQUATIONS_SET_TO_ADD,SOLUTION% &
                      & EQUATIONS_SET_ADDED_INDEX,ERR,ERROR,*999)
-                   CALL SOLUTION_MAPPING_EQUATIONS_VARIABLES_TO_SOLVER_MATRIX_SET(SOLUTION_MAPPING,1,SOLUTION% &
+                   CALL SOLUTION_MAPPING_EQUATS_VARS_TO_SOLVER_MATRIX_SET(SOLUTION_MAPPING,1,SOLUTION% &
                      & EQUATIONS_SET_ADDED_INDEX,(/FIELD_STANDARD_VARIABLE_TYPE/),ERR,ERROR,*999)
                  ELSE
                    CALL FLAG_ERROR("Solution mapping is not associated.",ERR,ERROR,*999)

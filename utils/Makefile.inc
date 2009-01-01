@@ -49,6 +49,10 @@ ifndef MP
   MP = false
 endif
 
+ifndef COMPILER
+  COMPILER = intel
+endif
+
 # set architecture dependent directories and default options
 
 # defaults
@@ -140,6 +144,20 @@ ifneq ($(DEBUG),false)
   DEBUG_SUFFIX = -debug
 else
   DEBUG_SUFFIX = 
+endif
+
+ifeq ($(OPERATING_SYSTEM),linux)
+  ifeq ($(COMPILER),intel)
+    COMPILER_SUFFIX = -intel
+  else
+    ifeq ($(COMPILER),gnu)
+      COMPILER_SUFFIX = -gnu
+    else
+      $(error invalid COMPILER specification)
+    endif	
+  endif
+else
+  COMPILER_SUFFIX =
 endif
 
 # Useful functions

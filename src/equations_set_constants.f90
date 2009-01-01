@@ -102,7 +102,9 @@ MODULE EQUATIONS_SET_CONSTANTS
   !  Helmholtz equation
   !  Wave equation
   !  Diffusion equation
-  !Modal class
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_LINEAR_DIFFUSION_SUBTYPE=1
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NONLINEAR_DIFFUSION_SUBTYPE=2
+ !Modal class
 
 
   !Module parameters

@@ -2538,7 +2538,7 @@ CONTAINS
                                           !Loop over the dependent variables associated with this equations set row
                                           DO variable_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
                                             variable_type=LINEAR_MAPPING%MATRIX_VARIABLE_TYPES(variable_idx)
-                                            DEPENDENT_VARIABLE=>LINEAR_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS(variable_type)% &
+                                            DEPENDENT_VARIABLE=>LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS(variable_type)% &
                                               & VARIABLE
                                             VARIABLE_DOMAIN_MAPPING=>DEPENDENT_VARIABLE%DOMAIN_MAPPING
                                             variable_dof=LINEAR_MAPPING%EQUATIONS_ROW_TO_VARIABLE_DOF_MAPS(equations_row_number, &
@@ -2548,12 +2548,12 @@ CONTAINS
                                             variable_boundary_condition=FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS( &
                                               & variable_global_dof)
                                             IF(variable_boundary_condition==EQUATIONS_SET_FIXED_BOUNDARY_CONDITION) THEN
-                                              DO equations_matrix_idx=1,LINEAR_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS( &
+                                              DO equations_matrix_idx=1,LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS( &
                                                 & variable_type)%NUMBER_OF_LINEAR_EQUATIONS_MATRICES
-                                                equations_matrix_number=LINEAR_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS( &
+                                                equations_matrix_number=LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS( &
                                                   & variable_type)%EQUATIONS_MATRIX_NUMBERS(equations_matrix_idx)
                                                 EQUATIONS_MATRIX=>LINEAR_MATRICES%MATRICES(equations_matrix_number)%PTR
-                                                equations_column_number=LINEAR_MAPPING%VARIABLE_TO_EQUATIONS_MATRICES_MAPS( &
+                                                equations_column_number=LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS( &
                                                   & variable_type)%DOF_TO_COLUMNS_MAPS(equations_matrix_idx)%COLUMN_DOF( &
                                                   & variable_dof)
                                                 DO equations_row_number2=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
@@ -2738,10 +2738,10 @@ CONTAINS
                                   IF(ASSOCIATED(LINEAR_MAPPING)) THEN
                                     !Calculate the linear part of the residual
                                     DO equations_matrix_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_EQUATIONS_MATRICES
-                                      EQUATIONS_MATRIX=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(equations_matrix_idx)% &
+                                      EQUATIONS_MATRIX=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(equations_matrix_idx)% &
                                         & EQUATIONS_MATRIX                                    
                                       IF(ASSOCIATED(EQUATIONS_MATRIX)) THEN
-                                        DEPENDENT_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS( &
+                                        DEPENDENT_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS( &
                                           & equations_matrix_idx)%VARIABLE
                                         IF(ASSOCIATED(DEPENDENT_VARIABLE)) THEN
                                           EQUATIONS_DISTRIBUTED_MATRIX=>EQUATIONS_MATRIX%MATRIX
@@ -2765,14 +2765,14 @@ CONTAINS
                                                 VALUE=0.0_DP
                                                 !Loop over the columns of the equations matrix
                                                 DO equations_column_number=1,EQUATIONS_MATRIX%NUMBER_OF_COLUMNS
-                                                  variable_dof=LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS( &
+                                                  variable_dof=LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS( &
                                                     & equations_matrix_idx)%COLUMN_TO_DOF_MAP(equations_column_number)
                                                   field_dof=DEPENDENT_VARIABLE%DOF_LIST(variable_dof)
                                                   VALUE=VALUE+EQUATIONS_MATRIX_DATA(equations_row_number+ &
                                                     & (equations_column_number-1)*EQUATIONS_MATRICES%TOTAL_NUMBER_OF_ROWS)* &
                                                     & row_coupling_coefficient*DEPENDENT_PARAMETERS(field_dof)
                                                 ENDDO !equations_column_number
-                                                VALUE=VALUE*LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS( &
+                                                VALUE=VALUE*LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS( &
                                                   & equations_matrix_idx)%MATRIX_COEFFICIENT
                                                 !Add in nonlinear residual values                                    
                                                 CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RESIDUAL_VECTOR,solver_row_number,VALUE, &
@@ -2804,14 +2804,14 @@ CONTAINS
                                                 DO equations_column_idx=ROW_INDICES(equations_row_number), &
                                                   & ROW_INDICES(equations_row_number+1)-1
                                                   equations_column_number=COLUMN_INDICES(equations_column_idx)
-                                                  variable_dof=LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS( &
+                                                  variable_dof=LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS( &
                                                     & equations_matrix_idx)%COLUMN_TO_DOF_MAP(equations_column_number)
                                                   field_dof=DEPENDENT_VARIABLE%DOF_LIST(variable_dof)
                                                   !Add in nonlinear residual values
                                                   VALUE=VALUE+EQUATIONS_MATRIX_DATA(equations_column_idx)* &
                                                     & row_coupling_coefficient*DEPENDENT_PARAMETERS(field_dof)
                                                 ENDDO !equations_column_idx
-                                                VALUE=VALUE*LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS( &
+                                                VALUE=VALUE*LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS( &
                                                   & equations_matrix_idx)%MATRIX_COEFFICIENT
                                                 CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RESIDUAL_VECTOR,solver_row_number,VALUE, &
                                                   & ERR,ERROR,*999)
@@ -4623,6 +4623,44 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Monitors the time integration solve.
+  SUBROUTINE SOLVER_TIME_INTEGRATION_MONITOR(TIME_INTEGRATION_SOLVER,STEPS,TIME,ERR,ERROR,*)
+
+   !Argument variables
+    TYPE(TIME_INTEGRATION_SOLVER_TYPE), POINTER :: TIME_INTEGRATION_SOLVER !<A pointer to the time integration solver to monitor
+    INTEGER(INTG), INTENT(IN) :: STEPS !<The number of iterations
+    REAL(DP), INTENT(IN) :: TIME !<The current time
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    
+    CALL ENTERS("SOLVER_TIME_INTEGRATION_MONITOR",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(TIME_INTEGRATION_SOLVER)) THEN
+        
+      CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+      CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
+      CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Time integration solve monitor: ",ERR,ERROR,*999)
+      CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of steps = ",STEPS,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Current time    = ",TIME,ERR,ERROR,*999)
+      CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)      
+        
+    ELSE
+      CALL FLAG_ERROR("Time integration solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+     
+    CALL EXITS("SOLVER_TIME_INTEGRATION_MONITOR")
+    RETURN
+999 CALL ERRORS("SOLVER_TIME_INTEGRATION_MONITOR",ERR,ERROR)
+    CALL EXITS("SOLVER_TIME_INTEGRATION_MONITOR")
+    RETURN 1
+  END SUBROUTINE SOLVER_TIME_INTEGRATION_MONITOR
+
+  !
+  !================================================================================================================================
+  !
+
   !>Solve a time integration solver 
   SUBROUTINE SOLVER_TIME_INTEGRATION_SOLVE(TIME_INTEGRATION_SOLVER,ERR,ERROR,*)
 
@@ -4895,4 +4933,51 @@ SUBROUTINE SOLVER_NONLINEAR_MONITOR_PETSC(SNES,ITS,NORM,CTX,ERR)
 998 CALL FLAG_WARNING("Error monitoring nonlinear solve.",ERR,ERROR,*997)
 997 RETURN    
 END SUBROUTINE SOLVER_NONLINEAR_MONITOR_PETSC
+
+!
+!================================================================================================================================
+!
+
+!>Called from the PETSc TS solvers to monitor the time integration solver
+SUBROUTINE SOLVER_TIME_INTEGRATION_MONITOR_PETSC(TS,STEPS,TIME,X,CTX,ERR)
+
+  USE BASE_ROUTINES
+  USE CMISS_PETSC_TYPES
+  USE ISO_VARYING_STRING
+  USE KINDS
+  USE SOLVER_ROUTINES
+  USE STRINGS
+  USE TYPES
+  
+  !Argument variables
+  TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS !<The PETSc TS type
+  INTEGER(INTG), INTENT(INOUT) :: STEPS !<The iteration number
+  REAL(DP), INTENT(INOUT) :: TIME !<The current time
+  TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The current iterate
+  TYPE(SOLVER_TYPE), POINTER :: CTX !<The passed through context
+  INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
+  !Local Variables
+  TYPE(TIME_INTEGRATION_SOLVER_TYPE), POINTER :: TIME_INTEGRATION_SOLVER
+  TYPE(VARYING_STRING) :: ERROR,LOCAL_ERROR
+
+  IF(ASSOCIATED(CTX)) THEN
+    IF(CTX%SOLVE_TYPE==SOLVER_TIME_INTEGRATION_TYPE) THEN
+      TIME_INTEGRATION_SOLVER=>CTX%TIME_INTEGRATION_SOLVER
+
+      CALL SOLVER_TIME_INTEGRATION_MONITOR(TIME_INTEGRATION_SOLVER,STEPS,TIME,ERR,ERROR,*999)
+
+    ELSE
+      LOCAL_ERROR="Invalid solve type. The solve type of "//TRIM(NUMBER_TO_VSTRING(CTX%SOLVE_TYPE,"*",ERR,ERROR))// &
+        & " does not correspond to a time integration solver."
+      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+    ENDIF      
+  ELSE
+    CALL FLAG_ERROR("Solver context is not associated.",ERR,ERROR,*999)
+  ENDIF
+  
+  RETURN
+999 CALL WRITE_ERROR(ERR,ERROR,*998)
+998 CALL FLAG_WARNING("Error monitoring time integration solve.",ERR,ERROR,*997)
+997 RETURN    
+END SUBROUTINE SOLVER_TIME_INTEGRATION_MONITOR_PETSC
 

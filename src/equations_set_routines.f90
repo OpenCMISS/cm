@@ -836,11 +836,11 @@ CONTAINS
                         IF(ASSOCIATED(RHS_VARIABLE)) THEN                                 
                           !Loop over the equations matrices
                           DO equations_matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
-                            DEPENDENT_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(equations_matrix_idx)%VARIABLE
+                            DEPENDENT_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(equations_matrix_idx)%VARIABLE
                             IF(ASSOCIATED(DEPENDENT_VARIABLE)) THEN
                               EQUATIONS_MATRIX=>LINEAR_MATRICES%MATRICES(equations_matrix_idx)%PTR
                               IF(ASSOCIATED(EQUATIONS_MATRIX)) THEN
-                                COLUMN_DOMAIN_MAPPING=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VARIABLE_MAPS(equations_matrix_idx)% &
+                                COLUMN_DOMAIN_MAPPING=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(equations_matrix_idx)% &
                                   & COLUMN_DOFS_MAPPING
                                 IF(ASSOCIATED(COLUMN_DOMAIN_MAPPING)) THEN
                                   EQUATIONS_DISTRIBUTED_MATRIX=>EQUATIONS_MATRIX%MATRIX
