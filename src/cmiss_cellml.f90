@@ -433,4 +433,23 @@ CONTAINS
     RETURN 1
   END SUBROUTINE CELLML_PARAMETERS_FIELD_GET
 
+  !> Validate and instantiate the specified CellML environment.
+  !! Users should call this routine once they have set up the CellML environment to allow the CellML environment to be validated and instantiated into computable code.
+  !! - generate and compile code.
+  !! - distribute things amonst processors?
+  !! - create the internal fields?
+  !! - does this method need to get called or can it be done implicitly as needed by other solution procedures?
+  SUBROUTINE CELLML_GENERATE(CELLML,ERR,ERROR,*)
+    TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object for which to generate computable code.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
+
+    CALL ENTERS("CELLML_GENERATE",ERR,ERROR,*999)
+    CALL EXITS("CELLML_GENERATE")
+    RETURN
+999 CALL ERRORS("CELLML_GENERATE",ERR,ERROR)
+    CALL EXITS("CELLML_GENERATE")
+    RETURN 1
+  END SUBROUTINE CELLML_GENERATE
+
 END MODULE CMISS_CELLML
