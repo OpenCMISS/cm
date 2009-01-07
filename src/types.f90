@@ -1449,6 +1449,16 @@ MODULE TYPES
   TYPE TIME_INTEGRATION_SOLVER_TYPE
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the problem_solver
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the time integration solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG) :: TIME_INTEGRATION_TYPE
+    INTEGER(INTG) :: LINEARITY
+    INTEGER(INTG) :: TIME_DEPENDENCE
+    INTEGER(INTG) :: STIFFNESS_MATRIX_NUMBER !<Move this and the mass matrix number to solution mapping???
+    INTEGER(INTG) :: MASS_MATRIX_NUMBER
+    INTEGER(INTG) :: MAXIMUM_TIMESTEPS
+    REAL(DP) :: START_TIME
+    REAL(DP) :: STOP_TIME
+    REAL(DP) :: TIME_INCREMENT
+    TYPE(PETSC_TS_TYPE) :: TS
   END TYPE TIME_INTEGRATION_SOLVER_TYPE
   
   !>Contains information for a time integration solver
@@ -1643,22 +1653,43 @@ MODULE TYPES
   !>Contains information on the solution of a problem
   TYPE SOLUTION_TYPE
     INTEGER(INTG) :: SOLUTION_NUMBER !<The number of the solution
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer back to the problem for this solution
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer back to the control loop for this solution
     LOGICAL :: SOLUTION_FINISHED !<Is .TRUE. if the problem solution has finished being created, .FALSE. if not.
     INTEGER(INTG) :: LINEARITY 
     !TYPE(SOLUTION_LINEAR_DATA_TYPE), POINTER :: LINEAR_DATA !<A pointer to the data for linear solutions.
     !TYPE(SOLUTION_NONLINEAR_DATA_TYPE), POINTER :: NONLINEAR_DATA !<A pointer to the data for non-linear solutions.
     !TYPE(SOLUTION_TIME_DATA_TYPE), POINTER :: TIME_DATA !<A pointer to the data for non-static solutions.
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET_TO_ADD !<The next equations set to add to the solution
-    INTEGER(INTG) :: EQUATIONS_SET_ADDED_INDEX !<The index of the last successfully added equations set
     TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING !<A pointer to the solution mapping for the solution.
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver for the problem.
   END TYPE SOLUTION_TYPE
 
+  !>A buffer type to allow for an array of pointers to a SOLTUION_TYPE \see TYPES:SOLUTION_TYPE
   TYPE SOLUTION_PTR_TYPE
     TYPE(SOLUTION_TYPE), POINTER :: PTR
   END TYPE SOLUTION_PTR_TYPE
 
+  TYPE SOLUTIONS_TYPE
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the parent control loop
+    LOGICAL :: SOLUTIONS_FINISHED !<Is .TRUE. if the solutions has finished being created, .FALSE. if not.
+    INTEGER(INTG) :: NUMBER_OF_SOLUTIONS !<The number of solutions
+    TYPE(SOLUTION_PTR_TYPE), ALLOCATABLE :: SOLUTIONS(:) !<A pointer to the solution information for the problem.
+  END TYPE SOLUTIONS_TYPE
+  
+  !
+  !================================================================================================================================
+  !
+  ! History types
+  !
+
+  TYPE HISTORY_TYPE
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop for the history file
+    LOGICAL :: HISTORY_FINISHED !<Is .TRUE. if the history file has finished being created, .FALSE. if not.
+    INTEGER(INTG) :: FILE_FORMAT !<The format of the history file \see HISTORY_ROUTINES_FileFormatTypes,HISTORY_ROUTINES
+    TYPE(VARYING_STRING) :: FILENAME !<The file name of the history file
+    INTEGER(INTG) :: UNIT_NUMBER !<The unit number of the history file.
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field that will be read/written in the history file
+  END TYPE HISTORY_TYPE
+  
   !
   !================================================================================================================================
   !
@@ -1700,7 +1731,7 @@ MODULE TYPES
 
   !>Contains information on a control loop
   TYPE CONTROL_LOOP_TYPE
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer back to the problem for the top level control loop
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer back to the problem for the control loop
     TYPE(CONTROL_LOOP_TYPE), POINTER :: PARENT_LOOP !<A pointer back to the parent control loop if this is a sub loop
     LOGICAL :: CONTROL_LOOP_FINISHED !<Is .TRUE. if the problem control has finished being created, .FALSE. if not.
     INTEGER(INTG) :: LOOP_TYPE !<The type of control loop \see PROBLEM_CONSTANTS_ControlTypes,PROBLEM_CONSTANTS
@@ -1711,8 +1742,8 @@ MODULE TYPES
     TYPE(CONTROL_LOOP_WHILE_TYPE), POINTER :: WHILE_LOOP !<A pointer to the while loop information
     INTEGER(INTG) :: NUMBER_OF_SUB_LOOPS !<The number of control loops below this loop
     TYPE(CONTROL_LOOP_PTR_TYPE), ALLOCATABLE :: SUB_LOOPS(:) !<A array of pointers to the loops below this loop.
-    INTEGER(INTG) :: NUMBER_OF_SOLUTIONS !<The number of solutions in this control loop.
-    TYPE(SOLUTION_PTR_TYPE), ALLOCATABLE :: SOLUTIONS(:) !<A pointer to the solution information for this control loop.
+    TYPE(SOLUTIONS_TYPE), POINTER :: SOLUTIONS !<A pointer to the solutions for this control loop
+    TYPE(HISTORY_TYPE), POINTER :: HISTORY !<A pointer to the history file for this control loop.
   END TYPE CONTROL_LOOP_TYPE  
   
   !
@@ -1737,6 +1768,13 @@ MODULE TYPES
     TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the problem solution.
   END TYPE PROBLEM_TIME_DATA_TYPE
 
+  TYPE PROBLEM_EQUATIONS_ADD_TYPE
+    INTEGER(INTG), ALLOCATABLE :: CONTROL_LOOP_IDENTIFIER(:) !<The control loop identifier of the next equations set to add
+    INTEGER(INTG) :: SOLUTION_INDEX !<The solution index for the next equations set to add.
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET_TO_ADD !<The next equations set to add to the solution
+    INTEGER(INTG) :: EQUATIONS_SET_ADDED_INDEX !<The index of the last successfully added equations set
+  END TYPE PROBLEM_EQUATIONS_ADD_TYPE
+  
   !>Contains information for a problem.
   TYPE PROBLEM_TYPE
     INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the problem. The user number must be unique.
@@ -1749,9 +1787,9 @@ MODULE TYPES
     INTEGER(INTG) :: SUBTYPE !<The problem specification subtype identifier
     
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop informaton for the problem.
-    
-    INTEGER(INTG) :: NUMBER_OF_SOLUTIONS !<The number of solutions in the problem.
-    TYPE(SOLUTION_PTR_TYPE), ALLOCATABLE :: SOLUTIONS(:) !<A pointer to the solution information for the problem.
+    TYPE(PROBLEM_EQUATIONS_ADD_TYPE), POINTER :: EQUATIONS_TO_ADD !<A pointer to the equations set information to be added to the problem.
+    !INTEGER(INTG) :: NUMBER_OF_SOLUTIONS !<The number of solutions in the problem.
+    !TYPE(SOLUTION_PTR_TYPE), ALLOCATABLE :: SOLUTIONS(:) !<A pointer to the solution information for the problem.
   END TYPE PROBLEM_TYPE
   
   !>A buffer type to allow for an array of pointers to a PROBLEM_TYPE \see TYPES:PROBLEM_TYPE

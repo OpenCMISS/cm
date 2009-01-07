@@ -47,6 +47,8 @@ MODULE CONTROL_LOOP_ROUTINES
   USE ISO_VARYING_STRING
   USE KINDS
   USE PROBLEM_CONSTANTS
+  USE SOLUTIONS_ROUTINES
+  USE SOLVER_ROUTINES
   USE STRINGS
   USE TYPES
 
@@ -56,17 +58,141 @@ MODULE CONTROL_LOOP_ROUTINES
 
   !Module parameters
 
+  !> \addtogroup CONTROL_LOOP_ROUTINES_ControlLoopIdentifiers CONTROL_LOOP_ROUTINES::ControlLoopIdentifiers
+  !> \brief The linearity type parameters
+  !> \see PROBLEM_ROUTINES
+  !>@{
+  INTEGER(INTG), PARAMETER :: CONTROL_LOOP_NODE=0 !<The identifier for a each "leaf" node in a control loop. \see CONTROL_LOOP_ROUTINES_ControlLoopIdentifiers,CONTROL_LOOP_ROUTINES
+  !>@}
+  
   !Module types
 
   !Module variables
 
   !Interfaces
 
-  PUBLIC CONTROL_LOOP_FINALISE,CONTROL_LOOP_INITIALISE,CONTROL_LOOP_ITERATIONS_SET,CONTROL_LOOP_MAXIMUM_ITERATIONS_SET, &
-    & CONTROL_LOOP_NUMBER_SUB_LOOPS_GET,CONTROL_LOOP_NUMBER_SUB_LOOPS_SET,CONTROL_LOOP_SUB_LOOP_GET,CONTROL_LOOP_TIMES_SET, &
-    & CONTROL_LOOP_TYPE_SET
+  !>Returns the specified control loop as indexed by the control loop identifier from the control loop root.
+  INTERFACE CONTROL_LOOP_GET
+    MODULE PROCEDURE CONTROL_LOOP_GET_0
+    MODULE PROCEDURE CONTROL_LOOP_GET_1
+  END INTERFACE !CONTROL_LOOP_GET
+
+  PUBLIC CONTROL_LOOP_NODE
+
+  PUBLIC CONTROL_LOOP_CREATE_FINISH,CONTROL_LOOP_CREATE_START,CONTROL_LOOP_DESTROY,CONTROL_LOOP_GET,CONTROL_LOOP_ITERATIONS_SET, &
+    & CONTROL_LOOP_MAXIMUM_ITERATIONS_SET,CONTROL_LOOP_NUMBER_SUB_LOOPS_GET,CONTROL_LOOP_NUMBER_SUB_LOOPS_SET, &
+    & CONTROL_LOOP_SUB_LOOP_GET,CONTROL_LOOP_SOLUTIONS_DESTROY,CONTROL_LOOP_SOLUTIONS_GET,CONTROL_LOOP_SOLVER_DESTROY, &
+    & CONTROL_LOOP_TIMES_SET,CONTROL_LOOP_TYPE_SET
 
 CONTAINS
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finish the process of creating a control loop
+  RECURSIVE SUBROUTINE CONTROL_LOOP_CREATE_FINISH(CONTROL_LOOP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to finish.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: loop_idx
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP2
+    
+    CALL ENTERS("CONTROL_LOOP_CREATE_FINISH",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
+        CALL FLAG_ERROR("Control loop has already been finished.",ERR,ERROR,*999)
+      ELSE
+        !Finish the sub-loops first
+        IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS>0) THEN
+          DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
+            CONTROL_LOOP2=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
+            CALL CONTROL_LOOP_CREATE_FINISH(CONTROL_LOOP2,ERR,ERROR,*999)
+          ENDDO !loop_idx
+        ENDIF
+        !Finish this control loop
+        CONTROL_LOOP%CONTROL_LOOP_FINISHED=.TRUE.
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("CONTROL_LOOP_CREATE_FINISH")
+    RETURN
+999 CALL ERRORS("CONTROL_LOOP_CREATE_FINISH",ERR,ERROR)
+    CALL EXITS("CONTROL_LOOP_CREATE_FINISH")
+    RETURN 1
+  END SUBROUTINE CONTROL_LOOP_CREATE_FINISH
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the process of creating a control loop for a problem.
+  SUBROUTINE CONTROL_LOOP_CREATE_START(PROBLEM,CONTROL_LOOP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to initialise the control for.
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<On exit, a pointer to the control loop. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+
+    CALL ENTERS("CONTROL_LOOP_CREATE_START",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(PROBLEM)) THEN
+      IF(ASSOCIATED(CONTROL_LOOP)) THEN
+        CALL FLAG_ERROR("Control loop is already associated.",ERR,ERROR,*998)
+      ELSE
+        NULLIFY(CONTROL_LOOP)
+        CALL CONTROL_LOOP_INITIALISE(PROBLEM,ERR,ERROR,*999)
+        CONTROL_LOOP=>PROBLEM%CONTROL_LOOP
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Problem is not associated",ERR,ERROR,*998)
+    ENDIF
+              
+    CALL EXITS("CONTROL_LOOP_CREATE_START")
+    RETURN
+999 CALL CONTROL_LOOP_FINALISE(PROBLEM%CONTROL_LOOP,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("CONTROL_LOOP_CREATE_START",ERR,ERROR)
+    CALL EXITS("CONTROL_LOOP_CREATE_START")
+    RETURN 1
+  END SUBROUTINE CONTROL_LOOP_CREATE_START
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroy a control loop
+  SUBROUTINE CONTROL_LOOP_DESTROY(CONTROL_LOOP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to destroy.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+   
+    CALL ENTERS("CONTROL_LOOP_DESTROY",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      CALL CONTROL_LOOP_FINALISE(CONTROL_LOOP,ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("CONTROL_LOOP_DESTROY")
+    RETURN
+999 CALL ERRORS("CONTROL_LOOP_DESTROY",ERR,ERROR)
+    CALL EXITS("CONTROL_LOOP_DESTROY")
+    RETURN 1
+  END SUBROUTINE CONTROL_LOOP_DESTROY
 
   !
   !================================================================================================================================
@@ -80,10 +206,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: loop_idx,solution_idx
+    INTEGER(INTG) :: loop_idx
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP2
-    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION
-
+ 
     CALL ENTERS("CONTROL_LOOP_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
@@ -96,13 +221,7 @@ CONTAINS
         DEALLOCATE(CONTROL_LOOP%SUB_LOOPS)
       ENDIF
       !Finalise any solutions
-      IF(CONTROL_LOOP%NUMBER_OF_SOLUTIONS>0) THEN
-        DO solution_idx=1,CONTROL_LOOP%NUMBER_OF_SOLUTIONS
-          SOLUTION=>CONTROL_LOOP%SOLUTIONS(solution_idx)%PTR
-          CALL SOLUTION_FINALISE(SOLUTION,ERR,ERROR,*999)
-        ENDDO !solution_idx
-        DEALLOCATE(CONTROL_LOOP%SOLUTIONS)
-      ENDIF
+      IF(ASSOCIATED(CONTROL_LOOP%SOLUTIONS)) CALL SOLUTIONS_DESTROY(CONTROL_LOOP%SOLUTIONS,ERR,ERROR,*999)
       !Now finalise this control loop
       CALL CONTROL_LOOP_SIMPLE_FINALISE(CONTROL_LOOP%SIMPLE_LOOP,ERR,ERROR,*999)
       CALL CONTROL_LOOP_FIXED_FINALISE(CONTROL_LOOP%FIXED_LOOP,ERR,ERROR,*999)
@@ -118,6 +237,7 @@ CONTAINS
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_FINALISE
 
+  !
   !================================================================================================================================
   !
 
@@ -150,7 +270,7 @@ CONTAINS
         NULLIFY(PROBLEM%CONTROL_LOOP%TIME_LOOP)
         NULLIFY(PROBLEM%CONTROL_LOOP%WHILE_LOOP)
         PROBLEM%CONTROL_LOOP%NUMBER_OF_SUB_LOOPS=0
-        PROBLEM%CONTROL_LOOP%NUMBER_OF_SOLUTIONS=0
+        NULLIFY(PROBLEM%CONTROL_LOOP%SOLUTIONS)
         CALL CONTROL_LOOP_SIMPLE_INITIALISE(PROBLEM%CONTROL_LOOP,ERR,ERROR,*999)
       ENDIF
     ELSE
@@ -190,6 +310,112 @@ CONTAINS
     CALL EXITS("CONTROL_LOOP_FIXED_FINALISE")
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_FIXED_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the specified control loop as indexed by the control loop identifier from the control loop root.
+  SUBROUTINE CONTROL_LOOP_GET_0(CONTROL_LOOP_ROOT,CONTROL_LOOP_IDENTIFIER,CONTROL_LOOP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP_ROOT !<A pointer to the control loop to root
+    INTEGER(INTG), INTENT(IN) :: CONTROL_LOOP_IDENTIFIER !<The control loop identifier
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<On exit, the specified control loop
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("CONTROL_LOOP_GET_0",ERR,ERROR,*999)
+
+    CALL CONTROL_LOOP_GET_1(CONTROL_LOOP_ROOT,(/CONTROL_LOOP_IDENTIFIER/),CONTROL_LOOP,ERR,ERROR,*999)
+       
+    CALL EXITS("CONTROL_LOOP_GET_0")
+    RETURN
+999 CALL ERRORS("CONTROL_LOOP_GET_0",ERR,ERROR)
+    CALL EXITS("CONTROL_LOOP_GET_0")
+    RETURN 1
+  END SUBROUTINE CONTROL_LOOP_GET_0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the specified control loop as indexed by the control loop identifier from the control loop root.
+  SUBROUTINE CONTROL_LOOP_GET_1(CONTROL_LOOP_ROOT,CONTROL_LOOP_IDENTIFIER,CONTROL_LOOP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP_ROOT !<A pointer to the control loop to root
+    INTEGER(INTG), INTENT(IN) :: CONTROL_LOOP_IDENTIFIER(:) !<The control loop identifier
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<On exit, the specified control loop. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: control_loop_idx
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+ 
+    CALL ENTERS("CONTROL_LOOP_GET_1",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(CONTROL_LOOP_ROOT)) THEN
+      !IF(CONTROL_LOOP_ROOT%CONTROL_LOOP_FINISHED) THEN
+        IF(ASSOCIATED(CONTROL_LOOP)) THEN
+          CALL FLAG_ERROR("Control loop is already associated.",ERR,ERROR,*998)
+        ELSE
+          NULLIFY(CONTROL_LOOP)
+          IF(COUNT(CONTROL_LOOP_IDENTIFIER==CONTROL_LOOP_NODE)==1) THEN
+            IF(CONTROL_LOOP_IDENTIFIER(SIZE(CONTROL_LOOP_IDENTIFIER,1))==CONTROL_LOOP_NODE) THEN
+              CONTROL_LOOP=>CONTROL_LOOP_ROOT
+              DO control_loop_idx=1,SIZE(CONTROL_LOOP_IDENTIFIER,1)
+                IF(CONTROL_LOOP_IDENTIFIER(control_loop_idx)==CONTROL_LOOP_NODE) THEN
+                  EXIT
+                ELSE
+                  IF(CONTROL_LOOP_IDENTIFIER(control_loop_idx)>0.AND. &
+                    & CONTROL_LOOP_IDENTIFIER(control_loop_idx)<=CONTROL_LOOP%NUMBER_OF_SUB_LOOPS) THEN
+                    CONTROL_LOOP=>CONTROL_LOOP%SUB_LOOPS(CONTROL_LOOP_IDENTIFIER(control_loop_idx))%PTR
+                    IF(.NOT.ASSOCIATED(CONTROL_LOOP)) THEN
+                      LOCAL_ERROR="Control sub loop number "// &
+                        & TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP_IDENTIFIER(control_loop_idx),"*",ERR,ERROR))// &
+                        & " at identifier index "//TRIM(NUMBER_TO_VSTRING(control_loop_idx,"*",ERR,ERROR))// &
+                        & " is not associated."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    LOCAL_ERROR="Invalid control loop identifier. The identifier at index "// &
+                      & TRIM(NUMBER_TO_VSTRING(control_loop_idx,"*",ERR,ERROR))//" is "// &
+                      & TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP_IDENTIFIER(control_loop_idx),"*",ERR,ERROR))// &
+                      & ". The identifier must be between 1 and "// &
+                      & TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS,"*",ERR,ERROR))//"."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
+                ENDIF
+              ENDDO !control_loop_idx
+            ELSE
+              LOCAL_ERROR="Invalid control loop identifier. The last value in the identifier vector is "// &
+                & TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP_IDENTIFIER(SIZE(CONTROL_LOOP_IDENTIFIER,1)),"*",ERR,ERROR))// &
+                & " and it should be "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP_NODE,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="Invalid control loop identifier. The control loop identifier has "// &
+              & TRIM(NUMBER_TO_VSTRING(COUNT(CONTROL_LOOP_IDENTIFIER==CONTROL_LOOP_NODE),"*",ERR,ERROR))// &
+              & " control loop node identifiers and it should only have 1."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ENDIF
+      !ELSE
+      !  CALL FLAG_ERROR("Control loop root has not been finished.",ERR,ERROR,*998)
+      !ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop root is not associated.",ERR,ERROR,*998)
+    ENDIF
+       
+    CALL EXITS("CONTROL_LOOP_GET_1")
+    RETURN
+999 NULLIFY(CONTROL_LOOP)
+998 CALL ERRORS("CONTROL_LOOP_GET_1",ERR,ERROR)
+    CALL EXITS("CONTROL_LOOP_GET_1")
+    RETURN 1
+  END SUBROUTINE CONTROL_LOOP_GET_1
 
   !
   !================================================================================================================================
@@ -428,7 +654,7 @@ CONTAINS
               DO loop_idx=CONTROL_LOOP%NUMBER_OF_SUB_LOOPS+1,NUMBER_OF_SUB_LOOPS
                 ALLOCATE(CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR,STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sub loops control loop.",ERR,ERROR,*999)
-                NULLIFY(CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%PROBLEM)
+                CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%PROBLEM=>CONTROL_LOOP%PROBLEM
                 CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%PARENT_LOOP=>CONTROL_LOOP
                 CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%CONTROL_LOOP_FINISHED=.FALSE.
                 CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%LOOP_TYPE=PROBLEM_CONTROL_SIMPLE_TYPE
@@ -438,7 +664,7 @@ CONTAINS
                 NULLIFY(CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%TIME_LOOP)
                 NULLIFY(CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%WHILE_LOOP)
                 CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%NUMBER_OF_SUB_LOOPS=0
-                CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%NUMBER_OF_SOLUTIONS=0
+                NULLIFY(CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%SOLUTIONS)
                 CALL CONTROL_LOOP_SIMPLE_INITIALISE(CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR,ERR,ERROR,*999)
               ENDDO !loop_idx
             ELSE
@@ -532,6 +758,128 @@ CONTAINS
     CALL EXITS("CONTROL_LOOP_SIMPLE_INITIALISE")
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_SIMPLE_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Recursively destroys the solutions for a control loop and all sub control loops.
+  RECURSIVE SUBROUTINE CONTROL_LOOP_SOLUTIONS_DESTROY(CONTROL_LOOP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to destroy the solutions for.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: loop_idx
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP2
+
+    CALL ENTERS("CONTROL_LOOP_SOLUTIONS_DESTROY",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      !Destroy the solutions in any sub control loops first
+      IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS>0) THEN
+        DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
+          CONTROL_LOOP2=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
+          CALL CONTROL_LOOP_SOLUTIONS_DESTROY(CONTROL_LOOP2,ERR,ERROR,*999)
+        ENDDO !loop_idx
+      ENDIF
+      !Destroy the solutions in this control loop
+      IF(ASSOCIATED(CONTROL_LOOP%SOLUTIONS)) CALL SOLUTIONS_DESTROY(CONTROL_LOOP%SOLUTIONS,ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("CONTROL_LOOP_SOLUTIONS_DESTROY")
+    RETURN
+999 CALL ERRORS("CONTROL_LOOP_SOLUTIONS_DESTROY",ERR,ERROR)
+    CALL EXITS("CONTROL_LOOP_SOLUTIONS_DESTROY")
+    RETURN 1
+  END SUBROUTINE CONTROL_LOOP_SOLUTIONS_DESTROY
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns a pointer to the solutions for a control loop.
+  RECURSIVE SUBROUTINE CONTROL_LOOP_SOLUTIONS_GET(CONTROL_LOOP,SOLUTIONS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to get the solutions for.
+    TYPE(SOLUTIONS_TYPE), POINTER :: SOLUTIONS !<On exit, a pointer to the control loop solutions. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("CONTROL_LOOP_SOLUTIONS_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(ASSOCIATED(SOLUTIONS)) THEN
+        CALL FLAG_ERROR("Solutions is already associated.",ERR,ERROR,*999)
+      ELSE
+        SOLUTIONS=>CONTROL_LOOP%SOLUTIONS
+        IF(.NOT.ASSOCIATED(SOLUTIONS)) CALL FLAG_ERROR("Solutions is not associated.",ERR,ERROR,*999)
+      ENDIF      
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("CONTROL_LOOP_SOLUTIONS_GET")
+    RETURN
+999 CALL ERRORS("CONTROL_LOOP_SOLUTIONS_GET",ERR,ERROR)
+    CALL EXITS("CONTROL_LOOP_SOLUTIONS_GET")
+    RETURN 1
+  END SUBROUTINE CONTROL_LOOP_SOLUTIONS_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Recursively destroys the solver for a control loop and all sub control loops. \todo Create solutions_solver_destory and call?
+  RECURSIVE SUBROUTINE CONTROL_LOOP_SOLVER_DESTROY(CONTROL_LOOP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to destroy the solver for.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: loop_idx,solution_idx
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP2
+    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+ 
+    CALL ENTERS("CONTROL_LOOP_SOLVER_DESTROY",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      !Destroy the solvers in any sub control loops first
+      IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS>0) THEN
+        DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
+          CONTROL_LOOP2=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
+          CALL CONTROL_LOOP_SOLVER_DESTROY(CONTROL_LOOP2,ERR,ERROR,*999)
+        ENDDO !loop_idx
+      ENDIF
+      !Destroy the solutions in this control loop
+      IF(ASSOCIATED(CONTROL_LOOP%SOLUTIONS)) THEN
+        DO solution_idx=1,CONTROL_LOOP%SOLUTIONS%NUMBER_OF_SOLUTIONS
+          SOLUTION=>CONTROL_LOOP%SOLUTIONS%SOLUTIONS(solution_idx)%PTR
+          IF(ASSOCIATED(SOLUTION)) THEN
+            SOLVER=>SOLUTION%SOLVER
+            IF(ASSOCIATED(SOLVER)) CALL SOLVER_DESTROY(SOLVER,ERR,ERROR,*999)
+          ELSE
+            CALL FLAG_ERROR("Solution is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ENDDO !solution_idx
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("CONTROL_LOOP_SOLVER_DESTROY")
+    RETURN
+999 CALL ERRORS("CONTROL_LOOP_SOLVER_DESTROY",ERR,ERROR)
+    CALL EXITS("CONTROL_LOOP_SOLVER_DESTROY")
+    RETURN 1
+  END SUBROUTINE CONTROL_LOOP_SOLVER_DESTROY
 
   !
   !================================================================================================================================

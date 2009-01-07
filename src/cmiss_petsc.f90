@@ -677,6 +677,13 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE TSDestroy
 
+    SUBROUTINE TSGetApplicationContext(ts,userP,ierr)
+      USE TYPES
+      TS ts
+      TYPE(SOLVER_TYPE), POINTER :: userP
+      PetscInt ierr
+    END SUBROUTINE TSGetApplicationContext
+
     SUBROUTINE TSMonitorSet(ts,mfunction,mctx,monitordestroy,ierr)
       USE TYPES
       TS ts
@@ -685,6 +692,20 @@ MODULE CMISS_PETSC
       PetscInt monitordestroy
       PetscInt ierr
     END SUBROUTINE TSMonitorSet
+
+    SUBROUTINE TSSetApplicationContext(ts,userP,ierr)
+      USE TYPES
+      TS ts
+      TYPE(SOLVER_TYPE), POINTER :: userP
+      PetscInt ierr
+    END SUBROUTINE TSSetApplicationContext
+
+    SUBROUTINE TSSetDuration(ts,maxsteps,maxtime,ierr)
+      TS ts
+      PetscInt maxsteps
+      PetscReal maxtime
+      PetscInt ierr
+    END SUBROUTINE TSSetDuration
 
     SUBROUTINE TSSetFromOptions(ts,ierr)
       TS ts
@@ -1007,6 +1028,10 @@ MODULE CMISS_PETSC
   PUBLIC PETSC_TS_LINEAR,PETSC_TS_NONLINEAR
 
   PUBLIC PETSC_SUNDIALS_ADAMS,PETSC_SUNDIALS_BDF,PETSC_SUNDIALS_MODIFIED_GS,PETSC_SUNDIALS_CLASSICAL_GS
+
+  PUBLIC PETSC_TSCREATE,PETSC_TSDESTROY,PETSC_TSFINALISE,PETSC_TSINITIALISE,PETSC_TSMONITORSET, &
+    & PETSC_TSSETDURATION,PETSC_TSSETFROMOPTIONS,PETSC_TSSETINITIALTIMESTEP,PETSC_TSSETMATRICES, &
+    & PETSC_TSSETPROBLEMTYPE,PETSC_TSSETRHSFUNCTION,PETSC_TSSETTIMESTEP,PETSC_TSSETTYPE,PETSC_TSSOLVE,PETSC_TSSTEP
   
   PUBLIC PETSC_ERRORHANDLING_SET_OFF,PETSC_ERRORHANDLING_SET_ON
   
@@ -3663,6 +3688,41 @@ CONTAINS
   !
   !================================================================================================================================
   !
+    
+!  !>Buffer routine to the PETSc TSGetApplicationContext routine.
+!  SUBROUTINE PETSC_TSGETAPPLICATIONCONTEXT(TS_,USERP,ERR,ERROR,*)
+
+!    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to get the application context from
+!    TYPE(SOLVER_TYPE), POINTER :: USERP !<On exit, a pointer to the user application context
+!    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+!    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+!    !Local Variables
+
+!    CALL ENTERS("PETSC_TSSETAPPLICATIONCONTEXT",ERR,ERROR,*999)
+
+!    IF(ASSOCIATED(USERP)) THEN
+!      CALL FLAG_ERROR("User application pointer is already associated.",ERR,ERROR,*999)
+!    ELSE
+!      NULLIFY(USERP)
+!      CALL TSGetApplicationContext(TS_%TS_,USERP,ERR)
+!      IF(ERR/=0) THEN
+!        IF(PETSC_HANDLE_ERROR) THEN
+!          CHKERRQ(ERR)
+!        ENDIF
+!        CALL FLAG_ERROR("PETSc error in TSGetApplicationContext",ERR,ERROR,*999)
+!      ENDIF
+!    ENDIF
+    
+!    CALL EXITS("PETSC_TSGETAPPLICATIONCONTEXT")
+!    RETURN
+!999 CALL ERRORS("PETSC_TSGETAPPLICATIONCONTEXT",ERR,ERROR)
+!    CALL EXITS("PETSC_TSGETAPPLICATIONCONTEXT")
+!    RETURN 1
+!  END SUBROUTINE PETSC_TSGETAPPLICATIONCONTEXT
+    
+  !
+  !================================================================================================================================
+  !
 
   !>Buffer routine to the PETSc TSMonitorSet routine.
   SUBROUTINE PETSC_TSMONITORSET(TS_,MFUNCTION,CTX,ERR,ERROR,*)
@@ -3691,6 +3751,67 @@ CONTAINS
     CALL EXITS("PETSC_TSMONITORSET")
     RETURN 1
   END SUBROUTINE PETSC_TSMONITORSET
+    
+  !
+  !================================================================================================================================
+  !
+    
+!  !>Buffer routine to the PETSc TSSetApplicationContext routine.
+!  SUBROUTINE PETSC_TSSETAPPLICATIONCONTEXT(TS_,USERP,ERR,ERROR,*)
+
+!    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to set the application context for
+!    TYPE(SOLVER_TYPE), POINTER :: USERP !<A pointer to the user application context
+!    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+!    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+!    !Local Variables
+
+!    CALL ENTERS("PETSC_TSSETAPPLICATIONCONTEXT",ERR,ERROR,*999)
+
+!    CALL TSSetApplicationContext(TS_%TS_,USERP,ERR)
+!    IF(ERR/=0) THEN
+!      IF(PETSC_HANDLE_ERROR) THEN
+!        CHKERRQ(ERR)
+!      ENDIF
+!      CALL FLAG_ERROR("PETSc error in TSSetApplicationContext",ERR,ERROR,*999)
+!    ENDIF
+    
+!    CALL EXITS("PETSC_TSSETAPPLICATIONCONTEXT")
+!    RETURN
+!999 CALL ERRORS("PETSC_TSSETAPPLICATIONCONTEXT",ERR,ERROR)
+!    CALL EXITS("PETSC_TSSETAPPLICATIONCONTEXT")
+!    RETURN 1
+!  END SUBROUTINE PETSC_TSSETAPPLICATIONCONTEXT
+    
+  !
+  !================================================================================================================================
+  !
+    
+  !>Buffer routine to the PETSc TSSetDuration routine.
+  SUBROUTINE PETSC_TSSETDURATION(TS_,MAX_STEPS,MAX_TIME,ERR,ERROR,*)
+
+    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to set from the options
+    INTEGER(INTG), INTENT(IN) :: MAX_STEPS !<The maximum number of steps to use
+    REAL(DP), INTENT(IN) :: MAX_TIME !<The maximum time to iteration to
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_TSSETDURATION",ERR,ERROR,*999)
+
+    CALL TSSetDuration(TS_%TS_,MAX_STEPS,MAX_TIME,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in TSSetDuration",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_TSSETDURATION")
+    RETURN
+999 CALL ERRORS("PETSC_TSSETDURATION",ERR,ERROR)
+    CALL EXITS("PETSC_TSSETDURATION")
+    RETURN 1
+  END SUBROUTINE PETSC_TSSETDURATION
     
   !
   !================================================================================================================================

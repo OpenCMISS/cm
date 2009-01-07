@@ -49,7 +49,6 @@ MODULE SOLVER_ROUTINES
   USE CONSTANTS
   USE DISTRIBUTED_MATRIX_VECTOR
   USE EQUATIONS_SET_CONSTANTS
-  !USE EQUATIONS_SET_ROUTINES
   USE FIELD_ROUTINES
   USE KINDS
   USE INPUT_OUTPUT
@@ -143,6 +142,7 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NONLINEAR_QUADRATIC_LINESEARCH=3 !<Quadratic search for Newton line search nonlinear solves \see SOLVER_ROUTINES_NonlinearLineSearchTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NONLINEAR_CUBIC_LINESEARCH=4!<Cubic search for Newton line search nonlinear solves \see SOLVER_ROUTINES_NonlinearLineSearchTypes,SOLVER_ROUTINES
   !>@}
+  
   !> \addtogroup SOLVER_ROUTINES_JacobianCalculationTypes SOLVER_ROUTINES::JacobianCalculationTypes
   !> \brief The Jacobian calculation types for a nonlinear solver 
   !> \see SOLVER_ROUTINES
@@ -150,6 +150,31 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NONLINEAR_JACOBIAN_NOT_CALCULATED=1 !<The Jacobian values will not be calculated for the nonlinear equations set \see SOLVER_ROUTINES_JacobianCalculationTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NONLINEAR_JACOBIAN_ANALTYIC_CALCULATED=2 !<The Jacobian values will be calculated analytically for the nonlinear equations set \see SOLVER_ROUTINES_JacobianCalculationTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NONLINEAR_JACOBIAN_FD_CALCULATED=3 !<The Jacobian values will be calcualted using finite differences for the nonlinear equations set \see SOLVER_ROUTINES_JacobianCalculationTypes,SOLVER_ROUTINES
+  !>@}  
+
+  !> \addtogroup SOLVER_ROUTINES_TimeIntegrationTypes SOLVER_ROUTINES::TimeIntegrationTypes
+  !> \brief The time integration types for a time integration solver 
+  !> \see SOLVER_ROUTINES
+  !>@{
+  INTEGER(INTG), PARAMETER :: SOLVER_EULER_TIME_INTEGRATION=1 !<Euler time integration \see SOLVER_ROUTINES_TimeIntegrationTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_BACKWARD_EULER_TIME_INTEGRATION=2 !<Backward Euler time integration \see SOLVER_ROUTINES_TimeIntegrationTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_CRANK_NICHOLSON_TIME_INTEGRATION=3 !<Crank-Nicholson time integration \see SOLVER_ROUTINES_TimeIntegrationTypes,SOLVER_ROUTINES
+  !>@}
+  
+  !> \addtogroup SOLVER_ROUTINES_TimeLinearityTypes SOLVER_ROUTINES::TimeLinearityTypes
+  !> \brief The time linearity types for a time integration solver 
+  !> \see SOLVER_ROUTINES
+  !>@{
+  INTEGER(INTG), PARAMETER :: SOLVER_LINEAR_TIME_INTEGRATION=1 !<Time integration RHS is linear \see SOLVER_ROUTINES_TimeLinearityTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_NONLINEAR_TIME_INTEGRATION=2 !<Time integration RHS is nonlinear \see SOLVER_ROUTINES_TimeLinearityTypes,SOLVER_ROUTINES
+  !>@}
+  
+  !> \addtogroup SOLVER_ROUTINES_TimeDependenceTypes SOLVER_ROUTINES::TimeDependenceTypes
+  !> \brief The time dependence types for a time integration solver 
+  !> \see SOLVER_ROUTINES
+  !>@{
+  INTEGER(INTG), PARAMETER :: SOLVER_STATIC_RHS_TIME_INTEGRATION=1 !<Time integration RHS does not depend on time \see SOLVER_ROUTINES_TimeDependenceTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DYNAMIC_RHS_TIME_INTEGRATION=2 !<Time integration RHS varies with time \see SOLVER_ROUTINES_TimeDependenceTypes,SOLVER_ROUTINES
   !>@}
   
   !> \addtogroup SOLVER_ROUTINES_OutputTypes SOLVER_ROUTINES::OutputTypes
@@ -246,6 +271,8 @@ MODULE SOLVER_ROUTINES
     & SOLVER_NONLINEAR_JACOBIAN_FD_CALCULATED
 
   PUBLIC SOLVER_NONLINEAR_JACOBIAN_CALCULATION_TYPE_SET,SOLVER_NONLINEAR_MONITOR
+
+  PUBLIC SOLVER_TIME_INTEGRATION_MONITOR
   
   PUBLIC SOLVER_VARIABLES_UPDATE
   
@@ -319,14 +346,18 @@ CONTAINS
     
     CALL ENTERS("SOLVER_CREATE_START",ERR,ERROR,*998)
 
-    IF(ASSOCIATED(SOLUTION)) THEN             
-      IF(ASSOCIATED(SOLVER)) THEN
-        CALL FLAG_ERROR("Solver is already associated.",ERR,ERROR,*998)
+    IF(ASSOCIATED(SOLUTION)) THEN
+      IF(SOLUTION%SOLUTION_FINISHED) THEN
+        IF(ASSOCIATED(SOLVER)) THEN
+          CALL FLAG_ERROR("Solver is already associated.",ERR,ERROR,*998)
+        ELSE
+          NULLIFY(SOLVER)
+          !Initialise the solver
+          CALL SOLVER_INITIALISE(SOLUTION,SOLVE_TYPE,ERR,ERROR,*999)
+          SOLVER=>SOLUTION%SOLVER
+        ENDIF
       ELSE
-        NULLIFY(SOLVER)
-        !Initialise the solver
-        CALL SOLVER_INITIALISE(SOLUTION,SOLVE_TYPE,ERR,ERROR,*999)
-        SOLVER=>SOLUTION%SOLVER
+        CALL FLAG_ERROR("Solution has not been finished.",ERR,ERROR,*998)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Solution is not associated.",ERR,ERROR,*998)
@@ -4551,7 +4582,8 @@ CONTAINS
 
     CALL ENTERS("SOLVER_TIME_INTEGRATION_FINALISE",ERR,ERROR,*999)
 
-    IF(ASSOCIATED(TIME_INTEGRATION_SOLVER)) THEN        
+    IF(ASSOCIATED(TIME_INTEGRATION_SOLVER)) THEN
+      CALL PETSC_TSFINALISE(TIME_INTEGRATION_SOLVER%TS,ERR,ERROR,*999)
       DEALLOCATE(TIME_INTEGRATION_SOLVER)
     ENDIF
         
@@ -4594,6 +4626,13 @@ CONTAINS
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver time integration solver.",ERR,ERROR,*999)
               SOLVER%TIME_INTEGRATION_SOLVER%SOLVER=>SOLVER
               SOLVER%TIME_INTEGRATION_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
+              SOLVER%TIME_INTEGRATION_SOLVER%TIME_INTEGRATION_TYPE=SOLVER_EULER_TIME_INTEGRATION
+              SOLVER%TIME_INTEGRATION_SOLVER%LINEARITY=SOLVER_LINEAR_TIME_INTEGRATION
+              SOLVER%TIME_INTEGRATION_SOLVER%TIME_DEPENDENCE=SOLVER_STATIC_RHS_TIME_INTEGRATION
+              SOLVER%TIME_INTEGRATION_SOLVER%START_TIME=0.0_DP
+              SOLVER%TIME_INTEGRATION_SOLVER%STOP_TIME=1.0_DP
+              SOLVER%TIME_INTEGRATION_SOLVER%TIME_INCREMENT=0.01_DP
+              CALL PETSC_TSINITIALISE(SOLVER%TIME_INTEGRATION_SOLVER%TS,ERR,ERROR,*999)
             ELSE
               LOCAL_ERROR="The number of solver matrices in the solution mapping of "// &
                 & TRIM(NUMBER_TO_VSTRING(SOLUTION_MAPPING%NUMBER_OF_SOLVER_MATRICES,"*",ERR,ERROR))// &
@@ -4686,6 +4725,127 @@ CONTAINS
     
   END SUBROUTINE SOLVER_TIME_INTEGRATION_SOLVE
         
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the time integration times for a time integration solver.
+  SUBROUTINE SOLVER_TIME_INTEGRATION_TIMES_SET(SOLVER,START_TIME,STOP_TIME,TIME_INCREMENT,ERR,ERROR,*)
+
+   !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the time integration solver to set the times for
+    REAL(DP), INTENT(IN) :: START_TIME !<The start time
+    REAL(DP), INTENT(IN) :: STOP_TIME !<The stop time
+    REAL(DP), INTENT(IN) :: TIME_INCREMENT !<The (initial) time increment
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(TIME_INTEGRATION_SOLVER_TYPE), POINTER :: TIME_INTEGRATION_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("SOLVER_TIME_INTEGRATION_TIMES_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      !Note: do not check for finished here as we may wish to modify this for multiple solves.
+      IF(SOLVER%SOLVE_TYPE==SOLVER_TIME_INTEGRATION_TYPE) THEN
+        TIME_INTEGRATION_SOLVER=>SOLVER%TIME_INTEGRATION_SOLVER
+        IF(ASSOCIATED(TIME_INTEGRATION_SOLVER)) THEN
+          IF(ABS(TIME_INCREMENT)<=ZERO_TOLERANCE) THEN
+            LOCAL_ERROR="The specified time increment of "//TRIM(NUMBER_TO_VSTRING(TIME_INCREMENT,"*",ERR,ERROR))// &
+              & " is invalid. The time increment must not be zero."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ELSE
+            IF(TIME_INCREMENT>0.0_DP) THEN
+              IF(STOP_TIME<=START_TIME) THEN
+                LOCAL_ERROR="The specified stop time of "//TRIM(NUMBER_TO_VSTRING(STOP_TIME,"*",ERR,ERROR))// &
+                  & " is incompatiable with a start time of "//TRIM(NUMBER_TO_VSTRING(START_TIME,"*",ERR,ERROR))// &
+                  & ". For a positive time increment the stop time must be > than the start time."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              IF(START_TIME<=STOP_TIME) THEN
+                LOCAL_ERROR="The specified start time of "//TRIM(NUMBER_TO_VSTRING(START_TIME,"*",ERR,ERROR))// &
+                  & " is incompatiable with a stop time of "//TRIM(NUMBER_TO_VSTRING(STOP_TIME,"*",ERR,ERROR))// &
+                  & ". For a negative time increment the start time must be > than the stop time."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ENDIF
+            TIME_INTEGRATION_SOLVER%START_TIME=START_TIME
+            TIME_INTEGRATION_SOLVER%STOP_TIME=STOP_TIME
+            TIME_INTEGRATION_SOLVER%TIME_INCREMENT=TIME_INCREMENT
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Time integration solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The specified solver is not a time integration solver.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+     
+    CALL EXITS("SOLVER_TIME_INTEGRATION_TIMES_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_TIME_INTEGRATION_TIMES_SET",ERR,ERROR)
+    CALL EXITS("SOLVER_TIME_INTEGRATION_TIMES_SET")
+    RETURN 1
+  END SUBROUTINE SOLVER_TIME_INTEGRATION_TIMES_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of time integration solver.
+  SUBROUTINE SOLVER_TIME_INTEGRATION_TYPE_SET(SOLVER,TIME_INTEGRATION_TYPE,ERR,ERROR,*)
+
+   !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the time integration solver to set the type for
+    INTEGER(INTG), INTENT(IN) :: TIME_INTEGRATION_TYPE !<The time integration type to set \see SOLVER_ROUTINES_TimeIntegrationTypes,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(TIME_INTEGRATION_SOLVER_TYPE), POINTER :: TIME_INTEGRATION_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("SOLVER_TIME_INTEGRATION_TYPE_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVER_FINISHED) THEN
+        CALL FLAG_ERROR("The solver has already been finished.",ERR,ERROR,*999)
+      ELSE
+        IF(SOLVER%SOLVE_TYPE==SOLVER_TIME_INTEGRATION_TYPE) THEN
+          TIME_INTEGRATION_SOLVER=>SOLVER%TIME_INTEGRATION_SOLVER
+          IF(ASSOCIATED(TIME_INTEGRATION_SOLVER)) THEN
+            SELECT CASE(TIME_INTEGRATION_TYPE)
+            CASE(SOLVER_EULER_TIME_INTEGRATION)
+              TIME_INTEGRATION_SOLVER%TIME_INTEGRATION_TYPE=SOLVER_EULER_TIME_INTEGRATION
+            CASE(SOLVER_BACKWARD_EULER_TIME_INTEGRATION)
+              TIME_INTEGRATION_SOLVER%TIME_INTEGRATION_TYPE=SOLVER_BACKWARD_EULER_TIME_INTEGRATION
+            CASE(SOLVER_CRANK_NICHOLSON_TIME_INTEGRATION)
+              TIME_INTEGRATION_SOLVER%TIME_INTEGRATION_TYPE=SOLVER_CRANK_NICHOLSON_TIME_INTEGRATION
+            CASE DEFAULT
+              LOCAL_ERROR="The specified time integration type of "// &
+                & TRIM(NUMBER_TO_VSTRING(TIME_INTEGRATION_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+          ELSE
+            CALL FLAG_ERROR("Time integration solver is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The specified solver is not a time integration solver.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+     
+    CALL EXITS("SOLVER_TIME_INTEGRATION_TYPE_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_TIME_INTEGRATION_TYPE_SET",ERR,ERROR)
+    CALL EXITS("SOLVER_TIME_INTEGRATION_TYPE_SET")
+    RETURN 1
+  END SUBROUTINE SOLVER_TIME_INTEGRATION_TYPE_SET
+
   !
   !================================================================================================================================
   !

@@ -648,8 +648,10 @@ OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/Poisson_equations_routines.o \
 	$(OBJECT_DIR)/problem_constants.o \
 	$(OBJECT_DIR)/problem_routines.o \
+	$(OBJECT_DIR)/problem_setup_routines.o \
 	$(OBJECT_DIR)/region_routines.o \
 	$(OBJECT_DIR)/solution_mapping_routines.o \
+	$(OBJECT_DIR)/solutions_routines.o \
 	$(OBJECT_DIR)/solver_matrices_routines.o \
 	$(OBJECT_DIR)/solver_routines.o \
 	$(OBJECT_DIR)/strings.o \
@@ -699,7 +701,6 @@ ifeq ($(OPERATING_SYSTEM),aix)
 
    #Need to disable argument list checking for c interface modules to allow for the c->fortran char->integer string conversion
    $(OBJECT_DIR)/timer_c.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
-   $(OBJECT_DIR)/f90c_c.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
 
 endif
 
@@ -811,7 +812,8 @@ $(OBJECT_DIR)/control_loop_routines.o		:	$(MAIN_SOURCE_DIR)/control_loop_routine
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/problem_constants.o \
+	$(OBJECT_DIR)/problem_setup_routines.o \
+	$(OBJECT_DIR)/solutions_routines.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 
@@ -970,10 +972,6 @@ $(OBJECT_DIR)/fluid_mechanics_routines.o	:	$(MAIN_SOURCE_DIR)/fluid_mechanics_ro
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/f90c_c.o	:	$(MAIN_SOURCE_DIR)/f90c_c.c 
-
-$(OBJECT_DIR)/f90c_f.o	:	$(MAIN_SOURCE_DIR)/f90c_f.f90 \
 
 $(OBJECT_DIR)/input_output.o	:	$(MAIN_SOURCE_DIR)/input_output.f90 \
 	$(OBJECT_DIR)/base_routines.o \
@@ -1151,6 +1149,19 @@ $(OBJECT_DIR)/problem_routines.o	:	$(MAIN_SOURCE_DIR)/problem_routines.f90 \
 	$(OBJECT_DIR)/timer_f.o \
 	$(OBJECT_DIR)/types.o
 
+$(OBJECT_DIR)/problem_setup_routines.o	:	$(MAIN_SOURCE_DIR)/problem_setup_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/classical_field_routines.o \
+	$(OBJECT_DIR)/elasticity_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/problem_constants.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/types.o
+
 $(OBJECT_DIR)/region_routines.o	:	$(MAIN_SOURCE_DIR)/region_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/coordinate_routines.o \
@@ -1176,6 +1187,15 @@ $(OBJECT_DIR)/solution_mapping_routines.o	:	$(MAIN_SOURCE_DIR)/solution_mapping_
 	$(OBJECT_DIR)/kinds.o	\
 	$(OBJECT_DIR)/matrix_vector.o	\
 	$(OBJECT_DIR)/problem_constants.o	\
+	$(OBJECT_DIR)/strings.o	\
+	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/solutions_routines.o	:	$(MAIN_SOURCE_DIR)/solutions_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o	\
+	$(OBJECT_DIR)/problem_constants.o \
+	$(OBJECT_DIR)/problem_setup_routines.o	\
 	$(OBJECT_DIR)/strings.o	\
 	$(OBJECT_DIR)/types.o
 
@@ -1214,7 +1234,6 @@ $(OBJECT_DIR)/timer_f.o		:	$(MAIN_SOURCE_DIR)/timer_f.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/f90c_f.o \
 	$(OBJECT_DIR)/iso_varying_string.o
 
 $(OBJECT_DIR)/trees.o		:	$(MAIN_SOURCE_DIR)/trees.f90 \

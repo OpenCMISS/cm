@@ -1288,15 +1288,15 @@ CONTAINS
 
     IF(ASSOCIATED(SOLUTION)) THEN
       IF(SOLUTION%SOLUTION_FINISHED) THEN
-        CALL FLAG_ERROR("Problem solution has already been finished",ERR,ERROR,*999)
-      ELSE
         IF(ASSOCIATED(SOLUTION_MAPPING)) THEN
-          CALL FLAG_ERROR("Solution mapping is already assocaited",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Solution mapping is already associated.",ERR,ERROR,*999)
         ELSE
           NULLIFY(SOLUTION_MAPPING)
           CALL SOLUTION_MAPPING_INITIALISE(SOLUTION,ERR,ERROR,*999)
           SOLUTION_MAPPING=>SOLUTION%SOLUTION_MAPPING
         ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solution has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Solution is not associated",ERR,ERROR,*999)
