@@ -2,7 +2,7 @@
   * \brief How to add support for a programming language
   */
 
-/** \page library_commands Library Commands
+/** \page 9_library_commands Library Commands
 
 \section sect1 OpenCMISS library structure
 

@@ -1,0 +1,352 @@
+/*!
+\page 2_concepts OpenCMISS concepts
+openCMISS has the following top level objects.
+- \subpage basis 
+- \subpage coordinate_systems
+- \subpage regions
+- \subpage problems
+- Computational environments
+- Base system(Diagnostics, I/O etc.)
+.
+\image html openCMISS_topStructure.jpg
+\page basis Basis Functions
+Basis functions are the key item to specify the field approximation/interpolation and the linking of nodes and elements to form a mesh.
+Currently, it has two types: Lagrange-Hermite tensor product and Simplex.
+Lagrange-Hermite tensor product can be further divided into linear to cubic lagrange, cubic and quadratic hermite. 
+It can be arbitrarily collapsed (two or more nodes in the same location) in any one direction or in any two directions to give a degenerate basis.
+Simplex basic functions could contain line, triangular and tetrahedral elements. 
+It could be linear, quadratic or cubic.
+Arbitrary Gaussian quadrature can integrate from 1st to 5th order (3rd  order for lines at the moment).
+Can only have the same order in each direction at the moment.
+Specifying a basis function automatically generates all necessary line and face basis functions as sub-bases of the basis function.
+
+Basis function has the following attributes:
+- User number
+- Global number
+- Family number
+- Finished tag
+- Type
+- Is Hermite
+- Number of XI
+- Number of XI coordinates
+- ...
+.
+\page coordinate_systems Coordinate Systems
+Coordinate system is a system for assigning an n-tuple of numbers or scalars to each point in an n-dimensional space. 
+It anchors the regions within the real world. 
+Coordinate system can have different types such as:
+- Rectangular cartesian
+- Cylindrical polar
+- Spherical polar
+- Prolate spheroidal
+- Oblate spheroidal
+.
+There is a global (world) coordinate system aligned with 3D rectangular cartesian space.
+
+Coordinate system has the following attributes:
+- User number
+- Finished tag
+- Type
+- Number of dimensions
+- Focus (for prolate-spheriodal system only)
+- Origins
+- Orientation
+.
+\page regions Regions
+Regions are one of the primary objects in openCMISS. 
+Regions are hierarchical in nature in that a region can have one parent region and a number of daughter sub-regions. 
+Daughter regions are related in space to parent regions by an origin and an orientation of the regions coordinate system.
+Daughter regions may only have the same or fewer dimensions as the parent region.
+There is a global (world) region (number 0) that has the global (world) coordinate system.
+\image html region_definition.jpg   
+Region has the following attributes
+- User number
+- Finished tag
+- Label
+- Number of sub(daughter) regions
+- Coordinate system pointer
+- Nodes
+- Meshes
+- Fields
+- Equations
+- Parent region pointer
+- Daughter regions pointers
+.   
+\image html region_structure.jpg
+\section nodes Nodes
+There are three places storing nodal information. 
+Nodes associated with region defines the nodes identification and the nodes geometric (initial) position. 
+
+Node has the following attributes
+- User number
+- Global number
+- Label
+- Initial Position
+.
+\section meshes Meshes
+Meshes are topological constructs within a region which fields use to define themselves.
+Meshes are made up of a number of mesh components.
+All mesh components in a mesh must “conform”, that is have the same number of elements, Xi directions etc.       
+
+Mesh has the following attributes:
+- User number
+- Global number
+- Finished tag
+- Region pointer
+- Number of dimensions
+- Number of components
+- Embedded flag
+- Embedding mesh pointer
+- Embedded meshes pointers
+- Number of elements
+- Number of faces
+- Number of lines
+- Mesh topology pointers
+- Decomposition pointers
+.
+\image html mesh_structure.jpg
+\subsection mesh_topology Mesh Topology
+Mesh components (Topology) are made up from nodes, elements and basis functions.
+A new mesh component is required for each different form of interpolation e.g., one mesh component is bilinear Lagrange and another is biquadratic Lagrange.
+\image html meshTopology_definition.jpg       
+
+Mesh topology has the following attributes:
+- Mesh component number
+- Mesh pointer
+- Nodes pointers
+- Element pointers
+- DOFs pointers
+.
+\image html meshTopology_structure.jpg
+\subsection decompositions Decompositions
+Mesh decomposition (partitioning) is used to split a computationally expensive mesh into smaller subdomains (parts) for parallel computing. 
+        
+Decomposition has the following attributes
+- User number
+- Global number
+- Finished tag
+- Mesh pointer
+- Mesh component number
+- Decomposition type
+- Number of domains
+- Number of edge cut
+- Element domain numbers
+- Decomposition topology pointer
+- Domains pointers(list of domain which has the same size as the number of components in the mesh)
+.
+\image html meshDecomposition_structure.jpg
+\subsubsection domain Domain
+Each domain stores domain information for relevant mesh component.
+
+The domain object contains the following attributes:
+- Decomposition pointer
+- Mesh pointer
+- Mesh component number
+- Region pointer
+- Number of dimensions
+- Node domain(The domain number that the np'th global node is in for the domain decomposition. Note: the domain numbers start at 0 and go up to the NUMBER_OF_DOMAINS-1)
+- Domain mappings(for each mapped object e.g. nodes, elements, etc)
+- Domain topology pointer(elements, nodes, DOFs)
+.
+\image html meshDecompositionDomain_structure.jpg
+\paragraph domain_mappings Domain Mappings
+Stores information for each mapped object e.g. nodes, elements, etc.
+
+The domain mapping contains the following attributes:
+- Number of local
+- Total number of local
+- Numbers of domain local
+- Number of global
+- Number of domains
+- Number of internal
+- Internal list
+- Number of boundary
+- Boundary list
+- Number of ghost
+- Ghost list
+- Local to global map
+- Global to local map
+- Number of adjacent domains
+- Pointer to list of adjacent domains by domain number
+- List of adjacent domains
+.
+\image html meshDecompositionDomainMapping_structure.jpg
+\section fields Fields
+Fields are the central object for storing information and framing the problem.
+Fields have a number of field variables i.e., u, du/dn, du/dt, d2u/dt2.
+Each field variable has a number of components.
+A field is defined on a decomposed mesh.
+Each field variable component is defined on a decomposed mesh component.
+
+Field can contains the following attributes:
+- User number
+- Global number
+- Finished tag
+- Region pointer
+- Type(Geometric, Fibre, General, Material, Source)
+- Dependent type(Independent, Dependent)
+- Dimension
+- Decomposition pointer
+- Number of variables
+- Variables
+- Scalings sets
+- Mappings(DOF->Field parameters)
+- Parameter sets(distributed vectors)
+- Geometric field pointer
+- Geomatric field parameters
+- Create values cache
+.
+\image html field_structure.jpg
+\subsection field_variables Field variable
+Field variable stores variables for the field such as dependent variables. 
+For example, in the Laplace's equation(FEM), it stores two variables: u and du/dn.
+Each field variable has a number of components.  
+
+Field variable has the following attributes:
+- Variable number
+- Variable type
+- Field pointer
+- Region pointer
+- Max number of interpolation parameters
+- Number of DOFs
+- Total number of DOFs
+- Global DOF List
+- Domain mapping pointer
+- Number of components
+- Components
+.
+\image fieldVaraible_structure.jpg
+\subsubsection field_variable_component Field Variable Component
+Field Variable Component has the following attributes:
+- Component number
+- Variable pointer
+- Field pointer
+- Interpolation type
+- Mesh component number
+- Scaling index
+- Domain pointer
+- Max number of interpolation parameters
+- Mappings(Field paramters->DOF)
+.
+\subsection parameter_set Parameter set
+Parameter set stores values for each field variable component.
+
+\image html field_parameter_set_definition.jpg
+
+Parameter set has the following Attributes:
+- Set index
+- Set type
+- Parameters pointer
+.
+\section equation_sets Equations Sets
+Equations sets are aimed to have multiple classes,
+e.g. Elasticity, Fluid mechanics, Electromagnetics, General field problems, Fitting, Optimisation.
+Different equations are within each class, e.g. Bidomain, Navier-stokes etc.
+Each equation can use different solution techniques, e.g. FEM, BEM, FD, GFEM.
+The equation set is associated with a region and is built using the fields defined on the region.      
+
+The numerical methods are used which will result in a discretised matrix-vector form of the governing equations.
+openCMISS is designed to generate equations sets with a number of "equations" matrices.
+      
+e.g, damped mass spring system
+Mü + Cù + Ku = f
+will be represented as:
+\image html fieldEquationsets-matrix.JPG
+
+Equations Set has the following attributes:
+- User number
+- Global number
+- Finished tag
+- Region pointer
+- Class identifier
+- Type identifier
+- Sub type identifier
+- Linearity type(?)
+- Time dependence type(?)
+- Solution method
+- Geometry (fibre?) field pointer
+- Materials field pointer
+- Source field pointer
+- Dependent field pointer
+- Analytic info pointer(Analytic info stored in dependent field currently)
+- Fixed conditions
+- Equations pointer
+.
+\image html fieldEquationssets-structure.jpg
+\subsection equations Equations
+Equation holds the matrices and mapping information.
+
+The Field variable to matrix mappings maps each field variable onto the equations matrices or RHS vector. 
+        
+e.g. Laplace(FEM): 2 variables, 1 component
+\image html fieldEquationsetsEquations-mappingFEM.JPG
+
+e.g. Laplace(BEM): 2 variables, 1 component
+\image html fieldEquationsetsEquations-mappingBEM.JPG
+
+e.g. Heat equation(explicit time/FEM space): 2 variables, 1 component
+\image html fieldEquationsetsEquations-mappingHeat.JPG
+
+TODO matrix distribution
+
+Equations has the following attributes:
+- Equation set pointer
+- Finished tag
+- Output type
+- Sparsity type
+- Interpolation pointer
+- Linear equation data pointer
+- Nonlinear equation data pointer
+- Time(non-static) data pointer
+- Equations mapping pointer
+- Equations Matrices
+.
+\page problems Problems
+A problem has a number of solutions (each with their solver) inside a problem control loop. 
+Problem associated with region via solution which maps to equations sets and hence links to region. 
+Multiple problems can be in the same region, or multiple regions can woek to solve one problem.     
+
+Problem has the following attributes:
+- User number
+- Global number
+- Finished tag
+- Class
+- Type
+- Subtype
+- Control pointer
+- Number of solutions
+- Solutions pointer
+.
+\image html problem_structure.jpg
+\section solutions Solutions
+Solution has the following attributes:
+- Solution number
+- Finished tag
+- Linear solution data pointer
+- Nonlinear solution data pointer
+- Time (non-static) solution data pointer
+- Equations set to add (the next equations set to add)
+- Index of added equations set(the last successfully added equations set)
+- Solution mapping(which contains equations sets)
+- Solver pointer
+.
+\subsection solvers Solvers
+Solver has the following attributes:
+- Solution pointer
+- Finished tag
+- Solve type
+- Output type
+- Sparsity type
+- Linear solver pointer
+- Non-linear solver pointer
+- Time integrationn solver pointer
+- Eigenproblem solver pointer
+- Solver matrices
+.
+\image html problemSolutionSolver_structure.JPG
+\section control Control
+Control has the following attributes:
+- Problem pointer
+- Finished tag
+- Control type
+*/
