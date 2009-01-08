@@ -262,6 +262,11 @@ CONTAINS
                   & SOLUTION_MAPPING%NUMBER_OF_SOLVER_MATRICES),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations set to solver map equations to solver matrix maps sm.", &
                   & ERR,ERROR,*999)
+                DO solver_matrix_idx=1,SOLUTION_MAPPING%NUMBER_OF_SOLVER_MATRICES
+                  CALL SOLUTION_MAPPING_EQUATS_TO_SOL_MAT_MAPS_SM_INITIALISE(SOLUTION_MAPPING% &
+                    & EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
+                    & solver_matrix_idx),ERR,ERROR,*999)
+                ENDDO !solver_matrix_idx
                 IF(ASSOCIATED(LINEAR_MAPPING)) THEN
                   !Allocate the equations set to solver maps for equations matrix (em) indexing
                   ALLOCATE(SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM( &
@@ -269,6 +274,11 @@ CONTAINS
                   IF(ERR/=0) &
                     & CALL FLAG_ERROR("Could not allocate equations set to solver map equations to solver matrix maps em.", &
                     & ERR,ERROR,*999)
+                  DO equations_matrix_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_EQUATIONS_MATRICES
+                    CALL SOLUTION_MAPPING_EQUATS_TO_SOL_MAT_MAPS_EM_INITIALISE(SOLUTION_MAPPING% &
+                      & EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM( &
+                      & equations_matrix_idx),ERR,ERROR,*999)
+                  ENDDO !equations_matrix_idx
                 ENDIF
                 IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
                   !Allocate the equations set to solver maps for Jacobian matrix (jm) indexing
