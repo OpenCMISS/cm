@@ -2,9 +2,9 @@
   * \brief How to add support for a programming language
   */
 
-/** \page 9_library_commands Library Commands
+/** \page library_commands Library Commands
 
-\section sect1 OpenCMISS library structure
+\section library_structure OpenCMISS library structure
 
   - \ref toplevelsect
   - \ref basisfunctionsect
@@ -20,7 +20,7 @@
     .
   .
 
-\section toplevelsect Top Level - cmiss
+\section toplevel Top Level - cmiss
 
 \par
 To initialise CMISS, use: \n
@@ -32,17 +32,17 @@ To finalise CMISS, use:\n
 SUBROUTINE \link CMISS::CMISS_FINALISE CMISS_FINALISE\endlink (ERR,ERROR,*) \n
 Description: \copydoc CMISS::CMISS_FINALISE
 
-\section basisfunctionsect Basis Routines
+\section basis_function Basis Routines
 
-\section coordinatesystemsect Coordinate System Routines
+\section coordinate_system Coordinate System Routines
 
-\section regionsect Region Routines
+\section region Region Routines
 
-\subsection nodesect Node Routines
+\subsection node Node Routines
 
-\subsection meshsect Mesh Routines
+\subsection mesh Mesh Routines
 
-\subsection fieldsect Field Routines
+\subsection field Field Routines
 
 \subsection equationssect Equations Set Routines
 

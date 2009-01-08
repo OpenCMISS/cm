@@ -1,15 +1,15 @@
 /*!
-\page 3_installation Obtaining the Code and Setting up the Development Environment
-\section sec1 Obtaining the Code and Libraries
+\page installation Obtaining the Code and Setting up the Development Environment
+\section obtain_code_and_libraries Obtaining the Code and Libraries
 To obtain the openCMISS source you need to check it out from the subversion repository. 
 There are two parts to openCMISS to obtain - openCMISS itself and the various libraries it needs.
 In your root openCMISS directory, make the opencmiss and opemcmissextras directories.
-\subsection subsection1 Obtain the Code
+\subsection obtain_the_code Obtain the Code
 The openCMISS repository is at https://opencmiss.svn.sourceforge.net/svnroot/opencmiss/cm
 To check out the main trunk of openCMISS issue the following command in the opencmiss directory:
 \code svn co https://opencmiss.svn.sourceforge.net/svnroot/opencmiss/cm/trunk cm \endcode
 If you are not familar with subversion, have a look at http://svnbook.red-bean.com.
-\subsection subsection2 Obtain the Libraries
+\subsection obtain_the_libraries Obtain the Libraries
 The openCMISS libraries repository is at http://www.physiome.ox.ac.uk/svn/opencmissextras/cm
 To check out the main trunk of the various libraries required with openCMISS issue the following command in the opencmissextras directory:
 \code svn co http://www.physiome.ox.ac.uk/svn/opencmissextras/cm/trunk/external/architecture cm/external/architecture \endcode
@@ -25,33 +25,33 @@ where architecture is the appropriate architecture for the machine. Possible arc
 .
 Currently, the svn repository for openCMISS libraries is down. An alternative location for the libraries within the ABI is on hpc. Go to \\bioengsmb\cmiss\opencmissextras\cm and copy the necessary files. 
 The folder structure is the same as svn repository. 
-\subsection subsection3 Makefile Structure
+\subsection makefile_structure Makefile Structure
 The top level makefile will eventually build a library. 
 In the examples directory there are separate compilable "applications" with individual makefiles. 
 However, the library stuff isn't there as we need to code the bindings. 
-\section sec2 Programmer documentation
+\section programmer_documentation Programmer documentation
 This programmer documentation is written using DocBook with the source located in the opencmiss/cm/doc/programmer_documentation/ folder. The source XML code can be transformed into either chunked or combined documents in PDF or HTML format. The Makefile can be used to perform the transformation using make single or make chunk in the above folder.
 PDFs can be generated using make fo
 Doxygen can be included .
-\section sec3 Project Setup
-\subsection subsection3_1 On AIX 5.3 (HPC)
-\subsubsection subsubsection3_1_1 Set environment
+\section project_setup Project Setup
+\subsection project_setup_aix On AIX 5.3 (HPC)
+\subsubsection project_setup_hpc_environment Set environment
 Set environment variable to point to openCMISS
 \code setenv OPENCMISS_ROOT <path to your opencmiss folder>\endcode or \code export OPENCMISS_ROOT=<path to your opencmiss folder>\endcode
 Set environment variable to point to openCMISS-extras
 \code setenv OPENCMISSEXTRAS_ROOT <path to your opencmissextras folder>\endcode or \code export OPENCMISSEXTRAS_ROOT=<path to your opencmissextras folder>\endcode
-\subsubsection subsubsection3_1_2 Set MPI
+\subsubsection project_setup_hpc_mpi Set MPI
 Create a file called hostfile.list in your home directory.
 Inside the file, add several lines of "hpc.bioeng.auckland.ac.nz"
 In .rhost file in the home direcotry, add "hpc <username>"
-\subsubsection subsubsection3_1_3 Compile
+\subsubsection project_setup_aix_compile Compile
 Change directory to opencmiss/cm
 Change directory to examples/<example>
 Use gmake.
 This should result in a binary that you can run in the bin/rs6000-32-aix folder.
 
-\subsection subsection3_2 On Ubuntu 8.04
-\subsubsection subsubsection3_2_1 Set environment
+\subsection project_setup_linux On Ubuntu 8.04
+\subsubsection project_setup_linux_environment Set environment
 Set environment variable to point to opencmiss
 \code setenv OPENCMISS_ROOT <path to your opencmiss folder> \endcode or \code export OPENCMISS_ROOT=<path to your opencmiss folder> \endcode
 Set environment variable to point to openCMISS-extras
@@ -63,10 +63,10 @@ setenv PATH ${OPENCMISS_ROOT}/cm/bin/${archname}:${PATH} \endcode
 where ${archname} is the appropriate architecture e.g., i686-linux, x86_64-linux.
 If you are using totalview you will also need to add
 \code setenv LM_LICENSE_FILES <path-to-the-flex-directory> \endcode
-\subsubsection subsubsection3_2_2 Install Compilers
+\subsubsection project_setup_linux_compiler Install Compilers
 Download Intel Fotran Compiler from here.
 Extract the file and follow the install.htm to install
-\subsubsection subsubsection3_2_3 Compile
+\subsubsection project_setup_linux_compile Compile
 To build an example project:
 \code make \endcode
 To run the example project:
@@ -74,29 +74,29 @@ To run the example project:
 To debug the project using TotalView:
 \code mpd & mpirun -tv 2 path/to/the/execution/file \endcode
 
-\subsection subsection3_3 On Windows XP (Visual Studio 2005)
-\subsubsection subsubsection3_3_1 Install Compilers
+\subsection project_setup_windows_vs2005 On Windows XP (Visual Studio 2005)
+\subsubsection project_setup_windows_vs2005_compiler Install Compilers
 Download Intel Fortran Compiler from here.
 Execute the exe file and follow the installation wizard.
-\subsubsection subsubsection_3_3_2 Install MPI
+\subsubsection project_setup_windows_vs2005_mpi Install MPI
 Download MPICH2 from here.
 You can either download the source archive and follow the README.windows file to install or download the installer to install.
 Set bin folder to the path
 To start the MPI, run \code smpd -start \endcode in command window.
 NOTE: as from MPICH2 version 1.0.7 the library names have changed. libmpich2 has now become libmpi!
-\subsubsection subsubsection3_3_3 Compile and Debug
+\subsubsection project_setup_windows_vs2005_compile Compile and Debug
 Build the Fortran project under the debug mode and generate the opencmisstest-debug.exe file.
 In the C Project (since the Fortran projects do not support MPI cluster debugger), configure the debugging properties according to this.
 The MPIShim location is in the path similar to C:\Program Files\Microsoft Visual Studio 8\Common7\IDE\Remote Debugger\x86\mpishim.exe.
 Debug the C project.
-\subsubsection subsubsection3_3_4 Run
+\subsubsection project_setup_windows_vs2005_run Run
 To run the project in the command window:
 \code mpiexec -n 2 -localroot <path to the execution file> \endcode
-\subsection subsection3_4 On Windows Vista (Visual Studio 2008)
-\subsubsection_3_4_1 Install Compilers
+\subsection project_setup_windows_vs2008 On Windows Vista (Visual Studio 2008)
+\subsubsection project_setup_windows_vs2008_compiler Install Compilers
 Download Intel Fortran Compiler from here.
 Execute the exe file and follow the installation wizard.
-\subsubsection3_4_2 Install MPI
+\subsubsection project_setup_windows_vs2008_mpi Install MPI
 Before you install MPICH2 under Vista you must turn off User Account Control
 -# Goto Start -> Control Panel
 -# Double-click on User Accounts
@@ -108,13 +108,13 @@ Download from here. Choose the Win32 IA32 (binary) option.
 Run the downloaded .msi file. Follow all instructions and install "For everybody".
 Once you have installed MPICH2 you can turn User Account Control back on. Follow the instructions above and in 4. tick the "Use User Account Control ...".
 NOTE: as from MPICH2 version 1.0.7 the library names have changed. libmpich2 has now become libmpi!
-\subsubsection subsubsection3_4_3 Compile
+\subsubsection project_setup_windows_vs2008_compile Compile
 For each example, go into the VisualopenCMISS_08 folder. Double click the VisualopenCMISS project solution file to lauch Visual Studio.
 
-\section sec4 Libraries Build (Optional)
-\subsection subsection4_1 Compiling PETSc
+\section libraries_build Libraries Build (Optional)
+\subsection libraries_build_petsc Compiling PETSc
 Note this is assuming you have the Intel Fortran compiler version 10.1.024. Adjust the version string as necessary.
-\subsubsection subsubsection4_1_1 Step1: Linux Environment installation and Compiler Environment Set up (For Windows only)
+\subsubsection libraries_build_petsc_step1 Step1: Linux Environment installation and Compiler Environment Set up (For Windows only)
 Under windows system:
 - Install Cygwin if you need to. Cywin can be found here. Make sure you include the make and python modules when you install.
 - Lauch a Command Prompt Window
@@ -123,8 +123,8 @@ Under windows system:
 .
 N.B: PetSc uses X, so make sure in linux environment, libX11-dev package is installed.
 Also make sure blas and lapack (-dev) packages are installed. 
-\subsubsection subsubsection4_1_2 Step2: Compile PETSC
-\paragraph paragraph4_1_2_1 For Windows
+\subsubsection libraries_build_petsc_step2 Step2: Compile PETSC
+\paragraph libraries_build_petsc_step2_windows For Windows
 - Change to the opencmissextras PETSc directory e.g., if opencmissextras root is E:\opencmissextras and we are compiling PETSC version petsc-2.3.3-p8 then "cd /cygwin/e/opencmissextras/cm/external/packages/PETSc/petsc-2.3.3-p8"
 - If you have MPICH2 version 1.0.7 or greater edit the python/BuildSystem/config/packages/MPI.py file. Find the self.liblist_mpich line. After the line "['fmpich2.lib','mpich2.lib']," add the line "['fmpich2.lib','mpi.lib'],".
 - \code PETSC_DIR=/cygdrive/e/opencmissextras/cm/external/packages/PETSc/petsc-2.3.3-p8; export PETSC_DIR \endcode
@@ -138,7 +138,7 @@ config/configure.py --prefix=/cygdrive/e/opencmissextras/cm/external/i386-win32 
 PETSC_ARCH=cygwin-c-opt; export PETSC_ARCH \endcode
 - \code make -e all \endcode
 - \code make -e install \endcode
-\paragraph paragraph4_1_2_2 For AIX5.3
+\paragraph libraries_build_petsc_step2_aix For AIX5.3
 - Change to the opencmissextras PETSc directory. e.g /people/tyu011/workspace/opencmissextras/cm/external/packages/PETSc/petsc-2.3.3-p8
 - setenv PETSC_DIR /people/tyu011/workspace/opencmissextras/cm/external/packages/PETSc/petsc-2.3.3-p8
 - In config directory, copy the file aix5.1.0.0.py and rename it to aix5.3.0.0.py

@@ -1,5 +1,5 @@
 /*!
-\page 1_introduction Introduction
+\page introduction Introduction
 OpenCMISS is a project for the re-engineering of the CMISS computational engine.
 \section cmiss CMISS
 CMISS is an interactive computer program for Continuum Mechanics, Image analysis, Signal processing and System Identification.

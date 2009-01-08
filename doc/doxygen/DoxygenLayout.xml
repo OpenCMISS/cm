@@ -2,7 +2,7 @@
   <!-- Navigation index tabs for HTML output -->
   <navindex>
     <tab type="mainpage" visible="yes" title=""/>
-    <tab type="pages" visible="yes" title="Programmer Documentation"/>
+    <tab type="pages" visible="yes" title=""/>
     <tab type="modules" visible="yes" title=""/>
     <tab type="namespaces" visible="yes" title="">
       <tab type="namespaces" visible="yes" title=""/>
@@ -101,7 +101,7 @@
   <!-- Layout definition for a file page -->
   <file>
     <briefdescription visible="yes"/>
-    <includes visible="$SHOW_INCLUDE_FILES"/>
+    <includes visible="$SHOW_INCLUDE_FILES">
     <includegraph visible="$INCLUDE_GRAPH"/>
     <includedbygraph visible="$INCLUDED_BY_GRAPH"/>
     <sourcelink visible="yes"/>
