@@ -308,7 +308,7 @@ CONTAINS
 	    DEPENDENT_COMPONENT_NUMBER_OF_PARAMETERS=DEPENDENT_FIELD%VARIABLES(1)%COMPONENTS(COMPONENT_IDX)%PARAM_TO_DOF_MAP%NUMBER_OF_NODE_PARAMETERS
             DO parameter_idx=1,DEPENDENT_COMPONENT_NUMBER_OF_PARAMETERS
               element_dof_idx=element_dof_idx+1
-	      IF (NONLINEAR_MATRICES%UPDATE_RESIDUAL==.TRUE.) THEN !1st itteration - add displacement bcs to undeformed geomteric field
+	      IF (NONLINEAR_MATRICES%UPDATE_RESIDUAL) THEN !1st itteration - add displacement bcs to undeformed geomteric field
 	        DEPENDENT_FIELD%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(element_dof_idx)= &
 	          & DEPENDENT_FIELD%PARAMETER_SETS%PARAMETER_SETS(2)%PTR%PARAMETERS%CMISS%DATA_DP(element_dof_idx)+ &
 	          & GEOMETRIC_FIELD%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(element_dof_idx)		
@@ -338,7 +338,7 @@ CONTAINS
             ENDDO
 	  ELSEIF (DEPENDENT_COMPONENT_INTERPOLATION_TYPE==FIELD_ELEMENT_BASED_INTERPOLATION) THEN
             element_dof_idx=element_dof_idx+1
-	    IF (NONLINEAR_MATRICES%UPDATE_RESIDUAL==.TRUE.) THEN !1st iteration - set initial guess
+	    IF (NONLINEAR_MATRICES%UPDATE_RESIDUAL) THEN !1st iteration - set initial guess
 	      DEPENDENT_FIELD%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(element_dof_idx)=-5.0_DP
 	    ELSE ! subsequent iterations - copy parameters in dependent filed 2 to dpendent field 1
 	      DEPENDENT_FIELD%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(element_dof_idx)= &
