@@ -4,49 +4,358 @@
 
 /** \page library_commands Library Commands
 
+\todo divide into multiple pages. 
+
 \section library_structure OpenCMISS library structure
 
-  - \ref toplevelsect
-  - \ref basisfunctionsect
-  - \ref coordinatesystemsect
-  - \ref regionsect
-    - \ref nodesect
-    - \ref meshsect
-    - \ref fieldsect
-    - \ref equationssect
+  - \ref top_level
+  - \ref basis_function
+  - \ref coordinate_system
+  - \ref region
+    - \ref node
+    - \ref mesh
+    - \ref field
+    - \ref equations_set
     .
-  - \ref problemssect
-    - \ref solversect
+  - \ref problem
+    - \ref solver
     .
   .
+\section top_level Top Level - cmiss
 
-\section toplevel Top Level - cmiss
+To initialise CMISS, use:
+\code
+SUBROUTINE CMISS_INITIALISE(ERR,ERROR,*)
+\endcode
+Description: \copydoc CMISS::CMISS_INITIALISE 
 
-\par
-To initialise CMISS, use: \n
-SUBROUTINE \link CMISS::CMISS_INITIALISE CMISS_INITIALISE\endlink (ERR,ERROR,*) \n
-Description: \copydoc CMISS::CMISS_INITIALISE \n
 
-\par
-To finalise CMISS, use:\n
-SUBROUTINE \link CMISS::CMISS_FINALISE CMISS_FINALISE\endlink (ERR,ERROR,*) \n
+To finalise CMISS, use:
+\code
+SUBROUTINE CMISS_FINALISE(ERR,ERROR,*)
+\endcode
 Description: \copydoc CMISS::CMISS_FINALISE
 
+
+To output a CMISS error, use:
+\code
+SUBROUTINE CMISS_WRITE_ERROR(ERR,ERROR)
+\endcode
+Description: \copydoc CMISS::CMISS_WRITE_ERROR
+
+
 \section basis_function Basis Routines
+    
+To initialise basis functions , use:
+\code
+SUBROUTINE BASES_INITIALISE(ERR,ERROR,*)
+\endcode
+Description: \copydoc BASIS_ROUTINES::BASES_INITIALISE
+      
+To finalise basis functions , use:
+\code
+SUBROUTINE BASES_FINALISE(ERR,ERROR,*)
+\endcode
+Description: \copydoc BASIS_ROUTINES::BASES_FINALISE    
+
+\TODO BASIS_ROUTINES documents are not properly generated. 
 
 \section coordinate_system Coordinate System Routines
+    
+To initialise coordinate systems, use:
+\code
+SUBROUTINE COORDINATE_SYSTEMS_INITIALISE(ERR,ERROR,*)
+\endcode
+Description: \copydoc COORDINATE_ROUTINES::COORDINATE_SYSTEMS_INITIALISE
+
+To finalise coordinate systems, use:
+\code
+SUBROUTINE COORDINATE_SYSTEMS_FINALISE(ERR,ERROR,*)
+\endcode
+Description: \copydoc COORDINATE_ROUTINES::COORDINATE_SYSTEMS_FINALISE
+
+To start creating a coordinate systems, use:
+\code
+SUBROUTINE COORDINATE_SYSTEM_CREATE_START(USER_NUMBER,COORDINATE_SYSTEM,ERR,ERROR,*)
+\endcode
+Description: \copydoc COORDINATE_ROUTINES::COORDINATE_SYSTEM_CREATE_START
+
+To finish creating a coordinate systems, use:
+\code
+SUBROUTINE COORDINATE_SYSTEM_CREATE_FINISH(COORDINATE_SYSTEM,ERR,ERROR,*)
+\endcode
+Description: \copydoc COORDINATE_ROUTINES::COORDINATE_SYSTEM_CREATE_FINISH
+
+To destroy a coordinate systems, use:
+\code
+SUBROUTINE COORDINATE_SYSTEM_DESTROY(USER_NUMBER,ERR,ERROR,*)
+\endcode
+Description: \copydoc COORDINATE_ROUTINES::COORDINATE_SYSTEM_DESTROY_NUMBER
+
+To find a coordinate systems from user number, use:
+\code
+SUBROUTINE COORDINATE_SYSTEM_USER_NUMBER_FIND(USER_NUMBER,COORDINATE_SYSTEM,ERR,ERROR,*)
+\endcode
+Description: \copydoc COORDINATE_ROUTINES::COORDINATE_SYSTEM_USER_NUMBER_FIND
 
 \section region Region Routines
 
+To initialise regions, use:
+\code
+SUBROUTINE REGIONS_INITIALISE(ERR,ERROR,*)
+\endcode
+Description: \copydoc REGION_ROUTINES::REGIONS_INITIALISE
+
+To finalise regions, use:
+\code
+SUBROUTINE REGIONS_FINALISE(ERR,ERROR,*)
+\endcode
+Description: \copydoc REGION_ROUTINES::REGIONS_FINALISE
+
+To start creating a region, use:
+\code
+SUBROUTINE REGION_CREATE_START(USER_NUMBER,REGION,ERR,ERROR,*)
+\endcode
+Description: \copydoc REGION_ROUTINES::REGION_CREATE_START
+
+To finish creating a region, use:
+\code
+SUBROUTINE REGION_CREATE_FINISH(REGION,ERR,ERROR,*)
+\endcode
+Description: \copydoc REGION_ROUTINES::REGION_CREATE_FINISH
+
+To destroy a region, use:
+\code
+SUBROUTINE REGION_DESTROY(USER_NUMBER,ERR,ERROR,*)
+\endcode
+Description: \copydoc REGION_ROUTINES::REGION_DESTROY
+
+To find a region from user number, use:
+\code
+SUBROUTINE REGION_USER_NUMBER_FIND(USER_NUMBER,REGION,ERR,ERROR,*)
+\endcode
+Description: \copydoc REGION_ROUTINES::REGION_USER_NUMBER_FIND
+
 \subsection node Node Routines
+
+To initialise nodes on a region, use:
+\code
+SUBROUTINE NODES_INITIALISE(REGION,ERR,ERROR,*)
+\endcode
+Description: \copydoc NODES_ROUTINES::NODES_INITIALISE
+
+To finalise nodes on a region, use:
+\code
+SUBROUTINE NODES_FINALISE(REGION,ERR,ERROR,*)
+\endcode
+Description: \copydoc NODE_ROUTINES::NODES_FINALISE
+
+To start creating nodes in a region, use:
+\code
+SUBROUTINE NODES_CREATE_START(NUMBER_OF_NODES,REGION,NODES,ERR,ERROR,*)
+\endcode
+Description: \copydoc NODE_ROUTINES::NODES_CREATE_START
+
+To finish creating nodes in a region, use:
+\code
+SUBROUTINE NODES_CREATE_FINISH(REGION,ERR,ERROR,*))
+\endcode
+Description: \copydoc NODE_ROUTINES::NODES_CREATE_FINISH
+
+To destroy a node, use:
+\code
+SUBROUTINE NODE_DESTROY(NODE,ERR,ERROR,*)
+\endcode
+Description: \copydoc NODE_ROUTINES::NODE_DESTROY
 
 \subsection mesh Mesh Routines
 
+To initialise mesh on a region, use:
+\code
+SUBROUTINE MESHES_INITIALISE(REGION,ERR,ERROR,*)
+\endcode
+Description: \copydoc MESH_ROUTINES::MESHES_INITIALISE
+
+To finalise meshes on a region, use:
+\code
+SUBROUTINE MESHES_FINALISE(REGION,ERR,ERROR,*)
+\endcode
+Description: \copydoc MESH_ROUTINES::MESHES_FINALISE
+
+To start creating a mesh in a region, use:
+\code
+SUBROUTINE MESH_CREATE_START(USER_NUMBER,REGION,NUMBER_OF_DIMENSIONS,MESH,ERR,ERROR,*)
+\endcode
+Description: \copydoc MESH_ROUTINES::MESH_CREATE_START
+
+To finish creating a mesh in a region, use:
+\code
+SUBROUTINE MESH_CREATE_FINISH(REGION,MESH,ERR,ERROR,*)
+\endcode
+Description: \copydoc MESH_ROUTINES::MESH_CREATE_FINISH
+
+To destroy a mesh, use:
+\code
+SUBROUTINE MESH_DESTROY(USER_NUMBER,REGION,ERR,ERROR,*)
+\endcode
+Description: \copydoc MESH_ROUTINES::MESH_DESTROY
+
 \subsection field Field Routines
 
-\subsection equationssect Equations Set Routines
+To initialise fields on a region, use:
+\code
+SUBROUTINE FIELDS_INITIALISE(REGION,ERR,ERROR,*)
+\endcode
+Description: \copydoc FIELD_ROUTINES::FIELDS_INITIALISE
 
-\section problemssect Problems Routines
-\subsection solversect Solver Routines
+To finalise fields on a region, use:
+\code
+SUBROUTINE FIELDS_FINALISE(REGION,ERR,ERROR,*)
+\endcode
+Description: \copydoc FIELD_ROUTINES::FIELDS_FINALISE
+
+To start creating a field in a region, use:
+\code
+SUBROUTINE FIELD_CREATE_START(USER_NUMBER,REGION,FIELD,ERR,ERROR,*)
+\endcode
+Description: \copydoc FIELD_ROUTINES::FIELD_CREATE_START
+
+To finish creating a field in a region, use:
+\code
+SUBROUTINE FIELD_CREATE_FINISH(REGION,FIELD,ERR,ERROR,*)
+\endcode
+Description: \copydoc FIELD_ROUTINES::FIELD_CREATE_FINISH
+
+To destroy a field, use:
+\code
+SUBROUTINE FIELD_DESTROY(FIELD,ERR,ERROR,*)
+\endcode
+Description: \copydoc FIELD_ROUTINES::FIELD_DESTROY
+
+\subsection equations_set Equations Set Routines
+
+To initialise equations sets on a region, use:
+\code
+SUBROUTINE EQUATIONS_SETS_INITIALISE(REGION,ERR,ERROR,*)
+\endcode
+Description: \copydoc EQUATIONS_SET_ROUTINES::EQUATIONS_SETS_INITIALISE
+
+To finalise equations sets on a region, use:
+\code
+SUBROUTINE EQUATIONS_SETS_FINALISE(REGION,ERR,ERROR,*)
+\endcode
+Description: \copydoc EQUATIONS_SET_ROUTINES::EQUATIONS_SETS_FINALISE
+
+To initialise an equations set, use:
+\code
+SUBROUTINE EQUATIONS_SET_INITIALISE(EQUATIONS_SET,ERR,ERROR,*)
+\endcode
+Description: \copydoc EQUATIONS_SET_ROUTINES::EQUATIONS_SET_INITIALISE
+
+To finalise an equations set, use:
+\code
+SUBROUTINE EQUATIONS_SET_FINALISE(EQUATIONS_SET,ERR,ERROR,*)
+\endcode
+Description: \copydoc EQUATIONS_SET_ROUTINES::EQUATIONS_SET_FINALISE
+
+To start creating an equations set in a region, use:
+\code
+SUBROUTINE SUBROUTINE EQUATIONS_SET_CREATE_START(USER_NUMBER,REGION,GEOM_FIBRE_FIELD,EQUATIONS_SET,ERR,ERROR,*)
+\endcode
+Description: \copydoc EQUATIONS_SET_ROUTINES::EQUATIONS_SET_CREATE_START
+
+To finish creating an equations set in a region, use:
+\code
+SUBROUTINE EQUATIONS_SET_CREATE_FINISH(EQUATIONS_SET,ERR,ERROR,*)
+\endcode
+Description: \copydoc EQUATIONS_SET_ROUTINES::EQUTIONS_SET_CREATE_FINISH
+
+To destroy an equations set, use:
+\code
+SUBROUTINE EQUATIONS_SET_DESTROY(USER_NUMBER,REGION,ERR,ERROR,*)
+\endcode
+Description: \copydoc EQUATIONS_SET_ROUTINES::EQUATIONS_SET_DESTROY
+
+\section problem Problem Routines
+
+To initialise problems, use:
+\code
+SUBROUTINE PROBLEMS_INITIALISE(ERR,ERROR,*)
+\endcode
+Description: \copydoc PROBLEM_ROUTINES::PROBLEMS_INITIALISE
+
+To finalise problems, use:
+\code
+SUBROUTINE PROBLEMS_FINALISE(ERR,ERROR,*)
+\endcode
+Description: \copydoc PROBLEM_ROUTINES::PROBLEMS_FINALISE
+
+To initialise a problem, use:
+\code
+SUBROUTINE PROBLEM_INITIALISE(PROBLEM,ERR,ERROR,*)
+\endcode
+Description: \copydoc PROBLEM_ROUTINES::PROBLEM_INITIALISE
+
+To finalise a problem, use:
+\code
+SUBROUTINE PROBLEM_FINALISE(ERR,ERROR,*)
+\endcode
+Description: \copydoc PROBLEM_ROUTINES::PROBLEM_FINALISE
+
+To start creating a problem, use:
+\code
+SUBROUTINE PROBLEM_CREATE_START(USER_NUMBER,PROBLEM,ERR,ERROR,*)
+\endcode
+Description: \copydoc PROBLEM_ROUTINES::PROBLEM_CREATE_START
+
+To finish creating a problem, use:
+\code
+SUBROUTINE PROBLEM_CREATE_FINISH(PROBLEM,ERR,ERROR,*)
+\endcode
+Description: \copydoc PROBLEM_ROUTINES::PROBLEM_CREATE_FINISH
+
+To destroy a problem, use:
+\code
+SUBROUTINE PROBLEM_DESTROY(USER_NUMBER,ERR,ERROR,*)
+\endcode
+Description: \copydoc PROBLEM_ROUTINES::PROBLEM_DESTROY
+
+To find a problem from user number, use:
+\code
+SUBROUTINE PROBLEM_USER_NUMBER_FIND(USER_NUMBER,PROBLEM,ERR,ERROR,*)
+\endcode
+Description: \copydoc PROBLEM_ROUTINES::PROBLEM_USER_NUMBER_FIND
+
+\subsection solver Solver Routines
+
+To initialise a solver, use:
+\code
+SUBROUTINE SOLVER_INITIALISE(SOLUTION,SOLVE_TYPE,ERR,ERROR,*)
+\endcode
+Description: \copydoc SOLVER_ROUTINES::SOLVER_INITIALISE
+
+To finalise a solver, use:
+\code
+SUBROUTINE SOLVER_FINALISE(SOLVER,ERR,ERROR,*)
+\endcode
+Description: \copydoc SOLVER_ROUTINES::SOLVER_FINALISE
+
+To start creating a solver, use:
+\code
+SUBROUTINE SOLVER_CREATE_START(SOLUTION,SOLVE_TYPE,SOLVER,ERR,ERROR,*)
+\endcode
+Description: \copydoc SOLVER_ROUTINES::SOLVER_CREATE_START
+
+To finish creating a solver, use:
+\code
+SUBROUTINE SOLVER_CREATE_FINISH(SOLVER,ERR,ERROR,*)
+\endcode
+Description: \copydoc SOLVER_ROUTINES::SOLVER_CREATE_FINISH
+
+To destroy a solver, use:
+\code
+SUBROUTINE SOLVER_DESTROY(SOLVER,ERR,ERROR,*)
+\endcode
+Description: \copydoc SOLVER_ROUTINES::SOLVER_DESTROY
 
 */
