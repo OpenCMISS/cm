@@ -212,7 +212,7 @@ CONTAINS
         IF(ASSOCIATED(SOLVER_MATRICES)) THEN
           CALL FLAG_ERROR("Solver matrices is already associated",ERR,ERROR,*998)
         ELSE
-          NULLIFY(SOLVER_MATRICES)
+          NULLIFY(SOLVER%SOLVER_MATRICES)
           CALL SOLVER_MATRICES_INITIALISE(SOLVER,ERR,ERROR,*999)
           SOLVER_MATRICES=>SOLVER%SOLVER_MATRICES
         ENDIF
@@ -381,27 +381,28 @@ CONTAINS
    
   END SUBROUTINE SOLVER_MATRICES_INITIALISE
   
-    !
+  !
   !================================================================================================================================
   !
-
-!!MERGE: ditto
   
   !>Gets the library type for the solver matrices (and vectors)
-  FUNCTION SOLVER_MATRICES_LIBRARY_TYPE_GET(SOLVER_MATRICES,ERR,ERROR)
+  SUBROUTINE SOLVER_MATRICES_LIBRARY_TYPE_GET(SOLVER_MATRICES,LIBRARY_TYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES !<A pointer to the solver matrices.
+    INTEGER(INTG), INTENT(OUT) :: LIBRARY_TYPE !<On return, the library type of the specified solver matrices \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Function result
-    INTEGER(INTG) :: SOLVER_MATRICES_LIBRARY_TYPE_GET !<The library type to get \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes
     !Local Variables
 
     CALL ENTERS("SOLVER_MATRICES_LIBRARY_TYPE_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER_MATRICES)) THEN
-      SOLVER_MATRICES_LIBRARY_TYPE_GET=SOLVER_MATRICES%LIBRARY_TYPE
+      IF(SOLVER_MATRICES%SOLVER_MATRICES_FINISHED) THEN
+        LIBRARY_TYPE=SOLVER_MATRICES%LIBRARY_TYPE
+      ELSE
+        CALL FLAG_ERROR("Solver Matrices has not finished",ERR,ERROR,*999)
+      ENDIF
     ELSE
       CALL FLAG_ERROR("Global matrices is not associated",ERR,ERROR,*999)
     ENDIF
@@ -411,7 +412,7 @@ CONTAINS
 999 CALL ERRORS("SOLVER_MATRICES_LIBRARY_TYPE_GET",ERR,ERROR)
     CALL EXITS("SOLVER_MATRICES_LIBRARY_TYPE_GET")
     RETURN
-  END FUNCTION SOLVER_MATRICES_LIBRARY_TYPE_GET
+  END SUBROUTINE SOLVER_MATRICES_LIBRARY_TYPE_GET
   
         
   !
@@ -512,37 +513,41 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
-!!MERGE: ditto
   
   !>Gets the storage type (sparsity) of the solver matrices
   SUBROUTINE SOLVER_MATRICES_STORAGE_TYPE_GET(SOLVER_MATRICES,STORAGE_TYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES !<A pointer to the solver matrices
-    INTEGER(INTG), POINTER :: STORAGE_TYPE(:) !<STORAGE_TYPE(matrix_idx). The storage type for the matrix_idx'th solver matrix
+    INTEGER(INTG), INTENT(OUT) :: STORAGE_TYPE(:) !<STORAGE_TYPE(matrix_idx). The storage type for the matrix_idx'th solver matrix
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: matrix_idx
     TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("SOLVER_MATRICES_STORAGE_TYPE_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER_MATRICES)) THEN
       IF(SOLVER_MATRICES%SOLVER_MATRICES_FINISHED) THEN
-        CALL FLAG_ERROR("Solver matrices have been finished.",ERR,ERROR,*999)
+        IF(SIZE(STORAGE_TYPE,1)>=SOLVER_MATRICES%NUMBER_OF_MATRICES) THEN
+          DO matrix_idx=1,SOLVER_MATRICES%NUMBER_OF_MATRICES
+            SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(matrix_idx)%PTR
+            IF(ASSOCIATED(SOLVER_MATRIX)) THEN
+              STORAGE_TYPE(matrix_idx)=SOLVER_MATRIX%STORAGE_TYPE
+            ELSE
+              CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ENDDO !matrix_idx
+        ELSE
+          LOCAL_ERROR="The size of STORAGE_TYPE is too small. The supplied size is "// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(STORAGE_TYPE,1),"*",ERR,ERROR))//" and it needs to be >= "// &
+            & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
       ELSE
-        ALLOCATE(STORAGE_TYPE(SOLVER_MATRICES%NUMBER_OF_MATRICES),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate storage type list.",ERR,ERROR,*999)
-        DO matrix_idx=1,SOLVER_MATRICES%NUMBER_OF_MATRICES
-          SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(matrix_idx)%PTR
-          IF(ASSOCIATED(SOLVER_MATRIX)) THEN
-            STORAGE_TYPE(matrix_idx)=SOLVER_MATRIX%STORAGE_TYPE
-          ELSE
-            CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ENDDO !matrix_idx
+        CALL FLAG_ERROR("Solver matrices have not finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Solver matrices is not associated.",ERR,ERROR,*999)
@@ -1099,8 +1104,8 @@ CONTAINS
             SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.
             SOLVER_MATRIX%NUMBER_OF_COLUMNS=SOLUTION_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(MATRIX_NUMBER)%NUMBER_OF_COLUMNS
             SOLUTION_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(MATRIX_NUMBER)%SOLVER_MATRIX=>SOLVER_MATRIX
-            NULLIFY(SOLVER_MATRIX%MATRIX)
             NULLIFY(SOLVER_MATRIX%SOLVER_VECTOR)
+            NULLIFY(SOLVER_MATRIX%MATRIX)
           ENDIF
         ELSE
           CALL FLAG_ERROR("Solution mapping is not associated.",ERR,ERROR,*998)

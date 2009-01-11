@@ -243,14 +243,16 @@ MODULE DISTRIBUTED_MATRIX_VECTOR
     & DISTRIBUTED_MATRIX_DATA_GET,DISTRIBUTED_MATRIX_DATA_RESTORE,DISTRIBUTED_MATRIX_DATA_TYPE_SET,DISTRIBUTED_MATRIX_DESTROY, &
     & DISTRIBUTED_MATRIX_DUPLICATE,DISTRIBUTED_MATRIX_FORM,DISTRIBUTED_MATRIX_LIBRARY_TYPE_SET, &
     & DISTRIBUTED_MATRIX_MAX_COLUMNS_PER_ROW_GET,DISTRIBUTED_MATRIX_NUMBER_NON_ZEROS_SET,DISTRIBUTED_MATRIX_OUTPUT, &
-    & DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET,DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_SET,DISTRIBUTED_MATRIX_STORAGE_TYPE_GET, &
+    & DISTRIBUTED_MATRIX_OVERRIDE_SET_ON,DISTRIBUTED_MATRIX_OVERRIDE_SET_OFF,DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET, &
+    & DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_SET,DISTRIBUTED_MATRIX_STORAGE_TYPE_GET, &
     & DISTRIBUTED_MATRIX_STORAGE_TYPE_SET,DISTRIBUTED_MATRIX_UPDATE_START,DISTRIBUTED_MATRIX_UPDATE_FINISH, &
     & DISTRIBUTED_MATRIX_UPDATE_ISFINISHED,DISTRIBUTED_MATRIX_UPDATE_WAITFINISHED,DISTRIBUTED_MATRIX_VALUES_ADD, &
     & DISTRIBUTED_MATRIX_VALUES_GET,DISTRIBUTED_MATRIX_VALUES_SET
   
   PUBLIC DISTRIBUTED_VECTOR_ALL_VALUES_SET,DISTRIBUTED_VECTOR_CREATE_FINISH,DISTRIBUTED_VECTOR_CREATE_START, &
     & DISTRIBUTED_VECTOR_DATA_GET,DISTRIBUTED_VECTOR_DATA_RESTORE,DISTRIBUTED_VECTOR_DATA_TYPE_SET,DISTRIBUTED_VECTOR_DESTROY, &
-    & DISTRIBUTED_VECTOR_DUPLICATE,DISTRIBUTED_VECTOR_LIBRARY_TYPE_SET,DISTRIBUTED_VECTOR_OUTPUT,DISTRIBUTED_VECTOR_VALUES_ADD, &
+    & DISTRIBUTED_VECTOR_DUPLICATE,DISTRIBUTED_VECTOR_LIBRARY_TYPE_SET,DISTRIBUTED_VECTOR_OUTPUT, &
+    & DISTRIBUTED_VECTOR_OVERRIDE_SET_ON,DISTRIBUTED_VECTOR_OVERRIDE_SET_OFF,DISTRIBUTED_VECTOR_VALUES_ADD, &
     & DISTRIBUTED_VECTOR_VALUES_GET,DISTRIBUTED_VECTOR_VALUES_SET,DISTRIBUTED_VECTOR_UPDATE_START, &
     & DISTRIBUTED_VECTOR_UPDATE_FINISH,DISTRIBUTED_VECTOR_UPDATE_ISFINISHED,DISTRIBUTED_VECTOR_UPDATE_WAITFINISHED
   
@@ -379,7 +381,11 @@ CONTAINS
         CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
           IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
             IF(ABS(VALUE)<=ZERO_TOLERANCE) THEN
-              CALL PETSC_MATZEROENTRIES(DISTRIBUTED_MATRIX%PETSC%MATRIX,ERR,ERROR,*999)
+              IF(DISTRIBUTED_MATRIX%PETSC%USE_OVERRIDE_MATRIX) THEN
+                CALL PETSC_MATZEROENTRIES(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,ERR,ERROR,*999)
+              ELSE
+                CALL PETSC_MATZEROENTRIES(DISTRIBUTED_MATRIX%PETSC%MATRIX,ERR,ERROR,*999)
+              ENDIF
             ELSE
               CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
             ENDIF
@@ -816,7 +822,11 @@ CONTAINS
             ENDIF
           CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
             IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
-              CALL PETSC_MATGETARRAY(DISTRIBUTED_MATRIX%PETSC%MATRIX,DATA,ERR,ERROR,*999)
+              IF(DISTRIBUTED_MATRIX%PETSC%USE_OVERRIDE_MATRIX) THEN
+                CALL PETSC_MATGETARRAY(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,DATA,ERR,ERROR,*999)
+              ELSE
+                CALL PETSC_MATGETARRAY(DISTRIBUTED_MATRIX%PETSC%MATRIX,DATA,ERR,ERROR,*999)
+              ENDIF
             ELSE
               CALL FLAG_ERROR("Distributed matris PETSc is not associated",ERR,ERROR,*999)
             ENDIF
@@ -1011,7 +1021,11 @@ CONTAINS
             NULLIFY(DATA)
           CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
             IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
-              CALL PETSC_MATRESTOREARRAY(DISTRIBUTED_MATRIX%PETSC%MATRIX,ERR,ERROR,*999)
+              IF(DISTRIBUTED_MATRIX%PETSC%USE_OVERRIDE_MATRIX) THEN
+                CALL PETSC_MATRESTOREARRAY(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,ERR,ERROR,*999)
+              ELSE
+                CALL PETSC_MATRESTOREARRAY(DISTRIBUTED_MATRIX%PETSC%MATRIX,ERR,ERROR,*999)
+              ENDIF
             ELSE
               CALL FLAG_ERROR("Distributed matrix PETSc is not associated",ERR,ERROR,*999)
             ENDIF
@@ -1208,7 +1222,6 @@ CONTAINS
           CALL DISTRIBUTED_MATRIX_CREATE_START(DISTRIBUTED_MATRIX%ROW_DOMAIN_MAPPING,DISTRIBUTED_MATRIX%COLUMN_DOMAIN_MAPPING, &
             & NEW_DISTRIBUTED_MATRIX,ERR,ERROR,*999)
           CALL DISTRIBUTED_MATRIX_LIBRARY_TYPE_SET(NEW_DISTRIBUTED_MATRIX,DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE,ERR,ERROR,*999)
-          !TODO
           CALL DISTRIBUTED_MATRIX_CREATE_FINISH(NEW_DISTRIBUTED_MATRIX,ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="The distributed matrix library type of "// &
@@ -1269,7 +1282,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: column_idx,row
-    REAL(DP) :: ZERO_VALUE(1)=0.0_DP
     TYPE(DISTRIBUTED_MATRIX_PETSC_TYPE), POINTER :: PETSC_MATRIX
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -1296,14 +1308,24 @@ CONTAINS
               CALL FLAG_ERROR("Column major storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
             CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
               CALL FLAG_ERROR("Row major storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
-            CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)             
-              DO row=1,PETSC_MATRIX%M
-                DO column_idx=1,PETSC_MATRIX%ROW_INDICES(row),PETSC_MATRIX%ROW_INDICES(row+1)-1
-                  CALL PETSC_MATSETVALUES(PETSC_MATRIX%MATRIX,1,PETSC_MATRIX%GLOBAL_ROW_NUMBERS(row),1, &
-                    & PETSC_MATRIX%COLUMN_INDICES(column_idx)-1,ZERO_VALUE,PETSC_INSERT_VALUES, &
-                    & ERR,ERROR,*999) !PETSc uses 0 indicies
-                ENDDO !column_idx
-              ENDDO !row_idx
+            CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+              IF(PETSC_MATRIX%USE_OVERRIDE_MATRIX) THEN
+                DO row=1,PETSC_MATRIX%M
+                  DO column_idx=PETSC_MATRIX%ROW_INDICES(row),PETSC_MATRIX%ROW_INDICES(row+1)-1
+                    CALL PETSC_MATSETVALUE(PETSC_MATRIX%OVERRIDE_MATRIX,PETSC_MATRIX%GLOBAL_ROW_NUMBERS(row), &
+                      & PETSC_MATRIX%COLUMN_INDICES(column_idx)-1,0.0_DP,PETSC_INSERT_VALUES, &
+                      & ERR,ERROR,*999) !PETSc uses 0 indicies
+                  ENDDO !column_idx
+                ENDDO !row_idx
+              ELSE
+                DO row=1,PETSC_MATRIX%M
+                  DO column_idx=PETSC_MATRIX%ROW_INDICES(row),PETSC_MATRIX%ROW_INDICES(row+1)-1
+                    CALL PETSC_MATSETVALUE(PETSC_MATRIX%MATRIX,PETSC_MATRIX%GLOBAL_ROW_NUMBERS(row), &
+                      & PETSC_MATRIX%COLUMN_INDICES(column_idx)-1,0.0_DP,PETSC_INSERT_VALUES, &
+                      & ERR,ERROR,*999) !PETSc uses 0 indicies
+                  ENDDO !column_idx
+                ENDDO !row_idx
+              ENDIF
             CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
               CALL FLAG_ERROR("Compressed column storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
             CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
@@ -1313,8 +1335,13 @@ CONTAINS
                 & " is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
-            CALL PETSC_MATASSEMBLYBEGIN(PETSC_MATRIX%MATRIX,MAT_FINAL_ASSEMBLY,ERR,ERROR,*999)
-            CALL PETSC_MATASSEMBLYEND(PETSC_MATRIX%MATRIX,MAT_FINAL_ASSEMBLY,ERR,ERROR,*999)
+            IF(PETSC_MATRIX%USE_OVERRIDE_MATRIX) THEN
+              CALL PETSC_MATASSEMBLYBEGIN(PETSC_MATRIX%OVERRIDE_MATRIX,MAT_FINAL_ASSEMBLY,ERR,ERROR,*999)
+              CALL PETSC_MATASSEMBLYEND(PETSC_MATRIX%OVERRIDE_MATRIX,MAT_FINAL_ASSEMBLY,ERR,ERROR,*999)
+            ELSE
+              CALL PETSC_MATASSEMBLYBEGIN(PETSC_MATRIX%MATRIX,MAT_FINAL_ASSEMBLY,ERR,ERROR,*999)
+              CALL PETSC_MATASSEMBLYEND(PETSC_MATRIX%MATRIX,MAT_FINAL_ASSEMBLY,ERR,ERROR,*999)
+            ENDIF
           ELSE
             CALL FLAG_ERROR("Distributed matrix PETSc is not associated",ERR,ERROR,*999)
           ENDIF
@@ -1668,7 +1695,11 @@ CONTAINS
           ENDIF
         CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
           IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
-            CALL PETSC_MATVIEW(DISTRIBUTED_MATRIX%PETSC%MATRIX,PETSC_VIEWER_STDOUT_WORLD,ERR,ERROR,*999)
+            IF(DISTRIBUTED_MATRIX%PETSC%USE_OVERRIDE_MATRIX) THEN
+              CALL PETSC_MATVIEW(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,PETSC_VIEWER_STDOUT_WORLD,ERR,ERROR,*999)
+            ELSE
+              CALL PETSC_MATVIEW(DISTRIBUTED_MATRIX%PETSC%MATRIX,PETSC_VIEWER_STDOUT_WORLD,ERR,ERROR,*999)
+            ENDIF
           ELSE
             CALL FLAG_ERROR("Distributed matrix PETSc is not associated",ERR,ERROR,*999)
           ENDIF
@@ -1690,6 +1721,101 @@ CONTAINS
     CALL EXITS("DISTRIBUTED_MATRIX_OUTPUT")
     RETURN 1
   END SUBROUTINE DISTRIBUTED_MATRIX_OUTPUT
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the override matrix for a distributed matrix.
+  SUBROUTINE DISTRIBUTED_MATRIX_OVERRIDE_SET_ON(DISTRIBUTED_MATRIX,OVERRIDE_MATRIX,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: DISTRIBUTED_MATRIX !<A pointer to the distributed matrix to override
+    TYPE(PETSC_MAT_TYPE), INTENT(IN) :: OVERRIDE_MATRIX !<The override matrix
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("DISTRIBUTED_MATRIX_OVERRIDE_SET_ON",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DISTRIBUTED_MATRIX)) THEN
+      IF(DISTRIBUTED_MATRIX%MATRIX_FINISHED) THEN
+        SELECT CASE(DISTRIBUTED_MATRIX%LIBRARY_TYPE)
+        CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)          
+        CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
+          IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
+            DISTRIBUTED_MATRIX%PETSC%USE_OVERRIDE_MATRIX=.TRUE.
+            DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX=OVERRIDE_MATRIX
+          ELSE
+            CALL FLAG_ERROR("Distributed matrix PETSc is not associated.",ERR,ERROR,*999)
+          ENDIF
+        CASE DEFAULT
+          LOCAL_ERROR="The distributed matrix library type of "// &
+            & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE
+       CALL FLAG_ERROR("Distributed matrix has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Distributed matrix is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DISTRIBUTED_MATRIX_OVERRIDE_SET_ON")
+    RETURN
+999 CALL ERRORS("DISTRIBUTED_MATRIX_OVERRIDE_SET_ON",ERR,ERROR)
+    CALL EXITS("DISTRIBUTED_MATRIX_OVERRIDE_SET_ON")
+    RETURN 1
+  END SUBROUTINE DISTRIBUTED_MATRIX_OVERRIDE_SET_ON
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Turns off the override matrix for a distributed matrix.
+  SUBROUTINE DISTRIBUTED_MATRIX_OVERRIDE_SET_OFF(DISTRIBUTED_MATRIX,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: DISTRIBUTED_MATRIX !<A pointer to the distributed matrix to override
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("DISTRIBUTED_MATRIX_OVERRIDE_SET_OFF",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DISTRIBUTED_MATRIX)) THEN
+      IF(DISTRIBUTED_MATRIX%MATRIX_FINISHED) THEN
+        SELECT CASE(DISTRIBUTED_MATRIX%LIBRARY_TYPE)
+        CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)          
+        CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
+          IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
+            DISTRIBUTED_MATRIX%PETSC%USE_OVERRIDE_MATRIX=.FALSE.
+            CALL PETSC_MATINITIALISE(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,ERR,ERROR,*999)
+          ELSE
+            CALL FLAG_ERROR("Distributed matrix PETSc is not associated.",ERR,ERROR,*999)
+          ENDIF
+        CASE DEFAULT
+          LOCAL_ERROR="The distributed matrix library type of "// &
+            & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("Distributed matrix has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Distributed matrix is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DISTRIBUTED_MATRIX_OVERRIDE_SET_OFF")
+    RETURN
+999 CALL ERRORS("DISTRIBUTED_MATRIX_OVERRIDE_SET_OFF",ERR,ERROR)
+    CALL EXITS("DISTRIBUTED_MATRIX_OVERRIDE_SET_OFF")
+    RETURN 1
+  END SUBROUTINE DISTRIBUTED_MATRIX_OVERRIDE_SET_OFF
 
   !
   !================================================================================================================================
@@ -1749,16 +1875,6 @@ CONTAINS
                     IF((PETSC_MATRIX%ROW_INDICES(i+1)-PETSC_MATRIX%ROW_INDICES(i))>PETSC_MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW) &
                       & PETSC_MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW=PETSC_MATRIX%ROW_INDICES(i+1)-PETSC_MATRIX%ROW_INDICES(i)
                   ENDDO !i
-!!Don't use PETSc local to global mappings. Instead store the local to global row map for the matrix and then
-!!use MatSetValues instead
-                  !Should this be the global communicator or COMM_SELF???
-                  !CALL PETSC_ISLOCALTOGLOBALMAPPINGCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_MATRIX%M,GLOBAL_NUMBERS, &
-                  ! & PETSC_MATRIX%ISLTGMAPPING,ERR,ERROR,*999)
-                  !CALL PETSC_ISLOCALTOGLOBALMAPPINGCREATE(PETSC_COMM_SELF,PETSC_MATRIX%M,PETSC_MATRIX%GLOBAL_ROW_NUMBERS, &
-                  !  & PETSC_MATRIX%ISLTGMAPPING,ERR,ERROR,*999)
-                  !CALL PETSC_MATSETLOCALTOGLOBALMAPPING(PETSC_MATRIX%MATRIX,PETSC_MATRIX%ISLTGMAPPING,ERR,ERROR,*999)
-                  !CALL PETSC_ISLOCALTOGLOBALMAPPINGDESTROY(PETSC_MATRIX%ISLTGMAPPING,ERR,ERROR,*999)        
-                  !IF(ALLOCATED(GLOBAL_NUMBERS)) DEALLOCATE(GLOBAL_NUMBERS)
                 ELSE
                   CALL FLAG_ERROR("Matrix off diagonal storage locations have not been set.",ERR,ERROR,*999)
                 ENDIF
@@ -1816,8 +1932,8 @@ CONTAINS
       IF(ALLOCATED(PETSC_MATRIX%COLUMN_INDICES)) DEALLOCATE(PETSC_MATRIX%COLUMN_INDICES)
       IF(ALLOCATED(PETSC_MATRIX%GLOBAL_ROW_NUMBERS)) DEALLOCATE(PETSC_MATRIX%GLOBAL_ROW_NUMBERS)
       IF(ALLOCATED(PETSC_MATRIX%DATA_DP)) DEALLOCATE(PETSC_MATRIX%DATA_DP)
-      !CALL PETSC_ISLOCALTOGLOBALMAPPINGFINALISE(PETSC_MATRIX%ISLTGMAPPING,ERR,ERROR,*999)
       CALL PETSC_MATFINALISE(PETSC_MATRIX%MATRIX,ERR,ERROR,*999)
+      CALL PETSC_MATFINALISE(PETSC_MATRIX%OVERRIDE_MATRIX,ERR,ERROR,*999)
       DEALLOCATE(PETSC_MATRIX)
     ENDIF
     
@@ -1875,8 +1991,9 @@ CONTAINS
             DISTRIBUTED_MATRIX%PETSC%STORAGE_TYPE=DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE
             DISTRIBUTED_MATRIX%PETSC%DATA_SIZE=0
             DISTRIBUTED_MATRIX%PETSC%MAXIMUM_COLUMN_INDICES_PER_ROW=0
-            !CALL PETSC_ISLOCALTOGLOBALMAPPINGINITIALISE(DISTRIBUTED_MATRIX%PETSC%ISLTGMAPPING,ERR,ERROR,*999)
+            DISTRIBUTED_MATRIX%PETSC%USE_OVERRIDE_MATRIX=.FALSE.
             CALL PETSC_MATINITIALISE(DISTRIBUTED_MATRIX%PETSC%MATRIX,ERR,ERROR,*999)
+            CALL PETSC_MATINITIALISE(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,ERR,ERROR,*999)
           ELSE
             CALL FLAG_ERROR("Distributed matrix column domain mapping is not associated",ERR,ERROR,*998)
           ENDIF
@@ -2021,11 +2138,11 @@ CONTAINS
                 CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
                   !Do nothing
                 CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
-                  CALL FLAG_ERROR("Diagonal storage is not implemented for PETSc matrices",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Diagonal storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
                 CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-                  CALL FLAG_ERROR("Column major storage is not implemented for PETSc matrices",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Column major storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
                 CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
-                  CALL FLAG_ERROR("Row major storage is not implemented for PETSc matrices",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Row major storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
                 CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
                   IF(SIZE(ROW_INDICES,1)==PETSC_MATRIX%M+1) THEN
                     IF(SIZE(COLUMN_INDICES,1)==PETSC_MATRIX%NUMBER_NON_ZEROS) THEN
@@ -2035,25 +2152,25 @@ CONTAINS
                           DO i=2,PETSC_MATRIX%M+1
                             IF(ROW_INDICES(i)<ROW_INDICES(i-1)) THEN
                               LOCAL_ERROR="Invalid row indices. Row "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))// &
-                                & " index number ("//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//") is less than row "// &
-                                & TRIM(NUMBER_TO_VSTRING(i-1,"*",ERR,ERROR))//" index number ("// &
-                                & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i-1),"*",ERR,ERROR))//")"
+                                & " index number ("//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" &
+                                & ) is less than row "//TRIM(NUMBER_TO_VSTRING(i-1,"*",ERR,ERROR))//" index number ("// &
+                                & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i-1),"*",ERR,ERROR))//")."
                               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
                           ENDDO !i
                           !Allocate the PETSc sparsity storage arrays
                           ALLOCATE(PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS(PETSC_MATRIX%M),STAT=ERR)
-                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate PETSc matrix diagonal number of non zeros",ERR,ERROR,*999)
+                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate PETSc matrix diagonal number of non zeros.",ERR,ERROR,*999)
                           PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS=0
                           ALLOCATE(PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS(PETSC_MATRIX%M),STAT=ERR)
-                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate PETSc matrix off diagonal number of non zeros", &
+                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate PETSc matrix off diagonal number of non zeros.", &
                             & ERR,ERROR,*999)
                           PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS=0
                           ALLOCATE(PETSC_MATRIX%ROW_INDICES(PETSC_MATRIX%M+1),STAT=ERR)
-                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate PETSc matrix row indices",ERR,ERROR,*999)
+                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate PETSc matrix row indices.",ERR,ERROR,*999)
                           PETSC_MATRIX%ROW_INDICES=ROW_INDICES(1:PETSC_MATRIX%M+1)
                           ALLOCATE(PETSC_MATRIX%COLUMN_INDICES(PETSC_MATRIX%NUMBER_NON_ZEROS),STAT=ERR)
-                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate PETSc matrix column indices",ERR,ERROR,*999)
+                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate PETSc matrix column indices.",ERR,ERROR,*999)
                           PETSC_MATRIX%COLUMN_INDICES=COLUMN_INDICES(1:PETSC_MATRIX%NUMBER_NON_ZEROS)
                           !Check the column indices are correct and calculate number of diagonal and off-diagonal columns
                           global_row_start=ROW_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(1)
@@ -2066,7 +2183,7 @@ CONTAINS
                                   LOCAL_ERROR="Invalid column indices. Column index "//TRIM(NUMBER_TO_VSTRING(j,"*",ERR,ERROR))// &
                                     & " ("//TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))// &
                                     & ") is greater than the number of non-zeros ("// &
-                                    & TRIM(NUMBER_TO_VSTRING(PETSC_MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")"
+                                    & TRIM(NUMBER_TO_VSTRING(PETSC_MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")."
                                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                 ENDIF
                                 IF(k>=global_row_start.AND.k<=global_row_finish) THEN
@@ -2076,7 +2193,7 @@ CONTAINS
                                 ENDIF
                               ELSE
                                 LOCAL_ERROR="Invalid column indices. Column index "//TRIM(NUMBER_TO_VSTRING(j,"*",ERR,ERROR))// &
-                                  & " ("//TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//") is less than zero"
+                                  & " ("//TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//") is less than zero."
                                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                               ENDIF
                             ENDDO !j
@@ -2108,54 +2225,54 @@ CONTAINS
                           LOCAL_ERROR="Invalid row indices. The last row index ("// &
                             & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(PETSC_MATRIX%M+1),"*",ERR,ERROR))// &
                             & ") does not equal the number of non-zeros + 1 ("// &
-                            & TRIM(NUMBER_TO_VSTRING(PETSC_MATRIX%NUMBER_NON_ZEROS+1,"*",ERR,ERROR))//")"
+                            & TRIM(NUMBER_TO_VSTRING(PETSC_MATRIX%NUMBER_NON_ZEROS+1,"*",ERR,ERROR))//")."
                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         LOCAL_ERROR="Invalid row indices. The first row index ("// &
-                          & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(1),"*",ERR,ERROR))//") does not equal 1"
+                          & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(1),"*",ERR,ERROR))//") does not equal 1."
                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                     ELSE
                       LOCAL_ERROR="The supplied number of column indices ("// &
                         & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
                         & ") does not match the number of non-zeros in the matrix ("// &
-                        & TRIM(NUMBER_TO_VSTRING(PETSC_MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")"
+                        & TRIM(NUMBER_TO_VSTRING(PETSC_MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
                     LOCAL_ERROR="The supplied number of row indices ("// &
                       & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
                       & ") does not match the number of rows in the matrix + 1 ("// &
-                      & TRIM(NUMBER_TO_VSTRING(PETSC_MATRIX%M+1,"*",ERR,ERROR))//")"
+                      & TRIM(NUMBER_TO_VSTRING(PETSC_MATRIX%M+1,"*",ERR,ERROR))//")."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                 CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-                  CALL FLAG_ERROR("Compressed column storage is not implemented for PETSc matrices",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Compressed column storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
                 CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
-                  CALL FLAG_ERROR("Row column storage is not implemented for PETSc matrices",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Row column storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
                 CASE DEFAULT
                   LOCAL_ERROR="The specified matrix storage type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(PETSC_MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid"
+                    & TRIM(NUMBER_TO_VSTRING(PETSC_MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               ELSE
-                CALL FLAG_ERROR("Distributed matrix PETSc is not associated",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Distributed matrix PETSc is not associated.",ERR,ERROR,*999)
               ENDIF
             CASE DEFAULT
               LOCAL_ERROR="The distributed matrix library type of "// &
-                & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid"
+                & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE
-            CALL FLAG_ERROR("Distributed matrix column domain mapping is not associated",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Distributed matrix column domain mapping is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Distributed matrix row domain mapping is not associated",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Distributed matrix row domain mapping is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Distributed matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Distributed matrix is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_SET")
@@ -2239,14 +2356,14 @@ CONTAINS
 
     IF(ASSOCIATED(DISTRIBUTED_MATRIX)) THEN
       IF(DISTRIBUTED_MATRIX%MATRIX_FINISHED) THEN
-        CALL FLAG_ERROR("The distributed matrix has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The distributed matrix has been finished.",ERR,ERROR,*999)
       ELSE
         SELECT CASE(DISTRIBUTED_MATRIX%LIBRARY_TYPE)
         CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
           IF(ASSOCIATED(DISTRIBUTED_MATRIX%CMISS)) THEN
             CALL MATRIX_STORAGE_TYPE_SET(DISTRIBUTED_MATRIX%CMISS%MATRIX,STORAGE_TYPE,ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR("Distributed matrix CMISS is not associated",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Distributed matrix CMISS is not associated.",ERR,ERROR,*999)
           ENDIF
         CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
           IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
@@ -2254,33 +2371,33 @@ CONTAINS
             CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
               DISTRIBUTED_MATRIX%PETSC%STORAGE_TYPE=DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE
             CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
-              CALL FLAG_ERROR("Diagonal storage is not implemented for PETSc matrices",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Diagonal storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
             CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-              CALL FLAG_ERROR("Column major storage is not implemented for PETSc matrices",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Column major storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
             CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
-              CALL FLAG_ERROR("Row major storage is not implemented for PETSc matrices",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Row major storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
             CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
               DISTRIBUTED_MATRIX%PETSC%STORAGE_TYPE=DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE
             CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-              CALL FLAG_ERROR("Compressed column storage is not implemented for PETSc matrices",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Compressed column storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
             CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
-              CALL FLAG_ERROR("Row column storage is not implemented for PETSc matrices",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Row column storage is not implemented for PETSc matrices.",ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The specified matrix storage type of "//TRIM(NUMBER_TO_VSTRING(STORAGE_TYPE,"*",ERR,ERROR))// &
-                & " is invalid"
+                & " is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE
-            CALL FLAG_ERROR("Distributed matrix PETSc is not implemented",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Distributed matrix PETSc is not implemented.",ERR,ERROR,*999)
           ENDIF
         CASE DEFAULT
           LOCAL_ERROR="The distributed matrix library type of "// &
-            & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid"
+            & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Distributed matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Distributed matrix is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DISTRIBUTED_MATRIX_STORAGE_TYPE_SET")
@@ -2313,20 +2430,24 @@ CONTAINS
           !Do nothing for now.
         CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
           IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
-            CALL PETSC_MATASSEMBLYEND(DISTRIBUTED_MATRIX%PETSC%MATRIX,MAT_FINAL_ASSEMBLY,ERR,ERROR,*999)
+            IF(DISTRIBUTED_MATRIX%PETSC%USE_OVERRIDE_MATRIX) THEN
+              CALL PETSC_MATASSEMBLYEND(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,MAT_FINAL_ASSEMBLY,ERR,ERROR,*999)
+            ELSE
+              CALL PETSC_MATASSEMBLYEND(DISTRIBUTED_MATRIX%PETSC%MATRIX,MAT_FINAL_ASSEMBLY,ERR,ERROR,*999)
+            ENDIF
           ELSE
-            CALL FLAG_ERROR("Distributed matrix PETSc is not associated",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Distributed matrix PETSc is not associated.",ERR,ERROR,*999)
           ENDIF
         CASE DEFAULT
           LOCAL_ERROR="The distributed matrix library type of "// &
-            & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid"
+            & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("The distributed matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The distributed matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Distributed matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Distributed matrix is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DISTRIBUTED_MATRIX_UPDATE_FINISH")
@@ -2426,7 +2547,11 @@ CONTAINS
           !Do nothing for now.
         CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
           IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
-            CALL PETSC_MATASSEMBLYBEGIN(DISTRIBUTED_MATRIX%PETSC%MATRIX,MAT_FINAL_ASSEMBLY,ERR,ERROR,*999)
+            IF(DISTRIBUTED_MATRIX%PETSC%USE_OVERRIDE_MATRIX) THEN
+              CALL PETSC_MATASSEMBLYBEGIN(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,MAT_FINAL_ASSEMBLY,ERR,ERROR,*999)
+            ELSE
+              CALL PETSC_MATASSEMBLYBEGIN(DISTRIBUTED_MATRIX%PETSC%MATRIX,MAT_FINAL_ASSEMBLY,ERR,ERROR,*999)
+            ENDIF
           ELSE
             CALL FLAG_ERROR("Distributed matrix PETSc is not associated",ERR,ERROR,*999)
           ENDIF
@@ -2776,13 +2901,21 @@ CONTAINS
           IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
             IF(SIZE(ROW_INDICES,1)==SIZE(VALUES,1)) THEN
               IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,1)) THEN
-                DO i=1,SIZE(ROW_INDICES,1)
-                  !Use global matrix row and column numbers
-                  !CALL PETSC_MATSETVALUESLOCAL(DISTRIBUTED_MATRIX%PETSC%MATRIX,1,ROW_INDICES(i:i),1,COLUMN_INDICES(i:i), &
-                  !  & VALUES(i:i),PETSC_ADD_VALUES,ERR,ERROR,*999)
-                  CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,1,DISTRIBUTED_MATRIX%PETSC%GLOBAL_ROW_NUMBERS( &
-                    & ROW_INDICES(i:i)),1,COLUMN_INDICES(i:i)-1,VALUES(i:i),PETSC_ADD_VALUES,ERR,ERROR,*999) !PETSc uses 0 indicies
-                ENDDO !i
+                IF(DISTRIBUTED_MATRIX%PETSC%USE_OVERRIDE_MATRIX) THEN
+                  DO i=1,SIZE(ROW_INDICES,1)
+                    !Use global matrix row and column numbers
+                    CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,1,DISTRIBUTED_MATRIX%PETSC% &
+                      & GLOBAL_ROW_NUMBERS(ROW_INDICES(i:i)),1,COLUMN_INDICES(i:i)-1,VALUES(i:i),PETSC_ADD_VALUES, &
+                      & ERR,ERROR,*999) !PETSc uses 0 indicies
+                  ENDDO !i
+                ELSE
+                  DO i=1,SIZE(ROW_INDICES,1)
+                    !Use global matrix row and column numbers
+                    CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,1,DISTRIBUTED_MATRIX%PETSC% &
+                      & GLOBAL_ROW_NUMBERS(ROW_INDICES(i:i)),1,COLUMN_INDICES(i:i)-1,VALUES(i:i),PETSC_ADD_VALUES, &
+                      & ERR,ERROR,*999) !PETSc uses 0 indicies
+                  ENDDO !i
+                ENDIF
               ELSE
                 LOCAL_ERROR="The size of the column indices array ("// &
                   & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
@@ -2852,12 +2985,15 @@ CONTAINS
         CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
           IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
             !Use global matrix row and column numbers
-            !CALL PETSC_MATSETVALUESLOCAL(DISTRIBUTED_MATRIX%PETSC%MATRIX,1,(/ROW_INDEX/),1,(/COLUMN_INDEX/),(/VALUE/), &
-            !  & PETSC_ADD_VALUES,ERR,ERROR,*999)
             PETSC_COL_INDEX(1)=COLUMN_INDEX-1
             PETSC_VALUE(1)=VALUE
-            CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,1,DISTRIBUTED_MATRIX%PETSC%GLOBAL_ROW_NUMBERS( &
-              & ROW_INDEX),1,PETSC_COL_INDEX,PETSC_VALUE,PETSC_ADD_VALUES,ERR,ERROR,*999) !PETSc uses 0 based indices
+            IF(DISTRIBUTED_MATRIX%PETSC%USE_OVERRIDE_MATRIX) THEN
+              CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,1,DISTRIBUTED_MATRIX%PETSC%GLOBAL_ROW_NUMBERS( &
+                & ROW_INDEX),1,PETSC_COL_INDEX,PETSC_VALUE,PETSC_ADD_VALUES,ERR,ERROR,*999) !PETSc uses 0 based indices
+            ELSE
+              CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,1,DISTRIBUTED_MATRIX%PETSC%GLOBAL_ROW_NUMBERS( &
+                & ROW_INDEX),1,PETSC_COL_INDEX,PETSC_VALUE,PETSC_ADD_VALUES,ERR,ERROR,*999) !PETSc uses 0 based indices
+            ENDIF
           ELSE
             CALL FLAG_ERROR("Distributed matrix PETSc is not associated",ERR,ERROR,*999)
           ENDIF
@@ -2912,12 +3048,17 @@ CONTAINS
         CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
           IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
             IF(SIZE(ROW_INDICES,1)==SIZE(VALUES,1)) THEN
-              IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,2)) THEN
+              IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,2)) THEN                
                 DO i=1,SIZE(ROW_INDICES,1)
                   GLOBAL_ROW_INDICES(i)=DISTRIBUTED_MATRIX%PETSC%GLOBAL_ROW_NUMBERS(ROW_INDICES(i))
                 ENDDO !i
-                CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,SIZE(ROW_INDICES,1),GLOBAL_ROW_INDICES, &
-                  & SIZE(COLUMN_INDICES,1),COLUMN_INDICES-1,VALUES,PETSC_ADD_VALUES,ERR,ERROR,*999) !PETSc uses 0 based indices
+                IF(DISTRIBUTED_MATRIX%PETSC%USE_OVERRIDE_MATRIX) THEN
+                  CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,SIZE(ROW_INDICES,1),GLOBAL_ROW_INDICES, &
+                    & SIZE(COLUMN_INDICES,1),COLUMN_INDICES-1,VALUES,PETSC_ADD_VALUES,ERR,ERROR,*999) !PETSc uses 0 based indices
+                ELSE
+                  CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,SIZE(ROW_INDICES,1),GLOBAL_ROW_INDICES, &
+                    & SIZE(COLUMN_INDICES,1),COLUMN_INDICES-1,VALUES,PETSC_ADD_VALUES,ERR,ERROR,*999) !PETSc uses 0 based indices
+                ENDIF
               ELSE
                 LOCAL_ERROR="The size of the column indices array ("// &
                   & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
@@ -3278,10 +3419,6 @@ CONTAINS
           ENDIF
         CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
           CALL FLAG_ERROR("Cannot get values for a single precision PETSc distributed matrix",ERR,ERROR,*999)          
-          IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
-          ELSE
-            CALL FLAG_ERROR("Distributed matrix PETSc is not associated",ERR,ERROR,*999)
-          ENDIF
         CASE DEFAULT
           LOCAL_ERROR="The distributed matrix library type of "// &
             & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid"
@@ -3432,10 +3569,18 @@ CONTAINS
           IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
             IF(SIZE(ROW_INDICES,1)==SIZE(VALUES,1)) THEN
               IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,1)) THEN
-                DO i=1,SIZE(ROW_INDICES,1)
-                  CALL PETSC_MATGETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,1,DISTRIBUTED_MATRIX%PETSC%GLOBAL_ROW_NUMBERS( &
-                    & ROW_INDICES(i:i)),1,COLUMN_INDICES(i:i)-1,VALUES(i:i),ERR,ERROR,*999) !PETSc uses 0 based indices
-                ENDDO !i
+                IF(DISTRIBUTED_MATRIX%PETSC%USE_OVERRIDE_MATRIX) THEN
+                  DO i=1,SIZE(ROW_INDICES,1)
+                    CALL PETSC_MATGETVALUES(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,1,DISTRIBUTED_MATRIX%PETSC% &
+                      & GLOBAL_ROW_NUMBERS(ROW_INDICES(i:i)),1,COLUMN_INDICES(i:i)-1,VALUES(i:i), &
+                      & ERR,ERROR,*999) !PETSc uses 0 based indices
+                  ENDDO !i
+                ELSE
+                  DO i=1,SIZE(ROW_INDICES,1)
+                    CALL PETSC_MATGETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,1,DISTRIBUTED_MATRIX%PETSC%GLOBAL_ROW_NUMBERS( &
+                      & ROW_INDICES(i:i)),1,COLUMN_INDICES(i:i)-1,VALUES(i:i),ERR,ERROR,*999) !PETSc uses 0 based indices
+                  ENDDO !i
+                ENDIF
               ELSE
                 LOCAL_ERROR="The size of the column indices array ("// &
                   & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
@@ -3503,8 +3648,13 @@ CONTAINS
           ENDIF
         CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
           IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
-            CALL PETSC_MATGETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,1,DISTRIBUTED_MATRIX%PETSC%GLOBAL_ROW_NUMBERS(ROW_INDEX), &
-              & 1,(/COLUMN_INDEX-1/),VALUES,ERR,ERROR,*999) !PETSc uses 0 based indices
+            IF(DISTRIBUTED_MATRIX%PETSC%USE_OVERRIDE_MATRIX) THEN
+              CALL PETSC_MATGETVALUES(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,1,DISTRIBUTED_MATRIX%PETSC% &
+                & GLOBAL_ROW_NUMBERS(ROW_INDEX),1,(/COLUMN_INDEX-1/),VALUES,ERR,ERROR,*999) !PETSc uses 0 based indices
+            ELSE
+              CALL PETSC_MATGETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,1,DISTRIBUTED_MATRIX%PETSC%GLOBAL_ROW_NUMBERS(ROW_INDEX), &
+                & 1,(/COLUMN_INDEX-1/),VALUES,ERR,ERROR,*999) !PETSc uses 0 based indices
+            ENDIF
             VALUE=VALUES(1)
           ELSE
             CALL FLAG_ERROR("Distributed matrix PETSc is not associated",ERR,ERROR,*999)
@@ -3566,8 +3716,13 @@ CONTAINS
                 DO i=1,SIZE(ROW_INDICES,1)
                   GLOBAL_ROW_INDICES(i)=DISTRIBUTED_MATRIX%PETSC%GLOBAL_ROW_NUMBERS(ROW_INDICES(i))
                 ENDDO !i
-                CALL PETSC_MATGETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,SIZE(ROW_INDICES,1),GLOBAL_ROW_INDICES, &
-                  & SIZE(COLUMN_INDICES,1),COLUMN_INDICES-1,VALUES,ERR,ERROR,*999) !PETSc uses 0 based row indices
+                IF(DISTRIBUTED_MATRIX%PETSC%USE_OVERRIDE_MATRIX) THEN
+                  CALL PETSC_MATGETVALUES(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,SIZE(ROW_INDICES,1),GLOBAL_ROW_INDICES, &
+                    & SIZE(COLUMN_INDICES,1),COLUMN_INDICES-1,VALUES,ERR,ERROR,*999) !PETSc uses 0 based row indices
+                ELSE
+                  CALL PETSC_MATGETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,SIZE(ROW_INDICES,1),GLOBAL_ROW_INDICES, &
+                    & SIZE(COLUMN_INDICES,1),COLUMN_INDICES-1,VALUES,ERR,ERROR,*999) !PETSc uses 0 based row indices
+                ENDIF
               ELSE
                 LOCAL_ERROR="The size of the column indices array ("// &
                   & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
@@ -4078,10 +4233,18 @@ CONTAINS
           IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
             IF(SIZE(ROW_INDICES,1)==SIZE(VALUES,1)) THEN
               IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,1)) THEN
-                DO i=1,SIZE(ROW_INDICES,1)
-                  CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,1,DISTRIBUTED_MATRIX%PETSC%GLOBAL_ROW_NUMBERS( &
-                    & ROW_INDICES(i:i)),1,COLUMN_INDICES(i:i)-1,VALUES(i:i),PETSC_INSERT_VALUES,ERR,ERROR,*999) !0 based indices
-                ENDDO !i
+                IF(DISTRIBUTED_MATRIX%PETSC%USE_OVERRIDE_MATRIX) THEN
+                  DO i=1,SIZE(ROW_INDICES,1)
+                    CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,1,DISTRIBUTED_MATRIX%PETSC% &
+                      & GLOBAL_ROW_NUMBERS(ROW_INDICES(i:i)),1,COLUMN_INDICES(i:i)-1,VALUES(i:i),PETSC_INSERT_VALUES, &
+                      & ERR,ERROR,*999) !0 based indices
+                  ENDDO !i
+                ELSE
+                  DO i=1,SIZE(ROW_INDICES,1)
+                    CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,1,DISTRIBUTED_MATRIX%PETSC%GLOBAL_ROW_NUMBERS( &
+                      & ROW_INDICES(i:i)),1,COLUMN_INDICES(i:i)-1,VALUES(i:i),PETSC_INSERT_VALUES,ERR,ERROR,*999) !0 based indices
+                  ENDDO !i
+                ENDIF
               ELSE
                 LOCAL_ERROR="The size of the column indices array ("// &
                   & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
@@ -4148,8 +4311,13 @@ CONTAINS
           ENDIF
         CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
           IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
-            CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,1,DISTRIBUTED_MATRIX%PETSC%GLOBAL_ROW_NUMBERS(ROW_INDEX), &
-              & 1,(/COLUMN_INDEX-1/),(/VALUE/),PETSC_INSERT_VALUES,ERR,ERROR,*999) !PETSc uses 0 based indices
+            IF(DISTRIBUTED_MATRIX%PETSC%USE_OVERRIDE_MATRIX) THEN
+              CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,1,DISTRIBUTED_MATRIX%PETSC%GLOBAL_ROW_NUMBERS( &
+                & ROW_INDEX),1,(/COLUMN_INDEX-1/),(/VALUE/),PETSC_INSERT_VALUES,ERR,ERROR,*999) !PETSc uses 0 based indices
+            ELSE
+              CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,1,DISTRIBUTED_MATRIX%PETSC%GLOBAL_ROW_NUMBERS(ROW_INDEX), &
+                & 1,(/COLUMN_INDEX-1/),(/VALUE/),PETSC_INSERT_VALUES,ERR,ERROR,*999) !PETSc uses 0 based indices
+            ENDIF
           ELSE
             CALL FLAG_ERROR("Distributed matrix PETSc is not associated",ERR,ERROR,*999)
           ENDIF
@@ -4208,8 +4376,13 @@ CONTAINS
                 DO i=1,SIZE(ROW_INDICES,1)
                   GLOBAL_ROW_INDICES(i)=DISTRIBUTED_MATRIX%PETSC%GLOBAL_ROW_NUMBERS(ROW_INDICES(i))
                 ENDDO !i
-                CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,SIZE(ROW_INDICES,1),GLOBAL_ROW_INDICES, &
-                  & SIZE(COLUMN_INDICES,1),COLUMN_INDICES-1,VALUES,PETSC_INSERT_VALUES,ERR,ERROR,*999) !PETSc uses 0 based indices
+                IF(DISTRIBUTED_MATRIX%PETSC%USE_OVERRIDE_MATRIX) THEN
+                  CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%OVERRIDE_MATRIX,SIZE(ROW_INDICES,1),GLOBAL_ROW_INDICES, &
+                    & SIZE(COLUMN_INDICES,1),COLUMN_INDICES-1,VALUES,PETSC_INSERT_VALUES,ERR,ERROR,*999) !PETSc uses 0 based indices
+                ELSE
+                  CALL PETSC_MATSETVALUES(DISTRIBUTED_MATRIX%PETSC%MATRIX,SIZE(ROW_INDICES,1),GLOBAL_ROW_INDICES, &
+                    & SIZE(COLUMN_INDICES,1),COLUMN_INDICES-1,VALUES,PETSC_INSERT_VALUES,ERR,ERROR,*999) !PETSc uses 0 based indices
+                ENDIF
               ELSE
                 LOCAL_ERROR="The size of the column indices array ("// &
                   & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
@@ -4528,7 +4701,11 @@ CONTAINS
             ENDIF
           CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
             IF(ASSOCIATED(DISTRIBUTED_VECTOR%PETSC)) THEN
-              CALL PETSC_VECSET(DISTRIBUTED_VECTOR%PETSC%VECTOR,VALUE,ERR,ERROR,*999)
+              IF(DISTRIBUTED_VECTOR%PETSC%USE_OVERRIDE_VECTOR) THEN
+                CALL PETSC_VECSET(DISTRIBUTED_VECTOR%PETSC%OVERRIDE_VECTOR,VALUE,ERR,ERROR,*999)
+              ELSE
+                CALL PETSC_VECSET(DISTRIBUTED_VECTOR%PETSC%VECTOR,VALUE,ERR,ERROR,*999)
+              ENDIF
             ELSE
               CALL FLAG_ERROR("Distributed vector PETSc is not associated",ERR,ERROR,*999)
             ENDIF
@@ -5285,7 +5462,11 @@ CONTAINS
               ENDIF
             CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
               IF(ASSOCIATED(DISTRIBUTED_VECTOR%PETSC)) THEN
-                CALL PETSC_VECGETARRAYF90(DISTRIBUTED_VECTOR%PETSC%VECTOR,DATA,ERR,ERROR,*999)
+                IF(DISTRIBUTED_VECTOR%PETSC%USE_OVERRIDE_VECTOR) THEN
+                  CALL PETSC_VECGETARRAYF90(DISTRIBUTED_VECTOR%PETSC%OVERRIDE_VECTOR,DATA,ERR,ERROR,*999)
+                ELSE
+                  CALL PETSC_VECGETARRAYF90(DISTRIBUTED_VECTOR%PETSC%VECTOR,DATA,ERR,ERROR,*999)
+                ENDIF
               ELSE
                 CALL FLAG_ERROR("Distributed vector PETSc is not associated",ERR,ERROR,*999)
               ENDIF
@@ -5492,7 +5673,11 @@ CONTAINS
             NULLIFY(DATA)
           CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
             IF(ASSOCIATED(DISTRIBUTED_VECTOR%PETSC)) THEN
-              CALL PETSC_VECRESTOREARRAYF90(DISTRIBUTED_VECTOR%PETSC%VECTOR,DATA,ERR,ERROR,*999)
+              IF(DISTRIBUTED_VECTOR%PETSC%USE_OVERRIDE_VECTOR) THEN
+                CALL PETSC_VECRESTOREARRAYF90(DISTRIBUTED_VECTOR%PETSC%OVERRIDE_VECTOR,DATA,ERR,ERROR,*999)
+              ELSE
+                CALL PETSC_VECRESTOREARRAYF90(DISTRIBUTED_VECTOR%PETSC%VECTOR,DATA,ERR,ERROR,*999)
+              ENDIF
             ELSE
               CALL FLAG_ERROR("Distributed vector PETSc is not associated",ERR,ERROR,*999)
             ENDIF
@@ -5748,7 +5933,11 @@ CONTAINS
           ENDIF
         CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
           IF(ASSOCIATED(DISTRIBUTED_VECTOR%PETSC)) THEN
-            CALL PETSC_VECVIEW(DISTRIBUTED_VECTOR%PETSC%VECTOR,PETSC_VIEWER_STDOUT_WORLD,ERR,ERROR,*999)
+            IF(DISTRIBUTED_VECTOR%PETSC%USE_OVERRIDE_VECTOR) THEN
+              CALL PETSC_VECVIEW(DISTRIBUTED_VECTOR%PETSC%OVERRIDE_VECTOR,PETSC_VIEWER_STDOUT_WORLD,ERR,ERROR,*999)
+            ELSE              
+              CALL PETSC_VECVIEW(DISTRIBUTED_VECTOR%PETSC%VECTOR,PETSC_VIEWER_STDOUT_WORLD,ERR,ERROR,*999)
+            ENDIF
           ELSE
             CALL FLAG_ERROR("Distributed vector PETSc is not associated",ERR,ERROR,*999)
           ENDIF
@@ -5770,6 +5959,101 @@ CONTAINS
     CALL EXITS("DISTRIBUTED_VECTOR_OUTPUT")
     RETURN 1
   END SUBROUTINE DISTRIBUTED_VECTOR_OUTPUT
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the override vector for a distributed vector.
+  SUBROUTINE DISTRIBUTED_VECTOR_OVERRIDE_SET_ON(DISTRIBUTED_VECTOR,OVERRIDE_VECTOR,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: DISTRIBUTED_VECTOR !<A pointer to the distributed vector to override
+    TYPE(PETSC_VEC_TYPE), INTENT(IN) :: OVERRIDE_VECTOR !<The override vector
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("DISTRIBUTED_VECTOR_OVERRIDE_SET_ON",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DISTRIBUTED_VECTOR)) THEN
+      IF(DISTRIBUTED_VECTOR%VECTOR_FINISHED) THEN
+        SELECT CASE(DISTRIBUTED_VECTOR%LIBRARY_TYPE)
+        CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)          
+        CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
+          IF(ASSOCIATED(DISTRIBUTED_VECTOR%PETSC)) THEN
+            DISTRIBUTED_VECTOR%PETSC%USE_OVERRIDE_VECTOR=.TRUE.
+            DISTRIBUTED_VECTOR%PETSC%OVERRIDE_VECTOR=OVERRIDE_VECTOR
+          ELSE
+            CALL FLAG_ERROR("Distributed vector PETSc is not associated",ERR,ERROR,*999)
+          ENDIF
+        CASE DEFAULT
+          LOCAL_ERROR="The distributed vector library type of "// &
+            & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_VECTOR%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE
+       CALL FLAG_ERROR("Distributed vector has not been finished",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Distributed vector is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DISTRIBUTED_VECTOR_OVERRIDE_SET_ON")
+    RETURN
+999 CALL ERRORS("DISTRIBUTED_VECTOR_OVERRIDE_SET_ON",ERR,ERROR)
+    CALL EXITS("DISTRIBUTED_VECTOR_OVERRIDE_SET_ON")
+    RETURN 1
+  END SUBROUTINE DISTRIBUTED_VECTOR_OVERRIDE_SET_ON
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Turns off the override vector for a distributed vector.
+  SUBROUTINE DISTRIBUTED_VECTOR_OVERRIDE_SET_OFF(DISTRIBUTED_VECTOR,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: DISTRIBUTED_VECTOR !<A pointer to the distributed vector to override
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("DISTRIBUTED_VECTOR_OVERRIDE_SET_OFF",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DISTRIBUTED_VECTOR)) THEN
+      IF(DISTRIBUTED_VECTOR%VECTOR_FINISHED) THEN
+        SELECT CASE(DISTRIBUTED_VECTOR%LIBRARY_TYPE)
+        CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)          
+        CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
+          IF(ASSOCIATED(DISTRIBUTED_VECTOR%PETSC)) THEN
+            DISTRIBUTED_VECTOR%PETSC%USE_OVERRIDE_VECTOR=.FALSE.
+            CALL PETSC_VECINITIALISE(DISTRIBUTED_VECTOR%PETSC%OVERRIDE_VECTOR,ERR,ERROR,*999)
+          ELSE
+            CALL FLAG_ERROR("Distributed vector PETSc is not associated",ERR,ERROR,*999)
+          ENDIF
+        CASE DEFAULT
+          LOCAL_ERROR="The distributed vector library type of "// &
+            & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_VECTOR%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE
+       CALL FLAG_ERROR("Distributed vector has not been finished",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Distributed vector is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DISTRIBUTED_VECTOR_OVERRIDE_SET_OFF")
+    RETURN
+999 CALL ERRORS("DISTRIBUTED_VECTOR_OVERRIDE_SET_OFF",ERR,ERROR)
+    CALL EXITS("DISTRIBUTED_VECTOR_OVERRIDE_SET_OFF")
+    RETURN 1
+  END SUBROUTINE DISTRIBUTED_VECTOR_OVERRIDE_SET_OFF
 
   !
   !================================================================================================================================
@@ -5801,18 +6085,9 @@ CONTAINS
           CALL PETSC_VECCREATEMPI(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_VECTOR%N,PETSC_VECTOR%GLOBAL_N,PETSC_VECTOR%VECTOR, &
             & ERR,ERROR,*999)
           !Set up the Local to Global Mappings
-          !ALLOCATE(GLOBAL_NUMBERS(PETSC_VECTOR%DATA_SIZE),STAT=ERR)
-          !IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global numbers for PETSc distributed vector",ERR,ERROR,*999)
           DO i=1,PETSC_VECTOR%N
             PETSC_VECTOR%GLOBAL_NUMBERS(i)=DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(i)-1
-            !GLOBAL_NUMBERS(i)=DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(i)
           ENDDO !i
-          !Should this be the global communicator or COMM_SELF???
-          !CALL PETSC_ISLOCALTOGLOBALMAPPINGCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_VECTOR%N,GLOBAL_NUMBERS, &
-          !  & PETSC_VECTOR%ISLTGMAPPING,ERR,ERROR,*999)
-          !CALL PETSC_VECSETLOCALTOGLOBALMAPPING(PETSC_VECTOR%VECTOR,PETSC_VECTOR%ISLTGMAPPING,ERR,ERROR,*999)
-          !CALL PETSC_ISLOCALTOGLOBALMAPPINGDESTROY(PETSC_VECTOR%ISLTGMAPPING,ERR,ERROR,*999)
-          !IF(ALLOCATED(GLOBAL_NUMBERS)) DEALLOCATE(GLOBAL_NUMBERS)
         ELSE
           CALL FLAG_ERROR("PETSc vector distributed vector domain mapping is not associated",ERR,ERROR,*999)
         ENDIF
@@ -5847,8 +6122,8 @@ CONTAINS
 
     IF(ASSOCIATED(PETSC_VECTOR)) THEN
       IF(ALLOCATED(PETSC_VECTOR%GLOBAL_NUMBERS)) DEALLOCATE(PETSC_VECTOR%GLOBAL_NUMBERS)
-      !CALL PETSC_ISLOCALTOGLOBALMAPPINGFINALISE(PETSC_VECTOR%ISLTGMAPPING,ERR,ERROR,*999)
       CALL PETSC_VECFINALISE(PETSC_VECTOR%VECTOR,ERR,ERROR,*999)
+      CALL PETSC_VECFINALISE(PETSC_VECTOR%OVERRIDE_VECTOR,ERR,ERROR,*999)
       DEALLOCATE(PETSC_VECTOR)
     ENDIF
     
@@ -5899,8 +6174,9 @@ CONTAINS
           DISTRIBUTED_VECTOR%PETSC%GLOBAL_N=DISTRIBUTED_VECTOR%DOMAIN_MAPPING%NUMBER_OF_GLOBAL
           ALLOCATE(DISTRIBUTED_VECTOR%PETSC%GLOBAL_NUMBERS(DISTRIBUTED_VECTOR%PETSC%N),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate PETSc distributed vector global numbers.",ERR,ERROR,*999)
-          !CALL PETSC_ISLOCALTOGLOBALMAPPINGINITIALISE(DISTRIBUTED_VECTOR%PETSC%ISLTGMAPPING,ERR,ERROR,*999)
+          DISTRIBUTED_VECTOR%PETSC%USE_OVERRIDE_VECTOR=.FALSE.
           CALL PETSC_VECINITIALISE(DISTRIBUTED_VECTOR%PETSC%VECTOR,ERR,ERROR,*999)
+          CALL PETSC_VECINITIALISE(DISTRIBUTED_VECTOR%PETSC%OVERRIDE_VECTOR,ERR,ERROR,*999)          
         ELSE
           CALL FLAG_ERROR("Distributed vector domain mapping is not associated",ERR,ERROR,*998)
         ENDIF
@@ -6090,7 +6366,11 @@ CONTAINS
           ENDIF
         CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
           IF(ASSOCIATED(DISTRIBUTED_VECTOR%PETSC)) THEN
-            CALL PETSC_VECASSEMBLYEND(DISTRIBUTED_VECTOR%PETSC%VECTOR,ERR,ERROR,*999)
+            IF(DISTRIBUTED_VECTOR%PETSC%USE_OVERRIDE_VECTOR) THEN
+              CALL PETSC_VECASSEMBLYEND(DISTRIBUTED_VECTOR%PETSC%OVERRIDE_VECTOR,ERR,ERROR,*999)
+            ELSE
+              CALL PETSC_VECASSEMBLYEND(DISTRIBUTED_VECTOR%PETSC%VECTOR,ERR,ERROR,*999)
+            ENDIF
           ELSE
             CALL FLAG_ERROR("Distributed vector PETSc is not associated",ERR,ERROR,*999)
           ENDIF
@@ -6541,7 +6821,11 @@ CONTAINS
           ENDIF
         CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)          
           IF(ASSOCIATED(DISTRIBUTED_VECTOR%PETSC)) THEN
-            CALL PETSC_VECASSEMBLYBEGIN(DISTRIBUTED_VECTOR%PETSC%VECTOR,ERR,ERROR,*999)
+            IF(DISTRIBUTED_VECTOR%PETSC%USE_OVERRIDE_VECTOR) THEN
+              CALL PETSC_VECASSEMBLYBEGIN(DISTRIBUTED_VECTOR%PETSC%OVERRIDE_VECTOR,ERR,ERROR,*999)
+            ELSE
+              CALL PETSC_VECASSEMBLYBEGIN(DISTRIBUTED_VECTOR%PETSC%VECTOR,ERR,ERROR,*999)
+            ENDIF
           ELSE
             CALL FLAG_ERROR("Distributed vector PETSc is not associated",ERR,ERROR,*999)
           ENDIF
@@ -6930,8 +7214,13 @@ CONTAINS
               ENDIF
             CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
               IF(ASSOCIATED(DISTRIBUTED_VECTOR%PETSC)) THEN
-                CALL PETSC_VECSETVALUES(DISTRIBUTED_VECTOR%PETSC%VECTOR,SIZE(INDICES,1),DISTRIBUTED_VECTOR%PETSC%GLOBAL_NUMBERS( &
-                  & INDICES),VALUES,PETSC_ADD_VALUES,ERR,ERROR,*999)
+                IF(DISTRIBUTED_VECTOR%PETSC%USE_OVERRIDE_VECTOR) THEN
+                  CALL PETSC_VECSETVALUES(DISTRIBUTED_VECTOR%PETSC%OVERRIDE_VECTOR,SIZE(INDICES,1),DISTRIBUTED_VECTOR%PETSC% &
+                    & GLOBAL_NUMBERS(INDICES),VALUES,PETSC_ADD_VALUES,ERR,ERROR,*999)
+                ELSE
+                  CALL PETSC_VECSETVALUES(DISTRIBUTED_VECTOR%PETSC%VECTOR,SIZE(INDICES,1),DISTRIBUTED_VECTOR%PETSC% &
+                    & GLOBAL_NUMBERS(INDICES),VALUES,PETSC_ADD_VALUES,ERR,ERROR,*999)
+                ENDIF
               ELSE
                 CALL FLAG_ERROR("Distributed vector PETSc is not associated",ERR,ERROR,*999)
               ENDIF
@@ -7005,8 +7294,13 @@ CONTAINS
           CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
             IF(ASSOCIATED(DISTRIBUTED_VECTOR%PETSC)) THEN
               PETSC_VALUE(1)=VALUE
-              CALL PETSC_VECSETVALUES(DISTRIBUTED_VECTOR%PETSC%VECTOR,1,DISTRIBUTED_VECTOR%PETSC%GLOBAL_NUMBERS(INDEX), &
-                & PETSC_VALUE,PETSC_ADD_VALUES,ERR,ERROR,*999)
+              IF(DISTRIBUTED_VECTOR%PETSC%USE_OVERRIDE_VECTOR) THEN
+                CALL PETSC_VECSETVALUES(DISTRIBUTED_VECTOR%PETSC%OVERRIDE_VECTOR,1,DISTRIBUTED_VECTOR%PETSC%GLOBAL_NUMBERS(INDEX), &
+                  & PETSC_VALUE,PETSC_ADD_VALUES,ERR,ERROR,*999)
+              ELSE
+                CALL PETSC_VECSETVALUES(DISTRIBUTED_VECTOR%PETSC%VECTOR,1,DISTRIBUTED_VECTOR%PETSC%GLOBAL_NUMBERS(INDEX), &
+                  & PETSC_VALUE,PETSC_ADD_VALUES,ERR,ERROR,*999)
+              ENDIF
             ELSE
               CALL FLAG_ERROR("Distributed vector PETSc is not associated",ERR,ERROR,*999)
             ENDIF
@@ -7480,7 +7774,12 @@ CONTAINS
                 DO i=1,SIZE(INDICES,1)
                   PETSC_INDICES(i)=DISTRIBUTED_VECTOR%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(INDICES(i))-1 !PETSc uses global 0-based indices
                 ENDDO !i
-                CALL PETSC_VECGETVALUES(DISTRIBUTED_VECTOR%PETSC%VECTOR,SIZE(INDICES,1),PETSC_INDICES,VALUES,ERR,ERROR,*999)
+                IF(DISTRIBUTED_VECTOR%PETSC%USE_OVERRIDE_VECTOR) THEN
+                  CALL PETSC_VECGETVALUES(DISTRIBUTED_VECTOR%PETSC%OVERRIDE_VECTOR,SIZE(INDICES,1),PETSC_INDICES,VALUES, &
+                    & ERR,ERROR,*999)
+                ELSE
+                  CALL PETSC_VECGETVALUES(DISTRIBUTED_VECTOR%PETSC%VECTOR,SIZE(INDICES,1),PETSC_INDICES,VALUES,ERR,ERROR,*999)
+                ENDIF
               ELSE
                 CALL FLAG_ERROR("Distributed vector PETSc is not associated.",ERR,ERROR,*999)
               ENDIF
@@ -7554,7 +7853,11 @@ CONTAINS
           CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
             IF(ASSOCIATED(DISTRIBUTED_VECTOR%PETSC)) THEN
               PETSC_INDEX=DISTRIBUTED_VECTOR%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(INDEX)-1 !PETSc uses global 0-based indices
-              CALL PETSC_VECGETVALUES(DISTRIBUTED_VECTOR%PETSC%VECTOR,1,PETSC_INDEX,PETSC_VALUE,ERR,ERROR,*999)
+              IF(DISTRIBUTED_VECTOR%PETSC%USE_OVERRIDE_VECTOR) THEN
+                CALL PETSC_VECGETVALUES(DISTRIBUTED_VECTOR%PETSC%OVERRIDE_VECTOR,1,PETSC_INDEX,PETSC_VALUE,ERR,ERROR,*999)
+              ELSE
+                CALL PETSC_VECGETVALUES(DISTRIBUTED_VECTOR%PETSC%VECTOR,1,PETSC_INDEX,PETSC_VALUE,ERR,ERROR,*999)
+              ENDIF
               VALUE=PETSC_VALUE(1)
             ELSE
               CALL FLAG_ERROR("Distributed vector PETSc is not associated.",ERR,ERROR,*999)
@@ -8029,8 +8332,13 @@ CONTAINS
               ENDIF
             CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
               IF(ASSOCIATED(DISTRIBUTED_VECTOR%PETSC)) THEN
-                CALL PETSC_VECSETVALUES(DISTRIBUTED_VECTOR%PETSC%VECTOR,SIZE(INDICES,1),DISTRIBUTED_VECTOR%PETSC%GLOBAL_NUMBERS( &
-                  & INDICES),VALUES,PETSC_INSERT_VALUES,ERR,ERROR,*999)
+                IF(DISTRIBUTED_VECTOR%PETSC%USE_OVERRIDE_VECTOR) THEN
+                  CALL PETSC_VECSETVALUES(DISTRIBUTED_VECTOR%PETSC%OVERRIDE_VECTOR,SIZE(INDICES,1),DISTRIBUTED_VECTOR%PETSC% &
+                    & GLOBAL_NUMBERS(INDICES),VALUES,PETSC_INSERT_VALUES,ERR,ERROR,*999)
+                ELSE
+                  CALL PETSC_VECSETVALUES(DISTRIBUTED_VECTOR%PETSC%VECTOR,SIZE(INDICES,1),DISTRIBUTED_VECTOR%PETSC%GLOBAL_NUMBERS( &
+                    & INDICES),VALUES,PETSC_INSERT_VALUES,ERR,ERROR,*999)
+                ENDIF
               ELSE
                 CALL FLAG_ERROR("Distributed vector PETSc is not associated",ERR,ERROR,*999)
               ENDIF
@@ -8106,8 +8414,13 @@ CONTAINS
             IF(ASSOCIATED(DISTRIBUTED_VECTOR%PETSC)) THEN
               PETSC_INDEX(1)=DISTRIBUTED_VECTOR%PETSC%GLOBAL_NUMBERS(INDEX)
               PETSC_VALUE(1)=VALUE
-              CALL PETSC_VECSETVALUES(DISTRIBUTED_VECTOR%PETSC%VECTOR,1,PETSC_INDEX,PETSC_VALUE,PETSC_INSERT_VALUES, &
-                & ERR,ERROR,*999)
+              IF(DISTRIBUTED_VECTOR%PETSC%USE_OVERRIDE_VECTOR) THEN
+                CALL PETSC_VECSETVALUES(DISTRIBUTED_VECTOR%PETSC%OVERRIDE_VECTOR,1,PETSC_INDEX,PETSC_VALUE,PETSC_INSERT_VALUES, &
+                  & ERR,ERROR,*999)
+              ELSE
+                CALL PETSC_VECSETVALUES(DISTRIBUTED_VECTOR%PETSC%VECTOR,1,PETSC_INDEX,PETSC_VALUE,PETSC_INSERT_VALUES, &
+                  & ERR,ERROR,*999)
+              ENDIF
             ELSE
               CALL FLAG_ERROR("Distributed vector PETSc is not associated",ERR,ERROR,*999)
             ENDIF

@@ -75,6 +75,8 @@ MODULE COMP_ENVIRONMENT
     CHARACTER(LEN=MPI_MAX_PROCESSOR_NAME) :: NODE_NAME !<The name of the computational node
   END TYPE COMPUTATIONAL_NODE_TYPE
 
+  PUBLIC COMPUTATIONAL_NODE_TYPE
+
   !>Contains information on the MPI type to transfer information about a computational node
   TYPE MPI_COMPUTATIONAL_NODE_TYPE
     INTEGER(INTG) :: MPI_TYPE !<The MPI data type

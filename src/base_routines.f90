@@ -45,6 +45,7 @@ MODULE BASE_ROUTINES
 
   USE CONSTANTS
   USE KINDS
+  USE ISO_C_BINDING
   USE ISO_VARYING_STRING
   USE MACHINE_CONSTANTS 
 
@@ -64,7 +65,8 @@ MODULE BASE_ROUTINES
   INTEGER(INTG), PARAMETER :: DIAGNOSTIC_OUTPUT_TYPE=2 !<Diagnostic output type \see BASE_ROUTINES_OutputType,BASE_ROUTINES
   INTEGER(INTG), PARAMETER :: TIMING_OUTPUT_TYPE=3 !<Timing output type \see BASE_ROUTINES_OutputType,BASE_ROUTINES
   INTEGER(INTG), PARAMETER :: ERROR_OUTPUT_TYPE=4 !<Error output type \see BASE_ROUTINES_OutputType,BASE_ROUTINES
-  INTEGER(INTG), PARAMETER :: HELP_OUTPUT_TYPE=5 !<Help output type \see BASE_ROUTINES_OutputType,BASE_ROUTINES
+  INTEGER(INTG), PARAMETER :: WARNING_OUTPUT_TYPE=5 !<Warning output type \see BASE_ROUTINES_OutputType,BASE_ROUTINES
+  INTEGER(INTG), PARAMETER :: HELP_OUTPUT_TYPE=6 !<Help output type \see BASE_ROUTINES_OutputType,BASE_ROUTINES
   !>@}
 
   !> \addtogroup BASE_ROUTINES_FileUnits BASE_ROUTINES::FileUnits
@@ -175,20 +177,19 @@ MODULE BASE_ROUTINES
 !!!!NOTE: This module needs to call the c cputime function directly in order to avoid a circular module loop when timer uses
 !!!!      base_routines.
 
-    SUBROUTINE CPUTIMER(RETURN_TIME, TIME_TYPE, ERR, CERROR)
-      !DEC$ ATTRIBUTES C, reference, alias:'_cputimer' :: cputimer
-      USE KINDS
-      REAL(DP), INTENT(OUT) :: RETURN_TIME
-      INTEGER(INTG), INTENT(IN) :: TIME_TYPE
-      INTEGER(INTG), INTENT(OUT) :: ERR
-      INTEGER(INTG), INTENT(OUT) :: CERROR(*)
+    SUBROUTINE CPUTIMER(RETURN_TIME, TIME_TYPE, ERR, CERROR) BIND(C,NAME="CPUTimer")
+      USE ISO_C_BINDING
+      REAL(C_DOUBLE), INTENT(OUT) :: RETURN_TIME
+      INTEGER(C_INT), INTENT(IN) :: TIME_TYPE
+      INTEGER(C_INT), INTENT(OUT) :: ERR
+      CHARACTER(C_CHAR), INTENT(OUT) :: CERROR(*)
     END SUBROUTINE CPUTIMER
 
   END INTERFACE
 
   !>Flags an error condition \see BASE_ROUTINES
   INTERFACE FLAG_ERROR
-    MODULE PROCEDURE FLAG_ERROR_C 
+    MODULE PROCEDURE FLAG_ERROR_C
     MODULE PROCEDURE FLAG_ERROR_VS
   END INTERFACE !FLAG_ERROR
   
@@ -203,10 +204,10 @@ MODULE BASE_ROUTINES
     & START_READ_COMFILE_UNIT,STOP_READ_COMFILE_UNIT,TEMPORARY_FILE_UNIT,ALL_TIMING_TYPE,IN_TIMING_TYPE,FROM_TIMING_TYPE, &
     & LEARN_FILE_UNIT
 
-  PUBLIC ENTERS,ERRORS,EXITS,FLAG_ERROR,FLAG_WARNING,BASE_ROUTINES_FINALISE,BASE_ROUTINES_INITIALISE
+  PUBLIC ENTERS,ERRORS,EXITS,EXTRACT_ERROR_MESSAGE,FLAG_ERROR,FLAG_WARNING,BASE_ROUTINES_FINALISE,BASE_ROUTINES_INITIALISE
   
   PUBLIC OP_STRING,DIAGNOSTICS_SET_ON,DIAGNOSTICS_SET_OFF,OUTPUT_SET_OFF,OUTPUT_SET_ON,TIMING_SET_ON,TIMING_SET_OFF, &
-    & TIMING_SUMMARY_OUTPUT,WRITE_STR
+    & TIMING_SUMMARY_OUTPUT,WRITE_ERROR,WRITE_STR
 
 CONTAINS
 
@@ -222,7 +223,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
-    INTEGER(INTG) :: CERROR(100)
+    CHARACTER(C_CHAR) :: CERROR(MAXSTRLEN)
     REAL(DP) :: ENTERS_CPU_TIME,ENTERS_SYSTEM_TIME
     LOGICAL :: FINISHED
     TYPE(ROUTINE_LIST_ITEM_TYPE), POINTER :: LIST_ROUTINE_PTR
@@ -358,7 +359,8 @@ CONTAINS
     !Argument variables
     CHARACTER(LEN=*), INTENT(IN) :: NAME !<The name of the routine exiting
     !Local variables
-    INTEGER(INTG) :: CERROR(100),ERR
+    CHARACTER(C_CHAR) :: CERROR(MAXSTRLEN)
+    INTEGER(INTG) :: ERR
     REAL(DP) :: EXITS_CPU_TIME,EXITS_SYSTEM_TIME
     TYPE(VARYING_STRING) :: ERROR
     TYPE(ROUTINE_STACK_ITEM_TYPE), POINTER :: PREVIOUS_ROUTINE_PTR,ROUTINE_PTR
@@ -465,6 +467,27 @@ CONTAINS
   !
   !================================================================================================================================
   !
+
+  !>Extracts the error message from a CMISS error string and returns it as varying string
+  FUNCTION EXTRACT_ERROR_MESSAGE(ERR,ERROR)
+
+    !Argument variables    
+    INTEGER(INTG), INTENT(IN) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(IN) :: ERROR !<The error string
+    !Function variable
+    TYPE(VARYING_STRING) :: EXTRACT_ERROR_MESSAGE !<On exit, the error message contained in the error string
+    !Local Variables
+    INTEGER(INTG) :: POSITION
+    
+    POSITION=INDEX(ERROR,ERROR_SEPARATOR_CONSTANT)
+    EXTRACT_ERROR_MESSAGE=EXTRACT(ERROR,1,POSITION-1)
+    
+    RETURN    
+  END FUNCTION EXTRACT_ERROR_MESSAGE
+    
+  !
+  !================================================================================================================================
+  !
  
   !>Sets the error string specified by a character string and flags an error 
   SUBROUTINE FLAG_ERROR_C(STRING,ERR,ERROR,*)
@@ -516,7 +539,7 @@ CONTAINS
     !Local variables
 
     WRITE(OP_STRING,'(">>WARNING: ",A)') STRING
-    CALL WRITE_STR(ERROR_OUTPUT_TYPE,ERR,ERROR,*999)
+    CALL WRITE_STR(WARNING_OUTPUT_TYPE,ERR,ERROR,*999)
 
     RETURN 
 999 CALL ERRORS("FLAG_WARNING_C",ERR,ERROR)
@@ -537,7 +560,7 @@ CONTAINS
     !Local variables
 
     WRITE(OP_STRING,'(">>WARNING: ",A)') CHAR(STRING)
-    CALL WRITE_STR(ERROR_OUTPUT_TYPE,ERR,ERROR,*999)
+    CALL WRITE_STR(WARNING_OUTPUT_TYPE,ERR,ERROR,*999)
 
     RETURN 
 999 CALL ERRORS("FLAG_WARNING_VS",ERR,ERROR)
@@ -1112,6 +1135,48 @@ CONTAINS
     CALL EXITS("TIMING_SUMMARY_OUTPUT")
     RETURN 1
   END SUBROUTINE TIMING_SUMMARY_OUTPUT
+
+ !
+  !================================================================================================================================
+  !
+
+  !>Writes the error string.
+  SUBROUTINE WRITE_ERROR(ERR,ERROR,*)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(INOUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: INDENT,LOCAL_ERR,POSITION
+    CHARACTER(LEN=MAXSTRLEN) :: INDENT_STRING=">>"
+    TYPE(VARYING_STRING) :: LOCAL_ERROR,LOCAL_ERROR2
+    
+    POSITION=INDEX(ERROR,ERROR_SEPARATOR_CONSTANT)
+    WRITE(OP_STRING,'(">>ERROR: ",I5,": ",A)') ERR,CHAR(EXTRACT(ERROR,1,POSITION-1))
+    CALL WRITE_STR(ERROR_OUTPUT_TYPE,LOCAL_ERR,LOCAL_ERROR2,*999)
+    !CPB 20/02/07 aix compiler does not like varying strings so split the remove statement up into two statements
+    LOCAL_ERROR=REMOVE(ERROR,1,POSITION)
+    ERROR=LOCAL_ERROR
+    POSITION=INDEX(ERROR,ERROR_SEPARATOR_CONSTANT)
+    INDENT=4
+    DO WHILE(POSITION/=0)
+      WRITE(OP_STRING,'(A)') INDENT_STRING(1:INDENT)//CHAR(EXTRACT(ERROR,1,POSITION-1))
+      CALL WRITE_STR(ERROR_OUTPUT_TYPE,LOCAL_ERR,LOCAL_ERROR2,*999)
+      !CPB 20/02/07 aix compiler does not like varying strings so split the remove statement up into two statements
+      LOCAL_ERROR=REMOVE(ERROR,1,POSITION)
+      ERROR=LOCAL_ERROR
+      POSITION=INDEX(ERROR,ERROR_SEPARATOR_CONSTANT)
+      INDENT=INDENT+2
+    ENDDO
+    WRITE(OP_STRING,'(A)') INDENT_STRING(1:INDENT)//CHAR(ERROR)
+    CALL WRITE_STR(ERROR_OUTPUT_TYPE,LOCAL_ERR,LOCAL_ERROR2,*999)
+    ERR=0
+    ERROR=""
+
+    RETURN
+    !Don't return an error code here otherwise we will get into a circular loop
+999 RETURN 
+  END SUBROUTINE WRITE_ERROR
 
   !
   !================================================================================================================================

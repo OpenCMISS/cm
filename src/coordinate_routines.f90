@@ -45,9 +45,9 @@ MODULE COORDINATE_ROUTINES
 
   USE BASE_ROUTINES
   USE CONSTANTS
-  USE KINDS
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
+  USE KINDS
   USE MATHS
   USE STRINGS
   USE TYPES
@@ -116,6 +116,8 @@ MODULE COORDINATE_ROUTINES
   
   !Interfaces
 
+  !>COORDINATE_CONVERT_FROM_RC performs a coordinate transformation from a rectangular cartesian coordinate at the point with
+  !>coordinate Z(:) to the returned point with coordinate X(:) in the coordinate system identified by COORDINATE_SYSTEM.
   INTERFACE COORDINATE_CONVERT_FROM_RC
     MODULE PROCEDURE COORDINATE_CONVERT_FROM_RC_DP
     MODULE PROCEDURE COORDINATE_CONVERT_FROM_RC_SP
@@ -213,32 +215,15 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Function: COORDINATE_CONVERT_FROM_RC
-  !###  Description:
-  !###    COORDINATE_CONVERT_FROM_RC performs a coordinate transformation from a rectangular cartesian coordinate at the point with
-  !###    coordinate Z(:) to the returned point with coordinate X(:) in the coordinate system identified by COORDINATE_SYSTEM.
-  !###  Child-functions: COORDINATE_CONVERT_FROM_RC_DP,COORDINATE_CONVERT_FROM_RC_SP
 
-  !
-  !================================================================================================================================
-  !
-  
+  !>Performs a coordinate transformation from a rectangular cartesian coordinate at the point with coordinate Z(:) to the returned point with coordinate X(:) in the coordinate system identified by COORDINATE_SYSTEM for double precision coordinates.
   FUNCTION COORDINATE_CONVERT_FROM_RC_DP(COORDINATE_SYSTEM,Z,ERR,ERROR)
   
-    !#### Function: COORDINATE_CONVERT_FROM_RC_DP
-    !###  Type: REAL(DP)(SIZE(Z,1))
-    !###  Description:
-    !###    COORDINATE_CONVERT_FROM_RC_DP performs a coordinate transformation from a rectangular cartesian coordinate at the
-    !###    point with coordinate Z(:) to the returned point with coordinate X(:) in the coordinate system identified by
-    !###    COORDINATE_SYSTEM for double precision coordinates.
-    !###  Parent-function: COORDINATE_CONVERT_FROM_RC
-    
     !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM
-    REAL(DP), INTENT(IN) :: Z(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM !<The coordinate system to perform the conversion on
+    REAL(DP), INTENT(IN) :: Z(:) !<The rectangular cartesian coordiantes to convert
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
     REAL(DP) :: COORDINATE_CONVERT_FROM_RC_DP(SIZE(Z,1))
     !Local variables
@@ -718,23 +703,17 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Calculates the covariant metric tensor GL(i,j), the contravariant metric tensor GU(i,J), the Jacobian and derivative of the interpolated coordinate system (XI_i) with respect to the given coordinate (X_j) system (DXI_DX) at a point (X - normally a Gauss point). Old cmiss name: XGMG
   SUBROUTINE COORDINATE_METRICS_CALCULATE(COORDINATE_SYSTEM,JACOBIAN_TYPE,METRICS,ERR,ERROR,*)
 
-    !#### Subroutine: COORDINATE_METRICS_CALCUALTE
-    !###  Description:
-    !###    Calculates the covariant metric tensor GL(i,j), the contravariant metric tensor GU(i,J), the Jacobian and derivative
-    !###    of the interpolated coordinate system (XI_i) with respect to the given coordinate (X_j) system (DXI_DX) at a point
-    !###    (X - normally a Gauss point). 
-    !###    Old-cmiss-name: XGMG
-
     !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-    INTEGER(INTG), INTENT(IN) :: JACOBIAN_TYPE
-    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: METRICS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<A pointer to the coordinate system to calculate the metrics for
+    INTEGER(INTG), INTENT(IN) :: JACOBIAN_TYPE !<The type of Jacobian to calculate \see COORDINATE_ROUTINES_JacobianTypes,COORDINATE_ROUTINES
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: METRICS !<A pointer to the metrics to calculate
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: mi,nj,ni,nu
+    INTEGER(INTG) :: mi,ni,nu
     REAL(DP) :: DET_GL,DET_DX_DXI,FF,G1,G3,MU,R,RC,RCRC,RR
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -765,13 +744,33 @@ CONTAINS
             !Calculate the covariant metric tensor GL(i,j)
             SELECT CASE(COORDINATE_SYSTEM%TYPE)
             CASE(COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
-              DO mi=1,METRICS%NUMBER_OF_XI_DIMENSIONS
-                DO ni=1,METRICS%NUMBER_OF_XI_DIMENSIONS
-                  DO nj=1,METRICS%NUMBER_OF_X_DIMENSIONS
-                    METRICS%GL(mi,ni)=METRICS%GL(mi,ni)+METRICS%DX_DXI(nj,mi)*METRICS%DX_DXI(nj,ni)
-                  ENDDO !nj
-                ENDDO !ni
-              ENDDO !mi
+              SELECT CASE(METRICS%NUMBER_OF_X_DIMENSIONS)
+              CASE(1)
+                DO mi=1,METRICS%NUMBER_OF_XI_DIMENSIONS
+                  DO ni=1,METRICS%NUMBER_OF_XI_DIMENSIONS
+                    METRICS%GL(mi,ni)=METRICS%DX_DXI(1,mi)*METRICS%DX_DXI(1,ni)                    
+                  ENDDO !ni
+                ENDDO !mi
+              CASE(2)
+                DO mi=1,METRICS%NUMBER_OF_XI_DIMENSIONS
+                  DO ni=1,METRICS%NUMBER_OF_XI_DIMENSIONS
+                    METRICS%GL(mi,ni)=METRICS%DX_DXI(1,mi)*METRICS%DX_DXI(1,ni)+ &
+                      & METRICS%DX_DXI(2,mi)*METRICS%DX_DXI(2,ni)
+                  ENDDO !ni
+                ENDDO !mi
+              CASE(3)
+                DO mi=1,METRICS%NUMBER_OF_XI_DIMENSIONS
+                  DO ni=1,METRICS%NUMBER_OF_XI_DIMENSIONS
+                    METRICS%GL(mi,ni)=METRICS%DX_DXI(1,mi)*METRICS%DX_DXI(1,ni)+ &
+                      & METRICS%DX_DXI(2,mi)*METRICS%DX_DXI(2,ni)+ &
+                      & METRICS%DX_DXI(3,mi)*METRICS%DX_DXI(3,ni)
+                  ENDDO !ni
+                ENDDO !mi
+              CASE DEFAULT
+                LOCAL_ERROR=TRIM(NUMBER_TO_VSTRING(METRICS%NUMBER_OF_X_DIMENSIONS,"*",ERR,ERROR))// &
+                  & " is an invalid number of dimensions for a rectangular cartesian coordinate system"
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
             CASE(COORDINATE_CYCLINDRICAL_POLAR_TYPE)
               R=INTERPOLATED_POINT%VALUES(1,1)
               RR=R*R
