@@ -951,41 +951,42 @@ MODULE TYPES
   ! Equations matrices types
   !
   
-  !>Contains information for an element matrix
+  !>Contains information for an element matrix.
   TYPE ELEMENT_MATRIX_TYPE
-    INTEGER(INTG) :: EQUATIONS_MATRIX_NUMBER
-    INTEGER(INTG) :: NUMBER_OF_ROWS
-    INTEGER(INTG) :: NUMBER_OF_COLUMNS
-    INTEGER(INTG) :: MAX_NUMBER_OF_ROWS
-    INTEGER(INTG) :: MAX_NUMBER_OF_COLUMNS
-    INTEGER(INTG), ALLOCATABLE :: ROW_DOFS(:)
-    INTEGER(INTG), ALLOCATABLE :: COLUMN_DOFS(:)
-    REAL(DP), ALLOCATABLE :: MATRIX(:,:)
+    INTEGER(INTG) :: EQUATIONS_MATRIX_NUMBER !<The equations matrix number that this element matrix belongs to.
+    INTEGER(INTG) :: NUMBER_OF_ROWS !<The current number of rows in the element matrix.
+    INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The current number of columns in the element matrix.
+    INTEGER(INTG) :: MAX_NUMBER_OF_ROWS !<The maximum (allocated) number of rows in the element matrix.
+    INTEGER(INTG) :: MAX_NUMBER_OF_COLUMNS !<The maximu (allocated) number of columns in the element matrix.
+    INTEGER(INTG), ALLOCATABLE :: ROW_DOFS(:) !<ROW_DOFS(i). The equations row that the i'th row of the element matrix belongs to.
+    INTEGER(INTG), ALLOCATABLE :: COLUMN_DOFS(:) !<COLUMN_DOFS(j). The equations column that the j'th column of the element matrix bleongs to.
+    REAL(DP), ALLOCATABLE :: MATRIX(:,:) !<MATRIX(i,j). The vlaue of the i'th row and the j'th column of the element matrix.
   END TYPE ELEMENT_MATRIX_TYPE
 
-  !>Contains information for an element vector
+  !>Contains information for an element vector.
   TYPE ELEMENT_VECTOR_TYPE
-    INTEGER(INTG) :: NUMBER_OF_ROWS
-    INTEGER(INTG) :: MAX_NUMBER_OF_ROWS
-    INTEGER(INTG), ALLOCATABLE :: ROW_DOFS(:)
-    REAL(DP), ALLOCATABLE :: VECTOR(:)
+    INTEGER(INTG) :: NUMBER_OF_ROWS !<The current number of rows in the element vector
+    INTEGER(INTG) :: MAX_NUMBER_OF_ROWS !<The maximum (allocated) number of rows in the element vecotr
+    INTEGER(INTG), ALLOCATABLE :: ROW_DOFS(:) !<ROW_DOFS(i). The equations row that the i'th row of the element vector belongs to
+    REAL(DP), ALLOCATABLE :: VECTOR(:) !<VECTOR(i). The value of the i'th row of the element vector
   END TYPE ELEMENT_VECTOR_TYPE
 
-  !>Contains information about an equations matrix
+  !>Contains information about an equations matrix.
   TYPE EQUATIONS_MATRIX_TYPE
     INTEGER(INTG) :: MATRIX_NUMBER !<The number of the equations matrix
     TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES !<A pointer to the equations matrices for the equation matrix.
     INTEGER(INTG) :: STORAGE_TYPE !<The storage (sparsity) type for this matrix
     INTEGER(INTG) :: STRUCTURE_TYPE !<The structure (sparsity) type for this matrix
-    INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in this global matrix
-    LOGICAL :: UPDATE_MATRIX !<Is .TRUE. if this global matrix is to be updated
-    LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this global matrix has not been assembled
-    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the distributed global matrix data
-    TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_MATRIX !<The element matrix for this glboal matrix
+    INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in this equations matrix
+    LOGICAL :: UPDATE_MATRIX !<Is .TRUE. if this equations matrix is to be updated
+    LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this equations matrix has not been assembled
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the distributed equations matrix data
+    TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_MATRIX !<The element matrix for this equations matrix
    END TYPE EQUATIONS_MATRIX_TYPE
 
+  !>A buffer type to allow for an array of pointers to a EQUATIONS_MATRIX_TYPE \see TYPES::EQUATIONS_MATRIX_TYPE.
   TYPE EQUATIONS_MATRIX_PTR_TYPE
-    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: PTR
+    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: PTR !<A pointer to the equations matrix.
   END TYPE EQUATIONS_MATRIX_PTR_TYPE
 
   !>Contains information on the Jacobian matrix for nonlinear problems
@@ -1002,14 +1003,16 @@ MODULE TYPES
     TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_RESIDUAL !<An element residual vector for nonlinear problems when Jacobians are calculated. This is not used if the Jacobian is not supplied. Old CMISS name RE2.
   END TYPE EQUATIONS_JACOBIAN_TYPE
 
+  !>Contains information of the linear matrices for equations matrices
   TYPE EQUATIONS_MATRICES_LINEAR_TYPE
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES !<A pointer back to the equations matrices.
     INTEGER(INTG) :: NUMBER_OF_LINEAR_MATRICES !<The number of equations matrices defined for the problem.
-    TYPE(EQUATIONS_MATRIX_PTR_TYPE), ALLOCATABLE :: MATRICES(:) !<MATRICES(matrix_idx)%PTR contains the information on the matrix_id
+    TYPE(EQUATIONS_MATRIX_PTR_TYPE), ALLOCATABLE :: MATRICES(:) !<MATRICES(matrix_idx)%PTR contains the information on the matrix_idx'th equations matrix.
   END TYPE EQUATIONS_MATRICES_LINEAR_TYPE
 
+  !>Contains information of the nolinear matrices and vectors for equations matrices
   TYPE EQUATIONS_MATRICES_NONLINEAR_TYPE
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES !<A pointer back to the equations matrices.
     TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN !<A pointer to the Jacobian matrix for nonlinear equations
     LOGICAL :: UPDATE_RESIDUAL !<Is .TRUE. if the equtions residual vector is to be updated
     LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this residual vector has not been assembled
@@ -1017,23 +1020,25 @@ MODULE TYPES
     TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_RESIDUAL !<The element residual information for nonlinear equations. Old CMISS name RE1
   END TYPE EQUATIONS_MATRICES_NONLINEAR_TYPE
 
+  !>Contains information of the RHS vector for equations matrices
   TYPE EQUATIONS_MATRICES_RHS_TYPE
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES !<A pointer back to the equations matrices.
     LOGICAL :: UPDATE_VECTOR !<Is .TRUE. if the equtions rhs vector is to be updated
     LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this rhs vector has not been assembled
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the distributed global rhs vector data \todo rename this RHS_VECTOR
     TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_VECTOR !<The element rhs information
   END TYPE EQUATIONS_MATRICES_RHS_TYPE
   
+  !>Contains information of the source vector for equations matrices
   TYPE EQUATIONS_MATRICES_SOURCE_TYPE
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES !<A pointer back to the equations matrices.
     LOGICAL :: UPDATE_VECTOR !<Is .TRUE. if the equtions rhs vector is to be updated
     LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this source vector has not been assembled
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: VECTOR !<A pointer to the distributed source vector data \todo rename this SOURCE_VECTOR
     TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_VECTOR !<The element source information
   END TYPE EQUATIONS_MATRICES_SOURCE_TYPE
   
-  !>Contains information on the equations matrices and rhs vector
+  !>Contains information on the equations matrices and vectorS
   TYPE EQUATIONS_MATRICES_TYPE
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer back to the equations
     LOGICAL :: EQUATIONS_MATRICES_FINISHED !<Is .TRUE. if the equations matrices have finished being created, .FALSE. if not.
@@ -1043,10 +1048,10 @@ MODULE TYPES
     INTEGER(INTG) :: TOTAL_NUMBER_OF_ROWS !<The number of local rows (including ghost rows) in the distributed equations matrices and vectors
     INTEGER(INTG) :: NUMBER_OF_GLOBAL_ROWS !<The number of global rows in the distributed equations matrices and vectors
     !Equations matrices components
-    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
-    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
-    TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: RHS_VECTOR    
-    TYPE(EQUATIONS_MATRICES_SOURCE_TYPE), POINTER :: SOURCE_VECTOR  
+    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES !<A pointer to the linear matrices information for the equations matrices
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES !<A pointer to the nonlinear matrices and vectors information for the equations matrices
+    TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: RHS_VECTOR !<A pointer to the RHS vector information for the equations matrices
+    TYPE(EQUATIONS_MATRICES_SOURCE_TYPE), POINTER :: SOURCE_VECTOR !<A pointer to the source vector information for the equations matrices
    END TYPE EQUATIONS_MATRICES_TYPE
 
   !
@@ -1168,10 +1173,10 @@ MODULE TYPES
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RESIDUAL_VARIABLE_MAPPING !<A pointer to the residual variable domain mapping
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ROW_DOFS_MAPPING !<The domain mapping for the equations rows
     !Equations mapping components
-    TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
-    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
-    TYPE(EQUATIONS_MAPPING_RHS_TYPE), POINTER :: RHS_MAPPING
-    TYPE(EQUATIONS_MAPPING_SOURCE_TYPE), POINTER :: SOURCE_MAPPING
+    TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING !<A pointer to the equations mapping for the linear matrices
+    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING !<A pointer to the equations mapping for the nonlinear matrices and vectors
+    TYPE(EQUATIONS_MAPPING_RHS_TYPE), POINTER :: RHS_MAPPING !<A pointer to the equations mapping for the RHS vector
+    TYPE(EQUATIONS_MAPPING_SOURCE_TYPE), POINTER :: SOURCE_MAPPING !<A pointer to the equations mapping for the source vector
     !Create values cache
     TYPE(EQUATIONS_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE !<The create values cache for the equations mapping
   END TYPE EQUATIONS_MAPPING_TYPE
@@ -1299,7 +1304,7 @@ MODULE TYPES
 
 !!TODO: Are these two needed?
     INTEGER(INTG) :: LINEARITY !<The equations set linearity type \see EQUATIONS_ROUTINES_LinearityTypes
-    INTEGER(INTG) :: TIME_TYPE !<The equations set time dependence type \see EQUATIONS_ROUTINES_TimeDepedenceTypes
+    INTEGER(INTG) :: TIME_DEPENDENCE !<The equations set time dependence type \see EQUATIONS_ROUTINES_TimeDepedenceTypes
     
     INTEGER(INTG) :: SOLUTION_METHOD !<The solution method for the equations set \see EQUATIONS_ROUTINES_SolutionMethods 
     
@@ -1312,14 +1317,15 @@ MODULE TYPES
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !A pointer to the equations information for the equations set
   END TYPE EQUATIONS_SET_TYPE
   
+  !>A buffer type to allow for an array of pointers to a EQUATIONS_SET_TYPE \see TYPES::EQUATIONS_SET_TYPE
   TYPE EQUATIONS_SET_PTR_TYPE
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: PTR
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: PTR !<A pointer to the equations set.
   END TYPE EQUATIONS_SET_PTR_TYPE
   
   TYPE EQUATIONS_SETS_TYPE
-    TYPE(REGION_TYPE) , POINTER :: REGION
-    INTEGER(INTG) :: NUMBER_OF_EQUATIONS_SETS
-    TYPE(EQUATIONS_SET_PTR_TYPE), POINTER :: EQUATIONS_SETS(:)
+    TYPE(REGION_TYPE) , POINTER :: REGION !<A pointer to the region containing the equations sets
+    INTEGER(INTG) :: NUMBER_OF_EQUATIONS_SETS !<The number of equations sets
+    TYPE(EQUATIONS_SET_PTR_TYPE), POINTER :: EQUATIONS_SETS(:) !<EQUATIONS_SETS(equations_set_idx). EQUATIONS_SETS(equations_set_idx)%PTR is the pointer to the equations_set_idx'th equations set.
   END TYPE EQUATIONS_SETS_TYPE
 
   !
@@ -1339,8 +1345,9 @@ MODULE TYPES
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the distributed solver matrix data
   END TYPE SOLVER_MATRIX_TYPE
 
+  !>A buffer type to allow for an array of pointers to a SOLVER_MATRIX_TYPE \see TYPES:SOLUTION_MATRIX_TYPE
   TYPE SOLVER_MATRIX_PTR_TYPE
-    TYPE(SOLVER_MATRIX_TYPE), POINTER :: PTR
+    TYPE(SOLVER_MATRIX_TYPE), POINTER :: PTR !<The pointer to the solver matrix.
   END TYPE SOLVER_MATRIX_PTR_TYPE
 
   !>Contains information on the solver Jacobian for nonlinear problems
@@ -1376,6 +1383,31 @@ MODULE TYPES
   !
   ! Solver types
   !
+  
+  !>Contains information for a dynamic solver
+  TYPE DYNAMIC_SOLVER_TYPE
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the dynamic solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG) :: LINEARITY !<The linearity type of the dynamic solver \see SOLVER_ROUTINES_DynamicLinearityTypes,SOLVER_ROUTINES
+    INTEGER(INTG) :: DYNAMIC_TYPE !<The type of dynamic solver \see SOLVER_ROUTINES_DynamicTypes,SOLVER_ROUTINES
+    REAL(DP) :: THETA !<The theta value for the dynamic solver
+    REAL(DP) :: CURRENT_TIME !<The current time value for the dynamic solver
+    REAL(DP) :: TIME_INCREMENT !<The time increment for the dynamic solver to solver for
+    TYPE(PETSC_TS_TYPE) :: TS
+  END TYPE DYNAMIC_SOLVER_TYPE
+  
+  !>Contains information for an eigenproblem solver
+  TYPE EIGENPROBLEM_SOLVER_TYPE
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the eigenproblem solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  END TYPE EIGENPROBLEM_SOLVER_TYPE
+  
+  !>Contains information for an integration solver
+  TYPE INTEGRATION_SOLVER_TYPE
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the integration solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG) :: INTEGRATION_TYPE !<The integration type for the integration solver \see SOLVER_ROUTINES_IntegratorType,SOLVER_ROUTINES
+  END TYPE INTEGRATION_SOLVER_TYPE
   
   !>Contains information for a direct linear solver
   TYPE LINEAR_DIRECT_SOLVER_TYPE
@@ -1445,39 +1477,18 @@ MODULE TYPES
     TYPE(NONLINEAR_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER !<A pointer to the Newton trust region solver information
   END TYPE NONLINEAR_SOLVER_TYPE
   
-  !>Contains information for a time integration solver
-  TYPE TIME_INTEGRATION_SOLVER_TYPE
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the problem_solver
-    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the time integration solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
-    INTEGER(INTG) :: TIME_INTEGRATION_TYPE
-    INTEGER(INTG) :: LINEARITY
-    INTEGER(INTG) :: TIME_DEPENDENCE
-    INTEGER(INTG) :: STIFFNESS_MATRIX_NUMBER !<Move this and the mass matrix number to solution mapping???
-    INTEGER(INTG) :: MASS_MATRIX_NUMBER
-    INTEGER(INTG) :: MAXIMUM_TIMESTEPS
-    REAL(DP) :: START_TIME
-    REAL(DP) :: STOP_TIME
-    REAL(DP) :: TIME_INCREMENT
-    TYPE(PETSC_TS_TYPE) :: TS
-  END TYPE TIME_INTEGRATION_SOLVER_TYPE
-  
-  !>Contains information for a time integration solver
-  TYPE EIGENPROBLEM_SOLVER_TYPE
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the problem_solver
-    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the eigenproblem solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
-  END TYPE EIGENPROBLEM_SOLVER_TYPE
-  
   !>Contains information on the type of solver to be used
   TYPE SOLVER_TYPE
-    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the problem solution
-    LOGICAL :: SOLVER_FINISHED !<Is .TRUE. if the problem solver has finished being created, .FALSE. if not.
+    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the solution
+    LOGICAL :: SOLVER_FINISHED !<Is .TRUE. if the solver has finished being created, .FALSE. if not.
     TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING !<A pointer to the problem solution
-    INTEGER(INTG) :: SOLVE_TYPE !<The type of the problem solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
+    INTEGER(INTG) :: SOLVE_TYPE !<The type of the solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
     INTEGER(INTG) :: OUTPUT_TYPE !<The type of output required \see SOLVER_ROUTINES_OutputTypes,SOLVER_ROUTINES
     INTEGER(INTG) :: SPARSITY_TYPE !<The type of sparsity to use in the solver matrices \see SOLVER_ROTUINES_SparsityTypes,SOLVER_ROUTINES
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linear solver information
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer to the nonlinear solver information
-    TYPE(TIME_INTEGRATION_SOLVER_TYPE), POINTER :: TIME_INTEGRATION_SOLVER !<A pointer to the time integration solver information
+    TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER !<A pointer to the dynamic solver information
+    TYPE(INTEGRATION_SOLVER_TYPE), POINTER :: INTEGRATION_SOLVER !<A pointer to the integration solver information
     TYPE(EIGENPROBLEM_SOLVER_TYPE), POINTER :: EIGENPROBLEM_SOLVER !<A pointer to the eigenproblem solver information
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES !<A pointer to the solver matrices for the problem
   END TYPE SOLVER_TYPE
@@ -1655,10 +1666,8 @@ MODULE TYPES
     INTEGER(INTG) :: SOLUTION_NUMBER !<The number of the solution
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer back to the control loop for this solution
     LOGICAL :: SOLUTION_FINISHED !<Is .TRUE. if the problem solution has finished being created, .FALSE. if not.
-    INTEGER(INTG) :: LINEARITY 
-    !TYPE(SOLUTION_LINEAR_DATA_TYPE), POINTER :: LINEAR_DATA !<A pointer to the data for linear solutions.
-    !TYPE(SOLUTION_NONLINEAR_DATA_TYPE), POINTER :: NONLINEAR_DATA !<A pointer to the data for non-linear solutions.
-    !TYPE(SOLUTION_TIME_DATA_TYPE), POINTER :: TIME_DATA !<A pointer to the data for non-static solutions.
+    INTEGER(INTG) :: LINEARITY !<The linearity of the solution \see PROBLEM_CONSTANTS_SolutionLinearityTypes,PROBLEM_CONSTANTS
+    INTEGER(INTG) :: TIME_DEPENDENCE !<The time dependence of the solution \see PROBLEM_CONSTANTS_SolutionTimeDependenceTypes,PROBLEM_CONSTANTS
     TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING !<A pointer to the solution mapping for the solution.
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver for the problem.
   END TYPE SOLUTION_TYPE
@@ -1711,10 +1720,10 @@ MODULE TYPES
   TYPE CONTROL_LOOP_TIME_TYPE
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
     INTEGER(INTG) :: ITERATION_NUMBER
-    INTEGER(INTG) :: CURRENT_TIME
-    INTEGER(INTG) :: START_TIME
-    INTEGER(INTG) :: STOP_TIME
-    INTEGER(INTG) :: TIME_INCREMENT
+    REAL(DP) :: CURRENT_TIME
+    REAL(DP) :: START_TIME
+    REAL(DP) :: STOP_TIME
+    REAL(DP) :: TIME_INCREMENT
   END TYPE CONTROL_LOOP_TIME_TYPE
 
   TYPE CONTROL_LOOP_WHILE_TYPE

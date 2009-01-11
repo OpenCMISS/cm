@@ -68,26 +68,6 @@ MODULE PROBLEM_ROUTINES
 
   !Module parameters
 
-  !> \addtogroup PROBLEM_ROUTINES_LinearityTypes PROBLEM_ROUTINES::LinearityTypes
-  !> \brief The linearity type parameters
-  !> \see PROBLEM_ROUTINES
-  !>@{
-  INTEGER(INTG), PARAMETER :: NUMBER_OF_PROBLEM_LINEARITIES=3 !<The number of problem linearity types defined. \see PROBLEM_ROUTINES_LinearityTypes,PROBLEM_ROUTINES
-  INTEGER(INTG), PARAMETER :: PROBLEM_LINEAR=1 !<The problemis linear. \see PROBLEM_ROUTINES_LinearityTypes,PROBLEM_ROUTINES
-  INTEGER(INTG), PARAMETER :: PROBLEM_NONLINEAR=2 !<The problem is non-linear. \see PROBLEM_ROUTINES_LinearityTypes,PROBLEM_ROUTINES
-  INTEGER(INTG), PARAMETER :: PROBLEM_NONLINEAR_BCS=3 !<The problem has non-linear boundary conditions. \see PROBLEM_ROUTINES_LinearityTypes,PROBLEM_ROUTINES
-  !>@}
-  
-  !> \addtogroup PROBLEM_ROUTINES_TimeDepedenceTypes PROBLEM_ROUTINES::TimeDepedenceTypes
-  !> \brief The time dependence type parameters
-  !> \see PROBLEM_ROUTINES
-  !>@{
-  INTEGER(INTG), PARAMETER :: NUMBER_OF_PROBLEM_TIME_TYPES=3 !<The number of problem time dependence types defined. \see PROBLEM_ROUTINES_TimeDependenceTypes,PROBLEM_ROUTINES
-  INTEGER(INTG), PARAMETER :: PROBLEM_STATIC=1 !<The problem is static and has no time dependence \see PROBLEM_ROUTINES_TimeDependenceTypes,PROBLEM_ROUTINES
-  INTEGER(INTG), PARAMETER :: PROBLEM_DYNAMIC=2 !<The problem is dynamic \see PROBLEM_ROUTINES_TimeDependenceTypes,PROBLEM_ROUTINES
-  INTEGER(INTG), PARAMETER :: PROBLEM_QUASISTATIC=3 !<The problem is quasi-static \see PROBLEM_ROUTINES_TimeDependenceTypes,PROBLEM_ROUTINES
-  !>@}
-
   !Module types
 
   !Module variables
@@ -131,17 +111,13 @@ MODULE PROBLEM_ROUTINES
     MODULE PROCEDURE PROBLEM_SOLVER_GET_1
   END INTERFACE !PROBLEM_SOLVER_GET
   
-  PUBLIC PROBLEM_LINEAR,PROBLEM_NONLINEAR,PROBLEM_NONLINEAR_BCS
-
-  PUBLIC PROBLEM_STATIC,PROBLEM_DYNAMIC,PROBLEM_QUASISTATIC
-
   PUBLIC PROBLEMS_INITIALISE,PROBLEMS_FINALISE
   
   PUBLIC PROBLEM_CREATE_START,PROBLEM_CREATE_FINISH,PROBLEM_DESTROY
 
   PUBLIC PROBLEM_SPECIFICATION_SET
 
-  PUBLIC PROBLEM_CONTROL_CREATE_START,PROBLEM_CONTROL_CREATE_FINISH,PROBLEM_CONTROL_DESTROY
+  PUBLIC PROBLEM_CONTROL_LOOP_CREATE_START,PROBLEM_CONTROL_LOOP_CREATE_FINISH,PROBLEM_CONTROL_LOOP_DESTROY,PROBLEM_CONTROL_LOOP_GET
   
   PUBLIC PROBLEM_SOLUTIONS_CREATE_START,PROBLEM_SOLUTIONS_CREATE_FINISH,PROBLEM_SOLUTION_EQUATIONS_SET_ADD
 
@@ -244,7 +220,9 @@ CONTAINS
           TIME_LOOP=>CONTROL_LOOP%TIME_LOOP
           IF(ASSOCIATED(TIME_LOOP)) THEN
             TIME_LOOP%CURRENT_TIME=TIME_LOOP%START_TIME
+            TIME_LOOP%ITERATION_NUMBER=0
             DO WHILE(TIME_LOOP%CURRENT_TIME<=TIME_LOOP%STOP_TIME)
+              TIME_LOOP%ITERATION_NUMBER=TIME_LOOP%ITERATION_NUMBER+1
               IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS==0) THEN
                 !If there are no sub loops solve the solutions.
                 SOLUTIONS=>CONTROL_LOOP%SOLUTIONS
@@ -693,7 +671,7 @@ CONTAINS
   !
 
   !>Finish the creation of the control for the problem.
-  SUBROUTINE PROBLEM_CONTROL_CREATE_FINISH(PROBLEM,ERR,ERROR,*)
+  SUBROUTINE PROBLEM_CONTROL_LOOP_CREATE_FINISH(PROBLEM,ERR,ERROR,*)
 
     !Argument variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to finish the control for
@@ -701,7 +679,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("PROBLEM_CONTROL_CREATE_FINISH",ERR,ERROR,*999)
+    CALL ENTERS("PROBLEM_CONTROL_LOOP_CREATE_FINISH",ERR,ERROR,*999)
 
     IF(ASSOCIATED(PROBLEM)) THEN
       IF(ASSOCIATED(PROBLEM%CONTROL_LOOP)) THEN
@@ -720,19 +698,19 @@ CONTAINS
       CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
       
-    CALL EXITS("PROBLEM_CONTROL_CREATE_FINISH")
+    CALL EXITS("PROBLEM_CONTROL_LOOP_CREATE_FINISH")
     RETURN
-999 CALL ERRORS("PROBLEM_CONTROL_CREATE_FINISH",ERR,ERROR)
-    CALL EXITS("PROBLEM_CONTROL_CREATE_FINISH")
+999 CALL ERRORS("PROBLEM_CONTROL_LOOP_CREATE_FINISH",ERR,ERROR)
+    CALL EXITS("PROBLEM_CONTROL_LOOP_CREATE_FINISH")
     RETURN 1
-  END SUBROUTINE PROBLEM_CONTROL_CREATE_FINISH
+  END SUBROUTINE PROBLEM_CONTROL_LOOP_CREATE_FINISH
   
   !
   !================================================================================================================================
   !
 
-  !>Start the creation of a problem control for a problem.
-  SUBROUTINE PROBLEM_CONTROL_CREATE_START(PROBLEM,ERR,ERROR,*)
+  !>Start the creation of a control loop for a problem.
+  SUBROUTINE PROBLEM_CONTROL_LOOP_CREATE_START(PROBLEM,ERR,ERROR,*)
 
     !Argument variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to start the creation of a control for.
@@ -740,7 +718,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("PROBLEM_CONTROL_CREATE_START",ERR,ERROR,*999)
+    CALL ENTERS("PROBLEM_CONTROL_LOOP_CREATE_START",ERR,ERROR,*999)
 
     IF(ASSOCIATED(PROBLEM)) THEN
       IF(ASSOCIATED(PROBLEM%CONTROL_LOOP)) THEN
@@ -753,19 +731,19 @@ CONTAINS
       CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("PROBLEM_CONTROL_CREATE_START")
+    CALL EXITS("PROBLEM_CONTROL_LOOP_CREATE_START")
     RETURN
-999 CALL ERRORS("PROBLEM_CONTROL_CREATE_START",ERR,ERROR)
-    CALL EXITS("PROBLEM_CONTROL_CREATE_START")
+999 CALL ERRORS("PROBLEM_CONTROL_LOOP_CREATE_START",ERR,ERROR)
+    CALL EXITS("PROBLEM_CONTROL_LOOP_CREATE_START")
     RETURN 1
-  END SUBROUTINE PROBLEM_CONTROL_CREATE_START
+  END SUBROUTINE PROBLEM_CONTROL_LOOP_CREATE_START
 
   !
   !================================================================================================================================
   !
 
-  !>Destroy the control for a problem.
-  SUBROUTINE PROBLEM_CONTROL_DESTROY(PROBLEM,ERR,ERROR,*)
+  !>Destroy the control loop for a problem.
+  SUBROUTINE PROBLEM_CONTROL_LOOP_DESTROY(PROBLEM,ERR,ERROR,*)
 
     !Argument variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to destroy the control for.
@@ -773,7 +751,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("PROBLEM_CONTROL_DESTROY",ERR,ERROR,*999)
+    CALL ENTERS("PROBLEM_CONTROL_LOOP_DESTROY",ERR,ERROR,*999)
 
     IF(ASSOCIATED(PROBLEM)) THEN
       IF(ASSOCIATED(PROBLEM%CONTROL_LOOP)) THEN        
@@ -785,12 +763,12 @@ CONTAINS
       CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("PROBLEM_CONTROL_DESTROY")
+    CALL EXITS("PROBLEM_CONTROL_LOOP_DESTROY")
     RETURN
-999 CALL ERRORS("PROBLEM_CONTROL_DESTROY",ERR,ERROR)
-    CALL EXITS("PROBLEM_CONTROL_DESTROY")
+999 CALL ERRORS("PROBLEM_CONTROL_LOOP_DESTROY",ERR,ERROR)
+    CALL EXITS("PROBLEM_CONTROL_LOOP_DESTROY")
     RETURN 1
-  END SUBROUTINE PROBLEM_CONTROL_DESTROY
+  END SUBROUTINE PROBLEM_CONTROL_LOOP_DESTROY
 
   !
   !================================================================================================================================
@@ -1140,7 +1118,7 @@ CONTAINS
               ENDIF
             ENDDO !equations_set_idx
             !Assemble the solver matrices
-            CALL SOLVER_MATRICES_ASSEMBLE(SOLVER,SOLVER_MATRICES_JACOBIAN_ONLY,ERR,ERROR,*999)          
+            CALL SOLVER_MATRICES_STATIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_JACOBIAN_ONLY,ERR,ERROR,*999)          
           ELSE
             CALL FLAG_ERROR("Solution solver is not associated.",ERR,ERROR,*999)
           ENDIF
@@ -1204,7 +1182,7 @@ CONTAINS
             ENDDO !equations_set_idx
             !Assemble the solver matrices
 !!TODO: need to work out wether to assemble rhs and residual or residual only
-            CALL SOLVER_MATRICES_ASSEMBLE(SOLVER,SOLVER_MATRICES_RHS_RESIDUAL_ONLY,ERR,ERROR,*999)
+            CALL SOLVER_MATRICES_STATIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_RHS_RESIDUAL_ONLY,ERR,ERROR,*999)
           ELSE
             CALL FLAG_ERROR("Solution solver is not associated.",ERR,ERROR,*999)
           ENDIF
@@ -1333,45 +1311,51 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: equations_set_idx
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("PROBLEM_SOLUTION_SOLVE",ERR,ERROR,*999)
     
     IF(ASSOCIATED(SOLUTION)) THEN
       IF(SOLUTION%SOLUTION_FINISHED) THEN
-        SOLUTION_MAPPING=>SOLUTION%SOLUTION_MAPPING
-        IF(ASSOCIATED(SOLUTION_MAPPING)) THEN          
-          !Make sure the equations sets are up to date
-          DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
-            EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-            CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)    
-            IF(SOLUTION%LINEARITY==PROBLEM_SOLUTION_LINEAR) THEN
-              !Assemble the equations for linear problems
-              CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
-            ENDIF    
-          ENDDO !equations_set_idx          
-          SOLVER=>SOLUTION%SOLVER
-          IF(ASSOCIATED(SOLVER)) THEN
-            !Solve
-            CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
-            !Update depenent field with solution
-            CALL SOLVER_VARIABLES_UPDATE(SOLVER,ERR,ERROR,*999)
-            !Back-substitute to find flux values for linear problems
-            IF(SOLUTION%LINEARITY==PROBLEM_SOLUTION_LINEAR) THEN
-              DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
-                EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,ERR,ERROR,*999)
-              ENDDO !equations_set_idx
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("Solution solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("Solution mapping is not associated.",ERR,ERROR,*999)
-        ENDIF
+        SELECT CASE(SOLUTION%TIME_DEPENDENCE)
+        CASE(PROBLEM_SOLUTION_STATIC)
+          SELECT CASE(SOLUTION%LINEARITY)
+          CASE(PROBLEM_SOLUTION_LINEAR)
+            CALL PROBLEM_SOLUTION_STATIC_LINEAR_SOLVE(SOLUTION,ERR,ERROR,*999)
+          CASE(PROBLEM_SOLUTION_NONLINEAR)
+            CALL PROBLEM_SOLUTION_STATIC_NONLINEAR_SOLVE(SOLUTION,ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The solution linearity of "//TRIM(NUMBER_TO_VSTRING(SOLUTION%LINEARITY,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE(PROBLEM_SOLUTION_QUASISTATIC)
+          SELECT CASE(SOLUTION%LINEARITY)
+          CASE(PROBLEM_SOLUTION_LINEAR)
+            CALL PROBLEM_SOLUTION_QUASISTATIC_LINEAR_SOLVE(SOLUTION,ERR,ERROR,*999)
+          CASE(PROBLEM_SOLUTION_NONLINEAR)
+            CALL PROBLEM_SOLUTION_QUASISTATIC_NONLINEAR_SOLVE(SOLUTION,ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The solution linearity of "//TRIM(NUMBER_TO_VSTRING(SOLUTION%LINEARITY,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE(PROBLEM_SOLUTION_FIRST_ORDER_DYNAMIC,PROBLEM_SOLUTION_SECOND_ORDER_DYNAMIC,PROBLEM_SOLUTION_THIRD_ORDER_DYNAMIC)
+          SELECT CASE(SOLUTION%LINEARITY)
+          CASE(PROBLEM_SOLUTION_LINEAR)
+            CALL PROBLEM_SOLUTION_DYNAMIC_LINEAR_SOLVE(SOLUTION,ERR,ERROR,*999)
+          CASE(PROBLEM_SOLUTION_NONLINEAR)
+            CALL PROBLEM_SOLUTION_DYNAMIC_NONLINEAR_SOLVE(SOLUTION,ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The solution linearity of "//TRIM(NUMBER_TO_VSTRING(SOLUTION%LINEARITY,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE DEFAULT
+          LOCAL_ERROR="The solution time dependence type of "// &
+            & TRIM(NUMBER_TO_VSTRING(SOLUTION%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
       ELSE
         CALL FLAG_ERROR("Solution has not been finished.",ERR,ERROR,*999)
       ENDIF
@@ -1385,6 +1369,338 @@ CONTAINS
     CALL EXITS("PROBLEM_SOLUTION_SOLVE")
     RETURN 1
   END SUBROUTINE PROBLEM_SOLUTION_SOLVE
+
+   !
+  !================================================================================================================================
+  !
+
+  !>Solves a dynamic linear solution.
+  SUBROUTINE PROBLEM_SOLUTION_DYNAMIC_LINEAR_SOLVE(SOLUTION,ERR,ERROR,*)
+
+   !Argument variables
+    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the solution to solve
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: equations_set_idx
+    REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    
+    CALL ENTERS("PROBLEM_SOLUTION_DYNAMIC_LINEAR_SOLVE",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(SOLUTION)) THEN
+      CONTROL_LOOP=>SOLUTION%CONTROL_LOOP
+      IF(ASSOCIATED(CONTROL_LOOP)) THEN
+        SOLUTION_MAPPING=>SOLUTION%SOLUTION_MAPPING
+        IF(ASSOCIATED(SOLUTION_MAPPING)) THEN
+          !Make sure the equations sets are up to date
+          DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
+            EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+            CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)    
+            !Assemble the equations for linear problems
+            CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
+          ENDDO !equations_set_idx          
+          SOLVER=>SOLUTION%SOLVER
+          IF(ASSOCIATED(SOLVER)) THEN
+            !Get current control loop times
+            CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+            !Set the solver time
+            CALL SOLVER_DYNAMIC_TIMES_SET(SOLVER,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+            !Solve for the next time i.e., current time + time increment
+            CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
+            !Update depenent field with solution
+            CALL SOLVER_VARIABLES_UPDATE(SOLVER,ERR,ERROR,*999)
+            !Back-substitute to find flux values for linear problems
+            DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
+              EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+              CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,ERR,ERROR,*999)
+            ENDDO !equations_set_idx
+          ELSE
+            CALL FLAG_ERROR("Solution solver is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Solution mapping is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solution control loop is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solution is not associated.",ERR,ERROR,*999)
+    ENDIF    
+    
+    CALL EXITS("PROBLEM_SOLUTION_DYNAMIC_LINEAR_SOLVE")
+    RETURN
+999 CALL ERRORS("PROBLEM_SOLUTION_DYNAMIC_LINEAR_SOLVE",ERR,ERROR)
+    CALL EXITS("PROBLEM_SOLUTION_DYNAMIC_LINEAR_SOLVE")
+    RETURN 1
+  END SUBROUTINE PROBLEM_SOLUTION_DYNAMIC_LINEAR_SOLVE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Solves a dynamic nonlinear solution.
+  SUBROUTINE PROBLEM_SOLUTION_DYNAMIC_NONLINEAR_SOLVE(SOLUTION,ERR,ERROR,*)
+    
+   !Argument variables
+    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the solution to solve
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: equations_set_idx
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    
+    CALL ENTERS("PROBLEM_SOLUTION_DYNAMIC_NONLINEAR_SOLVE",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(SOLUTION)) THEN
+      SOLUTION_MAPPING=>SOLUTION%SOLUTION_MAPPING
+      IF(ASSOCIATED(SOLUTION_MAPPING)) THEN
+        !Apply boundary conditition
+        DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
+          EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+          CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)    
+        ENDDO !equations_set_idx          
+        SOLVER=>SOLUTION%SOLVER
+        IF(ASSOCIATED(SOLVER)) THEN
+          !Solve
+          CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
+          !Update depenent field with solution
+          CALL SOLVER_VARIABLES_UPDATE(SOLVER,ERR,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("Solution solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solution mapping is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solution is not associated.",ERR,ERROR,*999)
+    ENDIF    
+    
+    CALL EXITS("PROBLEM_SOLUTION_DYNAMIC_NONLINEAR_SOLVE")
+    RETURN
+999 CALL ERRORS("PROBLEM_SOLUTION_DYNAMIC_NONLINEAR_SOLVE",ERR,ERROR)
+    CALL EXITS("PROBLEM_SOLUTION_DYNAMIC_NONLINEAR_SOLVE")
+    RETURN 1
+  END SUBROUTINE PROBLEM_SOLUTION_DYNAMIC_NONLINEAR_SOLVE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Solves a quasistatic linear solution.
+  SUBROUTINE PROBLEM_SOLUTION_QUASISTATIC_LINEAR_SOLVE(SOLUTION,ERR,ERROR,*)
+
+   !Argument variables
+    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the solution to solve
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: equations_set_idx
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    
+    CALL ENTERS("PROBLEM_SOLUTION_QUASISTATIC_LINEAR_SOLVE",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(SOLUTION)) THEN
+      SOLUTION_MAPPING=>SOLUTION%SOLUTION_MAPPING
+      IF(ASSOCIATED(SOLUTION_MAPPING)) THEN
+        !Make sure the equations sets are up to date
+        DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
+          EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+          CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)    
+          !Assemble the equations for linear problems
+          CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
+        ENDDO !equations_set_idx          
+        SOLVER=>SOLUTION%SOLVER
+        IF(ASSOCIATED(SOLVER)) THEN
+          !Solve
+          CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
+          !Update depenent field with solution
+          CALL SOLVER_VARIABLES_UPDATE(SOLVER,ERR,ERROR,*999)
+          !Back-substitute to find flux values for linear problems
+          DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
+            EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+            CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,ERR,ERROR,*999)
+          ENDDO !equations_set_idx
+        ELSE
+          CALL FLAG_ERROR("Solution solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solution mapping is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solution is not associated.",ERR,ERROR,*999)
+    ENDIF    
+    
+    CALL EXITS("PROBLEM_SOLUTION_QUASISTATIC_LINEAR_SOLVE")
+    RETURN
+999 CALL ERRORS("PROBLEM_SOLUTION_QUASISTATIC_LINEAR_SOLVE",ERR,ERROR)
+    CALL EXITS("PROBLEM_SOLUTION_QUASISTATIC_LINEAR_SOLVE")
+    RETURN 1
+  END SUBROUTINE PROBLEM_SOLUTION_QUASISTATIC_LINEAR_SOLVE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Solves a quasistatic nonlinear solution.
+  SUBROUTINE PROBLEM_SOLUTION_QUASISTATIC_NONLINEAR_SOLVE(SOLUTION,ERR,ERROR,*)
+    
+   !Argument variables
+    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the solution to solve
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: equations_set_idx
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    
+    CALL ENTERS("PROBLEM_SOLUTION_QUASISTATIC_NONLINEAR_SOLVE",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(SOLUTION)) THEN
+      SOLUTION_MAPPING=>SOLUTION%SOLUTION_MAPPING
+      IF(ASSOCIATED(SOLUTION_MAPPING)) THEN
+        !Apply boundary conditition
+        DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
+          EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+          CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)    
+        ENDDO !equations_set_idx          
+        SOLVER=>SOLUTION%SOLVER
+        IF(ASSOCIATED(SOLVER)) THEN
+          !Solve
+          CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
+          !Update depenent field with solution
+          CALL SOLVER_VARIABLES_UPDATE(SOLVER,ERR,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("Solution solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solution mapping is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solution is not associated.",ERR,ERROR,*999)
+    ENDIF    
+    
+    CALL EXITS("PROBLEM_SOLUTION_QUASISTATIC_NONLINEAR_SOLVE")
+    RETURN
+999 CALL ERRORS("PROBLEM_SOLUTION_QUASISTATIC_NONLINEAR_SOLVE",ERR,ERROR)
+    CALL EXITS("PROBLEM_SOLUTION_QUASISTATIC_NONLINEAR_SOLVE")
+    RETURN 1
+  END SUBROUTINE PROBLEM_SOLUTION_QUASISTATIC_NONLINEAR_SOLVE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Solves a static linear solution.
+  SUBROUTINE PROBLEM_SOLUTION_STATIC_LINEAR_SOLVE(SOLUTION,ERR,ERROR,*)
+
+   !Argument variables
+    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the solution to solve
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: equations_set_idx
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    
+    CALL ENTERS("PROBLEM_SOLUTION_STATIC_LINEAR_SOLVE",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(SOLUTION)) THEN
+      SOLUTION_MAPPING=>SOLUTION%SOLUTION_MAPPING
+      IF(ASSOCIATED(SOLUTION_MAPPING)) THEN
+        !Make sure the equations sets are up to date
+        DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
+          EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+          CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)    
+          !Assemble the equations for linear problems
+          CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
+        ENDDO !equations_set_idx          
+        SOLVER=>SOLUTION%SOLVER
+        IF(ASSOCIATED(SOLVER)) THEN
+          !Solve
+          CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
+          !Update depenent field with solution
+          CALL SOLVER_VARIABLES_UPDATE(SOLVER,ERR,ERROR,*999)
+          !Back-substitute to find flux values for linear problems
+          DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
+            EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+            CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,ERR,ERROR,*999)
+          ENDDO !equations_set_idx
+        ELSE
+          CALL FLAG_ERROR("Solution solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solution mapping is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solution is not associated.",ERR,ERROR,*999)
+    ENDIF    
+    
+    CALL EXITS("PROBLEM_SOLUTION_STATIC_LINEAR_SOLVE")
+    RETURN
+999 CALL ERRORS("PROBLEM_SOLUTION_STATIC_LINEAR_SOLVE",ERR,ERROR)
+    CALL EXITS("PROBLEM_SOLUTION_STATIC_LINEAR_SOLVE")
+    RETURN 1
+  END SUBROUTINE PROBLEM_SOLUTION_STATIC_LINEAR_SOLVE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Solves a static nonlinear solution.
+  SUBROUTINE PROBLEM_SOLUTION_STATIC_NONLINEAR_SOLVE(SOLUTION,ERR,ERROR,*)
+    
+   !Argument variables
+    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the solution to solve
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: equations_set_idx
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    
+    CALL ENTERS("PROBLEM_SOLUTION_STATIC_NONLINEAR_SOLVE",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(SOLUTION)) THEN
+      SOLUTION_MAPPING=>SOLUTION%SOLUTION_MAPPING
+      IF(ASSOCIATED(SOLUTION_MAPPING)) THEN
+        !Apply boundary conditition
+        DO equations_set_idx=1,SOLUTION_MAPPING%NUMBER_OF_EQUATIONS_SETS
+          EQUATIONS_SET=>SOLUTION_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+          CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)    
+        ENDDO !equations_set_idx          
+        SOLVER=>SOLUTION%SOLVER
+        IF(ASSOCIATED(SOLVER)) THEN
+          !Solve
+          CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
+          !Update depenent field with solution
+          CALL SOLVER_VARIABLES_UPDATE(SOLVER,ERR,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("Solution solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solution mapping is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solution is not associated.",ERR,ERROR,*999)
+    ENDIF    
+    
+    CALL EXITS("PROBLEM_SOLUTION_STATIC_NONLINEAR_SOLVE")
+    RETURN
+999 CALL ERRORS("PROBLEM_SOLUTION_STATIC_NONLINEAR_SOLVE",ERR,ERROR)
+    CALL EXITS("PROBLEM_SOLUTION_STATIC_NONLINEAR_SOLVE")
+    RETURN 1
+  END SUBROUTINE PROBLEM_SOLUTION_STATIC_NONLINEAR_SOLVE
 
   !
   !================================================================================================================================
@@ -1990,8 +2306,7 @@ SUBROUTINE PROBLEM_SOLUTION_RESIDUAL_EVALUATE_PETSC(SNES,X,F,CTX,ERR)
                 CALL PROBLEM_SOLUTION_RESIDUAL_EVALUATE(CTX,ERR,ERROR,*999)
                 
                 CALL DISTRIBUTED_VECTOR_OVERRIDE_SET_OFF(SOLVER_VECTOR,ERR,ERROR,*999)
-                CALL DISTRIBUTED_VECTOR_OVERRIDE_SET_OFF(RESIDUAL_VECTOR,ERR,ERROR,*999)
-                
+                CALL DISTRIBUTED_VECTOR_OVERRIDE_SET_OFF(RESIDUAL_VECTOR,ERR,ERROR,*999)                
               ELSE
                 CALL FLAG_ERROR("Residual vector is not associated.",ERR,ERROR,*997)                
               ENDIF

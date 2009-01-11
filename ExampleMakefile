@@ -277,8 +277,8 @@ ifeq ($(OPERATING_SYSTEM),linux)
     #FC = /home/users/local/packages/gfortran/irun/bin/gfortran
     # -fstatck-check
     F_FLGS += -pipe -fno-second-underscore -Wall -x f95-cpp-input
-    # for now allow no line length. Should restrict to 132 in future
-    F_FLGS += -ffree-line-length-none
+    # Restrict line length to 132
+    F_FLGS += -ffree-line-length=132
     # for now change max identifier length. Should restrict to 63 (F2003) in future
     F_FLGS += -fmax-identifier-length=63
     # Position independent code is actually only required for objects
@@ -610,6 +610,8 @@ OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/analytic_analysis_routines.o \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/bioelectric_routines.o \
+	$(OBJECT_DIR)/bioelec_domain_equation_routines.o \
 	$(OBJECT_DIR)/boundary_condition_routines.o \
 	$(OBJECT_DIR)/blas.o \
 	$(OBJECT_DIR)/classical_field_routines.o \
@@ -636,6 +638,7 @@ OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/finite_elasticity_routines.o \
 	$(OBJECT_DIR)/fluid_mechanics_routines.o \
 	$(OBJECT_DIR)/generated_mesh_routines.o \
+	$(OBJECT_DIR)/history_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -732,6 +735,39 @@ $(OBJECT_DIR)/basis_routines.o	:	$(MAIN_SOURCE_DIR)/basis_routines.f90 \
 
 $(OBJECT_DIR)/blas.o		:	$(MAIN_SOURCE_DIR)/blas.f90 \
 	$(OBJECT_DIR)/kinds.o
+
+$(OBJECT_DIR)/bioelectric_routines.o	:	$(MAIN_SOURCE_DIR)/bioelectric_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/bioelec_domain_equation_routines.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/problem_constants.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/bioelec_domain_equation_routines.o	:	$(MAIN_SOURCE_DIR)/bioelec_domain_equation_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/constants.o \
+	$(OBJECT_DIR)/control_loop_routines.o \
+	$(OBJECT_DIR)/distributed_matrix_vector.o \
+	$(OBJECT_DIR)/domain_mappings.o \
+	$(OBJECT_DIR)/equations_mapping_routines.o \
+	$(OBJECT_DIR)/equations_matrices_routines.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o	\
+	$(OBJECT_DIR)/matrix_vector.o	\
+	$(OBJECT_DIR)/problem_constants.o	\
+	$(OBJECT_DIR)/strings.o	\
+	$(OBJECT_DIR)/solution_mapping_routines.o	\
+	$(OBJECT_DIR)/solutions_routines.o	\
+	$(OBJECT_DIR)/solver_routines.o	\
+	$(OBJECT_DIR)/timer_f.o	\
+	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/boundary_condition_routines.o  : $(MAIN_SOURCE_DIR)/boundary_condition_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
@@ -916,6 +952,7 @@ $(OBJECT_DIR)/equations_set_constants.o		:	$(MAIN_SOURCE_DIR)/equations_set_cons
 
 $(OBJECT_DIR)/equations_set_routines.o		:	$(MAIN_SOURCE_DIR)/equations_set_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/bioelectric_routines.o \
 	$(OBJECT_DIR)/classical_field_routines.o \
 	$(OBJECT_DIR)/cmiss_mpi.o \
 	$(OBJECT_DIR)/computational_environment.o \
@@ -1016,6 +1053,14 @@ $(OBJECT_DIR)/generated_mesh_routines.o	:	$(MAIN_SOURCE_DIR)/generated_mesh_rout
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/mesh_routines.o \
 	$(OBJECT_DIR)/node_routines.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/history_routines.o	:	$(MAIN_SOURCE_DIR)/history_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/problem_constants.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 

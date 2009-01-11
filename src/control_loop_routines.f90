@@ -59,7 +59,7 @@ MODULE CONTROL_LOOP_ROUTINES
   !Module parameters
 
   !> \addtogroup CONTROL_LOOP_ROUTINES_ControlLoopIdentifiers CONTROL_LOOP_ROUTINES::ControlLoopIdentifiers
-  !> \brief The linearity type parameters
+  !> \brief The control loop identification parameters
   !> \see PROBLEM_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: CONTROL_LOOP_NODE=0 !<The identifier for a each "leaf" node in a control loop. \see CONTROL_LOOP_ROUTINES_ControlLoopIdentifiers,CONTROL_LOOP_ROUTINES
@@ -79,10 +79,10 @@ MODULE CONTROL_LOOP_ROUTINES
 
   PUBLIC CONTROL_LOOP_NODE
 
-  PUBLIC CONTROL_LOOP_CREATE_FINISH,CONTROL_LOOP_CREATE_START,CONTROL_LOOP_DESTROY,CONTROL_LOOP_GET,CONTROL_LOOP_ITERATIONS_SET, &
-    & CONTROL_LOOP_MAXIMUM_ITERATIONS_SET,CONTROL_LOOP_NUMBER_SUB_LOOPS_GET,CONTROL_LOOP_NUMBER_SUB_LOOPS_SET, &
-    & CONTROL_LOOP_SUB_LOOP_GET,CONTROL_LOOP_SOLUTIONS_DESTROY,CONTROL_LOOP_SOLUTIONS_GET,CONTROL_LOOP_SOLVER_DESTROY, &
-    & CONTROL_LOOP_TIMES_SET,CONTROL_LOOP_TYPE_SET
+  PUBLIC CONTROL_LOOP_CREATE_FINISH,CONTROL_LOOP_CREATE_START,CONTROL_LOOP_CURRENT_TIMES_GET,CONTROL_LOOP_DESTROY, &
+    & CONTROL_LOOP_GET,CONTROL_LOOP_ITERATIONS_SET,CONTROL_LOOP_MAXIMUM_ITERATIONS_SET,CONTROL_LOOP_NUMBER_SUB_LOOPS_GET, &
+    & CONTROL_LOOP_NUMBER_SUB_LOOPS_SET,CONTROL_LOOP_SUB_LOOP_GET,CONTROL_LOOP_SOLUTIONS_DESTROY,CONTROL_LOOP_SOLUTIONS_GET, &
+    & CONTROL_LOOP_SOLVER_DESTROY,CONTROL_LOOP_TIMES_GET,CONTROL_LOOP_TIMES_SET,CONTROL_LOOP_TYPE_SET
 
 CONTAINS
 
@@ -166,6 +166,52 @@ CONTAINS
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_CREATE_START
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the current time parameters for a time control loop.
+  SUBROUTINE CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to get the times for
+    REAL(DP), INTENT(OUT) :: CURRENT_TIME !<On exit, the current time for the time control loop.
+    REAL(DP), INTENT(OUT) :: TIME_INCREMENT !<On exit, the time increment for the time control loop.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables    
+    TYPE(CONTROL_LOOP_TIME_TYPE), POINTER :: TIME_LOOP
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CONTROL_LOOP_CURRENT_TIMES_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
+        IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
+          TIME_LOOP=>CONTROL_LOOP%TIME_LOOP
+          IF(ASSOCIATED(TIME_LOOP)) THEN
+            CURRENT_TIME=TIME_LOOP%CURRENT_TIME
+            TIME_INCREMENT=TIME_LOOP%TIME_INCREMENT
+          ELSE
+            CALL FLAG_ERROR("Control loop time loop is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The specified control loop is not a time control loop.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Control loop has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("CONTROL_LOOP_CURRENT_TIMES_GET")
+    RETURN
+999 CALL ERRORS("CONTROL_LOOP_CURRENT_TIMES_GET",ERR,ERROR)
+    CALL EXITS("CONTROL_LOOP_CURRENT_TIMES_GET")
+    RETURN 1
+  END SUBROUTINE CONTROL_LOOP_CURRENT_TIMES_GET
+  
   !
   !================================================================================================================================
   !
@@ -992,6 +1038,56 @@ CONTAINS
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_TIME_INITIALISE
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the time parameters for a time control loop.
+  SUBROUTINE CONTROL_LOOP_TIMES_GET(CONTROL_LOOP,START_TIME,STOP_TIME,TIME_INCREMENT,CURRENT_TIME,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to get the times for
+    REAL(DP), INTENT(OUT) :: START_TIME !<On exit, the start time for the time control loop.
+    REAL(DP), INTENT(OUT) :: STOP_TIME !<On exit, the stop time for the time control loop.
+    REAL(DP), INTENT(OUT) :: TIME_INCREMENT !<On exit, the time increment for the time control loop.
+    REAL(DP), INTENT(OUT) :: CURRENT_TIME !<On exit, the current time for the time control loop.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables    
+    TYPE(CONTROL_LOOP_TIME_TYPE), POINTER :: TIME_LOOP
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CONTROL_LOOP_TIMES_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
+        IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
+          TIME_LOOP=>CONTROL_LOOP%TIME_LOOP
+          IF(ASSOCIATED(TIME_LOOP)) THEN
+            START_TIME=TIME_LOOP%START_TIME
+            STOP_TIME=TIME_LOOP%STOP_TIME
+            TIME_INCREMENT=TIME_LOOP%TIME_INCREMENT
+            CURRENT_TIME=TIME_LOOP%CURRENT_TIME
+          ELSE
+            CALL FLAG_ERROR("Control loop time loop is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The specified control loop is not a time control loop.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Control loop has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("CONTROL_LOOP_TIMES_GET")
+    RETURN
+999 CALL ERRORS("CONTROL_LOOP_TIMES_GET",ERR,ERROR)
+    CALL EXITS("CONTROL_LOOP_TIMES_GET")
+    RETURN 1
+  END SUBROUTINE CONTROL_LOOP_TIMES_GET
+  
   !
   !================================================================================================================================
   !
