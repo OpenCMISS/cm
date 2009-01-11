@@ -396,6 +396,7 @@ CONTAINS
         NEW_PROBLEM%CLASS=PROBLEM_CLASSICAL_FIELD_CLASS
         NEW_PROBLEM%TYPE=PROBLEM_LAPLACE_EQUATION_TYPE
         NEW_PROBLEM%SUBTYPE=PROBLEM_STANDARD_LAPLACE_SUBTYPE
+        NEW_PROBLEM%PROBLEM_FINISHED=.FALSE.
         !Start problem specific setup
         CALL PROBLEM_SETUP(NEW_PROBLEM,PROBLEM_SETUP_INITIAL_TYPE,PROBLEM_SETUP_START_ACTION,ERR,ERROR,*999)
         !Add new problem into list of problems
@@ -1927,9 +1928,9 @@ CONTAINS
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the problem to set the specification for.
-    INTEGER(INTG), INTENT(OUT) :: PROBLEM_CLASS !<The problem class to get.
-    INTEGER(INTG), INTENT(OUT) :: PROBLEM_EQUATION_TYPE !<The problem equation to get.
-    INTEGER(INTG), INTENT(OUT) :: PROBLEM_SUBTYPE !<The problem subtype.
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_CLASS !<On return, the problem class to get.
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_EQUATION_TYPE !<On return, the problem equation to get.
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_SUBTYPE !<On return, the problem subtype.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1956,9 +1957,9 @@ CONTAINS
 
     !Argument variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the specification for.
-    INTEGER(INTG), INTENT(OUT) :: PROBLEM_CLASS !<The problem class to set.
-    INTEGER(INTG), INTENT(OUT) :: PROBLEM_EQUATION_TYPE !<The problem equation type to set.
-    INTEGER(INTG), INTENT(OUT) :: PROBLEM_SUBTYPE !<The problem subtype to set.
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_CLASS !<On return, The problem class to set.
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_EQUATION_TYPE !<On return, the problem equation type to set.
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_SUBTYPE !<On return, the problem subtype to set.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables

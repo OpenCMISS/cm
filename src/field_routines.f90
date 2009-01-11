@@ -2286,7 +2286,7 @@ CONTAINS
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: PARAMETER_SET_NUMBER !<The field parameter set number to get the element parameters for
     INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to get the element parameters for
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS !<A pointer to the interpolation parameters
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS !<On return, a pointer to the interpolation parameters
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -2554,7 +2554,7 @@ CONTAINS
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: PARAMETER_SET_NUMBER !<The field parameter set number to get the line parameters for
     INTEGER(INTG), INTENT(IN) :: LINE_NUMBER !<The line number to get the line parameters for
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS !<A pointer to the interpolation parameters
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS !<On return, a pointer to the interpolation parameters
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -2702,7 +2702,7 @@ CONTAINS
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to get the element scale factors for
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS !<A pointer to the interpolation parameters
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS !<On return, a pointer to the interpolation parameters
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -2818,7 +2818,7 @@ CONTAINS
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: LINE_NUMBER !<The line number to get the element scale factors for
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS !<A pointer to the interpolation parameters
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS !<On return, a pointer to the interpolation parameters
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -3995,7 +3995,7 @@ CONTAINS
 
     !Argument variables
     TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to get the decomposition for
-    TYPE(DECOMPOSITION_TYPE) :: MESH_DECOMPOSITION !<A pointer to the mesh decomposition to get
+    TYPE(DECOMPOSITION_TYPE) :: MESH_DECOMPOSITION !<On return, a pointer to the mesh decomposition to get
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -4869,7 +4869,7 @@ CONTAINS
     !Argument variables
     TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to get the parameter set from
     INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE !<The field parameter set identifier
-    REAL(DP), POINTER :: PARAMETERS(:) !<On exit, a pointer to the field parameter set data
+    REAL(DP), POINTER :: PARAMETERS(:) !<On return, a pointer to the field parameter set data
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables

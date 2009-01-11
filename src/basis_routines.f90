@@ -871,7 +871,7 @@ CONTAINS
 
     !Argument variables
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis to get the interpolation xi
-    INTEGER(INTG), INTENT(OUT) :: INTERPOLATION_XI(:) !<The interpolation xi parameters for each Xi direction \see BASIS_ROUTINES_InterpolationSpecifications
+    INTEGER(INTG), INTENT(OUT) :: INTERPOLATION_XI(:) !<On return, the interpolation xi parameters for each Xi direction \see BASIS_ROUTINES_InterpolationSpecifications
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1884,7 +1884,7 @@ CONTAINS
 
     !Argument variables
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis to get the number of nodes
-    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_NODES !<On exit, the number of local nodes in the basis
+    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_NODES !<On return, the number of local nodes in the basis
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1913,7 +1913,7 @@ CONTAINS
 
     !Argument variables
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function to change
-    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_XI !<The number of Xi directions to get.
+    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_XI !<On return, the number of Xi directions to get.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -2671,7 +2671,7 @@ CONTAINS
     CALL ENTERS("BASIS_QUADRATURE_ORDER_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(BASIS)) THEN
-      IF (BASIS%BASIS_FINISHED) THEN
+      IF(BASIS%BASIS_FINISHED) THEN
         IF(ASSOCIATED(BASIS%QUADRATURE%BASIS)) THEN
           QUADRATURE_ORDER=BASIS%QUADRATURE%GAUSS_ORDER
         ELSE
@@ -3999,7 +3999,7 @@ CONTAINS
     CALL ENTERS("BASIS_TYPE_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(BASIS)) THEN
-      IF (BASIS%BASIS_FINISHED) THEN
+      IF(BASIS%BASIS_FINISHED) THEN
         TYPE=BASIS%TYPE
       ELSE
         CALL FLAG_ERROR("Basis has not been finished yet",ERR,ERROR,*999)

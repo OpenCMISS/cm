@@ -92,7 +92,7 @@ CONTAINS
       & matrix_number,myrank,myrank_local_dof,NUMBER_OF_COLUMNS,NUMBER_OF_LINEAR_EQUATIONS_MATRICES,NUMBER_OF_GLOBAL_SOLVER_COLS, &
       & LOCAL_SOLVER_DOF_OFFSET,NUMBER_OF_GHOST_SOLVER_DOFS,NUMBER_OF_GLOBAL_SOLVER_ROWS,NUMBER_OF_LOCAL_SOLVER_COLS, &
       & NUMBER_OF_LOCAL_SOLVER_DOFS,NUMBER_OF_LOCAL_SOLVER_ROWS,NUMBER_OF_VARIABLES,rank,rank_idx,row_idx,SOLVER_DOF, &
-      & solver_matrix_idx,TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS,variable_idx,variable_type
+      & solver_matrix_idx,TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS,variable_idx,variable_type,equations_row_number
     LOGICAL :: INCLUDE_ROW,MYRANK_DOF,RANK_DOF
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: COL_DOMAIN_MAPPING,COL_DOFS_MAPPING,DEPENDENT_DOFS_MAPPING,ROW_DOMAIN_MAPPING, &
       & ROW_DOFS_MAPPING
@@ -290,6 +290,12 @@ CONTAINS
                   & EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations set to solver map equations row to solver rows maps.", &
                   & ERR,ERROR,*999)
+                DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
+                  !Initialise
+                  CALL SOLUTION_MAPPING_EQUATS_ROW_TO_SOL_ROWS_MAP_INITIALISE(SOLUTION_MAPPING% &
+                    & EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number), &
+                    & ERR,ERROR,*999)
+                ENDDO
               ENDIF !rank==my rank
 !!TODO: see how slow this is. At the moment we go through number of ranks*number of global rows. We could presort the global rows into a list for each rank. This would take additional memory.
               DO global_row=1,ROW_DOFS_MAPPING%NUMBER_OF_GLOBAL
@@ -377,10 +383,6 @@ CONTAINS
                       SOLUTION_MAPPING%SOLVER_ROW_TO_EQUATIONS_SET_MAPS(NUMBER_OF_LOCAL_SOLVER_ROWS)%COUPLING_COEFFICIENTS(1)= &
                         & 1.0_DP
                       !Set up the equations row -> solver row mappings
-                      !Initialise
-                      CALL SOLUTION_MAPPING_EQUATS_ROW_TO_SOL_ROWS_MAP_INITIALISE(SOLUTION_MAPPING% &
-                        & EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(local_row), &
-                        & ERR,ERROR,*999)
                       !Allocate the equations row to solver row mappings arrays
                       ALLOCATE(SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
                         & local_row)%SOLVER_ROWS(1),STAT=ERR)
@@ -401,10 +403,6 @@ CONTAINS
                   ELSE
                     IF(rank==myrank) THEN
                       !Set up the equations row -> solver row mappings
-                      !Initialise
-                      CALL SOLUTION_MAPPING_EQUATS_ROW_TO_SOL_ROWS_MAP_INITIALISE(SOLUTION_MAPPING% &
-                        & EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(local_row), &
-                        & ERR,ERROR,*999)
                       !Set the mappings
                       SOLUTION_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
                         & local_row)%NUMBER_OF_SOLVER_ROWS=0
@@ -721,6 +719,9 @@ CONTAINS
                       IF(FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(global_field_dof)==EQUATIONS_SET_NOT_FIXED) THEN
                         !DOF is not fixed so map the variable/equation dof to a new solution dof
                         NUMBER_OF_GLOBAL_SOLVER_COLS=NUMBER_OF_GLOBAL_SOLVER_COLS+1
+                        !Initialise_sm
+                        CALL DOMAIN_MAPPINGS_MAPPING_GLOBAL_INITIALISE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP( &
+                          & NUMBER_OF_GLOBAL_SOLVER_COLS),ERR,ERROR,*999)
                         IF(MYRANK_DOF) THEN
                           TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS=TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS+1
                           IF(rank==myrank) THEN
@@ -733,9 +734,6 @@ CONTAINS
                           ENDIF
                           !Set up the column domain mappings.
                           !There are no ghosted coLs for the solver matrices so there is only 1 domain for the global to local map.
-                          !Initialise_sm
-                          CALL DOMAIN_MAPPINGS_MAPPING_GLOBAL_INITIALISE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP( &
-                            & NUMBER_OF_GLOBAL_SOLVER_COLS),ERR,ERROR,*999)
                           !Allocate the global to local map arrays
                           ALLOCATE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(NUMBER_OF_GLOBAL_SOLVER_COLS)%LOCAL_NUMBER(1),STAT=ERR)
                           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column domain global to local map local number", &

@@ -85,8 +85,8 @@ CONTAINS
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
-    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_TYPE !<The equation type
-    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_SUBTYPE !<The equation subtype
+    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_TYPE !<On return, the equation type
+    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_SUBTYPE !<On return, the equation subtype
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -94,7 +94,7 @@ CONTAINS
     CALL ENTERS("CLASSICAL_FIELD_EQUATIONS_SET_CLASS_TYPE_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      IF (EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS) THEN
+      IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS) THEN
         EQUATIONS_TYPE=EQUATIONS_SET%TYPE
         EQUATIONS_SUBTYPE=EQUATIONS_SET%SUBTYPE
       ELSE
@@ -378,8 +378,8 @@ CONTAINS
 
     !Argument variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem
-    INTEGER(INTG), INTENT(OUT) :: PROBLEM_EQUATION_TYPE !<The problem type
-    INTEGER(INTG), INTENT(OUT) :: PROBLEM_SUBTYPE !<The proboem subtype
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_EQUATION_TYPE !<On return, the problem type
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_SUBTYPE !<On return, the proboem subtype
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables

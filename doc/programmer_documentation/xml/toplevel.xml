@@ -13,6 +13,7 @@
 <!ENTITY introduction SYSTEM "introduction.xml">
 <!ENTITY concepts SYSTEM "concepts.xml">
 <!ENTITY installation SYSTEM "installation.xml">
+ <!ENTITY project_tracker SYSTEM "project_tracker.xml">
 <!ENTITY object_interface SYSTEM "object_interface.xml">
 <!ENTITY examples SYSTEM "examples.xml">
 <!ENTITY library_commands SYSTEM "library_commands.xml">
@@ -25,6 +26,7 @@
   &introduction;
   &concepts;
   &installation;
+  &project_tracker;
   &object_interface;
   &examples;
   &library_commands;

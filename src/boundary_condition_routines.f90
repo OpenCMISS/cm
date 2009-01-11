@@ -194,7 +194,7 @@ CONTAINS
               node_number=NODES_MAPPING%INTERNAL_LIST(node_idx)
               DO dev_idx=1,DOMAIN_NODES%NODES(node_number)%NUMBER_OF_DERIVATIVES
                 ! Set the boundary condition for dependent field \todo for rectangular system only
-                IF (var_idx==1.AND.DOMAIN_NODES%NODES(node_number)%NUMBER_OF_SURROUNDING_ELEMENTS &
+                IF(var_idx==1.AND.DOMAIN_NODES%NODES(node_number)%NUMBER_OF_SURROUNDING_ELEMENTS &
                   & < 2**FIELD%REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS) THEN   
                   VALUE = ANALYTIC_PARAMETERS(FIELD%VARIABLES(var_idx)%COMPONENTS(comp_idx)%PARAM_TO_DOF_MAP% &
                     & NODE_PARAM2DOF_MAP(dev_idx,node_number,var_idx))
