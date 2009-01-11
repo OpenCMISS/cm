@@ -246,12 +246,8 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !> Starts the creation of a new region number USER_NUMBER under the global region, initialises all variables and inherits the global regions coordinate system etc.
   SUBROUTINE REGION_CREATE_START(USER_NUMBER,REGION,ERR,ERROR,*)
-
-    !#### Subroutine: REGION_CREATE_START
-    !###  Description:
-    !###    Starts the creation of a new region number USER_NUMBER under the global region, initialises all variables and
-    !###    inherits the global regions coordinate system etc.
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: USER_NUMBER
@@ -291,6 +287,7 @@ CONTAINS
       NULLIFY(NEW_REGION%NODES)
       NULLIFY(NEW_REGION%MESHES)
       NULLIFY(NEW_REGION%FIELDS)
+      NULLIFY(NEW_REGION%EQUATIONS_SETS)
       NULLIFY(NEW_REGION%PARENT_REGION)
       NULLIFY(NEW_REGION%EQUATIONS_SETS)
       NEW_REGION%NUMBER_OF_SUB_REGIONS=0
@@ -574,6 +571,7 @@ CONTAINS
         NULLIFY(NEW_REGION%NODES)
         NULLIFY(NEW_REGION%MESHES)
         NULLIFY(NEW_REGION%FIELDS)
+        NULLIFY(NEW_REGION%EQUATIONS_SETS)
         NULLIFY(NEW_REGION%PARENT_REGION)
         NEW_REGION%NUMBER_OF_SUB_REGIONS=0
         NULLIFY(NEW_REGION%SUB_REGIONS)
