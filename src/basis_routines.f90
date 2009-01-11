@@ -45,9 +45,9 @@ MODULE BASIS_ROUTINES
 
   USE BASE_ROUTINES
   USE CONSTANTS
-  USE KINDS
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
+  USE KINDS
   USE STRINGS
   USE TYPES
 
@@ -840,7 +840,9 @@ CONTAINS
         ENDDO !nn
         IF(ERR/=0) GOTO 999
       CASE(BASIS_SIMPLEX_TYPE)
+        ns=0
         DO nn=1,BASIS%NUMBER_OF_NODES
+          ns=ns+1
           BASIS_INTERPOLATE_XI_DP=BASIS_INTERPOLATE_XI_DP+ &
             & BASIS_SIMPLEX_BASIS_EVALUATE(BASIS,nn,PARTIAL_DERIV_INDEX,XI,ERR,ERROR)* &
             & ELEMENT_PARAMETERS(ns)
@@ -869,7 +871,7 @@ CONTAINS
 
     !Argument variables
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis to get the interpolation xi
-    INTEGER(INTG), INTENT(OUT) :: INTERPOLATION_XI(:) !<The interpolation xi parameters for each Xi direction \see BASIS_ROUTINES_InterpolationSpecifications
+    INTEGER(INTG), INTENT(OUT) :: INTERPOLATION_XI(:) !<On return, the interpolation xi parameters for each Xi direction \see BASIS_ROUTINES_InterpolationSpecifications
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1882,7 +1884,7 @@ CONTAINS
 
     !Argument variables
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis to get the number of nodes
-    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_NODES !<On exit, the number of local nodes in the basis
+    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_NODES !<On return, the number of local nodes in the basis
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1911,7 +1913,7 @@ CONTAINS
 
     !Argument variables
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function to change
-    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_XI !<The number of Xi directions to get.
+    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_XI !<On return, the number of Xi directions to get.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -2669,7 +2671,7 @@ CONTAINS
     CALL ENTERS("BASIS_QUADRATURE_ORDER_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(BASIS)) THEN
-      IF (BASIS%BASIS_FINISHED) THEN
+      IF(BASIS%BASIS_FINISHED) THEN
         IF(ASSOCIATED(BASIS%QUADRATURE%BASIS)) THEN
           QUADRATURE_ORDER=BASIS%QUADRATURE%GAUSS_ORDER
         ELSE
@@ -2782,16 +2784,16 @@ CONTAINS
 
     IF(ASSOCIATED(BASIS)) THEN
       IF(BASIS%BASIS_FINISHED) THEN
-	    IF(ASSOCIATED(BASIS%QUADRATURE%BASIS)) THEN
-	      QUADRATURE_TYPE=BASIS%QUADRATURE%TYPE
-	    ELSE
-	      CALL FLAG_ERROR("Basis quadrature basis is not associated",ERR,ERROR,*999)
-	    ENDIF
-	  ELSE
-	    CALL FLAG_ERROR("Basis has not finished",ERR,ERROR,*999)
-	  ENDIF
+        IF(ASSOCIATED(BASIS%QUADRATURE%BASIS)) THEN
+          QUADRATURE_TYPE=BASIS%QUADRATURE%TYPE
+        ELSE
+          CALL FLAG_ERROR("Basis quadrature basis is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Basis has not finished.",ERR,ERROR,*999)
+      ENDIF
     ELSE
-      CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Basis is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("BASIS_QUADRATURE_TYPE_GET")
@@ -3997,7 +3999,7 @@ CONTAINS
     CALL ENTERS("BASIS_TYPE_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(BASIS)) THEN
-      IF (BASIS%BASIS_FINISHED) THEN
+      IF(BASIS%BASIS_FINISHED) THEN
         TYPE=BASIS%TYPE
       ELSE
         CALL FLAG_ERROR("Basis has not been finished yet",ERR,ERROR,*999)
@@ -5009,7 +5011,7 @@ CONTAINS
               LAMBDA=4.0_DP/27.0_DP*(4.0_DP*SQRT(79.0_DP)*COS((ACOS(ACOS_ARG)/3.0_DP)+71.0_DP))
               ALPHA_1=(SQRT(9.0_DP*LAMBDA*LAMBDA-248.0_DP*LAMBDA+1680.0_DP)+28.0_DP-3.0_DP*LAMBDA)/ &
                 & (112.0_DP-10.0_DP*LAMBDA)
-              ALPHA_1=(-1.0_DP*SQRT(9.0_DP*LAMBDA*LAMBDA-248.0_DP*LAMBDA+1680.0_DP)+28.0_DP-3.0_DP*LAMBDA)/ &
+              ALPHA_2=(-1.0_DP*SQRT(9.0_DP*LAMBDA*LAMBDA-248.0_DP*LAMBDA+1680.0_DP)+28.0_DP-3.0_DP*LAMBDA)/ &
                 & (112.0_DP-10.0_DP*LAMBDA)
               BETA=1.0_DP/SQRT(LAMBDA)
               W_ALPHA_1=((21.0_DP-LAMBDA)*ALPHA_2-7.0_DP)/(420.0_DP*ALPHA_1*ALPHA_1*(ALPHA_2-ALPHA_1))
