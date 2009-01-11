@@ -579,6 +579,13 @@ This outcome is achieved with [[revision 232|http://trac.bioeng.auckland.ac.nz/p
 <div title="CellML API" modifier="DavidNickerson" created="200807241619" modified="200807251625" changecount="4">
 <pre>The [[CellML API|http://www.cellml.org/tools/api]]  is a collection of {{{C++}}} code developed by the ABI CellML team (primarily Andrew Miller), which provides a base API for interacting with CellML models and several services that use the API to achieve specific tasks. This code can be compiled into fairly fine grained static or dynamic libraries for use by applications and is known to build and function under several platform and compiler combinations. The public API for the base and all services are specified using {{{IDL}}} from which the actual {{{C++}}} headers are generated using {{{omniORB}}}.</pre>
 </div>
+<div title="CellML HDF5 storage" modifier="andre" created="200811191454" modified="200811191509" tags="task" changecount="7" tt_scope="openCMISS + CellML" tt_priority="4" tt_user="andre" tt_status="InProgress">
+<pre>Prompted by recent discussion in the CellML community I have started toying with code to better store ~CellML-based simulation results using [[HDF5]]. My CellMLSimulator tool currently uses HDF5 for data files, but my code isn't all that general and has a few known problems. I am now starting to think about ways HDF5 could be used to store CellML variable values over time (for example) at multiple instances (nodes, grid points, etc.). This could be used in openCMISS(cm) as a way of generating the equivalent of the current binary history file, allowing all variables in all the CellML models being used in a given openCMISS(cm) simulation to be stored in HDF5.
+
+If I understand the way [[HDF5]] works, this should work fine over multiple threads using MPI or openMP.
+
+Of course, this may simply be a temporary step until a more suitable persistent data storage framework is implemented in openCMISS, possibly based on FieldML. Which may even be ready in time for me to use from the start...</pre>
+</div>
 <div title="CellMLSimulator" modifier="DavidNickerson" created="200807251713" changecount="1">
 <pre>Andre's ultra-cool CellML model simulation and processing tool. Does all sorts of cool stuff including process CellML graphing and simulation metadata. See http://cellml.sourceforge.net/ for all the glorious details.</pre>
 </div>
@@ -676,12 +683,22 @@ and then may wish to make further customisations by editing the [[TaskDefinition
 
 [[More information|About TeamTasks]] about what components go into TeamTasks. </pre>
 </div>
+<div title="HDF5" modifier="andre" created="200811191504" changecount="1">
+<pre>[[HDF5|http://www.hdfgroup.org/HDF5/whatishdf5.html]] is a unique technology suite that makes possible the management of extremely large and complex data collections.</pre>
+</div>
+<div title="Implementation of openCMISS(cellml) interfaces" modifier="andre" created="200807251727" modified="200811191428" tags="task" changecount="16" tt_scope="openCMISS + CellML" tt_priority="3" tt_user="andre" tt_status="Pending">
+<pre>Need to refactor the initial [[Basic Simulation Application]] in order to find and most suitable abstractions and packaging (modularisation?) for use in the openCMISS framework. This work can progress independent of the [[Benchmark: generated C vs Fortran 95]] task although that will feed into this sub-project at some point.</pre>
+</div>
+<div title="Implementation of openCMISS(cm) CellML interfaces" modifier="andre" created="200811191435" modified="200811191435" tags="task" changecount="5" tt_scope="openCMISS + CellML" tt_priority="3" tt_user="andre" tt_status="Pending">
+<pre>Need to implement the interfaces defined in the [[openCMISS(cm) CellML API definition]]. It is expected that implementation will result in changes to the interfaces :)</pre>
+</div>
 <div title="Listings" modifier="PhilHawksworth" created="200805081121">
 <pre>&lt;&lt;tabs txtMainTab &quot;Timeline&quot; &quot;Timeline&quot; TabTimeline &quot;A - Z&quot; &quot;All tiddlers in alphabetical order&quot; TabAll &quot;Tags&quot; &quot;All tags&quot; TabTags &quot;Missing&quot; &quot;Missing tiddlers&quot; TabMoreMissing &quot;Shadowed&quot; &quot;Shadowed tiddlers&quot; TabMoreShadowed&gt;&gt;</pre>
 </div>
-<div title="MainMenu" modifier="andre" created="200708051914" modified="200807311524" changecount="4">
+<div title="MainMenu" modifier="andre" created="200708051914" modified="200811191457" changecount="5">
 <pre>{{search{&lt;&lt;search&gt;&gt;}}}
 [[Overview]]
+&lt;&lt;slider chkSliderSubProjectsPanel SubProjects 'Sub projects »'  'The core sub-projects'&gt;&gt;
 &lt;&lt;slider chkSliderOptionsPanel TaskViews 'Task views »' 'A selection of task views'&gt;&gt;
 [[Listings]]
 [[Getting Started with TeamTasks]]
@@ -919,9 +936,6 @@ To achieve this goal I have split the project into several smaller sub-projects:
 9
 </pre>
 </div>
-<div title="Refactor and Abstraction" modifier="andre" created="200807251727" modified="200807311535" tags="task" changecount="13" tt_scope="openCMISS + CellML" tt_priority="1" tt_user="andre" tt_status="Pending">
-<pre>Need to refactor the initial [[Basic Simulation Application]] in order to find and most suitable abstractions and packaging (modularisation?) for use in the openCMISS framework. This work can progress independent of the [[Benchmark: generated C vs Fortran 95]] task although that will feed into this sub-project at some point.</pre>
-</div>
 <div title="Release Notes" modifier="PhilHawksworth" created="200710241224" modified="200710241439" tags="help" changecount="23">
 <pre>!Version 0.4
 !!!Comments
@@ -1018,7 +1032,7 @@ ControlsContainer
 <div title="Report: FieldML + CellML" modifier="DavidNickerson" created="200807251654" changecount="1">
 <pre>&lt;&lt;TTReportView DisplayFields:&quot;Priority,Title,Status&quot; OrderBy:&quot;Priority,asc&quot; Scope:&quot;FieldML + CellML&quot;&gt;&gt;</pre>
 </div>
-<div title="Report: openCMISS + CellML" modifier="DavidNickerson" created="200807251654" changecount="1">
+<div title="Report: openCMISS + CellML" modifier="andre" created="200807251654" modified="200811191502" changecount="4">
 <pre>&lt;&lt;TTReportView DisplayFields:&quot;Priority,Title,Status&quot; OrderBy:&quot;Priority,asc&quot; Scope:&quot;openCMISS + CellML&quot;&gt;&gt;</pre>
 </div>
 <div title="ScopeDefinitions" modifier="DavidNickerson" created="200709041507" modified="200807251627" tags="TaskDefinitions" changecount="4">
@@ -1051,6 +1065,11 @@ Complete</pre>
   white-space: pre;
   overflow: auto;
 }</pre>
+</div>
+<div title="SubProjects" modifier="andre" created="200811191458" modified="200811191459" changecount="2">
+<pre>[[CellML + Fortran 95]]
+[[openCMISS + CellML]]
+[[FieldML + CellML]]</pre>
 </div>
 <div title="TTMigrateTasks0304Plugin" modifier="PhilHawksworth" created="200803110000" tags="systemConfig">
 <pre>/***
@@ -2013,6 +2032,14 @@ Given that the [[CCGS]] supports a finite set of MathML operators and we know wh
 Have checked out the {{{openCMISS.cm}}} source code :)
 !!18 October 2008
 Have the Intel Fortran compiler for Linux (and the MKL libraries) installed and able to build the example applications from the {{{openCMISS/opencmiss/cm/examples}}} folder.</pre>
+</div>
+<div title="openCMISS(cellml) API definition" modifier="andre" created="200811191433" modified="200811191433" tags="task" changecount="5" tt_priority="2" tt_scope="openCMISS + CellML" tt_user="andre" tt_status="Pending">
+<pre>From the [[openCMISS(cm) CellML API definition]] it should start to become clear what will be required of the openCMISS(cellml) module(s) allowing the us to start defining and documenting the required interfaces.</pre>
+</div>
+<div title="openCMISS(cm) CellML API definition" modifier="andre" created="200811191421" modified="200811191432" tags="task" changecount="7" tt_scope="openCMISS + CellML" tt_priority="1" tt_user="andre" tt_status="InProgress">
+<pre>The openCMISS(cm) CellML API is currently specified in the openCMISS powerpoint presentation document. This needs to be translated into documented interfaces within an openCMISS(cm) CellML module. This module provides the interface between openCMISS(cm) and openCMISS(cellml). (openCMISS(cellml) provides the interface between openCMISS and the CellML API &amp; associated services.)
+
+Will need to merge the interfaces from the powerpoint with some of the recent ideas regarding the CellML model definition annotations I started to develop as part of the [[Basic Simulation Application]].</pre>
 </div>
 <div title="settings" modifier="PhilHawksworth" created="200803251627" tags="systemConfig excludeLists excludeSearch">
 <pre>//{{{

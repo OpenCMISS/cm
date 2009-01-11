@@ -82,24 +82,6 @@ CPUTimer      Returns the CPU time
 #include <unistd.h>
 #endif
 
-/* Defines */
-
-#if defined VMS
-#define CPUTimer CPUTIMER
-#endif
-#if defined mips
-#define CPUTimer cputimer_
-#endif
-#if defined WIN32
-#define CPUTimer cputimer
-#endif
-#if defined linux
-#define CPUTimer _cputimer
-#endif 
-#if defined _AIX
-#define CPUTimer cputimer
-#endif 
-
 /* Type definitions */
 
 /* Function Definitions */
@@ -107,7 +89,7 @@ CPUTimer      Returns the CPU time
 void CPUTimer(double *return_time,
   int *flag,
   int *err,
-  char *error_string)
+  char error_string[])
 
 /* keep these up to date with timer_f.f90 */
 
@@ -172,7 +154,7 @@ void CPUTimer(double *return_time,
     default:
     {
       *err=1;
-      strcpy(error_string,">>ERROR: Invalid operation code");
+      strcpy(error_string,"Invalid operation code");
       *return_time = -99999.0; /* get some attention! */
     }
   }     

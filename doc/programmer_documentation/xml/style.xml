@@ -19,7 +19,17 @@
       can be replaced with <code>REAL(DP)::VALUE_BUFFER(5)</code> 
     </listitem>
     <listitem>Use node hierarchy consistently in subroutine calls. i.e., derivative_number,node_number,component_number,variable_number instead of reverse order.</listitem>
-    <listitem>Use subroutines instead of function for Get routines and return the result to the memory supplied by calling program. (i.e. using <code>INTENT(OUT)::A(:)</code> etc)</listitem>
+    <listitem>Input arguments should be checked in a subroutine before being used.</listitem>
+    <listitem>No space between IF and condition i.e. IF( rather than IF (.</listitem>
+    <listitem>Use Fortran 2003 standard for get the arguments to a program than the non-standard GET_ARG</listitem>
+    <listitem>Get routines
+      <itemizedlist>
+        <listitem>Use subroutines instead of function.</listitem>
+        <listitem>Return the result to the memory supplied by calling program. (i.e. using <code>INTENT(OUT)::A(:)</code> etc)</listitem>
+        <listitem>Indicate in the doxygen comment that an argument is changed inside the get routine.</listitem>
+        <listitem>Check that the size of the memory passed in is large enough to hold the data that it is going to store</listitem>
+      </itemizedlist>
+    </listitem>
   </itemizedlist>
   <para>The following styles are required by IBM Fortran Compiler:</para>
   <itemizedlist>

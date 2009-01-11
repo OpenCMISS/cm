@@ -55,6 +55,7 @@ MODULE CMISS_PETSC_TYPES
 #include "include/finclude/petscmat.h"
 #include "include/finclude/petscpc.h"
 #include "include/finclude/petscsnes.h"
+#include "include/finclude/petscts.h"
 #include "include/finclude/petscvec.h"
 #include "include/finclude/petscviewer.h"
 
@@ -96,17 +97,21 @@ MODULE CMISS_PETSC_TYPES
     SNES :: SNES_
   END TYPE PETSC_SNES_TYPE
   
+  TYPE PETSC_TS_TYPE
+    TS :: TS_
+  END TYPE PETSC_TS_TYPE
+  
   TYPE PETSC_VEC_TYPE
-    PetscScalar :: VEC_DATA(1)
-    PetscOffset :: VEC_OFFSET
+    !PetscScalar :: VEC_DATA(1)
+    !PetscOffset :: VEC_OFFSET
     Vec :: VEC
   END TYPE PETSC_VEC_TYPE
   
   !Module variables
 
   !Interfaces
-
+ 
   PUBLIC PETSC_IS_TYPE,PETSC_ISLOCALTOGLOBALMAPPING_TYPE,PETSC_ISCOLORING_TYPE,PETSC_KSP_TYPE,PETSC_MAT_TYPE, &
-    & PETSC_MATFDCOLORING_TYPE,PETSC_PC_TYPE,PETSC_SNES_TYPE,PETSC_VEC_TYPE
+    & PETSC_MATFDCOLORING_TYPE,PETSC_PC_TYPE,PETSC_SNES_TYPE,PETSC_TS_TYPE,PETSC_VEC_TYPE
   
 END MODULE CMISS_PETSC_TYPES
