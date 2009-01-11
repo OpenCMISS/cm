@@ -1,0 +1,15 @@
+<chapter>
+  <title>Project Tracker</title>
+  <para>
+    The opencmiss project tracker is hosted by the <ulink url='https://tracker.physiomeproject.org/'>Physiome project's Tracker</ulink>
+  </para>
+  <sect1>
+    <title>Tips</title>
+    <itemizedlist>
+      <listitem>To view openCMISS tracker items, go to <ulink url='https://tracker.physiomeproject.org/buglist.cgi?query_format=advanced&amp;bug_status=NEW&amp;bug_status=ASSIGNED&amp;bug_status=REOPENED&amp;product=openCMISS-cm'/></listitem>
+      <listitem>To add a tracker item: <ulink url='https://tracker.physiomeproject.org/enter_bug.cgi?classification=openCMISS-cm'/></listitem>
+      <listitem>Set preferences in the tracker to shadow/watch the opencmiss@physiomeproject.org user.  It is a default CC on openCMISS items, and that way you can set your preferences as to which bugmail you get, and have all new openCMISS tracker items.</listitem>
+      <listitem>There is an RSS feed link for any search result, so if you do a search for openCMISS (Advanced search, then choose openCMISS from "Classification"), you can use the RSS feed, and CC yourself to tracker items of interest.</listitem>
+    </itemizedlist>
+  </sect1>
+</chapter>

@@ -1,0 +1,28 @@
+/*!
+\page introduction Introduction
+OpenCMISS is a project for the re-engineering of the CMISS computational engine.
+\section cmiss CMISS
+CMISS is an interactive computer program for Continuum Mechanics, Image analysis, Signal processing and System Identification.
+It provides a mathematical modelling environment that allows the application of finite element analysis, boundary element and collocation techniques to a variety of complex bioengineering problems. 
+    
+CMISS consists of two main components, cmgui and cm. 
+cmgui is a graphical front end with advanced 3D display and modelling capabilities. 
+It is the open source project written in C/C++.   
+cm is a computational backend that may be run remotely on powerful workstations or supercomputers. 
+cm is developed under Fortran 77 and has some licensing limitations.
+    
+\section parallel_computing Shared Memory Computing vs Distributed Memory Computing
+cm uses OpenMP for shared memory computing. 
+A shared memory system is relatively easy to program since all processors share a single view of data and the communication between processors can be as fast as memory accesses to a shared location. 
+However, the CPU-to-memory connection will eventually become a bottleneck. 
+
+Distributed memory systems have increased CPU and memory scalibility compared to shared memory systems, but are much harder to program. The MPI standard is used for message passing.  
+    
+\section objective Objectives of OpenCMISS
+OpenCMISS is re-engineering of CMISS cm component. 
+It is intended to give a library based approach to enable use in multiple applications.
+It is developed under Fortan 95 and Modular, easily extendable and programmable.
+It will be integrated with MPI to provide modular, easily extendable and programmable code which is applicable for either MPI based distributed system, OpenMP based shared memory system and/or serial code. 
+It will be open sourced.     
+*/
+
