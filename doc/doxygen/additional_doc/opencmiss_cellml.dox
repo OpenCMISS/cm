@@ -1,0 +1,36 @@
+/** \file opencmiss_cellml.dox
+  * \brief Current status and plans for the use of CellML in openCMISS.
+  */
+
+/** \page opencmiss_cellml openCMISS & CellML
+
+\todo Keep up-to-date..
+
+\section opencmiss-cellml-introduction Introduction
+
+The goal of this page is to track the development status of the integration of CellML into openCMISS. It is envisioned that this page will form the basis of user and programmer documentation for the use of CellML models in openCMISS.
+
+It also serves as Andre's test on the use of doxygen for documenting openCMISS developments.
+
+\section opencmiss-cellml-goals Goals
+
+Here we list the goals to be achieved through the integration of CellML into openCMISS:
+<ol>
+  <li>to be able to use CellML to define mathematical equations at run-time;</li>
+  <li>to have mathematical models simulated using openCMISS behave identically to their behaviour in other CellML-capable simulation tools (PCEnv/COR/CellMLSimulator). This will require identical (similar?) numerical methods to be used in the simulation of CellML models (simulation metadata is key?);</li>
+  <li>use many different CellML models each with many different parameterizations throughout a domain of interest;</li>
+  <li></li>
+</ol>
+
+
+\section opencmiss-cellml-current-status Current Status
+
+\section opencmiss-cellml-current-status-background Background
+
+Initial work has been completed, under the \link http://trac.bioeng.auckland.ac.nz/projects/opencmiss/browser/cellml/branches/basicSimulationApplication basicSimulationApplication \endlink branch of the openCMISS \c cellml subversion project, investigating the use of the \link http://www.cellml.org/tools/api CellML C++ API implementation \endlink with a Fortran 95/2003 application environment. This evaluation was quite successful and provided a few key outcomes:
+- the Fortran 2003 standards for mixed language programming are superior enough that we decided to begin allowing Fortran 2003 code in openCMISS;
+- more that I can't remember at the moment...
+
+
+
+*/

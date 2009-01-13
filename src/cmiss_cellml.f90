@@ -65,7 +65,7 @@ CONTAINS
   !! For a given field, create a CellML environment that will be used to define the value of that field in openCMISS. This will likely simply create and initialise an empty CellML environment object with the specified unique identifier number and associate it with the field? Also set some flag to indicate the CellML environment object is in the process of being created and should not yet be used.
   SUBROUTINE CELLML_CREATE_START(CELLML_USER_NUMBER,FIELD,CELLML,ERR,ERROR,*)
     INTEGER(INTG), INTENT(IN) :: CELLML_USER_NUMBER !<Not sure what the purpose of this is? I guess to give the created CellML environment object a unique identifier? Perhaps if the same identifier is specified then an existing CellML environment would be reused/reinitialised for the given source field...
-    TYPE(FIELD_TYPE), POINTER :: FIELD !<The (source) field to set up this CellML environment for.
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<The (source) field to set up this CellML environment for. Should be USER_NUMBER instead?
     TYPE(CELLML_TYPE), POINTER :: CELLML !<The newly created CellML environment object.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
