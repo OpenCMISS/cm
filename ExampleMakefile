@@ -282,7 +282,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
     # -fstatck-check
     F_FLGS += -pipe -fno-second-underscore -Wall -x f95-cpp-input
     # Restrict line length to 132
-    F_FLGS += -ffree-line-length=132
+    F_FLGS += -ffree-line-length-132
     # for now change max identifier length. Should restrict to 63 (F2003) in future
     F_FLGS += -fmax-identifier-length=63
     # Position independent code is actually only required for objects
@@ -1405,7 +1405,7 @@ help:
 	@echo "Options: (The former is the default unless specified.)"
 	@echo
 	@echo "	(DEBUG=|OPT=)"
-	@echo " MPI=(mpich2|intel)"
+	@echo "	MPI=(mpich2|intel|openmpi)"
 	@echo "	PROF=(true|)"
 	@echo "	MPIPROF=(true|)"
 	@echo "	ABI=(32|64)"
