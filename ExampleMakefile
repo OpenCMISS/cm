@@ -79,7 +79,11 @@ else
       $(error can only use intel mpi with Linux)
     endif
   else
-    $(error unknown MPI type - $(MPI))
+    ifeq ($(MPI),openmpi)
+      MPI := openmpi
+    else
+      $(error unknown MPI type - $(MPI))
+    endif
   endif
 endif
 
@@ -544,18 +548,24 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
     MPI_LIBRARIES += -lmpich -lpthread -lrt
     MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
   else
-    ifeq ($(MPIPROF),true)
-      MPI_INCLUDE_PATH += $(addprefix -I, $(VT_ROOT)/include/ )
-      MPI_LIB_PATH += $(addprefix -L, $(VT_LIB_DIR) )
-      MPI_LIBRARIES += -lVT $(VT_ADD_LIBS)
-    endif
-    MPI_LIBRARIES += -lmpi -lmpiif -lmpigi -lrt -lpthread -ldl
-    ifeq ($(ABI),64)
-      MPI_INCLUDE_PATH += $(addprefix -I, $(I_MPI_ROOT)/include64/ )
-      MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib64/ )
+    ifeq ($(MPI),intel)
+      ifeq ($(MPIPROF),true)
+        MPI_INCLUDE_PATH += $(addprefix -I, $(VT_ROOT)/include/ )
+        MPI_LIB_PATH += $(addprefix -L, $(VT_LIB_DIR) )
+        MPI_LIBRARIES += -lVT $(VT_ADD_LIBS)
+      endif
+      MPI_LIBRARIES += -lmpi -lmpiif -lmpigi -lrt -lpthread -ldl
+      ifeq ($(ABI),64)
+        MPI_INCLUDE_PATH += $(addprefix -I, $(I_MPI_ROOT)/include64/ )
+        MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib64/ )
+      else
+        MPI_INCLUDE_PATH += $(addprefix -I, $(I_MPI_ROOT)/include/ )
+        MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib/ )
+      endif
     else
-      MPI_INCLUDE_PATH += $(addprefix -I, $(I_MPI_ROOT)/include/ )
-      MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib/ )
+      MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
+      MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -lnsl -lutil
+      MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
     endif
   endif
 else
