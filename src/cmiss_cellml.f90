@@ -147,6 +147,7 @@ CONTAINS
   !> Start the creation of the models field for the given CellML environment.
   !! This will create the models field for the given CellML environment object. The models field is used to associate specific models defined for this CellML environment with each of the degrees of freedom for the (source) field for which this CellML environment is defined.
   !! - what to do if models field already exists? exists but has a different user number?
+  !! - perhaps a better way to do this is through the mapping of CellML model variables to field components. This might provide more flexibility, including the use of multiple models for different field components at a single DOF. Otherwise, still need some way to map model variables to field components.
   SUBROUTINE CELLML_MODELS_FIELD_CREATE_START(MODEL_FIELD_USER_NUMBER,CELLML,ERR,ERROR,*)
     INTEGER(INTG), INTENT(IN) :: MODEL_FIELD_USER_NUMBER !<The unique identifier for the models field to be created for the given CellML environment object.
     TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object for which we need to create the models field.
@@ -337,18 +338,18 @@ CONTAINS
   !> Start the parameters definition process.
   !! Initialise the CellML environment ready for the nomination of parameters from this environment's models that will be overridden by field values.
   !! - what to do if the paramters field has already be defined?
-  SUBROUTINE CELLML_PARAMATERS_CREATE_START(CELLML,ERR,ERROR,*)
+  SUBROUTINE CELLML_PARAMETERS_CREATE_START(CELLML,ERR,ERROR,*)
     TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object for which we will be defining parameter overrides.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
 
-    CALL ENTERS("CELLML_PARAMATERS_CREATE_START",ERR,ERROR,*999)
-    CALL EXITS("CELLML_PARAMATERS_CREATE_START")
+    CALL ENTERS("CELLML_PARAMETERS_CREATE_START",ERR,ERROR,*999)
+    CALL EXITS("CELLML_PARAMETERS_CREATE_START")
     RETURN
-999 CALL ERRORS("CELLML_PARAMATERS_CREATE_START",ERR,ERROR)
-    CALL EXITS("CELLML_PARAMATERS_CREATE_START")
+999 CALL ERRORS("CELLML_PARAMETERS_CREATE_START",ERR,ERROR)
+    CALL EXITS("CELLML_PARAMETERS_CREATE_START")
     RETURN 1
-  END SUBROUTINE CELLML_PARAMATERS_CREATE_START
+  END SUBROUTINE CELLML_PARAMETERS_CREATE_START
 
   !> Finialse the parameters definition process.
   !! Indicates that the user has added all parameter overrides and allows the CellML environment to be further processed.
@@ -386,24 +387,24 @@ CONTAINS
   !! Check that parameters have been nominated and create the environment's user accessible parameters field. The user accessible parameters field is used by the user to define parameter overrides and is distinct from the internally used parameters field which is always defined for the environment's (source) field DOF's.
   !! - similar to the models field.
   !! - should initialise all components of the field as constant fields with a value as specified in the corresponding CellML models imported into the environment?
-  SUBROUTINE CELLML_PARAMATERS_FIELD_CREATE_START(PARAMETERS_FIELD_USER_NUMBER,CELLML,ERR,ERROR,*)
+  SUBROUTINE CELLML_PARAMETERS_FIELD_CREATE_START(PARAMETERS_FIELD_USER_NUMBER,CELLML,ERR,ERROR,*)
     INTEGER(INTG), INTENT(IN) :: PARAMETERS_FIELD_USER_NUMBER !<The unique identifier for the parameters field to be created for the given CellML environment object.
     TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object for which we will be defining the parameters field.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
 
-    CALL ENTERS("CELLML_PARAMATERS_FIELD_CREATE_START",ERR,ERROR,*999)
-    CALL EXITS("CELLML_PARAMATERS_FIELD_CREATE_START")
+    CALL ENTERS("CELLML_PARAMETERS_FIELD_CREATE_START",ERR,ERROR,*999)
+    CALL EXITS("CELLML_PARAMETERS_FIELD_CREATE_START")
     RETURN
-999 CALL ERRORS("CELLML_PARAMATERS_FIELD_CREATE_START",ERR,ERROR)
-    CALL EXITS("CELLML_PARAMATERS_FIELD_CREATE_START")
+999 CALL ERRORS("CELLML_PARAMETERS_FIELD_CREATE_START",ERR,ERROR)
+    CALL EXITS("CELLML_PARAMETERS_FIELD_CREATE_START")
     RETURN 1
-  END SUBROUTINE CELLML_PARAMATERS_FIELD_CREATE_START
+  END SUBROUTINE CELLML_PARAMETERS_FIELD_CREATE_START
 
   !> Finialse the parameters field definition.
   !! - here is where we sync the user level parameters field to the internal parameters representation?
   !! - or maybe we simply create the internal field?
-  !! - the internal field will contain compnents for all parameters in all models?
+  !! - the internal field will contain components for all parameters in all models?
   SUBROUTINE CELLML_PARAMETERS_FIELD_CREATE_FINISH(CELLML,ERR,ERROR,*)
     TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object for which to finalise the parameters field.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
