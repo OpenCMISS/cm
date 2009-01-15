@@ -49,7 +49,7 @@ Initial work has been completed, under the \c basicSimulationApplication branch 
 
 \section oc_current_status-cellml openCMISS(cellml) API
 
-The \c basicSimulationApplication described above (\ref oc_current-status-background) primarily tested out the use of the C++ implementation of the CellML API from Fortran code. This forms the basis of the openCMISS(cellml) API, which will provide the interface used by the openCMISS(cm) CellML API implementation to interact with CellML models and metadata via the C++ CellML API implementation. As the openCMISS(cm) CellML API is implemented, the openCMISS(cellml) API will be defined and implemented.
+The \c basicSimulationApplication described above (\ref oc_current_status-background) primarily tested out the use of the C++ implementation of the CellML API from Fortran code. This forms the basis of the openCMISS(cellml) API, which will provide the interface used by the openCMISS(cm) CellML API implementation to interact with CellML models and metadata via the C++ CellML API implementation. As the openCMISS(cm) CellML API is implemented, the openCMISS(cellml) API will be defined and implemented.
 
 \section oc_current_status-api openCMISS(cm) CellML API
 
