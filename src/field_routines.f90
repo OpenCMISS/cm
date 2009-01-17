@@ -3359,9 +3359,11 @@ CONTAINS
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field variable dofs global to local map local number",ERR,ERROR,*999)
                 ALLOCATE(FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%DOMAIN_NUMBER(NUMBER_OF_DOMAINS), &
                   & STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field variable dofs global to local map domain number",ERR,ERROR,*999)
+                IF(ERR/=0)  &
+                  & CALL FLAG_ERROR("Could not allocate field variable dofs global to local map domain number",ERR,ERROR,*999)
                 ALLOCATE(FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_TYPE(NUMBER_OF_DOMAINS),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field variable dofs global to local map domain number",ERR,ERROR,*999)
+                IF(ERR/=0) &
+                  & CALL FLAG_ERROR("Could not allocate field variable dofs global to local map domain number",ERR,ERROR,*999)
                 FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%NUMBER_OF_DOMAINS=NUMBER_OF_DOMAINS
                 DO domain_idx=1,NUMBER_OF_DOMAINS
                   domain_no=DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(domain_idx)
