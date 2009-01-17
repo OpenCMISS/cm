@@ -1199,7 +1199,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) ng,mh,mhs,ms,nj,nh,nhs,ni,ns
-    REAL(DP) :: A_PARAM,B_PARAM,C_PARAM,K_PARAM,RWG,SUM,PGMJ(3),PGNJ(3),U_VALUE
+    REAL(DP) :: A_PARAM,B_PARAM,C_PARAM,K_PARAM,RWG,SUM1,SUM2,PGMJ(3),PGNJ(3),U_VALUE,WG
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,GEOMETRIC_BASIS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
@@ -1264,8 +1264,10 @@ CONTAINS
             CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
               & MATERIALS_INTERP_POINT,ERR,ERROR,*999)
             !Calculate RWG.
-!!TODO: Think about symmetric problems. 
-            RWG=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)
+!!TODO: Think about symmetric problems.
+            WG=QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)
+            RWG=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*WG
+            B_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(GEOMETRIC_VARIABLE%NUMBER_OF_COMPONENTS+2,NO_PART_DERIV)
             !Loop over field components
             IF(EQUATIONS_MATRIX%FIRST_ASSEMBLY) THEN
               IF(EQUATIONS_MATRIX%UPDATE_MATRIX) THEN
@@ -1279,7 +1281,7 @@ CONTAINS
                     DO nh=1,DEPENDENT_VARIABLE%NUMBER_OF_COMPONENTS
                       DO ns=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                         nhs=nhs+1
-                        SUM=0.0_DP
+                        SUM1=0.0_DP
                         DO nj=1,GEOMETRIC_VARIABLE%NUMBER_OF_COMPONENTS
                           PGMJ(nj)=0.0_DP
                           PGNJ(nj)=0.0_DP
@@ -1292,9 +1294,12 @@ CONTAINS
                               & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(ni,nj)
                           ENDDO !ni
                           K_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(nj,NO_PART_DERIV)
-                          SUM=SUM+K_PARAM*PGMJ(nj)*PGNJ(nj)
+                          SUM1=SUM1+K_PARAM*PGMJ(nj)*PGNJ(nj)
                         ENDDO !nj
-                        EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
+                        SUM2=B_PARAM*QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)* &
+                          & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)                        
+                        EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+ &
+                          & (SUM1+SUM2)*RWG
                       ENDDO !ns
                     ENDDO !nh
                   ENDDO !ms
@@ -1384,7 +1389,7 @@ CONTAINS
                     DO nh=1,DEPENDENT_VARIABLE%NUMBER_OF_COMPONENTS
                       DO ns=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                         nhs=nhs+1
-                        SUM=0.0_DP
+                        SUM1=0.0_DP
                         DO nj=1,GEOMETRIC_VARIABLE%NUMBER_OF_COMPONENTS
                           PGMJ(nj)=0.0_DP
                           PGNJ(nj)=0.0_DP
@@ -1397,9 +1402,9 @@ CONTAINS
                               & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(ni,nj)
                           ENDDO !ni
                           K_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(nj,NO_PART_DERIV)
-                          SUM=SUM+K_PARAM*PGMJ(nj)*PGNJ(nj)
+                          SUM1=SUM1+K_PARAM*PGMJ(nj)*PGNJ(nj)
                         ENDDO !nj
-                        EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
+                        EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM1*RWG
                       ENDDO !ns
                     ENDDO !nh
                   ENDDO !ms
