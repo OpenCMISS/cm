@@ -1,5 +1,5 @@
 /*!
-\page examples Examples
+\page local-examples Examples
 \section laplace_equation Laplace equation
 \code
 !Initialise CMISS.
