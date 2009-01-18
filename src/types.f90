@@ -1840,5 +1840,24 @@ MODULE TYPES
   !
   !================================================================================================================================
   !
+  ! CellML types (belongs under field types?)
+  
+  !> Contains information for a CellML environment defined for a host field.
+  TYPE CELLML_TYPE
+     INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the CellML environment in the list of environments for a field.
+     INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the CellML environment. The user number must be unique.
+     LOGICAL :: FIELD_FINISHED !<Is .TRUE. if the environment has finished being created, .FALSE. if not.
+  END TYPE CELLML_TYPE
+
+  !> A buffer type to allow for an array of pointers to a CELLML_TYPE.
+  !! \todo Is this needed? not currently used...
+  TYPE CELLML_PTR_TYPE
+     TYPE(CELLML_TYPE), POINTER :: PTR !< The pointer to the CellML environment.
+  END TYPE CELLML_PTR_TYPE
+
+  !
+  !================================================================================================================================
+  !
+
 
 END MODULE TYPES
