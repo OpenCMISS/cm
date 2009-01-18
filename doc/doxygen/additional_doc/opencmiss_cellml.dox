@@ -57,7 +57,7 @@ Initially defined in the openCMISS powerpoint presentation and now coded into th
 
 \section oc_development Development
 
-This is where we document the status of the development.
+This is where we document the status of the development. See the \c cellml example page (how to reference?) which demonstrates this.
 
 \subsection oc_development-cellml_environment openCMISS CellML Environment
 
