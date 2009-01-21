@@ -1164,7 +1164,15 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Starts the creation of a field defined by a user number in the specified region. \todo Add in FIELD_INITIALISE
+  !>Starts the creation of a field defined by a user number in the specified region. 
+  !>Default values set for the FIELD's attributes are:
+  !>- DEPENDENT_TYPE: 1 (FIELD_INDEPENDENT_TYPE)
+  !>- DIMENSION: 2 (FIELD_VECTOR_DIMENSION_TYPE)
+  !>- TYPE: 1 (FIELD_GEOMETRIC_TYPE)
+  !>- NUMBER_OF_VARIABLES: 1
+  !>- GEOMETRIC_FIELD: itself
+  !>- SCALINGS%SCALING_TYPE: 3 (FIELD_ARITHMETIC_MEAN_SCALING)
+  !>\todo Add in FIELD_INITIALISE
   SUBROUTINE FIELD_CREATE_START(USER_NUMBER,REGION,FIELD,ERR,ERROR,*)
 
     !Argument variables

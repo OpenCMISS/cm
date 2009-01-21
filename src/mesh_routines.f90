@@ -4238,6 +4238,8 @@ CONTAINS
   !
 
   !>Starts the process of creating a mesh defined by a user number with the specified NUMBER_OF_DIMENSIONS in the region identified by REGION.
+  !>Default values set for the MESH's attributes are:
+  !>- NUMBER_OF_COMPONENTS: 1
   SUBROUTINE MESH_CREATE_START(USER_NUMBER,REGION,NUMBER_OF_DIMENSIONS,MESH,ERR,ERROR,*)
     
     !Argument variables

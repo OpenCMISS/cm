@@ -1694,15 +1694,13 @@ CONTAINS
   !
 
   !>Starts the creation of and initialises a new coordinate system. 
-  !>The default values of the coordinate system's attributes are:
-  !>- Type:Rectangular Cartensian Type
-  !>- Dimensions:3
-  !>- Focus:1.0
-  !>- Origin:(0.0,0.0,0.0)
-  !>- Oritention: ((1,0,0),(0,1,0),(0,0,1))
-  !>.
-  !>Defaults may be changed by COORDINATE_SYSTEM_xxx_SET calls.
-  !>\sa COORDINATE_SYSTEM_DESTROY, COORDINATE_SYSTEM_CREATE_FINISH
+  !>The default values of the COORDINATE_SYSTEM's attributes are:
+  !>- TYPE: 1 (COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
+  !>- RADIAL_INTERPOLATION_TYPE: 0 (COORDINATE_NO_RADIAL_INTERPOLATION_TYPE)
+  !>- Dimensions: 3
+  !>- Focus: 1.0
+  !>- Origin: (0.0,0.0,0.0)
+  !>- Oritention: ((1.0,0.0,0.0),(0.0,1.0,0.0),(0.0,0.0,1.0))
   SUBROUTINE COORDINATE_SYSTEM_CREATE_START(USER_NUMBER,COORDINATE_SYSTEM,ERR,ERROR,*)
 
     !Argument variables
@@ -4023,14 +4021,6 @@ CONTAINS
   !
    
   !>Initialises the coordinate systems and creates the world coordinate system.
-  !>The default values of the coordinate system's attributes are:
-  !>- Type:Rectangular Cartensian Type
-  !>- Dimensions:3
-  !>- Focus:1.0
-  !>- Origin:(0.0,0.0,0.0)
-  !>- Oritention: ((1,0,0),(0,1,0),(0,0,1))
-  !>.
-  !>Defaults may be changed by COORDINATE_SYSTEM_xxx_SET calls.
   !>\sa COORDINATE_SYSTEMS_FINALISE
   SUBROUTINE COORDINATE_SYSTEMS_INITIALISE(ERR,ERROR,*)
 
