@@ -19,8 +19,8 @@ The programmer documentation is managed by Doxygen. The html version of doxygen 
 \section buildbot Buildbot
 Buildbot is used as the automatic building and testing tool for the openCMISS project.
 \subsection buildbot_tips Tips
-- Manual and downloads from http://buildbot.net/trac.
+- Manual and downloads from http://buildbot.net/trac
 - It could contain one build master(machine to trigger the builds on different build slaves and deliver information about the build results through protocols like HTTP, mail)
-- It could contain several build slaves (obtain codes from svn repository and do the build under build maters instructions).
-- Buildmaster and buildslaves can be on the smae machine. 
+- It could contain several build slaves (obtain codes from svn repository and do the build under build master's instructions).
+- Build master and build slaves can be on the same machine. 
 */
