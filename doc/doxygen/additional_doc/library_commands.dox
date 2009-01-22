@@ -337,7 +337,7 @@ To finish creating an equations set in a region, use:
 \code
 SUBROUTINE EQUATIONS_SET_CREATE_FINISH(EQUATIONS_SET,ERR,ERROR,*)
 \endcode
-Description: \copydoc EQUATIONS_SET_ROUTINES::EQUTIONS_SET_CREATE_FINISH
+Description: \copydoc EQUATIONS_SET_ROUTINES::EQUATIONS_SET_CREATE_FINISH
 
 \section EQUATIONS_SET_DESTROY EQUATIONS_SET_DESTROY
 To destroy an equations set, use:
