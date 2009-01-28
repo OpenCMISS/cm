@@ -2179,11 +2179,11 @@ CONTAINS
                             DO j=ROW_INDICES(i),ROW_INDICES(i+1)-1
                               k=COLUMN_INDICES(j)
                               IF(k>0) THEN
-                                IF(k>PETSC_MATRIX%NUMBER_NON_ZEROS) THEN
+                                IF(k>PETSC_MATRIX%GLOBAL_N) THEN
                                   LOCAL_ERROR="Invalid column indices. Column index "//TRIM(NUMBER_TO_VSTRING(j,"*",ERR,ERROR))// &
                                     & " ("//TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))// &
-                                    & ") is greater than the number of non-zeros ("// &
-                                    & TRIM(NUMBER_TO_VSTRING(PETSC_MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")."
+                                    & ") is greater than the number of columns ("// &
+                                    & TRIM(NUMBER_TO_VSTRING(PETSC_MATRIX%GLOBAL_N,"*",ERR,ERROR))//")."
                                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                 ENDIF
                                 IF(k>=global_row_start.AND.k<=global_row_finish) THEN
