@@ -411,7 +411,7 @@ MODULE CMISS_PETSC
       USE TYPES
       MatFDColoring fdcoloring
       EXTERNAL ffunction
-      TYPE(SOLUTION_TYPE), POINTER :: ctx
+      TYPE(SOLVER_TYPE), POINTER :: ctx
       PetscInt ierr
     END SUBROUTINE MatFDColoringSetFunctionSNES
     
@@ -621,7 +621,7 @@ MODULE CMISS_PETSC
       SNES snes
       Vec f
       EXTERNAL ffunction
-      TYPE(SOLUTION_TYPE), POINTER :: ctx
+      TYPE(SOLVER_TYPE), POINTER :: ctx
       PetscInt ierr
     END SUBROUTINE SNESSetFunction
 
@@ -728,7 +728,7 @@ MODULE CMISS_PETSC
       USE TYPES
       TS ts
       EXTERNAL rhsfunc
-      TYPE(SOLUTION_TYPE), POINTER :: ctx
+      TYPE(SOLVER_TYPE), POINTER :: ctx
       PetscInt ierr
     END SUBROUTINE TSSetRHSFunction
     
@@ -2385,7 +2385,7 @@ CONTAINS
     !Argument Variables
     TYPE(PETSC_MATFDCOLORING_TYPE), INTENT(INOUT) :: MATFDCOLORING !<The matrix finite difference coloring to set
     EXTERNAL FFUNCTION !<The external function to call
-    TYPE(SOLUTION_TYPE), POINTER :: CTX !<The solver data to pass to the function
+    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the function
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -3354,7 +3354,7 @@ CONTAINS
     TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the function for
     TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: F !<The residual vector
     EXTERNAL FFUNCTION !<The external function to call
-    TYPE(SOLUTION_TYPE), POINTER :: CTX !<The solution data to pass to the function
+    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the function
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -3885,7 +3885,7 @@ CONTAINS
     TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: ALHS !<The LHS matrix
     EXTERNAL LHSFUNCTION !<The external LHS matrix evaluation function to call
     INTEGER(INTG), INTENT(IN) :: FLAG !<The matrices structure flag
-    TYPE(SOLUTION_TYPE), POINTER :: CTX !<The solution data to pass to the matrix evaluations functions
+    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the matrix evaluations functions
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -3946,7 +3946,7 @@ CONTAINS
 
     TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to set the problem type for
     EXTERNAL RHSFUNCTION !<The external RHS function to call
-    TYPE(SOLUTION_TYPE), POINTER :: CTX !<The solution data to pass to the function
+    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the function
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables

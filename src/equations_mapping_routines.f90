@@ -782,7 +782,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finishes the process of creating an equations mapping for a problem solution
+  !>Finishes the process of creating an equations mapping for a equations set equations
   SUBROUTINE EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*)
 
     !Argument variables

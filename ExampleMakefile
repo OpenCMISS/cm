@@ -278,7 +278,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
     # -fstatck-check
     F_FLGS += -pipe -fno-second-underscore -Wall -x f95-cpp-input
     # Restrict line length to 132
-    F_FLGS += -ffree-line-length=132
+    F_FLGS += -ffree-line-length-132
     # for now change max identifier length. Should restrict to 63 (F2003) in future
     F_FLGS += -fmax-identifier-length=63
     # Position independent code is actually only required for objects
@@ -653,10 +653,9 @@ OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/problem_constants.o \
 	$(OBJECT_DIR)/problem_routines.o \
 	$(OBJECT_DIR)/region_routines.o \
-	$(OBJECT_DIR)/solution_mapping_routines.o \
-	$(OBJECT_DIR)/solutions_routines.o \
-	$(OBJECT_DIR)/solver_matrices_routines.o \
 	$(OBJECT_DIR)/solver_routines.o \
+	$(OBJECT_DIR)/solver_mapping_routines.o \
+	$(OBJECT_DIR)/solver_matrices_routines.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/timer_c.o \
 	$(OBJECT_DIR)/timer_f.o \
@@ -763,8 +762,6 @@ $(OBJECT_DIR)/bioelec_domain_equation_routines.o	:	$(MAIN_SOURCE_DIR)/bioelec_do
 	$(OBJECT_DIR)/matrix_vector.o	\
 	$(OBJECT_DIR)/problem_constants.o	\
 	$(OBJECT_DIR)/strings.o	\
-	$(OBJECT_DIR)/solution_mapping_routines.o	\
-	$(OBJECT_DIR)/solutions_routines.o	\
 	$(OBJECT_DIR)/solver_routines.o	\
 	$(OBJECT_DIR)/timer_f.o	\
 	$(OBJECT_DIR)/types.o
@@ -849,7 +846,6 @@ $(OBJECT_DIR)/control_loop_routines.o		:	$(MAIN_SOURCE_DIR)/control_loop_routine
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/solutions_routines.o \
 	$(OBJECT_DIR)/solver_routines.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
@@ -881,8 +877,6 @@ $(OBJECT_DIR)/diffusion_equation_routines.o	:	$(MAIN_SOURCE_DIR)/diffusion_equat
 	$(OBJECT_DIR)/matrix_vector.o	\
 	$(OBJECT_DIR)/problem_constants.o	\
 	$(OBJECT_DIR)/strings.o	\
-	$(OBJECT_DIR)/solution_mapping_routines.o	\
-	$(OBJECT_DIR)/solutions_routines.o	\
 	$(OBJECT_DIR)/solver_routines.o	\
 	$(OBJECT_DIR)/timer_f.o	\
 	$(OBJECT_DIR)/types.o
@@ -1025,8 +1019,6 @@ $(OBJECT_DIR)/finite_elasticity_routines.o		:	$(MAIN_SOURCE_DIR)/finite_elastici
 	$(OBJECT_DIR)/maths.o \
 	$(OBJECT_DIR)/matrix_vector.o \
 	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/solution_mapping_routines.o \
-	$(OBJECT_DIR)/solutions_routines.o \
 	$(OBJECT_DIR)/solver_routines.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/timer_f.o \
@@ -1086,8 +1078,6 @@ $(OBJECT_DIR)/Laplace_equations_routines.o	:	$(MAIN_SOURCE_DIR)/Laplace_equation
 	$(OBJECT_DIR)/matrix_vector.o	\
 	$(OBJECT_DIR)/problem_constants.o	\
 	$(OBJECT_DIR)/strings.o	\
-	$(OBJECT_DIR)/solution_mapping_routines.o	\
-	$(OBJECT_DIR)/solutions_routines.o	\
 	$(OBJECT_DIR)/solver_routines.o	\
 	$(OBJECT_DIR)/timer_f.o	\
 	$(OBJECT_DIR)/types.o
@@ -1108,8 +1098,6 @@ $(OBJECT_DIR)/linear_elasticity_routines.o		:	$(MAIN_SOURCE_DIR)/linear_elastici
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/matrix_vector.o \
 	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/solution_mapping_routines.o \
-	$(OBJECT_DIR)/solutions_routines.o \
 	$(OBJECT_DIR)/solver_routines.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/timer_f.o \
@@ -1193,8 +1181,6 @@ $(OBJECT_DIR)/Poisson_equations_routines.o	:	$(MAIN_SOURCE_DIR)/Poisson_equation
 	$(OBJECT_DIR)/matrix_vector.o	\
 	$(OBJECT_DIR)/problem_constants.o	\
 	$(OBJECT_DIR)/strings.o	\
-	$(OBJECT_DIR)/solution_mapping_routines.o	\
-	$(OBJECT_DIR)/solutions_routines.o	\
 	$(OBJECT_DIR)/solver_routines.o	\
 	$(OBJECT_DIR)/timer_f.o	\
 	$(OBJECT_DIR)/types.o
@@ -1215,7 +1201,6 @@ $(OBJECT_DIR)/problem_routines.o	:	$(MAIN_SOURCE_DIR)/problem_routines.f90 \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/solution_mapping_routines.o \
 	$(OBJECT_DIR)/solver_routines.o \
 	$(OBJECT_DIR)/solver_matrices_routines.o \
 	$(OBJECT_DIR)/strings.o \
@@ -1234,7 +1219,24 @@ $(OBJECT_DIR)/region_routines.o	:	$(MAIN_SOURCE_DIR)/region_routines.f90 \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 
-$(OBJECT_DIR)/solution_mapping_routines.o	:	$(MAIN_SOURCE_DIR)/solution_mapping_routines.f90 \
+$(OBJECT_DIR)/solver_routines.o	:	$(MAIN_SOURCE_DIR)/solver_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/cmiss_petsc.o \
+	$(OBJECT_DIR)/computational_environment.o \
+	$(OBJECT_DIR)/constants.o \
+	$(OBJECT_DIR)/distributed_matrix_vector.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/solver_mapping_routines.o \
+	$(OBJECT_DIR)/solver_matrices_routines.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/timer_f.o \
+	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/solver_mapping_routines.o	:	$(MAIN_SOURCE_DIR)/solver_mapping_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/computational_environment.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
@@ -1249,17 +1251,7 @@ $(OBJECT_DIR)/solution_mapping_routines.o	:	$(MAIN_SOURCE_DIR)/solution_mapping_
 	$(OBJECT_DIR)/strings.o	\
 	$(OBJECT_DIR)/types.o
 
-$(OBJECT_DIR)/solutions_routines.o	:	$(MAIN_SOURCE_DIR)/solutions_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o	\
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/solution_mapping_routines.o	\
-	$(OBJECT_DIR)/solver_routines.o	\
-	$(OBJECT_DIR)/strings.o	\
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/solver_matrices_routines.o	:	$(MAIN_SOURCE_DIR)/solver_matrices_routines.f90 \
+(OBJECT_DIR)/solver_matrices_routines.o	:	$(MAIN_SOURCE_DIR)/solver_matrices_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
@@ -1267,22 +1259,6 @@ $(OBJECT_DIR)/solver_matrices_routines.o	:	$(MAIN_SOURCE_DIR)/solver_matrices_ro
 	$(OBJECT_DIR)/matrix_vector.o	\
 	$(OBJECT_DIR)/problem_constants.o	\
 	$(OBJECT_DIR)/strings.o	\
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/solver_routines.o	:	$(MAIN_SOURCE_DIR)/solver_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/cmiss_petsc.o \
-	$(OBJECT_DIR)/computational_environment.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/solver_matrices_routines.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/timer_f.o \
 	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/strings.o	:	$(MAIN_SOURCE_DIR)/strings.f90 \

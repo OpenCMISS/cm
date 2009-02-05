@@ -173,10 +173,11 @@ MODULE EQUATIONS_SET_CONSTANTS
   !> \brief The problem time dependence type parameters
   !> \see EQUATIONS_SET_CONSTANTS
   !>@{
-  INTEGER(INTG), PARAMETER :: NUMBER_OF_EQUATIONS_SET_TIME_TYPES=3 !<The number of equations set time dependence types defined. \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
+  INTEGER(INTG), PARAMETER :: NUMBER_OF_EQUATIONS_SET_TIME_TYPES=4 !<The number of equations set time dependence types defined. \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_STATIC=1 !<The equations set is static and has no time dependence \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_QUASISTATIC=2 !<The equations set is quasi-static \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DYNAMIC=3 !<The equations set is dynamic \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_FIRST_ORDER_DYNAMIC=3 !<The equations set is a first order dynamic set \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_SECOND_ORDER_DYNAMIC=4 !<The equations set is a second order dynamic set \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
   !>@}
 
   !> \addtogroup EQUATIONS_SET_CONSTANTS_SolutionMethods EQUATIONS_SET_CONSTANTS::SolutionMethods
@@ -208,6 +209,14 @@ MODULE EQUATIONS_SET_CONSTANTS
   !>@{
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_SPARSE_MATRICES=1 !<Use sparse matrices for the equations set \see EQUATIONS_SET_CONSTANTS_SparsityTypes,EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_FULL_MATRICES=2 !<Use fully populated matrices for the equations set \see EQUATIONS_SET_CONSTANTS_SparsityTypes,EQUATIONS_SET_CONSTANTS
+ !>@}
+ 
+  !> \addtogroup EQUATIONS_SET_CONSTANTS_LumpingTypes EQUATIONS_SET_CONSTANTS::LumpingTypes
+  !> \brief Equations matrices lumping types
+  !> \see EQUATIONS_SET_CONSTANTS
+  !>@{
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_UNLUMPED_MATRICES=1 !<The matrix is not lumped \see EQUATIONS_SET_CONSTANTS_SparsityTypes,EQUATIONS_SET_CONSTANTS
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_LUMPED_MATRICES=2 !<The matrix is "mass" lumped \see EQUATIONS_SET_CONSTANTS_SparsityTypes,EQUATIONS_SET_CONSTANTS
  !>@}
  
   !> \addtogroup EQUATIONS_SET_CONSTANTS_EquationAnalyticFunction EQUATIONS_SET_CONSTANTS::EquationAnalyticFunction

@@ -108,7 +108,6 @@ MODULE PROBLEM_CONSTANTS
   !  Monodomain equation
   !  Bidomain equation
   !Modal class
-
     
   !> \addtogroup PROBLEM_CONSTANTS_SetupTypes PROBLEM_CONSTANTS::SetupTypes
   !> \brief Setup type parameters
@@ -116,8 +115,8 @@ MODULE PROBLEM_CONSTANTS
   !>@{
   INTEGER(INTG), PARAMETER :: PROBLEM_SETUP_INITIAL_TYPE=1 !<Initial setup for a problem. \see PROBLEM_CONSTANTS_SetupTypes,PROBLEM_CONSTANTS
   INTEGER(INTG), PARAMETER :: PROBLEM_SETUP_CONTROL_TYPE=2 !<Solver setup for a problem. \see PROBLEM_CONSTANTS_SetupTypes,PROBLEM_ROU
-  INTEGER(INTG), PARAMETER :: PROBLEM_SETUP_SOLUTION_TYPE=3 !<Solution parameters setup for a problem. \see PROBLEM_CONSTANTS_SetupTypes,PROBLEM_CONSTANTS
-  INTEGER(INTG), PARAMETER :: PROBLEM_SETUP_SOLVER_TYPE=4 !<Solver setup for a problem. \see PROBLEM_CONSTANTS_SetupTypes,PROBLEM_CONSTANTS
+  INTEGER(INTG), PARAMETER :: PROBLEM_SETUP_SOLVERS_TYPE=3 !<Solver setup for a problem. \see PROBLEM_CONSTANTS_SetupTypes,PROBLEM_CONSTANTS
+  INTEGER(INTG), PARAMETER :: PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE=4 !<Solution parameters setup for a problem. \see PROBLEM_CONSTANTS_SetupTypes,PROBLEM_CONSTANTS
   !>@}
   
   !> \addtogroup PROBLEM_CONSTANTS_SetupActionTypes PROBLEM_CONSTANTS::SetupActionTypes
@@ -138,52 +137,15 @@ MODULE PROBLEM_CONSTANTS
   INTEGER(INTG), PARAMETER :: PROBLEM_CONTROL_TIME_LOOP_TYPE=3 !<Time control loop. \see PROBLEM_CONSTANTS_ControlLoopTypes,PROBLEM_CONSTANTS
   INTEGER(INTG), PARAMETER :: PROBLEM_CONTROL_WHILE_LOOP_TYPE=4 !<While control loop. \see PROBLEM_CONSTANTS_ControlLoopTypes,PROBLEM_CONSTANTS
   !>@}
-
-  !> \addtogroup PROBLEM_CONSTANTS_SolutionOutputTypes PROBLEM_CONSTANTS::SolutionOutputTypes
-  !> \brief Solution output types
+   
+  !> \addtogroup PROBLEM_CONSTANTS_LinearityTypes PROBLEM_CONSTANTS::LinearityTypes
+  !> \brief Setup type parameters
   !> \see PROBLEM_CONSTANTS
   !>@{
-  INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_NO_OUTPUT=0 !<No output \see PROBLEM_CONSTANTS_SolutionOutputTypes,PROBLEM_CONSTANTS
-  INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_TIMING_OUTPUT=1 !<Timing information output \see PROBLEM_CONSTANTS_SolutionOutputTypes,PROBLEM_CONSTANTS
-  INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_MATRIX_OUTPUT=2 !<All below and solution matrices output \see PROBLEM_CONSTANTS_SolutionOutputTypes,PROBLEM_CONSTANTS
+  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_LINEAR=1 !<Linear a problem. \see PROBLEM_CONSTANTS_LinearityTypes,PROBLEM_CONSTANTS
+  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_NONLINEAR=2 !<Nonlinear problem. \see PROBLEM_CONSTANTS_LinearityTypes,PROBLEM_CONSTANTS
   !>@}
-
-  !> \addtogroup PROBLEM_CONSTANTS_SolutionLinearityTypes PROBLEM_CONSTANTS::SolutionLinearityTypes
-  !> \brief The solution linearity type parameters
-  !> \see PROBLEM_CONSTANTS
-  !>@{
-  INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_LINEAR=1 !<The problem solution is linear. \see PROBLEM_CONSTANTS_SolutionLinearityTypes,PROBLEM_CONSTANTS
-  INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_NONLINEAR=2 !<The problem solution is nonlinear. \see PROBLEM_CONSTANTS_SolutionLinearityTypes,PROBLEM_CONSTANTS
-  !>@}
-
-  !> \addtogroup PROBLEM_CONSTANTS_SolutionTimeDependenceTypes PROBLEM_CONSTANTS::SolutionTimeDependenceTypes
-  !> \brief The solution time dependence type parameters
-  !> \see PROBLEM_CONSTANTS
-  !>@{
-  INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_STATIC=1 !<The problem solution is static (no time dependence). \see PROBLEM_CONSTANTS_SolutionTimeDependenceTypes,PROBLEM_CONSTANTS
-  INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_QUASISTATIC=2 !<The problem solution is quasistatic (no time integration). \see PROBLEM_CONSTANTS_SolutionTimeDependenceTypes,PROBLEM_CONSTANTS
-  INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_FIRST_ORDER_DYNAMIC=3 !<The problem solution is dynamic with a first order time integration. \see PROBLEM_CONSTANTS_SolutionTimeDependenceTypes,PROBLEM_CONSTANTS
-  INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_SECOND_ORDER_DYNAMIC=4 !<The problem solution is dynamic with second order time integration.  \see PROBLEM_CONSTANTS_SolutionTimeDependenceTypes,PROBLEM_CONSTANTS
-  INTEGER(INTG), PARAMETER :: PROBLEM_SOLUTION_THIRD_ORDER_DYNAMIC=5 !<The problem solution is dynamic with third order time integration.  \see PROBLEM_CONSTANTS_SolutionTimeDependenceTypes,PROBLEM_CONSTANTS
-  !>@}
-
-
-!  !> \addtogroup PROBLEM_CONSTANTS_SolverOutputTypes PROBLEM_CONSTANTS::SolverOutputTypes
-!  !> \brief Solver output types
-!  !> \see PROBLEM_CONSTANTS
-!  !>@{
-!  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_NO_OUTPUT=0 !<No output \see PROBLEM_CONSTANTS_SolverOutputTypes,PROBLEM_CONSTANTS
-!  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_PROGESS_OUTPUT=1 !<Progress of the solver output e.g. iteration information \see PROBLEM_CONSTANTS_SolverOutputTypes,PROBLEM_CONSTANTS
-!  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_TIMING_OUTPUT=2 !<Timing information output \see PROBLEM_CONSTANTS_SolverOutputTypes,PROBLEM_CONSTANTS
-!  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_SOLVER_OUTPUT=3 !<All below and solver output \see PROBLEM_CONSTANTS_SolverOutputTypes,PROBLEM_CONSTANTS
-!  !>@}
-
-  !> \addtogroup PROBLEM_CONSTANTS_SolverSparsityTypes PROBLEM_CONSTANTS::SolverSparsityTypes
-  !> \brief Solution output types
-  !> \see PROBLEM_CONSTANTS
-  !>@{
-  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_SPARSE_MATRICES=1 !<Use sparse solver matrices \see PROBLEM_CONSTANTS_SolverSparsityTypes,PROBLEM_CONSTANTS
-  INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_FULL_MATRICES=2 !<Use fully populated solver matrices \see PROBLEM_CONSTANTS_SolverSparsityTypes,PROBLEM_CONSTANTS
- !>@}
   
+
+   
 END MODULE PROBLEM_CONSTANTS
