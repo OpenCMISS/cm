@@ -550,7 +550,7 @@ EXCLUDE_SYMBOLS        = INTEGER(INTG) REAL(SP) REAL(DP) LOGICAL
 
 # Andre notes: seems you have to put the actual folder here even if you specify a deeper path in the \example...
 
-EXAMPLE_PATH           = ../../examples/cellml/src/
+EXAMPLE_PATH           = ../../examples/cellml/src/ ../../examples/define-geometry-and-export/src/
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the 
 # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 
