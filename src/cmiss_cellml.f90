@@ -44,7 +44,7 @@
 MODULE CMISS_CELLML
 
   ! Uses EXAMPLE_PATH from Doxyfile but putting path from examples folder to ensure uniqueness.
-  !> \example examples/cellml/src/cellml.f90
+  !> \example examples/cellml/src/cellmlExample.f90
   !! A complete example demonstrating and testing the methods defined in the openCMISS(cellml) API.
   !<
 
