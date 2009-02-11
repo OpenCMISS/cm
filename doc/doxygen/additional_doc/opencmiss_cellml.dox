@@ -6,6 +6,10 @@
 Example illustrating the use of openCMISS to define a geometric mesh and export it for visualisation.
 */
 
+/** \example examples/simple-field-manipulation/src/simple-field-manipulationExample.f90
+Example illustrating the creation of a regular mesh and then defining and manipulating a field over that mesh.
+*/
+
 /** \page opencmiss_cellml openCMISS & CellML
 
 \todo Keep up-to-date..
