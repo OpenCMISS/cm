@@ -182,7 +182,7 @@ MODULE TYPES
   !
 
   !>Contains information on a coordinate system. \todo Have a list of coordinate systems and have a pointer in the coordinate_system_type back to the regions that use them.
-  TYPE COORDINATE_SYSTEM_TYPE
+  TYPE, BIND(C) :: COORDINATE_SYSTEM_TYPE
     INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the coordinate. The user number must be unique.
     LOGICAL :: COORDINATE_SYSTEM_FINISHED !<Is .TRUE. if the coordinate system has finished being created, .FALSE. if not.
     INTEGER(INTG) :: TYPE !<The type of coordinate system. Old CMISS name ITYP10(nr). \see COORINDATE_ROUTINES_CoordinateSystemTypes
@@ -844,8 +844,6 @@ MODULE TYPES
   TYPE FIELD_VARIABLE_COMPONENT_TYPE
     INTEGER(INTG) :: COMPONENT_NUMBER !<The number of the field variable component.
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE !< A pointer to the field variable for this component.
-    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field for this field variable component.
-    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region for this field variable component.
     INTEGER(INTG) :: INTERPOLATION_TYPE !<The interpolation type of the field variable component \see FIELD_ROUTINES_InterpolationTypes
     INTEGER(INTG) :: MESH_COMPONENT_NUMBER !<The mesh component of the field decomposition for this field variable component.
     INTEGER(INTG) :: SCALING_INDEX !<The index into the defined field scalings for this field variable component.
