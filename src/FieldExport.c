@@ -7,23 +7,23 @@
 
 /**********************************************************
 
-	Fortran constants. Audit regularly. These aren't in
-	FieldExport.h, because the Fortran code #includes
-	that file, which leads to a #define collision.
+    Fortran constants. Audit regularly. These aren't in
+    FieldExport.h, because the Fortran code #includes
+    that file, which leads to a #define collision.
 
  **********************************************************/
-#define BASIS_LINEAR_LAGRANGE_INTERPOLATION		1 //< Linear Lagrange interpolation specification \see BASIS_ROUTINES_InterpolationSpecifications,BASIS_ROUTINES
-#define BASIS_QUADRATIC_LAGRANGE_INTERPOLATION	2 //< Quadratic Lagrange interpolation specification \see BASIS_ROUTINES_InterpolationSpecifications,BASIS_ROUTINES
-#define BASIS_CUBIC_LAGRANGE_INTERPOLATION		3 //< Cubic Lagrange interpolation specification \see BASIS_ROUTINES_InterpolationSpecifications,BASIS_ROUTINES
-#define BASIS_CUBIC_HERMITE_INTERPOLATION		4 //< Cubic Hermite interpolation specification \see BASIS_ROUTINES_InterpolationSpecifications,BASIS_ROUTINES
-#define BASIS_QUADRATIC1_HERMITE_INTERPOLATION	5 //< Quadratic Hermite (no derivative at xi=0) interpolation specification \see BASIS_ROUTINES_InterpolationSpecifications,BASIS_ROUTINES
-#define BASIS_QUADRATIC2_HERMITE_INTERPOLATION	6 //< Quadratic Hermite (no derivative at xi=1) interpolation specification \see BASIS_ROUTINES_InterpolationSpecifications,BASIS_ROUTINES
-#define BASIS_LINEAR_SIMPLEX_INTERPOLATION		7 //< Linear Simplex interpolation specification \see BASIS_ROUTINES_InterpolationSpecifications,BASIS_ROUTINES
-#define BASIS_QUADRATIC_SIMPLEX_INTERPOLATION	8 //< Quadratic Simplex interpolation specification \see BASIS_ROUTINES_InterpolationSpecifications,BASIS_ROUTINES
-#define BASIS_CUBIC_SIMPLEX_INTERPOLATION		9 //< Cubic Simplex interpolation specification \see BASIS_ROUTINES_InterpolationSpecifications,BASIS_ROUTINES
+#define BASIS_LINEAR_LAGRANGE_INTERPOLATION     1 //< Linear Lagrange interpolation specification \see BASIS_ROUTINES_InterpolationSpecifications,BASIS_ROUTINES
+#define BASIS_QUADRATIC_LAGRANGE_INTERPOLATION  2 //< Quadratic Lagrange interpolation specification \see BASIS_ROUTINES_InterpolationSpecifications,BASIS_ROUTINES
+#define BASIS_CUBIC_LAGRANGE_INTERPOLATION      3 //< Cubic Lagrange interpolation specification \see BASIS_ROUTINES_InterpolationSpecifications,BASIS_ROUTINES
+#define BASIS_CUBIC_HERMITE_INTERPOLATION       4 //< Cubic Hermite interpolation specification \see BASIS_ROUTINES_InterpolationSpecifications,BASIS_ROUTINES
+#define BASIS_QUADRATIC1_HERMITE_INTERPOLATION  5 //< Quadratic Hermite (no derivative at xi=0) interpolation specification \see BASIS_ROUTINES_InterpolationSpecifications,BASIS_ROUTINES
+#define BASIS_QUADRATIC2_HERMITE_INTERPOLATION  6 //< Quadratic Hermite (no derivative at xi=1) interpolation specification \see BASIS_ROUTINES_InterpolationSpecifications,BASIS_ROUTINES
+#define BASIS_LINEAR_SIMPLEX_INTERPOLATION      7 //< Linear Simplex interpolation specification \see BASIS_ROUTINES_InterpolationSpecifications,BASIS_ROUTINES
+#define BASIS_QUADRATIC_SIMPLEX_INTERPOLATION   8 //< Quadratic Simplex interpolation specification \see BASIS_ROUTINES_InterpolationSpecifications,BASIS_ROUTINES
+#define BASIS_CUBIC_SIMPLEX_INTERPOLATION       9 //< Cubic Simplex interpolation specification \see BASIS_ROUTINES_InterpolationSpecifications,BASIS_ROUTINES
 
-#define FIELD_IO_SCALE_FACTORS_NUMBER_TYPE		5
-#define FIELD_IO_SCALE_FACTORS_PROPERTY_TYPE	6
+#define FIELD_IO_SCALE_FACTORS_NUMBER_TYPE      5
+#define FIELD_IO_SCALE_FACTORS_PROPERTY_TYPE    6
 
 
 #define FIELD_GEOMETRIC_TYPE 1 //Geometric field \see FIELD_ROUTINES_FieldTypes,FIELD_ROUTINES
@@ -69,1226 +69,1011 @@
 
 /**********************************************************
 
-	Fortran constants. Audit regularly.
+    Fortran constants. Audit regularly.
 
  **********************************************************/
 typedef struct
 {
-	int userNumber;
-	char isFinished;
-	int type;
-	int radialInterpolationType;
-	int numberOfDimensions;
-	double focus;
-	double origin[3];
-	double orientation[3][3];
+    int userNumber;
+    char isFinished;
+    int type;
+    int radialInterpolationType;
+    int numberOfDimensions;
+    double focus;
+    double origin[3];
+    double orientation[3][3];
 }
 CMISS_CoordinateSystem;
 
 
-#define HANDLE_TYPE_CHUNK_SIZE 32
-
 /*
-	API-local structs.
+    API-local structs.
 */
 typedef struct
 {
-	int handle;
+    FILE *file;
 
-	FILE *file;
+    int error;
 }
 FileSession;
 
-typedef struct _FileSessionListEntry
+typedef struct _SessionListEntry
 {
-	FileSession *session;
+    int handle;
 
-	struct _FileSessionListEntry *next;
+    int type;
+
+    union
+    {
+        FileSession fileSession;
+    };
+
+    struct _SessionListEntry *next;
 }
-FileSessionListEntry;
+SessionListEntry;
 
-static FileSessionListEntry fileSessions;
+//This is the head of the session list. For convenience, the head itself is a stub, so it exists even for a zero-entry list.
+static SessionListEntry sessions;
 
 static int nextHandle = 0;
 
-static int *handleTypes = NULL;
-
-
-static void flog( char *logline, int line )
+static int FieldExport_FPrintf( FileSession *const session, const char *format, ... )
 {
-	char foo[1024];
-	FILE *f;
+    va_list args;
 
-	sprintf( foo, "c:\\log%d.bob", GetCurrentThreadId() );
-	f = fopen( foo, "a" );
-	fprintf( f, "%d: %s\n", line, logline );
-	fclose(f);
+    if( session->error == FIELD_EXPORT_NO_ERROR )
+    {
+        va_start( args, format );
+        if( vfprintf( session->file, format, args ) < 0 )
+        {
+            session->error = FIELD_EXPORT_ERROR_FILE_WRITE;
+        }
+        va_end( args );
+    }
+
+    return session->error;
 }
 
 
-static void fblog( char *string, int data )
+static SessionListEntry *FieldExport_GetSession( const int handle )
 {
-	char foo[1024];
-	FILE *f;
+    SessionListEntry *entry = sessions.next;
 
-	sprintf( foo, "c:\\log%d.bob", GetCurrentThreadId() );
-	f = fopen( foo, "a" );
-	fprintf( f, "%s %08x\n", string, data );
-	fclose(f);
-}
+    while( entry != NULL )
+    {
+        if( entry->handle == handle )
+        {
+            return entry;
+        }
 
+        entry = entry->next;
+    }
 
-/*
-	General-purpose handle routines
-*/
-static int FieldExport_GetNewSessionHandle( const int type )
-{
-	if( ( nextHandle % HANDLE_TYPE_CHUNK_SIZE ) == 0 )
-	{
-		int *newHandleTypes = calloc( nextHandle + HANDLE_TYPE_CHUNK_SIZE, sizeof( int ) );
-
-		if( handleTypes != NULL )
-		{
-			memcpy( newHandleTypes, handleTypes, nextHandle * sizeof( int ) );
-		}
-
-		handleTypes = newHandleTypes;
-	}
-
-	handleTypes[nextHandle] = type;
-
-	return nextHandle++;
-}
-
-
-static int FieldExport_CheckHandle( const int handle )
-{
-	if( ( handle < 0 ) || ( handle >= nextHandle ) )
-	{
-		return FIELD_EXPORT_ERROR_BAD_HANDLE;
-	}
-	else if( handleTypes[handle] == EXPORT_TYPE_CLOSED )
-	{
-		return FIELD_EXPORT_ERROR_CLOSED_HANDLE;
-	}
-
-	return FIELD_EXPORT_NO_ERROR;
+    return NULL;
 }
 
 
 /*
-	CMISS-formatted file export routines.
+    CMISS-formatted file export routines.
 */
-static int FieldExport_File_Group( const FileSession *const session, const char *const label )
+static int FieldExport_File_Group( FileSession *const session, const char *const label )
 {
-	if( session == NULL )
-	{
-		return FIELD_EXPORT_ERROR_BAD_HANDLE;
-	}
-
-	if( fprintf( session->file, " Group name: %s\n", label ) < 0 )
-	{
-		return FIELD_EXPORT_ERROR_FILE_WRITE;
-	}
-
-	return 0;
+    return FieldExport_FPrintf( session, " Group name: %s\n", label );
 }
 
 
-static int FieldExport_File_MeshDimensions( const FileSession *const session, const int dimensions )
+static int FieldExport_File_MeshDimensions( FileSession *const session, const int dimensions )
 {
-	if( session == NULL )
-	{
-		return FIELD_EXPORT_ERROR_BAD_HANDLE;
-	}
-
-	if( fprintf( session->file, " Shape.  Dimension=%d\n", dimensions ) < 0 )
-	{
-		return FIELD_EXPORT_ERROR_FILE_WRITE;
-	}
-
-	return 0;
+    return FieldExport_FPrintf( session, " Shape.  Dimension=%d\n", dimensions );
 }
 
 
-static int FieldExport_File_ScalingFactorCount( const FileSession *const session, const int scalingFactorCount )
+static int FieldExport_File_ScalingFactorCount( FileSession *const session, const int scalingFactorCount )
 {
-	if( session == NULL )
-	{
-		return FIELD_EXPORT_ERROR_BAD_HANDLE;
-	}
-
-	if( fprintf( session->file, " #Scale factor sets= %d\n", scalingFactorCount ) < 0 )
-	{
-		return FIELD_EXPORT_ERROR_FILE_WRITE;
-	}
-
-	return 0;
+    return FieldExport_FPrintf( session, " #Scale factor sets= %d\n", scalingFactorCount );
 }
 
 
-static int FieldExport_File_LagrangeHermiteScaleFactors( const FileSession *const session, const int labelType, const int numberOfXi, const int* const interpolationXi )
+static int FieldExport_File_LagrangeHermiteScaleFactors( FileSession *const session, const int labelType, const int numberOfXi, const int* const interpolationXi )
 {
-	int err;
-	int scaleFactorCount = 1;
-	int i;
+    int scaleFactorCount = 1;
+    int i;
+    const char * label;
 
-	flog( __FILE__, __LINE__ );
+    FieldExport_FPrintf( session, " " );
 
-	fblog( "interpolationXi = ", interpolationXi );
+    for( i = 0; i < numberOfXi; i++ )
+    {
+        switch( interpolationXi[i] )
+        {
+        case BASIS_LINEAR_LAGRANGE_INTERPOLATION:
+            scaleFactorCount *= 2;
+            label = "l.Lagrange";
+            break;
+        case BASIS_QUADRATIC_LAGRANGE_INTERPOLATION:
+            scaleFactorCount *= 3;
+            label = "q.Lagrange";
+            break;
+        case BASIS_CUBIC_LAGRANGE_INTERPOLATION:
+            scaleFactorCount *= 4;
+            label = "c.Lagrange";
+            break;
+        case BASIS_CUBIC_HERMITE_INTERPOLATION:
+            scaleFactorCount *= 4;
+            label = "c.Hermite";
+            break;
+        case BASIS_QUADRATIC1_HERMITE_INTERPOLATION:
+            scaleFactorCount *= 4;
+            label = "q1.Hermite";
+            break;
+        case BASIS_QUADRATIC2_HERMITE_INTERPOLATION:
+            scaleFactorCount *= 4;
+            label = "q2.Hermite";
+            break;
+        default:
+            return FIELD_EXPORT_ERROR_UNKNOWN_INTERPOLATION;
+        }
 
-	fflush(NULL);
+        FieldExport_FPrintf( session, "%s", label );
 
-	fprintf( session->file, " " );
+        if( i < ( numberOfXi - 1 ) )
+        {
+            FieldExport_FPrintf( session, "*" );
+        }
+    }
+    
+    switch( labelType )
+    {
+    case FIELD_IO_SCALE_FACTORS_NUMBER_TYPE:
+        FieldExport_FPrintf( session, ", #Scale factors=%d\n", scaleFactorCount );
+        break;
+    case FIELD_IO_SCALE_FACTORS_PROPERTY_TYPE:
+        FieldExport_FPrintf( session, ", no modify, standard node based.\n" );
+        break;
+    default:
+        return FIELD_EXPORT_ERROR_UNKNOWN_LABEL_TYPE;
+    }
 
-	//MUSTDO Extract this loop, and write to a string.
-	for( i = 0; i < numberOfXi; i++ )
-	{
-	flog( __FILE__, __LINE__ );
-		switch( interpolationXi[i] )
-		{
-		case BASIS_LINEAR_LAGRANGE_INTERPOLATION:
-	flog( __FILE__, __LINE__ );
-			scaleFactorCount *= 2;
-			err = fprintf( session->file, "l.Lagrange" );
-			break;
-		case BASIS_QUADRATIC_LAGRANGE_INTERPOLATION:
-	flog( __FILE__, __LINE__ );
-			scaleFactorCount *= 3;
-             err = fprintf( session->file, "q.Lagrange" );
-			break;
-		case BASIS_CUBIC_LAGRANGE_INTERPOLATION:
-	flog( __FILE__, __LINE__ );
-			scaleFactorCount *= 4;
-             err = fprintf( session->file, "c.Lagrange" );
-			break;
-		case BASIS_CUBIC_HERMITE_INTERPOLATION:
-	flog( __FILE__, __LINE__ );
-			scaleFactorCount *= 4;
-             err = fprintf( session->file, "c.Hermite" );
-			break;
-		case BASIS_QUADRATIC1_HERMITE_INTERPOLATION:
-	flog( __FILE__, __LINE__ );
-			scaleFactorCount *= 4;
-             err = fprintf( session->file, "q1.Hermite" );
-			break;
-		case BASIS_QUADRATIC2_HERMITE_INTERPOLATION:
-	flog( __FILE__, __LINE__ );
-			scaleFactorCount *= 4;
-             err = fprintf( session->file, "q2.Hermite" );
-			break;
-		default:
-	flog( __FILE__, __LINE__ );
-			return FIELD_EXPORT_ERROR_UNKNOWN_INTERPOLATION;
-		}
-
-	flog( __FILE__, __LINE__ );
-		if( ( err >= 0 ) && ( i < ( numberOfXi - 1 ) ) )
-		{
-			err = fprintf( session->file, "*" );
-		}
-		if( err < 0 )
-		{
-	flog( __FILE__, __LINE__ );
-			return FIELD_EXPORT_ERROR_FILE_WRITE;
-		}
-	flog( __FILE__, __LINE__ );
-	}
-
-	flog( __FILE__, __LINE__ );
-	switch( labelType )
-	{
-	case FIELD_IO_SCALE_FACTORS_NUMBER_TYPE:
-		fprintf( session->file, ", #Scale factors=%d\n", scaleFactorCount );
-		break;
-	case FIELD_IO_SCALE_FACTORS_PROPERTY_TYPE:
-		fprintf( session->file, ", no modify, standard node based.\n" );
-		break;
-	default:
-		return FIELD_EXPORT_ERROR_UNKNOWN_LABEL_TYPE;
-	}
-	flog( __FILE__, __LINE__ );
-
-	return 0;
+    return session->error;
 }
 
 
 static char *FieldExport_GetVariableLabel( const int fieldType, const int variableType )
 {
-	switch( fieldType )
-	{
-	case FIELD_GEOMETRIC_TYPE:
-		switch( variableType )
-		{
-		case FIELD_STANDARD_VARIABLE_TYPE:
-			return "unknown";
-		case FIELD_NORMAL_VARIABLE_TYPE:
+    switch( fieldType )
+    {
+    case FIELD_GEOMETRIC_TYPE:
+        switch( variableType )
+        {
+        case FIELD_STANDARD_VARIABLE_TYPE:
+            return "unknown";
+        case FIELD_NORMAL_VARIABLE_TYPE:
             return "Normal_derivative,  field,  normal derivative of variable";
-		case FIELD_TIME_DERIV1_VARIABLE_TYPE:
+        case FIELD_TIME_DERIV1_VARIABLE_TYPE:
             return "first_time_derivative,  field,  first time derivative of variable";
-		case FIELD_TIME_DERIV2_VARIABLE_TYPE:
+        case FIELD_TIME_DERIV2_VARIABLE_TYPE:
             return "second_time_derivative,  field,  second time derivative of variable";
-		default:
+        default:
             return "unknown_geometry,  field,  unknown field variable type";
-		}
-	case FIELD_FIBRE_TYPE:
+        }
+    case FIELD_FIBRE_TYPE:
         switch( variableType )
-		{
-		case FIELD_STANDARD_VARIABLE_TYPE:
+        {
+        case FIELD_STANDARD_VARIABLE_TYPE:
             return "fibres, anatomical, fibre";
-		case FIELD_NORMAL_VARIABLE_TYPE:
+        case FIELD_NORMAL_VARIABLE_TYPE:
             return "norm_der_fiber,  normal derivative of variable";
-		case FIELD_TIME_DERIV1_VARIABLE_TYPE:
+        case FIELD_TIME_DERIV1_VARIABLE_TYPE:
             return "first_time_fiber,  first time derivative of variable";
-		case FIELD_TIME_DERIV2_VARIABLE_TYPE:
+        case FIELD_TIME_DERIV2_VARIABLE_TYPE:
             return "second_time_fiber,  second time derivative of variable";
-		default:
+        default:
             return "unknown_fiber,  unknown field variable type";
-		}
-	case FIELD_GENERAL_TYPE:
+        }
+    case FIELD_GENERAL_TYPE:
         switch( variableType )
-		{
-		case FIELD_STANDARD_VARIABLE_TYPE:
-			return "general,  field,  rectangular cartesian";
-		case FIELD_NORMAL_VARIABLE_TYPE:
+        {
+        case FIELD_STANDARD_VARIABLE_TYPE:
+            return "general,  field,  rectangular cartesian";
+        case FIELD_NORMAL_VARIABLE_TYPE:
             return "norm_dev_variable,  field,  string";
-		case FIELD_TIME_DERIV1_VARIABLE_TYPE:
+        case FIELD_TIME_DERIV1_VARIABLE_TYPE:
             return "first_time_variable,  field,  first time derivative of variable";
-		case FIELD_TIME_DERIV2_VARIABLE_TYPE:
+        case FIELD_TIME_DERIV2_VARIABLE_TYPE:
             return "second_time_variable,  field,  second time derivative of variable";
-		default:
+        default:
             return "unknown_general,  field,  unknown field variable type";
-		}
-	case FIELD_MATERIAL_TYPE:
+        }
+    case FIELD_MATERIAL_TYPE:
         switch( variableType )
-		{
-		case FIELD_STANDARD_VARIABLE_TYPE:
+        {
+        case FIELD_STANDARD_VARIABLE_TYPE:
             return "material,  field,  rectangular cartesian";
-		case FIELD_NORMAL_VARIABLE_TYPE:
+        case FIELD_NORMAL_VARIABLE_TYPE:
             return "normal_material,  field,  normal derivative of variable";
-		case FIELD_TIME_DERIV1_VARIABLE_TYPE:
+        case FIELD_TIME_DERIV1_VARIABLE_TYPE:
             return "fist_time_material,  field,  first time derivative of variable";
-		case FIELD_TIME_DERIV2_VARIABLE_TYPE:
+        case FIELD_TIME_DERIV2_VARIABLE_TYPE:
             return "second_time_material,  field,  second time derivative of variable";
-		default:
+        default:
             return "unknown material,  field,  unknown field variable type";
-		}
-	default:
+        }
+    default:
         switch( variableType )
-		{
-		case FIELD_STANDARD_VARIABLE_TYPE:
+        {
+        case FIELD_STANDARD_VARIABLE_TYPE:
             return "unknown,  field,  unknown standand variable type";
-		case FIELD_NORMAL_VARIABLE_TYPE:
+        case FIELD_NORMAL_VARIABLE_TYPE:
             return "unknown,  field,  unknown normal derivative of variable";
-		case FIELD_TIME_DERIV1_VARIABLE_TYPE:
+        case FIELD_TIME_DERIV1_VARIABLE_TYPE:
             return "unknown,  field,  unknown first time derivative of variable";
-		case FIELD_TIME_DERIV2_VARIABLE_TYPE:
+        case FIELD_TIME_DERIV2_VARIABLE_TYPE:
             return "unknown, field,  unknown second time derivative of variable";
-		default:
+        default:
             return "unknown,  field,  unknown field variable type";
-		}
-	}
+        }
+    }
 }
 
 
 static char *FieldExport_GetCoordinateVariableLabel( CMISS_CoordinateSystem *coordinateSystem )
 {
-	switch( coordinateSystem->type )
-	{
-	case COORDINATE_RECTANGULAR_CARTESIAN_TYPE:
-		return "coordinates,  coordinate, rectangular cartesian";
-	/*
+    switch( coordinateSystem->type )
+    {
+    case COORDINATE_RECTANGULAR_CARTESIAN_TYPE:
+        return "coordinates,  coordinate, rectangular cartesian";
+    //MUSTDO non-rectangular coordinate systems
+    /*
     case COORDINATE_CYCLINDRICAL_POLAR_TYPE:
     case COORDINATE_SPHERICAL_POLAR_TYPE:
     case COORDINATE_PROLATE_SPHEROIDAL_TYPE:
     case COORDINATE_OBLATE_SPHEROIDAL_TYPE:
-	*/
-	default:
-		return "unknown";
-	}
+    */
+    default:
+        return "unknown";
+    }
 }
 
 
 static char *FieldExport_GetCoordinateComponentLabel( CMISS_CoordinateSystem *coordinateSystem, int componentNumber )
 {
-	flog( __FILE__, __LINE__ );
-
-	fblog( "FieldExport_GetCoordinateComponentLabel:coordinateSystem", coordinateSystem );
-
-	switch( coordinateSystem->type )
-	{
-	case COORDINATE_RECTANGULAR_CARTESIAN_TYPE:
-		if( componentNumber == 1 )
-		{
-			return "x";
-		}
-		else if( componentNumber == 2 )
-		{
-			return "y";
-		}
-		else if( componentNumber == 3 )
-		{
-			return "z";
-		}
-		break;
-	/*
+    switch( coordinateSystem->type )
+    {
+    case COORDINATE_RECTANGULAR_CARTESIAN_TYPE:
+        if( componentNumber == 1 )
+        {
+            return "x";
+        }
+        else if( componentNumber == 2 )
+        {
+            return "y";
+        }
+        else if( componentNumber == 3 )
+        {
+            return "z";
+        }
+        break;
+    /*
     case COORDINATE_CYCLINDRICAL_POLAR_TYPE:
     case COORDINATE_SPHERICAL_POLAR_TYPE:
     case COORDINATE_PROLATE_SPHEROIDAL_TYPE:
     case COORDINATE_OBLATE_SPHEROIDAL_TYPE:
-	*/
-	default:
-		break;
-	}
+    */
+    default:
+        break;
+    }
 
-	flog( __FILE__, __LINE__ );
-	return NULL;
+    return NULL;
 }
 
 
-static int FieldExport_File_NodeCount( const FileSession *const session, const int nodeCount )
+static int FieldExport_File_NodeCount( FileSession *const session, const int nodeCount )
 {
-	if( session == NULL )
-	{
-		return FIELD_EXPORT_ERROR_BAD_HANDLE;
-	}
-
-	if( fprintf( session->file, " #Nodes=           %d\n", nodeCount ) < 0 )
-	{
-		return FIELD_EXPORT_ERROR_FILE_WRITE;
-	}
-
-	return 0;
+    return FieldExport_FPrintf( session, " #Nodes=           %d\n", nodeCount );
 }
 
 
-static int FieldExport_File_FieldCount( const FileSession *const session, const int fieldCount )
+static int FieldExport_File_FieldCount( FileSession *const session, const int fieldCount )
 {
-	if( session == NULL )
-	{
-		return FIELD_EXPORT_ERROR_BAD_HANDLE;
-	}
-
-	if( fprintf( session->file, " #Fields=%d\n", fieldCount ) < 0 )
-	{
-		return FIELD_EXPORT_ERROR_FILE_WRITE;
-	}
-
-	return 0;
+    return FieldExport_FPrintf( session, " #Fields=%d\n", fieldCount );
 }
 
 
-static int FieldExport_File_CoordinateVariable( const FileSession *const session, const int variableIndex,
-										CMISS_CoordinateSystem *coordinateSystem, const int componentCount )
+static int FieldExport_File_CoordinateVariable( FileSession *const session, const int variableIndex,
+                                        CMISS_CoordinateSystem *coordinateSystem, const int componentCount )
 {
-	char *coordinateLabel;
+    char *coordinateLabel;
 
-	if( session == NULL )
-	{
-		return FIELD_EXPORT_ERROR_BAD_HANDLE;
-	}
-
-	coordinateLabel = FieldExport_GetCoordinateVariableLabel( coordinateSystem );
-	if( fprintf( session->file, " %d) %s, #Components=%d\n", variableIndex, coordinateLabel, componentCount ) < 0 )
-	{
-		return FIELD_EXPORT_ERROR_FILE_WRITE;
-	}
-
-	return 0;
+    coordinateLabel = FieldExport_GetCoordinateVariableLabel( coordinateSystem );
+    
+    return FieldExport_FPrintf( session, " %d) %s, #Components=%d\n", variableIndex, coordinateLabel, componentCount );
 }
 
 
-static int FieldExport_File_Variable( const FileSession *const session, const int variableIndex, const int fieldType, const int variableType, const int componentCount )
+static int FieldExport_File_Variable( FileSession *const session, const int variableIndex, const int fieldType, const int variableType, const int componentCount )
 {
-	char *variableLabel;
+    char *variableLabel;
 
-	if( session == NULL )
-	{
-		return FIELD_EXPORT_ERROR_BAD_HANDLE;
-	}
-
-	variableLabel = FieldExport_GetVariableLabel( fieldType, variableType );
-	if( fprintf( session->file, " %d) %s, #Components=%d\n", variableIndex, variableLabel, componentCount ) < 0 )
-	{
-		return FIELD_EXPORT_ERROR_FILE_WRITE;
-	}
-
-	return 0;
+    variableLabel = FieldExport_GetVariableLabel( fieldType, variableType );
+    
+    return FieldExport_FPrintf( session, " %d) %s, #Components=%d\n", variableIndex, variableLabel, componentCount );
 }
 
 
-static int FieldExport_File_CoordinateComponent( const FileSession *const session, CMISS_CoordinateSystem * coordinateSystem,
-	const int componentNumber, const int numberOfXi, const int *const interpolationXi )
+static int FieldExport_File_CoordinateComponent( FileSession *const session, CMISS_CoordinateSystem * coordinateSystem,
+    const int componentNumber, const int numberOfXi, const int *const interpolationXi )
 {
-	const char * const componentLabel = FieldExport_GetCoordinateComponentLabel( coordinateSystem, componentNumber );
+    const char * const componentLabel = FieldExport_GetCoordinateComponentLabel( coordinateSystem, componentNumber );
 
-	flog( __FILE__, __LINE__ );
+    if( componentLabel == NULL )
+    {
+        FieldExport_FPrintf( session, "   %d.  ", componentNumber );
+    }
+    else
+    {
+        FieldExport_FPrintf( session, "   %s.  ", componentLabel );
+    }
 
-	fblog( "FieldExport_File_CoordinateComponent interpolationXi = ", interpolationXi );
-	if( componentLabel == NULL )
-	{
-		fprintf( session->file, "   %d.  ", componentNumber );
-	}
-	else
-	{
-		fprintf( session->file, "   %s.  ", componentLabel );
-	}
+    if( session->error != FIELD_EXPORT_NO_ERROR )
+    {
+        return session->error;
+    }
 
-	flog( __FILE__, __LINE__ );
-
-	return FieldExport_File_LagrangeHermiteScaleFactors( session, FIELD_IO_SCALE_FACTORS_PROPERTY_TYPE, numberOfXi, interpolationXi );
+    return FieldExport_File_LagrangeHermiteScaleFactors( session, FIELD_IO_SCALE_FACTORS_PROPERTY_TYPE, numberOfXi, interpolationXi );
 }
 
 
-static int FieldExport_File_Component( const FileSession *const session,
-	const int componentNumber, const int numberOfXi, const int *const interpolationXi )
+static int FieldExport_File_Component( FileSession *const session,
+    const int componentNumber, const int numberOfXi, const int *const interpolationXi )
 {
-	flog( __FILE__, __LINE__ );
+    if( FieldExport_FPrintf( session, "   %d.  ", componentNumber ) != FIELD_EXPORT_NO_ERROR )
+    {
+        session->error;
+    }
 
-	fprintf( session->file, "   %d.  ", componentNumber );
-
-	return FieldExport_File_LagrangeHermiteScaleFactors( session, FIELD_IO_SCALE_FACTORS_PROPERTY_TYPE, numberOfXi, interpolationXi );
+    return FieldExport_File_LagrangeHermiteScaleFactors( session, FIELD_IO_SCALE_FACTORS_PROPERTY_TYPE, numberOfXi, interpolationXi );
 }
 
 
-static int FieldExport_File_Nodes( const FileSession *const session, const int nodeCount, const int *const derivativeCount,
-	const int *const elementDerivatives, int firstScaleIndex )
+static int FieldExport_File_Nodes( FileSession *const session, const int nodeCount, const int *const derivativeCount,
+    const int *const elementDerivatives, int firstScaleIndex )
 {
-	int i, j;
+    int i, j;
 
-	fprintf( session->file, "     #Nodes= %d\n", nodeCount );
+    FieldExport_FPrintf( session, "     #Nodes= %d\n", nodeCount );
 
-	fblog( "derivatives = ", elementDerivatives );
-	fblog( "derivatives[0] = ", elementDerivatives[0] );
-	for( i = 0; i < nodeCount; i++ )
-	{
-		fprintf( session->file, " %5d.  #Values=%d\n", i + 1, elementDerivatives[i] );
-		fprintf( session->file, "      Value indices:  " );
-		for( j = 0; j < derivativeCount[i]; j++ )
-		{
-			fprintf( session->file, " %3d", elementDerivatives[ i + (j * nodeCount ) ] );
-		}
-		fprintf( session->file, "\n" );
-		fprintf( session->file, "      Scale factor indices: " );
-		for( j = 0; j < derivativeCount[i]; j++ )
-		{
-			firstScaleIndex++;
-			fprintf( session->file, " %3d", firstScaleIndex );
-		}
-		fprintf( session->file, "\n" );
-	}
+    for( i = 0; i < nodeCount; i++ )
+    {
+        FieldExport_FPrintf( session, " %5d.  #Values=%d\n", i + 1, elementDerivatives[i] );
+        FieldExport_FPrintf( session, "      Value indices:  " );
+        for( j = 0; j < derivativeCount[i]; j++ )
+        {
+            FieldExport_FPrintf( session, " %3d", elementDerivatives[ i + (j * nodeCount ) ] );
+        }
+        FieldExport_FPrintf( session, "\n" );
+        FieldExport_FPrintf( session, "      Scale factor indices: " );
+        for( j = 0; j < derivativeCount[i]; j++ )
+        {
+            firstScaleIndex++;
+            FieldExport_FPrintf( session, " %3d", firstScaleIndex );
+        }
+        FieldExport_FPrintf( session, "\n" );
+    }
 
-	flog( __FILE__, __LINE__ );
-
-	return 0;
+    return session->error;
 }
 
 
 static int FieldExport_File_ElementIndex( FileSession *session, const int dimensionCount, const int elementIndex )
 {
-	if( dimensionCount == 3 )
-	{
-          fprintf( session->file, " Element:            %d 0 0\n", elementIndex );
-	}
-	else if( dimensionCount == 2 )
-	{
-          fprintf( session->file, " Element:            0 %d 0\n", elementIndex );
-	}
-	else if( dimensionCount == 1 )
-	{
-          fprintf( session->file, " Element:            0 0 %d\n", elementIndex );
-	}
-
-	return 0;
+    if( dimensionCount == 3 )
+    {
+          return FieldExport_FPrintf( session, " Element:            %d 0 0\n", elementIndex );
+    }
+    else if( dimensionCount == 2 )
+    {
+          return FieldExport_FPrintf( session, " Element:            0 %d 0\n", elementIndex );
+    }
+    else
+    {
+          return FieldExport_FPrintf( session, " Element:            0 0 %d\n", elementIndex );
+    }
 }
 
 
 static int FieldExport_File_ElementNodeIndices( FileSession *session, const int nodeCount, const int *const indices )
 {
-	int i;
+    int i;
 
-	fprintf( session->file, "  Nodes:\n" );
+    FieldExport_FPrintf( session, "  Nodes:\n" );
 
-	for( i = 0; i < nodeCount; i++ )
-	{
-		fprintf( session->file, "  %10d", indices[i] );
-	}
-	fprintf( session->file, "\n" );
+    for( i = 0; i < nodeCount; i++ )
+    {
+        FieldExport_FPrintf( session, "  %10d", indices[i] );
+    }
 
-	return 0;
+    FieldExport_FPrintf( session, "\n" );
+
+    return session->error;
 }
 
 
 static int FieldExport_File_ElementNodeScales( FileSession *session, const int scaleCount, const double *const scales )
 {
-	int i;
+    int i;
 
-	fprintf( session->file, "   Scale factors:\n" );
+    FieldExport_FPrintf( session, "   Scale factors:\n" );
 
-	for( i = 0; i < scaleCount; i++ )
-	{
-		fprintf( session->file, "   %.16E", scales[i] );
-	}
-	fprintf( session->file, "\n" );
+    for( i = 0; i < scaleCount; i++ )
+    {
+        FieldExport_FPrintf( session, "   %.16E", scales[i] );
+    }
 
-	return 0;
+    FieldExport_FPrintf( session, "\n" );
+
+    return session->error;
 }
 
 
-static FileSession *FieldExport_GetFileSession( const int handle )
+static int FieldExport_File_OpenSession( const char *const name, int * const handle )
 {
-	FileSessionListEntry *entry = fileSessions.next;
+    SessionListEntry *session = calloc( 1, sizeof( SessionListEntry ) );
 
-	while( entry != NULL )
-	{
-		if( entry->session->handle == handle )
-		{
-			return entry->session;
-		}
-		entry = entry->next;
-	}
+    session->type = EXPORT_TYPE_FILE;
+    session->handle = nextHandle++;
+    session->fileSession.file = fopen( name, "w" );
+    session->fileSession.error = FIELD_EXPORT_NO_ERROR;
 
-	return NULL;
+    if( session->fileSession.file == NULL )
+    {
+        free( session );
+        return FIELD_EXPORT_ERROR_FILE_IO;
+    }
+
+    session->next = sessions.next;
+    sessions.next = session;
+
+    *handle = session->handle;
+
+    return FIELD_EXPORT_NO_ERROR;
 }
 
 
-static int FieldExport_OpenFileSession( const char *const name, int * const handle )
+static int FieldExport_File_CloseSession( SessionListEntry *session )
 {
-	int i;
-	FileSessionListEntry *entry;
-	FileSession *session = calloc( 1, sizeof( FileSession ) );
+    fclose( session->fileSession.file );
+    session->type = EXPORT_TYPE_CLOSED;
 
-	session->handle = FieldExport_GetNewSessionHandle( EXPORT_TYPE_FILE );
-	session->file = fopen( name, "w" );
-
-	if( session->file == NULL )
-	{
-		free( session );
-		return FIELD_EXPORT_ERROR_FILE_IO;
-	}
-
-	flog( "New session", session->handle );
-
-	*handle = session->handle;
-
-	entry = calloc( 1, sizeof( FileSessionListEntry ) );
-
-	entry->session = session;
-	entry->next = fileSessions.next;
-	fileSessions.next = entry;
-
-	return 0;
-}
-
-
-static int FieldExport_File_CloseSession( FileSession *session )
-{
-	FileSessionListEntry *entry = fileSessions.next;
-	FileSessionListEntry *previousEntry = &fileSessions;
-
-	handleTypes[session->handle] = EXPORT_TYPE_CLOSED;
-
-	while( entry != NULL )
-	{
-		if( entry->session != session )
-		{
-			previousEntry = entry;
-			entry = entry->next;
-			continue;
-		}
-
-		fclose( entry->session->file );
-		free( entry->session );
-
-		previousEntry->next = entry->next;
-		free( entry );
-		break;
-	}
-
-	return 0;
+    return FIELD_EXPORT_NO_ERROR;
 }
 
 
 static int FieldExport_File_NodeNumber( FileSession *session, const int nodeNumber )
 {
-	flog( __FILE__, __LINE__ );
-
-	fprintf( session->file, " Node:            %d\n", nodeNumber );
-
-	flog( __FILE__, __LINE__ );
-
-	return 0;
+    return FieldExport_FPrintf( session, " Node:            %d\n", nodeNumber );
 }
 
 
 static int FieldExport_File_NodeValues( FileSession *session, const int valueCount, const double *const values )
 {
-	int i;
+    int i;
 
-	flog( __FILE__, __LINE__ );
+    for( i = 0; i < valueCount; i++ )
+    {
+        FieldExport_FPrintf( session, "  %.16E", values[i] );
+    }
+    FieldExport_FPrintf( session, "\n" );
 
-	for( i = 0; i < valueCount; i++ )
-	{
-		fprintf( session->file, "  %.16E", values[i] );
-	}
-	fprintf( session->file, "\n" );
-
-	flog( __FILE__, __LINE__ );
-
-	return 0;
+    return session->error;
 }
 
 
-static void FieldExport_FieldDerivateLabels( FileSession *session, const int numberOfDerivatives, const int *const derivatives )
+static int FieldExport_FieldDerivateLabels( FileSession *session, const int numberOfDerivatives, const int *const derivatives )
 {
-	int i;
+    int i;
 
-	if( ( numberOfDerivatives == 1 ) && ( derivatives[0] == NO_PART_DERIV ) )
-	{
-		return;
-	}
+    if( ( numberOfDerivatives == 1 ) && ( derivatives[0] == NO_PART_DERIV ) )
+    {
+        return session->error;
+    }
 
-	for( i = 0; i < numberOfDerivatives; i++ )
-	{
-		switch( derivatives[i] )
-		{
-		case NO_PART_DERIV:
-			break;
-		case PART_DERIV_S1:
-              fprintf( session->file, ", d/ds1" );
-			  break;
-		case PART_DERIV_S1_S1:
-              fprintf( session->file, ", d2/ds1ds1" );
-			  break;
-		case PART_DERIV_S2:
-              fprintf( session->file, ", d/ds2" );
-			  break;
-		case PART_DERIV_S2_S2:
-              fprintf( session->file, ", d2/ds2ds2" );
-			  break;
-		case PART_DERIV_S1_S2:
-              fprintf( session->file, ", d/ds3" );
-			  break;
-		case PART_DERIV_S3:
-              fprintf( session->file, ", d2/ds3ds3" );
-			  break;
-		case PART_DERIV_S3_S3:
-              fprintf( session->file, ", d2/ds3ds3" );
-			  break;
-		case PART_DERIV_S1_S3:
-              fprintf( session->file, ", d2/ds1ds3" );
-			  break;
-		case PART_DERIV_S2_S3:
-              fprintf( session->file, ", d2/ds2ds3" );
-			  break;
-		case PART_DERIV_S1_S2_S3:
-              fprintf( session->file, ", d3/ds1ds2ds3" );
-			  break;
-		case PART_DERIV_S4:
-              fprintf( session->file, ", d/ds4" );
-			  break;
-		case PART_DERIV_S4_S4:
-              fprintf( session->file, ", d2/ds4ds4" );
-			  break;
-		case PART_DERIV_S1_S4:
-              fprintf( session->file, ", d2/ds1ds4" );
-			  break;
-		case PART_DERIV_S2_S4:
-              fprintf( session->file, ", d2/ds2ds4" );
-			  break;
-		case PART_DERIV_S3_S4:
-              fprintf( session->file, ", d2/ds3ds4" );
-			  break;
-		case PART_DERIV_S1_S2_S4:
-              fprintf( session->file, ", d3/ds1ds2ds4" );
-			  break;
-		case PART_DERIV_S1_S3_S4:
-              fprintf( session->file, ", d3/ds1ds3ds4" );
-			  break;
-		case PART_DERIV_S2_S3_S4:
-              fprintf( session->file, ", d3/ds2ds3ds4" );
-			  break;
-		case PART_DERIV_S1_S2_S3_S4:
-              fprintf( session->file, ", d4/ds1ds2ds3ds4" );
-			  break;
-		default:
-              fprintf( session->file, "unknown field variable type %d", derivatives[i] );
-		}
-	}
+    for( i = 0; i < numberOfDerivatives; i++ )
+    {
+        switch( derivatives[i] )
+        {
+        case NO_PART_DERIV:
+            break;
+        case PART_DERIV_S1:
+              FieldExport_FPrintf( session, ", d/ds1" );
+              break;
+        case PART_DERIV_S1_S1:
+              FieldExport_FPrintf( session, ", d2/ds1ds1" );
+              break;
+        case PART_DERIV_S2:
+              FieldExport_FPrintf( session, ", d/ds2" );
+              break;
+        case PART_DERIV_S2_S2:
+              FieldExport_FPrintf( session, ", d2/ds2ds2" );
+              break;
+        case PART_DERIV_S1_S2:
+              FieldExport_FPrintf( session, ", d/ds3" );
+              break;
+        case PART_DERIV_S3:
+              FieldExport_FPrintf( session, ", d2/ds3ds3" );
+              break;
+        case PART_DERIV_S3_S3:
+              FieldExport_FPrintf( session, ", d2/ds3ds3" );
+              break;
+        case PART_DERIV_S1_S3:
+              FieldExport_FPrintf( session, ", d2/ds1ds3" );
+              break;
+        case PART_DERIV_S2_S3:
+              FieldExport_FPrintf( session, ", d2/ds2ds3" );
+              break;
+        case PART_DERIV_S1_S2_S3:
+              FieldExport_FPrintf( session, ", d3/ds1ds2ds3" );
+              break;
+        case PART_DERIV_S4:
+              FieldExport_FPrintf( session, ", d/ds4" );
+              break;
+        case PART_DERIV_S4_S4:
+              FieldExport_FPrintf( session, ", d2/ds4ds4" );
+              break;
+        case PART_DERIV_S1_S4:
+              FieldExport_FPrintf( session, ", d2/ds1ds4" );
+              break;
+        case PART_DERIV_S2_S4:
+              FieldExport_FPrintf( session, ", d2/ds2ds4" );
+              break;
+        case PART_DERIV_S3_S4:
+              FieldExport_FPrintf( session, ", d2/ds3ds4" );
+              break;
+        case PART_DERIV_S1_S2_S4:
+              FieldExport_FPrintf( session, ", d3/ds1ds2ds4" );
+              break;
+        case PART_DERIV_S1_S3_S4:
+              FieldExport_FPrintf( session, ", d3/ds1ds3ds4" );
+              break;
+        case PART_DERIV_S2_S3_S4:
+              FieldExport_FPrintf( session, ", d3/ds2ds3ds4" );
+              break;
+        case PART_DERIV_S1_S2_S3_S4:
+              FieldExport_FPrintf( session, ", d4/ds1ds2ds3ds4" );
+              break;
+        default:
+              FieldExport_FPrintf( session, "unknown field variable type %d", derivatives[i] );
+        }
+    }
+
+    return session->error;
 }
 
 
 static int FieldExport_File_DerivativeIndices( FileSession *session, const int componentNumber, const int fieldType,
     const int variableType, const int numberOfDerivatives, const int *const derivatives, const int valueIndex )
 {
-	flog( __FILE__, __LINE__ );
+    //MUSTDO add a proper GetComponentLabel( fieldType, variableType, componentNumber ) function.
+    FieldExport_FPrintf( session, "   %d.  Value index= %d, #Derivatives= %d", componentNumber, valueIndex, numberOfDerivatives - 1 );
 
-	//MUSTDO add a proper GetComponentLabel( fieldType, variableType, componentNumber ) function.
-	fprintf( session->file, "   %d.  Value index= %d, #Derivatives= %d", componentNumber, valueIndex, numberOfDerivatives - 1 );
+    FieldExport_FieldDerivateLabels( session, numberOfDerivatives, derivatives );
 
-	FieldExport_FieldDerivateLabels( session, numberOfDerivatives, derivatives );
+    FieldExport_FPrintf( session, "\n" );
 
-	fprintf( session->file, "\n" );
-
-	flog( __FILE__, __LINE__ );
-
-	return 0;
+    return session->error;
 }
 
 
 static int FieldExport_File_CoordinateDerivativeIndices( FileSession *session, const int componentNumber, CMISS_CoordinateSystem * coordinateSystem,
-	const int numberOfDerivatives, const int *const derivatives, const int valueIndex )
+    const int numberOfDerivatives, const int *const derivatives, const int valueIndex )
 {
-	const char * const componentLabel = FieldExport_GetCoordinateComponentLabel( coordinateSystem, componentNumber );
+    const char * const componentLabel = FieldExport_GetCoordinateComponentLabel( coordinateSystem, componentNumber );
 
-	flog( __FILE__, __LINE__ );
+    //MUSTDO add a proper GetComponentLabel( fieldType, variableType, componentNumber ) function.
+    if( componentLabel == NULL )
+    {
+        FieldExport_FPrintf( session, "   %d.  Value index= %d, #Derivatives= %d", componentNumber, valueIndex, numberOfDerivatives - 1 );
+    }
+    else
+    {
+        FieldExport_FPrintf( session, "   %s.  Value index= %d, #Derivatives= %d", componentLabel, valueIndex, numberOfDerivatives - 1 );
+    }
 
-	//MUSTDO add a proper GetComponentLabel( fieldType, variableType, componentNumber ) function.
-	if( componentLabel == NULL )
-	{
-		fprintf( session->file, "   %d.  Value index= %d, #Derivatives= %d", componentNumber, valueIndex, numberOfDerivatives - 1 );
-	}
-	else
-	{
-		fprintf( session->file, "   %s.  Value index= %d, #Derivatives= %d", componentLabel, valueIndex, numberOfDerivatives - 1 );
-	}
+    FieldExport_FieldDerivateLabels( session, numberOfDerivatives, derivatives );
 
-	FieldExport_FieldDerivateLabels( session, numberOfDerivatives, derivatives );
+    FieldExport_FPrintf( session, "\n" );
 
-	fprintf( session->file, "\n" );
-
-	flog( __FILE__, __LINE__ );
-
-	return 0;
+    return session->error;
 }
 
 
 /*
-	Public API implementation
+    Public API implementation
 */
 int FieldExport_OpenSession( const int type, const char *const name, int * const handle )
 {
-	flog( __FILE__, __LINE__ );
-	if( type == EXPORT_TYPE_FILE )
-	{
-		return FieldExport_OpenFileSession( name, handle );
-	}
-	else
-	{
-		return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
-	}
+    if( type == EXPORT_TYPE_FILE )
+    {
+        return FieldExport_File_OpenSession( name, handle );
+    }
+    else
+    {
+        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
+    }
 }
 
 
 int FieldExport_Group( const int handle, const char *const label )
 {
-	int err = FieldExport_CheckHandle( handle );
-	if( err != FIELD_EXPORT_NO_ERROR )
-	{
-		return err;
-	}
-
-	flog( __FILE__, __LINE__ );
-	if( handleTypes[handle] == EXPORT_TYPE_FILE )
-	{
-		FileSession *fileSession = FieldExport_GetFileSession( handle );
-		return FieldExport_File_Group( fileSession, label );
-	}
-	else
-	{
-		return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
-	}
+    SessionListEntry *session = FieldExport_GetSession( handle );
+    
+    if( session == NULL )
+    {
+        return FIELD_EXPORT_ERROR_BAD_HANDLE;
+    }
+    else if( session->type == EXPORT_TYPE_FILE )
+    {
+        return FieldExport_File_Group( &session->fileSession, label );
+    }
+    else 
+    {
+        return FIELD_EXPORT_ERROR_CLOSED_HANDLE;
+    }
 }
 
 
 int FieldExport_MeshDimensions( const int handle, const int dimensions )
 {
-	int err = FieldExport_CheckHandle( handle );
-	if( err != FIELD_EXPORT_NO_ERROR )
-	{
-		return err;
-	}
-	
-	flog( __FILE__, __LINE__ );
-	if( handleTypes[handle] == EXPORT_TYPE_FILE )
-	{
-		FileSession *fileSession = FieldExport_GetFileSession( handle );
-		return FieldExport_File_MeshDimensions( fileSession, dimensions );
-	}
-	else
-	{
-		return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
-	}
+    SessionListEntry *session = FieldExport_GetSession( handle );
+    
+    if( session == NULL )
+    {
+        return FIELD_EXPORT_ERROR_BAD_HANDLE;
+    }
+    else if( session->type == EXPORT_TYPE_FILE )
+    {
+        return FieldExport_File_MeshDimensions( &session->fileSession, dimensions );
+    }
+    else
+    {
+        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
+    }
 }
 
 
 int FieldExport_ScalingFactorCount( const int handle, const int scalingFactorCount )
 {
-	int err = FieldExport_CheckHandle( handle );
-	if( err != FIELD_EXPORT_NO_ERROR )
-	{
-		return err;
-	}
-	
-	flog( __FILE__, __LINE__ );
-	if( handleTypes[handle] == EXPORT_TYPE_FILE )
-	{
-		FileSession *fileSession = FieldExport_GetFileSession( handle );
-		return FieldExport_File_ScalingFactorCount( fileSession, scalingFactorCount );
-	}
-	else
-	{
-		return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
-	}
+    SessionListEntry *session = FieldExport_GetSession( handle );
+    
+    if( session == NULL )
+    {
+        return FIELD_EXPORT_ERROR_BAD_HANDLE;
+    }
+    else if( session->type == EXPORT_TYPE_FILE )
+    {
+        return FieldExport_File_ScalingFactorCount( &session->fileSession, scalingFactorCount );
+    }
+    else
+    {
+        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
+    }
 }
 
 
 int FieldExport_LagrangeHermiteScaleFactors( const int handle, const int numberOfXi, const int* const interpolationXi )
 {
-	int err = FieldExport_CheckHandle( handle );
-	if( err != FIELD_EXPORT_NO_ERROR )
-	{
-		return err;
-	}
-	
-	flog( __FILE__, __LINE__ );
-	if( handleTypes[handle] == EXPORT_TYPE_FILE )
-	{
-		FileSession *fileSession = FieldExport_GetFileSession( handle );
-		return FieldExport_File_LagrangeHermiteScaleFactors( fileSession, FIELD_IO_SCALE_FACTORS_NUMBER_TYPE, numberOfXi, interpolationXi );
-	}
-	else
-	{
-		return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
-	}
+    SessionListEntry *session = FieldExport_GetSession( handle );
+    
+    if( session == NULL )
+    {
+        return FIELD_EXPORT_ERROR_BAD_HANDLE;
+    }
+    else if( session->type == EXPORT_TYPE_FILE )
+    {
+        return FieldExport_File_LagrangeHermiteScaleFactors( &session->fileSession, FIELD_IO_SCALE_FACTORS_NUMBER_TYPE, numberOfXi, interpolationXi );
+    }
+    else
+    {
+        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
+    }
 }
 
 
 int FieldExport_NodeCount( const int handle, const int nodeCount )
 {
-	int err = FieldExport_CheckHandle( handle );
-	if( err != FIELD_EXPORT_NO_ERROR )
-	{
-		return err;
-	}
-	
-	flog( __FILE__, __LINE__ );
-	if( handleTypes[handle] == EXPORT_TYPE_FILE )
-	{
-		FileSession *fileSession = FieldExport_GetFileSession( handle );
-		return FieldExport_File_NodeCount( fileSession, nodeCount );
-	}
-	else
-	{
-		return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
-	}
+    SessionListEntry *session = FieldExport_GetSession( handle );
+    
+    if( session == NULL )
+    {
+        return FIELD_EXPORT_ERROR_BAD_HANDLE;
+    }
+    else if( session->type == EXPORT_TYPE_FILE )
+    {
+        return FieldExport_File_NodeCount( &session->fileSession, nodeCount );
+    }
+    else
+    {
+        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
+    }
 }
 
 
 int FieldExport_FieldCount( const int handle, const int fieldCount )
 {
-	int err = FieldExport_CheckHandle( handle );
-	if( err != FIELD_EXPORT_NO_ERROR )
-	{
-		return err;
-	}
-	
-	flog( __FILE__, __LINE__ );
-	if( handleTypes[handle] == EXPORT_TYPE_FILE )
-	{
-		FileSession *fileSession = FieldExport_GetFileSession( handle );
-		return FieldExport_File_FieldCount( fileSession, fieldCount );
-	}
-	else
-	{
-		return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
-	}
+    SessionListEntry *session = FieldExport_GetSession( handle );
+    
+    if( session == NULL )
+    {
+        return FIELD_EXPORT_ERROR_BAD_HANDLE;
+    }
+    else if( session->type == EXPORT_TYPE_FILE )
+    {
+        return FieldExport_File_FieldCount( &session->fileSession, fieldCount );
+    }
+    else
+    {
+        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
+    }
 }
 
 
 int FieldExport_CoordinateVariable( const int handle, const int variableNumber, CMISS_CoordinateSystem coordinateSystem,
-	const int componentCount )
+    const int componentCount )
 {
-	int err = FieldExport_CheckHandle( handle );
-	if( err != FIELD_EXPORT_NO_ERROR )
-	{
-		return err;
-	}
-	
-	flog( __FILE__, __LINE__ );
-	if( handleTypes[handle] == EXPORT_TYPE_FILE )
-	{
-		FileSession *fileSession = FieldExport_GetFileSession( handle );
-		return FieldExport_File_CoordinateVariable( fileSession, variableNumber, &coordinateSystem, componentCount );
-	}
-	else
-	{
-		return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
-	}
+    SessionListEntry *session = FieldExport_GetSession( handle );
+    
+    if( session == NULL )
+    {
+        return FIELD_EXPORT_ERROR_BAD_HANDLE;
+    }
+    else if( session->type == EXPORT_TYPE_FILE )
+    {
+        return FieldExport_File_CoordinateVariable( &session->fileSession, variableNumber, &coordinateSystem, componentCount );
+    }
+    else
+    {
+        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
+    }
 }
 
 
 int FieldExport_Variable( const int handle, const int variableNumber, const int fieldType, const int variableType,
-	const int componentCount )
+    const int componentCount )
 {
-	int err = FieldExport_CheckHandle( handle );
-	if( err != FIELD_EXPORT_NO_ERROR )
-	{
-		return err;
-	}
-	
-	flog( __FILE__, __LINE__ );
-	if( handleTypes[handle] == EXPORT_TYPE_FILE )
-	{
-		FileSession *fileSession = FieldExport_GetFileSession( handle );
-		return FieldExport_File_Variable( fileSession, variableNumber, fieldType, variableType, componentCount );
-	}
-	else
-	{
-		return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
-	}
+    SessionListEntry *session = FieldExport_GetSession( handle );
+    
+    if( session == NULL )
+    {
+        return FIELD_EXPORT_ERROR_BAD_HANDLE;
+    }
+    else if( session->type == EXPORT_TYPE_FILE )
+    {
+        return FieldExport_File_Variable( &session->fileSession, variableNumber, fieldType, variableType, componentCount );
+    }
+    else
+    {
+        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
+    }
 }
 
 
 int FieldExport_CoordinateComponent( const int handle, CMISS_CoordinateSystem coordinateSystem,
-	const int componentNumber, const int numberOfXi, const int * const interpolationXi )
+    const int componentNumber, const int numberOfXi, const int * const interpolationXi )
 {
-	int err = FieldExport_CheckHandle( handle );
-	if( err != FIELD_EXPORT_NO_ERROR )
-	{
-		return err;
-	}
-	
-	if( handleTypes[handle] == EXPORT_TYPE_FILE )
-	{
-		FileSession *fileSession = FieldExport_GetFileSession( handle );
-		return FieldExport_File_CoordinateComponent( fileSession, &coordinateSystem, componentNumber, numberOfXi, interpolationXi );
-	}
-	else
-	{
-		return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
-	}
+    SessionListEntry *session = FieldExport_GetSession( handle );
+    
+    if( session == NULL )
+    {
+        return FIELD_EXPORT_ERROR_BAD_HANDLE;
+    }
+    else if( session->type == EXPORT_TYPE_FILE )
+    {
+        return FieldExport_File_CoordinateComponent( &session->fileSession, &coordinateSystem, componentNumber, numberOfXi, interpolationXi );
+    }
+    else
+    {
+        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
+    }
 }
 
 
 int FieldExport_Component( const int handle, const int componentNumber, const int numberOfXi, const int * const interpolationXi )
 {
-	int err = FieldExport_CheckHandle( handle );
-	if( err != FIELD_EXPORT_NO_ERROR )
-	{
-		return err;
-	}
-	
-	flog( __FILE__, __LINE__ );
-	if( handleTypes[handle] == EXPORT_TYPE_FILE )
-	{
-		FileSession *fileSession = FieldExport_GetFileSession( handle );
-		return FieldExport_File_Component( fileSession, componentNumber, numberOfXi, interpolationXi );
-	}
-	else
-	{
-		return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
-	}
+    SessionListEntry *session = FieldExport_GetSession( handle );
+    
+    if( session == NULL )
+    {
+        return FIELD_EXPORT_ERROR_BAD_HANDLE;
+    }
+    else if( session->type == EXPORT_TYPE_FILE )
+    {
+        return FieldExport_File_Component( &session->fileSession, componentNumber, numberOfXi, interpolationXi );
+    }
+    else
+    {
+        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
+    }
 }
 
 
 int FieldExport_Nodes( const int handle, const int nodeCount, const int *const derivativeCount,
-	const int *const elementDerivatives, const int firstScaleIndex )
+    const int *const elementDerivatives, const int firstScaleIndex )
 {
-	int err = FieldExport_CheckHandle( handle );
-	if( err != FIELD_EXPORT_NO_ERROR )
-	{
-		return err;
-	}
-	
-	flog( __FILE__, __LINE__ );
-	if( handleTypes[handle] == EXPORT_TYPE_FILE )
-	{
-		FileSession *fileSession = FieldExport_GetFileSession( handle );
-		return FieldExport_File_Nodes( fileSession, nodeCount, derivativeCount, elementDerivatives, firstScaleIndex );
-	}
-	else
-	{
-		return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
-	}
+    SessionListEntry *session = FieldExport_GetSession( handle );
+    
+    if( session == NULL )
+    {
+        return FIELD_EXPORT_ERROR_BAD_HANDLE;
+    }
+    else if( session->type == EXPORT_TYPE_FILE )
+    {
+        return FieldExport_File_Nodes( &session->fileSession, nodeCount, derivativeCount, elementDerivatives, firstScaleIndex );
+    }
+    else
+    {
+        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
+    }
 }
 
 
 int FieldExport_ElementIndex( const int handle, const int dimensionCount, const int index )
 {
-	int err = FieldExport_CheckHandle( handle );
-	if( err != FIELD_EXPORT_NO_ERROR )
-	{
-		return err;
-	}
-	
-	flog( __FILE__, __LINE__ );
-	if( handleTypes[handle] == EXPORT_TYPE_FILE )
-	{
-		FileSession *fileSession = FieldExport_GetFileSession( handle );
-		return FieldExport_File_ElementIndex( fileSession, dimensionCount, index );
-	}
-	else
-	{
-		return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
-	}
+    SessionListEntry *session = FieldExport_GetSession( handle );
+    
+    if( session == NULL )
+    {
+        return FIELD_EXPORT_ERROR_BAD_HANDLE;
+    }
+    else if( session->type == EXPORT_TYPE_FILE )
+    {
+        return FieldExport_File_ElementIndex( &session->fileSession, dimensionCount, index );
+    }
+    else
+    {
+        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
+    }
 }
 
 
 int FieldExport_ElementNodeIndices( const int handle, const int nodeCount, const int* const indices )
 {
-	int err = FieldExport_CheckHandle( handle );
-	if( err != FIELD_EXPORT_NO_ERROR )
-	{
-		return err;
-	}
-	
-	flog( __FILE__, __LINE__ );
-	if( handleTypes[handle] == EXPORT_TYPE_FILE )
-	{
-		FileSession *fileSession = FieldExport_GetFileSession( handle );
-		return FieldExport_File_ElementNodeIndices( fileSession, nodeCount, indices );
-	}
-	else
-	{
-		return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
-	}
+    SessionListEntry *session = FieldExport_GetSession( handle );
+    
+    if( session == NULL )
+    {
+        return FIELD_EXPORT_ERROR_BAD_HANDLE;
+    }
+    else if( session->type == EXPORT_TYPE_FILE )
+    {
+        return FieldExport_File_ElementNodeIndices( &session->fileSession, nodeCount, indices );
+    }
+    else
+    {
+        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
+    }
 }
 
 
 int FieldExport_ElementNodeScales( const int handle, const int scaleCount, const double* const scales )
 {
-	int err = FieldExport_CheckHandle( handle );
-	if( err != FIELD_EXPORT_NO_ERROR )
-	{
-		return err;
-	}
-	
-	flog( __FILE__, __LINE__ );
-	if( handleTypes[handle] == EXPORT_TYPE_FILE )
-	{
-		FileSession *fileSession = FieldExport_GetFileSession( handle );
-		return FieldExport_File_ElementNodeScales( fileSession, scaleCount, scales );
-	}
-	else
-	{
-		return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
-	}
+    SessionListEntry *session = FieldExport_GetSession( handle );
+    
+    if( session == NULL )
+    {
+        return FIELD_EXPORT_ERROR_BAD_HANDLE;
+    }
+    else if( session->type == EXPORT_TYPE_FILE )
+    {
+        return FieldExport_File_ElementNodeScales( &session->fileSession, scaleCount, scales );
+    }
+    else
+    {
+        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
+    }
 }
 
 
 int FieldExport_CloseSession( const int handle )
 {
-	int err = FieldExport_CheckHandle( handle );
-	if( err != FIELD_EXPORT_NO_ERROR )
-	{
-		return err;
-	}
-	
-	flog( __FILE__, __LINE__ );
-	if( handleTypes[handle] == EXPORT_TYPE_FILE )
-	{
-		FileSession *fileSession = FieldExport_GetFileSession( handle );
-		return FieldExport_File_CloseSession( fileSession );
-	}
-	else
-	{
-		return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
-	}
+    SessionListEntry *session = FieldExport_GetSession( handle );
+    
+    if( session == NULL )
+    {
+        return FIELD_EXPORT_ERROR_BAD_HANDLE;
+    }
+    else if( session->type == EXPORT_TYPE_FILE )
+    {
+        return FieldExport_File_CloseSession( session );
+    }
+    else
+    {
+        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
+    }
 
-	return 0;
+    return FIELD_EXPORT_NO_ERROR;
 }
 
 
 int FieldExport_NodeNumber( const int handle, const int nodeNumber )
 {
-	int err = FieldExport_CheckHandle( handle );
-	if( err != FIELD_EXPORT_NO_ERROR )
-	{
-		return err;
-	}
-	
-	flog( __FILE__, __LINE__ );
-	if( handleTypes[handle] == EXPORT_TYPE_FILE )
-	{
-		FileSession *fileSession = FieldExport_GetFileSession( handle );
-		return FieldExport_File_NodeNumber( fileSession, nodeNumber );
-	}
-	else
-	{
-		return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
-	}
+    SessionListEntry *session = FieldExport_GetSession( handle );
+    
+    if( session == NULL )
+    {
+        return FIELD_EXPORT_ERROR_BAD_HANDLE;
+    }
+    else if( session->type == EXPORT_TYPE_FILE )
+    {
+        return FieldExport_File_NodeNumber( &session->fileSession, nodeNumber );
+    }
+    else
+    {
+        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
+    }
 
-	return 0;
+    return FIELD_EXPORT_NO_ERROR;
 }
 
 
 int FieldExport_NodeValues( const int handle, const int valueCount, const double* const values )
 {
-	int err = FieldExport_CheckHandle( handle );
-	if( err != FIELD_EXPORT_NO_ERROR )
-	{
-		return err;
-	}
-	
-	flog( __FILE__, __LINE__ );
-	if( handleTypes[handle] == EXPORT_TYPE_FILE )
-	{
-		FileSession *fileSession = FieldExport_GetFileSession( handle );
-		return FieldExport_File_NodeValues( fileSession, valueCount, values );
-	}
-	else
-	{
-		return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
-	}
+    SessionListEntry *session = FieldExport_GetSession( handle );
+    
+    if( session == NULL )
+    {
+        return FIELD_EXPORT_ERROR_BAD_HANDLE;
+    }
+    else if( session->type == EXPORT_TYPE_FILE )
+    {
+        return FieldExport_File_NodeValues( &session->fileSession, valueCount, values );
+    }
+    else
+    {
+        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
+    }
 
-	return 0;
+    return FIELD_EXPORT_NO_ERROR;
 }
 
 
 int FieldExport_CoordinateDerivativeIndices( const int handle, const int componentNumber, CMISS_CoordinateSystem coordinateSystem,
     const int numberOfDerivatives, const int *const derivatives, const int valueIndex )
 {
-	int err = FieldExport_CheckHandle( handle );
-	if( err != FIELD_EXPORT_NO_ERROR )
-	{
-		return err;
-	}
-	
-	flog( __FILE__, __LINE__ );
-	if( handleTypes[handle] == EXPORT_TYPE_FILE )
-	{
-		FileSession *fileSession = FieldExport_GetFileSession( handle );
-		return FieldExport_File_CoordinateDerivativeIndices( fileSession, componentNumber, &coordinateSystem, numberOfDerivatives, derivatives, valueIndex );
-	}
-	else
-	{
-		return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
-	}
+    SessionListEntry *session = FieldExport_GetSession( handle );
+    
+    if( session == NULL )
+    {
+        return FIELD_EXPORT_ERROR_BAD_HANDLE;
+    }
+    else if( session->type == EXPORT_TYPE_FILE )
+    {
+        return FieldExport_File_CoordinateDerivativeIndices( &session->fileSession, componentNumber, &coordinateSystem, numberOfDerivatives, derivatives, valueIndex );
+    }
+    else
+    {
+        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
+    }
 
-	return 0;
+    return FIELD_EXPORT_NO_ERROR;
 }
 
 
 int FieldExport_DerivativeIndices( const int handle, const int componentNumber, const int fieldType, const int variableType,
     const int numberOfDerivatives, const int *const derivatives, const int valueIndex )
 {
-	int err = FieldExport_CheckHandle( handle );
-	if( err != FIELD_EXPORT_NO_ERROR )
-	{
-		return err;
-	}
-	
-	flog( __FILE__, __LINE__ );
-	if( handleTypes[handle] == EXPORT_TYPE_FILE )
-	{
-		FileSession *fileSession = FieldExport_GetFileSession( handle );
-		return FieldExport_File_DerivativeIndices( fileSession, componentNumber, fieldType, variableType, numberOfDerivatives, derivatives, valueIndex );
-	}
-	else
-	{
-		return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
-	}
+    SessionListEntry *session = FieldExport_GetSession( handle );
+    
+    if( session == NULL )
+    {
+        return FIELD_EXPORT_ERROR_BAD_HANDLE;
+    }
+    else if( session->type == EXPORT_TYPE_FILE )
+    {
+        return FieldExport_File_DerivativeIndices( &session->fileSession, componentNumber, fieldType, variableType, numberOfDerivatives, derivatives, valueIndex );
+    }
+    else
+    {
+        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
+    }
 
-	return 0;
+    return FIELD_EXPORT_NO_ERROR;
 }
