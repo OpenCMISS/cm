@@ -2041,14 +2041,18 @@ Have the Intel Fortran compiler for Linux (and the MKL libraries) installed and 
 
 Will need to merge the interfaces from the powerpoint with some of the recent ideas regarding the CellML model definition annotations I started to develop as part of the [[Basic Simulation Application]].</pre>
 </div>
-<div title="openCMISS(cm) simple field example" modifier="andre" created="200902051619" modified="200902161544" tags="task" changecount="10" tt_scope="openCMISS + CellML" tt_priority="3" tt_user="andre" tt_status="InProgress">
+<div title="openCMISS(cm) simple field example" modifier="andre" created="200902051619" modified="200902211557" tags="task" changecount="16" tt_scope="openCMISS + CellML" tt_priority="3" tt_user="andre" tt_status="Complete">
 <pre>Following on from the [[openCMISS(cm) simple mesh example]] define a single component field on the defined mesh and set its value (constant, element based, node based) and export the mesh + field for visualisation. This example will use the field API to interact with the field, see [[openCMISS(cm) simple field example - direct access]] for an alternate approach.
 
 Have set up the basic example which defines both the geometric field and a general field. Now to work out how to:
 # set the field and component names;
+## fields, variables, and components don't seem to have names. Not really a problem as I'll be mapping URI's to field components in the CellML code...but seems it would provide problems when exporting fields. Need to check Caton's code to see how that handles naming fields in the generated ex files.
 # set the field values;
+## done using the field API (~FIELD_PARAMETER_SET_UPDATE_NODE).
 # vary the interpolation?;
-# step through time updating the field values.</pre>
+## not really needed for current purposes.
+# step through time updating the field values.
+## no longer sure this makes sense for this example. Will see how [[openCMISS(cm) simple field example - direct access]] evolves.</pre>
 </div>
 <div title="openCMISS(cm) simple field example - direct access" modifier="andre" created="200902161541" modified="200902161543" tags="task" changecount="6" tt_scope="openCMISS + CellML" tt_priority="5" tt_user="andre" tt_status="Pending">
 <pre>This example repeats the same steps as [[openCMISS(cm) simple field example]], but instead of interacting with the field via the field API we dive in and play with the field's data storage.</pre>
