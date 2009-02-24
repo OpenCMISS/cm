@@ -203,6 +203,14 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_ELEMENT_MATRIX_OUTPUT=3 !<All below and Element matrices output \see EQUATIONS_SET_CONSTANTS_OutputTypes,EQUATIONS_SET_CONSTANTS
   !>@}
 
+  !> \addtogroup EQUATIONS_SET_CONSTANTS_EquationsMatrixTypes EQUATIONS_SET_CONSTANTS::EquationsMatrixTypes
+  !> \brief Equations matrix types
+  !> \see EQUATIONS_SET_CONSTANTS
+  !>@{
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_LINEAR_MATRIX=1 !<The equations matrix is a linear equations set matrix \see EQUATIONS_SET_CONSTANTS_EquationsMatrixTypes,EQUATIONS_SET_CONSTANTS
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DYNAMIC_MATRIX=2 !<The equations matrix is a dynamic equaitons set matrix \see EQUATIONS_SET_CONSTANTS_EquationsMatrixTypes,EQUATIONS_SET_CONSTANTS
+ !>@}
+ 
   !> \addtogroup EQUATIONS_SET_CONSTANTS_SparsityTypes EQUATIONS_SET_CONSTANTS::SparsityTypes
   !> \brief Equations matrices sparsity types
   !> \see EQUATIONS_SET_CONSTANTS

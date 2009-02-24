@@ -1099,7 +1099,6 @@ CONTAINS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_equations
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("PROBLEM_SOLVER_JACOBIAN_EVALUATE",ERR,ERROR,*999)
 
@@ -1110,19 +1109,12 @@ CONTAINS
           SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
           IF(ASSOCIATED(SOLVER_MAPPING)) THEN
             !Copy the current solution vector to the depenent field
-            CALL SOLVER_VARIABLES_UPDATE(SOLVER,ERR,ERROR,*999)
+            CALL SOLVER_VARIABLES_STATIC_UPDATE(SOLVER,ERR,ERROR,*999)
             !Make sure the equations sets are up to date
             DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
               EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-              IF(EQUATIONS_SET%LINEARITY==EQUATIONS_SET_NONLINEAR) THEN
-                !Assemble the equations for linear problems
-                CALL EQUATIONS_SET_JACOBIAN_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
-              ELSE
-                LOCAL_ERROR="Cannot evaluate the Jacobian for equations set index "// &
-                  & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))// &
-                  & " as it is not a nonlinear equations set."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              ENDIF
+              !Assemble the equations 
+              CALL EQUATIONS_SET_JACOBIAN_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
             ENDDO !equations_set_idx
             !Assemble the solver matrices
             CALL SOLVER_MATRICES_STATIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_JACOBIAN_ONLY,ERR,ERROR,*999)          
@@ -1162,7 +1154,6 @@ CONTAINS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("PROBLEM_SOLVER_RESIDUAL_EVALUATE",ERR,ERROR,*999)
 
@@ -1173,19 +1164,12 @@ CONTAINS
           SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
           IF(ASSOCIATED(SOLVER_MAPPING)) THEN
             !Copy the current solution vector to the depenent field
-            CALL SOLVER_VARIABLES_UPDATE(SOLVER,ERR,ERROR,*999)
+            CALL SOLVER_VARIABLES_STATIC_UPDATE(SOLVER,ERR,ERROR,*999)
             !Make sure the equations sets are up to date
             DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
               EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-              IF(SOLVER_EQUATIONS%LINEARITY==SOLVER_EQUATIONS_NONLINEAR) THEN
-                !Assemble the equations for linear problems
-                CALL EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
-              ELSE
-                LOCAL_ERROR="Cannot evaluate a residual for equations set index "// &
-                  & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))// &
-                  & " as it is not a nonlinear equations set."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              ENDIF
+              !Assemble the equations for linear problems
+              CALL EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
             ENDDO !equations_set_idx
             !Assemble the solver matrices
 !!TODO: need to work out wether to assemble rhs and residual or residual only
@@ -1411,7 +1395,6 @@ CONTAINS
               !Make sure the equations sets are up to date
               DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                 EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)    
                 !Assemble the equations for linear problems
                 CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
               ENDDO !equations_set_idx          
@@ -1421,8 +1404,6 @@ CONTAINS
               CALL SOLVER_DYNAMIC_TIMES_SET(SOLVER,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
               !Solve for the next time i.e., current time + time increment
               CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
-              !Update depenent field with solution
-              CALL SOLVER_VARIABLES_UPDATE(SOLVER,ERR,ERROR,*999)
               !Back-substitute to find flux values for linear problems
               DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                 EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
@@ -1485,7 +1466,7 @@ CONTAINS
               !Apply boundary conditition
               DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                 EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)    
+                !CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)    
               ENDDO !equations_set_idx          
               !Get current control loop times
               CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
@@ -1493,8 +1474,6 @@ CONTAINS
               CALL SOLVER_DYNAMIC_TIMES_SET(SOLVER,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
               !Solve for the next time i.e., current time + time increment
               CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
-              !Update depenent field with solution
-              CALL SOLVER_VARIABLES_UPDATE(SOLVER,ERR,ERROR,*999)
             ELSE
               CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
             ENDIF
@@ -1552,7 +1531,7 @@ CONTAINS
               !Make sure the equations sets are up to date
               DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                 EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)    
+                !CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)    
                 !Assemble the equations for linear problems
                 CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
               ENDDO !equations_set_idx          
@@ -1562,8 +1541,6 @@ CONTAINS
               CALL SOLVER_DYNAMIC_TIMES_SET(SOLVER,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
               !Solve for the next time i.e., current time + time increment
               CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
-              !Update depenent field with solution
-              CALL SOLVER_VARIABLES_UPDATE(SOLVER,ERR,ERROR,*999)
               !Back-substitute to find flux values for linear problems
               DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                 EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
@@ -1626,7 +1603,7 @@ CONTAINS
               !Make sure the equations sets are up to date
               DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                 EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)    
+                !CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)    
                 !Assemble the equations for linear problems
                 CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
               ENDDO !equations_set_idx          
@@ -1636,9 +1613,7 @@ CONTAINS
               CALL SOLVER_DYNAMIC_TIMES_SET(SOLVER,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
               !Solve for the next time i.e., current time + time increment
               CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
-              !Update dependent field with solution
-              CALL SOLVER_VARIABLES_UPDATE(SOLVER,ERR,ERROR,*999)
-            ELSE
+             ELSE
               CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
@@ -1688,14 +1663,12 @@ CONTAINS
           !Make sure the equations sets are up to date
           DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
             EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-            CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)    
+            !CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)    
             !Assemble the equations for linear problems
             CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
           ENDDO !equations_set_idx          
           !Solve
           CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
-          !Update depenent field with solution
-          CALL SOLVER_VARIABLES_UPDATE(SOLVER,ERR,ERROR,*999)
           !Back-substitute to find flux values for linear problems
           DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
             EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
@@ -1745,12 +1718,10 @@ CONTAINS
           !Apply boundary conditition
           DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
             EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-            CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)    
+            !CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)    
           ENDDO !equations_set_idx          
           !Solve
           CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
-          !Update depenent field with solution
-          CALL SOLVER_VARIABLES_UPDATE(SOLVER,ERR,ERROR,*999)
         ELSE
           CALL FLAG_ERROR("Solver equations solver mapping not associated.",ERR,ERROR,*999)
         ENDIF

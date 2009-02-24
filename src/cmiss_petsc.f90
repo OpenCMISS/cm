@@ -587,6 +587,12 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE SNESGetIterationNumber
 
+    SUBROUTINE SNESGetKSP(snes,ksp,ierr)
+      SNES snes
+      KSP ksp
+      PetscInt ierr
+    END SUBROUTINE SNESGetKSP
+
     SUBROUTINE SNESLineSearchSet(snes,func,lsctx,ierr)
       SNES snes
       EXTERNAL func
@@ -625,16 +631,15 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE SNESSetFunction
 
-    !Can't have a definition here as we have multiple contexts
-    !SUBROUTINE SNESSetJacobian(snes,A,B,Jfunction,ctx,ierr)
-    !  USE TYPES
-    !  SNES snes
-    !  Mat A
-    !  Mat B      
-    !  EXTERNAL Jfunction
-    !  TYPE(SOLVER_TYPE), POINTER :: ctx
-    !  PetscInt ierr
-    !END SUBROUTINE SNESSetJacobian
+    SUBROUTINE SNESSetJacobian(snes,A,B,Jfunction,ctx,ierr)
+      USE TYPES
+      SNES snes
+      Mat A
+      Mat B      
+      EXTERNAL Jfunction
+      TYPE(SOLVER_TYPE), POINTER :: ctx
+      PetscInt ierr
+    END SUBROUTINE SNESSetJacobian
 
     SUBROUTINE SNESSetTolerances(snes,abstol,rtol,stol,maxit,maxf,ierr)
       SNES snes
@@ -1046,9 +1051,9 @@ MODULE CMISS_PETSC
     & PETSC_SNES_CONVERGED_ITERATING
 
   PUBLIC PETSC_SNESFINALISE,PETSC_SNESINITIALISE,PETSC_SNESCREATE,PETSC_SNESDESTROY,PETSC_SNESGETCONVERGEDREASON, &
-    & PETSC_SNESGETFUNCTIONNORM,PETSC_SNESGETITERATIONNUMBER,PETSC_SNESLINESEARCHSET,PETSC_SNESLINESEARCHSETPARAMS, &
-    & PETSC_SNESMONITORSET,PETSC_SNESSETFROMOPTIONS,PETSC_SNESSETFUNCTION,PETSC_SNESSETJACOBIAN,PETSC_SNESSETTOLERANCES, &
-    & PETSC_SNESSETTRUSTREGIONTOLERANCE,PETSC_SNESSETTYPE,PETSC_SNESSOLVE
+    & PETSC_SNESGETFUNCTIONNORM,PETSC_SNESGETITERATIONNUMBER,PETSC_SNESGETKSP,PETSC_SNESLINESEARCHSET, &
+    & PETSC_SNESLINESEARCHSETPARAMS,PETSC_SNESMONITORSET,PETSC_SNESSETFROMOPTIONS,PETSC_SNESSETFUNCTION,PETSC_SNESSETJACOBIAN, &
+    & PETSC_SNESSETTOLERANCES,PETSC_SNESSETTRUSTREGIONTOLERANCE,PETSC_SNESSETTYPE,PETSC_SNESSOLVE
   
   PUBLIC PETSC_VECINITIALISE,PETSC_VECFINALISE,PETSC_VECASSEMBLYBEGIN,PETSC_VECASSEMBLYEND,PETSC_VECCREATE,PETSC_VECCREATEGHOST, &
     & PETSC_VECCREATEGHOSTWITHARRAY,PETSC_VECCREATEMPI,PETSC_VECCREATEMPIWITHARRAY,PETSC_VECCREATESEQ, &
@@ -3175,7 +3180,7 @@ CONTAINS
     RETURN 1
   END SUBROUTINE PETSC_SNESGETFUNCTIONNORM
     
- !
+  !
   !================================================================================================================================
   !
 
@@ -3205,6 +3210,37 @@ CONTAINS
     CALL EXITS("PETSC_SNESGETITERATIONNUMBER")
     RETURN 1
   END SUBROUTINE PETSC_SNESGETITERATIONNUMBER
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESGetKSP routine.
+  SUBROUTINE PETSC_SNESGETKSP(SNES_,KSP_,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to get the iteration number for
+    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<On exit, the KSP to associated with the SNES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_SNESGETKSP",ERR,ERROR,*999)
+
+    CALL SNESGetKSP(SNES_%SNES_,KSP_%KSP_,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in SNESGetKSP",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_SNESGETKSP")
+    RETURN
+999 CALL ERRORS("PETSC_SNESGETKSP",ERR,ERROR)
+    CALL EXITS("PETSC_SNESGETKSP")
+    RETURN 1
+  END SUBROUTINE PETSC_SNESGETKSP
     
   !
   !================================================================================================================================
@@ -3396,7 +3432,7 @@ CONTAINS
 
     CALL ENTERS("PETSC_SNESSETJACOBIAN_MATFDCOLORING",ERR,ERROR,*999)
 
-    CALL SNESSetJacobian(SNES_%SNES_,A%MAT,B%MAT,JFUNCTION,CTX%MATFDCOLORING,ERR)
+    CALL SNESSetJacobianBuffer(SNES_,A,B,JFUNCTION,CTX,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
@@ -5110,3 +5146,24 @@ CONTAINS
 
 END MODULE CMISS_PETSC
     
+!>Buffer routine to the PETSc SNESSetJacobian routine for MatFDColoring contexts. The buffer is required because we want to
+!>provide an interface so that we can pass a pointer to the solver for analytic Jacobian's. However, if we provided an interface
+!>the Fortran's strong typing rules would not let us pass the matfdcoloring.
+SUBROUTINE SNESSetJacobianBuffer(SNES_,A,B,JFUNCTION,CTX,ERR)
+
+  USE CMISS_PETSC_TYPES
+  USE KINDS
+
+  IMPLICIT NONE
+  
+  !Argument Variables
+  TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the function for
+  TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The Jacobian matrix
+  TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: B !<The Jacobian preconditioning matrix
+  EXTERNAL JFUNCTION !<The external function to call
+  TYPE(PETSC_MATFDCOLORING_TYPE) :: CTX !<The MatFDColoring data to pass to the function
+  INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+
+  CALL SNESSetJacobian(SNES_%SNES_,A%MAT,B%MAT,JFUNCTION,CTX%MATFDCOLORING,ERR)
+
+END SUBROUTINE SNESSetJacobianBuffer

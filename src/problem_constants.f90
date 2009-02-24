@@ -146,6 +146,24 @@ MODULE PROBLEM_CONSTANTS
   INTEGER(INTG), PARAMETER :: PROBLEM_SOLVER_NONLINEAR=2 !<Nonlinear problem. \see PROBLEM_CONSTANTS_LinearityTypes,PROBLEM_CONSTANTS
   !>@}
   
+  
+  !> \addtogroup PROBLEM_CONSTANTS_EquationsLinearityTypes PROBLEM_CONSTANTS::EquationsLinearityTypes
+  !> \brief The solver equations linearity types 
+  !> \see PROBLEM_CONSTANTS
+  !>@{
+  INTEGER(INTG), PARAMETER :: SOLVER_EQUATIONS_LINEAR=1 !<Solver equations are linear \see PROBLEM_CONSTANTS_EquationLinearityTypes,PROBLEM_CONSTANTS
+  INTEGER(INTG), PARAMETER :: SOLVER_EQUATIONS_NONLINEAR=2 !<Solver equations are nonlinear \see PROBLEM_CONSTANTS_EquationLinearityTypes,PROBLEM_CONSTANTS
+  !>@}
+
+  !> \addtogroup PROBLEM_CONSTANTS_EquationsTimeDependenceTypes PROBLEM_CONSTANTS::EquationsTimeDependenceTypes
+  !> \brief The solver equations time dependence types 
+  !> \see PROBLEM_CONSTANTS
+  !>@{
+  INTEGER(INTG), PARAMETER :: SOLVER_EQUATIONS_STATIC=1 !<Solver equations are static \see PROBLEM_CONSTANTS_EquationTimeDependenceTypes,PROBLEM_CONSTANTS
+  INTEGER(INTG), PARAMETER :: SOLVER_EQUATIONS_QUASISTATIC=2 !<Solver equations are quasistatic \see PROBLEM_CONSTANTS_EquationTimeDependenceTypes,PROBLEM_CONSTANTS
+  INTEGER(INTG), PARAMETER :: SOLVER_EQUATIONS_FIRST_ORDER_DYNAMIC=3 !<Solver equations are first order dynamic \see PROBLEM_CONSTANTS_EquationTimeDependenceTypes,PROBLEM_CONSTANTS
+  INTEGER(INTG), PARAMETER :: SOLVER_EQUATIONS_SECOND_ORDER_DYNAMIC=4 !<Solver equations are second order dynamic \see PROBLEM_CONSTANTS_EquationTimeDependenceTypes,PROBLEM_CONSTANTS
+  !>@}
 
    
 END MODULE PROBLEM_CONSTANTS
