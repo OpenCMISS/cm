@@ -5772,7 +5772,7 @@ CONTAINS
                     !Link linear solver
                     LINEAR_SOLVER%SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
                     !Finish the creation of the linear solver
-                    !CALL SOLVER_LINEAR_CREATE_FINISH(LINEAR_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
+                    CALL SOLVER_LINEAR_CREATE_FINISH(LINEAR_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
 
                     !Set the nonlinear function
                     RESIDUAL_VECTOR=>SOLVER_MATRICES%RESIDUAL
