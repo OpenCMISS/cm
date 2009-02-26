@@ -134,10 +134,10 @@ CONTAINS
               ENDIF
               !Calculate the number of rows in the equations set
               LINEAR_MATRIX_START=1
-              SELECT CASE(EQUATIONS_SET%TIME_DEPENDENCE)
-              CASE(EQUATIONS_SET_STATIC,EQUATIONS_SET_QUASISTATIC)
-                SELECT CASE(EQUATIONS_SET%LINEARITY)
-                CASE(EQUATIONS_SET_LINEAR,EQUATIONS_SET_NONLINEAR_BCS)
+              SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
+              CASE(EQUATIONS_STATIC,EQUATIONS_QUASISTATIC)
+                SELECT CASE(EQUATIONS%LINEARITY)
+                CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
                   !Static linear equations set
                   IF(CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES>=1) THEN
                     LINEAR_MATRIX_START=2
@@ -146,29 +146,29 @@ CONTAINS
                     CALL FLAG_ERROR("The number of linear equations matrices is zero of less for a linear equations set.", &
                       & ERR,ERROR,*999)
                   ENDIF
-                CASE(EQUATIONS_SET_NONLINEAR)
+                CASE(EQUATIONS_NONLINEAR)
                   !Static nonlinear equations set
                   DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE)%PTR
                 CASE DEFAULT
-                  LOCAL_ERROR="The equations set linearity type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%LINEARITY,"*",ERR,ERROR))//" is invalid."
+                  LOCAL_ERROR="The equations linearity type of "// &
+                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
-              CASE(EQUATIONS_SET_FIRST_ORDER_DYNAMIC,EQUATIONS_SET_SECOND_ORDER_DYNAMIC)
-                SELECT CASE(EQUATIONS_SET%LINEARITY)
-                CASE(EQUATIONS_SET_LINEAR,EQUATIONS_SET_NONLINEAR_BCS)
+              CASE(EQUATIONS_FIRST_ORDER_DYNAMIC,EQUATIONS_SECOND_ORDER_DYNAMIC)
+                SELECT CASE(EQUATIONS%LINEARITY)
+                CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
                   !Dynamic linear equations set
                   DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE)%PTR
-                CASE(EQUATIONS_SET_NONLINEAR)
+                CASE(EQUATIONS_NONLINEAR)
                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                 CASE DEFAULT
-                  LOCAL_ERROR="The equations set linearity type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%LINEARITY,"*",ERR,ERROR))//" is invalid."
+                  LOCAL_ERROR="The equations linearity type of "// &
+                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               CASE DEFAULT
-                LOCAL_ERROR="The equations set time dependence type of "// &
-                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
+                LOCAL_ERROR="The equations time dependence type of "// &
+                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
               IF(ASSOCIATED(DEPENDENT_VARIABLE)) THEN
@@ -895,42 +895,42 @@ CONTAINS
             EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
             IF(ASSOCIATED(EQUATIONS_SET)) THEN
               !Check that all the variables have been mapped properly
-              SELECT CASE(EQUATIONS_SET%TIME_DEPENDENCE)
-              CASE(EQUATIONS_SET_STATIC,EQUATIONS_SET_QUASISTATIC)
-                SELECT CASE(EQUATIONS_SET%LINEARITY)
-                CASE(EQUATIONS_SET_LINEAR,EQUATIONS_SET_NONLINEAR_BCS)
+              SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
+              CASE(EQUATIONS_STATIC,EQUATIONS_QUASISTATIC)
+                SELECT CASE(EQUATIONS%LINEARITY)
+                CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
                   IF(CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE==0.AND.CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES==0) &
                     & CALL FLAG_ERROR("Invalid equations mapping. The RHS variable type must be set if there are no "// &
                     & "linear matrices.",ERR,ERROR,*999)
-                CASE(EQUATIONS_SET_NONLINEAR)
+                CASE(EQUATIONS_NONLINEAR)
                   IF(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE==0) CALL FLAG_ERROR("Invalid equations mapping. "// &
-                    & "The residual variable type must be set for a nonlinear equations set.", ERR,ERROR,*999)
+                    & "The residual variable type must be set for nonlinear equations.", ERR,ERROR,*999)
                   IF(CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE==0.AND.CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES==0) &
                     & CALL FLAG_ERROR("Invalid equations mapping. The RHS variable type must be set if there are no "// &
                     & "linear matrices.",ERR,ERROR,*999)
                 CASE DEFAULT
-                  LOCAL_ERROR="The equations set linearity type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%LINEARITY,"*",ERR,ERROR))//" is invalid."
+                  LOCAL_ERROR="The equations linearity type of "// &
+                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
-              CASE(EQUATIONS_SET_FIRST_ORDER_DYNAMIC,EQUATIONS_SET_SECOND_ORDER_DYNAMIC)
-                SELECT CASE(EQUATIONS_SET%LINEARITY)
-                CASE(EQUATIONS_SET_LINEAR,EQUATIONS_SET_NONLINEAR_BCS)
+              CASE(EQUATIONS_FIRST_ORDER_DYNAMIC,EQUATIONS_SECOND_ORDER_DYNAMIC)
+                SELECT CASE(EQUATIONS%LINEARITY)
+                CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
                   IF(CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE==0) CALL FLAG_ERROR("Invalid equations mapping. "// &
-                    & "The dynamic variable type must be set for a dynamic equations set.", ERR,ERROR,*999)
+                    & "The dynamic variable type must be set for dynamic equations.", ERR,ERROR,*999)
                   IF(CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE==0.AND.CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES==0) &
                     & CALL FLAG_ERROR("Invalid equations mapping. The RHS variable type must be set if there are no "// &
                     & "linear matrices.",ERR,ERROR,*999)
-                CASE(EQUATIONS_SET_NONLINEAR)
+                CASE(EQUATIONS_NONLINEAR)
                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                 CASE DEFAULT
-                  LOCAL_ERROR="The equations set linearity type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%LINEARITY,"*",ERR,ERROR))//" is invalid."
+                  LOCAL_ERROR="The equations linearity type of "// &
+                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               CASE DEFAULT
-                LOCAL_ERROR="The equations set time dependence type of "// &
-                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
+                LOCAL_ERROR="The equations time dependence type of "// &
+                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
               !Check the linear matrices variable types
@@ -943,7 +943,7 @@ CONTAINS
               ENDDO !matrix_idx
               !Now calculate the equations mapping and clean up
               CALL EQUATIONS_MAPPING_CALCULATE(EQUATIONS_MAPPING,ERR,ERROR,*999)
-              CALL EQUATIONS_MAPPING_CREATE_VALUES_CACHE_FINALISE(CREATE_VALUES_CACHE,ERR,ERROR,*999)
+              CALL EQUATIONS_MAPPING_CREATE_VALUES_CACHE_FINALISE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE,ERR,ERROR,*999)
               EQUATIONS_MAPPING%EQUATIONS_MAPPING_FINISHED=.TRUE.
             ELSE
               CALL FLAG_ERROR("Equations equations set is not associated.",ERR,ERROR,*999)
@@ -984,8 +984,6 @@ CONTAINS
 
     IF(ASSOCIATED(EQUATIONS)) THEN
       IF(EQUATIONS%EQUATIONS_FINISHED) THEN
-        CALL FLAG_ERROR("Equations has already been finished",ERR,ERROR,*999)
-      ELSE
         IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
           CALL FLAG_ERROR("Equations mapping is already assocaited",ERR,ERROR,*999)
         ELSE
@@ -993,6 +991,8 @@ CONTAINS
           CALL EQUATIONS_MAPPING_INITIALISE(EQUATIONS,ERR,ERROR,*999)
           EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
         ENDIF
+      ELSE
+        CALL FLAG_ERROR("Equations has not been finished",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
@@ -1083,143 +1083,144 @@ CONTAINS
               !First calculate how many linear and dynamic matrices we have and set the variable types for the dynamic, residual
               !and RHS variables
               IF(DEPENDENT_FIELD%NUMBER_OF_VARIABLES==1) THEN
-                SELECT CASE(EQUATIONS_SET%LINEARITY)
-                CASE(EQUATIONS_SET_LINEAR,EQUATIONS_SET_NONLINEAR_BCS)
+                SELECT CASE(EQUATIONS%LINEARITY)
+                CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
                   CALL FLAG_ERROR("Dependent field only has one variable which cannot be mapped to both an equations matrix "// &
-                    & "and rhs vector",ERR,ERROR,*999)
-                CASE(EQUATIONS_SET_NONLINEAR)
+                    & "and rhs vector.",ERR,ERROR,*999)
+                CASE(EQUATIONS_NONLINEAR)
                   CALL FLAG_ERROR("Dependent field only has one variable which cannot be mapped to both the residual "// &
-                    & "and rhs vector",ERR,ERROR,*999)
+                    & "and rhs vector.",ERR,ERROR,*999)
                 CASE DEFAULT
-                  LOCAL_ERROR="The equations set linearity type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%LINEARITY,"*",ERR,ERROR))//" is invalid."
+                  LOCAL_ERROR="The equations linearity type of "// &
+                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               ELSE IF(DEPENDENT_FIELD%NUMBER_OF_VARIABLES>1) THEN
-                SELECT CASE(EQUATIONS_SET%TIME_DEPENDENCE)
-                CASE(EQUATIONS_SET_STATIC,EQUATIONS_SET_QUASISTATIC)
-                 SELECT CASE(EQUATIONS_SET%LINEARITY)
-                 CASE(EQUATIONS_SET_LINEAR,EQUATIONS_SET_NONLINEAR_BCS)
-                   EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES=DEPENDENT_FIELD%NUMBER_OF_VARIABLES-1
-                   IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_NORMAL_VARIABLE_TYPE)%PTR)) THEN
-                     EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE=DEPENDENT_FIELD% &
-                       & VARIABLE_TYPE_MAP(FIELD_NORMAL_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   ENDIF
-                 CASE(EQUATIONS_SET_NONLINEAR)
-                   EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES=DEPENDENT_FIELD%NUMBER_OF_VARIABLES-2
-                   IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_STANDARD_VARIABLE_TYPE)%PTR)) THEN
-                     EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE=DEPENDENT_FIELD% &
-                       & VARIABLE_TYPE_MAP(FIELD_STANDARD_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
-                  ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   ENDIF
-                   IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_NORMAL_VARIABLE_TYPE)%PTR)) THEN
-                     EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE=DEPENDENT_FIELD% &
-                       & VARIABLE_TYPE_MAP(FIELD_NORMAL_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   ENDIF
-                 CASE DEFAULT
-                   LOCAL_ERROR="The equations set linearity type of "// &
-                     & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%LINEARITY,"*",ERR,ERROR))//" is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                 END SELECT
-               CASE(EQUATIONS_SET_FIRST_ORDER_DYNAMIC,EQUATIONS_SET_SECOND_ORDER_DYNAMIC)
-                 SELECT CASE(EQUATIONS_SET%LINEARITY)
-                 CASE(EQUATIONS_SET_LINEAR,EQUATIONS_SET_NONLINEAR_BCS)
-                   IF(EQUATIONS_SET%TIME_DEPENDENCE==EQUATIONS_SET_FIRST_ORDER_DYNAMIC) THEN
-                     EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES=2
-                     EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_STIFFNESS_MATRIX_NUMBER=1
-                     EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_DAMPING_MATRIX_NUMBER=2
-                   ELSE
-                     EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES=3
-                     EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_STIFFNESS_MATRIX_NUMBER=1
-                     EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_DAMPING_MATRIX_NUMBER=2
-                     EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_MASS_MATRIX_NUMBER=3
-                   ENDIF
-                   EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES=DEPENDENT_FIELD%NUMBER_OF_VARIABLES-2
-                   IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_STANDARD_VARIABLE_TYPE)%PTR)) THEN
-                     EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE=DEPENDENT_FIELD% &
-                       & VARIABLE_TYPE_MAP(FIELD_STANDARD_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   ENDIF
-                   IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_NORMAL_VARIABLE_TYPE)%PTR)) THEN
-                     EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE=DEPENDENT_FIELD% &
-                       & VARIABLE_TYPE_MAP(FIELD_NORMAL_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   ENDIF
-                 CASE(EQUATIONS_SET_NONLINEAR)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The equations set linearity type of "// &
-                     & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%LINEARITY,"*",ERR,ERROR))//" is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                 END SELECT
-               CASE DEFAULT
-                 LOCAL_ERROR="The equations set time dependence type of "// &
-                   & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
-                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             ELSE
-               LOCAL_ERROR="The number of dependent field variables of "// &
-                 & TRIM(NUMBER_TO_VSTRING(DEPENDENT_FIELD%NUMBER_OF_VARIABLES,"*",ERR,ERROR))//" is invalid."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-             ENDIF
-             !Allocate the dynamic matrix coefficients and set their values
-             IF(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES>0) THEN
-               ALLOCATE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS(EQUATIONS_MAPPING% &
-                 & CREATE_VALUES_CACHE%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES),STAT=ERR)
-               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations mapping create values cache dynamic matrix coefficients", &
-                 & ERR,ERROR,*999)
-               EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS=1.0_DP !Equations matrices are added by default
-             ENDIF
-             !Allocate the linear matrix variable types and linear matrix coefficients and set their values
-             IF(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES>0) THEN
-               ALLOCATE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(EQUATIONS_MAPPING% &
-                 & CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES),STAT=ERR)
-               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations mapping create values cache linear matrix variable types", &
-                 & ERR,ERROR,*999)
-               ALLOCATE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%LINEAR_MATRIX_COEFFICIENTS(EQUATIONS_MAPPING% &
-                 & CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES),STAT=ERR)
-               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations mapping create values cache linear matrix coefficients", &
-                 & ERR,ERROR,*999)
-               !Set up the matrices variable types
-               EQUATIONS_MAPPING%CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES=0
-               VARIABLE_NUMBER=1
-               DO matrix_idx=1,EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES
-                 DO WHILE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(matrix_idx)==0.AND. &
-                   & VARIABLE_NUMBER<=FIELD_NUMBER_OF_VARIABLE_TYPES)
-                   IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(VARIABLE_NUMBER)%PTR)) THEN
-                     IF(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(VARIABLE_NUMBER)%PTR%VARIABLE_TYPE/= &
-                       & EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE) THEN
-                       IF(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(VARIABLE_NUMBER)%PTR%VARIABLE_TYPE/= &
-                         & EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE) THEN
-                         IF(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(VARIABLE_NUMBER)%PTR%VARIABLE_TYPE/= &
-                           & EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE) THEN
-                           EQUATIONS_MAPPING%CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(matrix_idx)= &
-                             & DEPENDENT_FIELD%VARIABLE_TYPE_MAP(VARIABLE_NUMBER)%PTR%VARIABLE_TYPE
-                         ENDIF
-                       ENDIF
-                     ENDIF
+                SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
+                CASE(EQUATIONS_STATIC,EQUATIONS_QUASISTATIC)
+                  SELECT CASE(EQUATIONS%LINEARITY)
+                  CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
+                    EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES=DEPENDENT_FIELD%NUMBER_OF_VARIABLES-1
+                    IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR)) THEN
+                      EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE=DEPENDENT_FIELD% &
+                        & VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
+                    ELSE
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                     ENDIF
-                   VARIABLE_NUMBER=VARIABLE_NUMBER+1
-                 ENDDO
-               ENDDO !matrix_idx
-               IF(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(EQUATIONS_MAPPING% &
-                 & CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES)==0) &
-                 & CALL FLAG_ERROR("Invalid setup. All linear matrices do not have a mapped dependent field variable.", &
-                 & ERR,ERROR,*999)
-               EQUATIONS_MAPPING%CREATE_VALUES_CACHE%LINEAR_MATRIX_COEFFICIENTS=1.0_DP !Equations matrices are added by default
-             ENDIF
-           ELSE
-             CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
-           ENDIF
-         ELSE
-           CALL FLAG_ERROR("The equations equations set is not associated.",ERR,ERROR,*998)
+                  CASE(EQUATIONS_NONLINEAR)
+                    EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES=DEPENDENT_FIELD%NUMBER_OF_VARIABLES-2
+                    IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR)) THEN
+                      EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE=DEPENDENT_FIELD% &
+                        & VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
+                    ELSE
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    ENDIF
+                    IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR)) THEN
+                      EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE=DEPENDENT_FIELD% &
+                        & VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
+                    ELSE
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    ENDIF
+                  CASE DEFAULT
+                    LOCAL_ERROR="The equations linearity type of "// &
+                      & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
+                CASE(EQUATIONS_FIRST_ORDER_DYNAMIC,EQUATIONS_SECOND_ORDER_DYNAMIC)
+                  SELECT CASE(EQUATIONS%LINEARITY)
+                  CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
+                    IF(EQUATIONS%TIME_DEPENDENCE==EQUATIONS_FIRST_ORDER_DYNAMIC) THEN
+                      EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES=2
+                      EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_STIFFNESS_MATRIX_NUMBER=1
+                      EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_DAMPING_MATRIX_NUMBER=2
+                    ELSE
+                      EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES=3
+                      EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_STIFFNESS_MATRIX_NUMBER=1
+                      EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_DAMPING_MATRIX_NUMBER=2
+                      EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_MASS_MATRIX_NUMBER=3
+                    ENDIF
+                    EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES=DEPENDENT_FIELD%NUMBER_OF_VARIABLES-2
+                    IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR)) THEN
+                      EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE=DEPENDENT_FIELD% &
+                        & VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
+                    ELSE
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    ENDIF
+                    IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR)) THEN
+                      EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE=DEPENDENT_FIELD% &
+                        & VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
+                    ELSE
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    ENDIF
+                  CASE(EQUATIONS_NONLINEAR)
+                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CASE DEFAULT
+                    LOCAL_ERROR="The equations linearity type of "// &
+                      & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
+                CASE DEFAULT
+                  LOCAL_ERROR="The equations time dependence type of "// &
+                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+              ELSE
+                LOCAL_ERROR="The number of dependent field variables of "// &
+                  & TRIM(NUMBER_TO_VSTRING(DEPENDENT_FIELD%NUMBER_OF_VARIABLES,"*",ERR,ERROR))//" is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+              !Allocate the dynamic matrix coefficients and set their values
+              IF(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES>0) THEN
+                ALLOCATE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS(EQUATIONS_MAPPING% &
+                  & CREATE_VALUES_CACHE%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations mapping create values cache dynamic matrix coefficients", &
+                  & ERR,ERROR,*999)
+                EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS=1.0_DP !Equations matrices are added by default
+              ENDIF
+              !Allocate the linear matrix variable types and linear matrix coefficients and set their values
+              IF(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES>0) THEN
+                ALLOCATE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(EQUATIONS_MAPPING% &
+                  & CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES),STAT=ERR)
+                IF(ERR/=0) CALL  & 
+                  & FLAG_ERROR("Could not allocate equations mapping create values cache linear matrix variable types", &
+                  & ERR,ERROR,*999)
+                ALLOCATE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%LINEAR_MATRIX_COEFFICIENTS(EQUATIONS_MAPPING% &
+                  & CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations mapping create values cache linear matrix coefficients", &
+                  & ERR,ERROR,*999)
+                !Set up the matrices variable types
+                EQUATIONS_MAPPING%CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES=0
+                VARIABLE_NUMBER=1
+                DO matrix_idx=1,EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES
+                  DO WHILE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(matrix_idx)==0.AND. &
+                    & VARIABLE_NUMBER<=FIELD_NUMBER_OF_VARIABLE_TYPES)
+                    IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(VARIABLE_NUMBER)%PTR)) THEN
+                      IF(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(VARIABLE_NUMBER)%PTR%VARIABLE_TYPE/= &
+                        & EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE) THEN
+                        IF(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(VARIABLE_NUMBER)%PTR%VARIABLE_TYPE/= &
+                          & EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE) THEN
+                          IF(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(VARIABLE_NUMBER)%PTR%VARIABLE_TYPE/= &
+                            & EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE) THEN
+                            EQUATIONS_MAPPING%CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(matrix_idx)= &
+                              & DEPENDENT_FIELD%VARIABLE_TYPE_MAP(VARIABLE_NUMBER)%PTR%VARIABLE_TYPE
+                          ENDIF
+                        ENDIF
+                      ENDIF
+                    ENDIF
+                    VARIABLE_NUMBER=VARIABLE_NUMBER+1
+                  ENDDO
+                ENDDO !matrix_idx
+                IF(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(EQUATIONS_MAPPING% &
+                  & CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES)==0) &
+                  & CALL FLAG_ERROR("Invalid setup. All linear matrices do not have a mapped dependent field variable.", &
+                  & ERR,ERROR,*999)
+                EQUATIONS_MAPPING%CREATE_VALUES_CACHE%LINEAR_MATRIX_COEFFICIENTS=1.0_DP !Equations matrices are added by default
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The equations equations set is not associated.",ERR,ERROR,*998)
           ENDIF
         ELSE
           CALL FLAG_ERROR("The equations mapping equations is not associated",ERR,ERROR,*998)
@@ -1387,8 +1388,8 @@ CONTAINS
         IF(ASSOCIATED(EQUATIONS_SET)) THEN
           CREATE_VALUES_CACHE=>EQUATIONS_MAPPING%CREATE_VALUES_CACHE
           IF(ASSOCIATED(CREATE_VALUES_CACHE)) THEN
-            SELECT CASE(EQUATIONS_SET%LINEARITY)
-            CASE(EQUATIONS_SET_LINEAR,EQUATIONS_SET_NONLINEAR_BCS)
+            SELECT CASE(EQUATIONS%LINEARITY)
+            CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
               NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES=0
               NEW_DYNAMIC_STIFFNESS_MATRIX_NUMBER=0
               NEW_DYNAMIC_DAMPING_MATRIX_NUMBER=0
@@ -1444,10 +1445,10 @@ CONTAINS
               ELSE
                 CALL FLAG_ERROR("Invalid dynamic matrices set up. There are no dynamic equations matrices.",ERR,ERROR,*999)
               ENDIF
-            CASE(EQUATIONS_SET_NONLINEAR)
+            CASE(EQUATIONS_NONLINEAR)
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)              
             CASE DEFAULT
-              LOCAL_ERROR="The equations set linearity type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%LINEARITY,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The equations linearity type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))// &
                 & " is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
@@ -1488,7 +1489,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("EQUATIONS_MAPPING_DYNAMIC_MATRICES_SET_1",ERR,ERROR,*999)
@@ -1499,28 +1499,23 @@ CONTAINS
       ELSE
         EQUATIONS=>EQUATIONS_MAPPING%EQUATIONS
         IF(ASSOCIATED(EQUATIONS)) THEN
-          EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
-          IF(ASSOCIATED(EQUATIONS_SET)) THEN
-            SELECT CASE(EQUATIONS_SET%TIME_DEPENDENCE)
-            CASE(EQUATIONS_SET_STATIC)
-              CALL FLAG_ERROR("Can not set dynamic matrices for a static equations set.",ERR,ERROR,*999)
-            CASE(EQUATIONS_SET_QUASISTATIC)
-              CALL FLAG_ERROR("Can not set dynamic matrices for a quasi-static equations set.",ERR,ERROR,*999)
-            CASE(EQUATIONS_SET_FIRST_ORDER_DYNAMIC)
-              IF(.NOT.DAMPING_MATRIX) CALL FLAG_WARNING("No damping matrix for a first order dynamic system.",ERR,ERROR,*999)
-              CALL EQUATIONS_MAPPING_DYNAMIC_MATRICES_SET_ALL(EQUATIONS_MAPPING,.FALSE.,DAMPING_MATRIX,STIFFNESS_MATRIX, &
-                ERR,ERROR,*999)
-            CASE(EQUATIONS_SET_SECOND_ORDER_DYNAMIC)
-              CALL FLAG_ERROR("Need to specify three matrices to set for a second order dynamic equations set.",ERR,ERROR,*999)
-            CASE DEFAULT
-              LOCAL_ERROR="The equations set time dependence type of "// &
-                & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TIME_DEPENDENCE,"*",ERR,ERROR))// &
-                & " is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT
-          ELSE
-            CALL FLAG_ERROR("Equations equations set is not associated.",ERR,ERROR,*999)
-          ENDIF
+          SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
+          CASE(EQUATIONS_STATIC)
+            CALL FLAG_ERROR("Can not set dynamic matrices for static equations.",ERR,ERROR,*999)
+          CASE(EQUATIONS_QUASISTATIC)
+            CALL FLAG_ERROR("Can not set dynamic matrices for quasi-static equations.",ERR,ERROR,*999)
+          CASE(EQUATIONS_FIRST_ORDER_DYNAMIC)
+            IF(.NOT.DAMPING_MATRIX) CALL FLAG_WARNING("No damping matrix for first order dynamic equations.",ERR,ERROR,*999)
+            CALL EQUATIONS_MAPPING_DYNAMIC_MATRICES_SET_ALL(EQUATIONS_MAPPING,.FALSE.,DAMPING_MATRIX,STIFFNESS_MATRIX, &
+              ERR,ERROR,*999)
+          CASE(EQUATIONS_SECOND_ORDER_DYNAMIC)
+            CALL FLAG_ERROR("Need to specify three matrices to set for second order dynamic equations.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The equations time dependence type of "// &
+              & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
         ELSE
           CALL FLAG_ERROR("Equations mapping equations is not associated.",ERR,ERROR,*999)
         ENDIF
@@ -1554,7 +1549,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("EQUATIONS_MAPPING_DYNAMIC_MATRICES_SET_2",ERR,ERROR,*999)
@@ -1565,34 +1559,29 @@ CONTAINS
       ELSE
         EQUATIONS=>EQUATIONS_MAPPING%EQUATIONS
         IF(ASSOCIATED(EQUATIONS)) THEN
-          EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
-          IF(ASSOCIATED(EQUATIONS_SET)) THEN
-            SELECT CASE(EQUATIONS_SET%TIME_DEPENDENCE)
-            CASE(EQUATIONS_SET_STATIC)
-              CALL FLAG_ERROR("Can not set dynamic matrices for a static equations set.",ERR,ERROR,*999)
-            CASE(EQUATIONS_SET_QUASISTATIC)
-              CALL FLAG_ERROR("Can not set dynamic matrices for a quasi-static equations set.",ERR,ERROR,*999)
-            CASE(EQUATIONS_SET_FIRST_ORDER_DYNAMIC)
-              IF(MASS_MATRIX) THEN
-                CALL FLAG_ERROR("The mass matrix cannot be present for a first order dynamic equations set.",ERR,ERROR,*999)
-              ELSE
-                IF(.NOT.DAMPING_MATRIX) CALL FLAG_WARNING("No damping matrix for a first order dynamic system.",ERR,ERROR,*999)
-                 CALL EQUATIONS_MAPPING_DYNAMIC_MATRICES_SET_ALL(EQUATIONS_MAPPING,.FALSE.,DAMPING_MATRIX,STIFFNESS_MATRIX, &
-                  ERR,ERROR,*999)
-              ENDIF
-            CASE(EQUATIONS_SET_SECOND_ORDER_DYNAMIC)
-              IF(.NOT.MASS_MATRIX) CALL FLAG_WARNING("No mass matrix for a second order dynamic system.",ERR,ERROR,*999)
-              CALL EQUATIONS_MAPPING_DYNAMIC_MATRICES_SET_ALL(EQUATIONS_MAPPING,MASS_MATRIX,DAMPING_MATRIX, &
-                & STIFFNESS_MATRIX,ERR,ERROR,*999)
-            CASE DEFAULT
-              LOCAL_ERROR="The equations set time dependence type of "// &
-                & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TIME_DEPENDENCE,"*",ERR,ERROR))// &
-                & " is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT
-          ELSE
-            CALL FLAG_ERROR("Equations equations set is not associated.",ERR,ERROR,*999)
-          ENDIF
+          SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
+          CASE(EQUATIONS_STATIC)
+            CALL FLAG_ERROR("Can not set dynamic matrices for static equations.",ERR,ERROR,*999)
+          CASE(EQUATIONS_QUASISTATIC)
+            CALL FLAG_ERROR("Can not set dynamic matrices for quasi-static equations.",ERR,ERROR,*999)
+          CASE(EQUATIONS_FIRST_ORDER_DYNAMIC)
+            IF(MASS_MATRIX) THEN
+              CALL FLAG_ERROR("The mass matrix cannot be present for first order dynamic equations.",ERR,ERROR,*999)
+            ELSE
+              IF(.NOT.DAMPING_MATRIX) CALL FLAG_WARNING("No damping matrix for a first order dynamic system.",ERR,ERROR,*999)
+              CALL EQUATIONS_MAPPING_DYNAMIC_MATRICES_SET_ALL(EQUATIONS_MAPPING,.FALSE.,DAMPING_MATRIX,STIFFNESS_MATRIX, &
+                ERR,ERROR,*999)
+            ENDIF
+          CASE(EQUATIONS_SECOND_ORDER_DYNAMIC)
+            IF(.NOT.MASS_MATRIX) CALL FLAG_WARNING("No mass matrix for a second order dynamic system.",ERR,ERROR,*999)
+            CALL EQUATIONS_MAPPING_DYNAMIC_MATRICES_SET_ALL(EQUATIONS_MAPPING,MASS_MATRIX,DAMPING_MATRIX, &
+              & STIFFNESS_MATRIX,ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The equations time dependence type of "// &
+              & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
         ELSE
           CALL FLAG_ERROR("Equations mapping equations is not associated.",ERR,ERROR,*999)
         ENDIF
@@ -1626,7 +1615,6 @@ CONTAINS
     !Local Variables
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("EQUATIONS_MAPPING_DYNAMIC_MATRICES_COEFFS_SET_1",ERR,ERROR,*999)
@@ -1639,34 +1627,29 @@ CONTAINS
         IF(ASSOCIATED(CREATE_VALUES_CACHE)) THEN
           EQUATIONS=>EQUATIONS_MAPPING%EQUATIONS
           IF(ASSOCIATED(EQUATIONS)) THEN
-            EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
-            IF(ASSOCIATED(EQUATIONS_SET)) THEN
-              SELECT CASE(EQUATIONS_SET%TIME_DEPENDENCE)
-              CASE(EQUATIONS_SET_STATIC)
-                CALL FLAG_ERROR("Can not set dynamic matrix coefficients for a static equations set.",ERR,ERROR,*999)
-              CASE(EQUATIONS_SET_QUASISTATIC)
-                CALL FLAG_ERROR("Can not set dynamic matrix coefficients for a quasi-static equations set.",ERR,ERROR,*999)
-              CASE(EQUATIONS_SET_FIRST_ORDER_DYNAMIC)
-                IF(CREATE_VALUES_CACHE%DYNAMIC_STIFFNESS_MATRIX_NUMBER/=0) THEN
-                  CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS(CREATE_VALUES_CACHE%DYNAMIC_STIFFNESS_MATRIX_NUMBER)= &
-                    & STIFFNESS_MATRIX_COEFFICIENT
-                ENDIF
-                IF(CREATE_VALUES_CACHE%DYNAMIC_DAMPING_MATRIX_NUMBER/=0) THEN
-                  CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS(CREATE_VALUES_CACHE%DYNAMIC_DAMPING_MATRIX_NUMBER)= &
-                    & DAMPING_MATRIX_COEFFICIENT
-                ENDIF
-              CASE(EQUATIONS_SET_SECOND_ORDER_DYNAMIC)
-                CALL FLAG_ERROR("Need to specify three matrix coefficients for a second order dynamic equations set.", &
-                  & ERR,ERROR,*999)
-              CASE DEFAULT
-                LOCAL_ERROR="The equations set time dependence type of "// &
-                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TIME_DEPENDENCE,"*",ERR,ERROR))// &
-                  & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              END SELECT
-            ELSE
-              CALL FLAG_ERROR("Equations equations set is not associated.",ERR,ERROR,*999)
-            ENDIF
+            SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
+            CASE(EQUATIONS_STATIC)
+              CALL FLAG_ERROR("Can not set dynamic matrix coefficients for static equations.",ERR,ERROR,*999)
+            CASE(EQUATIONS_QUASISTATIC)
+              CALL FLAG_ERROR("Can not set dynamic matrix coefficients for quasi-static equations.",ERR,ERROR,*999)
+            CASE(EQUATIONS_FIRST_ORDER_DYNAMIC)
+              IF(CREATE_VALUES_CACHE%DYNAMIC_STIFFNESS_MATRIX_NUMBER/=0) THEN
+                CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS(CREATE_VALUES_CACHE%DYNAMIC_STIFFNESS_MATRIX_NUMBER)= &
+                  & STIFFNESS_MATRIX_COEFFICIENT
+              ENDIF
+              IF(CREATE_VALUES_CACHE%DYNAMIC_DAMPING_MATRIX_NUMBER/=0) THEN
+                CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS(CREATE_VALUES_CACHE%DYNAMIC_DAMPING_MATRIX_NUMBER)= &
+                  & DAMPING_MATRIX_COEFFICIENT
+              ENDIF
+            CASE(EQUATIONS_SECOND_ORDER_DYNAMIC)
+              CALL FLAG_ERROR("Need to specify three matrix coefficients for second order dynamic equations.", &
+                & ERR,ERROR,*999)
+            CASE DEFAULT
+              LOCAL_ERROR="The equations time dependence type of "// &
+                & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))// &
+                & " is invalid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
           ELSE
             CALL FLAG_ERROR("Equations mapping equations is not associated.",ERR,ERROR,*999)
           ENDIF
@@ -1704,7 +1687,6 @@ CONTAINS
     !Local Variables
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("EQUATIONS_MAPPING_DYNAMIC_MATRICES_COEFFS_SET_2",ERR,ERROR,*999)
@@ -1717,37 +1699,32 @@ CONTAINS
         IF(ASSOCIATED(CREATE_VALUES_CACHE)) THEN
           EQUATIONS=>EQUATIONS_MAPPING%EQUATIONS
           IF(ASSOCIATED(EQUATIONS)) THEN
-            EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
-            IF(ASSOCIATED(EQUATIONS_SET)) THEN
-              SELECT CASE(EQUATIONS_SET%TIME_DEPENDENCE)
-              CASE(EQUATIONS_SET_STATIC)
-                CALL FLAG_ERROR("Can not set dynamic matrices for a static equations set.",ERR,ERROR,*999)
-              CASE(EQUATIONS_SET_QUASISTATIC)
-                CALL FLAG_ERROR("Can not set dynamic matrices for a quasi-static equations set.",ERR,ERROR,*999)
-              CASE(EQUATIONS_SET_FIRST_ORDER_DYNAMIC)
-                CALL FLAG_ERROR("Need to specify two matrix coefficients for a second order dynamic equations set.",ERR,ERROR,*999)
-              CASE(EQUATIONS_SET_SECOND_ORDER_DYNAMIC)
-                IF(CREATE_VALUES_CACHE%DYNAMIC_STIFFNESS_MATRIX_NUMBER/=0) THEN
-                  CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS(CREATE_VALUES_CACHE%DYNAMIC_STIFFNESS_MATRIX_NUMBER)= &
-                    & STIFFNESS_MATRIX_COEFFICIENT
-                ENDIF
-                IF(CREATE_VALUES_CACHE%DYNAMIC_DAMPING_MATRIX_NUMBER/=0) THEN
-                  CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS(CREATE_VALUES_CACHE%DYNAMIC_DAMPING_MATRIX_NUMBER)= &
-                    & DAMPING_MATRIX_COEFFICIENT
-                ENDIF
-                IF(CREATE_VALUES_CACHE%DYNAMIC_MASS_MATRIX_NUMBER/=0) THEN
-                  CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS(CREATE_VALUES_CACHE%DYNAMIC_MASS_MATRIX_NUMBER)= &
-                    & MASS_MATRIX_COEFFICIENT
-                ENDIF
-              CASE DEFAULT
-                LOCAL_ERROR="The equations set time dependence type of "// &
-                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TIME_DEPENDENCE,"*",ERR,ERROR))// &
-                  & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              END SELECT
-            ELSE
-              CALL FLAG_ERROR("Equations equations set is not associated.",ERR,ERROR,*999)
-            ENDIF
+            SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
+            CASE(EQUATIONS_STATIC)
+              CALL FLAG_ERROR("Can not set dynamic matrices for static equations.",ERR,ERROR,*999)
+            CASE(EQUATIONS_QUASISTATIC)
+              CALL FLAG_ERROR("Can not set dynamic matrices for quasi-static equations.",ERR,ERROR,*999)
+            CASE(EQUATIONS_FIRST_ORDER_DYNAMIC)
+              CALL FLAG_ERROR("Need to specify two matrix coefficients for second order dynamic equations.",ERR,ERROR,*999)
+            CASE(EQUATIONS_SECOND_ORDER_DYNAMIC)
+              IF(CREATE_VALUES_CACHE%DYNAMIC_STIFFNESS_MATRIX_NUMBER/=0) THEN
+                CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS(CREATE_VALUES_CACHE%DYNAMIC_STIFFNESS_MATRIX_NUMBER)= &
+                  & STIFFNESS_MATRIX_COEFFICIENT
+              ENDIF
+              IF(CREATE_VALUES_CACHE%DYNAMIC_DAMPING_MATRIX_NUMBER/=0) THEN
+                CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS(CREATE_VALUES_CACHE%DYNAMIC_DAMPING_MATRIX_NUMBER)= &
+                  & DAMPING_MATRIX_COEFFICIENT
+              ENDIF
+              IF(CREATE_VALUES_CACHE%DYNAMIC_MASS_MATRIX_NUMBER/=0) THEN
+                CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS(CREATE_VALUES_CACHE%DYNAMIC_MASS_MATRIX_NUMBER)= &
+                  & MASS_MATRIX_COEFFICIENT
+              ENDIF
+            CASE DEFAULT
+              LOCAL_ERROR="The equations time dependence type of "// &
+                & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))// &
+                & " is invalid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
           ELSE
             CALL FLAG_ERROR("Equations mapping equations is not associated.",ERR,ERROR,*999)
           ENDIF
@@ -1802,8 +1779,8 @@ CONTAINS
             IF(ASSOCIATED(EQUATIONS)) THEN
               EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
               IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                IF(EQUATIONS_SET%TIME_DEPENDENCE==EQUATIONS_SET_FIRST_ORDER_DYNAMIC.OR. &
-                  EQUATIONS_SET%TIME_DEPENDENCE==EQUATIONS_SET_SECOND_ORDER_DYNAMIC) THEN
+                IF(EQUATIONS%TIME_DEPENDENCE==EQUATIONS_FIRST_ORDER_DYNAMIC.OR. &
+                  EQUATIONS%TIME_DEPENDENCE==EQUATIONS_SECOND_ORDER_DYNAMIC) THEN
                   DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                   IF(ASSOCIATED(DEPENDENT_FIELD)) THEN                 
                     !Check the dynamic variable type is not being by other equations matrices or vectors
@@ -1849,7 +1826,7 @@ CONTAINS
                     CALL FLAG_ERROR("Dependent field is not associated",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("The equations set is not a dynamic equations set.",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("The equations are not dynamic equations.",ERR,ERROR,*999)
                 ENDIF
               ELSE
                 CALL FLAG_ERROR("Equations equations set is not associated.",ERR,ERROR,*999)
@@ -2001,14 +1978,15 @@ CONTAINS
     CALL ENTERS("EQUATIONS_MAPPING_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-      CALL DOMAIN_MAPPINGS_MAPPING_FINALISE(EQUATIONS_MAPPING%ROW_DOFS_MAPPING,ERR,ERROR,*999)
-      CALL EQUATIONS_MAPPING_DYNAMIC_MAPPING_FINALISE(EQUATIONS_MAPPING%DYNAMIC_MAPPING,ERR,ERROR,*999)
-      CALL EQUATIONS_MAPPING_LINEAR_MAPPING_FINALISE(EQUATIONS_MAPPING%LINEAR_MAPPING,ERR,ERROR,*999)
-      CALL EQUATIONS_MAPPING_NONLINEAR_MAPPING_FINALISE(EQUATIONS_MAPPING%NONLINEAR_MAPPING,ERR,ERROR,*999)
-      CALL EQUATIONS_MAPPING_RHS_MAPPING_FINALISE(EQUATIONS_MAPPING%RHS_MAPPING,ERR,ERROR,*999)      
-      CALL EQUATIONS_MAPPING_SOURCE_MAPPING_FINALISE(EQUATIONS_MAPPING%SOURCE_MAPPING,ERR,ERROR,*999)      
-      CALL EQUATIONS_MAPPING_CREATE_VALUES_CACHE_FINALISE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE,ERR,ERROR,*999)
-      DEALLOCATE(EQUATIONS_MAPPING)
+       !Row dofs mappings are linked to the field mapping therefore do not deallocate here
+       NULLIFY(EQUATIONS_MAPPING%ROW_DOFS_MAPPING)
+       CALL EQUATIONS_MAPPING_DYNAMIC_MAPPING_FINALISE(EQUATIONS_MAPPING%DYNAMIC_MAPPING,ERR,ERROR,*999)
+       CALL EQUATIONS_MAPPING_LINEAR_MAPPING_FINALISE(EQUATIONS_MAPPING%LINEAR_MAPPING,ERR,ERROR,*999)
+       CALL EQUATIONS_MAPPING_NONLINEAR_MAPPING_FINALISE(EQUATIONS_MAPPING%NONLINEAR_MAPPING,ERR,ERROR,*999)
+       CALL EQUATIONS_MAPPING_RHS_MAPPING_FINALISE(EQUATIONS_MAPPING%RHS_MAPPING,ERR,ERROR,*999)      
+       CALL EQUATIONS_MAPPING_SOURCE_MAPPING_FINALISE(EQUATIONS_MAPPING%SOURCE_MAPPING,ERR,ERROR,*999)      
+       CALL EQUATIONS_MAPPING_CREATE_VALUES_CACHE_FINALISE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE,ERR,ERROR,*999)
+       DEALLOCATE(EQUATIONS_MAPPING)
     ENDIF
        
     CALL EXITS("EQUATIONS_MAPPING_FINALISE")
@@ -2232,10 +2210,10 @@ CONTAINS
             EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
             IF(ASSOCIATED(EQUATIONS_SET)) THEN            
               !Check number of matrices to create is valid
-              SELECT CASE(EQUATIONS_SET%TIME_DEPENDENCE)
-              CASE(EQUATIONS_SET_STATIC,EQUATIONS_SET_QUASISTATIC)
-                SELECT CASE(EQUATIONS_SET%LINEARITY)
-                CASE(EQUATIONS_SET_LINEAR,EQUATIONS_SET_NONLINEAR_BCS)
+              SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
+              CASE(EQUATIONS_STATIC,EQUATIONS_QUASISTATIC)
+                SELECT CASE(EQUATIONS%LINEARITY)
+                CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
                   IF(CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE==0) THEN                  
                     IF(NUMBER_OF_LINEAR_EQUATIONS_MATRICES<1.OR. &
                       & NUMBER_OF_LINEAR_EQUATIONS_MATRICES>FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
@@ -2254,7 +2232,7 @@ CONTAINS
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ENDIF
-                CASE(EQUATIONS_SET_NONLINEAR)
+                CASE(EQUATIONS_NONLINEAR)
                   IF(NUMBER_OF_LINEAR_EQUATIONS_MATRICES<0.OR. &
                     & NUMBER_OF_LINEAR_EQUATIONS_MATRICES>FIELD_NUMBER_OF_VARIABLE_TYPES-2) THEN
                     LOCAL_ERROR="The specified number of linear matrices of "// &
@@ -2264,13 +2242,13 @@ CONTAINS
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                 CASE DEFAULT
-                  LOCAL_ERROR="The equations set linearity type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%LINEARITY,"*",ERR,ERROR))//" is invalid."
+                  LOCAL_ERROR="The equations linearity type of "// &
+                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT              
-              CASE(EQUATIONS_SET_FIRST_ORDER_DYNAMIC,EQUATIONS_SET_SECOND_ORDER_DYNAMIC)
-                SELECT CASE(EQUATIONS_SET%LINEARITY)
-                CASE(EQUATIONS_SET_LINEAR,EQUATIONS_SET_NONLINEAR_BCS)
+                END SELECT
+              CASE(EQUATIONS_FIRST_ORDER_DYNAMIC,EQUATIONS_SECOND_ORDER_DYNAMIC)
+                SELECT CASE(EQUATIONS%LINEARITY)
+                CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
                   IF(CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE==0) THEN                  
                     IF(NUMBER_OF_LINEAR_EQUATIONS_MATRICES<1.OR. &
                       & NUMBER_OF_LINEAR_EQUATIONS_MATRICES>FIELD_NUMBER_OF_VARIABLE_TYPES-1) THEN
@@ -2289,25 +2267,25 @@ CONTAINS
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ENDIF
-                CASE(EQUATIONS_SET_NONLINEAR)
+                CASE(EQUATIONS_NONLINEAR)
                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                 CASE DEFAULT
-                  LOCAL_ERROR="The equations set linearity type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%LINEARITY,"*",ERR,ERROR))//" is invalid."
+                  LOCAL_ERROR="The equations linearity type of "// &
+                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT              
               CASE DEFAULT
-                LOCAL_ERROR="The equations set time dependence type of "// &
-                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
+                LOCAL_ERROR="The equations time dependence type of "// &
+                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
               !If we need to reallocate and reset all the create_values cache arrays and change the number of matrices
               IF(NUMBER_OF_LINEAR_EQUATIONS_MATRICES/=CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES) THEN
                 IF(CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES>0) THEN                  
                   ALLOCATE(OLD_LINEAR_MATRIX_VARIABLE_TYPES(CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old linear matrix variable types",ERR,ERROR,*999)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old linear matrix variable types.",ERR,ERROR,*999)
                   ALLOCATE(OLD_LINEAR_MATRIX_COEFFICIENTS(CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old linear matrix coefficients",ERR,ERROR,*999)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old linear matrix coefficients.",ERR,ERROR,*999)
                   OLD_LINEAR_MATRIX_VARIABLE_TYPES=CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES
                   OLD_LINEAR_MATRIX_COEFFICIENTS=CREATE_VALUES_CACHE%LINEAR_MATRIX_COEFFICIENTS
                 ENDIF
@@ -2316,9 +2294,9 @@ CONTAINS
                 IF(ALLOCATED(CREATE_VALUES_CACHE%LINEAR_MATRIX_COEFFICIENTS)) &
                   & DEALLOCATE(CREATE_VALUES_CACHE%LINEAR_MATRIX_COEFFICIENTS)
                 ALLOCATE(CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(NUMBER_OF_LINEAR_EQUATIONS_MATRICES),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate linear matrix variable types",ERR,ERROR,*999)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate linear matrix variable types.",ERR,ERROR,*999)
                 ALLOCATE(CREATE_VALUES_CACHE%LINEAR_MATRIX_COEFFICIENTS(NUMBER_OF_LINEAR_EQUATIONS_MATRICES),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate linear matrix coefficients",ERR,ERROR,*999)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate linear matrix coefficients.",ERR,ERROR,*999)
                 IF(CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES>0) THEN                  
                   IF(NUMBER_OF_LINEAR_EQUATIONS_MATRICES>CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES) THEN
                     CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(1:CREATE_VALUES_CACHE% &
@@ -2341,13 +2319,13 @@ CONTAINS
                   DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                   IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
                     CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES=0
-                    SELECT CASE(EQUATIONS_SET%TIME_DEPENDENCE)
-                    CASE(EQUATIONS_SET_STATIC,EQUATIONS_SET_QUASISTATIC)
-                      SELECT CASE(EQUATIONS_SET%LINEARITY)
-                      CASE(EQUATIONS_SET_LINEAR,EQUATIONS_SET_NONLINEAR_BCS)
-                        IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_STANDARD_VARIABLE_TYPE)%PTR)) THEN
+                    SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
+                    CASE(EQUATIONS_STATIC,EQUATIONS_QUASISTATIC)
+                      SELECT CASE(EQUATIONS%LINEARITY)
+                      CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
+                        IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR)) THEN
                           CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(1)=DEPENDENT_FIELD% &
-                            & VARIABLE_TYPE_MAP(FIELD_STANDARD_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
+                            & VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
                         ELSE
                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                         ENDIF
@@ -2359,7 +2337,7 @@ CONTAINS
                             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                           ENDIF
                         ENDDO !matrix_idx
-                      CASE(EQUATIONS_SET_NONLINEAR)
+                      CASE(EQUATIONS_NONLINEAR)
                         DO matrix_idx=1,CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES
                           IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(matrix_idx+2)%PTR)) THEN
                             CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(matrix_idx)= &
@@ -2369,13 +2347,13 @@ CONTAINS
                           ENDIF
                         ENDDO !matrix_idx
                       CASE DEFAULT
-                        LOCAL_ERROR="The equations set linearity type of "// &
-                          & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%LINEARITY,"*",ERR,ERROR))//" is invalid."
+                        LOCAL_ERROR="The equations linearity type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
-                    CASE(EQUATIONS_SET_FIRST_ORDER_DYNAMIC,EQUATIONS_SET_SECOND_ORDER_DYNAMIC)
-                      SELECT CASE(EQUATIONS_SET%LINEARITY)
-                      CASE(EQUATIONS_SET_LINEAR,EQUATIONS_SET_NONLINEAR_BCS)
+                    CASE(EQUATIONS_FIRST_ORDER_DYNAMIC,EQUATIONS_SECOND_ORDER_DYNAMIC)
+                      SELECT CASE(EQUATIONS%LINEARITY)
+                      CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
                         DO matrix_idx=1,CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES
                           IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(matrix_idx+2)%PTR)) THEN
                             CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(matrix_idx)= &
@@ -2384,16 +2362,16 @@ CONTAINS
                             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                           ENDIF
                         ENDDO !matrix_idx
-                      CASE(EQUATIONS_SET_NONLINEAR)
+                      CASE(EQUATIONS_NONLINEAR)
                         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                       CASE DEFAULT
-                        LOCAL_ERROR="The equations set linearity type of "// &
-                          & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%LINEARITY,"*",ERR,ERROR))//" is invalid."
+                        LOCAL_ERROR="The equations linearity type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     CASE DEFAULT
-                      LOCAL_ERROR="The equations set time dependence type of "// &
-                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
+                      LOCAL_ERROR="The equations time dependence type of "// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     END SELECT
                     CREATE_VALUES_CACHE%LINEAR_MATRIX_COEFFICIENTS=1.0_DP !Equations matrices are added by default
@@ -2688,7 +2666,7 @@ CONTAINS
             IF(ASSOCIATED(EQUATIONS)) THEN
               EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
               IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                IF(EQUATIONS_SET%LINEARITY==EQUATIONS_SET_NONLINEAR) THEN
+                IF(EQUATIONS%LINEARITY==EQUATIONS_NONLINEAR) THEN
                   DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                   IF(ASSOCIATED(DEPENDENT_FIELD)) THEN                 
                     !Check the residual variable type is not being by other equations matrices or vectors

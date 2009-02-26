@@ -1010,7 +1010,6 @@ MODULE TYPES
     INTEGER(INTG) :: STORAGE_TYPE !<The storage (sparsity) type for this matrix
     INTEGER(INTG) :: STRUCTURE_TYPE !<The structure (sparsity) type for this matrix
     INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in this global matrix
-    INTEGER(INTG) :: JACOBIAN_CALCULATION_TYPE !<The type of how the Jacobian is calculated \see EQUATIONS_SET_CONSTANTS_JacobianCalculationTypes,EQUATIONS_SET_CONSTANTS
     LOGICAL :: UPDATE_JACOBIAN !<Is .TRUE. if this Jacobian matrix is to be updated
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: JACOBIAN !<A pointer to the distributed jacobian matrix data
     LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this Jacobian matrix has not been assembled
@@ -1256,34 +1255,16 @@ MODULE TYPES
     TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: FIBRE_INTERP_POINT_METRICS !<A pointer to the fibre interpolated point metrics information 
   END TYPE EQUATIONS_INTERPOLATION_TYPE
 
-  !>Contains information on any data required for a linear solution
-  TYPE EQUATIONS_LINEAR_DATA_TYPE
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations.
-  END TYPE EQUATIONS_LINEAR_DATA_TYPE
-
-  !>Contains information on any data required for a non-linear solution
-  TYPE EQUATIONS_NONLINEAR_DATA_TYPE
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations.
-  END TYPE EQUATIONS_NONLINEAR_DATA_TYPE
-  
-  !>Contains information on any data required for a time-dependent equations
-  TYPE EQUATIONS_TIME_DATA_TYPE
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations.
-  END TYPE EQUATIONS_TIME_DATA_TYPE
-
   !>Contains information about the equations in an equations set.
   TYPE EQUATIONS_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations_set
     LOGICAL :: EQUATIONS_FINISHED !<Is .TRUE. if the equations have finished being created, .FALSE. if not.
-    INTEGER(INTG) :: OUTPUT_TYPE !<The output type for the equations \see EQUATIONS_ROUTINES_EquationsOutputTypes,EQUATIONS_ROUTINES \todo move to equations set???
-    INTEGER(INTG) :: SPARSITY_TYPE !<The sparsity type for the equation matrices of the equations \see EQUATIONS_ROUTINES_EquationsSparsityTypes,EQUATIONS_ROUTINES \todo move to equations set???
-    INTEGER(INTG) :: LUMPING_TYPE !<The lumping type for the equation matrices of the equations \see EQUATIONS_ROUTINES_EquationsLumpingTypes,EQUATIONS_ROUTINES \todo move to equations set???
-    INTEGER(INTG) :: NONLINEAR_JACOBIAN_TYPE !<The type of non-linear Jacobian calculation \see EQUATIONS_SET_CONSTANTS_NonlinearJacobianTypes,EQUATIONS_SET_CONSTANTS
+    INTEGER(INTG) :: LINEARITY !<The equations linearity type \see EQUATIONS_ROUTINES_LinearityTypes,EQUATIONS_ROUTINES
+    INTEGER(INTG) :: TIME_DEPENDENCE !<The equations time dependence type \see EQUATIONS_ROUTINES_TimeDepedenceTypes,EQUATIONS_ROUTINES
+    INTEGER(INTG) :: OUTPUT_TYPE !<The output type for the equations \see EQUATIONS_ROUTINES_EquationsOutputTypes,EQUATIONS_ROUTINES
+    INTEGER(INTG) :: SPARSITY_TYPE !<The sparsity type for the equation matrices of the equations \see EQUATIONS_ROUTINES_EquationsSparsityTypes,EQUATIONS_ROUTINES
+    INTEGER(INTG) :: LUMPING_TYPE !<The lumping type for the equation matrices of the equations \see EQUATIONS_ROUTINES_EquationsLumpingTypes,EQUATIONS_ROUTINES
     TYPE(EQUATIONS_INTERPOLATION_TYPE), POINTER :: INTERPOLATION !<A pointer to the interpolation information used in the equations.
-    !!TODO: Are these three needed? What about solution method data???
-    TYPE(EQUATIONS_LINEAR_DATA_TYPE), POINTER :: LINEAR_DATA !<A pointer to the data for linear equations.
-    TYPE(EQUATIONS_NONLINEAR_DATA_TYPE), POINTER :: NONLINEAR_DATA !<A pointer to the data for non-linear equations.
-    TYPE(EQUATIONS_TIME_DATA_TYPE), POINTER :: TIME_DATA !<A pointer to the data for non-static equations.
     
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping for the equations.
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES !<A pointer to the equations matrices and vectors used for the equations.
@@ -1348,10 +1329,6 @@ MODULE TYPES
     INTEGER(INTG) :: CLASS !<The equations set specification class identifier
     INTEGER(INTG) :: TYPE !<The equations set specification type identifier
     INTEGER(INTG) :: SUBTYPE !<The equations set specification subtype identifier
-
-!!TODO: Are these two needed?
-    INTEGER(INTG) :: LINEARITY !<The equations set linearity type \see EQUATIONS_ROUTINES_LinearityTypes
-    INTEGER(INTG) :: TIME_DEPENDENCE !<The equations set time dependence type \see EQUATIONS_ROUTINES_TimeDepedenceTypes
     
     INTEGER(INTG) :: SOLUTION_METHOD !<The solution method for the equations set \see EQUATIONS_ROUTINES_SolutionMethods 
     
@@ -1594,7 +1571,7 @@ MODULE TYPES
   END TYPE EQUATIONS_COL_TO_SOLVER_COLS_MAP_TYPE
 
   TYPE EQUATIONS_TO_SOLVER_MAPS_TYPE
-    INTEGER(INTG) :: EQUATIONS_MATRIX_TYPE !<The type of equations matrix 
+    INTEGER(INTG) :: EQUATIONS_MATRIX_TYPE !<The type of equations matrix \see SOLVER_MAPPING_EquationsMatrixTypes,SOLVER_MAPPING
     INTEGER(INTG) :: EQUATIONS_MATRIX_NUMBER !<The equations matrix number being mapped.
     INTEGER(INTG) :: SOLVER_MATRIX_NUMBER !<The solver matrix number being mapped.
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX !<A pointer to the equations matrix being mapped.

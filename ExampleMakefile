@@ -629,6 +629,7 @@ OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/domain_mappings.o \
 	$(OBJECT_DIR)/elasticity_routines.o \
 	$(OBJECT_DIR)/electromechanics_routines.o \
+	$(OBJECT_DIR)/equations_routines.o \
 	$(OBJECT_DIR)/equations_mapping_routines.o \
 	$(OBJECT_DIR)/equations_matrices_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
@@ -752,6 +753,7 @@ $(OBJECT_DIR)/bioelec_domain_equation_routines.o	:	$(MAIN_SOURCE_DIR)/bioelec_do
 	$(OBJECT_DIR)/control_loop_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/domain_mappings.o \
+	$(OBJECT_DIR)/equations_routines.o \
 	$(OBJECT_DIR)/equations_mapping_routines.o \
 	$(OBJECT_DIR)/equations_matrices_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
@@ -867,6 +869,7 @@ $(OBJECT_DIR)/diffusion_equation_routines.o	:	$(MAIN_SOURCE_DIR)/diffusion_equat
 	$(OBJECT_DIR)/control_loop_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/domain_mappings.o \
+	$(OBJECT_DIR)/equations_routines.o \
 	$(OBJECT_DIR)/equations_mapping_routines.o \
 	$(OBJECT_DIR)/equations_matrices_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
@@ -918,6 +921,17 @@ $(OBJECT_DIR)/electromechanics_routines.o	:	$(MAIN_SOURCE_DIR)/electromechanics_
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/types.o
 
+$(OBJECT_DIR)/equations_routines.o		:	$(MAIN_SOURCE_DIR)/equations_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/equations_mapping_routines.o \
+	$(OBJECT_DIR)/equations_matrices_routines.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/types.o
+
 $(OBJECT_DIR)/equations_mapping_routines.o		:	$(MAIN_SOURCE_DIR)/equations_mapping_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/domain_mappings.o \
@@ -954,6 +968,7 @@ $(OBJECT_DIR)/equations_set_routines.o		:	$(MAIN_SOURCE_DIR)/equations_set_routi
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/domain_mappings.o \
 	$(OBJECT_DIR)/elasticity_routines.o \
+	$(OBJECT_DIR)/equations_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/equations_matrices_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
@@ -1009,6 +1024,7 @@ $(OBJECT_DIR)/finite_elasticity_routines.o		:	$(MAIN_SOURCE_DIR)/finite_elastici
 	$(OBJECT_DIR)/control_loop_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/domain_mappings.o \
+	$(OBJECT_DIR)/equations_routines.o \
 	$(OBJECT_DIR)/equations_mapping_routines.o \
 	$(OBJECT_DIR)/equations_matrices_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
@@ -1068,6 +1084,7 @@ $(OBJECT_DIR)/Laplace_equations_routines.o	:	$(MAIN_SOURCE_DIR)/Laplace_equation
 	$(OBJECT_DIR)/control_loop_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/domain_mappings.o \
+	$(OBJECT_DIR)/equations_routines.o \
 	$(OBJECT_DIR)/equations_mapping_routines.o \
 	$(OBJECT_DIR)/equations_matrices_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
@@ -1089,6 +1106,7 @@ $(OBJECT_DIR)/linear_elasticity_routines.o		:	$(MAIN_SOURCE_DIR)/linear_elastici
 	$(OBJECT_DIR)/control_loop_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/domain_mappings.o \
+	$(OBJECT_DIR)/equations_routines.o \
 	$(OBJECT_DIR)/equations_mapping_routines.o \
 	$(OBJECT_DIR)/equations_matrices_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
@@ -1171,6 +1189,7 @@ $(OBJECT_DIR)/Poisson_equations_routines.o	:	$(MAIN_SOURCE_DIR)/Poisson_equation
 	$(OBJECT_DIR)/control_loop_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/domain_mappings.o \
+	$(OBJECT_DIR)/equations_routines.o \
 	$(OBJECT_DIR)/equations_mapping_routines.o \
 	$(OBJECT_DIR)/equations_matrices_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
@@ -1301,6 +1320,7 @@ $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o		:	$(EXAMPLE_SOURCE_DIR)/$(BASE_EXAMPLE_NAM
 	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/domain_mappings.o \
+	$(OBJECT_DIR)/equations_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/equations_set_routines.o \
 	$(OBJECT_DIR)/field_routines.o \

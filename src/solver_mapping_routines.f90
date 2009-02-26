@@ -63,11 +63,21 @@ MODULE SOLVER_MAPPING_ROUTINES
 
   !Module parameters
 
+  !> \addtogroup SOLVER_MAPPING_EquationsMatrixTypes SOLVER_MAPPING::EquationsMatrixTypes
+  !> \brief Equations matrix types
+  !> \see EQUATIONS_SET_CONSTANTS
+  !>@{
+  INTEGER(INTG), PARAMETER :: SOLVER_MAPPING_EQUATIONS_DYNAMIC_MATRIX=1 !<The equations matrix in the solver mapping is a dynamic equaitons matrix \see SOLVER_MAPPING_EquationsMatrixTypes,SOLVER_MAPPING
+  INTEGER(INTG), PARAMETER :: SOLVER_MAPPING_EQUATIONS_LINEAR_MATRIX=2 !<The equations matrix in the solver mapping is a linear equations matrix \see SOLVER_MAPPING_EquationsMatrixTypes,SOLVER_MAPPING
+ !>@}
+ 
   !Module types
 
   !Module variables
 
   !Interfaces
+
+  PUBLIC SOLVER_MAPPING_EQUATIONS_DYNAMIC_MATRIX,SOLVER_MAPPING_EQUATIONS_LINEAR_MATRIX
 
   PUBLIC SOLVER_MAPPING_CREATE_FINISH,SOLVER_MAPPING_CREATE_START,SOLVER_MAPPING_DESTROY, &
     & SOLVER_MAPPING_EQUATIONS_SET_ADD,SOLVER_MAPPING_EQUATS_VARS_TO_SOLVER_MATRIX_SET, &
@@ -695,7 +705,7 @@ CONTAINS
                         & DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR,ERR,ERROR,*999)
                       SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                         & solver_matrix_idx)%DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR% &
-                        & EQUATIONS_MATRIX_TYPE=EQUATIONS_SET_DYNAMIC_MATRIX
+                        & EQUATIONS_MATRIX_TYPE=SOLVER_MAPPING_EQUATIONS_DYNAMIC_MATRIX
                       SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM( &
                         & equations_matrix_idx)%EQUATIONS_MATRIX_NUMBER=equations_matrix_idx
                       SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM( &
@@ -722,7 +732,7 @@ CONTAINS
                         & LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR,ERR,ERROR,*999)
                       SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                         & solver_matrix_idx)%LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR% &
-                        & EQUATIONS_MATRIX_TYPE=EQUATIONS_SET_LINEAR_MATRIX
+                        & EQUATIONS_MATRIX_TYPE=SOLVER_MAPPING_EQUATIONS_LINEAR_MATRIX
                       SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM( &
                         & equations_matrix_idx)%EQUATIONS_MATRIX_NUMBER=equations_matrix_idx
                       SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM( &
@@ -3231,7 +3241,7 @@ CONTAINS
                   & OLD_MATRIX_VARIABLE_TYPES(:,:,1:SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES)
                 DO matrix_idx=SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES+1,NUMBER_OF_SOLVER_MATRICES
                   SOLVER_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(0,:,matrix_idx)=1
-                  SOLVER_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(1,:,matrix_idx)=FIELD_STANDARD_VARIABLE_TYPE
+                  SOLVER_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(1,:,matrix_idx)=FIELD_U_VARIABLE_TYPE
                   SOLVER_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(2:FIELD_NUMBER_OF_VARIABLE_TYPES,:,matrix_idx)=0
                 ENDDO !matrix_idx
               ELSE

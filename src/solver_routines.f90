@@ -1655,19 +1655,19 @@ CONTAINS
               IF(ASSOCIATED(EQUATIONS_SET)) THEN
                 EQUATIONS=>EQUATIONS_SET%EQUATIONS
                 IF(ASSOCIATED(EQUATIONS)) THEN
-                  IF(EQUATIONS_SET%LINEARITY==SOLVER_EQUATIONS%LINEARITY) THEN
-                    IF(EQUATIONS_SET%TIME_DEPENDENCE==SOLVER_EQUATIONS%TIME_DEPENDENCE) THEN
+                  IF(EQUATIONS%LINEARITY==SOLVER_EQUATIONS%LINEARITY) THEN
+                    IF(EQUATIONS%TIME_DEPENDENCE==SOLVER_EQUATIONS%TIME_DEPENDENCE) THEN
                       CALL SOLVER_MAPPING_EQUATIONS_SET_ADD(SOLVER_MAPPING,EQUATIONS_SET,EQUATIONS_SET_INDEX,ERR,ERROR,*999)
                     ELSE
                       LOCAL_ERROR="Invalid equations set up. The time dependence of the equations set to add ("// &
-                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TIME_DEPENDENCE,"*",ERR,ERROR))// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))// &
                         & ") does not match the solver equations time dependence ("// &
                         & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//")."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
                     LOCAL_ERROR="Invalid equations set up. The linearity of the equations set to add ("// &
-                      & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%LINEARITY,"*",ERR,ERROR))// &
+                      & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))// &
                       & ") does not match the solver equations linearity ("// &
                       & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%LINEARITY,"*",ERR,ERROR))//")."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
@@ -1776,7 +1776,7 @@ CONTAINS
   SUBROUTINE SOLVER_EQUATIONS_LINEARITY_TYPE_SET(SOLVER_EQUATIONS,LINEARITY_TYPE,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer the solver equations to set the sparsity type for
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer the solver equations to set the linearity type for
     INTEGER(INTG), INTENT(IN) :: LINEARITY_TYPE !<The type of linearity to be set \see SOLVER_ROUTINES_EquationLinearityTypes,SOLVER_ROUTINES
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -5777,9 +5777,11 @@ CONTAINS
                     !Set the nonlinear function
                     RESIDUAL_VECTOR=>SOLVER_MATRICES%RESIDUAL
                     IF(ASSOCIATED(RESIDUAL_VECTOR)) THEN
-                      IF(ASSOCIATED(RESIDUAL_VECTOR%PETSC)) THEN                   
+                      IF(ASSOCIATED(RESIDUAL_VECTOR%PETSC)) THEN
+                        !Pass the linesearch solver object rather than the temporary solver
                         CALL PETSC_SNESSETFUNCTION(LINESEARCH_SOLVER%SNES,RESIDUAL_VECTOR%PETSC%VECTOR, &
-                          & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,SOLVER,ERR,ERROR,*999)
+                          & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER, &
+                          & ERR,ERROR,*999)
                       ELSE
                         CALL FLAG_ERROR("The residual vector PETSc is not associated.",ERR,ERROR,*999)
                       ENDIF
@@ -5800,18 +5802,22 @@ CONTAINS
                                 & ERR,ERROR,*999)
                             CASE(SOLVER_NEWTON_JACOBIAN_ANALTYIC_CALCULATED)
                               SOLVER_JACOBIAN%UPDATE_MATRIX=.TRUE. !CMISS will fill in the Jacobian values
+                              !Pass the linesearch solver object rather than the temporary solver
                               CALL PETSC_SNESSETJACOBIAN(LINESEARCH_SOLVER%SNES,JACOBIAN_MATRIX%PETSC%MATRIX, &
-                                & JACOBIAN_MATRIX%PETSC%MATRIX,PROBLEM_SOLVER_JACOBIAN_EVALUATE_PETSC,SOLVER,ERR,ERROR,*999)
+                                & JACOBIAN_MATRIX%PETSC%MATRIX,PROBLEM_SOLVER_JACOBIAN_EVALUATE_PETSC, &
+                                & LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER,ERR,ERROR,*999)
                             CASE(SOLVER_NEWTON_JACOBIAN_FD_CALCULATED)
                               SOLVER_JACOBIAN%UPDATE_MATRIX=.FALSE. !Petsc will fill in the Jacobian values
                               CALL DISTRIBUTED_MATRIX_FORM(JACOBIAN_MATRIX,ERR,ERROR,*999)
                               CALL PETSC_MATGETCOLORING(JACOBIAN_MATRIX%PETSC%MATRIX,PETSC_MATCOLORING_SL,LINESEARCH_SOLVER% &
                                 & JACOBIAN_ISCOLORING,ERR,ERROR,*999)
+                              !Pass the linesearch solver object rather than the temporary solver
                               CALL PETSC_MATFDCOLORINGCREATE(JACOBIAN_MATRIX%PETSC%MATRIX,LINESEARCH_SOLVER% &
                                 & JACOBIAN_ISCOLORING,LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
                               CALL PETSC_ISCOLORINGDESTROY(LINESEARCH_SOLVER%JACOBIAN_ISCOLORING,ERR,ERROR,*999)
                               CALL PETSC_MATFDCOLORINGSETFUNCTIONSNES(LINESEARCH_SOLVER%JACOBIAN_FDCOLORING, &
-                                & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,SOLVER,ERR,ERROR,*999)
+                                & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER, &
+                                & ERR,ERROR,*999)
                               CALL PETSC_MATFDCOLORINGSETFROMOPTIONS(LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
                               CALL PETSC_SNESSETJACOBIAN(LINESEARCH_SOLVER%SNES,JACOBIAN_MATRIX%PETSC%MATRIX, &
                                 & JACOBIAN_MATRIX%PETSC%MATRIX,SNESDefaultComputeJacobianColor,LINESEARCH_SOLVER% &
@@ -5838,7 +5844,9 @@ CONTAINS
                     ENDIF
                     IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
                       !Set the monitor
-                      CALL PETSC_SNESMONITORSET(LINESEARCH_SOLVER%SNES,SOLVER_NONLINEAR_MONITOR_PETSC,SOLVER,ERR,ERROR,*999)
+                      !Pass the linesearch solver object rather than the temporary solver
+                      CALL PETSC_SNESMONITORSET(LINESEARCH_SOLVER%SNES,SOLVER_NONLINEAR_MONITOR_PETSC, &
+                        & LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER,ERR,ERROR,*999)
                     ENDIF
                     !Set the line search type
                     SELECT CASE(LINESEARCH_SOLVER%LINESEARCH_TYPE)
@@ -7520,10 +7528,10 @@ CONTAINS
           IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS)) CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solvers has not been finished.",ERR,ERROR,*998)
+        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*998)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solvers is not associated.",ERR,ERROR,*998)
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
     ENDIF
        
     CALL EXITS("SOLVER_SOLVER_EQUATIONS_GET")
@@ -7627,41 +7635,45 @@ CONTAINS
       IF(SOLVER%SOLVER_FINISHED) THEN
         CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*998)
       ELSE
-        IF(SOLVE_TYPE/=SOLVER%SOLVE_TYPE) THEN
-          !Initialise the new solver type 
-          SELECT CASE(SOLVE_TYPE)
-          CASE(SOLVER_LINEAR_TYPE)
-            CALL SOLVER_LINEAR_INITIALISE(SOLVER,ERR,ERROR,*999)
-          CASE(SOLVER_NONLINEAR_TYPE)
-            CALL SOLVER_NONLINEAR_INITIALISE(SOLVER,ERR,ERROR,*999)
-          CASE(SOLVER_DYNAMIC_TYPE)
-            CALL SOLVER_DYNAMIC_INITIALISE(SOLVER,ERR,ERROR,*999)
-          CASE(SOLVER_INTEGRATION_TYPE)
-            CALL SOLVER_INTEGRATION_INITIALISE(SOLVER,ERR,ERROR,*999)
-          CASE(SOLVER_EIGENPROBLEM_TYPE)
-            CALL SOLVER_EIGENPROBLEM_INITIALISE(SOLVER,ERR,ERROR,*999)
-          CASE DEFAULT
-            LOCAL_ERROR="The specified solve type of "//TRIM(NUMBER_TO_VSTRING(SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          END SELECT
-          !Finalise the old solve type
-          SELECT CASE(SOLVER%SOLVE_TYPE)
-          CASE(SOLVER_LINEAR_TYPE)
-            CALL SOLVER_LINEAR_FINALISE(SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
-          CASE(SOLVER_NONLINEAR_TYPE)
-            CALL SOLVER_NONLINEAR_FINALISE(SOLVER%NONLINEAR_SOLVER,ERR,ERROR,*999)
-          CASE(SOLVER_DYNAMIC_TYPE)
-            CALL SOLVER_DYNAMIC_FINALISE(SOLVER%DYNAMIC_SOLVER,ERR,ERROR,*999)
-          CASE(SOLVER_INTEGRATION_TYPE)
-            CALL SOLVER_INTEGRATION_FINALISE(SOLVER%INTEGRATION_SOLVER,ERR,ERROR,*999)
-          CASE(SOLVER_EIGENPROBLEM_TYPE)
-            CALL SOLVER_EIGENPROBLEM_FINALISE(SOLVER%EIGENPROBLEM_SOLVER,ERR,ERROR,*999)
-          CASE DEFAULT
-            LOCAL_ERROR="The solver solve type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          END SELECT
-          !Set the solve type
-          SOLVER%SOLVE_TYPE=SOLVE_TYPE
+        IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
+          CALL FLAG_ERROR("Can not changed the solver type for a solve that has been linked.",ERR,ERROR,*998)
+        ELSE
+          IF(SOLVE_TYPE/=SOLVER%SOLVE_TYPE) THEN
+            !Initialise the new solver type 
+            SELECT CASE(SOLVE_TYPE)
+            CASE(SOLVER_LINEAR_TYPE)
+              CALL SOLVER_LINEAR_INITIALISE(SOLVER,ERR,ERROR,*999)
+            CASE(SOLVER_NONLINEAR_TYPE)
+              CALL SOLVER_NONLINEAR_INITIALISE(SOLVER,ERR,ERROR,*999)
+            CASE(SOLVER_DYNAMIC_TYPE)
+              CALL SOLVER_DYNAMIC_INITIALISE(SOLVER,ERR,ERROR,*999)
+            CASE(SOLVER_INTEGRATION_TYPE)
+              CALL SOLVER_INTEGRATION_INITIALISE(SOLVER,ERR,ERROR,*999)
+            CASE(SOLVER_EIGENPROBLEM_TYPE)
+              CALL SOLVER_EIGENPROBLEM_INITIALISE(SOLVER,ERR,ERROR,*999)
+            CASE DEFAULT
+              LOCAL_ERROR="The specified solve type of "//TRIM(NUMBER_TO_VSTRING(SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+            !Finalise the old solve type
+            SELECT CASE(SOLVER%SOLVE_TYPE)
+            CASE(SOLVER_LINEAR_TYPE)
+              CALL SOLVER_LINEAR_FINALISE(SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
+            CASE(SOLVER_NONLINEAR_TYPE)
+              CALL SOLVER_NONLINEAR_FINALISE(SOLVER%NONLINEAR_SOLVER,ERR,ERROR,*999)
+            CASE(SOLVER_DYNAMIC_TYPE)
+              CALL SOLVER_DYNAMIC_FINALISE(SOLVER%DYNAMIC_SOLVER,ERR,ERROR,*999)
+            CASE(SOLVER_INTEGRATION_TYPE)
+              CALL SOLVER_INTEGRATION_FINALISE(SOLVER%INTEGRATION_SOLVER,ERR,ERROR,*999)
+            CASE(SOLVER_EIGENPROBLEM_TYPE)
+              CALL SOLVER_EIGENPROBLEM_FINALISE(SOLVER%EIGENPROBLEM_SOLVER,ERR,ERROR,*999)
+            CASE DEFAULT
+              LOCAL_ERROR="The solver solve type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+            !Set the solve type
+            SOLVER%SOLVE_TYPE=SOLVE_TYPE
+          ENDIF
         ENDIF
       ENDIF
     ELSE
