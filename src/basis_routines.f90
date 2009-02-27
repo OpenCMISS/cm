@@ -309,7 +309,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finishes the creation of a new basis \see BASIS_ROUTINES::BASIS_CREATE_START
+  !>Finishes the creation of a new basis
   SUBROUTINE BASIS_CREATE_FINISH(BASIS,ERR,ERROR,*)
 
     !Argument variables
@@ -470,7 +470,19 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Starts the creation of a new basis \see BASIS_ROUTINES::BASIS_CREATE_START
+  !>Starts the creation of a new basis 
+  !>The default values of the BASIS attributes are:
+  !>- TYPE: 1 (BASIS_LAGRANGE_HERMITE_TP_TYPE)
+  !>- NUMBER_OF_XI: 3
+  !>- INTERPOLATION_XI: (1,1,1) (BASIS_LINEAR_LAGRANGE_INTERPOLATIONs)
+  !>- INTERPOLATION_TYPE: (1,1,1) (BASIS_LAGRANGE_INTERPOLATIONs)
+  !>- INTERPOLATION_ORDER: (1,1,1) (BASIS_LINEAR_INTERPOLATION_ORDERs)
+  !>- DEGENERATE: false
+  !>- COLLAPSED_XI: (4,4,4) (BASIS_NOT_COLLAPSEDs)
+  !>- QUADRATURE: 
+  !>  - TYPE: 1 (BASIS_LAGRANGE_HERMITE_TP_TYPE)
+  !>  - NUMBER_OF_GAUSS_XI: (2,2,2)
+  !>  - GAUSS_ORDER: 0 
   SUBROUTINE BASIS_CREATE_START(USER_NUMBER,BASIS,ERR,ERROR,*)
 
     !Argument variables

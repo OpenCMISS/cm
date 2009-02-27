@@ -247,6 +247,15 @@ CONTAINS
   !
 
   !> Starts the creation of a new region number USER_NUMBER under the global region, initialises all variables and inherits the global regions coordinate system etc.
+  !> Default values set for the REGION's attributes are:
+  !>- COORDINATE_SYSTEM: global coordinate system. See \ref COORDINATE_SYSTEM_TYPE
+  !>- NODES: null
+  !>- MESHES: 0 mesh
+  !>- FIELDS: 0 field
+  !>- EQUATIONS_SETS: 0 equation set
+  !>- PARENT_REGION: global region
+  !>- NUMBER_OF_SUB_REGIONS: 0
+  !>- SUB_REGIONS: 0 region
   SUBROUTINE REGION_CREATE_START(USER_NUMBER,REGION,ERR,ERROR,*)
 
     !Argument variables

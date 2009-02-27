@@ -1,0 +1,26 @@
+/*!
+\page tools Related Tools
+\section tracker Project Tracker
+The opencmiss project tracker is hosted by the Physiome project's Tracker
+\subsection tracker_tips Tips
+- To view openCMISS tracker items, go to https://tracker.physiomeproject.org/buglist.cgi?query_format=advanced&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&product=openCMISS-cm
+- To add a tracker item: https://tracker.physiomeproject.org/enter_bug.cgi?classification=openCMISS-cm
+- Set preferences in the tracker to shadow/watch the opencmiss@physiomeproject.org user.  It is a default CC on openCMISS items, and that way you can set your preferences as to which bugmail you get, and have all new openCMISS tracker items.
+- There is an RSS feed link for any search result, so if you do a search for openCMISS (Advanced search, then choose openCMISS from "Classification"), you can use the RSS feed, and CC yourself to tracker items of interest.   
+
+\section doxygen Doxygen
+The programmer documentation is managed by Doxygen. The html version of doxygen is hosted in http://www.physiome.ox.ac.uk/openCMISS/doc/openCMISS/. 
+\subsection doxygen_tips Tips
+- Can be downloaded from http://www.stack.nl/~dimitri/doxygen/
+- Suggested Doxygen version is 1.5.6. (Currently there are some problems with 1.5.7 & 1.5.8)
+- To generate html and latex versions, go to <path_to_your_opencmiss_folder>/doc/doxygen and run doxygen under that directory. There will be two folders html and latex generated. 
+- To generate pdf version, use some latex to pdf conversion tools, e.g pdflatex. In the latex folder, run "pdflatex refman.tex" and the refman.pdf file will be produced.
+
+\section buildbot Buildbot
+Buildbot is used as the automatic building and testing tool for the openCMISS project.
+\subsection buildbot_tips Tips
+- Manual and downloads from http://buildbot.net/trac
+- It could contain one build master(machine to trigger the builds on different build slaves and deliver information about the build results through protocols like HTTP, mail)
+- It could contain several build slaves (obtain codes from svn repository and do the build under build master's instructions).
+- Build master and build slaves can be on the same machine. 
+*/

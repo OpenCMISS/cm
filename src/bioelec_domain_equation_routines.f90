@@ -59,8 +59,6 @@ MODULE BIOELEC_DOMAIN_EQUATION_ROUTINES
   USE MATRIX_VECTOR
   USE PROBLEM_CONSTANTS
   USE STRINGS
-  USE SOLUTION_MAPPING_ROUTINES
-  USE SOLUTIONS_ROUTINES
   USE SOLVER_ROUTINES
   USE TIMER
   USE TYPES
@@ -260,11 +258,11 @@ CONTAINS
   !================================================================================================================================
   !
  
-  !>Sets up the bioelectric domain solution.
+  !>Sets up the bioelectric domain problem.
   SUBROUTINE BIOELEC_DOMAIN_EQUATION_PROBLEM_SETUP(PROBLEM,SETUP_TYPE,ACTION_TYPE,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the solutions set to setup a bioelectric domain equation on.
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem set to setup a bioelectric domain equation on.
     INTEGER(INTG), INTENT(IN) :: SETUP_TYPE !<The setup type
     INTEGER(INTG), INTENT(IN) :: ACTION_TYPE !<The action type
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -303,23 +301,23 @@ CONTAINS
             & " is invalid for a bioelectric domain equation."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
-      CASE(PROBLEM_SETUP_SOLUTION_TYPE)
+      CASE(PROBLEM_SETUP_SOLVERS_TYPE)
         SELECT CASE(ACTION_TYPE)
         CASE(PROBLEM_SETUP_START_ACTION)
         CASE(PROBLEM_SETUP_FINISH_ACTION)
         CASE(PROBLEM_SETUP_DO_ACTION)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
             & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a bioelectric equation."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
-      CASE(PROBLEM_SETUP_SOLVER_TYPE)
+      CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
         SELECT CASE(ACTION_TYPE)
         CASE(PROBLEM_SETUP_START_ACTION)
         CASE(PROBLEM_SETUP_FINISH_ACTION)
         CASE(PROBLEM_SETUP_DO_ACTION)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
             & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
