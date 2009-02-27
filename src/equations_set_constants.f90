@@ -150,35 +150,6 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_MIXED_BOUNDARY_CONDITION=2 !<The dof is set as a mixed boundary condition. \see EQUATIONS_SET_CONSTANTS_FixedConditions,EQUATIONS_SET_CONSTANTS
   !>@}
   
-  !> \addtogroup EQUATIONS_SET_CONSTANTS_LinearityTypes EQUATIONS_SET_CONSTANTS::LinearityTypes
-  !> \brief The problem linearity type parameters
-  !> \see EQUATIONS_SET_CONSTANTS
-  !>@{
-  INTEGER(INTG), PARAMETER :: NUMBER_OF_EQUATIONS_SET_LINEARITY_TYPES=3 !<The number of problem linearity types defined. \see EQUATIONS_SET_CONSTANTS_LinearityTypes,EQUATIONS_SET_CONSTANTS
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_LINEAR=1 !<The problem is linear. \see EQUATIONS_SET_CONSTANTS_LinearityTypes,EQUATIONS_SET_CONSTANTS
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NONLINEAR=2 !<The problem is non-linear. \see EQUATIONS_SET_CONSTANTS_LinearityTypes,EQUATIONS_SET_CONSTANTS
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NONLINEAR_BCS=3 !<The problem has non-linear boundary conditions. \see EQUATIONS_SET_CONSTANTS_LinearityTypes,EQUATIONS_SET_CONSTANTS
-  !>@}
-
-  !> \addtogroup EQUATIONS_SET_CONSTANTS_JacobianCalculationTypes EQUATIONS_SET_CONSTANTS::JacobianCalculationTypes
-  !> \brief The Jacobian types for nonlinear equations sets
-  !> \see EQUATIONS_SET_CONSTANTS
-  !>@{
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_JACOBIAN_NOT_CALCULATED=1 !<The Jacobian values will not be calculated for the nonlinear equations set \see EQUATIONS_SET_CONSTANTS_JacobianCalculationTypes,EQUATIONS_SET_CONSTANTS
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_JACOBIAN_ANALTYIC_CALCULATED=2 !<The Jacobian values will be calculated analytically for the nonlinear equations set \see EQUATIONS_SET_CONSTANTS_JacobianCalculationTypes,EQUATIONS_SET_CONSTANTS
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_JACOBIAN_FD_CALCULATED=3 !<The Jacobian values will be calcualted using finite differences for the nonlinear equations set \see EQUATIONS_SET_CONSTANTS_JacobianCalculationTypes,EQUATIONS_SET_CONSTANTS
-  !>@}
-  
-  
-  !> \addtogroup EQUATIONS_SET_CONSTANTS_TimeDepedenceTypes EQUATIONS_SET_CONSTANTS::TimeDepedenceTypes
-  !> \brief The problem time dependence type parameters
-  !> \see EQUATIONS_SET_CONSTANTS
-  !>@{
-  INTEGER(INTG), PARAMETER :: NUMBER_OF_EQUATIONS_SET_TIME_TYPES=3 !<The number of equations set time dependence types defined. \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_STATIC=1 !<The equations set is static and has no time dependence \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_QUASISTATIC=2 !<The equations set is quasi-static \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DYNAMIC=3 !<The equations set is dynamic \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
-  !>@}
 
   !> \addtogroup EQUATIONS_SET_CONSTANTS_SolutionMethods EQUATIONS_SET_CONSTANTS::SolutionMethods
   !> \brief The solution method parameters
@@ -193,24 +164,28 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_GFV_SOLUTION_METHOD=6 !<Grid-based Finite Volume solution method \see EQUATIONS_SET_CONSTANTS_SolutionMethods,EQUATIONS_SET_CONSTANTS
   !>@}
 
-  !> \addtogroup EQUATIONS_SET_CONSTANTS_OutputTypes EQUATIONS_SET_CONSTANTS::OutputTypes
-  !> \brief Equations output types
+  !Module parameters
+  !> \addtogroup EQUATIONS_SET_CONSTANTS_LinearityTypes EQUATIONS_SET_CONSTANTS::LinearityTypes
+  !> \brief The equations linearity types
   !> \see EQUATIONS_SET_CONSTANTS
   !>@{
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NO_OUTPUT=0 !<No output \see EQUATIONS_SET_CONSTANTS_OutputTypes,EQUATIONS_SET_CONSTANTS
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_TIMING_OUTPUT=1 !<Timing information output \see EQUATIONS_SET_CONSTANTS_OutputTypes,EQUATIONS_SET_CONSTANTS
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_MATRIX_OUTPUT=2 !<All below and equation matrices output \see EQUATIONS_SET_CONSTANTS_OutputTypes,EQUATIONS_SET_CONSTANTS
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_ELEMENT_MATRIX_OUTPUT=3 !<All below and Element matrices output \see EQUATIONS_SET_CONSTANTS_OutputTypes,EQUATIONS_SET_CONSTANTS
+  INTEGER(INTG), PARAMETER :: NUMBER_OF_EQUATIONS_LINEARITY_TYPES=3 !<The number of equations linearity types defined. \see EQUATIONS_SET_CONSTANTS_LinearityTypes,EQUATIONS_SET_CONSTANTS
+  INTEGER(INTG), PARAMETER :: EQUATIONS_LINEAR=1 !<The equations are linear. \see EQUATIONS_SET_CONSTANTS_LinearityTypes,EQUATIONS_SET_CONSTANTS
+  INTEGER(INTG), PARAMETER :: EQUATIONS_NONLINEAR=2 !<The equations are non-linear. \see EQUATIONS_SET_CONSTANTS_LinearityTypes,EQUATIONS_SET_CONSTANTS
+  INTEGER(INTG), PARAMETER :: EQUATIONS_NONLINEAR_BCS=3 !<The equations have non-linear boundary conditions. \see EQUATIONS_SET_CONSTANTS_LinearityTypes,EQUATIONS_SET_CONSTANTS
   !>@}
 
-  !> \addtogroup EQUATIONS_SET_CONSTANTS_SparsityTypes EQUATIONS_SET_CONSTANTS::SparsityTypes
-  !> \brief Equations matrices sparsity types
+ 
+  !> \addtogroup EQUATIONS_SET_CONSTANTS_TimeDepedenceTypes EQUATIONS_SET_CONSTANTS::TimeDepedenceTypes
+  !> \brief The equations time dependence type parameters
   !> \see EQUATIONS_SET_CONSTANTS
   !>@{
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_SPARSE_MATRICES=1 !<Use sparse matrices for the equations set \see EQUATIONS_SET_CONSTANTS_SparsityTypes,EQUATIONS_SET_CONSTANTS
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_FULL_MATRICES=2 !<Use fully populated matrices for the equations set \see EQUATIONS_SET_CONSTANTS_SparsityTypes,EQUATIONS_SET_CONSTANTS
- !>@}
- 
+  INTEGER(INTG), PARAMETER :: NUMBER_OF_EQUATIONS_TIME_TYPES=4 !<The number of equations time dependence types defined. \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
+  INTEGER(INTG), PARAMETER :: EQUATIONS_STATIC=1 !<The equations are static and have no time dependence. \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
+  INTEGER(INTG), PARAMETER :: EQUATIONS_QUASISTATIC=2 !<The equations are quasi-static. \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
+  INTEGER(INTG), PARAMETER :: EQUATIONS_FIRST_ORDER_DYNAMIC=3 !<The equations are first order dynamic. \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SECOND_ORDER_DYNAMIC=4 !<The equations are a second order dynamic. \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_ROUTINES
+  !>@}
   !> \addtogroup EQUATIONS_SET_CONSTANTS_EquationAnalyticFunction EQUATIONS_SET_CONSTANTS::EquationAnalyticFunction
   !> \brief the analytic representive of laplace equation
   !> \see LAPLACE_EQUATIONS_ROUTINES

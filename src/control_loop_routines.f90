@@ -47,7 +47,6 @@ MODULE CONTROL_LOOP_ROUTINES
   USE ISO_VARYING_STRING
   USE KINDS
   USE PROBLEM_CONSTANTS
-  USE SOLUTIONS_ROUTINES
   USE SOLVER_ROUTINES
   USE STRINGS
   USE TYPES
@@ -81,8 +80,8 @@ MODULE CONTROL_LOOP_ROUTINES
 
   PUBLIC CONTROL_LOOP_CREATE_FINISH,CONTROL_LOOP_CREATE_START,CONTROL_LOOP_CURRENT_TIMES_GET,CONTROL_LOOP_DESTROY, &
     & CONTROL_LOOP_GET,CONTROL_LOOP_ITERATIONS_SET,CONTROL_LOOP_MAXIMUM_ITERATIONS_SET,CONTROL_LOOP_NUMBER_SUB_LOOPS_GET, &
-    & CONTROL_LOOP_NUMBER_SUB_LOOPS_SET,CONTROL_LOOP_SUB_LOOP_GET,CONTROL_LOOP_SOLUTIONS_DESTROY,CONTROL_LOOP_SOLUTIONS_GET, &
-    & CONTROL_LOOP_SOLVER_DESTROY,CONTROL_LOOP_TIMES_GET,CONTROL_LOOP_TIMES_SET,CONTROL_LOOP_TYPE_SET
+    & CONTROL_LOOP_NUMBER_SUB_LOOPS_SET,CONTROL_LOOP_SUB_LOOP_GET,CONTROL_LOOP_SOLVERS_DESTROY,CONTROL_LOOP_SOLVERS_GET, &
+    & CONTROL_LOOP_SOLVER_EQUATIONS_DESTROY,CONTROL_LOOP_TIMES_GET,CONTROL_LOOP_TIMES_SET,CONTROL_LOOP_TYPE_SET
 
 CONTAINS
 
@@ -181,7 +180,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables    
     TYPE(CONTROL_LOOP_TIME_TYPE), POINTER :: TIME_LOOP
-    
+   
     CALL ENTERS("CONTROL_LOOP_CURRENT_TIMES_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
@@ -265,8 +264,8 @@ CONTAINS
         ENDDO !loop_idx
         DEALLOCATE(CONTROL_LOOP%SUB_LOOPS)
       ENDIF
-      !Finalise any solutions
-      IF(ASSOCIATED(CONTROL_LOOP%SOLUTIONS)) CALL SOLUTIONS_DESTROY(CONTROL_LOOP%SOLUTIONS,ERR,ERROR,*999)
+      !Finalise any solvers
+      IF(ASSOCIATED(CONTROL_LOOP%SOLVERS)) CALL SOLVERS_DESTROY(CONTROL_LOOP%SOLVERS,ERR,ERROR,*999)
       !Now finalise this control loop
       CALL CONTROL_LOOP_SIMPLE_FINALISE(CONTROL_LOOP%SIMPLE_LOOP,ERR,ERROR,*999)
       CALL CONTROL_LOOP_FIXED_FINALISE(CONTROL_LOOP%FIXED_LOOP,ERR,ERROR,*999)
@@ -315,7 +314,7 @@ CONTAINS
         NULLIFY(PROBLEM%CONTROL_LOOP%TIME_LOOP)
         NULLIFY(PROBLEM%CONTROL_LOOP%WHILE_LOOP)
         PROBLEM%CONTROL_LOOP%NUMBER_OF_SUB_LOOPS=0
-        NULLIFY(PROBLEM%CONTROL_LOOP%SOLUTIONS)
+        NULLIFY(PROBLEM%CONTROL_LOOP%SOLVERS)
         CALL CONTROL_LOOP_SIMPLE_INITIALISE(PROBLEM%CONTROL_LOOP,ERR,ERROR,*999)
       ENDIF
     ELSE
@@ -709,7 +708,7 @@ CONTAINS
                 NULLIFY(CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%TIME_LOOP)
                 NULLIFY(CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%WHILE_LOOP)
                 CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%NUMBER_OF_SUB_LOOPS=0
-                NULLIFY(CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%SOLUTIONS)
+                NULLIFY(CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%SOLVERS)
                 CALL CONTROL_LOOP_SIMPLE_INITIALISE(CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR,ERR,ERROR,*999)
               ENDDO !loop_idx
             ELSE
@@ -808,123 +807,124 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Recursively destroys the solutions for a control loop and all sub control loops.
-  RECURSIVE SUBROUTINE CONTROL_LOOP_SOLUTIONS_DESTROY(CONTROL_LOOP,ERR,ERROR,*)
+  !>Recursively destroys the solvers for a control loop and all sub control loops.
+  RECURSIVE SUBROUTINE CONTROL_LOOP_SOLVERS_DESTROY(CONTROL_LOOP,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to destroy the solutions for.
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to destroy the solvers for.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: loop_idx
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP2
 
-    CALL ENTERS("CONTROL_LOOP_SOLUTIONS_DESTROY",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(CONTROL_LOOP)) THEN
-      !Destroy the solutions in any sub control loops first
-      IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS>0) THEN
-        DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
-          CONTROL_LOOP2=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
-          CALL CONTROL_LOOP_SOLUTIONS_DESTROY(CONTROL_LOOP2,ERR,ERROR,*999)
-        ENDDO !loop_idx
-      ENDIF
-      !Destroy the solutions in this control loop
-      IF(ASSOCIATED(CONTROL_LOOP%SOLUTIONS)) CALL SOLUTIONS_DESTROY(CONTROL_LOOP%SOLUTIONS,ERR,ERROR,*999)
-    ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("CONTROL_LOOP_SOLUTIONS_DESTROY")
-    RETURN
-999 CALL ERRORS("CONTROL_LOOP_SOLUTIONS_DESTROY",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_SOLUTIONS_DESTROY")
-    RETURN 1
-  END SUBROUTINE CONTROL_LOOP_SOLUTIONS_DESTROY
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Returns a pointer to the solutions for a control loop.
-  RECURSIVE SUBROUTINE CONTROL_LOOP_SOLUTIONS_GET(CONTROL_LOOP,SOLUTIONS,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to get the solutions for.
-    TYPE(SOLUTIONS_TYPE), POINTER :: SOLUTIONS !<On exit, a pointer to the control loop solutions. Must not be associated on entry.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
- 
-    CALL ENTERS("CONTROL_LOOP_SOLUTIONS_GET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(CONTROL_LOOP)) THEN
-      IF(ASSOCIATED(SOLUTIONS)) THEN
-        CALL FLAG_ERROR("Solutions is already associated.",ERR,ERROR,*999)
-      ELSE
-        SOLUTIONS=>CONTROL_LOOP%SOLUTIONS
-        IF(.NOT.ASSOCIATED(SOLUTIONS)) CALL FLAG_ERROR("Solutions is not associated.",ERR,ERROR,*999)
-      ENDIF      
-    ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("CONTROL_LOOP_SOLUTIONS_GET")
-    RETURN
-999 CALL ERRORS("CONTROL_LOOP_SOLUTIONS_GET",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_SOLUTIONS_GET")
-    RETURN 1
-  END SUBROUTINE CONTROL_LOOP_SOLUTIONS_GET
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Recursively destroys the solver for a control loop and all sub control loops. \todo Create solutions_solver_destory and call?
-  RECURSIVE SUBROUTINE CONTROL_LOOP_SOLVER_DESTROY(CONTROL_LOOP,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to destroy the solver for.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: loop_idx,solution_idx
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP2
-    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER
- 
-    CALL ENTERS("CONTROL_LOOP_SOLVER_DESTROY",ERR,ERROR,*999)
+    CALL ENTERS("CONTROL_LOOP_SOLVERS_DESTROY",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       !Destroy the solvers in any sub control loops first
       IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS>0) THEN
         DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
           CONTROL_LOOP2=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
-          CALL CONTROL_LOOP_SOLVER_DESTROY(CONTROL_LOOP2,ERR,ERROR,*999)
+          CALL CONTROL_LOOP_SOLVERS_DESTROY(CONTROL_LOOP2,ERR,ERROR,*999)
         ENDDO !loop_idx
       ENDIF
-      !Destroy the solutions in this control loop
-      IF(ASSOCIATED(CONTROL_LOOP%SOLUTIONS)) THEN
-        DO solution_idx=1,CONTROL_LOOP%SOLUTIONS%NUMBER_OF_SOLUTIONS
-          SOLUTION=>CONTROL_LOOP%SOLUTIONS%SOLUTIONS(solution_idx)%PTR
-          IF(ASSOCIATED(SOLUTION)) THEN
-            SOLVER=>SOLUTION%SOLVER
-            IF(ASSOCIATED(SOLVER)) CALL SOLVER_DESTROY(SOLVER,ERR,ERROR,*999)
+      !Destroy the solvers in this control loop
+      IF(ASSOCIATED(CONTROL_LOOP%SOLVERS)) CALL SOLVERS_DESTROY(CONTROL_LOOP%SOLVERS,ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("CONTROL_LOOP_SOLVERS_DESTROY")
+    RETURN
+999 CALL ERRORS("CONTROL_LOOP_SOLVERS_DESTROY",ERR,ERROR)
+    CALL EXITS("CONTROL_LOOP_SOLVERS_DESTROY")
+    RETURN 1
+  END SUBROUTINE CONTROL_LOOP_SOLVERS_DESTROY
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns a pointer to the solvers for a control loop.
+  RECURSIVE SUBROUTINE CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to get the solvers for.
+    TYPE(SOLVERS_TYPE), POINTER :: SOLVERS !<On exit, a pointer to the control loop solvers. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("CONTROL_LOOP_SOLVERS_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(ASSOCIATED(SOLVERS)) THEN
+        CALL FLAG_ERROR("Solvers is already associated.",ERR,ERROR,*999)
+      ELSE
+        SOLVERS=>CONTROL_LOOP%SOLVERS
+        IF(.NOT.ASSOCIATED(SOLVERS)) CALL FLAG_ERROR("Solvers is not associated.",ERR,ERROR,*999)
+      ENDIF      
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("CONTROL_LOOP_SOLVERS_GET")
+    RETURN
+999 CALL ERRORS("CONTROL_LOOP_SOLVERS_GET",ERR,ERROR)
+    CALL EXITS("CONTROL_LOOP_SOLVERS_GET")
+    RETURN 1
+    
+  END SUBROUTINE CONTROL_LOOP_SOLVERS_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Recursively destroys the solver equations for a control loop and all sub control loops. \todo Create solvers_solver_equations_destory and call?
+  RECURSIVE SUBROUTINE CONTROL_LOOP_SOLVER_EQUATIONS_DESTROY(CONTROL_LOOP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to destroy the solver for.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: loop_idx,solver_idx
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP2
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
+ 
+    CALL ENTERS("CONTROL_LOOP_SOLVER_EQUATIONS_DESTROY",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      !Destroy the solver equations in any sub control loops first
+      IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS>0) THEN
+        DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
+          CONTROL_LOOP2=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
+          CALL CONTROL_LOOP_SOLVER_EQUATIONS_DESTROY(CONTROL_LOOP2,ERR,ERROR,*999)
+        ENDDO !loop_idx
+      ENDIF
+      !Destroy the solver equations in this control loop
+      IF(ASSOCIATED(CONTROL_LOOP%SOLVERS)) THEN
+        DO solver_idx=1,CONTROL_LOOP%SOLVERS%NUMBER_OF_SOLVERS
+          SOLVER=>CONTROL_LOOP%SOLVERS%SOLVERS(solver_idx)%PTR
+          IF(ASSOCIATED(SOLVER)) THEN
+            SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+            IF(ASSOCIATED(SOLVER_EQUATIONS)) CALL SOLVER_EQUATIONS_DESTROY(SOLVER_EQUATIONS,ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR("Solution is not associated.",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
           ENDIF
-        ENDDO !solution_idx
+        ENDDO !solver_idx
       ENDIF
     ELSE
       CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_SOLVER_DESTROY")
+    CALL EXITS("CONTROL_LOOP_SOLVER_EQUATIONS_DESTROY")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_SOLVER_DESTROY",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_SOLVER_DESTROY")
+999 CALL ERRORS("CONTROL_LOOP_SOLVER_EQUATIONS_DESTROY",ERR,ERROR)
+    CALL EXITS("CONTROL_LOOP_SOLVER_EQUATIONS_DESTROY")
     RETURN 1
-  END SUBROUTINE CONTROL_LOOP_SOLVER_DESTROY
+  END SUBROUTINE CONTROL_LOOP_SOLVER_EQUATIONS_DESTROY
 
   !
   !================================================================================================================================
@@ -1054,7 +1054,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables    
     TYPE(CONTROL_LOOP_TIME_TYPE), POINTER :: TIME_LOOP
-    
+   
     CALL ENTERS("CONTROL_LOOP_TIMES_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN

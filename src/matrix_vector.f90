@@ -1041,32 +1041,32 @@ CONTAINS
 
     IF(ASSOCIATED(MATRIX)) THEN
       IF(MATRIX%MATRIX_FINISHED) THEN
-        CALL FLAG_ERROR("The matrix has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has already been finished.",ERR,ERROR,*999)
       ELSE
         SELECT CASE(MATRIX%STORAGE_TYPE)
         CASE(MATRIX_BLOCK_STORAGE_TYPE)
-          CALL FLAG_ERROR("Can not set the number of non-zeros for a matrix with block storage",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Can not set the number of non-zeros for a matrix with block storage.",ERR,ERROR,*999)
         CASE(MATRIX_DIAGONAL_STORAGE_TYPE)
-          CALL FLAG_ERROR("Can not set the number of non-zeros for a matrix with diagonal storage",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Can not set the number of non-zeros for a matrix with diagonal storage.",ERR,ERROR,*999)
         CASE(MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-          CALL FLAG_ERROR("Can not set the number of non-zeros for a matrix with column major storage",ERR,ERROR,*999)          
+          CALL FLAG_ERROR("Can not set the number of non-zeros for a matrix with column major storage.",ERR,ERROR,*999)          
         CASE(MATRIX_ROW_MAJOR_STORAGE_TYPE)
-          CALL FLAG_ERROR("Can not set the number of non-zeros for a matrix with row major storage",ERR,ERROR,*999)          
+          CALL FLAG_ERROR("Can not set the number of non-zeros for a matrix with row major storage.",ERR,ERROR,*999)          
         CASE(MATRIX_COMPRESSED_ROW_STORAGE_TYPE,MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE,MATRIX_ROW_COLUMN_STORAGE_TYPE)
           IF(NUMBER_NON_ZEROS>0) THEN
             MATRIX%NUMBER_NON_ZEROS=NUMBER_NON_ZEROS
           ELSE
             LOCAL_ERROR="The number of non-zeros ("//TRIM(NUMBER_TO_VSTRING(NUMBER_NON_ZEROS,"*",ERR,ERROR))// &
-              & ") is invalid. The number must be greater than zero"
+              & ") is invalid. The number must be greater than zero."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         CASE DEFAULT
-          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid"
+          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_NUMBER_NON_ZEROS_SET")
@@ -1531,10 +1531,10 @@ CONTAINS
                     DO j=ROW_INDICES(i),ROW_INDICES(i+1)-1
                       k=COLUMN_INDICES(j)
                       IF(k>0) THEN
-                        IF(k>MATRIX%NUMBER_NON_ZEROS) THEN
+                        IF(k>MATRIX%N) THEN
                           LOCAL_ERROR="Invalid column indices. Column index "//TRIM(NUMBER_TO_VSTRING(j,"*",ERR,ERROR))//" ("// &
-                            & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//") is greater than the number of non-zeros ("// &
-                            & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")."
+                            & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//") is greater than the number of columns ("// &
+                            & TRIM(NUMBER_TO_VSTRING(MATRIX%N,"*",ERR,ERROR))//")."
                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
