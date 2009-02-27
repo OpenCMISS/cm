@@ -75,6 +75,16 @@ MODULE TYPES
   USE TREES
 
   IMPLICIT NONE
+
+  !
+  !================================================================================================================================
+  !
+  ! Base types
+  !
+
+  TYPE REAL_DP_PTR_TYPE
+    REAL(DP), POINTER :: PTR(:)
+  END TYPE REAL_DP_PTR_TYPE  
   
   !
   !================================================================================================================================
@@ -395,7 +405,7 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: DERIVATIVES_IN_FACE(:,:) !<DERIVATIVES_IN_FACE(nk,nn). The global derivative number of the local derivative nk for the local node nn in the face.
   END TYPE DOMAIN_FACE_TYPE
 
-  !>A buffer type to allow for an array of pointers to a FIELD_VARIABLE_TYPE.
+  !>A buffer type to allow for an array of pointers to a DOMAIN_FACE_TYPE.
   TYPE DOMAIN_FACE_PTR_TYPE
     TYPE(DOMAIN_FACE_TYPE), POINTER :: PTR !<The pointer to the domain face.
   END TYPE DOMAIN_FACE_PTR_TYPE
@@ -632,13 +642,15 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_OF_GLOBAL !<The number of global numbers for this mapping.
     INTEGER(INTG) :: NUMBER_OF_DOMAINS !<The number of domains in this mapping.
     INTEGER(INTG) :: NUMBER_OF_INTERNAL !<The number of internal numbers in this mapping.
-    INTEGER(INTG), ALLOCATABLE :: INTERNAL_LIST(:) !<INTERNAL_LIST(i). The list of internal numbers for the mapping. The i'th position gives the i'th local internal number.
     INTEGER(INTG) :: NUMBER_OF_BOUNDARY !<The number of boundary numbers in this mapping.
-    INTEGER(INTG), ALLOCATABLE :: BOUNDARY_LIST(:) !<BOUNDARY_LIST(i). The list of boundary numbers for the mapping. The i'th position gives the i'th local boundary number.
     INTEGER(INTG) :: NUMBER_OF_GHOST !<The number of ghost numbers in this mapping.
-    INTEGER(INTG), ALLOCATABLE :: GHOST_LIST(:) !<GHOST_LIST(i). The list of ghost numbers for the mapping. The i'th position gives the i'th local ghost number.
-    !!Need a dimension index here as domain  variables that map to matrices will have different row and column
-    !!mappings in general????
+    INTEGER(INTG) :: INTERNAL_START !<The start postition in the DOMAIN_LIST for the list of internal numbers
+    INTEGER(INTG) :: INTERNAL_FINISH !<The finish postition in the DOMAIN_LIST for the list of internal numbers
+    INTEGER(INTG) :: BOUNDARY_START !<The start postition in the DOMAIN_LIST for the list of boundary numbers
+    INTEGER(INTG) :: BOUNDARY_FINISH !<The finish postition in the DOMAIN_LIST for the list of boundary numbers
+    INTEGER(INTG) :: GHOST_START !<The start postition in the DOMAIN_LIST for the list of ghost numbers
+    INTEGER(INTG) :: GHOST_FINISH !<The finish postition in the DOMAIN_LIST for the list of ghost numbers
+    INTEGER(INTG), ALLOCATABLE :: DOMAIN_LIST(:) !<DOMAIN_LIST(i). The list of local numbers grouped so that the internal numbers are from INTERNAL_START to INTERNAL_FINISH, the boundary numbers are from BOUNDARY_START to BOUNDARY_FINISH and the ghost numbers are from GHOST_START to GHOST_FINISH
     INTEGER(INTG), ALLOCATABLE :: LOCAL_TO_GLOBAL_MAP(:) !<LOCAL_TO_GLOBAL_MAP(i). The global number for the i'th local number for the mapping.
     TYPE(DOMAIN_GLOBAL_MAPPING_TYPE), ALLOCATABLE :: GLOBAL_TO_LOCAL_MAP(:) !<GLOBAL_TO_LOCAL_MAP(i). The local information for the i'th global number for the mapping.
     INTEGER(INTG) :: NUMBER_OF_ADJACENT_DOMAINS !<The number of domains that are adjacent to this domain in the mapping.
@@ -974,28 +986,30 @@ MODULE TYPES
   !>Contains information about an equations matrix.
   TYPE EQUATIONS_MATRIX_TYPE
     INTEGER(INTG) :: MATRIX_NUMBER !<The number of the equations matrix
-    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES !<A pointer to the equations matrices for the equation matrix.
+    TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: DYNAMIC_MATRICES !<A pointer to the dynamic equations matrices for the dynamic equation matrix.
+    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES !<A pointer to the linear equations matrices for the linear equation matrix.
     INTEGER(INTG) :: STORAGE_TYPE !<The storage (sparsity) type for this matrix
     INTEGER(INTG) :: STRUCTURE_TYPE !<The structure (sparsity) type for this matrix
+    LOGICAL :: LUMPED !<Is .TRUE. if the equations matrix is lumped
     INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in this equations matrix
     LOGICAL :: UPDATE_MATRIX !<Is .TRUE. if this equations matrix is to be updated
     LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this equations matrix has not been assembled
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the distributed equations matrix data
     TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_MATRIX !<The element matrix for this equations matrix
-   END TYPE EQUATIONS_MATRIX_TYPE
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: TEMP_VECTOR !<Temporary vector used for assembly. 
+  END TYPE EQUATIONS_MATRIX_TYPE
 
   !>A buffer type to allow for an array of pointers to a EQUATIONS_MATRIX_TYPE \see TYPES::EQUATIONS_MATRIX_TYPE.
   TYPE EQUATIONS_MATRIX_PTR_TYPE
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: PTR !<A pointer to the equations matrix.
   END TYPE EQUATIONS_MATRIX_PTR_TYPE
-
+ 
   !>Contains information on the Jacobian matrix for nonlinear problems
   TYPE EQUATIONS_JACOBIAN_TYPE
     TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
     INTEGER(INTG) :: STORAGE_TYPE !<The storage (sparsity) type for this matrix
     INTEGER(INTG) :: STRUCTURE_TYPE !<The structure (sparsity) type for this matrix
     INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in this global matrix
-    INTEGER(INTG) :: JACOBIAN_CALCULATION_TYPE !<The type of how the Jacobian is calculated \see EQUATIONS_SET_CONSTANTS_JacobianCalculationTypes,EQUATIONS_SET_CONSTANTS
     LOGICAL :: UPDATE_JACOBIAN !<Is .TRUE. if this Jacobian matrix is to be updated
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: JACOBIAN !<A pointer to the distributed jacobian matrix data
     LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this Jacobian matrix has not been assembled
@@ -1003,11 +1017,19 @@ MODULE TYPES
     TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_RESIDUAL !<An element residual vector for nonlinear problems when Jacobians are calculated. This is not used if the Jacobian is not supplied. Old CMISS name RE2.
   END TYPE EQUATIONS_JACOBIAN_TYPE
 
+  !>Contains information of the dynamic matrices for equations matrices
+  TYPE EQUATIONS_MATRICES_DYNAMIC_TYPE
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES !<A pointer back to the equations matrices.
+    INTEGER(INTG) :: NUMBER_OF_DYNAMIC_MATRICES !<The number of dynamic equations matrices defined for the equations set.
+    TYPE(EQUATIONS_MATRIX_PTR_TYPE), ALLOCATABLE :: MATRICES(:) !<MATRICES(matrix_idx)%PTR contains the information on the matrix_idx'th dynamic equations matrix.
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: TEMP_VECTOR !<Temporary vector used for assembly. 
+  END TYPE EQUATIONS_MATRICES_DYNAMIC_TYPE
+
   !>Contains information of the linear matrices for equations matrices
   TYPE EQUATIONS_MATRICES_LINEAR_TYPE
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES !<A pointer back to the equations matrices.
-    INTEGER(INTG) :: NUMBER_OF_LINEAR_MATRICES !<The number of equations matrices defined for the problem.
-    TYPE(EQUATIONS_MATRIX_PTR_TYPE), ALLOCATABLE :: MATRICES(:) !<MATRICES(matrix_idx)%PTR contains the information on the matrix_idx'th equations matrix.
+    INTEGER(INTG) :: NUMBER_OF_LINEAR_MATRICES !<The number of linear equations matrices defined for the equations set.
+    TYPE(EQUATIONS_MATRIX_PTR_TYPE), ALLOCATABLE :: MATRICES(:) !<MATRICES(matrix_idx)%PTR contains the information on the matrix_idx'th linear equations matrix.
   END TYPE EQUATIONS_MATRICES_LINEAR_TYPE
 
   !>Contains information of the nolinear matrices and vectors for equations matrices
@@ -1043,11 +1065,12 @@ MODULE TYPES
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer back to the equations
     LOGICAL :: EQUATIONS_MATRICES_FINISHED !<Is .TRUE. if the equations matrices have finished being created, .FALSE. if not.
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping for the equations matrices.
-    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING !<A pointer to the solution mapping for the equations matrices
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping for the equations matrices
     INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of local rows (excluding ghost rows) in the distributed equations matrices and vectors
     INTEGER(INTG) :: TOTAL_NUMBER_OF_ROWS !<The number of local rows (including ghost rows) in the distributed equations matrices and vectors
     INTEGER(INTG) :: NUMBER_OF_GLOBAL_ROWS !<The number of global rows in the distributed equations matrices and vectors
     !Equations matrices components
+    TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: DYNAMIC_MATRICES !<A pointer to the dynamic matrices information for the equations matrices
     TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES !<A pointer to the linear matrices information for the equations matrices
     TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES !<A pointer to the nonlinear matrices and vectors information for the equations matrices
     TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: RHS_VECTOR !<A pointer to the RHS vector information for the equations matrices
@@ -1060,7 +1083,7 @@ MODULE TYPES
   ! Equations mapping types
   !
   
-  !>Contains the information about the mapping of a variable DOF to an equations matrix column
+   !>Contains the information about the mapping of a variable DOF to an equations matrix column
   TYPE VAR_TO_EQUATIONS_COLUMN_MAP_TYPE
     INTEGER(INTG), ALLOCATABLE :: COLUMN_DOF(:) !<COLUMN_DOF(dof_idx). The equations column number for this equations matrix that the dof_idx'th variable DOF is mapped to.  
   END TYPE VAR_TO_EQUATIONS_COLUMN_MAP_TYPE
@@ -1070,7 +1093,7 @@ MODULE TYPES
     INTEGER(INTG) :: VARIABLE_INDEX !<The variable index for this variable to equations matrices map
     INTEGER(INTG) :: VARIABLE_TYPE !<The variable type for this variable to equations matrices map
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE !<A pointer to the field variable for this variable to equations matrices map
-    INTEGER(INTG) :: NUMBER_OF_LINEAR_EQUATIONS_MATRICES !<The number of linear equations matrices this variable type is mapped to. If the number is -1 the variable is mapped to the RHS vector. If the number is zero then this variable type is not involved in the equations set and the rest of the type is not allocated.
+    INTEGER(INTG) :: NUMBER_OF_EQUATIONS_MATRICES !<The number of equations matrices (linear or dynamic) this variable type is mapped to. If the number is -1 the variable is mapped to the RHS vector. If the number is zero then this variable type is not involved in the equations set and the rest of the type is not allocated.
     INTEGER(INTG), ALLOCATABLE :: EQUATIONS_MATRIX_NUMBERS(:) !<EQUATIONS_MATRIX_NUMBERS(i). The equations matrix number for the i'th matrix that this variable type is mapped to.
     TYPE(VAR_TO_EQUATIONS_COLUMN_MAP_TYPE), ALLOCATABLE :: DOF_TO_COLUMNS_MAPS(:) !<DOF_TO_COLUMNS_MAPS(i). The variable dof to equations columns for the i'th equations matrix.
     INTEGER(INTG), ALLOCATABLE :: DOF_TO_ROWS_MAP(:) !<DOF_TO_ROWS_MAP(dof_idx). The row number that the dof_idx'th variable dof is mapped to.
@@ -1087,15 +1110,30 @@ MODULE TYPES
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: COLUMN_DOFS_MAPPING !<A pointer to the column dofs domain mapping for the matrix variable
   END TYPE EQUATIONS_MATRIX_TO_VAR_MAP_TYPE
 
+  TYPE EQUATIONS_MAPPING_DYNAMIC_TYPE
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping
+    INTEGER(INTG) :: NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES !<The number of dynamic equations matrices in this mapping
+
+    INTEGER(INTG) :: STIFFNESS_MATRIX_NUMBER !<The matrix number of the dynamic stiffness matrix. 0 if there is no dynamic stiffness matrix
+    INTEGER(INTG) :: DAMPING_MATRIX_NUMBER !<The matrix number of the dynamic damping matrix. 0 if there is no dynamic damping matrix
+    INTEGER(INTG) :: MASS_MATRIX_NUMBER !<The matrix number of the dynamic mass matrix. 0 if there is no dynamic mass matrix
+    INTEGER(INTG) :: DYNAMIC_VARIABLE_TYPE !<The variable type involved in the equations matrix mapping.
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DYNAMIC_VARIABLE !<A pointer to the variable that is mapped to the dynamic matrices.
+!!TODO: just make this the size of the number of matrix variables used (i.e. 1) rather than the field number of variable types???
+    TYPE(VAR_TO_EQUATIONS_MATRICES_MAP_TYPE), ALLOCATABLE :: VAR_TO_EQUATIONS_MATRICES_MAPS(:) !<VAR_TO_EQUATIONS_MATRICES_MAPS(variable_type_idx). The equations matrices mapping for the variable_type_idx'th variable type.
+    TYPE(EQUATIONS_MATRIX_TO_VAR_MAP_TYPE), ALLOCATABLE :: EQUATIONS_MATRIX_TO_VAR_MAPS(:) !<EQUATIONS_MATRIX_TO_VAR_MAPS(matrix_idx). The mappings for the matrix_idx'th equations matrix.
+    INTEGER(INTG), ALLOCATABLE :: EQUATIONS_ROW_TO_VARIABLE_DOF_MAPS(:) !<EQUATIONS_ROW_TO_VARIABLE_DOF_MAPS(row_idx). The row mappings for the row_idx'th row of the equations matrices to the dynamic variable.
+  END TYPE EQUATIONS_MAPPING_DYNAMIC_TYPE
+  
   TYPE EQUATIONS_MAPPING_LINEAR_TYPE
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping
     INTEGER(INTG) :: NUMBER_OF_LINEAR_EQUATIONS_MATRICES !<The number of linear equations matrices in this mapping
     INTEGER(INTG) :: NUMBER_OF_LINEAR_MATRIX_VARIABLES !<The number of dependent variables involved in the linear equations matrix mapping
-    INTEGER(INTG), ALLOCATABLE :: MATRIX_VARIABLE_TYPES(:) !<MATRIX_VARIABLE_TYPES(i). The variable type of the i'th variable type involved in the equations matrix mapping.
+    INTEGER(INTG), ALLOCATABLE :: LINEAR_MATRIX_VARIABLE_TYPES(:) !<LINEAR_MATRIX_VARIABLE_TYPES(i). The variable type of the i'th variable type involved in the equations linear matrix mapping.
 !!TODO: just make this the size of the number of matrix variables rather than the field number of variable types and merge matrix variable types above???
     TYPE(VAR_TO_EQUATIONS_MATRICES_MAP_TYPE), ALLOCATABLE :: VAR_TO_EQUATIONS_MATRICES_MAPS(:) !<VAR_TO_EQUATIONS_MATRICES_MAPS(variable_type_idx). The equations matrices mapping for the variable_type_idx'th variable type.
     TYPE(EQUATIONS_MATRIX_TO_VAR_MAP_TYPE), ALLOCATABLE :: EQUATIONS_MATRIX_TO_VAR_MAPS(:) !<EQUATIONS_MATRIX_TO_VAR_MAPS(matrix_idx). The mappings for the matrix_idx'th equations matrix.
-    INTEGER(INTG), ALLOCATABLE :: EQUATIONS_ROW_TO_VARIABLE_DOF_MAPS(:,:) !<EQUATIONS_ROW_TO_VARIABLE_DOFS_MAPS(row_idx,variable_type_idx). The row mappings for the row_idx'th row of the equations matrices to the variable_type_idx'th variable. 
+    INTEGER(INTG), ALLOCATABLE :: EQUATIONS_ROW_TO_VARIABLE_DOF_MAPS(:,:) !<EQUATIONS_ROW_TO_VARIABLE_DOFS_MAPS(row_idx,variable_type_idx). The row mappings for the row_idx'th row of the equations matrices to the variable_type_idx'th variable.
   END TYPE EQUATIONS_MAPPING_LINEAR_TYPE
   
   TYPE EQUATIONS_JACOBIAN_TO_VAR_MAP_TYPE
@@ -1149,9 +1187,15 @@ MODULE TYPES
   END TYPE EQUATIONS_MAPPING_SOURCE_TYPE
   
   TYPE EQUATIONS_MAPPING_CREATE_VALUES_CACHE_TYPE
+    INTEGER(INTG) :: NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES !<The number of dynamic matrices in the equations mapping
+    INTEGER(INTG) :: DYNAMIC_STIFFNESS_MATRIX_NUMBER !<The dynamic matrix number corresponding to the dynamic stiffness matrix
+    INTEGER(INTG) :: DYNAMIC_DAMPING_MATRIX_NUMBER !<The dynamic matrix number corresponding to the dynamic damping matrix
+    INTEGER(INTG) :: DYNAMIC_MASS_MATRIX_NUMBER !<The dynamic matrix number corresponding to the dynamic mass matrix
+    INTEGER(INTG) :: DYNAMIC_VARIABLE_TYPE !<The dependent variable type mapped to the dynamic equations matrices.
+    REAL(DP), ALLOCATABLE :: DYNAMIC_MATRIX_COEFFICIENTS(:) !<DYNAMIC_MATRIX_COEFFICIENTS(matrix_idx). The coefficient of the matrix_idx'th dynamic matrix in the equations set.
     INTEGER(INTG) :: NUMBER_OF_LINEAR_EQUATIONS_MATRICES !<The number of linear matrices in the equations mapping
-    INTEGER(INTG), ALLOCATABLE :: MATRIX_VARIABLE_TYPES(:) !<MATRIX_VARIABLE_TYPES(matrix_idx). The dependent variable type mapped to the matrix_idx'th equations matrix.
-    REAL(DP), ALLOCATABLE :: MATRIX_COEFFICIENTS(:) !<MATRIX_COEFFICIENTS(matrix_idx). The coefficient of the matrix_idx'th matrix in the equations set.
+    INTEGER(INTG), ALLOCATABLE :: LINEAR_MATRIX_VARIABLE_TYPES(:) !<LINEAR_MATRIX_VARIABLE_TYPES(matrix_idx). The dependent variable type mapped to the matrix_idx'th linear equations matrix.
+    REAL(DP), ALLOCATABLE :: LINEAR_MATRIX_COEFFICIENTS(:) !<LINEAR_MATRIX_COEFFICIENTS(matrix_idx). The coefficient of the matrix_idx'th linear matrix in the equations set.
     INTEGER(INTG) :: RESIDUAL_VARIABLE_TYPE !<The dependent variable type mapped to the residual vector
     REAL(DP) :: RESIDUAL_COEFFICIENT !<The coefficient multiplying the residual vector.
     INTEGER(INTG) :: RHS_VARIABLE_TYPE !<The dependent variable type mapped to the rhs vector
@@ -1173,6 +1217,7 @@ MODULE TYPES
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RESIDUAL_VARIABLE_MAPPING !<A pointer to the residual variable domain mapping
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ROW_DOFS_MAPPING !<The domain mapping for the equations rows
     !Equations mapping components
+    TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING !<A pointer to the equations mapping for dynamic matrices
     TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING !<A pointer to the equations mapping for the linear matrices
     TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING !<A pointer to the equations mapping for the nonlinear matrices and vectors
     TYPE(EQUATIONS_MAPPING_RHS_TYPE), POINTER :: RHS_MAPPING !<A pointer to the equations mapping for the RHS vector
@@ -1210,33 +1255,16 @@ MODULE TYPES
     TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: FIBRE_INTERP_POINT_METRICS !<A pointer to the fibre interpolated point metrics information 
   END TYPE EQUATIONS_INTERPOLATION_TYPE
 
-  !>Contains information on any data required for a linear solution
-  TYPE EQUATIONS_LINEAR_DATA_TYPE
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations.
-  END TYPE EQUATIONS_LINEAR_DATA_TYPE
-
-  !>Contains information on any data required for a non-linear solution
-  TYPE EQUATIONS_NONLINEAR_DATA_TYPE
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations.
-  END TYPE EQUATIONS_NONLINEAR_DATA_TYPE
-  
-  !>Contains information on any data required for a time-dependent equations
-  TYPE EQUATIONS_TIME_DATA_TYPE
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations.
-  END TYPE EQUATIONS_TIME_DATA_TYPE
-
   !>Contains information about the equations in an equations set.
   TYPE EQUATIONS_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations_set
     LOGICAL :: EQUATIONS_FINISHED !<Is .TRUE. if the equations have finished being created, .FALSE. if not.
-    INTEGER(INTG) :: OUTPUT_TYPE !<The output type for the equations \see EQUATIONS_ROUTINES_EquationsOutputTypes,EQUATIONS_ROUTINES \todo move to equations set???
-    INTEGER(INTG) :: SPARSITY_TYPE !<The sparsity type for the equation matrices of the equations \see EQUATIONS_ROUTINES_EquationsSparsityTypes,EQUATIONS_ROUTINES \todo move to equations set???
-    INTEGER(INTG) :: NONLINEAR_JACOBIAN_TYPE !<The type of non-linear Jacobian calculation \see EQUATIONS_SET_CONSTANTS_NonlinearJacobianTypes,EQUATIONS_SET_CONSTANTS
+    INTEGER(INTG) :: LINEARITY !<The equations linearity type \see EQUATIONS_ROUTINES_LinearityTypes,EQUATIONS_ROUTINES
+    INTEGER(INTG) :: TIME_DEPENDENCE !<The equations time dependence type \see EQUATIONS_ROUTINES_TimeDepedenceTypes,EQUATIONS_ROUTINES
+    INTEGER(INTG) :: OUTPUT_TYPE !<The output type for the equations \see EQUATIONS_ROUTINES_EquationsOutputTypes,EQUATIONS_ROUTINES
+    INTEGER(INTG) :: SPARSITY_TYPE !<The sparsity type for the equation matrices of the equations \see EQUATIONS_ROUTINES_EquationsSparsityTypes,EQUATIONS_ROUTINES
+    INTEGER(INTG) :: LUMPING_TYPE !<The lumping type for the equation matrices of the equations \see EQUATIONS_ROUTINES_EquationsLumpingTypes,EQUATIONS_ROUTINES
     TYPE(EQUATIONS_INTERPOLATION_TYPE), POINTER :: INTERPOLATION !<A pointer to the interpolation information used in the equations.
-    !!TODO: Are these three needed? What about solution method data???
-    TYPE(EQUATIONS_LINEAR_DATA_TYPE), POINTER :: LINEAR_DATA !<A pointer to the data for linear equations.
-    TYPE(EQUATIONS_NONLINEAR_DATA_TYPE), POINTER :: NONLINEAR_DATA !<A pointer to the data for non-linear equations.
-    TYPE(EQUATIONS_TIME_DATA_TYPE), POINTER :: TIME_DATA !<A pointer to the data for non-static equations.
     
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping for the equations.
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES !<A pointer to the equations matrices and vectors used for the equations.
@@ -1301,10 +1329,6 @@ MODULE TYPES
     INTEGER(INTG) :: CLASS !<The equations set specification class identifier
     INTEGER(INTG) :: TYPE !<The equations set specification type identifier
     INTEGER(INTG) :: SUBTYPE !<The equations set specification subtype identifier
-
-!!TODO: Are these two needed?
-    INTEGER(INTG) :: LINEARITY !<The equations set linearity type \see EQUATIONS_ROUTINES_LinearityTypes
-    INTEGER(INTG) :: TIME_DEPENDENCE !<The equations set time dependence type \see EQUATIONS_ROUTINES_TimeDepedenceTypes
     
     INTEGER(INTG) :: SOLUTION_METHOD !<The solution method for the equations set \see EQUATIONS_ROUTINES_SolutionMethods 
     
@@ -1349,21 +1373,12 @@ MODULE TYPES
   TYPE SOLVER_MATRIX_PTR_TYPE
     TYPE(SOLVER_MATRIX_TYPE), POINTER :: PTR !<The pointer to the solver matrix.
   END TYPE SOLVER_MATRIX_PTR_TYPE
-
-  !>Contains information on the solver Jacobian for nonlinear problems
-  TYPE SOLVER_JACOBIAN_TYPE
-    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES !<A pointer to the solver matrices for this solver Jacobian
-    LOGICAL :: UPDATE_JACOBIAN !<Is .TRUE. if the solver Jacobian is to be updated
-    INTEGER(INTG) :: STORAGE_TYPE !<The storage type for the solver Jacobian
-    INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in the distributed solver Jacobian
-    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: JACOBIAN !<A pointer to the distributed solver Jacobian
-  END TYPE SOLVER_JACOBIAN_TYPE
   
   !>Contains information on the solver matrices and rhs vector
   TYPE SOLVER_MATRICES_TYPE
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the problem solver
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver
     LOGICAL :: SOLVER_MATRICES_FINISHED !<Is .TRUE. if the solver matrices have finished being created, .FALSE. if not.
-    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING !<A pointer to the solution mapping for these solver matrices
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping for these solver matrices
     INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of (local) rows in the distributed solution matrix for this computational node
     INTEGER(INTG) :: NUMBER_OF_GLOBAL_ROWS !<The number of global rows in the distributed solution matrix
     INTEGER(INTG) :: LIBRARY_TYPE !<The library type for the solver matrices
@@ -1381,6 +1396,27 @@ MODULE TYPES
   !
   !================================================================================================================================
   !
+  ! Solver equations types
+  !
+
+  !>Contains information about the solver equations for a solver
+  TYPE SOLVER_EQUATIONS_TYPE
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    LOGICAL :: SOLVER_EQUATIONS_FINISHED !<Is .TRUE. if the solver equations have finished being created, .FALSE. if not.
+
+    INTEGER(INTG) :: LINEARITY !<The linearity type of the solver equations
+    INTEGER(INTG) :: TIME_DEPENDENCE !<The time dependence type of the solver equations
+
+    INTEGER(INTG) :: SPARSITY_TYPE !<The type of sparsity to use in the solver matrices \see SOLVER_ROTUINES_SparsityTypes,SOLVER_ROUTINES
+    
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
+    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES !<A pointer to the solver matrices for the problem
+    
+  END TYPE SOLVER_EQUATIONS_TYPE
+  
+  !
+  !================================================================================================================================
+  !
   ! Solver types
   !
   
@@ -1388,12 +1424,16 @@ MODULE TYPES
   TYPE DYNAMIC_SOLVER_TYPE
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the dynamic solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    LOGICAL :: SOLVER_INITIALISED !<Is .TRUE. if the solver has been initialised, .FALSE. if not.
     INTEGER(INTG) :: LINEARITY !<The linearity type of the dynamic solver \see SOLVER_ROUTINES_DynamicLinearityTypes,SOLVER_ROUTINES
-    INTEGER(INTG) :: DYNAMIC_TYPE !<The type of dynamic solver \see SOLVER_ROUTINES_DynamicTypes,SOLVER_ROUTINES
-    REAL(DP) :: THETA !<The theta value for the dynamic solver
-    REAL(DP) :: CURRENT_TIME !<The current time value for the dynamic solver
-    REAL(DP) :: TIME_INCREMENT !<The time increment for the dynamic solver to solver for
-    TYPE(PETSC_TS_TYPE) :: TS
+    INTEGER(INTG) :: ORDER !<The order of the dynamic solve \see SOLVER_ROUTINES_DynamicOrderTypes,SOLVER_ROUTINES
+    INTEGER(INTG) :: DEGREE !<The degree of the time interpolation polynomial \see SOLVER_ROUTINES_DynamicDegreeTypes,SOLVER_ROUTINES
+    INTEGER(INTG) :: SCHEME !<The dyanamic solver scheme \see SOLVER_ROUTINES_DynamicSchemeTypes,SOLVER_ROUTINES
+    REAL(DP), ALLOCATABLE :: THETA(:) !<THETA(degree_idx). The theta value for the degree_idx'th polynomial in the dynamic solver
+    LOGICAL :: EXPLICIT !<Is .TRUE. if the dynamic scheme is an explicit scheme, .FALSE. if not.
+    REAL(DP) :: CURRENT_TIME !<The current time value for the dynamic solver.
+    REAL(DP) :: TIME_INCREMENT !<The time increment for the dynamic solver to solver for.
+    TYPE(SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linked linear solver
   END TYPE DYNAMIC_SOLVER_TYPE
   
   !>Contains information for an eigenproblem solver
@@ -1434,13 +1474,14 @@ MODULE TYPES
   TYPE LINEAR_SOLVER_TYPE
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
     INTEGER(INTG) :: LINEAR_SOLVE_TYPE !<The type of linear solver \see SOLVER_ROUTINES_LinearSolverTypes,SOLVER_ROUTINES
+    LOGICAL :: LINKED_NEWTON_PETSC_SOLVER !<Is .TRUE. if this linear solver has been linked from a PETSc Newton solver, .FALSE. if not.
     TYPE(LINEAR_DIRECT_SOLVER_TYPE), POINTER :: DIRECT_SOLVER !<A pointer to the direct solver information
     TYPE(LINEAR_ITERATIVE_SOLVER_TYPE), POINTER :: ITERATIVE_SOLVER !<A pointer to the iterative solver information
   END TYPE LINEAR_SOLVER_TYPE
-  
+
   !>Contains information for a Newton line search nonlinear solver
-  TYPE NONLINEAR_LINESEARCH_SOLVER_TYPE
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer to the nonlinear solver
+  TYPE NEWTON_LINESEARCH_SOLVER_TYPE
+    TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER !<A pointer to the Newton solver
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the nonlinear solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
     INTEGER(INTG) :: LINESEARCH_TYPE !<The line search type \see SOLVER_ROUTINES_NonlinearLineSearchTypes,SOLVER_ROUTINES
     REAL(DP) :: LINESEARCH_ALPHA !<The line search alpha
@@ -1449,22 +1490,22 @@ MODULE TYPES
     TYPE(PETSC_ISCOLORING_TYPE) :: JACOBIAN_ISCOLORING !<The Jacobian matrix index set colouring
     TYPE(PETSC_MATFDCOLORING_TYPE) :: JACOBIAN_FDCOLORING !<The Jacobian matrix finite difference colouring
     TYPE(PETSC_SNES_TYPE) :: SNES !<The PETSc nonlinear solver object
-  END TYPE NONLINEAR_LINESEARCH_SOLVER_TYPE
+  END TYPE NEWTON_LINESEARCH_SOLVER_TYPE
   
   !>Contains information for a Newton trust region nonlinear solver
-  TYPE NONLINEAR_TRUSTREGION_SOLVER_TYPE
-    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer to the nonlinear solver 
+  TYPE NEWTON_TRUSTREGION_SOLVER_TYPE
+    TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER !<A pointer to the Newton solver 
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the nonlinear solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
     REAL(DP) :: TRUSTREGION_TOLERANCE !<The trust region tolerance
     REAL(DP) :: TRUSTREGION_DELTA0 !<The trust region delta0
     TYPE(PETSC_SNES_TYPE) :: SNES !<The PETSc nonlinear solver object
-  END TYPE NONLINEAR_TRUSTREGION_SOLVER_TYPE
-  
-  !>Contains information for a nonlinear solver
-  TYPE NONLINEAR_SOLVER_TYPE
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the problem_solver
-    INTEGER(INTG) :: NONLINEAR_SOLVE_TYPE !<The type of nonlinear solver \see SOLVER_ROUTINES_NonlinearSolverTypes,SOLVER_ROUTINES
-    INTEGER(INTG) :: TOTAL_NUMBER_OF_FUNCTION_EVALUATIONS !<The number of function evaluations performed by the nonlinear solver
+  END TYPE NEWTON_TRUSTREGION_SOLVER_TYPE
+
+  !>Contains information for a Newton nonlinear solver
+  TYPE NEWTON_SOLVER_TYPE
+    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer to the nonlinear solver
+    INTEGER(INTG) :: NEWTON_SOLVE_TYPE !<The type of Newton solver
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_FUNCTION_EVALUATIONS !<The number of function evaluations performed by the Newton solver
     INTEGER(INTG) :: TOTAL_NUMBER_OF_JACOBIAN_EVALUATIONS !<The number of Jacobian evaluations performed by the nonlinear solver
     INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ITERATIONS !<The maximum number of iterations
     INTEGER(INTG) :: MAXIMUM_NUMBER_OF_FUNCTION_EVALUATIONS !<The maximum number of function evaluations
@@ -1472,31 +1513,55 @@ MODULE TYPES
     REAL(DP) :: ABSOLUTE_TOLERANCE !<The tolerance between the absolute decrease between the solution norm and the initial guess
     REAL(DP) :: RELATIVE_TOLERANCE !<The tolerance between the relative decrease between the solution norm and the initial guess
     REAL(DP) :: SOLUTION_TOLERANCE !<The tolerance of the change in the norm of the solution
-!!TODO: Put in extra level for nonlinear solvers e.g., Newton methods, BFGS Inverse, SQP etc.
-    TYPE(NONLINEAR_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER !<A pointer to the Newton line search solver information
-    TYPE(NONLINEAR_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER !<A pointer to the Newton trust region solver information
+    TYPE(NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER !<A pointer to the Newton line search solver information
+    TYPE(NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER !<A pointer to the Newton trust region solver information
+    TYPE(SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linked linear solver
+  END TYPE NEWTON_SOLVER_TYPE
+    
+  !>Contains information for a nonlinear solver
+  TYPE NONLINEAR_SOLVER_TYPE
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the problem_solver
+    INTEGER(INTG) :: NONLINEAR_SOLVE_TYPE !<The type of nonlinear solver \see SOLVER_ROUTINES_NonlinearSolverTypes,SOLVER_ROUTINES
+    TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER !<A pointer to the Newton solver information
   END TYPE NONLINEAR_SOLVER_TYPE
   
   !>Contains information on the type of solver to be used
   TYPE SOLVER_TYPE
-    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the solution
+    TYPE(SOLVERS_TYPE), POINTER :: SOLVERS !<A pointer to the control loop solvers
+    TYPE(SOLVER_TYPE), POINTER :: LINKING_SOLVER !<A pointer to any solver that is linking to this solver
+    TYPE(SOLVER_TYPE), POINTER :: LINKED_SOLVER !<A pointer to any linked solver
     LOGICAL :: SOLVER_FINISHED !<Is .TRUE. if the solver has finished being created, .FALSE. if not.
-    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING !<A pointer to the problem solution
-    INTEGER(INTG) :: SOLVE_TYPE !<The type of the solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
+    
     INTEGER(INTG) :: OUTPUT_TYPE !<The type of output required \see SOLVER_ROUTINES_OutputTypes,SOLVER_ROUTINES
-    INTEGER(INTG) :: SPARSITY_TYPE !<The type of sparsity to use in the solver matrices \see SOLVER_ROTUINES_SparsityTypes,SOLVER_ROUTINES
+    
+    INTEGER(INTG) :: SOLVE_TYPE !<The type of the solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linear solver information
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer to the nonlinear solver information
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER !<A pointer to the dynamic solver information
     TYPE(INTEGRATION_SOLVER_TYPE), POINTER :: INTEGRATION_SOLVER !<A pointer to the integration solver information
     TYPE(EIGENPROBLEM_SOLVER_TYPE), POINTER :: EIGENPROBLEM_SOLVER !<A pointer to the eigenproblem solver information
-    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES !<A pointer to the solver matrices for the problem
+
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver equations
+
   END TYPE SOLVER_TYPE
 
+  !>A buffer type to allow for an array of pointers to a SOLVER_TYPE \see TYPES::SOLVER_TYPE
+  TYPE SOLVER_PTR_TYPE
+    TYPE(SOLVER_TYPE), POINTER :: PTR
+  END TYPE SOLVER_PTR_TYPE
+
+  !>Contains information on the solvers to be used in a control loop
+  TYPE SOLVERS_TYPE
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the parent control loop
+    LOGICAL :: SOLVERS_FINISHED !<Is .TRUE. if the solvers have finished being created, .FALSE. if not.
+    INTEGER(INTG) :: NUMBER_OF_SOLVERS !<The number of solvers
+    TYPE(SOLVER_PTR_TYPE), ALLOCATABLE :: SOLVERS(:) !<A pointer to the solvers information for the problem.
+  END TYPE SOLVERS_TYPE
+  
   !
   !================================================================================================================================
   !
-  ! Solution mapping types
+  ! Solver mapping types
   !
   
   TYPE EQUATIONS_COL_TO_SOLVER_COLS_MAP_TYPE
@@ -1505,7 +1570,8 @@ MODULE TYPES
     REAL(DP), ALLOCATABLE :: COUPLING_COEFFICIENTS(:) !<COUPLING_COEFFICIENTS(i). The coupling coefficients for the i'th solver column that this column is mapped to.
   END TYPE EQUATIONS_COL_TO_SOLVER_COLS_MAP_TYPE
 
-  TYPE EQUATIONS_TO_SOLVER_MAPS_TYPE    
+  TYPE EQUATIONS_TO_SOLVER_MAPS_TYPE
+    INTEGER(INTG) :: EQUATIONS_MATRIX_TYPE !<The type of equations matrix \see SOLVER_MAPPING_EquationsMatrixTypes,SOLVER_MAPPING
     INTEGER(INTG) :: EQUATIONS_MATRIX_NUMBER !<The equations matrix number being mapped.
     INTEGER(INTG) :: SOLVER_MATRIX_NUMBER !<The solver matrix number being mapped.
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX !<A pointer to the equations matrix being mapped.
@@ -1546,8 +1612,10 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: VARIABLE_TYPES(:) !<VARIABLE_TYPES(variable_idx). The variable type for the variable_idx'th variable that is mapped to the solver matrix.
     TYPE(FIELD_VARIABLE_PTR_TYPE), ALLOCATABLE :: VARIABLES(:) !<VARIABLES(variable_idx). VARIABLES(variable_idx)%PTR points to the variable_idx'th variable that is mapped to the solver matrix.
     TYPE(VARIABLE_TO_SOLVER_COL_MAP_TYPE), ALLOCATABLE :: VARIABLE_TO_SOLVER_COL_MAPS(:) !<VARIABLE_TO_SOLVER_COL_MAPS(variable_idx). The mappings from the variable dofs to the solver dofs for the variable_idx'th variable in the equations set that is mapped to the solver matrix.
+    INTEGER(INTG) :: NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES !<The number of dynamic equations matrices mapped to this solver matrix
+    TYPE(EQUATIONS_TO_SOLVER_MAPS_PTR_TYPE), ALLOCATABLE :: DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS(:) !<DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx). The maps from the equations_idx'th linear equations matrix to solver matrix
     INTEGER(INTG) :: NUMBER_OF_LINEAR_EQUATIONS_MATRICES !<The number of linear equations matrices mapped to this solver matrix
-    TYPE(EQUATIONS_TO_SOLVER_MAPS_PTR_TYPE), ALLOCATABLE :: EQUATIONS_TO_SOLVER_MATRIX_MAPS(:) !<EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx). The maps from the equations_idx'th linear equations matrix to solver matrix
+    TYPE(EQUATIONS_TO_SOLVER_MAPS_PTR_TYPE), ALLOCATABLE :: LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS(:) !<LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx). The maps from the equations_idx'th linear equations matrix to solver matrix
     TYPE(JACOBIAN_TO_SOLVER_MAP_TYPE), POINTER :: JACOBIAN_TO_SOLVER_MATRIX_MAP !<The map from the Jacobian matrix to the solver matrix
   END TYPE EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM_TYPE
 
@@ -1572,7 +1640,7 @@ MODULE TYPES
   !>Contains information on the mappings from an equations set to the solver matrices
   TYPE EQUATIONS_SET_TO_SOLVER_MAP_TYPE
     INTEGER(INTG) :: EQUATIONS_SET_INDEX !<The index of the equations set for these mappings
-    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING !<A pointer to the solution mappings
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mappings
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations in this equations set
     TYPE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM_TYPE), ALLOCATABLE :: EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(:) !<EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx). The mappings from the equations matrices in this equation set to the solver_matrix_idx'th solver_matrix
     TYPE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM_TYPE), ALLOCATABLE :: EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM(:) !<EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM(equations_matrix_idx). The mappings from the equation_matrix_idx'th equations matrix in this equation set to the solver_matrices.
@@ -1580,8 +1648,16 @@ MODULE TYPES
     TYPE(EQUATIONS_ROW_TO_SOLVER_ROWS_MAP_TYPE), ALLOCATABLE :: EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(:) !<EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_idx). The mappings from the equations_row_idx'th equations row to the solver matrices rows.
   END TYPE EQUATIONS_SET_TO_SOLVER_MAP_TYPE
 
-  !>Contains information about the mapping from a solver matrix column to equations matrices and variables
-  TYPE SOLVER_COL_TO_EQUATIONS_MAP_TYPE
+ !>Contains information about the mapping from a solver matrix column to dynamic equations matrices and variables
+  TYPE SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAP_TYPE
+    INTEGER(INTG) :: NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES !<The number of dynamic equations matrices the solver column is mapped to in this equations set
+    INTEGER(INTG), ALLOCATABLE :: EQUATIONS_MATRIX_NUMBERS(:) !<EQUATIONS_MATRIX_NUMBERS(i). The i'th equations matrix number in theequations that the solver column is mapped to
+    INTEGER(INTG), ALLOCATABLE :: EQUATIONS_COL_NUMBERS(:) !<EQUATIONS_COL_NUMBERS(i). The i'th equations column number in the equation set the solver column is mapped to.
+    REAL(DP), ALLOCATABLE :: COUPLING_COEFFICIENTS(:) !<COUPLING_COEFFICIENTS(i). The i'th coupling coefficient for solver column mapping
+  END TYPE SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAP_TYPE
+
+  !>Contains information about the mapping from a solver matrix column to static equations matrices and variables
+  TYPE SOLVER_COL_TO_STATIC_EQUATIONS_MAP_TYPE
     INTEGER(INTG) :: NUMBER_OF_LINEAR_EQUATIONS_MATRICES !<The number of linear equations matrices the solver column is mapped to in this equations set
     INTEGER(INTG), ALLOCATABLE :: EQUATIONS_MATRIX_NUMBERS(:) !<EQUATIONS_MATRIX_NUMBERS(i). The i'th equations matrix number in theequations that the solver column is mapped to
     INTEGER(INTG), ALLOCATABLE :: EQUATIONS_COL_NUMBERS(:) !<EQUATIONS_COL_NUMBERS(i). The i'th equations column number in the equation set the solver column is mapped to.
@@ -1589,7 +1665,7 @@ MODULE TYPES
 !!TODO: Maybe split this into a linear and a nonlinear part? The only problem is that would probably use about the same memory???
     INTEGER(INTG) :: JACOBIAN_COL_NUMBER !<The Jacbian column number in the equations set that the solver column is mapped to.
     REAL(DP) :: JACOBIAN_COUPLING_COEFFICIENT !<The coupling coefficient for the solver column to Jacobian column mapping.
-  END TYPE SOLVER_COL_TO_EQUATIONS_MAP_TYPE
+  END TYPE SOLVER_COL_TO_STATIC_EQUATIONS_MAP_TYPE
 
   !>Contains information about mapping the solver dof to the field variable dofs in the equations set.
   TYPE SOLVER_DOF_TO_VARIABLE_MAP_TYPE
@@ -1604,13 +1680,14 @@ MODULE TYPES
   !>Contains information about the mappings from a solver matrix to the equations in an equations set
   TYPE SOLVER_COL_TO_EQUATIONS_SET_MAP_TYPE
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(SOLVER_COL_TO_EQUATIONS_MAP_TYPE), ALLOCATABLE :: SOLVER_COL_TO_EQUATIONS_MAPS(:) !<SOLVER_COL_TO_EQUATIONS_MAPS(col_idx). The mappings from the col_idx'th column of the solver matrix to the equations in the equations set.
+    TYPE(SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAP_TYPE), ALLOCATABLE :: SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS(:) !<SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS(col_idx). The mappings from the col_idx'th column of the solver matrix to the dynamic equations in the equations set.
+    TYPE(SOLVER_COL_TO_STATIC_EQUATIONS_MAP_TYPE), ALLOCATABLE :: SOLVER_COL_TO_STATIC_EQUATIONS_MAPS(:) !<SOLVER_COL_TO_STATIC_EQUATIONS_MAPS(col_idx). The mappings from the col_idx'th column of the solver matrix to the static equations in the equations set.
   END TYPE SOLVER_COL_TO_EQUATIONS_SET_MAP_TYPE
   
   !>Contains information on the mappings from a solver matrix to equations sets
   TYPE SOLVER_COL_TO_EQUATIONS_SETS_MAP_TYPE
     INTEGER(INTG) :: SOLVER_MATRIX_NUMBER !<The number of this solver matrix
-    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING !<A pointer to the solution mapping for this solver matrix mapping
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping for this solver matrix mapping
     TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX !<A pointer to the solver matrix being mappind
     INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in this distributed solver matrix
     TYPE(SOLVER_COL_TO_EQUATIONS_SET_MAP_TYPE), ALLOCATABLE :: SOLVER_COL_TO_EQUATIONS_SET_MAPS(:) !<SOLVER_TO_EQUATIONS_SET_MAP(equations_set_idx). The solver columns to equations matrix maps for the col_idx'th column set.
@@ -1630,18 +1707,19 @@ MODULE TYPES
     REAL(DP), ALLOCATABLE :: COUPLING_COEFFICIENTS(:) !<COUPLING_COEFFICIENTS(i). The i'th coupling coefficient for solver row mapping
   END TYPE SOLVER_ROW_TO_EQUATIONS_SET_MAP_TYPE
 
-  !>Contains information about the cached create values for a solution mapping
-  TYPE SOLUTION_MAPPING_CREATE_VALUES_CACHE_TYPE    
+  !>Contains information about the cached create values for a solver mapping
+  TYPE SOLVER_MAPPING_CREATE_VALUES_CACHE_TYPE    
+    INTEGER, ALLOCATABLE :: DYNAMIC_VARIABLE_TYPE(:) !<DYNAMIC_VARIABLE_TYPE(equations_set_idx). The variable type that is mapped to the dynamic matrices for the equations_set_idx'th equations set.
     INTEGER(INTG), ALLOCATABLE :: MATRIX_VARIABLE_TYPES(:,:,:) !<MATRIX_VARIABLE_TYPES(0:..,equations_set_idx,matrix_idx). The list of matrix variable types in the equations_set_idx'th equations set for the matrix_idx'th solver matrix. MATRIX_VARIABLE_TYPES(0,equations_set_idx,matrix_idx) is the number of variable types in the equations_set_idx'th equations set mapped to the matrix_idx'th solver matrix and MATRIX_VARIABLE_TYPES(1..,equations_set_idx,matrix_idx) is the list of the variable types in the equations set.
-   INTEGER, ALLOCATABLE :: RESIDUAL_VARIABLE_TYPE(:) !<RESIDUAL_VARIABLE_TYPE(equations_set_idx). The variable type that is mapped to the solution residual for the equations_set_idx'th equations set.
-   INTEGER, ALLOCATABLE :: RHS_VARIABLE_TYPE(:) !<RHS_VARIABLE_TYPE(equations_set_idx). The variable type that is mapped to the solution RHS for the equations_set_idx'th equations set
-   INTEGER, ALLOCATABLE :: SOURCE_VARIABLE_TYPE(:) !<SOURCE_VARIABLE_TYPE(equations_set_idx). The source variable type that is mapped to the RHS for the equations_set_idx'th equations set.
- END TYPE SOLUTION_MAPPING_CREATE_VALUES_CACHE_TYPE
+    INTEGER, ALLOCATABLE :: RESIDUAL_VARIABLE_TYPE(:) !<RESIDUAL_VARIABLE_TYPE(equations_set_idx). The variable type that is mapped to the solution residual for the equations_set_idx'th equations set.
+    INTEGER, ALLOCATABLE :: RHS_VARIABLE_TYPE(:) !<RHS_VARIABLE_TYPE(equations_set_idx). The variable type that is mapped to the solution RHS for the equations_set_idx'th equations set
+    INTEGER, ALLOCATABLE :: SOURCE_VARIABLE_TYPE(:) !<SOURCE_VARIABLE_TYPE(equations_set_idx). The source variable type that is mapped to the RHS for the equations_set_idx'th equations set.
+  END TYPE SOLVER_MAPPING_CREATE_VALUES_CACHE_TYPE
 
-  !>Contains information on the solution mapping between the global equation sets and the solver matrices.
-  TYPE SOLUTION_MAPPING_TYPE
-    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the solution for this mapping.
-    LOGICAL :: SOLUTION_MAPPING_FINISHED !<Is .TRUE. if the solution mapping has finished being created, .FALSE. if not.
+  !>Contains information on the solver mapping between the global equation sets and the solver matrices.
+  TYPE SOLVER_MAPPING_TYPE
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver equations for this mapping.
+    LOGICAL :: SOLVER_MAPPING_FINISHED !<Is .TRUE. if the solution mapping has finished being created, .FALSE. if not.
     INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of (local) rows in the solver matrices
     INTEGER(INTG) :: NUMBER_OF_GLOBAL_ROWS !<The number of global rows in the solver matrices
     INTEGER(INTG) :: NUMBER_OF_SOLVER_MATRICES !<The number of solution matrices in this mapping.
@@ -1652,38 +1730,9 @@ MODULE TYPES
     TYPE(SOLVER_ROW_TO_EQUATIONS_SET_MAP_TYPE), ALLOCATABLE :: SOLVER_ROW_TO_EQUATIONS_SET_MAPS(:) !<SOLVER_ROW_TO_EQUATIONS_SET_MAPS(row_idx). The mappings from the row_idx'th solver row to the equations set rows.
     LOGICAL :: HAVE_JACOBIAN !<Is .TRUE. if the Jacobian exists for nonlinear problems.
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ROW_DOFS_MAPPING !<The domain mapping for the solver rows.
-    TYPE(SOLUTION_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE !<The create values cache for the solution mapping
-  END TYPE SOLUTION_MAPPING_TYPE
+    TYPE(SOlVER_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE !<The create values cache for the solver mapping
+  END TYPE SOLVER_MAPPING_TYPE
 
-  !
-  !================================================================================================================================
-  !
-  ! Solution types
-  !
-  
-  !>Contains information on the solution of a problem
-  TYPE SOLUTION_TYPE
-    INTEGER(INTG) :: SOLUTION_NUMBER !<The number of the solution
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer back to the control loop for this solution
-    LOGICAL :: SOLUTION_FINISHED !<Is .TRUE. if the problem solution has finished being created, .FALSE. if not.
-    INTEGER(INTG) :: LINEARITY !<The linearity of the solution \see PROBLEM_CONSTANTS_SolutionLinearityTypes,PROBLEM_CONSTANTS
-    INTEGER(INTG) :: TIME_DEPENDENCE !<The time dependence of the solution \see PROBLEM_CONSTANTS_SolutionTimeDependenceTypes,PROBLEM_CONSTANTS
-    TYPE(SOLUTION_MAPPING_TYPE), POINTER :: SOLUTION_MAPPING !<A pointer to the solution mapping for the solution.
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver for the problem.
-  END TYPE SOLUTION_TYPE
-
-  !>A buffer type to allow for an array of pointers to a SOLTUION_TYPE \see TYPES:SOLUTION_TYPE
-  TYPE SOLUTION_PTR_TYPE
-    TYPE(SOLUTION_TYPE), POINTER :: PTR
-  END TYPE SOLUTION_PTR_TYPE
-
-  TYPE SOLUTIONS_TYPE
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the parent control loop
-    LOGICAL :: SOLUTIONS_FINISHED !<Is .TRUE. if the solutions has finished being created, .FALSE. if not.
-    INTEGER(INTG) :: NUMBER_OF_SOLUTIONS !<The number of solutions
-    TYPE(SOLUTION_PTR_TYPE), ALLOCATABLE :: SOLUTIONS(:) !<A pointer to the solution information for the problem.
-  END TYPE SOLUTIONS_TYPE
-  
   !
   !================================================================================================================================
   !
@@ -1705,10 +1754,12 @@ MODULE TYPES
   ! Control types
   !
   
+  !>Contains information on a simple (execute once) control loop
   TYPE CONTROL_LOOP_SIMPLE_TYPE
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
   END TYPE CONTROL_LOOP_SIMPLE_TYPE
 
+  !>Contains information on a fixed iteration control loop
   TYPE CONTROL_LOOP_FIXED_TYPE
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
     INTEGER(INTG) :: ITERATION_NUMBER
@@ -1717,6 +1768,7 @@ MODULE TYPES
     INTEGER(INTG) :: ITERATION_INCREMENT
   END TYPE CONTROL_LOOP_FIXED_TYPE
 
+  !>Contains information on a time iteration control loop
   TYPE CONTROL_LOOP_TIME_TYPE
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
     INTEGER(INTG) :: ITERATION_NUMBER
@@ -1726,6 +1778,7 @@ MODULE TYPES
     REAL(DP) :: TIME_INCREMENT
   END TYPE CONTROL_LOOP_TIME_TYPE
 
+  !>Contains information on a do-while control loop
   TYPE CONTROL_LOOP_WHILE_TYPE
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
     INTEGER(INTG) :: ITERATION_NUMBER
@@ -1751,7 +1804,7 @@ MODULE TYPES
     TYPE(CONTROL_LOOP_WHILE_TYPE), POINTER :: WHILE_LOOP !<A pointer to the while loop information
     INTEGER(INTG) :: NUMBER_OF_SUB_LOOPS !<The number of control loops below this loop
     TYPE(CONTROL_LOOP_PTR_TYPE), ALLOCATABLE :: SUB_LOOPS(:) !<A array of pointers to the loops below this loop.
-    TYPE(SOLUTIONS_TYPE), POINTER :: SOLUTIONS !<A pointer to the solutions for this control loop
+    TYPE(SOLVERS_TYPE), POINTER :: SOLVERS !<A pointer to the solvers for this control loop
     TYPE(HISTORY_TYPE), POINTER :: HISTORY !<A pointer to the history file for this control loop.
   END TYPE CONTROL_LOOP_TYPE  
   
@@ -1760,26 +1813,10 @@ MODULE TYPES
   !
   ! Problem types
   !
-  
-  !>Contains information on any data required for a linear solution
-  TYPE PROBLEM_LINEAR_DATA_TYPE
-    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the problem solution.
-  END TYPE PROBLEM_LINEAR_DATA_TYPE
-
-  !>Contains information on any data required for a non-linear solution
-  TYPE PROBLEM_NONLINEAR_DATA_TYPE
-    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the problem solution.
-    INTEGER(INTG) :: NUMBER_OF_ITERATIONS
-  END TYPE PROBLEM_NONLINEAR_DATA_TYPE
-
- !>Contains information on any data required for a time-dependent solution
-  TYPE PROBLEM_TIME_DATA_TYPE
-    TYPE(SOLUTION_TYPE), POINTER :: SOLUTION !<A pointer to the problem solution.
-  END TYPE PROBLEM_TIME_DATA_TYPE
 
   TYPE PROBLEM_EQUATIONS_ADD_TYPE
     INTEGER(INTG), ALLOCATABLE :: CONTROL_LOOP_IDENTIFIER(:) !<The control loop identifier of the next equations set to add
-    INTEGER(INTG) :: SOLUTION_INDEX !<The solution index for the next equations set to add.
+    INTEGER(INTG) :: SOLVER_INDEX !<The solver index for the next equations set to add.
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET_TO_ADD !<The next equations set to add to the solution
     INTEGER(INTG) :: EQUATIONS_SET_ADDED_INDEX !<The index of the last successfully added equations set
   END TYPE PROBLEM_EQUATIONS_ADD_TYPE
@@ -1797,8 +1834,6 @@ MODULE TYPES
     
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop informaton for the problem.
     TYPE(PROBLEM_EQUATIONS_ADD_TYPE), POINTER :: EQUATIONS_TO_ADD !<A pointer to the equations set information to be added to the problem.
-    !INTEGER(INTG) :: NUMBER_OF_SOLUTIONS !<The number of solutions in the problem.
-    !TYPE(SOLUTION_PTR_TYPE), ALLOCATABLE :: SOLUTIONS(:) !<A pointer to the solution information for the problem.
   END TYPE PROBLEM_TYPE
   
   !>A buffer type to allow for an array of pointers to a PROBLEM_TYPE \see TYPES:PROBLEM_TYPE
@@ -1840,5 +1875,24 @@ MODULE TYPES
   !
   !================================================================================================================================
   !
+  ! CellML types (belongs under field types?)
+  
+  !> Contains information for a CellML environment defined for a host field.
+  TYPE CELLML_TYPE
+     INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the CellML environment in the list of environments for a field.
+     INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the CellML environment. The user number must be unique.
+     LOGICAL :: FIELD_FINISHED !<Is .TRUE. if the environment has finished being created, .FALSE. if not.
+  END TYPE CELLML_TYPE
+
+  !> A buffer type to allow for an array of pointers to a CELLML_TYPE.
+  !! \todo Is this needed? not currently used...
+  TYPE CELLML_PTR_TYPE
+     TYPE(CELLML_TYPE), POINTER :: PTR !< The pointer to the CellML environment.
+  END TYPE CELLML_PTR_TYPE
+
+  !
+  !================================================================================================================================
+  !
+
 
 END MODULE TYPES
