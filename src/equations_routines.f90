@@ -1,0 +1,870 @@
+!> \file
+!> $Id: equations_routines.f90 360 2009-02-24 13:34:44Z chrispbradley $
+!> \author Chris Bradley
+!> \brief This module handles all equations routines.
+!>
+!> \section LICENSE
+!>
+!> Version: MPL 1.1/GPL 2.0/LGPL 2.1
+!>
+!> The contents of this file are subject to the Mozilla Public License
+!> Version 1.1 (the "License"); you may not use this file except in
+!> compliance with the License. You may obtain a copy of the License at
+!> http://www.mozilla.org/MPL/
+!>
+!> Software distributed under the License is distributed on an "AS IS"
+!> basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
+!> License for the specific language governing rights and limitations
+!> under the License.
+!>
+!> The Original Code is openCMISS
+!>
+!> The Initial Developer of the Original Code is University of Auckland,
+!> Auckland, New Zealand and University of Oxford, Oxford, United
+!> Kingdom. Portions created by the University of Auckland and University
+!> of Oxford are Copyright (C) 2007 by the University of Auckland and
+!> the University of Oxford. All Rights Reserved.
+!>
+!> Contributor(s):
+!>
+!> Alternatively, the contents of this file may be used under the terms of
+!> either the GNU General Public License Version 2 or later (the "GPL"), or
+!> the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+!> in which case the provisions of the GPL or the LGPL are applicable instead
+!> of those above. If you wish to allow use of your version of this file only
+!> under the terms of either the GPL or the LGPL, and not to allow others to
+!> use your version of this file under the terms of the MPL, indicate your
+!> decision by deleting the provisions above and replace them with the notice
+!> and other provisions required by the GPL or the LGPL. If you do not delete
+!> the provisions above, a recipient may use your version of this file under
+!> the terms of any one of the MPL, the GPL or the LGPL.
+!>
+
+!> This module handles all equations routines.
+MODULE EQUATIONS_ROUTINES
+
+  USE BASE_ROUTINES
+  USE EQUATIONS_MAPPING_ROUTINES
+  USE EQUATIONS_MATRICES_ROUTINES
+  USE EQUATIONS_SET_CONSTANTS
+  USE FIELD_ROUTINES
+  USE ISO_VARYING_STRING
+  USE KINDS
+  USE STRINGS
+  USE TYPES
+
+  IMPLICIT NONE
+
+  PRIVATE
+
+
+  !> \addtogroup EQUATIONS_ROUTINES_OutputTypes EQUATIONS_ROUTINES::OutputTypes
+  !> \brief The equations output types
+  !> \see EQUATIONS_ROUTINES
+  !>@{
+  INTEGER(INTG), PARAMETER :: EQUATIONS_NO_OUTPUT=0 !<No output. \see EQUATIONS_ROUTINES_OutputTypes,EQUATIONS_ROUTINES
+  INTEGER(INTG), PARAMETER :: EQUATIONS_TIMING_OUTPUT=1 !<Timing information output. \see EQUATIONS_ROUTINES_OutputTypes,EQUATIONS_ROUTINES
+  INTEGER(INTG), PARAMETER :: EQUATIONS_MATRIX_OUTPUT=2 !<All below and equation matrices output. \see EQUATIONS_ROUTINES_OutputTypes,EQUATIONS_ROUTINES
+  INTEGER(INTG), PARAMETER :: EQUATIONS_ELEMENT_MATRIX_OUTPUT=3 !<All below and element matrices output. \see EQUATIONS_ROUTINES_OutputTypes,EQUATIONS_ROUTINES
+  !>@}
+
+  !> \addtogroup EQUATIONS_ROUTINES_SparsityTypes EQUATIONS_ROUTINES::SparsityTypes
+  !> \brief Equations matrices sparsity types
+  !> \see EQUATIONS_ROUTINES
+  !>@{
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SPARSE_MATRICES=1 !<Use sparse matrices for the equations. \see EQUATIONS_ROUTINES_SparsityTypes,EQUATIONS_ROUTINES
+  INTEGER(INTG), PARAMETER :: EQUATIONS_FULL_MATRICES=2 !<Use fully populated matrices for the equations. \see EQUATIONS_ROUTINES_SparsityTypes,EQUATIONS_ROUTINES
+ !>@}
+ 
+  !> \addtogroup EQUATIONS_ROUTINES_LumpingTypes EQUATIONS_ROUTINES::LumpingTypes
+  !> \brief Equations matrices lumping types
+  !> \see EQUATIONS_ROUTINES
+  !>@{
+  INTEGER(INTG), PARAMETER :: EQUATIONS_UNLUMPED_MATRICES=1 !<The equations matrices are not lumped. \see EQUATIONS_ROUTINES_SparsityTypes,EQUATIONS_ROUTINES
+  INTEGER(INTG), PARAMETER :: EQUATIONS_LUMPED_MATRICES=2 !<The equations matrices are "mass" lumped. \see EQUATIONS_ROUTINES_SparsityTypes,EQUATIONS_ROUTINES
+ !>@}
+ 
+  !Module types
+
+  !Module variables
+
+  !Interfaces
+
+  PUBLIC EQUATIONS_NO_OUTPUT,EQUATIONS_TIMING_OUTPUT,EQUATIONS_MATRIX_OUTPUT,EQUATIONS_ELEMENT_MATRIX_OUTPUT
+
+  PUBLIC EQUATIONS_SPARSE_MATRICES,EQUATIONS_FULL_MATRICES
+
+  PUBLIC EQUATIONS_UNLUMPED_MATRICES,EQUATIONS_LUMPED_MATRICES
+  
+  PUBLIC EQUATIONS_CREATE_START,EQUATIONS_CREATE_FINISH,EQUATIONS_DESTROY,EQUATIONS_LINEARITY_TYPE_GET, &
+    & EQUATIONS_LINEARITY_TYPE_SET,EQUATIONS_LUMPING_TYPE_GET,EQUATIONS_LUMPING_TYPE_SET,EQUATIONS_OUTPUT_TYPE_GET, &
+    & EQUATIONS_OUTPUT_TYPE_SET,EQUATIONS_SPARSITY_TYPE_GET,EQUATIONS_SPARSITY_TYPE_SET,EQUATIONS_TIME_DEPENDENCE_TYPE_GET, &
+    & EQUATIONS_TIME_DEPENDENCE_TYPE_SET
+
+  PUBLIC EQUATIONS_SET_EQUATIONS_GET
+  
+CONTAINS
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finish the creation of equations.
+  SUBROUTINE EQUATIONS_CREATE_FINISH(EQUATIONS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations to finish the creation of.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("EQUATIONS_CREATE_FINISH",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS)) THEN
+      IF(EQUATIONS%EQUATIONS_FINISHED) THEN
+        CALL FLAG_ERROR("Equations have already been finished.",ERR,ERROR,*999)        
+      ELSE
+        !Set the finished flag
+        EQUATIONS%EQUATIONS_FINISHED=.TRUE.
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_CREATE_FINISH")
+    RETURN
+999 CALL ERRORS("EQUATION_CREATE_FINISH",ERR,ERROR)
+    CALL EXITS("EQUATIONS_CREATE_FINISH")
+    RETURN 1
+    
+  END SUBROUTINE EQUATIONS_CREATE_FINISH
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the creation of equations for the equation set.
+  SUBROUTINE EQUATIONS_CREATE_START(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to create equations for
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<On exit, a pointer to the created equations. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("EQUATIONS_CREATE_START",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(ASSOCIATED(EQUATIONS_SET%EQUATIONS)) THEN
+        CALL FLAG_ERROR("Equations are already associated for the equations set.",ERR,ERROR,*999)        
+      ELSE
+        IF(ASSOCIATED(EQUATIONS)) THEN
+          CALL FLAG_ERROR("Equations is already associated.",ERR,ERROR,*999)
+        ELSE
+          !Initialise the equations
+          CALL EQUATIONS_INITIALISE(EQUATIONS_SET,ERR,ERROR,*999)
+          !Return the pointer
+          EQUATIONS=>EQUATIONS_SET%EQUATIONS
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_CREATE_START")
+    RETURN
+999 CALL ERRORS("EQUATION_CREATE_START",ERR,ERROR)
+    CALL EXITS("EQUATIONS_CREATE_START")
+    RETURN 1
+    
+  END SUBROUTINE EQUATIONS_CREATE_START
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroys equations
+  SUBROUTINE EQUATIONS_DESTROY(EQUATIONS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations to destroy
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("EQUATIONS_DESTROY",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS)) THEN
+      CALL EQUATIONS_FINALISE(EQUATIONS,ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_DESTROY")
+    RETURN
+999 CALL ERRORS("EQUATION_DESTROY",ERR,ERROR)
+    CALL EXITS("EQUATIONS_DESTROY")
+    RETURN 1
+    
+  END SUBROUTINE EQUATIONS_DESTROY
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise the equations and deallocate all memory.
+  SUBROUTINE EQUATIONS_FINALISE(EQUATIONS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("EQUATIONS_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS)) THEN
+      CALL EQUATIONS_INTERPOLATION_FINALISE(EQUATIONS%INTERPOLATION,ERR,ERROR,*999)
+      IF(ASSOCIATED(EQUATIONS%EQUATIONS_MAPPING)) CALL EQUATIONS_MAPPING_DESTROY(EQUATIONS%EQUATIONS_MAPPING,ERR,ERROR,*999)
+      IF(ASSOCIATED(EQUATIONS%EQUATIONS_MATRICES)) CALL EQUATIONS_MATRICES_DESTROY(EQUATIONS%EQUATIONS_MATRICES,ERR,ERROR,*999)
+      DEALLOCATE(EQUATIONS)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_FINALISE")
+    RETURN
+999 CALL ERRORS("EQUATIONS_FINALISE",ERR,ERROR)
+    CALL EXITS("EQUATIONS_FINALISE")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises the equations for an equations set.
+  SUBROUTINE EQUATIONS_INITIALISE(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to initialise the equations for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("EQUATIONS_INITIALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(ASSOCIATED(EQUATIONS_SET%EQUATIONS)) THEN
+        CALL FLAG_ERROR("Equations is already associated for this equations set.",ERR,ERROR,*999)
+      ELSE
+        ALLOCATE(EQUATIONS_SET%EQUATIONS,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations.",ERR,ERROR,*999)
+        EQUATIONS_SET%EQUATIONS%EQUATIONS_SET=>EQUATIONS_SET
+        EQUATIONS_SET%EQUATIONS%LINEARITY=EQUATIONS_LINEAR
+        EQUATIONS_SET%EQUATIONS%TIME_DEPENDENCE=EQUATIONS_STATIC
+        EQUATIONS_SET%EQUATIONS%OUTPUT_TYPE=EQUATIONS_NO_OUTPUT
+        EQUATIONS_SET%EQUATIONS%SPARSITY_TYPE=EQUATIONS_SPARSE_MATRICES
+        EQUATIONS_SET%EQUATIONS%LUMPING_TYPE=EQUATIONS_UNLUMPED_MATRICES
+        NULLIFY(EQUATIONS_SET%EQUATIONS%INTERPOLATION)
+        NULLIFY(EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING)
+        NULLIFY(EQUATIONS_SET%EQUATIONS%EQUATIONS_MATRICES)
+        EQUATIONS_SET%EQUATIONS%EQUATIONS_FINISHED=.FALSE.
+        CALL EQUATIONS_INTERPOLATION_INITIALISE(EQUATIONS_SET%EQUATIONS,ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_INITIALISE")
+    RETURN
+999 CALL ERRORS("EQUATIONS_INITIALISE",ERR,ERROR)
+    CALL EXITS("EQUATIONS_INITIALISE")
+    RETURN 1
+    
+  END SUBROUTINE EQUATIONS_INITIALISE
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !>Finalises the interpolation information for equations and deallocates all memory
+  SUBROUTINE EQUATIONS_INTERPOLATION_FINALISE(EQUATIONS_INTERPOLATION,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_INTERPOLATION_TYPE), POINTER :: EQUATIONS_INTERPOLATION !<A pointer to the equations interpolation to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("EQUATIONS_INTERPOLATION_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_INTERPOLATION)) THEN
+      CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(EQUATIONS_INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS,ERR,ERROR,*999)
+      CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(EQUATIONS_INTERPOLATION%FIBRE_INTERP_PARAMETERS,ERR,ERROR,*999)
+      CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(EQUATIONS_INTERPOLATION%DEPENDENT_INTERP_PARAMETERS,ERR,ERROR,*999)
+      CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(EQUATIONS_INTERPOLATION%MATERIALS_INTERP_PARAMETERS,ERR,ERROR,*999)
+      CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(EQUATIONS_INTERPOLATION%SOURCE_INTERP_PARAMETERS,ERR,ERROR,*999)
+      CALL FIELD_INTERPOLATED_POINT_FINALISE(EQUATIONS_INTERPOLATION%GEOMETRIC_INTERP_POINT,ERR,ERROR,*999)
+      CALL FIELD_INTERPOLATED_POINT_FINALISE(EQUATIONS_INTERPOLATION%DEPENDENT_INTERP_POINT,ERR,ERROR,*999)
+      CALL FIELD_INTERPOLATED_POINT_FINALISE(EQUATIONS_INTERPOLATION%FIBRE_INTERP_POINT,ERR,ERROR,*999)
+      CALL FIELD_INTERPOLATED_POINT_FINALISE(EQUATIONS_INTERPOLATION%MATERIALS_INTERP_POINT,ERR,ERROR,*999)
+      CALL FIELD_INTERPOLATED_POINT_FINALISE(EQUATIONS_INTERPOLATION%SOURCE_INTERP_POINT,ERR,ERROR,*999)
+      CALL FIELD_INTERPOLATED_POINT_METRICS_FINALISE(EQUATIONS_INTERPOLATION%DEPENDENT_INTERP_POINT_METRICS,ERR,ERROR,*999)
+      CALL FIELD_INTERPOLATED_POINT_METRICS_FINALISE(EQUATIONS_INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS,ERR,ERROR,*999)
+      CALL FIELD_INTERPOLATED_POINT_METRICS_FINALISE(EQUATIONS_INTERPOLATION%FIBRE_INTERP_POINT_METRICS,ERR,ERROR,*999)
+      DEALLOCATE(EQUATIONS_INTERPOLATION)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_INTERPOLATION_FINALISE")
+    RETURN
+999 CALL ERRORS("EQUATIONS_INTERPOLATION_FINALISE",ERR,ERROR)
+    CALL EXITS("EQUATIONS_INTERPOLATION_FINALISE")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_INTERPOLATION_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises the interpolation information for equations
+  SUBROUTINE EQUATIONS_INTERPOLATION_INITIALISE(EQUATIONS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<The pointer to the equations to initialise the interpolation for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    
+    CALL ENTERS("EQUATIONS_INTERPOLATION_INITIALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS)) THEN
+      EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+      IF(ASSOCIATED(EQUATIONS_SET)) THEN
+        IF(ASSOCIATED(EQUATIONS%INTERPOLATION)) THEN
+          CALL FLAG_ERROR("Interpolation is already associated for these equations.",ERR,ERROR,*999)
+        ELSE
+          ALLOCATE(EQUATIONS%INTERPOLATION,STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations interpolation",ERR,ERROR,*999)
+          EQUATIONS%INTERPOLATION%EQUATIONS=>EQUATIONS
+          NULLIFY(EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS)
+          NULLIFY(EQUATIONS%INTERPOLATION%FIBRE_INTERP_PARAMETERS)
+          NULLIFY(EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS)
+          NULLIFY(EQUATIONS%INTERPOLATION%MATERIALS_INTERP_PARAMETERS)
+          NULLIFY(EQUATIONS%INTERPOLATION%SOURCE_INTERP_PARAMETERS)
+          NULLIFY(EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT)
+          NULLIFY(EQUATIONS%INTERPOLATION%FIBRE_INTERP_POINT)
+          NULLIFY(EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT)
+          NULLIFY(EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT)
+          NULLIFY(EQUATIONS%INTERPOLATION%SOURCE_INTERP_POINT)
+          NULLIFY(EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT_METRICS)
+          NULLIFY(EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS)
+          NULLIFY(EQUATIONS%INTERPOLATION%FIBRE_INTERP_POINT_METRICS)
+          
+          EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+          EQUATIONS%INTERPOLATION%FIBRE_FIELD=>EQUATIONS_SET%GEOMETRY%FIBRE_FIELD
+          EQUATIONS%INTERPOLATION%DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+          IF(ASSOCIATED(EQUATIONS_SET%MATERIALS)) THEN
+            EQUATIONS%INTERPOLATION%MATERIALS_FIELD=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
+          ELSE
+            NULLIFY(EQUATIONS%INTERPOLATION%MATERIALS_FIELD)
+          ENDIF
+          IF(ASSOCIATED(EQUATIONS_SET%SOURCE)) THEN
+            EQUATIONS%INTERPOLATION%SOURCE_FIELD=>EQUATIONS_SET%SOURCE%SOURCE_FIELD
+          ELSE
+            NULLIFY(EQUATIONS%INTERPOLATION%SOURCE_FIELD)
+          ENDIF
+          
+          CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD, &
+            & FIELD_U_VARIABLE_TYPE,EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS,ERR,ERROR,*999)
+          CALL FIELD_INTERPOLATED_POINT_INITIALISE(EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS, &
+            & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT,ERR,ERROR,*999)
+          CALL FIELD_INTERPOLATED_POINT_METRICS_INITIALISE(EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT, &
+            & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS,ERR,ERROR,*999)
+          CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(EQUATIONS%INTERPOLATION%DEPENDENT_FIELD, &
+            & FIELD_U_VARIABLE_TYPE,EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS,ERR,ERROR,*999)
+          CALL FIELD_INTERPOLATED_POINT_INITIALISE(EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS, &
+            & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT,ERR,ERROR,*999)
+          IF(EQUATIONS%INTERPOLATION%DEPENDENT_FIELD%TYPE==FIELD_GEOMETRIC_TYPE.OR. &
+            & EQUATIONS%INTERPOLATION%DEPENDENT_FIELD%TYPE==FIELD_FIBRE_TYPE) THEN
+            CALL FIELD_INTERPOLATED_POINT_METRICS_INITIALISE(EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT, &
+              & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT_METRICS,ERR,ERROR,*999)
+          ENDIF
+          IF(ASSOCIATED(EQUATIONS%INTERPOLATION%FIBRE_FIELD)) THEN
+            CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(EQUATIONS%INTERPOLATION%FIBRE_FIELD, &
+              & FIELD_U_VARIABLE_TYPE,EQUATIONS%INTERPOLATION%FIBRE_INTERP_PARAMETERS,ERR,ERROR,*999)
+            CALL FIELD_INTERPOLATED_POINT_INITIALISE(EQUATIONS%INTERPOLATION%FIBRE_INTERP_PARAMETERS,  &
+              &  EQUATIONS%INTERPOLATION%FIBRE_INTERP_POINT,ERR,ERROR,*999)
+            CALL FIELD_INTERPOLATED_POINT_METRICS_INITIALISE(EQUATIONS%INTERPOLATION%FIBRE_INTERP_POINT,  &
+              &  EQUATIONS%INTERPOLATION%FIBRE_INTERP_POINT_METRICS,ERR,ERROR,*999)
+          ENDIF
+          IF(ASSOCIATED(EQUATIONS%INTERPOLATION%MATERIALS_FIELD)) THEN
+            CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(EQUATIONS%INTERPOLATION%MATERIALS_FIELD, &
+              & FIELD_U_VARIABLE_TYPE,EQUATIONS%INTERPOLATION%MATERIALS_INTERP_PARAMETERS,ERR,ERROR,*999)
+            CALL FIELD_INTERPOLATED_POINT_INITIALISE(EQUATIONS%INTERPOLATION%MATERIALS_INTERP_PARAMETERS,  &
+              & EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT,ERR,ERROR,*999)
+          ENDIF
+          IF(ASSOCIATED(EQUATIONS%INTERPOLATION%SOURCE_FIELD)) THEN
+            CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(EQUATIONS%INTERPOLATION%SOURCE_FIELD, &
+              & FIELD_U_VARIABLE_TYPE,EQUATIONS%INTERPOLATION%SOURCE_INTERP_PARAMETERS,ERR,ERROR,*999)
+            CALL FIELD_INTERPOLATED_POINT_INITIALISE(EQUATIONS%INTERPOLATION%SOURCE_INTERP_PARAMETERS, &
+              & EQUATIONS%INTERPOLATION%SOURCE_INTERP_POINT,ERR,ERROR,*999)
+          ENDIF
+          
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Equations equation set is not associated",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_INTERPOLATION_INITIALISE")
+    RETURN
+999 CALL ERRORS("EQUATIONS_INTERPOLATION_INITIALISE",ERR,ERROR)
+    CALL EXITS("EQUATIONS_INTERPOLATION_INITIALISE")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_INTERPOLATION_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the linearity type for equations.
+  SUBROUTINE EQUATIONS_LINEARITY_TYPE_GET(EQUATIONS,LINEARITY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations to get the linearity for
+    INTEGER(INTG), INTENT(OUT) :: LINEARITY_TYPE !<On exit, the linearity type of the equations
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("EQUATIONS_LINEARITY_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS)) THEN
+      IF(EQUATIONS%EQUATIONS_FINISHED) THEN
+        LINEARITY_TYPE=EQUATIONS%LINEARITY
+      ELSE
+        CALL FLAG_ERROR("Equations has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_LINEARITY_TYPE_GET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_LINEARITY_TYPE_GET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_LINEARITY_TYPE_GET")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_LINEARITY_TYPE_GET
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the linearity type for equations.
+  SUBROUTINE EQUATIONS_LINEARITY_TYPE_SET(EQUATIONS,LINEARITY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations to set the linearity for
+    INTEGER(INTG), INTENT(IN) :: LINEARITY_TYPE !<The linearity type to set \see EQUATIONS_ROUTINES_LinearityTypes,EQUATIONS_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+ 
+    CALL ENTERS("EQUATIONS_LINEARITY_TYPE_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS)) THEN
+      IF(EQUATIONS%EQUATIONS_FINISHED) THEN
+        CALL FLAG_ERROR("Equations has already been finished.",ERR,ERROR,*999)
+      ELSE
+        SELECT CASE(LINEARITY_TYPE)
+        CASE(EQUATIONS_LINEAR)
+          EQUATIONS%LINEARITY=EQUATIONS_LINEAR
+        CASE(EQUATIONS_NONLINEAR)
+          EQUATIONS%LINEARITY=EQUATIONS_NONLINEAR
+        CASE(EQUATIONS_NONLINEAR_BCS)
+          EQUATIONS%LINEARITY=EQUATIONS_NONLINEAR_BCS
+        CASE DEFAULT
+          LOCAL_ERROR="The specified linearity type of "//TRIM(NUMBER_TO_VSTRING(LINEARITY_TYPE,"*",ERR,ERROR))// &
+            & " is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_LINEARITY_TYPE_SET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_LINEARITY_TYPE_SET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_LINEARITY_TYPE_SET")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_LINEARITY_TYPE_SET
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the lumping type for equations.
+  SUBROUTINE EQUATIONS_LUMPING_TYPE_GET(EQUATIONS,LUMPING_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations to get the lumping type for
+    INTEGER(INTG), INTENT(OUT) :: LUMPING_TYPE !<On exit, the lumping type of the equations
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("EQUATIONS_LUMPING_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS)) THEN
+      IF(EQUATIONS%EQUATIONS_FINISHED) THEN
+        LUMPING_TYPE=EQUATIONS%LUMPING_TYPE
+      ELSE
+        CALL FLAG_ERROR("Equations has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_LUMPING_TYPE_GET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_LUMPING_TYPE_GET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_LUMPING_TYPE_GET")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_LUMPING_TYPE_GET
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the matrix lumping for the equations.
+  SUBROUTINE EQUATIONS_LUMPING_TYPE_SET(EQUATIONS,LUMPING_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations to set the lumping for
+    INTEGER(INTG), INTENT(IN) :: LUMPING_TYPE !<The lumping type to set \see EQUATIONS_ROUTINES_LumpingTypes,EQUATIONS_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+ 
+    CALL ENTERS("EQUATIONS_LUMPING_TYPE_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS)) THEN
+      IF(EQUATIONS%EQUATIONS_FINISHED) THEN
+        CALL FLAG_ERROR("Equations has already been finished.",ERR,ERROR,*999)
+      ELSE
+        IF(EQUATIONS%TIME_DEPENDENCE==EQUATIONS_FIRST_ORDER_DYNAMIC.OR. &
+          & EQUATIONS%TIME_DEPENDENCE==EQUATIONS_SECOND_ORDER_DYNAMIC) THEN
+          SELECT CASE(LUMPING_TYPE)
+          CASE(EQUATIONS_UNLUMPED_MATRICES)
+            EQUATIONS%LUMPING_TYPE=EQUATIONS_UNLUMPED_MATRICES
+          CASE(EQUATIONS_LUMPED_MATRICES)
+            EQUATIONS%LUMPING_TYPE=EQUATIONS_LUMPED_MATRICES
+          CASE DEFAULT
+            LOCAL_ERROR="The specified lumping type of "//TRIM(NUMBER_TO_VSTRING(LUMPING_TYPE,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          LOCAL_ERROR="Invalid equations time dependence. The equations time dependence of "// &
+            & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))// &
+            & " does not correspond to dynamic equations. You can only set lumping for dynamic equations."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_LUMPING_TYPE_SET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_LUMPING_TYPE_SET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_LUMPING_TYPE_SET")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_LUMPING_TYPE_SET
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the output type for equations.
+  SUBROUTINE EQUATIONS_OUTPUT_TYPE_GET(EQUATIONS,OUTPUT_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations to get the output type for
+    INTEGER(INTG), INTENT(OUT) :: OUTPUT_TYPE !<On exit, the output type of the equations
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("EQUATIONS_OUTPUT_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS)) THEN
+      IF(EQUATIONS%EQUATIONS_FINISHED) THEN
+        OUTPUT_TYPE=EQUATIONS%OUTPUT_TYPE
+      ELSE
+        CALL FLAG_ERROR("Equations has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_OUTPUT_TYPE_GET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_OUTPUT_TYPE_GET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_OUTPUT_TYPE_GET")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_OUTPUT_TYPE_GET
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the output type for the equations.
+  SUBROUTINE EQUATIONS_OUTPUT_TYPE_SET(EQUATIONS,OUTPUT_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations to set the output type for
+    INTEGER(INTG), INTENT(IN) :: OUTPUT_TYPE !<The output type to set \see EQUATIONS_ROUTINES_OutputTypes,EQUATIONS_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+ 
+    CALL ENTERS("EQUATIONS_OUTPUT_TYPE_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS)) THEN
+      IF(EQUATIONS%EQUATIONS_FINISHED) THEN
+        CALL FLAG_ERROR("Equations has already been finished.",ERR,ERROR,*999)
+      ELSE
+        SELECT CASE(OUTPUT_TYPE)
+        CASE(EQUATIONS_NO_OUTPUT)
+          EQUATIONS%OUTPUT_TYPE=EQUATIONS_NO_OUTPUT
+        CASE(EQUATIONS_TIMING_OUTPUT)
+          EQUATIONS%OUTPUT_TYPE=EQUATIONS_TIMING_OUTPUT
+        CASE(EQUATIONS_MATRIX_OUTPUT)
+          EQUATIONS%OUTPUT_TYPE=EQUATIONS_MATRIX_OUTPUT
+        CASE(EQUATIONS_ELEMENT_MATRIX_OUTPUT)
+          EQUATIONS%OUTPUT_TYPE=EQUATIONS_ELEMENT_MATRIX_OUTPUT
+        CASE DEFAULT
+          LOCAL_ERROR="The specified output type of "//TRIM(NUMBER_TO_VSTRING(OUTPUT_TYPE,"*",ERR,ERROR))//" is invalid"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_OUTPUT_TYPE_SET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_OUTPUT_TYPE_SET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_OUTPUT_TYPE_SET")
+    RETURN 1
+    
+  END SUBROUTINE EQUATIONS_OUTPUT_TYPE_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the sparsity type for equations.
+  SUBROUTINE EQUATIONS_SPARSITY_TYPE_GET(EQUATIONS,SPARSITY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations to get the output type for
+    INTEGER(INTG), INTENT(OUT) :: SPARSITY_TYPE !<On exit, the sparsity type of the equations
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("EQUATIONS_SPARSITY_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS)) THEN
+      IF(EQUATIONS%EQUATIONS_FINISHED) THEN
+        SPARSITY_TYPE=EQUATIONS%SPARSITY_TYPE
+      ELSE
+        CALL FLAG_ERROR("Equations has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SPARSITY_TYPE_GET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SPARSITY_TYPE_GET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SPARSITY_TYPE_GET")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SPARSITY_TYPE_GET
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the sparsity type for the equations.
+  SUBROUTINE EQUATIONS_SPARSITY_TYPE_SET(EQUATIONS,SPARSITY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations to set the sparsity type for
+    INTEGER(INTG), INTENT(IN) :: SPARSITY_TYPE !<The sparsity type to set \see EQUATIONS_ROUTINES_SparsityTypes,EQUATIONS_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+ 
+    CALL ENTERS("EQUATIONS_SPARSITY_TYPE_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS)) THEN
+      IF(EQUATIONS%EQUATIONS_FINISHED) THEN
+        CALL FLAG_ERROR("Equations has already been finished.",ERR,ERROR,*999)
+      ELSE
+        SELECT CASE(SPARSITY_TYPE)
+        CASE(EQUATIONS_SPARSE_MATRICES)
+          EQUATIONS%SPARSITY_TYPE=EQUATIONS_SPARSE_MATRICES
+        CASE(EQUATIONS_FULL_MATRICES)
+          EQUATIONS%SPARSITY_TYPE=EQUATIONS_FULL_MATRICES
+        CASE DEFAULT
+          LOCAL_ERROR="The specified sparsity type of "//TRIM(NUMBER_TO_VSTRING(SPARSITY_TYPE,"*",ERR,ERROR))// &
+            & " is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SPARSITY_TYPE_SET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SPARSITY_TYPE_SET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SPARSITY_TYPE_SET")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SPARSITY_TYPE_SET
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the time dependence type for equations.
+  SUBROUTINE EQUATIONS_TIME_DEPENDENCE_TYPE_GET(EQUATIONS,TIME_DEPENDENCE_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations to get the output type for
+    INTEGER(INTG), INTENT(OUT) :: TIME_DEPENDENCE_TYPE !<On exit, the time dependence type of the equations
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("EQUATIONS_TIME_DEPENDENCE_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS)) THEN
+      IF(EQUATIONS%EQUATIONS_FINISHED) THEN
+        TIME_DEPENDENCE_TYPE=EQUATIONS%TIME_DEPENDENCE
+      ELSE
+        CALL FLAG_ERROR("Equations has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_TIME_DEPENDENCE_TYPE_GET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_TIME_DEPENDENCE_TYPE_GET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_TIME_DEPENDENCE_TYPE_GET")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_TIME_DEPENDENCE_TYPE_GET
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the time dependence type for equations.
+  SUBROUTINE EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,TIME_DEPENDENCE_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations to set the linearity for
+    INTEGER(INTG), INTENT(IN) :: TIME_DEPENDENCE_TYPE !<The time dependence type to set \see EQUATIONS_ROUTINES_TimeDependenceTypes,EQUATIONS_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+ 
+    CALL ENTERS("EQUATIONS_TIME_DEPENDENCE_TYPE_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS)) THEN
+      IF(EQUATIONS%EQUATIONS_FINISHED) THEN
+        CALL FLAG_ERROR("Equations has already been finished.",ERR,ERROR,*999)
+      ELSE
+        SELECT CASE(TIME_DEPENDENCE_TYPE)
+        CASE(EQUATIONS_STATIC)
+          EQUATIONS%TIME_DEPENDENCE=EQUATIONS_STATIC
+        CASE(EQUATIONS_QUASISTATIC)
+          EQUATIONS%TIME_DEPENDENCE=EQUATIONS_QUASISTATIC
+        CASE(EQUATIONS_FIRST_ORDER_DYNAMIC)
+          EQUATIONS%TIME_DEPENDENCE=EQUATIONS_FIRST_ORDER_DYNAMIC
+        CASE(EQUATIONS_SECOND_ORDER_DYNAMIC)
+          EQUATIONS%TIME_DEPENDENCE=EQUATIONS_SECOND_ORDER_DYNAMIC
+        CASE DEFAULT
+          LOCAL_ERROR="The specified time dependence type of "//TRIM(NUMBER_TO_VSTRING(TIME_DEPENDENCE_TYPE,"*",ERR,ERROR))// &
+            & " is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_TIME_DEPENDENCE_TYPE_SET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_TIME_DEPENDENCE_TYPE_SET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_TIME_DEPENDENCE_TYPE_SET")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_TIME_DEPENDENCE_TYPE_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the equations for an equations set.
+  SUBROUTINE EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to get the equations for
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<On exit, a pointer to the equations in the specified equations set. Must not be associated on entry
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("EQUATIONS_SET_EQUATIONS_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(EQUATIONS_SET%EQUATIONS_SET_FINISHED) THEN
+        IF(ASSOCIATED(EQUATIONS)) THEN
+          CALL FLAG_ERROR("Equations is already associated.",ERR,ERROR,*999)
+        ELSE
+          EQUATIONS=>EQUATIONS_SET%EQUATIONS
+          IF(.NOT.ASSOCIATED(EQUATIONS)) CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Equations set has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_EQUATIONS_GET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_EQUATIONS_GET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_EQUATIONS_GET")
+    RETURN 1
+    
+  END SUBROUTINE EQUATIONS_SET_EQUATIONS_GET
+
+  !
+  !================================================================================================================================
+  !
+      
+END MODULE EQUATIONS_ROUTINES

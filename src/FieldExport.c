@@ -1,4 +1,51 @@
+/* \file
+ * $Id: FieldExport.c 375 2009-02-27 11:05:03Z chrispbradley $
+ * \author Caton Little
+ * \brief 
+ *
+ * \section LICENSE
+ *
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License
+ * Version 1.1 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS"
+ * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
+ * License for the specific language governing rights and limitations
+ * under the License.
+ *
+ * The Original Code is openCMISS
+ *
+ * The Initial Developer of the Original Code is University of Auckland,
+ * Auckland, New Zealand and University of Oxford, Oxford, United
+ * Kingdom. Portions created by the University of Auckland and University
+ * of Oxford are Copyright (C) 2007 by the University of Auckland and
+ * the University of Oxford. All Rights Reserved.
+ *
+ * Contributor(s):
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ */
+
+#ifdef WIN32
 #include <windows.h>
+#else
+#include <stdarg.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,10 +78,12 @@
 #define FIELD_GENERAL_TYPE   3 //General field \see FIELD_ROUTINES_FieldTypes,FIELD_ROUTINES
 #define FIELD_MATERIAL_TYPE  4 //Material field \see FIELD_ROUTINES_FieldTypes,FIELD_ROUTINES
 
-#define FIELD_STANDARD_VARIABLE_TYPE    1 //Standard variable type i.e., u \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
-#define FIELD_NORMAL_VARIABLE_TYPE      2 //Normal derivative variable type i.e., du/dn \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
-#define FIELD_TIME_DERIV1_VARIABLE_TYPE 3 //First time derivative variable type i.e., du/dt \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
-#define FIELD_TIME_DERIV2_VARIABLE_TYPE 4 //Second type derivative variable type i.e., d^2u/dt^2 \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+#define FIELD_U_VARIABLE_TYPE    1 //Standard variable type i.e., u \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+#define FIELD_DELUDELN_VARIABLE_TYPE      2 //Normal derivative variable type i.e., du/dn \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+#define FIELD_DELUDELT_VARIABLE_TYPE 3 //First time derivative variable type i.e., du/dt \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+#define FIELD_DEL2UDELT2_VARIABLE_TYPE 4 //Second type derivative variable type i.e., d^2u/dt^2 \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+#define FIELD_V_VARIABLE_TYPE 5 //Second standard variable type i.e., v \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+#define FIELD_DELVDELN_VARIABLE_TYPE 6 //Second normal variable type i.e., dv/dn \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
 
 #define COORDINATE_RECTANGULAR_CARTESIAN_TYPE 1 //Rectangular Cartesian coordinate system type \see COORDINATE_ROUTINES_CoordinateSystemTypes,COORDINATE_ROUTINES
 #define COORDINATE_CYCLINDRICAL_POLAR_TYPE    2 //Cylindrical polar coordinate system type \see COORDINATE_ROUTINES_CoordinateSystemTypes,COORDINATE_ROUTINES
@@ -245,13 +294,13 @@ static char *FieldExport_GetVariableLabel( const int fieldType, const int variab
     case FIELD_GEOMETRIC_TYPE:
         switch( variableType )
         {
-        case FIELD_STANDARD_VARIABLE_TYPE:
+        case FIELD_U_VARIABLE_TYPE:
             return "unknown";
-        case FIELD_NORMAL_VARIABLE_TYPE:
+        case FIELD_DELUDELN_VARIABLE_TYPE:
             return "Normal_derivative,  field,  normal derivative of variable";
-        case FIELD_TIME_DERIV1_VARIABLE_TYPE:
+        case FIELD_DELUDELT_VARIABLE_TYPE:
             return "first_time_derivative,  field,  first time derivative of variable";
-        case FIELD_TIME_DERIV2_VARIABLE_TYPE:
+        case FIELD_DEL2UDELT2_VARIABLE_TYPE:
             return "second_time_derivative,  field,  second time derivative of variable";
         default:
             return "unknown_geometry,  field,  unknown field variable type";
@@ -259,13 +308,13 @@ static char *FieldExport_GetVariableLabel( const int fieldType, const int variab
     case FIELD_FIBRE_TYPE:
         switch( variableType )
         {
-        case FIELD_STANDARD_VARIABLE_TYPE:
+        case FIELD_U_VARIABLE_TYPE:
             return "fibres, anatomical, fibre";
-        case FIELD_NORMAL_VARIABLE_TYPE:
+        case FIELD_DELUDELN_VARIABLE_TYPE:
             return "norm_der_fiber,  normal derivative of variable";
-        case FIELD_TIME_DERIV1_VARIABLE_TYPE:
+        case FIELD_DELUDELT_VARIABLE_TYPE:
             return "first_time_fiber,  first time derivative of variable";
-        case FIELD_TIME_DERIV2_VARIABLE_TYPE:
+        case FIELD_DEL2UDELT2_VARIABLE_TYPE:
             return "second_time_fiber,  second time derivative of variable";
         default:
             return "unknown_fiber,  unknown field variable type";
@@ -273,13 +322,13 @@ static char *FieldExport_GetVariableLabel( const int fieldType, const int variab
     case FIELD_GENERAL_TYPE:
         switch( variableType )
         {
-        case FIELD_STANDARD_VARIABLE_TYPE:
+        case FIELD_U_VARIABLE_TYPE:
             return "general,  field,  rectangular cartesian";
-        case FIELD_NORMAL_VARIABLE_TYPE:
+        case FIELD_DELUDELN_VARIABLE_TYPE:
             return "norm_dev_variable,  field,  string";
-        case FIELD_TIME_DERIV1_VARIABLE_TYPE:
+        case FIELD_DELUDELT_VARIABLE_TYPE:
             return "first_time_variable,  field,  first time derivative of variable";
-        case FIELD_TIME_DERIV2_VARIABLE_TYPE:
+        case FIELD_DEL2UDELT2_VARIABLE_TYPE:
             return "second_time_variable,  field,  second time derivative of variable";
         default:
             return "unknown_general,  field,  unknown field variable type";
@@ -287,13 +336,13 @@ static char *FieldExport_GetVariableLabel( const int fieldType, const int variab
     case FIELD_MATERIAL_TYPE:
         switch( variableType )
         {
-        case FIELD_STANDARD_VARIABLE_TYPE:
+        case FIELD_U_VARIABLE_TYPE:
             return "material,  field,  rectangular cartesian";
-        case FIELD_NORMAL_VARIABLE_TYPE:
+        case FIELD_DELUDELN_VARIABLE_TYPE:
             return "normal_material,  field,  normal derivative of variable";
-        case FIELD_TIME_DERIV1_VARIABLE_TYPE:
+        case FIELD_DELUDELT_VARIABLE_TYPE:
             return "fist_time_material,  field,  first time derivative of variable";
-        case FIELD_TIME_DERIV2_VARIABLE_TYPE:
+        case FIELD_DEL2UDELT2_VARIABLE_TYPE:
             return "second_time_material,  field,  second time derivative of variable";
         default:
             return "unknown material,  field,  unknown field variable type";
@@ -301,13 +350,13 @@ static char *FieldExport_GetVariableLabel( const int fieldType, const int variab
     default:
         switch( variableType )
         {
-        case FIELD_STANDARD_VARIABLE_TYPE:
+        case FIELD_U_VARIABLE_TYPE:
             return "unknown,  field,  unknown standand variable type";
-        case FIELD_NORMAL_VARIABLE_TYPE:
+        case FIELD_DELUDELN_VARIABLE_TYPE:
             return "unknown,  field,  unknown normal derivative of variable";
-        case FIELD_TIME_DERIV1_VARIABLE_TYPE:
+        case FIELD_DELUDELT_VARIABLE_TYPE:
             return "unknown,  field,  unknown first time derivative of variable";
-        case FIELD_TIME_DERIV2_VARIABLE_TYPE:
+        case FIELD_DEL2UDELT2_VARIABLE_TYPE:
             return "unknown, field,  unknown second time derivative of variable";
         default:
             return "unknown,  field,  unknown field variable type";
