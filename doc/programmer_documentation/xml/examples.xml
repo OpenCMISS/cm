@@ -1,7 +1,0 @@
-<chapter>
-  <title>Examples</title>
-  <section>
-    <title>Laplace equation</title>
-    &laplace_example;
-  </section>
-</chapter>

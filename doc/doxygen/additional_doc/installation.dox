@@ -10,9 +10,9 @@ To check out the main trunk of openCMISS issue the following command in the open
 \code svn co https://opencmiss.svn.sourceforge.net/svnroot/opencmiss/cm/trunk cm \endcode
 If you are not familar with subversion, have a look at http://svnbook.red-bean.com.
 \subsection obtain_the_libraries Obtain the Libraries
-The openCMISS libraries repository is at http://www.physiome.ox.ac.uk/svn/opencmissextras/cm
+The openCMISS libraries repository is at https://svn.physiomeproject.org/svn/opencmissextras/cm/
 To check out the main trunk of the various libraries required with openCMISS issue the following command in the opencmissextras directory:
-\code svn co http://www.physiome.ox.ac.uk/svn/opencmissextras/cm/trunk/external/architecture cm/external/architecture \endcode
+\code svn co https://svn.physiomeproject.org/svn/opencmissextras/cm/trunk/external/architecture cm/external/architecture \endcode
 where architecture is the appropriate architecture for the machine. Possible architectures are:
 - i386-win32
 - i386-win32-debug
@@ -23,7 +23,7 @@ where architecture is the appropriate architecture for the machine. Possible arc
 - rs6000-32-aix
 - rs6000-32-aix-debug
 .
-Currently, the svn repository for openCMISS libraries is down. An alternative location for the libraries within the ABI is on hpc. Go to \\bioengsmb\cmiss\opencmissextras\cm and copy the necessary files. 
+For Auckland users, you may find libraries on hpc. Go to \\bioengsmb\cmiss\opencmissextras\cm (Windows) or /hpc/cmiss/opencmissextras/cm and copy the necessary files. 
 The folder structure is the same as svn repository. 
 \subsection makefile_structure Makefile Structure
 The top level makefile will eventually build a library. 
@@ -43,7 +43,7 @@ Set environment variable to point to openCMISS-extras
 \subsubsection project_setup_hpc_mpi Set MPI
 Create a file called hostfile.list in your home directory.
 Inside the file, add several lines of "hpc.bioeng.auckland.ac.nz"
-In .rhost file in the home direcotry, add "hpc <username>"
+In .rhost file in the home directory, add "hpc <username>" 
 \subsubsection project_setup_aix_compile Compile
 Change directory to opencmiss/cm
 Change directory to examples/<example>
@@ -117,7 +117,7 @@ Note this is assuming you have the Intel Fortran compiler version 10.1.024. Adju
 \subsubsection libraries_build_petsc_step1 Step1: Linux Environment installation and Compiler Environment Set up (For Windows only)
 Under windows system:
 - Install Cygwin if you need to. Cywin can be found here. Make sure you include the make and python modules when you install.
-- Lauch a Command Prompt Window
+- Launch a Command Prompt Window
 - Run the ifortvars.bat batch file to setup your Intel Fortran environment. e.g., "C:\Program Files\Intel\Compiler\Fortran\10.1.024\IA32\Bin\ifortvars.bat"
 - Run the Cygwin batch file to setup the unix environment e.g., "C:\Cygwin\Cygwin.bat"
 .

@@ -1693,13 +1693,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Starts the creation of and initialises a new coordinate system. 
+  !>The default values of the COORDINATE_SYSTEM's attributes are:
+  !>- TYPE: 1 (COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
+  !>- RADIAL_INTERPOLATION_TYPE: 0 (COORDINATE_NO_RADIAL_INTERPOLATION_TYPE)
+  !>- Dimensions: 3
+  !>- Focus: 1.0
+  !>- Origin: (0.0,0.0,0.0)
+  !>- Oritention: ((1.0,0.0,0.0),(0.0,1.0,0.0),(0.0,0.0,1.0))
   SUBROUTINE COORDINATE_SYSTEM_CREATE_START(USER_NUMBER,COORDINATE_SYSTEM,ERR,ERROR,*)
-
-    !#### Subroutine: COORDINATE_SYSTEM_CREATE_START
-    !###  Description:
-    !###    Starts the creation of and initialises a new coordinate system. The coordinate system is 3D rectangular cartesian by
-    !###    default. Defaults may be changed by COORDINATE_SYSTEM_SET_xxx calls.
-    !###  See-Also: COORDINATE_SYSTEM_DESTROY,COORDINATE_SYSTEM_CREATE_FINISH
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: USER_NUMBER
@@ -3984,6 +3986,7 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !
   SUBROUTINE COORDINATE_SYSTEMS_FINALISE(ERR,ERROR,*)
 
     !#### Subroutine: COORDINATE_SYSTEMS_FINALISE
@@ -4016,13 +4019,10 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
+   
+  !>Initialises the coordinate systems and creates the world coordinate system.
+  !>\sa COORDINATE_SYSTEMS_FINALISE
   SUBROUTINE COORDINATE_SYSTEMS_INITIALISE(ERR,ERROR,*)
-
-    !#### Subroutine: COORDINATE_SYSTEMS_INITIALISE
-    !###  Description:
-    !###   Initialises the coordinate systems and creates the world coordinate system.
-    !###  See-Also: COORDINATE_SYSTEMS_FINALISE
 
     !Argument variables
     INTEGER(INTG), INTENT(OUT) :: ERR
