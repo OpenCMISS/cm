@@ -166,6 +166,8 @@ CONTAINS
   !
 
   !>Start the creation of a analytic solution for a equations set.
+  !>Default values set for the EQUATIONS_SET ANALYTIC TYPE's attributes are:
+  !>- ANALYTIC_FUNCTION: 3 (EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_1)
   SUBROUTINE EQUATIONS_SET_ANALYTIC_CREATE_START(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -1224,6 +1226,20 @@ CONTAINS
   !
 
   !>Starts the process of creating an equations set defined by USER_NUMBER in the region identified by REGION.    
+  !>Default values set for the EQUATIONS_SET's attributes are:
+  !>- CLASS: 4 (EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
+  !>- TYPE: 1 (EQUATIONS_SET_LAPLACE_EQUATION_TYPE)
+  !>- SUBTYPE: 1 (EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE)
+  !>- LINEARITY: 1 (EQUATIONS_SET_LINEAR)
+  !>- TIME_DEPENDENCE: 1 (EQUATIONS_SET_STATIC)
+  !>- SOLUTION_METHOD: 1 (EQUATIONS_SET_FEM_SOLUTION_METHOD)
+  !>- GEOMETRY 
+  !>- MATERIALS 
+  !>- SOURCE 
+  !>- DEPENDENT
+  !>- ANALYTIC
+  !>- FIXED_CONDITIONS 
+  !>- EQUATIONS 
   SUBROUTINE EQUATIONS_SET_CREATE_START(USER_NUMBER,REGION,GEOM_FIBRE_FIELD,EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -3185,6 +3201,16 @@ CONTAINS
   !
 
   !>Start the creation of equations for the equation set. \todo Should this return a pointer to the equations???
+  !>Default values set for the EQUATIONS's attributes are:
+  !>- OUTPUT_TYPE: 0 (EQUATIONS_SET_NO_OUTPUT)
+  !>- SPARSITY_TYPE: 1 (EQUATIONS_SET_SPARSE_MATRICES)
+  !>- NONLINEAR_JACOBIAN_TYPE: 0
+  !>- INTERPOLATION: null
+  !>- LINEAR_DATA: null 
+  !>- NONLINEAR_DATA: null
+  !>- TIME_DATA: null
+  !>- EQUATIONS_MAPPING:  
+  !>- EQUATIONS_MATRICES:  
   SUBROUTINE EQUATIONS_SET_EQUATIONS_CREATE_START(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables

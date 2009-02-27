@@ -355,6 +355,10 @@ CONTAINS
   !
 
   !>Starts the process of creating a problem defined by USER_NUMBER.
+  !>The default values of the PROBLEM attributes are:
+  !>- CLASS: 4 (PROBLEM_CLASSICAL_FIELD_CLASS)
+  !>- TYPE: 1 (PROBLEM_LAPLACE_EQUATION_TYPE)
+  !>- SUBTYPE: 1 (PROBLEM_STANDARD_LAPLACE_SUBTYPE)
   SUBROUTINE PROBLEM_CREATE_START(USER_NUMBER,PROBLEM,ERR,ERROR,*)
 
     !Argument variables
@@ -710,6 +714,10 @@ CONTAINS
   !
 
   !>Start the creation of a control loop for a problem.
+  !>The default values of the PROBLEM CONTROL LOOP attributes are:
+  !>- LOOP_TYPE: PROBLEM_CONTROL_SIMPLE_TYPE
+  !>- CONTROL_LOOP_LEVEL: 1
+  !>- NUMBER_OF_SUB_LOOPS: 0
   SUBROUTINE PROBLEM_CONTROL_LOOP_CREATE_START(PROBLEM,ERR,ERROR,*)
 
     !Argument variables
@@ -1805,6 +1813,10 @@ CONTAINS
   !
 
   !>Start the creation of solver equations for a problem.
+  !>The default values of the SOLVER attributes are:
+  !>- SOLVE_TYPE: 1 (SOLVER_LINEAR_TYPE)
+  !>- OUTPUT_TYPE: 0 (SOLVER_NO_OUTPUT)
+  !>- SPARSITY_TYPE: 1 (SOLVER_SPARSE_MATRICES)
   SUBROUTINE PROBLEM_SOLVER_EQUATIONS_CREATE_START(PROBLEM,ERR,ERROR,*)
 
     !Argument variablesg

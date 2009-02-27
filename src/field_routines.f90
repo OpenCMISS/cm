@@ -844,9 +844,7 @@ CONTAINS
             IF(COMPONENT_NUMBER>=1.AND.COMPONENT_NUMBER<=FIELD%VARIABLES(VARIABLE_NUMBER)%NUMBER_OF_COMPONENTS) THEN
               FIELD%VARIABLES(VARIABLE_NUMBER)%COMPONENTS(COMPONENT_NUMBER)%COMPONENT_NUMBER=COMPONENT_NUMBER
               FIELD%VARIABLES(VARIABLE_NUMBER)%COMPONENTS(COMPONENT_NUMBER)%FIELD_VARIABLE=>FIELD%VARIABLES(VARIABLE_NUMBER)
-              FIELD%VARIABLES(VARIABLE_NUMBER)%COMPONENTS(COMPONENT_NUMBER)%FIELD=>FIELD
-              FIELD%VARIABLES(VARIABLE_NUMBER)%COMPONENTS(COMPONENT_NUMBER)%REGION=>FIELD%REGION
-             DECOMPOSITION=>FIELD%DECOMPOSITION
+              DECOMPOSITION=>FIELD%DECOMPOSITION
               IF(ASSOCIATED(DECOMPOSITION)) THEN
                 MESH=>DECOMPOSITION%MESH
                 IF(ASSOCIATED(MESH)) THEN
@@ -1179,7 +1177,15 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Starts the creation of a field defined by a user number in the specified region. \todo Add in FIELD_INITIALISE
+  !>Starts the creation of a field defined by a user number in the specified region. 
+  !>Default values set for the FIELD's attributes are:
+  !>- DEPENDENT_TYPE: 1 (FIELD_INDEPENDENT_TYPE)
+  !>- DIMENSION: 2 (FIELD_VECTOR_DIMENSION_TYPE)
+  !>- TYPE: 1 (FIELD_GEOMETRIC_TYPE)
+  !>- NUMBER_OF_VARIABLES: 1
+  !>- GEOMETRIC_FIELD: itself
+  !>- SCALINGS%SCALING_TYPE: 3 (FIELD_ARITHMETIC_MEAN_SCALING)
+  !>\todo Add in FIELD_INITIALISE
   SUBROUTINE FIELD_CREATE_START(USER_NUMBER,REGION,FIELD,ERR,ERROR,*)
 
     !Argument variables
@@ -3374,7 +3380,7 @@ CONTAINS
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field variable dofs global to local map local number",ERR,ERROR,*999)
                 ALLOCATE(FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%DOMAIN_NUMBER(NUMBER_OF_DOMAINS), &
                   & STAT=ERR)
-                IF(ERR/=0)  &
+                IF(ERR/=0) &
                   & CALL FLAG_ERROR("Could not allocate field variable dofs global to local map domain number",ERR,ERROR,*999)
                 ALLOCATE(FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_TYPE(NUMBER_OF_DOMAINS),STAT=ERR)
                 IF(ERR/=0) &

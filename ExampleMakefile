@@ -79,7 +79,11 @@ else
       $(error can only use intel mpi with Linux)
     endif
   else
-    $(error unknown MPI type - $(MPI))
+    ifeq ($(MPI),openmpi)
+      MPI := openmpi
+    else
+      $(error unknown MPI type - $(MPI))
+    endif
   endif
 endif
 
@@ -544,18 +548,24 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
     MPI_LIBRARIES += -lmpich -lpthread -lrt
     MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
   else
-    ifeq ($(MPIPROF),true)
-      MPI_INCLUDE_PATH += $(addprefix -I, $(VT_ROOT)/include/ )
-      MPI_LIB_PATH += $(addprefix -L, $(VT_LIB_DIR) )
-      MPI_LIBRARIES += -lVT $(VT_ADD_LIBS)
-    endif
-    MPI_LIBRARIES += -lmpi -lmpiif -lmpigi -lrt -lpthread -ldl
-    ifeq ($(ABI),64)
-      MPI_INCLUDE_PATH += $(addprefix -I, $(I_MPI_ROOT)/include64/ )
-      MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib64/ )
+    ifeq ($(MPI),intel)
+      ifeq ($(MPIPROF),true)
+        MPI_INCLUDE_PATH += $(addprefix -I, $(VT_ROOT)/include/ )
+        MPI_LIB_PATH += $(addprefix -L, $(VT_LIB_DIR) )
+        MPI_LIBRARIES += -lVT $(VT_ADD_LIBS)
+      endif
+      MPI_LIBRARIES += -lmpi -lmpiif -lmpigi -lrt -lpthread -ldl
+      ifeq ($(ABI),64)
+        MPI_INCLUDE_PATH += $(addprefix -I, $(I_MPI_ROOT)/include64/ )
+        MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib64/ )
+      else
+        MPI_INCLUDE_PATH += $(addprefix -I, $(I_MPI_ROOT)/include/ )
+        MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib/ )
+      endif
     else
-      MPI_INCLUDE_PATH += $(addprefix -I, $(I_MPI_ROOT)/include/ )
-      MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib/ )
+      MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
+      MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -lnsl -lutil
+      MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
     endif
   endif
 else
@@ -616,6 +626,7 @@ OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/blas.o \
 	$(OBJECT_DIR)/classical_field_routines.o \
 	$(OBJECT_DIR)/cmiss.o \
+	$(OBJECT_DIR)/cmiss_cellml.o \
 	$(OBJECT_DIR)/cmiss_mpi.o \
 	$(OBJECT_DIR)/cmiss_parmetis.o \
 	$(OBJECT_DIR)/cmiss_petsc.o \
@@ -626,6 +637,7 @@ OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/diffusion_equation_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
+	$(OBJECT_DIR)/distributed_matrix_vector_IO.o \
 	$(OBJECT_DIR)/domain_mappings.o \
 	$(OBJECT_DIR)/elasticity_routines.o \
 	$(OBJECT_DIR)/electromechanics_routines.o \
@@ -638,7 +650,9 @@ OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/field_IO_routines.o\
 	$(OBJECT_DIR)/finite_elasticity_routines.o \
 	$(OBJECT_DIR)/fluid_mechanics_routines.o \
+	$(OBJECT_DIR)/FieldExport.o \
 	$(OBJECT_DIR)/generated_mesh_routines.o \
+	$(OBJECT_DIR)/Helmholtz_equations_routines.o \
 	$(OBJECT_DIR)/history_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
@@ -786,6 +800,7 @@ $(OBJECT_DIR)/classical_field_routines.o		:	$(MAIN_SOURCE_DIR)/classical_field_r
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/diffusion_equation_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/Helmholtz_equations_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/Laplace_equations_routines.o \
@@ -806,6 +821,11 @@ $(OBJECT_DIR)/cmiss.o		:	$(MAIN_SOURCE_DIR)/cmiss.f90 \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/problem_routines.o \
 	$(OBJECT_DIR)/region_routines.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/types.o \
+	$(MACHINE_OBJECTS)
+
+$(OBJECT_DIR)/cmiss_cellml.o	:	$(MAIN_SOURCE_DIR)/cmiss_cellml.f90 \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o \
 	$(MACHINE_OBJECTS)
@@ -893,6 +913,13 @@ $(OBJECT_DIR)/distributed_matrix_vector.o		:	$(MAIN_SOURCE_DIR)/distributed_matr
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/matrix_vector.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/distributed_matrix_vector_IO.o	:	$(MAIN_SOURCE_DIR)/distributed_matrix_vector_IO.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 
@@ -1006,6 +1033,7 @@ $(OBJECT_DIR)/field_IO_routines.o	:	$(MAIN_SOURCE_DIR)/field_IO_routines.f90 \
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
+	$(MAIN_SOURCE_DIR)/FieldExportConstants.h \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -1045,6 +1073,9 @@ $(OBJECT_DIR)/fluid_mechanics_routines.o	:	$(MAIN_SOURCE_DIR)/fluid_mechanics_ro
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/types.o
 
+$(OBJECT_DIR)/FieldExport.o	:	$(MAIN_SOURCE_DIR)/FieldExport.c \
+	$(MAIN_SOURCE_DIR)/FieldExportConstants.h
+
 $(OBJECT_DIR)/input_output.o	:	$(MAIN_SOURCE_DIR)/input_output.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/kinds.o	\
@@ -1062,6 +1093,29 @@ $(OBJECT_DIR)/generated_mesh_routines.o	:	$(MAIN_SOURCE_DIR)/generated_mesh_rout
 	$(OBJECT_DIR)/mesh_routines.o \
 	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/Helmholtz_equations_routines.o	:	$(MAIN_SOURCE_DIR)/Helmholtz_equations_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/boundary_condition_routines.o \
+	$(OBJECT_DIR)/constants.o \
+	$(OBJECT_DIR)/control_loop_routines.o \
+	$(OBJECT_DIR)/distributed_matrix_vector.o \
+	$(OBJECT_DIR)/domain_mappings.o \
+	$(OBJECT_DIR)/equations_routines.o \
+	$(OBJECT_DIR)/equations_mapping_routines.o \
+	$(OBJECT_DIR)/equations_matrices_routines.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o	\
+	$(OBJECT_DIR)/matrix_vector.o	\
+	$(OBJECT_DIR)/problem_constants.o	\
+	$(OBJECT_DIR)/strings.o	\
+	$(OBJECT_DIR)/solver_routines.o	\
+	$(OBJECT_DIR)/timer_f.o	\
 	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/history_routines.o	:	$(MAIN_SOURCE_DIR)/history_routines.f90 \
@@ -1391,7 +1445,7 @@ help:
 	@echo "Options: (The former is the default unless specified.)"
 	@echo
 	@echo "	(DEBUG=|OPT=)"
-	@echo " MPI=(mpich2|intel)"
+	@echo "	MPI=(mpich2|intel|openmpi)"
 	@echo "	PROF=(true|)"
 	@echo "	MPIPROF=(true|)"
 	@echo "	ABI=(32|64)"
