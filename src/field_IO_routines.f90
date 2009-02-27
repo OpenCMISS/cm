@@ -134,207 +134,207 @@ MODULE FIELD_IO_ROUTINES
       & BIND(C,NAME="FieldExport_OpenSession")
       USE TYPES
       USE ISO_C_BINDING
-      INTEGER(INTG), VALUE :: exportType
+      INTEGER(C_INT), VALUE :: exportType
       CHARACTER(C_CHAR), INTENT(IN) :: filename(*)
-      INTEGER(INTG), INTENT(OUT) :: handle
-      INTEGER(INTG) :: FieldExport_OpenSession
+      INTEGER(C_INT), INTENT(OUT) :: handle
+      INTEGER(C_INT) :: FieldExport_OpenSession
     END FUNCTION FieldExport_OpenSession
 
     FUNCTION FieldExport_Group( handle, groupName ) &
       & BIND(C,NAME="FieldExport_Group")
       USE TYPES
       USE ISO_C_BINDING
-      INTEGER(INTG), VALUE :: handle
+      INTEGER(C_INT), VALUE :: handle
       CHARACTER(C_CHAR), INTENT(IN) :: groupName(*)
-      INTEGER(INTG) :: FieldExport_Group
+      INTEGER(C_INT) :: FieldExport_Group
     END FUNCTION FieldExport_Group
 
     FUNCTION FieldExport_MeshDimensions( handle, meshDimensions ) &
       & BIND(C,NAME="FieldExport_MeshDimensions")
       USE TYPES
       USE ISO_C_BINDING
-      INTEGER(INTG), VALUE :: handle
-      INTEGER(INTG), VALUE :: meshDimensions
-      INTEGER(INTG) :: FieldExport_MeshDimensions
+      INTEGER(C_INT), VALUE :: handle
+      INTEGER(C_INT), VALUE :: meshDimensions
+      INTEGER(C_INT) :: FieldExport_MeshDimensions
     END FUNCTION FieldExport_MeshDimensions
 
     FUNCTION FieldExport_ScalingFactorCount( handle, scalingFactorCount ) &
       & BIND(C,NAME="FieldExport_ScalingFactorCount")
       USE TYPES
       USE ISO_C_BINDING
-      INTEGER(INTG), VALUE :: handle
-      INTEGER(INTG), VALUE :: scalingFactorCount
-      INTEGER(INTG) :: FieldExport_ScalingFactorCount
+      INTEGER(C_INT), VALUE :: handle
+      INTEGER(C_INT), VALUE :: scalingFactorCount
+      INTEGER(C_INT) :: FieldExport_ScalingFactorCount
     END FUNCTION FieldExport_ScalingFactorCount
 
     FUNCTION FieldExport_LagrangeHermiteScaleFactors( handle, numberOfXi, interpolationXi ) &
       & BIND(C,NAME="FieldExport_LagrangeHermiteScaleFactors")
       USE TYPES
       USE ISO_C_BINDING
-      INTEGER(INTG), VALUE :: handle
-      INTEGER(INTG), VALUE :: numberOfXi
+      INTEGER(C_INT), VALUE :: handle
+      INTEGER(C_INT), VALUE :: numberOfXi
       TYPE(C_PTR), VALUE :: interpolationXi
-      INTEGER(INTG) :: FieldExport_LagrangeHermiteScaleFactors
+      INTEGER(C_INT) :: FieldExport_LagrangeHermiteScaleFactors
     END FUNCTION FieldExport_LagrangeHermiteScaleFactors
 
     FUNCTION FieldExport_NodeCount( handle, nodeCount ) &
       & BIND(C,NAME="FieldExport_NodeCount")
       USE TYPES
       USE ISO_C_BINDING
-      INTEGER(INTG), VALUE :: handle
-      INTEGER(INTG), VALUE :: nodeCount
-      INTEGER(INTG) :: FieldExport_NodeCount
+      INTEGER(C_INT), VALUE :: handle
+      INTEGER(C_INT), VALUE :: nodeCount
+      INTEGER(C_INT) :: FieldExport_NodeCount
     END FUNCTION FieldExport_NodeCount
 
     FUNCTION FieldExport_FieldCount( handle, fieldCount ) &
       & BIND(C,NAME="FieldExport_FieldCount")
       USE TYPES
       USE ISO_C_BINDING
-      INTEGER(INTG), VALUE :: handle
-      INTEGER(INTG), VALUE :: fieldCount
-      INTEGER(INTG) :: FieldExport_FieldCount
+      INTEGER(C_INT), VALUE :: handle
+      INTEGER(C_INT), VALUE :: fieldCount
+      INTEGER(C_INT) :: FieldExport_FieldCount
     END FUNCTION FieldExport_FieldCount
 
     FUNCTION FieldExport_CoordinateVariable( handle, variableNumber, coordinateSystem, componentCount ) &
       & BIND(C,NAME="FieldExport_CoordinateVariable")
       USE TYPES
       USE ISO_C_BINDING
-      INTEGER(INTG), VALUE :: handle
-      INTEGER(INTG), VALUE :: variableNumber
+      INTEGER(C_INT), VALUE :: handle
+      INTEGER(C_INT), VALUE :: variableNumber
       TYPE(COORDINATE_SYSTEM_TYPE), VALUE :: coordinateSystem
-      INTEGER(INTG), VALUE :: componentCount
-      INTEGER(INTG) :: FieldExport_CoordinateVariable
+      INTEGER(C_INT), VALUE :: componentCount
+      INTEGER(C_INT) :: FieldExport_CoordinateVariable
     END FUNCTION FieldExport_CoordinateVariable
 
     FUNCTION FieldExport_Variable( handle, variableNumber, fieldType, variableType, componentCount ) &
       & BIND(C,NAME="FieldExport_Variable")
       USE TYPES
       USE ISO_C_BINDING
-      INTEGER(INTG), VALUE :: handle
-      INTEGER(INTG), VALUE :: variableNumber
-      INTEGER(INTG), VALUE :: fieldType
-      INTEGER(INTG), VALUE :: variableType
-      INTEGER(INTG), VALUE :: componentCount
-      INTEGER(INTG) :: FieldExport_Variable
+      INTEGER(C_INT), VALUE :: handle
+      INTEGER(C_INT), VALUE :: variableNumber
+      INTEGER(C_INT), VALUE :: fieldType
+      INTEGER(C_INT), VALUE :: variableType
+      INTEGER(C_INT), VALUE :: componentCount
+      INTEGER(C_INT) :: FieldExport_Variable
     END FUNCTION FieldExport_Variable
 
     FUNCTION FieldExport_CoordinateComponent( handle, coordinateSystem, componentNumber, numberOfXi, interpolationXi ) &
       & BIND(C,NAME="FieldExport_CoordinateComponent")
       USE TYPES
       USE ISO_C_BINDING
-      INTEGER(INTG), VALUE :: handle
+      INTEGER(C_INT), VALUE :: handle
       TYPE(COORDINATE_SYSTEM_TYPE), VALUE :: coordinateSystem
-      INTEGER(INTG), VALUE :: componentNumber
-      INTEGER(INTG), VALUE :: numberOfXi
+      INTEGER(C_INT), VALUE :: componentNumber
+      INTEGER(C_INT), VALUE :: numberOfXi
       TYPE(C_PTR), VALUE :: interpolationXi
-      INTEGER(INTG) :: FieldExport_CoordinateComponent
+      INTEGER(C_INT) :: FieldExport_CoordinateComponent
     END FUNCTION FieldExport_CoordinateComponent
 
     FUNCTION FieldExport_Component( handle, componentNumber, numberOfXi, interpolationXi ) &
       & BIND(C,NAME="FieldExport_Component")
       USE TYPES
       USE ISO_C_BINDING
-      INTEGER(INTG), VALUE :: handle
-      INTEGER(INTG), VALUE :: componentNumber
-      INTEGER(INTG), VALUE :: numberOfXi
+      INTEGER(C_INT), VALUE :: handle
+      INTEGER(C_INT), VALUE :: componentNumber
+      INTEGER(C_INT), VALUE :: numberOfXi
       TYPE(C_PTR), VALUE :: interpolationXi
-      INTEGER(INTG) :: FieldExport_Component
+      INTEGER(C_INT) :: FieldExport_Component
     END FUNCTION FieldExport_Component
 
     FUNCTION FieldExport_Nodes( handle, nodeCount, derivativeCount, elementDerivatives, firstScaleIndex ) &
       & BIND(C,NAME="FieldExport_Nodes")
       USE TYPES
       USE ISO_C_BINDING
-      INTEGER(INTG), VALUE :: handle
-      INTEGER(INTG), VALUE :: nodeCount
+      INTEGER(C_INT), VALUE :: handle
+      INTEGER(C_INT), VALUE :: nodeCount
       TYPE(C_PTR), VALUE :: derivativeCount
       TYPE(C_PTR), VALUE :: elementDerivatives
-      INTEGER(INTG), VALUE :: firstScaleIndex
-      INTEGER(INTG) :: FieldExport_Nodes
+      INTEGER(C_INT), VALUE :: firstScaleIndex
+      INTEGER(C_INT) :: FieldExport_Nodes
     END FUNCTION FieldExport_Nodes
 
     FUNCTION FieldExport_ElementIndex( handle, dimensionCount, elementIndex ) &
       & BIND(C,NAME="FieldExport_ElementIndex")
       USE TYPES
       USE ISO_C_BINDING
-      INTEGER(INTG), VALUE :: handle
-      INTEGER(INTG), VALUE :: dimensionCount
-      INTEGER(INTG), VALUE :: elementIndex
-      INTEGER(INTG) :: FieldExport_ElementIndex
+      INTEGER(C_INT), VALUE :: handle
+      INTEGER(C_INT), VALUE :: dimensionCount
+      INTEGER(C_INT), VALUE :: elementIndex
+      INTEGER(C_INT) :: FieldExport_ElementIndex
     END FUNCTION FieldExport_ElementIndex
 
     FUNCTION FieldExport_ElementNodeIndices( handle, nodeCount, nodeIndices ) &
       & BIND(C,NAME="FieldExport_ElementNodeIndices")
       USE TYPES
       USE ISO_C_BINDING
-      INTEGER(INTG), VALUE :: handle
-      INTEGER(INTG), VALUE :: nodeCount
+      INTEGER(C_INT), VALUE :: handle
+      INTEGER(C_INT), VALUE :: nodeCount
       TYPE(C_PTR), VALUE :: nodeIndices
-      INTEGER(INTG) :: FieldExport_ElementNodeIndices
+      INTEGER(C_INT) :: FieldExport_ElementNodeIndices
     END FUNCTION FieldExport_ElementNodeIndices
 
     FUNCTION FieldExport_ElementNodeScales( handle, scaleCount, scales ) &
       & BIND(C,NAME="FieldExport_ElementNodeScales")
       USE TYPES
       USE ISO_C_BINDING
-      INTEGER(INTG), VALUE :: handle
-      INTEGER(INTG), VALUE :: scaleCount
+      INTEGER(C_INT), VALUE :: handle
+      INTEGER(C_INT), VALUE :: scaleCount
       TYPE(C_PTR), VALUE :: scales
-      INTEGER(INTG) :: FieldExport_ElementNodeScales
+      INTEGER(C_INT) :: FieldExport_ElementNodeScales
     END FUNCTION FieldExport_ElementNodeScales
 
     FUNCTION FieldExport_NodeNumber( handle, nodeNumber ) &
       & BIND(C,NAME="FieldExport_NodeNumber")
       USE TYPES
       USE ISO_C_BINDING
-      INTEGER(INTG), VALUE :: handle
-      INTEGER(INTG), VALUE :: nodeNumber
-      INTEGER(INTG) :: FieldExport_NodeNumber
+      INTEGER(C_INT), VALUE :: handle
+      INTEGER(C_INT), VALUE :: nodeNumber
+      INTEGER(C_INT) :: FieldExport_NodeNumber
     END FUNCTION FieldExport_NodeNumber
 
     FUNCTION FieldExport_NodeValues( handle, valueCount, nodeValues ) &
       & BIND(C,NAME="FieldExport_NodeValues")
       USE TYPES
       USE ISO_C_BINDING
-      INTEGER(INTG), VALUE :: handle
-      INTEGER(INTG), VALUE :: valueCount
+      INTEGER(C_INT), VALUE :: handle
+      INTEGER(C_INT), VALUE :: valueCount
       TYPE(C_PTR), VALUE :: nodeValues
-      INTEGER(INTG) :: FieldExport_NodeValues
+      INTEGER(C_INT) :: FieldExport_NodeValues
     END FUNCTION FieldExport_NodeValues
 
     FUNCTION FieldExport_CloseSession( handle ) &
       & BIND(C,NAME="FieldExport_CloseSession")
       USE TYPES
       USE ISO_C_BINDING
-      INTEGER(INTG), VALUE :: handle
-      INTEGER(INTG) :: FieldExport_CloseSession
+      INTEGER(C_INT), VALUE :: handle
+      INTEGER(C_INT) :: FieldExport_CloseSession
     END FUNCTION FieldExport_CloseSession
 
     FUNCTION FieldExport_CoordinateDerivativeIndices( handle, componentNumber, coordinateSystem, numberOfDerivatives,  &
       & derivatives, valueIndex ) BIND(C,NAME="FieldExport_CoordinateDerivativeIndices")
       USE TYPES
       USE ISO_C_BINDING
-      INTEGER(INTG), VALUE :: handle
-      INTEGER(INTG), VALUE :: componentNumber
+      INTEGER(C_INT), VALUE :: handle
+      INTEGER(C_INT), VALUE :: componentNumber
       TYPE(COORDINATE_SYSTEM_TYPE), VALUE :: coordinateSystem
-      INTEGER(INTG), VALUE :: numberOfDerivatives
+      INTEGER(C_INT), VALUE :: numberOfDerivatives
       TYPE(C_PTR), VALUE :: derivatives
-      INTEGER(INTG), VALUE :: valueIndex
-      INTEGER(INTG) :: FieldExport_CoordinateDerivativeIndices
+      INTEGER(C_INT), VALUE :: valueIndex
+      INTEGER(C_INT) :: FieldExport_CoordinateDerivativeIndices
     END FUNCTION FieldExport_CoordinateDerivativeIndices
 
     FUNCTION FieldExport_DerivativeIndices( handle, componentNumber, fieldType, variableType, numberOfDerivatives, &
       & derivatives, valueIndex ) BIND(C,NAME="FieldExport_DerivativeIndices")
       USE TYPES
       USE ISO_C_BINDING
-      INTEGER(INTG), VALUE :: handle
-      INTEGER(INTG), VALUE :: componentNumber
-      INTEGER(INTG), VALUE :: fieldType
-      INTEGER(INTG), VALUE :: variableType
-      INTEGER(INTG), VALUE :: numberOfDerivatives
+      INTEGER(C_INT), VALUE :: handle
+      INTEGER(C_INT), VALUE :: componentNumber
+      INTEGER(C_INT), VALUE :: fieldType
+      INTEGER(C_INT), VALUE :: variableType
+      INTEGER(C_INT), VALUE :: numberOfDerivatives
       TYPE(C_PTR), VALUE :: derivatives
-      INTEGER(INTG), VALUE :: valueIndex
-      INTEGER(INTG) :: FieldExport_DerivativeIndices
+      INTEGER(C_INT), VALUE :: valueIndex
+      INTEGER(C_INT) :: FieldExport_DerivativeIndices
     END FUNCTION FieldExport_DerivativeIndices
 
   END INTERFACE
@@ -491,7 +491,7 @@ CONTAINS
     INTEGER(INTG), ALLOCATABLE :: tmp_pointer(:), LIST_DEV(:), LIST_DEV_POS(:)
     INTEGER(INTG) :: FILE_ID
     !INTEGER(INTG) :: NUMBER_FIELDS
-    INTEGER(INTG) :: NODAL_USER_NUMBER, NODAL_LOCAL_NUMBER, FIELD_TYPE, NUMBER_NODAL_VALUE_LINES, NUMBER_OF_LINES, &
+    INTEGER(INTG) :: NODAL_USER_NUMBER, NODAL_LOCAL_NUMBER, FIELDTYPE, NUMBER_NODAL_VALUE_LINES, NUMBER_OF_LINES, &
       & NUMBER_OF_COMPONENTS !, LABEL_TYPE, FOCUS
     INTEGER(INTG) :: MPI_IERROR
     INTEGER(INTG) :: idx_comp, idx_comp1, pos, idx_field, idx_exnode, idx_nodal_line, idx_node
@@ -606,12 +606,12 @@ CONTAINS
        CALL FIELD_SCALING_TYPE_SET(FIELD, FIELD_SCALING_TYPE, ERR, ERROR, *999)
 
        IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
-          CALL FIELD_IO_FIELD_INFO(LIST_STR(idx_field), FIELD_IO_FIELD_LABEL, FIELD_TYPE, ERR, ERROR, *999)
+          CALL FIELD_IO_FIELD_INFO(LIST_STR(idx_field), FIELD_IO_FIELD_LABEL, FIELDTYPE, ERR, ERROR, *999)
        ENDIF
-       CALL MPI_BCAST(FIELD_TYPE,1,MPI_LOGICAL,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+       CALL MPI_BCAST(FIELDTYPE,1,MPI_LOGICAL,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
        CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
        !Set FIELD TYPE
-       CALL FIELD_TYPE_SET(FIELD, FIELD_TYPE, ERR, ERROR, *999)
+       CALL FIELD_TYPE_SET(FIELD, FIELDTYPE, ERR, ERROR, *999)
        !Finish creating the field
        CALL FIELD_CREATE_FINISH(REGION,FIELD,ERR,ERROR,*999)
     ENDDO
@@ -2236,7 +2236,8 @@ CONTAINS
     TYPE(BASIS_PTR_TYPE), ALLOCATABLE :: listScaleBases(:)
     INTEGER(INTG), ALLOCATABLE :: GROUP_LOCAL_NUMBER(:), GROUP_SCALE_FACTORS(:)
     INTEGER(INTG), ALLOCATABLE :: GROUP_NODE(:), GROUP_VARIABLES(:)
-    INTEGER(INTG) :: NUM_OF_VARIABLES, MAX_NUM_NODES !NUM_OF_NODES
+    INTEGER(C_INT), TARGET :: INTERPOLATION_XI(3),ELEMENT_DERIVATIVES(64,64),NUMBER_OF_DERIVATIVES(64)
+    INTEGER(INTG) :: nn, NUM_OF_VARIABLES, MAX_NUM_NODES !NUM_OF_NODES
     INTEGER(INTG) :: local_number
     INTEGER(INTG) :: num_scl, num_node, comp_idx, scaleIndex, scaleIndex1, var_idx !value_idx field_idx global_var_idx comp_idx1 ny2
     LOGICAL :: SWITCH
@@ -2364,7 +2365,12 @@ CONTAINS
       basis = listScaleBases( scaleIndex )%PTR
       SELECT CASE( basis%TYPE )
         CASE( BASIS_LAGRANGE_HERMITE_TP_TYPE )
-          ERR = FieldExport_LagrangeHermiteScaleFactors( sessionHandle, basis%NUMBER_OF_XI, C_LOC(basis%INTERPOLATION_XI) );
+!!TEMP
+          !ERR = FieldExport_LagrangeHermiteScaleFactors( sessionHandle, basis%NUMBER_OF_XI, C_LOC(basis%INTERPOLATION_XI) );
+!!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
+!!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
+          INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(BASIS%NUMBER_OF_XI)
+          ERR = FieldExport_LagrangeHermiteScaleFactors( sessionHandle, basis%NUMBER_OF_XI, C_LOC(INTERPOLATION_XI) );
           IF( ERR /= 0 ) THEN
             CALL FLAG_ERROR( "can not get basis type of lagrange_hermite label" ,ERR, ERROR, *999 )
           ENDIF
@@ -2413,11 +2419,23 @@ CONTAINS
 
       IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
         & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
-        ERR = FieldExport_CoordinateComponent( sessionHandle, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM, &
-          & elementalInfoSet%COMPONENTS(comp_idx)%PTR%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( basis%INTERPOLATION_XI ) )
+!!TEMP
+        !ERR = FieldExport_CoordinateComponent( sessionHandle, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM, &
+        !  & elementalInfoSet%COMPONENTS(comp_idx)%PTR%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( basis%INTERPOLATION_XI ) )
+!!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
+!!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
+          INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(BASIS%NUMBER_OF_XI)
+          ERR = FieldExport_CoordinateComponent( sessionHandle, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM, &
+            & elementalInfoSet%COMPONENTS(comp_idx)%PTR%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ) )
       ELSE
+!!TEMP
+        !ERR = FieldExport_Component( sessionHandle, &
+        !  & elementalInfoSet%COMPONENTS(comp_idx)%PTR%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( basis%INTERPOLATION_XI ) )
+!!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
+!!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
+        INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(BASIS%NUMBER_OF_XI)
         ERR = FieldExport_Component( sessionHandle, &
-          & elementalInfoSet%COMPONENTS(comp_idx)%PTR%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( basis%INTERPOLATION_XI ) )
+          & elementalInfoSet%COMPONENTS(comp_idx)%PTR%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ) )
       ENDIF
       IF(ERR/=0) THEN
         CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
@@ -2433,8 +2451,18 @@ CONTAINS
           CALL WRITE_STR(DIAGNOSTIC_OUTPUT_TYPE,ERR,ERROR,*999)
         BASIS=>DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%BASIS
 
-        ERR = FieldExport_Nodes( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( BASIS%NUMBER_OF_DERIVATIVES ), &
-          & C_LOC( DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%ELEMENT_DERIVATIVES ), scaleIndex )
+!!TEMP
+        !ERR = FieldExport_Nodes( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( BASIS%NUMBER_OF_DERIVATIVES ), &
+        ! & C_LOC( DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%ELEMENT_DERIVATIVES ), scaleIndex )
+!!Copy element derivatives etc. to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
+!!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
+        DO nn=1,BASIS%NUMBER_OF_NODES
+          NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(nn)
+          ELEMENT_DERIVATIVES(1:BASIS%NUMBER_OF_DERIVATIVES(nn),nn)= DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+            & ELEMENT_DERIVATIVES(1:BASIS%NUMBER_OF_DERIVATIVES(nn),nn)
+        ENDDO !nn
+        ERR = FieldExport_Nodes( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( NUMBER_OF_DERIVATIVES ), &
+          & C_LOC( ELEMENT_DERIVATIVES ), scaleIndex )
 
         IF(ERR/=0) THEN
           CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
@@ -2483,8 +2511,10 @@ CONTAINS
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES ! domain elements
     INTEGER(INTG) :: local_number, global_number, MAX_NODE_COMP_INDEX, NUM_DIM
     INTEGER(INTG), ALLOCATABLE :: LIST_COMP_SCALE(:), NODAL_NUMBER(:)!LIST_COMP(:) !Components which will be used for export scale factors
+    INTEGER(C_INT), TARGET :: USER_ELEMENT_NODES(64)
     INTEGER(INTG) :: nk, np, nn, ns, mk, ny2, elem_idx, comp_idx,  scal_idx, NUM_OF_SCALING_FACTOR_SETS !dev_idx  elem_num
-    REAL(DP), ALLOCATABLE :: SCALE_FACTORS(:), SCALING_BUFFER(:)
+    REAL(DP), ALLOCATABLE :: SCALE_FACTORS(:)
+    REAL(C_DOUBLE), ALLOCATABLE, TARGET :: SCALING_BUFFER(:)
 
     CALL ENTERS("FIELD_IO_EXPORT_ELEMENTS_INTO_LOCAL_FILE",ERR,ERROR,*999)
 
@@ -2567,7 +2597,12 @@ CONTAINS
 
       BASIS=>element%BASIS
 
-      ERR = FieldExport_ElementNodeIndices( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( element%USER_ELEMENT_NODES ) )
+!!TEMP
+      !ERR = FieldExport_ElementNodeIndices( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( element%USER_ELEMENT_NODES ) )
+!!Copy user element nodes to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
+!!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
+      USER_ELEMENT_NODES(1:BASIS%NUMBER_OF_NODES)=element%USER_ELEMENT_NODES(1:BASIS%NUMBER_OF_NODES)
+      ERR = FieldExport_ElementNodeIndices( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( USER_ELEMENT_NODES ) )
       IF(ERR/=0) THEN
         CALL FLAG_ERROR( "Cannot write node indices to file", ERR, ERROR,*999 )
       ENDIF
@@ -4017,7 +4052,7 @@ CONTAINS
             FIELD_IO_GET_VARIABLE_INFO_LABEL="Normal_derivative,  field,  normal derivative of variable"
           CASE(FIELD_DELUDELT_VARIABLE_TYPE)
             FIELD_IO_GET_VARIABLE_INFO_LABEL="first_time_derivative,  field,  first time derivative of variable"
-          CASE(FILED_DEL2UDELT2_VARIABLE_TYPE)
+          CASE(FIELD_DEL2UDELT2_VARIABLE_TYPE)
             FIELD_IO_GET_VARIABLE_INFO_LABEL="second_time_derivative,  field,  second time derivative of variable"
           CASE DEFAULT
             FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown_geometry,  field,  unknown field variable type"
@@ -4033,7 +4068,7 @@ CONTAINS
             FIELD_IO_GET_VARIABLE_INFO_LABEL="norm_der_fiber,  normal derivative of variable"
           CASE(FIELD_DELUDELT_VARIABLE_TYPE)
             FIELD_IO_GET_VARIABLE_INFO_LABEL="first_time_fiber,  first time derivative of variable"
-          CASE(FILED_DEL2UDELT2_VARIABLE_TYPE)
+          CASE(FIELD_DEL2UDELT2_VARIABLE_TYPE)
             FIELD_IO_GET_VARIABLE_INFO_LABEL="second_time_fiber,  second time derivative of variable"
           CASE DEFAULT
             FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown_fiber,  unknown field variable type"
@@ -4049,7 +4084,7 @@ CONTAINS
             FIELD_IO_GET_VARIABLE_INFO_LABEL="norm_dev_variable,  field,  string"
           CASE(FIELD_DELUDELT_VARIABLE_TYPE)
             FIELD_IO_GET_VARIABLE_INFO_LABEL="first_time_variable,  field,  first time derivative of variable"
-          CASE(FILED_DEL2UDELT2_VARIABLE_TYPE)
+          CASE(FIELD_DEL2UDELT2_VARIABLE_TYPE)
             FIELD_IO_GET_VARIABLE_INFO_LABEL="second_time_variable,  field,  second time derivative of variable"
           CASE DEFAULT
             FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown_general,  field,  unknown field variable type"
@@ -4065,7 +4100,7 @@ CONTAINS
             FIELD_IO_GET_VARIABLE_INFO_LABEL="normal_material,  field,  normal derivative of variable"
           CASE(FIELD_DELUDELT_VARIABLE_TYPE)
             FIELD_IO_GET_VARIABLE_INFO_LABEL="fist_time_material,  field,  first time derivative of variable"
-          CASE(FILED_DEL2UDELT2_VARIABLE_TYPE)
+          CASE(FIELD_DEL2UDELT2_VARIABLE_TYPE)
             FIELD_IO_GET_VARIABLE_INFO_LABEL="second_time_material,  field,  second time derivative of variable"
           CASE DEFAULT
             FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown material,  field,  unknown field variable type"
@@ -4078,7 +4113,7 @@ CONTAINS
             FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown,  field,  unknown normal derivative of variable"
           CASE(FIELD_DELUDELT_VARIABLE_TYPE)
             FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown,  field,  unknown first time derivative of variable"
-          CASE(FILED_DEL2UDELT2_VARIABLE_TYPE)
+          CASE(FIELD_DEL2UDELT2_VARIABLE_TYPE)
             FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown, field,  unknown second time derivative of variable"
           CASE DEFAULT
             FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown,  field,  unknown field variable type"
@@ -4376,7 +4411,7 @@ CONTAINS
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING_NODES !The domain mapping to calculate nodal mappings
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES ! domain nodes
     TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: component
-    INTEGER(INTG), ALLOCATABLE :: GROUP_FIELDS(:), GROUP_VARIABLES(:), GROUP_DERIVATIVES(:)
+    INTEGER(INTG), ALLOCATABLE, TARGET :: GROUP_FIELDS(:), GROUP_VARIABLES(:), GROUP_DERIVATIVES(:)
     INTEGER(INTG) :: NUM_OF_FIELDS, NUM_OF_VARIABLES, NUM_OF_NODAL_DEV
     INTEGER(INTG) :: local_number
     INTEGER(INTG) :: field_idx, comp_idx, comp_idx1, value_idx, var_idx, global_var_idx !dev_idx,
@@ -4893,11 +4928,11 @@ CONTAINS
   !        DO dev_idx=1, NUM_OF_NODAL_DEV
   !           NULLIFY(GEOMETRIC_PARAMETERS)
   !           IF(comp_idx==1) THEN
-  !              CALL FIELD_PARAMETER_SET_GET(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%FIELD,&
+  !              CALL FIELD_PARAMETER_SET_DATA_GET(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%FIELD,&
   !                                        &FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
   !           ELSE IF (ASSOCIATED(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%DOMAIN, &
   !              &TARGET=LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS (comp_idx-1)%PTR%DOMAIN)) THEN
-  !              CALL FIELD_PARAMETER_SET_GET(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%FIELD,&
+  !              CALL FIELD_PARAMETER_SET_DATA_GET(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%FIELD,&
   !                                        &FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
   !           ENDIF
   !           NODAL_BUFFER(dev_idx)=GEOMETRIC_PARAMETERS(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%&
@@ -5062,11 +5097,11 @@ CONTAINS
   !           CALL FIELD_IO_FORTRAN_FILE_READ_DP(FILE_ID, NODAL_BUFFER, NUM_OF_NODAL_DEV, ERR,ERROR,*999)
   !           NULLIFY(GEOMETRIC_PARAMETERS)
   !           IF(comp_idx==1) THEN
-  !              CALL FIELD_PARAMETER_SET_GET(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%FIELD,&
+  !              CALL FIELD_PARAMETER_SET_DATA_GET(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%FIELD,&
   !                                        &FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
   !           ELSE IF (ASSOCIATED(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%DOMAIN, &
   !              &TARGET=LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS (comp_idx-1)%PTR%DOMAIN)) THEN
-  !              CALL FIELD_PARAMETER_SET_GET(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%FIELD,&
+  !              CALL FIELD_PARAMETER_SET_DATA_GET(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%FIELD,&
   !                                        &FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
   !           ENDIF
   !           GEOMETRIC_PARAMETERS(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%&
@@ -5117,7 +5152,7 @@ CONTAINS
     INTEGER(INTG) :: local_number, global_number, sessionHandle
     INTEGER(INTG), ALLOCATABLE :: GROUP_DERIVATIVES(:)
     INTEGER(INTG) :: nn, comp_idx,  dev_idx, NUM_OF_NODAL_DEV, MAX_NUM_OF_NODAL_DERIVATIVES
-    REAL(DP), ALLOCATABLE :: NODAL_BUFFER(:)
+    REAL(C_DOUBLE), ALLOCATABLE, TARGET :: NODAL_BUFFER(:)
     REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
 
     CALL ENTERS("FIELD_IO_EXPORT_NODES_INTO_LOCAL_FILE",ERR,ERROR,*999)
@@ -5211,11 +5246,11 @@ CONTAINS
           DO dev_idx=1, NUM_OF_NODAL_DEV
              NULLIFY(GEOMETRIC_PARAMETERS)
              IF(comp_idx==1) THEN
-                CALL FIELD_PARAMETER_SET_GET(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR% &
+                CALL FIELD_PARAMETER_SET_DATA_GET(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR% &
                   & FIELD_VARIABLE%FIELD,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
              ELSE IF (ASSOCIATED(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%DOMAIN, &
                 &TARGET=LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS (comp_idx-1)%PTR%DOMAIN)) THEN
-                CALL FIELD_PARAMETER_SET_GET(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR% &
+                CALL FIELD_PARAMETER_SET_DATA_GET(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR% &
                   & FIELD_VARIABLE%FIELD,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
              ENDIF
              NODAL_BUFFER(dev_idx)=GEOMETRIC_PARAMETERS(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%&
@@ -5444,7 +5479,6 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: DP_FMT !<the name of file.
 
     CALL ENTERS("FIELD_IO_FORTRAN_FILE_WRITE_DP",ERR,ERROR,*999)
 

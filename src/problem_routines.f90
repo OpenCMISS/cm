@@ -1812,12 +1812,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Start the creation of a problem solver for a problem.
+  !>Start the creation of solver equations for a problem.
   !>The default values of the SOLVER attributes are:
   !>- SOLVE_TYPE: 1 (SOLVER_LINEAR_TYPE)
   !>- OUTPUT_TYPE: 0 (SOLVER_NO_OUTPUT)
   !>- SPARSITY_TYPE: 1 (SOLVER_SPARSE_MATRICES)
-  SUBROUTINE PROBLEM_SOLVER_CREATE_START(PROBLEM,ERR,ERROR,*)
+  SUBROUTINE PROBLEM_SOLVER_EQUATIONS_CREATE_START(PROBLEM,ERR,ERROR,*)
 
     !Argument variablesg
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to start the creation of the solver equations for.

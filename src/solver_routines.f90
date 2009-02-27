@@ -4476,31 +4476,51 @@ CONTAINS
                                         EQUATIONS_RHS_VECTOR=>RHS_VECTOR%VECTOR
                                         !Loop over the rows in the equations set
                                         DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
-                                          IF(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                            & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                                            & NUMBER_OF_SOLVER_ROWS>0) THEN
-                                            !Get the dynamic contribution to the the RHS values
-                                            CALL DISTRIBUTED_VECTOR_VALUES_GET(DYNAMIC_TEMP_VECTOR,equations_row_number, &
-                                              & DYNAMIC_VALUE,ERR,ERROR,*999)
-                                            !Get the linear matrices contribution to the RHS values if there are any
-                                            IF(ASSOCIATED(LINEAR_MAPPING)) THEN
-                                              LINEAR_VALUE_SUM=0.0_DP
-                                              DO equations_matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
-                                                LINEAR_MATRIX=>LINEAR_MATRICES%MATRICES(equations_matrix_idx)%PTR
-                                                LINEAR_TEMP_VECTOR=>LINEAR_MATRIX%TEMP_VECTOR
-                                                CALL DISTRIBUTED_VECTOR_VALUES_GET(LINEAR_TEMP_VECTOR,equations_row_number, &
-                                                  & LINEAR_VALUE,ERR,ERROR,*999)
-                                                LINEAR_VALUE_SUM=LINEAR_VALUE_SUM+LINEAR_VALUE
-                                              ENDDO !equations_matrix_idx
-                                              DYNAMIC_VALUE=DYNAMIC_VALUE+LINEAR_VALUE_SUM
-                                            ENDIF
-                                            !Get the source vector contribute to the RHS values if there are any
-                                            IF(ASSOCIATED(SOURCE_MAPPING)) THEN
-                                              !Add in equations source values
-                                              CALL DISTRIBUTED_VECTOR_VALUES_GET(DISTRIBUTED_SOURCE_VECTOR,equations_row_number, &
-                                                & SOURCE_VALUE,ERR,ERROR,*999)
-                                              DYNAMIC_VALUE=DYNAMIC_VALUE+SOURCE_VALUE
-                                            ENDIF
+                                          !Get the dynamic contribution to the the RHS values
+                                          CALL DISTRIBUTED_VECTOR_VALUES_GET(DYNAMIC_TEMP_VECTOR,equations_row_number, &
+                                            & DYNAMIC_VALUE,ERR,ERROR,*999)
+                                          !Get the linear matrices contribution to the RHS values if there are any
+                                          IF(ASSOCIATED(LINEAR_MAPPING)) THEN
+                                            LINEAR_VALUE_SUM=0.0_DP
+                                            DO equations_matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
+                                              LINEAR_MATRIX=>LINEAR_MATRICES%MATRICES(equations_matrix_idx)%PTR
+                                              LINEAR_TEMP_VECTOR=>LINEAR_MATRIX%TEMP_VECTOR
+                                              CALL DISTRIBUTED_VECTOR_VALUES_GET(LINEAR_TEMP_VECTOR,equations_row_number, &
+                                                & LINEAR_VALUE,ERR,ERROR,*999)
+                                              LINEAR_VALUE_SUM=LINEAR_VALUE_SUM+LINEAR_VALUE
+                                            ENDDO !equations_matrix_idx
+                                            DYNAMIC_VALUE=DYNAMIC_VALUE+LINEAR_VALUE_SUM
+                                          ENDIF
+                                          !Get the source vector contribute to the RHS values if there are any
+                                          IF(ASSOCIATED(SOURCE_MAPPING)) THEN
+                                            !Add in equations source values
+                                            CALL DISTRIBUTED_VECTOR_VALUES_GET(DISTRIBUTED_SOURCE_VECTOR,equations_row_number, &
+                                              & SOURCE_VALUE,ERR,ERROR,*999)
+                                            DYNAMIC_VALUE=DYNAMIC_VALUE+SOURCE_VALUE
+                                          ENDIF
+                                          !Loop over the solver rows associated with this equations set row
+                                          DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                            & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
+                                            solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
+                                              & solver_row_idx)
+                                            row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                              & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
+                                              & COUPLING_COEFFICIENTS(solver_row_idx)
+                                            VALUE=DYNAMIC_VALUE*row_coupling_coefficient
+                                            CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
+                                              & ERR,ERROR,*999)
+                                          ENDDO !solver_row_idx
+                                          rhs_variable_dof=RHS_MAPPING%EQUATIONS_ROW_TO_RHS_DOF_MAP(equations_row_number)
+                                          rhs_field_dof=RHS_VARIABLE%DOF_LIST(rhs_variable_dof)
+                                          rhs_global_dof=DEPENDENT_DOFS_MAPPING%LOCAL_TO_GLOBAL_MAP(rhs_field_dof)
+                                          rhs_boundary_condition=FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(rhs_global_dof)
+                                          !Apply boundary conditions
+                                          SELECT CASE(rhs_boundary_condition)
+                                          CASE(EQUATIONS_SET_NOT_FIXED)
+                                            !Get the equations RHS values
+                                            CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_RHS_VECTOR,equations_row_number, &
+                                              & RHS_VALUE,ERR,ERROR,*999)
                                             !Loop over the solver rows associated with this equations set row
                                             DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                                               & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
@@ -4510,62 +4530,38 @@ CONTAINS
                                               row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                                                 & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
                                                 & COUPLING_COEFFICIENTS(solver_row_idx)
-                                              VALUE=DYNAMIC_VALUE*row_coupling_coefficient
+                                              VALUE=RHS_VALUE*row_coupling_coefficient
                                               CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
                                                 & ERR,ERROR,*999)
                                             ENDDO !solver_row_idx
-                                            rhs_variable_dof=RHS_MAPPING%EQUATIONS_ROW_TO_RHS_DOF_MAP(equations_row_number)
-                                            rhs_field_dof=RHS_VARIABLE%DOF_LIST(rhs_variable_dof)
-                                            rhs_global_dof=DEPENDENT_DOFS_MAPPING%LOCAL_TO_GLOBAL_MAP(rhs_field_dof)
-                                            rhs_boundary_condition=FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(rhs_global_dof)
-                                            !Apply boundary conditions
-                                            SELECT CASE(rhs_boundary_condition)
-                                            CASE(EQUATIONS_SET_NOT_FIXED)
-                                              !Get the equations RHS values
-                                              CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_RHS_VECTOR,equations_row_number, &
-                                                & RHS_VALUE,ERR,ERROR,*999)
-                                              !Loop over the solver rows associated with this equations set row
-                                              DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                                & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
-                                                solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                                  & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
-                                                  & solver_row_idx)
-                                                row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-                                                  & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                                                  & COUPLING_COEFFICIENTS(solver_row_idx)
-                                                VALUE=RHS_VALUE*row_coupling_coefficient
-                                                CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
-                                                  & ERR,ERROR,*999)
-                                              ENDDO !solver_row_idx
-                                              !Note: the Dirichlet boundary conditions are implicity included by doing a matrix
-                                              !vector product above with the dynamic stiffness matrix and the mean predicited
-                                              !displacement vector
-                                            CASE(EQUATIONS_SET_FIXED_BOUNDARY_CONDITION)
-                                              !Set Neumann boundary conditions
-                                              !Loop over the solver rows associated with this equations set row
-                                              DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                                & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
-                                                solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                                  & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
-                                                  & solver_row_idx)
-                                                row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-                                                  & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                                                  & COUPLING_COEFFICIENTS(solver_row_idx)
-                                                VALUE=DEPENDENT_PARAMETERS(rhs_field_dof)*row_coupling_coefficient
-                                                CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
-                                                  & ERR,ERROR,*999)
-                                              ENDDO !solver_row_idx
-                                            CASE(EQUATIONS_SET_MIXED_BOUNDARY_CONDITION)
+                                            !Note: the Dirichlet boundary conditions are implicity included by doing a matrix
+                                            !vector product above with the dynamic stiffness matrix and the mean predicited
+                                            !displacement vector
+                                          CASE(EQUATIONS_SET_FIXED_BOUNDARY_CONDITION)
+                                            !Set Neumann boundary conditions
+                                            !Loop over the solver rows associated with this equations set row
+                                            DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
+                                              solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                                & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
+                                                & solver_row_idx)
+                                              row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
+                                                & COUPLING_COEFFICIENTS(solver_row_idx)
+                                              VALUE=DEPENDENT_PARAMETERS(rhs_field_dof)*row_coupling_coefficient
+                                              CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
+                                                & ERR,ERROR,*999)
+                                            ENDDO !solver_row_idx
+                                          CASE(EQUATIONS_SET_MIXED_BOUNDARY_CONDITION)
                                               !Set Robin or is it Cauchy??? boundary conditions
-                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                            CASE DEFAULT
-                                              LOCAL_ERROR="The global boundary condition of "// &
-                                                & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
-                                                & " for RHS field dof number "// &
-                                                & TRIM(NUMBER_TO_VSTRING(rhs_field_dof,"*",ERR,ERROR))//" is invalid."
-                                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                            END SELECT
-                                          ENDIF
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE DEFAULT
+                                            LOCAL_ERROR="The global boundary condition of "// &
+                                              & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
+                                              & " for RHS field dof number "// &
+                                              & TRIM(NUMBER_TO_VSTRING(rhs_field_dof,"*",ERR,ERROR))//" is invalid."
+                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                          END SELECT
                                         ENDDO !equations_row_number
                                       ELSE
                                         CALL FLAG_ERROR("Fixed conditions is not associated.",ERR,ERROR,*999)
@@ -4888,123 +4884,119 @@ CONTAINS
                                       EQUATIONS_RHS_VECTOR=>RHS_VECTOR%VECTOR
                                       !Loop over the rows in the equations set
                                       DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
-                                        IF(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                          & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                                          & NUMBER_OF_SOLVER_ROWS>0) THEN
-                                          !Get the source vector contribute to the RHS values if there are any
-                                          IF(ASSOCIATED(SOURCE_MAPPING)) THEN
-                                            !Add in equations source values
-                                            CALL DISTRIBUTED_VECTOR_VALUES_GET(DISTRIBUTED_SOURCE_VECTOR,equations_row_number, &
-                                              & SOURCE_VALUE,ERR,ERROR,*999)
-                                            !Loop over the solver rows associated with this equations set row
-                                            DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
-                                              solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                                & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
-                                                & solver_row_idx)
-                                              row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-                                                & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                                                & COUPLING_COEFFICIENTS(solver_row_idx)
-                                              VALUE=SOURCE_VALUE*row_coupling_coefficient
-                                              CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
-                                                & ERR,ERROR,*999)
-                                            ENDDO !solver_row_idx
-                                          ENDIF
-                                          rhs_variable_dof=RHS_MAPPING%EQUATIONS_ROW_TO_RHS_DOF_MAP(equations_row_number)
-                                          rhs_field_dof=RHS_VARIABLE%DOF_LIST(rhs_variable_dof)
-                                          rhs_global_dof=DEPENDENT_DOFS_MAPPING%LOCAL_TO_GLOBAL_MAP(rhs_field_dof)
-                                          rhs_boundary_condition=FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(rhs_global_dof)
-                                          !Apply boundary conditions
-                                          SELECT CASE(rhs_boundary_condition)
-                                          CASE(EQUATIONS_SET_NOT_FIXED)
-                                            !Add in equations RHS values
-                                            CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_RHS_VECTOR,equations_row_number, &
-                                              & RHS_VALUE,ERR,ERROR,*999)
-                                            !Loop over the solver rows associated with this equations set row
-                                            DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
-                                              solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                                & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
-                                                & solver_row_idx)
-                                              row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-                                                & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                                                & COUPLING_COEFFICIENTS(solver_row_idx)
-                                              VALUE=RHS_VALUE*row_coupling_coefficient
-                                              CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
-                                                & ERR,ERROR,*999)
-                                            ENDDO !solver_row_idx                          
-                                            !Set Dirichlet boundary conditions
-                                            IF(ASSOCIATED(LINEAR_MAPPING)) THEN
-                                              !Loop over the dependent variables associated with this equations set row
-                                              DO variable_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
-                                                variable_type=LINEAR_MAPPING%LINEAR_MATRIX_VARIABLE_TYPES(variable_idx)
-                                                DEPENDENT_VARIABLE=>LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS( &
-                                                  & variable_type)%VARIABLE
-                                                VARIABLE_DOMAIN_MAPPING=>DEPENDENT_VARIABLE%DOMAIN_MAPPING
-                                                variable_dof=LINEAR_MAPPING%EQUATIONS_ROW_TO_VARIABLE_DOF_MAPS( &
-                                                  & equations_row_number,variable_idx)
-                                                variable_field_dof=DEPENDENT_VARIABLE%DOF_LIST(variable_dof)
-                                                variable_global_dof=DEPENDENT_DOFS_MAPPING%LOCAL_TO_GLOBAL_MAP(variable_field_dof)
-                                                variable_boundary_condition=FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS( &
-                                                  & variable_global_dof)
-                                                IF(variable_boundary_condition==EQUATIONS_SET_FIXED_BOUNDARY_CONDITION) THEN
-                                                  DO equations_matrix_idx=1,LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS( &
-                                                    & variable_type)%NUMBER_OF_EQUATIONS_MATRICES
-                                                    equations_matrix_number=LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS( &
-                                                      & variable_type)%EQUATIONS_MATRIX_NUMBERS(equations_matrix_idx)
-                                                    EQUATIONS_MATRIX=>LINEAR_MATRICES%MATRICES(equations_matrix_number)%PTR
-                                                    equations_column_number=LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS( &
-                                                      & variable_type)%DOF_TO_COLUMNS_MAPS(equations_matrix_idx)%COLUMN_DOF( &
-                                                      & variable_dof)
-                                                    DO equations_row_number2=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
-                                                      CALL DISTRIBUTED_MATRIX_VALUES_GET(EQUATIONS_MATRIX%MATRIX, &
-                                                        & equations_row_number2,equations_column_number,MATRIX_VALUE, &
-                                                        & ERR,ERROR,*999)
-                                                      DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-                                                        & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
-                                                        & equations_row_number2)%NUMBER_OF_SOLVER_ROWS
-                                                        solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-                                                          & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
-                                                          & equations_row_number2)%SOLVER_ROWS(solver_row_idx)
-                                                        row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-                                                          & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
-                                                          & equations_row_number2)%COUPLING_COEFFICIENTS(solver_row_idx)
-                                                        VALUE=-1.0_DP*MATRIX_VALUE*DEPENDENT_PARAMETERS(variable_field_dof)* &
-                                                          & row_coupling_coefficient
-                                                        CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number, &
-                                                          & VALUE,ERR,ERROR,*999)
-                                                      ENDDO !solver_row_idx
-                                                    ENDDO !equations_row_number2
-                                                  ENDDO !matrix_idx
-                                                ENDIF
-                                              ENDDO !variable_idx
-                                            ENDIF
-                                          CASE(EQUATIONS_SET_FIXED_BOUNDARY_CONDITION)
-                                            !Set Neumann boundary conditions
-                                            !Loop over the solver rows associated with this equations set row
-                                            DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
-                                              solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                                & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
-                                                & solver_row_idx)
-                                              row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-                                                & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                                                & COUPLING_COEFFICIENTS(solver_row_idx)
-                                              VALUE=DEPENDENT_PARAMETERS(rhs_field_dof)*row_coupling_coefficient
-                                              CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
-                                                & ERR,ERROR,*999)
-                                            ENDDO !solver_row_idx
-                                          CASE(EQUATIONS_SET_MIXED_BOUNDARY_CONDITION)
-                                            !Set Robin or is it Cauchy??? boundary conditions
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                          CASE DEFAULT
-                                            LOCAL_ERROR="The global boundary condition of "// &
-                                              & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
-                                              & " for RHS field dof number "// &
-                                              & TRIM(NUMBER_TO_VSTRING(rhs_field_dof,"*",ERR,ERROR))//" is invalid."
-                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                          END SELECT
+                                        !Get the source vector contribute to the RHS values if there are any
+                                        IF(ASSOCIATED(SOURCE_MAPPING)) THEN
+                                          !Add in equations source values
+                                          CALL DISTRIBUTED_VECTOR_VALUES_GET(DISTRIBUTED_SOURCE_VECTOR,equations_row_number, &
+                                            & SOURCE_VALUE,ERR,ERROR,*999)
+                                          !Loop over the solver rows associated with this equations set row
+                                          DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                            & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
+                                            solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
+                                              & solver_row_idx)
+                                            row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                              & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
+                                              & COUPLING_COEFFICIENTS(solver_row_idx)
+                                            VALUE=SOURCE_VALUE*row_coupling_coefficient
+                                            CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
+                                              & ERR,ERROR,*999)
+                                          ENDDO !solver_row_idx
                                         ENDIF
+                                        rhs_variable_dof=RHS_MAPPING%EQUATIONS_ROW_TO_RHS_DOF_MAP(equations_row_number)
+                                        rhs_field_dof=RHS_VARIABLE%DOF_LIST(rhs_variable_dof)
+                                        rhs_global_dof=DEPENDENT_DOFS_MAPPING%LOCAL_TO_GLOBAL_MAP(rhs_field_dof)
+                                        rhs_boundary_condition=FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(rhs_global_dof)
+                                        !Apply boundary conditions
+                                        SELECT CASE(rhs_boundary_condition)
+                                        CASE(EQUATIONS_SET_NOT_FIXED)
+                                          !Add in equations RHS values
+                                          CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_RHS_VECTOR,equations_row_number, &
+                                            & RHS_VALUE,ERR,ERROR,*999)
+                                          !Loop over the solver rows associated with this equations set row
+                                          DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                            & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
+                                            solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
+                                              & solver_row_idx)
+                                            row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                              & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
+                                              & COUPLING_COEFFICIENTS(solver_row_idx)
+                                            VALUE=RHS_VALUE*row_coupling_coefficient
+                                            CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
+                                              & ERR,ERROR,*999)
+                                          ENDDO !solver_row_idx                          
+                                          !Set Dirichlet boundary conditions
+                                          IF(ASSOCIATED(LINEAR_MAPPING)) THEN
+                                            !Loop over the dependent variables associated with this equations set row
+                                            DO variable_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
+                                              variable_type=LINEAR_MAPPING%LINEAR_MATRIX_VARIABLE_TYPES(variable_idx)
+                                              DEPENDENT_VARIABLE=>LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS( &
+                                                & variable_type)%VARIABLE
+                                              VARIABLE_DOMAIN_MAPPING=>DEPENDENT_VARIABLE%DOMAIN_MAPPING
+                                              variable_dof=LINEAR_MAPPING%EQUATIONS_ROW_TO_VARIABLE_DOF_MAPS( &
+                                                & equations_row_number,variable_idx)
+                                              variable_field_dof=DEPENDENT_VARIABLE%DOF_LIST(variable_dof)
+                                              variable_global_dof=DEPENDENT_DOFS_MAPPING%LOCAL_TO_GLOBAL_MAP(variable_field_dof)
+                                              variable_boundary_condition=FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS( &
+                                                & variable_global_dof)
+                                              IF(variable_boundary_condition==EQUATIONS_SET_FIXED_BOUNDARY_CONDITION) THEN
+                                                DO equations_matrix_idx=1,LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS( &
+                                                  & variable_type)%NUMBER_OF_EQUATIONS_MATRICES
+                                                  equations_matrix_number=LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS( &
+                                                    & variable_type)%EQUATIONS_MATRIX_NUMBERS(equations_matrix_idx)
+                                                  EQUATIONS_MATRIX=>LINEAR_MATRICES%MATRICES(equations_matrix_number)%PTR
+                                                  equations_column_number=LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS( &
+                                                    & variable_type)%DOF_TO_COLUMNS_MAPS(equations_matrix_idx)%COLUMN_DOF( &
+                                                    & variable_dof)
+                                                  DO equations_row_number2=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
+                                                    CALL DISTRIBUTED_MATRIX_VALUES_GET(EQUATIONS_MATRIX%MATRIX, &
+                                                      & equations_row_number2,equations_column_number,MATRIX_VALUE, &
+                                                      & ERR,ERROR,*999)
+                                                    DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                      & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
+                                                      & equations_row_number2)%NUMBER_OF_SOLVER_ROWS
+                                                      solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                        & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
+                                                        & equations_row_number2)%SOLVER_ROWS(solver_row_idx)
+                                                      row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                        & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
+                                                        & equations_row_number2)%COUPLING_COEFFICIENTS(solver_row_idx)
+                                                      VALUE=-1.0_DP*MATRIX_VALUE*DEPENDENT_PARAMETERS(variable_field_dof)* &
+                                                        & row_coupling_coefficient
+                                                      CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number, &
+                                                        & VALUE,ERR,ERROR,*999)
+                                                    ENDDO !solver_row_idx
+                                                  ENDDO !equations_row_number2
+                                                ENDDO !matrix_idx
+                                              ENDIF
+                                            ENDDO !variable_idx
+                                          ENDIF
+                                        CASE(EQUATIONS_SET_FIXED_BOUNDARY_CONDITION)
+                                          !Set Neumann boundary conditions
+                                          !Loop over the solver rows associated with this equations set row
+                                          DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                            & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
+                                            solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
+                                              & solver_row_idx)
+                                            row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                              & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
+                                              & COUPLING_COEFFICIENTS(solver_row_idx)
+                                            VALUE=DEPENDENT_PARAMETERS(rhs_field_dof)*row_coupling_coefficient
+                                            CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
+                                              & ERR,ERROR,*999)
+                                          ENDDO !solver_row_idx
+                                        CASE(EQUATIONS_SET_MIXED_BOUNDARY_CONDITION)
+                                          !Set Robin or is it Cauchy??? boundary conditions
+                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                        CASE DEFAULT
+                                          LOCAL_ERROR="The global boundary condition of "// &
+                                            & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
+                                            & " for RHS field dof number "// &
+                                            & TRIM(NUMBER_TO_VSTRING(rhs_field_dof,"*",ERR,ERROR))//" is invalid."
+                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        END SELECT
                                       ENDDO !equations_row_number
                                     ELSE
                                       CALL FLAG_ERROR("Fixed conditions is not associated.",ERR,ERROR,*999)
