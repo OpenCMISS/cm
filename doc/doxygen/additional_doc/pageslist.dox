@@ -4,8 +4,10 @@
 - \subpage concepts
 - \subpage installation
 - \subpage object_interface
-- \subpage examples
+- \subpage local-examples
 - \subpage library_commands  
 - \subpage code_style 
 - \subpage tools
+Development notes:
+- \subpage opencmiss_cellml
 */

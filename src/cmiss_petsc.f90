@@ -411,7 +411,7 @@ MODULE CMISS_PETSC
       USE TYPES
       MatFDColoring fdcoloring
       EXTERNAL ffunction
-      TYPE(SOLUTION_TYPE), POINTER :: ctx
+      TYPE(SOLVER_TYPE), POINTER :: ctx
       PetscInt ierr
     END SUBROUTINE MatFDColoringSetFunctionSNES
     
@@ -587,6 +587,12 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE SNESGetIterationNumber
 
+    SUBROUTINE SNESGetKSP(snes,ksp,ierr)
+      SNES snes
+      KSP ksp
+      PetscInt ierr
+    END SUBROUTINE SNESGetKSP
+
     SUBROUTINE SNESLineSearchSet(snes,func,lsctx,ierr)
       SNES snes
       EXTERNAL func
@@ -607,7 +613,7 @@ MODULE CMISS_PETSC
       SNES snes
       EXTERNAL mfunction
       TYPE(SOLVER_TYPE), POINTER :: mctx
-      PetscInt monitordestroy
+      EXTERNAL monitordestroy
       PetscInt ierr
     END SUBROUTINE SNESMonitorSet
 
@@ -621,20 +627,19 @@ MODULE CMISS_PETSC
       SNES snes
       Vec f
       EXTERNAL ffunction
-      TYPE(SOLUTION_TYPE), POINTER :: ctx
+      TYPE(SOLVER_TYPE), POINTER :: ctx
       PetscInt ierr
     END SUBROUTINE SNESSetFunction
 
-    !Can't have a definition here as we have multiple contexts
-    !SUBROUTINE SNESSetJacobian(snes,A,B,Jfunction,ctx,ierr)
-    !  USE TYPES
-    !  SNES snes
-    !  Mat A
-    !  Mat B      
-    !  EXTERNAL Jfunction
-    !  TYPE(SOLVER_TYPE), POINTER :: ctx
-    !  PetscInt ierr
-    !END SUBROUTINE SNESSetJacobian
+    SUBROUTINE SNESSetJacobian(snes,A,B,Jfunction,ctx,ierr)
+      USE TYPES
+      SNES snes
+      Mat A
+      Mat B      
+      EXTERNAL Jfunction
+      TYPE(SOLVER_TYPE), POINTER :: ctx
+      PetscInt ierr
+    END SUBROUTINE SNESSetJacobian
 
     SUBROUTINE SNESSetTolerances(snes,abstol,rtol,stol,maxit,maxf,ierr)
       SNES snes
@@ -688,7 +693,7 @@ MODULE CMISS_PETSC
       TS ts
       EXTERNAL mfunction
       TYPE(SOLVER_TYPE), POINTER :: mctx
-      PetscInt monitordestroy
+      EXTERNAL monitordestroy
       PetscInt ierr
     END SUBROUTINE TSMonitorSet
 
@@ -728,7 +733,7 @@ MODULE CMISS_PETSC
       USE TYPES
       TS ts
       EXTERNAL rhsfunc
-      TYPE(SOLUTION_TYPE), POINTER :: ctx
+      TYPE(SOLVER_TYPE), POINTER :: ctx
       PetscInt ierr
     END SUBROUTINE TSSetRHSFunction
     
@@ -971,12 +976,6 @@ MODULE CMISS_PETSC
  
   PUBLIC PETSC_NULL_CHARACTER,PETSC_NULL_DOUBLE,PETSC_NULL_INTEGER,PETSC_NULL_SCALAR
 
-  !Equivalence the null variables as gfortran does not seem to recognise them as the same variable that is in common
-  !EQUIVALENCE (PETSC_NULL_CHARACTER,PETSC_NULLCHARACTER)
-  !EQUIVALENCE (PETSC_NULL_DOUBLE,PETSC_NULLDOUBLE)
-  !EQUIVALENCE (PETSC_NULL_INTEGER,PETSC_NULLINTEGER)
-  !EQUIVALENCE (PETSC_NULL_SCALAR,PETSC_NULLSCALAR)
-
   PUBLIC PETSC_ADD_VALUES,PETSC_INSERT_VALUES,PETSC_COMM_WORLD,PETSC_COMM_SELF,PETSC_DECIDE,PETSC_DEFAULT_INTEGER, &
     & PETSC_DEFAULT_DOUBLE_PRECISION,PETSC_SCATTER_FORWARD,PETSC_SCATTER_REVERSE
   
@@ -1046,9 +1045,9 @@ MODULE CMISS_PETSC
     & PETSC_SNES_CONVERGED_ITERATING
 
   PUBLIC PETSC_SNESFINALISE,PETSC_SNESINITIALISE,PETSC_SNESCREATE,PETSC_SNESDESTROY,PETSC_SNESGETCONVERGEDREASON, &
-    & PETSC_SNESGETFUNCTIONNORM,PETSC_SNESGETITERATIONNUMBER,PETSC_SNESLINESEARCHSET,PETSC_SNESLINESEARCHSETPARAMS, &
-    & PETSC_SNESMONITORSET,PETSC_SNESSETFROMOPTIONS,PETSC_SNESSETFUNCTION,PETSC_SNESSETJACOBIAN,PETSC_SNESSETTOLERANCES, &
-    & PETSC_SNESSETTRUSTREGIONTOLERANCE,PETSC_SNESSETTYPE,PETSC_SNESSOLVE
+    & PETSC_SNESGETFUNCTIONNORM,PETSC_SNESGETITERATIONNUMBER,PETSC_SNESGETKSP,PETSC_SNESLINESEARCHSET, &
+    & PETSC_SNESLINESEARCHSETPARAMS,PETSC_SNESMONITORSET,PETSC_SNESSETFROMOPTIONS,PETSC_SNESSETFUNCTION,PETSC_SNESSETJACOBIAN, &
+    & PETSC_SNESSETTOLERANCES,PETSC_SNESSETTRUSTREGIONTOLERANCE,PETSC_SNESSETTYPE,PETSC_SNESSOLVE
   
   PUBLIC PETSC_VECINITIALISE,PETSC_VECFINALISE,PETSC_VECASSEMBLYBEGIN,PETSC_VECASSEMBLYEND,PETSC_VECCREATE,PETSC_VECCREATEGHOST, &
     & PETSC_VECCREATEGHOSTWITHARRAY,PETSC_VECCREATEMPI,PETSC_VECCREATEMPIWITHARRAY,PETSC_VECCREATESEQ, &
@@ -1226,7 +1225,7 @@ CONTAINS
   SUBROUTINE PETSC_ISDESTROY(IS_,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(PETSC_IS_TYPE), INTENT(IN) :: IS_ !<The index set
+    TYPE(PETSC_IS_TYPE), INTENT(INOUT) :: IS_ !<The index set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1240,12 +1239,14 @@ CONTAINS
       ENDIF
       CALL FLAG_ERROR("PETSc error in ISDestroy",ERR,ERROR,*999)
     ENDIF
-    
+    IS_%IS_=PETSC_NULL
+        
     CALL EXITS("PETSC_ISDESTROY")
     RETURN
 999 CALL ERRORS("PETSC_ISDESTROY",ERR,ERROR)
     CALL EXITS("PETSC_ISDESTROY")
     RETURN 1
+    
   END SUBROUTINE PETSC_ISDESTROY
     
   !
@@ -1297,6 +1298,7 @@ CONTAINS
 999 CALL ERRORS("PETSC_ISCOLORINGINITIALISE",ERR,ERROR)
     CALL EXITS("PETSC_ISCOLORINGINITIALISE")
     RETURN 1
+    
   END SUBROUTINE PETSC_ISCOLORINGINITIALISE
     
   !
@@ -1307,7 +1309,7 @@ CONTAINS
   SUBROUTINE PETSC_ISCOLORINGDESTROY(ISCOLORING,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(PETSC_ISCOLORING_TYPE), INTENT(IN) :: ISCOLORING !<The index set coloring
+    TYPE(PETSC_ISCOLORING_TYPE), INTENT(INOUT) :: ISCOLORING !<The index set coloring
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1321,18 +1323,20 @@ CONTAINS
       ENDIF
       CALL FLAG_ERROR("PETSc error in ISColoringDestroy",ERR,ERROR,*999)
     ENDIF
+    ISCOLORING%ISCOLORING=PETSC_NULL
     
     CALL EXITS("PETSC_ISCOLORINGDESTROY")
     RETURN
 999 CALL ERRORS("PETSC_ISCOLORINGDESTROY",ERR,ERROR)
     CALL EXITS("PETSC_ISCOLORINGDESTROY")
     RETURN 1
+    
   END SUBROUTINE PETSC_ISCOLORINGDESTROY
     
   !================================================================================================================================
   !
 
-  !Finalise the PETSc ISLocalToGlobalMapping structure and destroy the KSP
+  !Finalise the PETSc ISLocalToGlobalMapping structure and destroy the ISLocalToGlobalMapping
   SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGFINALISE(ISLOCALTOGLOBALMAPPING,ERR,ERROR,*)
 
     !Argument Variables
@@ -1386,7 +1390,7 @@ CONTAINS
   SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGAPPLY(CTX,TYPE,NIN,IDXIN,NOUT,IDXOUT,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE), INTENT(IN) :: CTX !<The local to global mapping context
+    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE), INTENT(INOUT) :: CTX !<The local to global mapping context
     INTEGER(INTG), INTENT(IN) :: TYPE !<The type of local to global mapping
     INTEGER(INTG), INTENT(IN) :: NIN !<The number of local indicies
     INTEGER(INTG), INTENT(IN) :: IDXIN(*)
@@ -1405,12 +1409,14 @@ CONTAINS
       ENDIF
       CALL FLAG_ERROR("PETSc error in ISLocalToGlobalMappingApply",ERR,ERROR,*999)
     ENDIF
+    CTX%ISLOCALTOGLOBALMAPPING=PETSC_NULL
     
     CALL EXITS("PETSC_ISLOCALTOGLOBALMAPPINGAPPLY")
     RETURN
 999 CALL ERRORS("PETSC_ISLOCALTOGLOBALMAPPINGAPPLY",ERR,ERROR)
     CALL EXITS("PETSC_ISLOCALTOGLOBALMAPPINGAPPLY")
     RETURN 1
+    
   END SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGAPPLY
     
   !
@@ -1500,6 +1506,7 @@ CONTAINS
       ENDIF
       CALL FLAG_ERROR("PETSc error in ISLocalToGlobalMappingDestroy",ERR,ERROR,*999)
     ENDIF
+    CTX%ISLOCALTOGLOBALMAPPING=PETSC_NULL
     
     CALL EXITS("PETSC_ISLOCALTOGLOBALMAPPINGDESTROY")
     RETURN
@@ -1561,6 +1568,7 @@ CONTAINS
       ENDIF
       CALL FLAG_ERROR("PETSc error in KSPDestroy",ERR,ERROR,*999)
     ENDIF
+    KSP_%KSP_=PETSC_NULL
     
     CALL EXITS("PETSC_KSPDESTROY")
     RETURN
@@ -2225,7 +2233,8 @@ CONTAINS
       ENDIF
       CALL FLAG_ERROR("PETSc error in MatDestroy",ERR,ERROR,*999)
     ENDIF
-    
+    A%MAT=PETSC_NULL
+     
     CALL EXITS("PETSC_MATDESTROY")
     RETURN
 999 CALL ERRORS("PETSC_MATDESTROY",ERR,ERROR)
@@ -2287,7 +2296,8 @@ CONTAINS
       ENDIF
       CALL FLAG_ERROR("PETSc error in MatFDColoringDestroy",ERR,ERROR,*999)
     ENDIF
-    
+    MATFDCOLORING%MATFDCOLORING=PETSC_NULL
+     
     CALL EXITS("PETSC_MATFDCOLORINGDESTROY")
     RETURN
 999 CALL ERRORS("PETSC_MATFDCOLORINGDESTROY",ERR,ERROR)
@@ -2385,7 +2395,7 @@ CONTAINS
     !Argument Variables
     TYPE(PETSC_MATFDCOLORING_TYPE), INTENT(INOUT) :: MATFDCOLORING !<The matrix finite difference coloring to set
     EXTERNAL FFUNCTION !<The external function to call
-    TYPE(SOLUTION_TYPE), POINTER :: CTX !<The solver data to pass to the function
+    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the function
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -3105,7 +3115,8 @@ CONTAINS
       ENDIF
       CALL FLAG_ERROR("PETSc error in SNESDestroy",ERR,ERROR,*999)
     ENDIF
-    
+    SNES_%SNES_=PETSC_NULL
+     
     CALL EXITS("PETSC_SNESDESTROY")
     RETURN
 999 CALL ERRORS("PETSC_SNESDESTROY",ERR,ERROR)
@@ -3175,7 +3186,7 @@ CONTAINS
     RETURN 1
   END SUBROUTINE PETSC_SNESGETFUNCTIONNORM
     
- !
+  !
   !================================================================================================================================
   !
 
@@ -3205,6 +3216,37 @@ CONTAINS
     CALL EXITS("PETSC_SNESGETITERATIONNUMBER")
     RETURN 1
   END SUBROUTINE PETSC_SNESGETITERATIONNUMBER
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESGetKSP routine.
+  SUBROUTINE PETSC_SNESGETKSP(SNES_,KSP_,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to get the iteration number for
+    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<On exit, the KSP to associated with the SNES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_SNESGETKSP",ERR,ERROR,*999)
+
+    CALL SNESGetKSP(SNES_%SNES_,KSP_%KSP_,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in SNESGetKSP",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_SNESGETKSP")
+    RETURN
+999 CALL ERRORS("PETSC_SNESGETKSP",ERR,ERROR)
+    CALL EXITS("PETSC_SNESGETKSP")
+    RETURN 1
+  END SUBROUTINE PETSC_SNESGETKSP
     
   !
   !================================================================================================================================
@@ -3298,7 +3340,7 @@ CONTAINS
 
     CALL ENTERS("PETSC_SNESMONITORSET",ERR,ERROR,*999)
 
-    CALL SNESMonitorSet(SNES_%SNES_,MFUNCTION,CTX,PETSC_NULL_INTEGER,ERR)
+    CALL SNESMonitorSet(SNES_%SNES_,MFUNCTION,CTX,PETSC_NULL_FUNCTION,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
@@ -3354,7 +3396,7 @@ CONTAINS
     TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the function for
     TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: F !<The residual vector
     EXTERNAL FFUNCTION !<The external function to call
-    TYPE(SOLUTION_TYPE), POINTER :: CTX !<The solution data to pass to the function
+    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the function
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -3396,7 +3438,7 @@ CONTAINS
 
     CALL ENTERS("PETSC_SNESSETJACOBIAN_MATFDCOLORING",ERR,ERROR,*999)
 
-    CALL SNESSetJacobian(SNES_%SNES_,A%MAT,B%MAT,JFUNCTION,CTX%MATFDCOLORING,ERR)
+    CALL SNESSetJacobianBuffer(SNES_,A,B,JFUNCTION,CTX,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
@@ -3676,6 +3718,7 @@ CONTAINS
       ENDIF
       CALL FLAG_ERROR("PETSc error in TSDestroy",ERR,ERROR,*999)
     ENDIF
+    TS_%TS_=PETSC_NULL
     
     CALL EXITS("PETSC_TSDESTROY")
     RETURN
@@ -3736,7 +3779,7 @@ CONTAINS
 
     CALL ENTERS("PETSC_TSMONITORSET",ERR,ERROR,*999)
 
-    CALL TSMonitorSet(TS_%TS_,MFUNCTION,CTX,PETSC_NULL_INTEGER,ERR)
+    CALL TSMonitorSet(TS_%TS_,MFUNCTION,CTX,PETSC_NULL_FUNCTION,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
@@ -3885,7 +3928,7 @@ CONTAINS
     TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: ALHS !<The LHS matrix
     EXTERNAL LHSFUNCTION !<The external LHS matrix evaluation function to call
     INTEGER(INTG), INTENT(IN) :: FLAG !<The matrices structure flag
-    TYPE(SOLUTION_TYPE), POINTER :: CTX !<The solution data to pass to the matrix evaluations functions
+    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the matrix evaluations functions
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -3946,7 +3989,7 @@ CONTAINS
 
     TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to set the problem type for
     EXTERNAL RHSFUNCTION !<The external RHS function to call
-    TYPE(SOLUTION_TYPE), POINTER :: CTX !<The solution data to pass to the function
+    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the function
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -4457,6 +4500,7 @@ CONTAINS
       ENDIF
       CALL FLAG_ERROR("PETSc error in VecDestroy",ERR,ERROR,*999)
     ENDIF
+    X%VEC=PETSC_NULL
     
     CALL EXITS("PETSC_VECDESTROY")
     RETURN
@@ -5110,3 +5154,24 @@ CONTAINS
 
 END MODULE CMISS_PETSC
     
+!>Buffer routine to the PETSc SNESSetJacobian routine for MatFDColoring contexts. The buffer is required because we want to
+!>provide an interface so that we can pass a pointer to the solver for analytic Jacobian's. However, if we provided an interface
+!>the Fortran's strong typing rules would not let us pass the matfdcoloring.
+SUBROUTINE SNESSetJacobianBuffer(SNES_,A,B,JFUNCTION,CTX,ERR)
+
+  USE CMISS_PETSC_TYPES
+  USE KINDS
+
+  IMPLICIT NONE
+  
+  !Argument Variables
+  TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the function for
+  TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The Jacobian matrix
+  TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: B !<The Jacobian preconditioning matrix
+  EXTERNAL JFUNCTION !<The external function to call
+  TYPE(PETSC_MATFDCOLORING_TYPE) :: CTX !<The MatFDColoring data to pass to the function
+  INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+
+  CALL SNESSetJacobian(SNES_%SNES_,A%MAT,B%MAT,JFUNCTION,CTX%MATFDCOLORING,ERR)
+
+END SUBROUTINE SNESSetJacobianBuffer
