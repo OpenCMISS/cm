@@ -86,7 +86,7 @@ Node has the following attributes
 \section meshes Meshes
 Meshes are topological constructs within a region which fields use to define themselves.
 Meshes are made up of a number of mesh components.
-All mesh components in a mesh must “conform”, that is have the same number of elements, Xi directions etc.       
+All mesh components in a mesh must "conform", that is have the same number of elements, Xi directions etc.       
 
 Mesh has the following attributes:
 - User number
@@ -249,7 +249,7 @@ The numerical methods are used which will result in a discretised matrix-vector 
 openCMISS is designed to generate equations sets with a number of "equations" matrices.
       
 e.g, damped mass spring system
-Mü + Cù + Ku = f
+Mu + Cu + Ku = f
 will be represented as:
 \image html fieldEquationsets-matrix.JPG
 

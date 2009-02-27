@@ -1,0 +1,35 @@
+/*!
+\page code_style Coding Style
+This is an attempt to document the programming "style" for use with openCMISS.
+- Within a module all named constants and procedure names should be prefixed by a name indicating that module so as to maintain a namespace.
+- All dynamic arrays should be ALLOCATABLE rather than POINTER unless full pointer functionality is required.
+- A double space should be used for an indent. Tabs should not be used to indent code.
+- All pointers should be checked to see if they are ASSOCIATED before de-referencing them.
+- If there is just a single statement following an IF clause use the inline form of the IF statement and do not use THEN and ENDIF.
+- There should be a space before the first continuation character and a space after the second continuation character when continuing lines.
+- Use standard loop variable names e.g., nn, component_idx, when looping rather than temporary variable names.
+- When using case statements put in all known values of the the case variable and use a CALL FLAG_ERROR("Not implemented", ... statement if the code for the case variable has yet to be coded.
+- Use a !================... line between subroutines and functions
+- For dummy array arguments the dimension qualifier should be with the array name i.e., use INTEGER(INTG) :: FRED(N) rather than INTEGER(INTG), DIMENSION(N) :: FRED.
+- Code should be no more than 132 characters in a line. Use continuation &'s if need be. Add the space before/after each & to distinguish with the complete line.
+- No need to allocate local arrays if the size of array is known. 
+  e.g. REAL(DP), ALLOCATABLE :: VALUE_BUFFER(:) and then ALLOCATE(VALUE_BUFFER(5),STAT=ERR)
+  can be replaced with REAL(DP)::VALUE_BUFFER(5)
+- Use node hierarchy consistently in subroutine calls. i.e., derivative_number,node_number,component_number,variable_number instead of reverse order.
+- Input arguments should be checked in a subroutine before being used.
+- No space between IF and condition i.e. IF( rather than IF (.
+- Use Fortran 2003 standard for get the arguments to a program than the non-standard GET_ARG
+- Get routines
+  - Use subroutines instead of function.
+  - Return the result to the memory supplied by calling program. (i.e. using INTENT(OUT)::A(:) etc)
+  - Indicate in the doxygen comment that an argument is changed inside the get routine.
+  - Check that the size of the memory passed in is large enough to hold the data that it is going to store
+  .
+.
+The following styles are required by IBM Fortran Compiler:
+- For read/write/print statement, avoid the comma before the data variable. 
+  For example, use READ(FILE_ID, CHAR(DP_FMT), IOSTAT=IOS) REAL_DATA(1:LEN_OF_DATA) instead of READ(FILE_ID, CHAR(DP_FMT), IOSTAT=IOS), REAL_DATA(1:LEN_OF_DATA)
+- In IF/WHILE statement, if it checks whether a logical value is true or false, 
+  use IF(SOMEVALUE) or IF(.NOT.SOMEVALUE) instead of IF(SOMEVALUE==.TRUE.) or IF(SOMEVALUE==.FALSE.)
+- For the complete array assignment, use A=B instead of A(:)=B(:)     
+*/
