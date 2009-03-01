@@ -2447,8 +2447,8 @@ CONTAINS
         ELSE
           scaleIndex= SUM(GROUP_SCALE_FACTORS(1:LIST_COMP_SCALE(comp_idx)-1))
         ENDIF
-          WRITE(OP_STRING,'("*** Scale index ",I10," = ",I10)') comp_idx, scaleIndex
-          CALL WRITE_STR(DIAGNOSTIC_OUTPUT_TYPE,ERR,ERROR,*999)
+          !WRITE(OP_STRING,'("*** Scale index ",I10," = ",I10)') comp_idx, scaleIndex
+          !CALL WRITE_STR(DIAGNOSTIC_OUTPUT_TYPE,ERR,ERROR,*999)
         BASIS=>DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%BASIS
 
 !!TEMP
