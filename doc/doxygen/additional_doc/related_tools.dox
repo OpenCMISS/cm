@@ -15,6 +15,7 @@ The programmer documentation is managed by Doxygen. The html version of doxygen 
 - Suggested Doxygen version is 1.5.6. (Currently there are some problems with 1.5.7 & 1.5.8)
 - To generate html and latex versions, go to <path_to_your_opencmiss_folder>/doc/doxygen and run doxygen under that directory. There will be two folders html and latex generated. 
 - To generate pdf version, use some latex to pdf conversion tools, e.g pdflatex. In the latex folder, run "pdflatex refman.tex" and the refman.pdf file will be produced.
+- By default dot is enabled. Dot tool is part of Graphviz, a graph visualization toolkit from AT&T and Lucent Bell Labs. To reduce number of files generated, disable the dot tool by setting HAVE_DOT=NO in <path_to_your_opencmiss_folder>/doc/doxygen/Doxyfile.
 
 \section buildbot Buildbot
 Buildbot is used as the automatic building and testing tool for the openCMISS project.
