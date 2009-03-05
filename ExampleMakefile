@@ -323,7 +323,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
     # turn on preprocessing,
     # turn on warnings,
     # warn about non-standard Fortran 95
-    F_FLGS += -cpp -warn all 
+    F_FLGS += -cpp -w # -warn all 
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
         ifneq ($(shell grep Duo /proc/cpuinfo 2>/dev/null),)
