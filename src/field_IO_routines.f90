@@ -341,6 +341,7 @@ MODULE FIELD_IO_ROUTINES
 
   PUBLIC :: FIELD_IO_NODES_EXPORT, FIELD_IO_ELEMENTS_EXPORT, FIELD_IO_FILEDS_IMPORT
 
+
 CONTAINS
 
   !
@@ -365,24 +366,24 @@ CONTAINS
     LINE=STRING
 
     SELECT CASE(LABEL_TYPE)
-    CASE(FIELD_IO_FIELD_LABEL)
-      pos=INDEX(LINE, ",")
-      LINE=REMOVE(LINE, 1, pos)
-      pos=INDEX(LINE, ",")
-      KEYWORD=EXTRACT(LINE, 1, pos-1)
-      LINE=REMOVE(LINE, 1,pos)
-      KEYWORD=ADJUSTL(KEYWORD)
-      KEYWORD=TRIM(KEYWORD)
-      IF(KEYWORD=="coordinate") THEN
-        FIELD_TYPE=FIELD_GEOMETRIC_TYPE
-      ELSE IF (KEYWORD=="anatomical") THEN
-        FIELD_TYPE=FIELD_FIBRE_TYPE
-      ELSE
-        FIELD_TYPE=-1
-        CALL FLAG_ERROR("Cannot find corresponding field type from input string",ERR,ERROR,*999)
-      ENDIF
-    CASE DEFAULT
-      CALL FLAG_ERROR("Cannot find any information from input string",ERR,ERROR,*999)
+      CASE(FIELD_IO_FIELD_LABEL)
+        pos=INDEX(LINE, ",")
+        LINE=REMOVE(LINE, 1, pos)
+        pos=INDEX(LINE, ",")
+        KEYWORD=EXTRACT(LINE, 1, pos-1)
+        LINE=REMOVE(LINE, 1,pos)
+        KEYWORD=ADJUSTL(KEYWORD)
+        KEYWORD=TRIM(KEYWORD)
+        IF(KEYWORD=="coordinate") THEN
+           FIELD_TYPE=FIELD_GEOMETRIC_TYPE
+        ELSE IF (KEYWORD=="anatomical") THEN
+           FIELD_TYPE=FIELD_FIBRE_TYPE
+        ELSE
+           FIELD_TYPE=-1
+           CALL FLAG_ERROR("Cannot find corresponding field type from input string",ERR,ERROR,*999)
+        ENDIF
+      CASE DEFAULT
+        CALL FLAG_ERROR("Cannot find any information from input string",ERR,ERROR,*999)
     END SELECT !CASE(LABEL_TYPE)
 
     CALL EXITS("FIELD_IO_FIELD_INFO")
@@ -409,46 +410,46 @@ CONTAINS
 
 
     IF("d/ds1"==LINE) THEN
-      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1
     ELSE IF("d2/ds1ds1"==LINE) THEN
-      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S1
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S1
     ELSE IF("d/ds2"==LINE) THEN
-      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2
     ELSE IF("d2/ds2ds2"==LINE) THEN
-      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2_S2
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2_S2
     ELSE IF("d/ds3"==LINE) THEN
-      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S2
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S2
     ELSE IF("d2/ds3ds3"==LINE) THEN
-      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S3
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S3
     ELSE IF("d2/ds3ds3"==LINE) THEN
-      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S3_S3
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S3_S3
     ELSE IF("d2/ds1ds3"==LINE) THEN
-      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S3
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S3
     ELSE IF("d2/ds2ds3"==LINE) THEN
-      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2_S3
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2_S3
     ELSE IF("d3/ds1ds2ds3"==LINE) THEN
-      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S2_S3
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S2_S3
     ELSE IF("d/ds4"==LINE) THEN
-      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S4
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S4
     ELSE IF("d2/ds4ds4"==LINE) THEN
-      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S4_S4
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S4_S4
     ELSE IF("d2/ds1ds4"==LINE) THEN
-      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S4
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S4
     ELSE IF("d2/ds2ds4"==LINE) THEN
-      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2_S4
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2_S4
     ELSE IF("d2/ds3ds4"==LINE) THEN
-      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S3_S4
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S3_S4
     ELSE IF("d3/ds1ds2ds4"==LINE) THEN
-      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S2_S4
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S2_S4
     ELSE IF("d3/ds1ds3ds4"==LINE) THEN
-      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S3_S4
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S3_S4
     ELSE IF("d3/ds2ds3ds4"==LINE) THEN
-      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2_S3_S4
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2_S3_S4
     ELSE IF("d4/ds1ds2ds3ds4"==LINE) THEN
-      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S2_S3_S4
+       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S2_S3_S4
     ELSE
-      FIELD_IO_DERIVATIVE_INFO=-1
-      CALL FLAG_ERROR("Could not recognize derivatives from input string",ERR,ERROR,*999)
+       FIELD_IO_DERIVATIVE_INFO=-1
+       CALL FLAG_ERROR("Could not recognize derivatives from input string",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("FIELD_IO_DERIVATIVE_INFO")
@@ -500,6 +501,7 @@ CONTAINS
     REAL(DP), ALLOCATABLE :: LIST_DEV_VALUE(:)
     LOGICAL :: SECTION_START, FILE_END, NODE_SECTION, FILE_OPEN, NODE_IN_DOMAIN
 
+
     CALL ENTERS("FIELD_IO_CREATE_FIELDS",ERR,ERROR,*999)
 
     IF(.NOT.ASSOCIATED(DECOMPOSITION)) THEN
@@ -535,40 +537,40 @@ CONTAINS
 
       DO WHILE(idx_exnode<NUMBER_OF_EXNODE_FILES)
 
-        FILE_ID=1030+idx_exnode
-        !checking the next file
-        FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnode,"*",ERR,ERROR))//".exnode"
-        !INQUIRE(FILE=CHAR(FILE_NAME), OPENED=FILE_OPEN)
-        CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
-        SECTION_START=.FALSE.
-        FILE_END=.FALSE.
+         FILE_ID=1030+idx_exnode
+         !checking the next file
+         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnode,"*",ERR,ERROR))//".exnode"
+         !INQUIRE(FILE=CHAR(FILE_NAME), OPENED=FILE_OPEN)
+         CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
+         SECTION_START=.FALSE.
+         FILE_END=.FALSE.
 
-        DO WHILE(.NOT.FILE_END)
-          CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+         DO WHILE(.NOT.FILE_END)
+            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
 
-          !check the beginning of field section in exnode files
-          IF((.NOT.SECTION_START).AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
-            SECTION_START=.TRUE.
-          ENDIF
+            !check the beginning of field section in exnode files
+            IF((.NOT.SECTION_START).AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
+               SECTION_START=.TRUE.
+            ENDIF
 
-          !check whether it is a new header for another group of elements
-          IF(SECTION_START.AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
+            !check whether it is a new header for another group of elements
+            IF(SECTION_START.AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
 
-            !collect header information
-            pos=INDEX(LINE,CMISS_KEYWORD_FIELDS)
-            LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_FIELDS)-1)
-            idx_field=STRING_TO_INTEGER(LINE, ERR,ERROR)
-            IF(idx_field/=NUMBER_OF_FIELDS) CALL FLAG_ERROR("find different field number in exnode files",ERR,ERROR,*999)
-            idx_comp=0
-            DO idx_field=1,NUMBER_OF_FIELDS
-              CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-              IF(idx_exnode==0) THEN
-                LIST_STR(idx_field)=LINE
-                pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)
-                LINE=REMOVE(LINE, 1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENTS)-1)
-                number_of_comps=STRING_TO_INTEGER(LINE, ERR,ERROR)
-                total_number_of_comps=total_number_of_comps+number_of_comps
-              ELSE
+               !collect header information
+               pos=INDEX(LINE,CMISS_KEYWORD_FIELDS)
+               LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_FIELDS)-1)
+               idx_field=STRING_TO_INTEGER(LINE, ERR,ERROR)
+               IF(idx_field/=NUMBER_OF_FIELDS) CALL FLAG_ERROR("find different field number in exnode files",ERR,ERROR,*999)
+               idx_comp=0
+               DO idx_field=1,NUMBER_OF_FIELDS
+                  CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+                  IF(idx_exnode==0) THEN
+                     LIST_STR(idx_field)=LINE
+                     pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)
+                     LINE=REMOVE(LINE, 1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENTS)-1)
+                     number_of_comps=STRING_TO_INTEGER(LINE, ERR,ERROR)
+                     total_number_of_comps=total_number_of_comps+number_of_comps
+                  ELSE
                 IF(LIST_STR(idx_field)/=LINE) CALL FLAG_ERROR("find different field information in exnode files", &
                   & ERR,ERROR,*999)
                   ENDIF
@@ -835,48 +837,49 @@ CONTAINS
        print *, LIST_DEV_VALUE
        !ENDIF
 
+
        idx_comp1=0
        idx_dev1=0
        idx_variable=1
        DO idx_field=1,NUMBER_OF_FIELDS
-         IF(ASSOCIATED(FIELD)) NULLIFY(FIELD)
-         FIELD=>REGION%FIELDS%FIELDS(idx_field)%PTR
-         DO idx_comp=1, COMPONENTS_IN_FIELDS(idx_field)
-           idx_comp1=idx_comp1+1
-           DOMAIN_NODES=>FIELD%VARIABLES(idx_variable)%COMPONENTS(idx_comp)%DOMAIN%TOPOLOGY%NODES
-           NODE_IN_DOMAIN=.FALSE.
-           DO idx_node=1,DOMAIN_NODES%NUMBER_OF_NODES
-             !IF(DOMAIN_NODES%NODES(idx_node)%GLOBAL_NUMBER==USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(NODAL_USER_NUMBER)) THEN
-             IF(DOMAIN_NODES%NODES(idx_node)%USER_NUMBER==NODAL_USER_NUMBER) THEN
-               NODE_IN_DOMAIN=.TRUE.
-               NODAL_LOCAL_NUMBER=idx_node
-             ENDIF
-           ENDDO
-           
-           IF(NODE_IN_DOMAIN) THEN
-             IF(idx_comp1>=NUMBER_OF_COMPONENTS) THEN
-               DO idx_dev=1, total_number_of_devs-LIST_DEV_POS(idx_comp1)+1
-                 idx_dev1=idx_dev1+1
-                 !Set the domain to be used by the field components
-                 CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_VALUES_SET_TYPE, LIST_DEV(idx_dev1), &
-                   &NODAL_LOCAL_NUMBER, idx_comp, idx_variable, LIST_DEV_VALUE(idx_dev1),&
-                   &ERR, ERROR, *999)
-                 !print *, "n--n"
-               ENDDO !idx_dev
-             ELSE
-               DO idx_dev=1, LIST_DEV_POS(idx_comp1+1)-LIST_DEV_POS(idx_comp1)
-                 idx_dev1=idx_dev1+1
-                 !Set the domain to be used by the field components
-                 CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_VALUES_SET_TYPE, LIST_DEV(idx_dev1), &
-                   &NODAL_LOCAL_NUMBER, idx_comp, idx_variable, LIST_DEV_VALUE(idx_dev1),&
-                   &ERR, ERROR, *999)
-                 !print *, "n--n"
-               ENDDO !idx_dev
-             ENDIF  !idx_comp1
-           ENDIF !NODE_IN_DOMAIN
-         ENDDO !idx_comp
+          IF(ASSOCIATED(FIELD)) NULLIFY(FIELD)
+          FIELD=>REGION%FIELDS%FIELDS(idx_field)%PTR
+          DO idx_comp=1, COMPONENTS_IN_FIELDS(idx_field)
+             idx_comp1=idx_comp1+1
+             DOMAIN_NODES=>FIELD%VARIABLES(idx_variable)%COMPONENTS(idx_comp)%DOMAIN%TOPOLOGY%NODES
+             NODE_IN_DOMAIN=.FALSE.
+             DO idx_node=1,DOMAIN_NODES%NUMBER_OF_NODES
+                !IF(DOMAIN_NODES%NODES(idx_node)%GLOBAL_NUMBER==USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(NODAL_USER_NUMBER)) THEN
+                IF(DOMAIN_NODES%NODES(idx_node)%USER_NUMBER==NODAL_USER_NUMBER) THEN
+                   NODE_IN_DOMAIN=.TRUE.
+                   NODAL_LOCAL_NUMBER=idx_node
+                ENDIF
+             ENDDO
+
+             IF(NODE_IN_DOMAIN) THEN
+                IF(idx_comp1>=NUMBER_OF_COMPONENTS) THEN
+                   DO idx_dev=1, total_number_of_devs-LIST_DEV_POS(idx_comp1)+1
+                      idx_dev1=idx_dev1+1
+                      !Set the domain to be used by the field components
+                      CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_VALUES_SET_TYPE, LIST_DEV(idx_dev1), &
+                           &NODAL_LOCAL_NUMBER, idx_comp, idx_variable, LIST_DEV_VALUE(idx_dev1),&
+                           &ERR, ERROR, *999)
+                      !print *, "n--n"
+                   ENDDO !idx_dev
+                ELSE
+                   DO idx_dev=1, LIST_DEV_POS(idx_comp1+1)-LIST_DEV_POS(idx_comp1)
+                      idx_dev1=idx_dev1+1
+                      !Set the domain to be used by the field components
+                      CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_VALUES_SET_TYPE, LIST_DEV(idx_dev1), &
+                           &NODAL_LOCAL_NUMBER, idx_comp, idx_variable, LIST_DEV_VALUE(idx_dev1),&
+                           &ERR, ERROR, *999)
+                      !print *, "n--n"
+                   ENDDO !idx_dev
+                ENDIF  !idx_comp1
+             ENDIF !NODE_IN_DOMAIN
+          ENDDO !idx_comp
        ENDDO !idx_field
-     ENDDO !idx_exnode<NUMBER_OF_EXELEM_FILES
+    ENDDO !idx_exnode<NUMBER_OF_EXELEM_FILES
 
     !print *, "out of loop"
 
@@ -988,8 +991,8 @@ CONTAINS
             &computational_node_numbers, ERR, ERROR, *999)
 
        CALL FIELD_IO_CREATE_FIELDS(NAME, REGION, DECOMPOSITION, FIELD_VALUES_SET_TYPE, NUMBER_OF_FIELDS, &
-         !&USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER,
-         & MESH_COMPONENTS_OF_FIELD_COMPONENTS, COMPONENTS_IN_FIELDS, &
+            !&USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER,
+            &MESH_COMPONENTS_OF_FIELD_COMPONENTS, COMPONENTS_IN_FIELDS, &
          & NUMBER_OF_EXNODE_FILES, MASTER_COMPUTATIONAL_NUMBER, my_computational_node_number, FIELD_SCALING_TYPE, &
          & ERR, ERROR, *999)
     ELSE IF(METHOD=="MPIIO") THEN
@@ -2214,7 +2217,7 @@ CONTAINS
 
   !>Write the header of a group elements using FORTRAN
   SUBROUTINE FIELD_IO_EXPORT_ELEMENTAL_GROUP_HEADER_FORTRAN( global_number, MAX_NODE_COMP_INDEX,&
-    &NUM_OF_SCALING_FACTOR_SETS, LIST_COMP_SCALE, my_computational_node_number, elementalInfoSet, sessionHandle, ERR,ERROR, *)
+          &NUM_OF_SCALING_FACTOR_SETS, LIST_COMP_SCALE, my_computational_node_number, elementalInfoSet, sessionHandle, ERR,ERROR, *)
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: global_number !<element number in my elemental IO list
     INTEGER(INTG), INTENT(INOUT) ::  MAX_NODE_COMP_INDEX !<MAX_NODE_INDEX
@@ -2236,10 +2239,10 @@ CONTAINS
     TYPE(BASIS_PTR_TYPE), ALLOCATABLE :: listScaleBases(:)
     INTEGER(INTG), ALLOCATABLE :: GROUP_LOCAL_NUMBER(:), GROUP_SCALE_FACTORS(:)
     INTEGER(INTG), ALLOCATABLE :: GROUP_NODE(:), GROUP_VARIABLES(:)
-    INTEGER(C_INT), TARGET :: INTERPOLATION_XI(3),ELEMENT_DERIVATIVES(64,64),NUMBER_OF_DERIVATIVES(64)
-    INTEGER(INTG) :: nn, NUM_OF_VARIABLES, MAX_NUM_NODES !NUM_OF_NODES
+    INTEGER(C_INT), TARGET :: INTERPOLATION_XI(3),ELEMENT_DERIVATIVES(64*64),NUMBER_OF_DERIVATIVES(64)
+    INTEGER(INTG) :: nn, mm, NUM_OF_VARIABLES, MAX_NUM_NODES !NUM_OF_NODES
     INTEGER(INTG) :: local_number
-    INTEGER(INTG) :: num_scl, num_node, comp_idx, scaleIndex, scaleIndex1, var_idx !value_idx field_idx global_var_idx comp_idx1 ny2
+    INTEGER(INTG) :: num_scl, num_node, comp_idx, scaleIndex, scaleIndex1, var_idx, derivativeIndex !value_idx field_idx global_var_idx comp_idx1 ny2
     LOGICAL :: SWITCH
 
     CALL ENTERS("FIELD_IO_EXPORT_ELEMENTAL_GROUP_HEADER_FORTRAN",ERR,ERROR,*999)
@@ -2425,7 +2428,7 @@ CONTAINS
 !!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
 !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
           INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(BASIS%NUMBER_OF_XI)
-          ERR = FieldExport_CoordinateComponent( sessionHandle, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM, &
+        ERR = FieldExport_CoordinateComponent( sessionHandle, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM, &
             & elementalInfoSet%COMPONENTS(comp_idx)%PTR%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ) )
       ELSE
 !!TEMP
@@ -2452,14 +2455,22 @@ CONTAINS
         BASIS=>DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%BASIS
 
 !!TEMP
-        !ERR = FieldExport_Nodes( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( BASIS%NUMBER_OF_DERIVATIVES ), &
+        ! ERR = FieldExport_Nodes( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( BASIS%NUMBER_OF_DERIVATIVES ), &
         ! & C_LOC( DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%ELEMENT_DERIVATIVES ), scaleIndex )
 !!Copy element derivatives etc. to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
 !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
+!!In order to correctly index the supplied array, the API needs to know in advance the dimensions of the array.
+!!To avoid having to pass in an extra 'size' parameter, we unroll the 2d derivative index array into a vector.
+
+        derivativeIndex = 1
+
         DO nn=1,BASIS%NUMBER_OF_NODES
-          NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(nn)
-          ELEMENT_DERIVATIVES(1:BASIS%NUMBER_OF_DERIVATIVES(nn),nn)= DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-            & ELEMENT_DERIVATIVES(1:BASIS%NUMBER_OF_DERIVATIVES(nn),nn)
+          NUMBER_OF_DERIVATIVES(nn) = BASIS%NUMBER_OF_DERIVATIVES(nn)
+          DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+            ELEMENT_DERIVATIVES(derivativeIndex) = &
+              & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%ELEMENT_DERIVATIVES(mm,nn)
+            derivativeIndex = derivativeIndex + 1
+          ENDDO !mm
         ENDDO !nn
         ERR = FieldExport_Nodes( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( NUMBER_OF_DERIVATIVES ), &
           & C_LOC( ELEMENT_DERIVATIVES ), scaleIndex )
