@@ -18,8 +18,9 @@ where architecture is the appropriate architecture for the machine. Possible arc
 - i386-win32-debug
 - i686-linux
 - i686-linux-debug
-- x86_64-linux
-- x86_64-linux-debug
+- x86_64-linux-intel
+- x86_64-linux-debug-gnu
+- x86_64-linux-debug-intel
 - rs6000-32-aix
 - rs6000-32-aix-debug
 .
