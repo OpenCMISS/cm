@@ -64,8 +64,37 @@ where ${archname} is the appropriate architecture e.g., i686-linux, x86_64-linux
 If you are using totalview you will also need to add
 \code setenv LM_LICENSE_FILES <path-to-the-flex-directory> \endcode
 \subsubsection project_setup_linux_compiler Install Compilers
+There are two options for compilers under Linux - Intel or gnu compilers.
+
+For the Intel compiler:
+
 Download Intel Fotran Compiler from here.
 Extract the file and follow the install.htm to install
+
+For the GNU comilers:
+
+Currently, only gfortran version 4.4 or greater will work. As at 1/3/09 the 4.4 compilers had not been released and thus you need to download the trunk binaries. The steps are
+
+1. Download either
+
+http://users.physik.fu-berlin.de/~tburnus/gcc-trunk/i686/gcc-trunk-i686.tar.gz
+
+or
+
+http://users.physik.fu-berlin.de/~tburnus/gcc-trunk/gcc-trunk-x86_64.tar.gz
+
+Dependending on the type of your system.
+
+2. Follow the instructions at
+
+http://gcc.gnu.org/wiki/GFortranBinaries32Linux
+
+or
+
+http://gcc.gnu.org/wiki/GFortranBinaries64Linux
+
+Depending on the type of your system.
+
 \subsubsection project_setup_linux_compile Compile
 To build an example project:
 \code make \endcode
