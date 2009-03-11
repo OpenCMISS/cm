@@ -98,6 +98,11 @@ Depending on the type of your system.
 \subsubsection project_setup_linux_compile Compile
 To build an example project:
 \code make \endcode
+
+Note: that the default is the intel compilers (if installed). To explicitly use the gnu compilers use
+\code make COMPILER=gnu\endcode
+or set the COMPILER environment variable to be gnu.
+
 To run the example project:
 \code mpd & mpirun -n 2 path/to/the/execution/file \endcode
 To debug the project using TotalView:
