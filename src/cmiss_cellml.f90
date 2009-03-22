@@ -64,25 +64,66 @@ MODULE CMISS_CELLML
 
   !Interfaces
 
-  !PUBLIC public routines go here
+  PUBLIC CELLML_CREATE_START,CELLML_CREATE_FINISH,CELLML_DESTROY
 
 CONTAINS
 
   ! code goes here - just adding it all here to start with, will need to define proper interfaces above.
 
+  !> Destroys the given CellML environment.
+  SUBROUTINE CELLML_DESTROY(CELLML,ERR,ERROR,*)
+    TYPE(CELLML_TYPE), POINTER :: CELLML !<A pointer to the CellML environment to destroy
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !< The error string
+    WRITE(*,*) "Destroying CellML environment: ",CELLML%USER_NUMBER
+    CALL ENTERS("CELLML_DESTROY",ERR,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+       IF(ASSOCIATED(CELLML%SOURCE_FIELD)) THEN
+          IF (ASSOCIATED(CELLML%SOURCE_FIELD%CELLML)) NULLIFY(CELLML%SOURCE_FIELD%CELLML)
+       END IF
+       DEALLOCATE(CELLML)
+    ELSE
+       CALL FLAG_ERROR("CellML is not associated",ERR,ERROR,*999)
+    END IF
+    CALL EXITS("CELLML_DESTROY")
+    RETURN
+999 CALL ERRORS("CELLML_DESTROY",ERR,ERROR)
+    CALL EXITS("CELLML_DESTROY")
+    RETURN 1
+  END SUBROUTINE CELLML_DESTROY
+
   !> Set up the CellML environment in the given field.
   !! For a given field, create a CellML environment that will be used to define the value of that field in openCMISS. This will likely simply create and initialise an empty CellML environment object with the specified unique identifier number and associate it with the field? Also set some flag to indicate the CellML environment object is in the process of being created and should not yet be used.
+  !! \todo Not sure it makes sense to ever have more than one CellML environment for a given source field, so the user number is not needed?
   SUBROUTINE CELLML_CREATE_START(CELLML_USER_NUMBER,FIELD,CELLML,ERR,ERROR,*)
     INTEGER(INTG), INTENT(IN) :: CELLML_USER_NUMBER !<Not sure what the purpose of this is? I guess to give the created CellML environment object a unique identifier? Perhaps if the same identifier is specified then an existing CellML environment would be reused/reinitialised for the given source field...
     TYPE(FIELD_TYPE), POINTER :: FIELD !<The (source) field to set up this CellML environment for. Should be USER_NUMBER instead?
     TYPE(CELLML_TYPE), POINTER :: CELLML !<The newly created CellML environment object.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: NEW_CELLML
+
+    NULLIFY(NEW_CELLML)
 
     CALL ENTERS("CELLML_CREATE_START",ERR,ERROR,*999)
+    NULLIFY(CELLML)
+    IF(ASSOCIATED(FIELD)) THEN
+       ALLOCATE(NEW_CELLML,STAT=ERR)
+       IF (ERR/=0) CALL FLAG_ERROR("Could not allocate new CellML environment",ERR,ERROR,*999)
+       NEW_CELLML%USER_NUMBER = CELLML_USER_NUMBER
+       NEW_CELLML%GLOBAL_NUMBER = -1
+       NEW_CELLML%SOURCE_FIELD => FIELD
+       NEW_CELLML%CELLML_FINISHED = .FALSE.
+       CELLML => NEW_CELLML
+    ELSE
+       CALL FLAG_ERROR("Source field is not associated",ERR,ERROR,*998)
+    END IF
     CALL EXITS("CELLML_CREATE_START")
     RETURN
-999 CALL ERRORS("CELLML_CREATE_START",ERR,ERROR)
+999 IF(ASSOCIATED(NEW_CELLML)) CALL CELLML_DESTROY(NEW_CELLML,ERR,ERROR,*998)
+998 NULLIFY(CELLML)
+    CALL ERRORS("CELLML_CREATE_START",ERR,ERROR)
     CALL EXITS("CELLML_CREATE_START")
     RETURN 1
   END SUBROUTINE CELLML_CREATE_START
@@ -95,6 +136,18 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 
     CALL ENTERS("CELLML_CREATE_FINISH",ERR,ERROR,*999)
+    IF (ASSOCIATED(CELLML)) THEN
+       IF (ASSOCIATED(CELLML%SOURCE_FIELD)) THEN
+          ! Insert this CellML environment into the source field, deleting any existing CellML environment
+          IF (ASSOCIATED(CELLML%SOURCE_FIELD%CELLML)) CALL CELLML_DESTROY(CELLML%SOURCE_FIELD%CELLML,ERR,ERROR,*999)
+          CELLML%SOURCE_FIELD%CELLML => CELLML
+          CELLML%CELLML_FINISHED = .TRUE.
+       ELSE
+          CALL FLAG_ERROR("CellML source field not associated",ERR,ERROR,*999)
+       END IF
+    ELSE
+       CALL FLAG_ERROR("CellML is not associated",ERR,ERROR,*999)
+    END IF
     CALL EXITS("CELLML_CREATE_FINISH")
     RETURN
 999 CALL ERRORS("CELLML_CREATE_FINISH",ERR,ERROR)

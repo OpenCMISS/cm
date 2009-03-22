@@ -942,6 +942,7 @@ MODULE TYPES
     TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<A pointer to the geometric field that this field uses. If the field itself is a geometric field then this will be a pointer back to itself.
     TYPE(FIELD_GEOMETRIC_PARAMETERS_TYPE), POINTER :: GEOMETRIC_FIELD_PARAMETERS !<
     TYPE(FIELD_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE !<The create values cache for the field.
+    TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment associated with this field, if one is defined.
   END TYPE FIELD_TYPE
 
   !>A buffer type to allow for an array of pointers to a FIELD_TYPE.
@@ -1880,7 +1881,8 @@ MODULE TYPES
   TYPE CELLML_TYPE
      INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the CellML environment in the list of environments for a field.
      INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the CellML environment. The user number must be unique.
-     LOGICAL :: FIELD_FINISHED !<Is .TRUE. if the environment has finished being created, .FALSE. if not.
+     LOGICAL :: CELLML_FINISHED !<Is .TRUE. if the environment has finished being created, .FALSE. if not.
+     TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD !<The source field for this CellML environment
   END TYPE CELLML_TYPE
 
   !> A buffer type to allow for an array of pointers to a CELLML_TYPE.
