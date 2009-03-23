@@ -1877,12 +1877,32 @@ MODULE TYPES
   !
   ! CellML types (belongs under field types?)
   
+  !> This type is a wrapper for the C_PTR which references the actual CellML model definition object.
+  TYPE CELLML_MODEL_TYPE
+     TYPE(C_PTR) :: PTR !< The handle for the actual C++ CellML model definition object
+     INTEGER(INTG) :: USER_NUMBER !< The user defined identifier for this CellML model
+     INTEGER(INTG) :: GLOBAL_NUMBER !< The global number of this CellML model within the parent CellML environment.
+  END TYPE CELLML_MODEL_TYPE
+
+  !> A buffer type to allow for an array of pointers to a CELLML_MODEL_TYPE
+  TYPE CELLML_MODEL_PTR_TYPE
+     TYPE(CELLML_MODEL_TYPE), POINTER :: PTR
+  END TYPE CELLML_MODEL_PTR_TYPE
+
+  !> Contains information on the models defined in a CellML environment
+  TYPE CELLML_MODELS_TYPE
+     TYPE(CELLML_TYPE), POINTER :: CELLML !< A pointer to the CellML environment containing the models.
+     INTEGER(INTG) :: NUMBER_OF_MODELS !< The number of models defined in the CellML environment
+     TYPE(CELLML_MODEL_PTR_TYPE), POINTER :: MODELS(:) !< MODELS(model_idx). The array of pointers to the models.
+  END TYPE CELLML_MODELS_TYPE
+
   !> Contains information for a CellML environment defined for a host field.
   TYPE CELLML_TYPE
      INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the CellML environment in the list of environments for a field.
      INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the CellML environment. The user number must be unique.
      LOGICAL :: CELLML_FINISHED !<Is .TRUE. if the environment has finished being created, .FALSE. if not.
      TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD !<The source field for this CellML environment
+     TYPE(CELLML_MODELS_TYPE), POINTER :: MODELS !< A pointer to the models for this environment
   END TYPE CELLML_TYPE
 
   !> A buffer type to allow for an array of pointers to a CELLML_TYPE.
