@@ -18,7 +18,13 @@ The programmer documentation is managed by Doxygen. The html version of doxygen 
 - By default dot is enabled. Dot tool is part of Graphviz, a graph visualization toolkit from AT&T and Lucent Bell Labs. To reduce number of files generated, disable the dot tool by setting HAVE_DOT=NO in <path_to_your_opencmiss_folder>/doc/doxygen/Doxyfile.
 
 \section buildbot Buildbot
-Buildbot is used as the automatic building and testing tool for the openCMISS project.
+Buildbot is used as the automatic building and testing tool for the openCMISS project. Currently, the buildbot master is hosted at http://autotest.bioeng.auckland.ac.nz:8888/. Refer to the buildbot manual for the buildmaster and buildslave initial set up.
+\subsection buildbot_steps To add the addition buildslave for OpenCMISS
+- Accept the ssl certificate permanently: in terminal, use \code svn list https://svn.physiomeproject.org/svn/opencmissextras/cm/trunk/external/ \endcode and select p. 
+- Set up environment: in Makefile, setup the OPENCMISSEXTRAS_ROOT, OPENCMISS_ROOT, and PATH variables. 
+- Add the buildslave to the buildmaster's master.cfg file, make sure that the working dir should match the environment variables
+- Start buildslave by execute \code make start \endcode in the buildslave directory
+- Restart the buildmaster. 
 \subsection buildbot_tips Tips
 - Manual and downloads from http://buildbot.net/trac
 - It could contain one build master(machine to trigger the builds on different build slaves and deliver information about the build results through protocols like HTTP, mail)
