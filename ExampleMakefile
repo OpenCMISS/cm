@@ -1340,6 +1340,13 @@ $(OBJECT_DIR)/strings.o	:	$(MAIN_SOURCE_DIR)/strings.f90 \
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/iso_varying_string.o
+	
+$(OBJECT_DIR)/test_framework_routines.o : $(MAIN_SOURCE_DIR)/test_framework_routines.f90 \
+  $(OBJECT_DIR)/constants.o \
+  $(OBJECT_DIR)/iso_varying_strings.o \
+  $(OBJECT_DIR)/kinds.o \
+  $(OBJECT_DIR)/matrix_vector.o \
+  $(OBJECT_DIR)/strings.o
 
 $(OBJECT_DIR)/timer_c.o		:	$(MAIN_SOURCE_DIR)/timer_c.c 
 
@@ -1389,6 +1396,7 @@ $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o		:	$(EXAMPLE_SOURCE_DIR)/$(BASE_EXAMPLE_NAM
 	$(OBJECT_DIR)/problem_routines.o \
 	$(OBJECT_DIR)/region_routines.o \
 	$(OBJECT_DIR)/solver_routines.o \
+	$(OBJECT_DIR)/test_framework_routines.o \
 	$(OBJECT_DIR)/timer_f.o \
 	$(OBJECT_DIR)/types.o
 
