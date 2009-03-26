@@ -1436,7 +1436,7 @@ all64: debug64 opt64
 # TODO only for linux 64bit for now.
 test:
 # Test for 2x2 mesh using bilinear lagrange basis 
-	$(CURDIR)/bin/$(LIB_ARCH_DIR)/$(BASE_EXAMPLE_NAME)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)
+	$(CURDIR)/testscript.pl $(CURDIR)/bin/$(LIB_ARCH_DIR)/$(BASE_EXAMPLE_NAME)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)
 
 #-----------------------------------------------------------------------------
 
