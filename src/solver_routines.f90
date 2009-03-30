@@ -6100,6 +6100,8 @@ CONTAINS
                       CASE(SOLVER_CMISS_LIBRARY)
                         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                       CASE(SOLVER_PETSC_LIBRARY)
+                        !Make sure the solver vector contains the current dependent field values
+                        CALL SOLVER_SOLUTION_UPDATE(SOLVER,ERR,ERROR,*999)
                         !Solve the nonlinear equations
                         CALL PETSC_SNESSOLVE(LINESEARCH_SOLVER%SNES,RHS_VECTOR%PETSC%VECTOR,SOLVER_VECTOR%PETSC%VECTOR, &
                           & ERR,ERROR,*999)
@@ -7501,6 +7503,114 @@ CONTAINS
    
   END SUBROUTINE SOLVER_OUTPUT_TYPE_SET
         
+  !
+  !================================================================================================================================
+  !
+
+  !>Updates the solver solution from the field variables
+  SUBROUTINE SOLVER_SOLUTION_UPDATE(SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to update the solution from
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: column_number,equations_set_idx,local_number,solver_matrix_idx,variable_dof_idx,variable_idx
+    REAL(DP) :: additive_constant,VALUE,coupling_coefficient
+    REAL(DP), POINTER :: VARIABLE_DATA(:)
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: SOLVER_VECTOR
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
+    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
+    TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
+ 
+    NULLIFY(VARIABLE_DATA)
+    
+    CALL ENTERS("SOLVER_SOLUTION_UPDATE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVER_FINISHED) THEN
+        SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+        IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+          SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
+          IF(ASSOCIATED(SOLVER_MATRICES)) THEN
+            SOLVER_MAPPING=>SOLVER_MATRICES%SOLVER_MAPPING
+            IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+              DO solver_matrix_idx=1,SOLVER_MATRICES%NUMBER_OF_MATRICES
+                SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(solver_matrix_idx)%PTR
+                IF(ASSOCIATED(SOLVER_MATRIX)) THEN
+                  SOLVER_VECTOR=>SOLVER_MATRIX%SOLVER_VECTOR
+                  IF(ASSOCIATED(SOLVER_VECTOR)) THEN
+                    DOMAIN_MAPPING=>SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%COLUMN_DOFS_MAPPING
+                    IF(ASSOCIATED(DOMAIN_MAPPING)) THEN
+                      DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                        DO variable_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                          & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%NUMBER_OF_VARIABLES
+                          DEPENDENT_VARIABLE=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                            & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%VARIABLES(variable_idx)%PTR
+                          IF(ASSOCIATED(DEPENDENT_VARIABLE)) THEN
+                            DEPENDENT_FIELD=>DEPENDENT_VARIABLE%FIELD
+                            CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_VALUES_SET_TYPE,VARIABLE_DATA,ERR,ERROR,*999)
+                            DO variable_dof_idx=1,DEPENDENT_VARIABLE%NUMBER_OF_DOFS
+                              column_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_idx)% &
+                                & COLUMN_NUMBERS(variable_dof_idx)
+                              IF(column_number/=0) THEN
+                                coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                  & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS( &
+                                  & variable_idx)%COUPLING_COEFFICIENTS(variable_dof_idx)
+                                additive_constant=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                  & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS( &
+                                  & variable_idx)%ADDITIVE_CONSTANTS(variable_dof_idx)
+                                VALUE=VARIABLE_DATA(variable_dof_idx)*coupling_coefficient+additive_constant
+                                local_number=DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(column_number)%LOCAL_NUMBER(1)
+                                CALL DISTRIBUTED_VECTOR_VALUES_SET(SOLVER_VECTOR,local_number,VALUE,ERR,ERROR,*999)
+                              ENDIF
+                            ENDDO !variable_dof_idx
+                            CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_VALUES_SET_TYPE,VARIABLE_DATA, &
+                              & ERR,ERROR,*999)
+                          ELSE
+                            CALL FLAG_ERROR("Variable is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        ENDDO !variable_idx
+                      ENDDO !equations_set_idx
+                    ELSE
+                      CALL FLAG_ERROR("Domain mapping is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Solver vector is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ENDDO !solver_matrix_idx
+            ELSE
+              CALL FLAG_ERROR("Solver matrices solution mapping is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Solver equations solver matrices are not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_SOLUTION_UPDATE")
+    RETURN
+999 CALL ERRORS("SOLVER_SOLUTION_UPDATE",ERR,ERROR)    
+    CALL EXITS("SOLVER_SOLUTION_UPDATE")
+    RETURN 1
+    
+  END SUBROUTINE SOLVER_SOLUTION_UPDATE
+  
   !
   !================================================================================================================================
   !

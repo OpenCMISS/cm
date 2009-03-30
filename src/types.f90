@@ -1596,7 +1596,7 @@ MODULE TYPES
     TYPE(JACOBIAN_COL_TO_SOLVER_COLS_MAP_TYPE), ALLOCATABLE :: JACOBIAN_COL_SOLVER_COLS_MAP(:) !<JACOBIAN_COL_SOLVER_COL_MAP(column_idx). The mapping from the column_idx'th column of the Jacobian matrix to the solver matrix columns.
   END TYPE JACOBIAN_TO_SOLVER_MAP_TYPE
 
-  !>Contains information on the mappings between field variable dofs in an equation set and the solver matrix columns (solver dofs) \todo rename solver col to be solver dof here
+  !>Contains information on the mappings between field variable dofs in an equation set and the solver matrix columns (solver dofs) \todo rename solver col to be solver dof here???
   TYPE VARIABLE_TO_SOLVER_COL_MAP_TYPE
     INTEGER(INTG), ALLOCATABLE :: COLUMN_NUMBERS(:) !<COLUMN_NUMBERS(variable_dof_idx). The solver column number (solver dof) that the variable_dof_idx'th variable dof is mapped to.
     REAL(DP), ALLOCATABLE :: COUPLING_COEFFICIENTS(:) !<COUPLING_COEFFICIENTS(variable_dof_idx). The multiplicative constant for the mapping between the variable_dof_idx'th variable dof and the solver dof.
