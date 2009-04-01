@@ -1786,10 +1786,10 @@ CONTAINS
     
     CALL ENTERS("MATRIX_PRODUCT_SP",ERR,ERROR,*999)
 
-    DO i=1,3,1
-      DO j=1,3,1
+    DO i=1,3
+      DO j=1,3
         C(i,j)=0.0_SP
-	DO k=1,3,1	      
+	DO k=1,3	      
 	  C(i,j)=C(i,j)+A(i,k)*B(k,j) 
 	ENDDO  	    
       ENDDO
@@ -1824,10 +1824,10 @@ CONTAINS
         
     CALL ENTERS("MATRIX_PRODUCT_DP",ERR,ERROR,*999)
 
-    DO i=1,3,1
-      DO j=1,3,1
+    DO i=1,3
+      DO j=1,3
         C(i,j)=0.0_DP
-	DO k=1,3,1	      
+	DO k=1,3	      
 	  C(i,j)=C(i,j)+A(i,k)*B(k,j) 
 	ENDDO  	    
       ENDDO
@@ -1862,8 +1862,8 @@ CONTAINS
     
     CALL ENTERS("MATRIX_TRANSPOSE_SP",ERR,ERROR,*999)
 
-    DO i=1,3,1
-      DO j=1,3,1
+    DO i=1,3
+      DO j=1,3
 	AT(i,j)=A(j,i)
       ENDDO
     ENDDO
@@ -1897,8 +1897,8 @@ CONTAINS
         
     CALL ENTERS("MATRIX_TRANSPOSE_DP",ERR,ERROR,*999)
 
-    DO i=1,3,1
-      DO j=1,3,1
+    DO i=1,3
+      DO j=1,3
 	AT(i,j)=A(j,i)
       ENDDO
     ENDDO
