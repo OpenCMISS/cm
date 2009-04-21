@@ -63,6 +63,7 @@ MODULE LINEAR_ELASTICITY_ROUTINES
   USE SOLVER_ROUTINES
   USE TIMER
   USE TYPES
+  USE MATHS
 
   IMPLICIT NONE
 
@@ -89,18 +90,174 @@ CONTAINS
   SUBROUTINE LINEAR_ELASTICITY_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to perform the finite element calculations on
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to perform the finite element 
+						       !<calculations on
     INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to calculate
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-     
-    CALL ENTERS("LINEAR_ELASTICITY_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
 
+    !Local Variables
+    REAL(DP) :: DXDXI(3,3),JDXIDX(3,3),J,DPHIDXI(8,3),DPHIDX(8,3)
+    REAL(DP) :: XI(3),GAUSS_WEIGHT_J
+    INTEGER(INTG) :: DERIVATIVE_NUMBER,PARTIAL_DERIV_INDEX
+    INTEGER(INTG) :: ng,ni,np
+    INTEGER(INTG) :: i,k
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
+    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX
+    TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,GEOMETRIC_BASIS
+    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    !Temporary Lapack Variable 
+    INTEGER(INTG) :: N
+    INTEGER(INTG) :: NRHS
+    INTEGER(INTG) :: LDA
+    INTEGER(INTG) :: IPIV(12)
+    INTEGER(INTG) :: LDB
+    !REAL(DP) :: B(12,12)
+    INTEGER(INTG) :: INFO
+
+    ! Temporary Variables
+    INTEGER(INTG) :: BC(24),ll,mm
+    REAL(DP) :: C(6,6),GKK(12,12),b(12,1)
+
+    CALL ENTERS("LINEAR_ELASTICITY_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
+    !!TODO: Add local error messages
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN
+	CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," *** ELEMENT_CALCULATE  ***",ERR,ERROR,*999)
+  	CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE," ELEMENT_NUMBER  = ",ELEMENT_NUMBER, &
+    	& ERR,ERROR,*999)
+
+	!!TODO: Calculate elasticity tensor from outside element loop
+	CALL LINEAR_ELASTICITY_TENSOR(C,ERR,ERROR,*999) !Create Stress Tensor
+
+        DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
+        GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
+        EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+        LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
+        EQUATIONS_MATRIX=>LINEAR_MATRICES%MATRICES(1)%PTR
+        DEPENDENT_BASIS=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+          & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+        GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+          & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+	QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+
+	! GEOMETRIC_INTERP_PARAMETERS for GEOMETRIC_INTERPOLATED_POINT & UNIT_GEOMETRIC_INTERPOLATED_POINT automatically updated 
+	! since FIELD_INTERPOLATED_POINT_TYPE has a FIELD_INTERPOLATION_PARAMETERS_TYPE subtype
+	CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+	  & GEOMETRIC_INTERP_PARAMETERS,ERR,ERROR,*999)
+
+	!Construct Element Stiffness Matrix
+	EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX = 0.0_DP !Initialize Element Stiffness Matrix
+	!Loop over gauss points & integrate upper triangular portion of Stiffness matrix
+	DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS !Gauss point index
+	  !Define XI values of current Gauss point
+	  XI = (/QUADRATURE_SCHEME%gauss_positions(1,ng),QUADRATURE_SCHEME%gauss_positions(2,ng), &
+		& QUADRATURE_SCHEME%gauss_positions(3,ng)/)
+	  !Evaluate first partial derivatives
+	  DERIVATIVE_NUMBER = 1 ! Note Lagrange Basis family does not have derivatives associated with nodes. Set to 1
+	  DPHIDXI = 0.0_DP
+	  DXDXI = 0.0_DP
+	  DO ni=1,3 !xi index
+	    PARTIAL_DERIV_INDEX=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni)  !2,4,7     
+	    DO np=1,8 !node index
+	      DPHIDXI(np,ni) = BASIS_LHTP_BASIS_EVALUATE_DP(GEOMETRIC_BASIS,np,DERIVATIVE_NUMBER,PARTIAL_DERIV_INDEX,XI,ERR,ERROR)
+	    ENDDO !np
+	    DXDXI(:,ni) = (/DOT_PRODUCT(DPHIDXI(:,ni),EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS%parameters(:,1)), &
+			  & DOT_PRODUCT(DPHIDXI(:,ni),EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS%parameters(:,2)), &
+			  & DOT_PRODUCT(DPHIDXI(:,ni),EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS%parameters(:,3))/)
+	  ENDDO !xi
+	  !Invert DXDXI returning the Jacobian & the matrix (J*DXIDX) seperately. 
+	  CALL INVERT_VER2(DXDXI,JDXIDX,J,ERR,ERROR,*999) 
+	  !Divide the Gauss weights by Jacobian once (only place J is used), This is because in the final integral equations below,
+	  !the term GAUSS_WEIGHT*(DXIDX/J)*(DXIDX/J)*J (last J term is from coordinate transformation) can be simplified to 
+	  !(GAUSS_WEIGHT/J)*(DXIDX)*(DXIDX)
+	  GAUSS_WEIGHT_J = QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)/J
+	  DPHIDX = 0.0_DP
+	  DO np=1,8 !node index
+	    DPHIDX(np,1) = DPHIDXI(np,1)*JDXIDX(1,1)+DPHIDXI(np,2)*JDXIDX(1,2)+DPHIDXI(np,3)*JDXIDX(1,3) 
+	    DPHIDX(np,2) = DPHIDXI(np,1)*JDXIDX(2,1)+DPHIDXI(np,2)*JDXIDX(2,2)+DPHIDXI(np,3)*JDXIDX(2,3)
+	    DPHIDX(np,3) = DPHIDXI(np,1)*JDXIDX(3,1)+DPHIDXI(np,2)*JDXIDX(3,2)+DPHIDXI(np,3)*JDXIDX(3,3)
+	  ENDDO !np
+	  !Change indices
+	  DO i=1,8
+	    DO k=i,8 ! Matrices symmetric
+		EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(i,k) = EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(i,k) + &
+							  & GAUSS_WEIGHT_J*C(1,1)*DPHIDX(i,1)*DPHIDX(k,1) + &
+							  & GAUSS_WEIGHT_J*C(6,6)*DPHIDX(i,2)*DPHIDX(k,2) + &
+							  & GAUSS_WEIGHT_J*C(4,4)*DPHIDX(i,3)*DPHIDX(k,3)
+		EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(8+i,8+k)	= EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(8+i,8+k) + &
+							      &	GAUSS_WEIGHT_J*C(6,6)*DPHIDX(i,1)*DPHIDX(k,1) + &
+							      & GAUSS_WEIGHT_J*C(2,2)*DPHIDX(i,2)*DPHIDX(k,2) + &
+							      & GAUSS_WEIGHT_J*C(5,5)*DPHIDX(i,3)*DPHIDX(k,3)
+		EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(16+i,16+k) = EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(16+i,16+k) + &
+								& GAUSS_WEIGHT_J*C(4,4)*DPHIDX(i,1)*DPHIDX(k,1) + &
+					       			& GAUSS_WEIGHT_J*C(5,5)*DPHIDX(i,2)*DPHIDX(k,2) + &
+					  			& GAUSS_WEIGHT_J*C(3,3)*DPHIDX(i,3)*DPHIDX(k,3)
+	    ENDDO !k
+	    DO k=1,8
+		EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(i,8+k) = EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(i,8+k) + &
+							    & GAUSS_WEIGHT_J*C(1,2)*DPHIDX(i,1)*DPHIDX(k,2) + &
+							    & GAUSS_WEIGHT_J*C(6,6)*DPHIDX(i,2)*DPHIDX(k,1)
+		EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(i,16+k) = EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(i,16+k) + &
+							     & GAUSS_WEIGHT_J*C(1,3)*DPHIDX(i,1)*DPHIDX(k,3) + &
+						 	     & GAUSS_WEIGHT_J*C(4,4)*DPHIDX(i,3)*DPHIDX(k,1)
+		EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(8+i,16+k) = EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(8+i,16+k) + &
+							       & GAUSS_WEIGHT_J*C(2,3)*DPHIDX(i,2)*DPHIDX(k,3) + &
+					 	  	       & GAUSS_WEIGHT_J*C(5,5)*DPHIDX(i,3)*DPHIDX(k,2)
+	    ENDDO !k
+	  ENDDO !i
+        ENDDO !ng
+	!Transpose upper triangular portion of Stiffness matrix to give lower triangular portion
+	DO i=2,24
+	  DO k=1,i-1
+	    EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(i,k) = EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(k,i)
+	  ENDDO !k
+	ENDDO !i
+
+	! Temp assemble of global matrix & RHS b
+	ll = 0
+	mm = 0
+	BC = (/1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0/)
+	DO i=1,24
+	  IF(BC(i) == 0)THEN
+	    ll = ll +1
+	    DO k=1,24
+	      IF(BC(k) == 0)THEN
+		mm = mm +1
+	        GKK(ll,mm) = EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(i,k)
+	      ENDIF
+	    ENDDO
+	    mm = 0
+	  ENDIF
+	ENDDO
+
+    	!Temp. Solve Problem using LAPACK DGESV (D-Double Precision, GE-general matrix, SV-Solve a system of Linear Equations)
+	! Ax = b, !Matrix A of dimension (LDA,N), Matrix B of dimension (LDB,NRHS), IPIV(*) Pivot vector
+	B(:,1) = (/400.0_DP,400.0_DP,400.0_DP,400.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP/)
+	N = 12 ! Problem Dimension (rows)
+	NRHS = 1 ! Number of RHS b vectors
+	LDA = 12 ! Leading dimension of the array A (number of rows). LDA >= max(1,M), (M = rows)
+	LDB = 12 ! Leading dimension of the array B (number of rows). LDB >= max(1,M), (M = rows)
+	CALL DGESV(N, NRHS, GKK, LDA, IPIV, B, LDB, INFO )
+	WRITE(*,*) INFO
+	WRITE(*,*) b
+
+	!Construct RHS Vector
+        CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION &
+          & %DEPENDENT_INTERP_PARAMETERS,ERR,ERROR,*999)
+	!!TODO:Construct RHS vector taking into account multiple elements
+        EQUATIONS_MATRICES%RHS_VECTOR%ELEMENT_VECTOR%VECTOR = DEPENDENT_FIELD%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(25:48)
+
+        !!TODO: Should values below certain limit be set to zero eg 0.277556E-16
+        ! eg Contravariant metric tensor:GU(1,:)     :  0.100000E+01  0.154074E-32  0.277556E-16 or is it unnecessary
+        !!TODO: Add subtype for 2D or 3D problems
+
        ELSE
         CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
       ENDIF
@@ -114,6 +271,66 @@ CONTAINS
     CALL EXITS("LINEAR_ELASTICITY_FINITE_ELEMENT_CALCULATE")
     RETURN 1
   END SUBROUTINE LINEAR_ELASTICITY_FINITE_ELEMENT_CALCULATE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluates the linear elasticity tensor
+  SUBROUTINE LINEAR_ELASTICITY_TENSOR(ELASTICITY_TENSOR,ERR,ERROR,*)
+
+    !Argument variables    
+    REAL(DP), INTENT(OUT) :: ELASTICITY_TENSOR(:,:)
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    !Local Variables
+    REAL(DP) :: E,v
+    REAL(DP) :: E1,E2,E3,v13,v23,v12,v31,v32,v21,gama
+    REAL(DP) :: C11,C22,C33,C12,C13,C23,C21,C31,C32,C44,C55,C66
+
+    CALL ENTERS("LINEAR_ELASTICITY_TENSOR",ERR,ERROR,*999)
+
+    E = 30E6_DP
+    v = 0.25_DP
+    E1 = E
+    E2 = E
+    E3 = E
+    v13 = v
+    v23 = v
+    v12 = v
+    v31 = v13
+    v32 = v23
+    v21 = v12
+
+    gama = 1.0_DP/(1.0_DP-v12*v21-v23*v32-v31*v13-2.0_DP*v21*v32*v13)
+
+    C11 = E1*(1.0_DP-v23*v32)*gama
+    C22 = E2*(1.0_DP-v13*v31)*gama
+    C33 = E3*(1.0_DP-v12*v21)*gama
+    C12 = E1*(v21+v31*v23)*gama ! = E2*(v12+v32*v13)*gama
+    C13 = E1*(v31+v21*v32)*gama ! = E3*(v13+v12*v23)*gama
+    C23 = E2*(v32+v12*v31)*gama ! = E3*(v23+v21*v13)*gama
+    C21 = C12
+    C31 = C13
+    C32 = C23
+    C44 = E2/(2.0_DP*(1.0_DP+v23)) != G23
+    C55 = E1/(2.0_DP*(1.0_DP+v13)) != G13
+    C66 = E3/(2.0_DP*(1.0_DP+v12)) != G12
+
+    ELASTICITY_TENSOR(1,1:6)=(/C11,C12,C13,0.0_DP,0.0_DP,0.0_DP/)
+    ELASTICITY_TENSOR(2,1:6)=(/C21,C22,C23,0.0_DP,0.0_DP,0.0_DP/)
+    ELASTICITY_TENSOR(3,1:6)=(/C31,C32,C33,0.0_DP,0.0_DP,0.0_DP/)
+    ELASTICITY_TENSOR(4,1:6)=(/0.0_DP,0.0_DP,0.0_DP,C44,0.0_DP,0.0_DP/)
+    ELASTICITY_TENSOR(5,1:6)=(/0.0_DP,0.0_DP,0.0_DP,0.0_DP,C55,0.0_DP/)
+    ELASTICITY_TENSOR(6,1:6)=(/0.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP,C66/)
+      
+    CALL EXITS("LINEAR_ELASTICITY_TENSOR")
+    RETURN
+999 CALL ERRORS("LINEAR_ELASTICITY_TENSOR",ERR,ERROR)
+    CALL EXITS("LINEAR_ELASTICITY_TENSOR")
+    RETURN 1
+  END SUBROUTINE LINEAR_ELASTICITY_TENSOR
 
   !
   !================================================================================================================================
@@ -611,7 +828,11 @@ CONTAINS
     IF(ASSOCIATED(PROBLEM)) THEN
       SELECT CASE(PROBLEM_SUBTYPE)
       CASE(PROBLEM_NO_SUBTYPE)        
+        PROBLEM%CLASS=PROBLEM_ELASTICITY_CLASS
+        PROBLEM%TYPE=PROBLEM_LINEAR_ELASTICITY_TYPE
         PROBLEM%SUBTYPE=PROBLEM_NO_SUBTYPE      
+        CALL LINEAR_ELASTICITY_PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP_INITIAL_TYPE,PROBLEM_SETUP_START_ACTION, &
+          & ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
           & " is not valid for a linear elasticity type of an elasticity problem class."

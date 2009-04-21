@@ -106,6 +106,11 @@ MODULE MATHS
     MODULE PROCEDURE INVERT_FULL_DP
   END INTERFACE !INVERT
 
+  INTERFACE INVERT_VER2
+    MODULE PROCEDURE INVERT_VER2_FULL_SP
+    MODULE PROCEDURE INVERT_VER2_FULL_DP
+  END INTERFACE !INVERTVER2
+
   INTERFACE K0
     MODULE PROCEDURE K0_DP
     MODULE PROCEDURE K0_SP
@@ -141,7 +146,7 @@ MODULE MATHS
     MODULE PROCEDURE SOLVE_SMALL_LINEAR_SYSTEM_DP
   END INTERFACE !SOLVE_SMALL_LINEAR_SYSTEM
 
-  PUBLIC CROSS_PRODUCT,D_CROSS_PRODUCT,DETERMINANT,EIGENVALUE,EIGENVECTOR,INVERT,L2NORM,MATRIX_PRODUCT,MATRIX_TRANSPOSE, &
+  PUBLIC CROSS_PRODUCT,D_CROSS_PRODUCT,DETERMINANT,EIGENVALUE,EIGENVECTOR,INVERT,INVERT_VER2,L2NORM,MATRIX_PRODUCT,MATRIX_TRANSPOSE, &
     & NORMALISE,SOLVE_SMALL_LINEAR_SYSTEM
   
   
@@ -1242,7 +1247,7 @@ CONTAINS
   !#### Generic-Subroutine: INVERT
   !###  Description:
   !###    Returns the inverse of a matrix.
-  !###  Child-Subroutines: INVERT_FULL_SP,INVERT_FULL_DP
+  !###  Child-Subroutines: INVERT_FULL_SP,INVERT_FULL_DP,INVERT_FULL2_DP
 
   !
   !================================================================================================================================
@@ -1397,6 +1402,160 @@ CONTAINS
     CALL EXITS("INVERT_FULL_DP")
     RETURN 1
   END SUBROUTINE INVERT_FULL_DP
+  
+  !
+  !================================================================================================================================
+  !
+  
+  SUBROUTINE INVERT_VER2_FULL_SP(A,B,DET,ERR,ERROR,*)
+    
+    !#### Subroutine: INVERT_VER2_FULL_SP
+    !###  Description:
+    !###    INVERT_VER2_FULL_SP inverts a full single precision matrix A returning the DET & the term B from (1/DET)*B, separately.
+    !###  Parent-Subroutine: INVERTVER2
+
+    !Argument variables
+    REAL(SP), INTENT(IN) :: A(:,:)
+    REAL(SP), INTENT(OUT) :: B(:,:)
+    REAL(SP), INTENT(OUT) :: DET
+    INTEGER(INTG), INTENT(OUT) :: ERR
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    !Local variables
+
+    CALL ENTERS("INVERT_VER2_FULL_SP",ERR,ERROR,*999)
+
+    IF(SIZE(A,1)==SIZE(A,2)) THEN
+      IF(SIZE(B,1)==SIZE(A,1).AND.SIZE(B,2)==SIZE(A,2)) THEN
+        SELECT CASE(SIZE(A,1)) 
+        CASE(1)
+          DET=A(1,1)
+          IF(ABS(DET)>ZERO_TOLERANCE) THEN
+            B(1,1)=1.0_DP/A(1,1)
+          ELSE
+            CALL FLAG_WARNING("Matrix A is zero and cannot be inverted",ERR,ERROR,*999)
+            B(1,1)=0.0_DP
+          ENDIF
+        CASE(2)
+          DET=A(1,1)*A(2,2)-A(2,1)*A(1,2)
+          IF(ABS(DET)>ZERO_TOLERANCE) THEN
+            B(1,1)=A(2,2)
+            B(1,2)=-A(1,2)
+            B(2,1)=-A(2,1)
+            B(2,2)=A(1,1)
+          ELSE
+            CALL FLAG_WARNING("Zero Determinant for matrix A",ERR,ERROR,*999)
+            B=0.0_DP
+          ENDIF
+        CASE(3)
+          DET=A(1,1)*A(2,2)*A(3,3)+A(1,2)*A(2,3)*A(3,1)+A(1,3)*A(2,1)*A(3,2)-A(1,1)*A(3,2)*A(2,3)-A(2,1)*A(1,2)*A(3,3)- &
+            & A(3,1)*A(2,2)*A(1,3)
+          IF(ABS(DET)>ZERO_TOLERANCE) THEN
+            B(1,1)=(A(2,2)*A(3,3)-A(3,2)*A(2,3))
+            B(2,1)=(A(2,3)*A(3,1)-A(3,3)*A(2,1))
+            B(3,1)=(A(2,1)*A(3,2)-A(3,1)*A(2,2))
+            B(1,2)=(A(3,2)*A(1,3)-A(1,2)*A(3,3))
+            B(2,2)=(A(3,3)*A(1,1)-A(1,3)*A(3,1))
+            B(3,2)=(A(3,1)*A(1,2)-A(1,1)*A(3,2))
+            B(1,3)=(A(1,2)*A(2,3)-A(2,2)*A(1,3))
+            B(2,3)=(A(1,3)*A(2,1)-A(2,3)*A(1,1))
+            B(3,3)=(A(1,1)*A(2,2)-A(2,1)*A(1,2))
+          ELSE
+            CALL FLAG_WARNING("Zero Determinant for matrix A",ERR,ERROR,*999)
+            B=0.0_DP
+          ENDIF
+        CASE DEFAULT
+          CALL FLAG_ERROR("Matrix size is not implemented",ERR,ERROR,*999)
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("Matrix B is not the same size as matrix A",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Matrix A is not square",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("INVERT_VER2_FULL_SP")
+    RETURN
+999 CALL ERRORS("INVERT_VER2_FULL_SP",ERR,ERROR)
+    CALL EXITS("INVERT_VER2_FULL_SP")
+    RETURN 1
+  END SUBROUTINE INVERT_VER2_FULL_SP
+
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE INVERT_VER2_FULL_DP(A,B,DET,ERR,ERROR,*)
+    
+    !#### Subroutine: INVERT_VER2_FULL_DP
+    !###  Description:
+    !###    INVERT_VER2_FULL_DP inverts a full single precision matrix A returning the DET & the term B from (1/DET)*B, separately.
+    !###  Parent-Subroutine: INVERTVER2
+
+    !Argument variables
+    REAL(DP), INTENT(IN) :: A(:,:)
+    REAL(DP), INTENT(OUT) :: B(:,:)
+    REAL(DP), INTENT(OUT) :: DET
+    INTEGER(INTG), INTENT(OUT) :: ERR
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    !Local variables
+
+    CALL ENTERS("INVERT_VER2_FULL_DP",ERR,ERROR,*999)
+
+    IF(SIZE(A,1)==SIZE(A,2)) THEN
+      IF(SIZE(B,1)==SIZE(A,1).AND.SIZE(B,2)==SIZE(A,2)) THEN
+        SELECT CASE(SIZE(A,1)) 
+        CASE(1)
+          DET=A(1,1)
+          IF(ABS(DET)>ZERO_TOLERANCE) THEN
+            B(1,1)=1.0_DP/A(1,1)
+          ELSE
+            CALL FLAG_WARNING("Matrix A is zero and cannot be inverted",ERR,ERROR,*999)
+            B(1,1)=0.0_DP
+          ENDIF
+        CASE(2)
+          DET=A(1,1)*A(2,2)-A(2,1)*A(1,2)
+          IF(ABS(DET)>ZERO_TOLERANCE) THEN
+            B(1,1)=A(2,2)
+            B(1,2)=-A(1,2)
+            B(2,1)=-A(2,1)
+            B(2,2)=A(1,1)
+          ELSE
+            CALL FLAG_WARNING("Zero Determinant for matrix A",ERR,ERROR,*999)
+            B=0.0_DP
+          ENDIF
+        CASE(3)
+          DET=A(1,1)*A(2,2)*A(3,3)+A(1,2)*A(2,3)*A(3,1)+A(1,3)*A(2,1)*A(3,2)-A(1,1)*A(3,2)*A(2,3)-A(2,1)*A(1,2)*A(3,3)- &
+            & A(3,1)*A(2,2)*A(1,3)
+          IF(ABS(DET)>ZERO_TOLERANCE) THEN
+            B(1,1)=(A(2,2)*A(3,3)-A(3,2)*A(2,3))
+            B(2,1)=(A(2,3)*A(3,1)-A(3,3)*A(2,1))
+            B(3,1)=(A(2,1)*A(3,2)-A(3,1)*A(2,2))
+            B(1,2)=(A(3,2)*A(1,3)-A(1,2)*A(3,3))
+            B(2,2)=(A(3,3)*A(1,1)-A(1,3)*A(3,1))
+            B(3,2)=(A(3,1)*A(1,2)-A(1,1)*A(3,2))
+            B(1,3)=(A(1,2)*A(2,3)-A(2,2)*A(1,3))
+            B(2,3)=(A(1,3)*A(2,1)-A(2,3)*A(1,1))
+            B(3,3)=(A(1,1)*A(2,2)-A(2,1)*A(1,2))
+          ELSE
+            CALL FLAG_WARNING("Zero Determinant for matrix A",ERR,ERROR,*999)
+            B=0.0_DP
+          ENDIF
+        CASE DEFAULT
+          CALL FLAG_ERROR("Matrix size is not implemented",ERR,ERROR,*999)
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("Matrix B is not the same size as matrix A",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Matrix A is not square",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("INVERT_VER2_FULL_DP")
+    RETURN
+999 CALL ERRORS("INVERT_VER2_FULL_DP",ERR,ERROR)
+    CALL EXITS("INVERT_VER2_FULL_DP")
+    RETURN 1
+  END SUBROUTINE INVERT_VER2_FULL_DP
 
   !
   !================================================================================================================================
