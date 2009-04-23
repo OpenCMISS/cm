@@ -133,6 +133,10 @@ CONTAINS
   	CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE," ELEMENT_NUMBER  = ",ELEMENT_NUMBER, &
     	& ERR,ERROR,*999)
 
+!!CPB: need to take into account what sort of linear element we are dealing with e.g., truss, shell, plate, plane strain etc.
+!! Have a look at XPES40.f in the old CMISS code.
+!!CPB: where are the material properties interpolated???
+   
 	!!TODO: Calculate elasticity tensor from outside element loop
 	CALL LINEAR_ELASTICITY_TENSOR(C,ERR,ERROR,*999) !Create Stress Tensor
 
@@ -147,15 +151,22 @@ CONTAINS
           & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
 	QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
 
-	! GEOMETRIC_INTERP_PARAMETERS for GEOMETRIC_INTERPOLATED_POINT & UNIT_GEOMETRIC_INTERPOLATED_POINT automatically updated 
+!!CPB: not sure what this comment is about???
+        ! GEOMETRIC_INTERP_PARAMETERS for GEOMETRIC_INTERPOLATED_POINT & UNIT_GEOMETRIC_INTERPOLATED_POINT automatically updated 
 	! since FIELD_INTERPOLATED_POINT_TYPE has a FIELD_INTERPOLATION_PARAMETERS_TYPE subtype
 	CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
 	  & GEOMETRIC_INTERP_PARAMETERS,ERR,ERROR,*999)
+!!CPB: need to get the interpolation for the materials field.
 
-	!Construct Element Stiffness Matrix
+!!CPB: no need to initialise as this is done in EQUATIONS_MATRICES_ELEMENT_CALCULATE
+ !Construct Element Stiffness Matrix
 	EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX = 0.0_DP !Initialize Element Stiffness Matrix
 	!Loop over gauss points & integrate upper triangular portion of Stiffness matrix
 	DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS !Gauss point index
+
+!!CPB: No, you need to use the FIELD_INTERPOLATE_GAUSS and FIELD_INTERPOLATED_POINT_METRICS_CALCULATE routines to interpolate at
+!! at Gauss point and to calculate the Jacobian etc. All the basis functions have been pre-evaluated at Gauss points. Have a look
+!! at the LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE routine
 	  !Define XI values of current Gauss point
 	  XI = (/QUADRATURE_SCHEME%gauss_positions(1,ng),QUADRATURE_SCHEME%gauss_positions(2,ng), &
 		& QUADRATURE_SCHEME%gauss_positions(3,ng)/)
@@ -166,7 +177,8 @@ CONTAINS
 	  DO ni=1,3 !xi index
 	    PARTIAL_DERIV_INDEX=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni)  !2,4,7     
 	    DO np=1,8 !node index
-	      DPHIDXI(np,ni) = BASIS_LHTP_BASIS_EVALUATE_DP(GEOMETRIC_BASIS,np,DERIVATIVE_NUMBER,PARTIAL_DERIV_INDEX,XI,ERR,ERROR)
+!!CPB: The BASIS_LHTP_BASIS_EVALUATE_DP should be private. This routine does not know what type of basis function is being used and should go through the field interpolate routines. 
+       !	      DPHIDXI(np,ni) = BASIS_LHTP_BASIS_EVALUATE_DP(GEOMETRIC_BASIS,np,DERIVATIVE_NUMBER,PARTIAL_DERIV_INDEX,XI,ERR,ERROR)
 	    ENDDO !np
 	    DXDXI(:,ni) = (/DOT_PRODUCT(DPHIDXI(:,ni),EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS%parameters(:,1)), &
 			  & DOT_PRODUCT(DPHIDXI(:,ni),EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS%parameters(:,2)), &
@@ -179,6 +191,8 @@ CONTAINS
 	  !(GAUSS_WEIGHT/J)*(DXIDX)*(DXIDX)
 	  GAUSS_WEIGHT_J = QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)/J
 	  DPHIDX = 0.0_DP
+!!CPB: Do not hard code loops here. Need to loop over the appropriate number of nodes, derivatives etc. for the dependent basis.
+!! See LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE for further information
 	  DO np=1,8 !node index
 	    DPHIDX(np,1) = DPHIDXI(np,1)*JDXIDX(1,1)+DPHIDXI(np,2)*JDXIDX(1,2)+DPHIDXI(np,3)*JDXIDX(1,3) 
 	    DPHIDX(np,2) = DPHIDXI(np,1)*JDXIDX(2,1)+DPHIDXI(np,2)*JDXIDX(2,2)+DPHIDXI(np,3)*JDXIDX(2,3)
@@ -248,6 +262,7 @@ CONTAINS
 	WRITE(*,*) INFO
 	WRITE(*,*) b
 
+!!CPB: Not sure what you are doing here.
 	!Construct RHS Vector
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION &
           & %DEPENDENT_INTERP_PARAMETERS,ERR,ERROR,*999)
@@ -291,6 +306,8 @@ CONTAINS
 
     CALL ENTERS("LINEAR_ELASTICITY_TENSOR",ERR,ERROR,*999)
 
+!!CPB:: What type of linear elastic element are we dealing with here?
+!!CPB:: Material properties should be obtained from a materials field.
     E = 30E6_DP
     v = 0.25_DP
     E1 = E

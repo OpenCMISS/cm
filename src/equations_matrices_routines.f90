@@ -3023,7 +3023,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) ::  column_idx,DUMMY_ERR,elem_idx,global_column,local_column,local_ny,MATRIX_NUMBER,mk,mp,ne,nh,nn,nnk,np, &
+    INTEGER(INTG) ::  column_idx,DUMMY_ERR,elem_idx,global_column,local_column,local_ny,MATRIX_NUMBER,mk,mp,ne,nh,nh2,nn,nnk,np, &
       & NUMBER_OF_COLUMNS,nyy
     INTEGER(INTG), POINTER :: COLUMNS(:)
     REAL(DP) :: SPARSITY
@@ -3105,7 +3105,6 @@ CONTAINS
                                       np=DEPENDENT_DOFS_PARAM_MAPPING%NODE_DOF2PARAM_MAP(2,nyy)
                                       nh=DEPENDENT_DOFS_PARAM_MAPPING%NODE_DOF2PARAM_MAP(3,nyy)
                                       DOMAIN_NODES=>FIELD_VARIABLE%COMPONENTS(nh)%DOMAIN%TOPOLOGY%NODES
-                                      DOMAIN_ELEMENTS=>FIELD_VARIABLE%COMPONENTS(nh)%DOMAIN%TOPOLOGY%ELEMENTS
                                       !Set up list
                                       NULLIFY(COLUMN_INDICES_LISTS(local_ny)%PTR)
                                       CALL LIST_CREATE_START(COLUMN_INDICES_LISTS(local_ny)%PTR,ERR,ERROR,*999)
@@ -3117,17 +3116,21 @@ CONTAINS
                                       !Loop over all elements containing the dof
                                       DO elem_idx=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_SURROUNDING_ELEMENTS
                                         ne=DOMAIN_NODES%NODES(np)%SURROUNDING_ELEMENTS(elem_idx)
-                                        BASIS=>DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS
-                                        DO nn=1,BASIS%NUMBER_OF_NODES
-                                          mp=DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_NODES(nn)
-                                          DO nnk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
-                                            mk=DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_DERIVATIVES(nnk,nn)
-                                            !Find the local and global column and add the global column to the indices list
-                                            local_column=FIELD_VARIABLE%COMPONENTS(nh)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(mk,mp,1)
-                                            global_column=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
-                                            CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(local_ny)%PTR,global_column,ERR,ERROR,*999)
-                                          ENDDO !mk
-                                        ENDDO !nn
+                                        DO nh2=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                                          DOMAIN_ELEMENTS=>FIELD_VARIABLE%COMPONENTS(nh2)%DOMAIN%TOPOLOGY%ELEMENTS
+                                          BASIS=>DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS
+                                          DO nn=1,BASIS%NUMBER_OF_NODES
+                                            mp=DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_NODES(nn)
+                                            DO nnk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
+                                              mk=DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_DERIVATIVES(nnk,nn)
+                                              !Find the local and global column and add the global column to the indices list
+                                              local_column=FIELD_VARIABLE%COMPONENTS(nh2)%PARAM_TO_DOF_MAP% &
+                                                & NODE_PARAM2DOF_MAP(mk,mp,1)
+                                              global_column=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
+                                              CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(local_ny)%PTR,global_column,ERR,ERROR,*999)
+                                            ENDDO !mk
+                                          ENDDO !nn
+                                        ENDDO !nh2
                                       ENDDO !elem_idx
                                       CALL LIST_REMOVE_DUPLICATES(COLUMN_INDICES_LISTS(local_ny)%PTR,ERR,ERROR,*999)
                                       CALL LIST_NUMBER_OF_ITEMS_GET(COLUMN_INDICES_LISTS(local_ny)%PTR,NUMBER_OF_COLUMNS, &
@@ -3165,7 +3168,7 @@ CONTAINS
                                       & DEPENDENT_DOFS_DOMAIN_MAPPING%NUMBER_OF_GLOBAL/=0) THEN
                                       SPARSITY=REAL(NUMBER_OF_NON_ZEROS,DP)/REAL(DEPENDENT_DOFS_DOMAIN_MAPPING% &
                                         & TOTAL_NUMBER_OF_LOCAL*DEPENDENT_DOFS_DOMAIN_MAPPING%NUMBER_OF_GLOBAL,DP)*100.0_DP
-                                      CALL WRITE_STRING_FMT_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Sparsity (%) = ",SPARSITY,"F5.2", &
+                                      CALL WRITE_STRING_FMT_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Sparsity (%) = ",SPARSITY,"F6.2", &
                                         & ERR,ERROR,*999)
                                     ENDIF
                                     CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DEPENDENT_DOFS_DOMAIN_MAPPING% &
