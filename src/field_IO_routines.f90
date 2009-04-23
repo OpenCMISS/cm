@@ -18,7 +18,7 @@
 !> License for the specific language governing rights and limitations
 !> under the License.
 !>
-!> The Original Code is openCMISS
+!> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
@@ -496,7 +496,7 @@ CONTAINS
     INTEGER(INTG) :: MPI_IERROR
     INTEGER(INTG) :: idx_comp, idx_comp1, pos, idx_field, idx_exnode, idx_nodal_line, idx_node
     INTEGER(INTG) :: idx_variable, idx_dev, idx_dev1, total_number_of_comps, total_number_of_devs, number_of_devs !idx_variable1
-    INTEGER(INTG) :: number_of_comps
+    INTEGER(INTG) :: number_of_comps, VARIABLE_IDX,variable_type
     REAL(DP), ALLOCATABLE :: LIST_DEV_VALUE(:)
     LOGICAL :: SECTION_START, FILE_END, NODE_SECTION, FILE_OPEN, NODE_IN_DOMAIN
 
@@ -596,7 +596,7 @@ CONTAINS
        !Set the decomposition to use
        CALL FIELD_MESH_DECOMPOSITION_SET(FIELD,DECOMPOSITION,ERR,ERROR,*999)
        !Set the number of components for this field
-       CALL FIELD_NUMBER_OF_COMPONENTS_SET(FIELD,COMPONENTS_IN_FIELDS(idx_field),ERR,ERROR,*999)
+       CALL FIELD_NUMBER_OF_COMPONENTS_SET(FIELD,FIELD_U_VARIABLE_TYPE,COMPONENTS_IN_FIELDS(idx_field),ERR,ERROR,*999)
        DO idx_comp=1, COMPONENTS_IN_FIELDS(idx_field)
           idx_comp1=idx_comp1+1
           !Set the domain to be used by the field components
@@ -613,7 +613,7 @@ CONTAINS
        !Set FIELD TYPE
        CALL FIELD_TYPE_SET(FIELD, FIELDTYPE, ERR, ERROR, *999)
        !Finish creating the field
-       CALL FIELD_CREATE_FINISH(REGION,FIELD,ERR,ERROR,*999)
+       CALL FIELD_CREATE_FINISH(FIELD,ERR,ERROR,*999)
     ENDDO
 
     IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
@@ -883,8 +883,11 @@ CONTAINS
     DO idx_field=1,NUMBER_OF_FIELDS
        IF(ASSOCIATED(FIELD)) NULLIFY(FIELD)
        FIELD=>REGION%FIELDS%FIELDS(idx_field)%PTR
-       CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-       CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+       DO variable_idx=1,FIELD%NUMBER_OF_VARIABLES
+         variable_type=FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
+         CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD,variable_type,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+         CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD,variable_type,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+       ENDDO !variable_idx
     ENDDO
 
     IF(ALLOCATED(tmp_pointer)) DEALLOCATE(tmp_pointer)
@@ -1547,7 +1550,7 @@ CONTAINS
     DO idx_elem=1,NUMBER_OF_ELEMENTS
        DO idx_comp=1, NUMBER_OF_MESH_COMPONENTS
           IF(idx_elem/=LIST_ELEMENT_NUMBER(idx_elem)) &
-            &CALL MESH_TOPOLOGY_ELEMENTS_NUMBER_SET(idx_elem,LIST_ELEMENT_NUMBER(idx_elem),ELEMENTS_PTR(idx_comp)%PTR, &
+            &CALL MESH_TOPOLOGY_ELEMENTS_USER_NUMBER_SET(idx_elem,LIST_ELEMENT_NUMBER(idx_elem),ELEMENTS_PTR(idx_comp)%PTR, &
             & ERR,ERROR,*999)
        ENDDO
     ENDDO
@@ -5247,14 +5250,14 @@ CONTAINS
              NULLIFY(GEOMETRIC_PARAMETERS)
              IF(comp_idx==1) THEN
                 CALL FIELD_PARAMETER_SET_DATA_GET(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR% &
-                  & FIELD_VARIABLE%FIELD,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+                  & FIELD_VARIABLE%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
              ELSE IF (ASSOCIATED(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%DOMAIN, &
                 &TARGET=LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS (comp_idx-1)%PTR%DOMAIN)) THEN
                 CALL FIELD_PARAMETER_SET_DATA_GET(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR% &
-                  & FIELD_VARIABLE%FIELD,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+                  & FIELD_VARIABLE%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
              ENDIF
              NODAL_BUFFER(dev_idx)=GEOMETRIC_PARAMETERS(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%&
-               &PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(GROUP_DERIVATIVES(dev_idx),local_number,0))
+               &PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(GROUP_DERIVATIVES(dev_idx),local_number))
           ENDDO
     
           ERR = FieldExport_NodeValues( sessionHandle, NUM_OF_NODAL_DEV, C_LOC(NODAL_BUFFER) )

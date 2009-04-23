@@ -17,7 +17,7 @@
 !> License for the specific language governing rights and limitations
 !> under the License.
 !>
-!> The Original Code is openCMISS
+!> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
@@ -44,6 +44,7 @@
 MODULE SOLVER_MAPPING_ROUTINES
 
   USE BASE_ROUTINES
+  USE BOUNDARY_CONDITIONS_ROUTINES
   USE COMP_ENVIRONMENT
   USE DISTRIBUTED_MATRIX_VECTOR
   USE DOMAIN_MAPPINGS
@@ -97,16 +98,17 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code 
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: column_idx,dof_idx,DYNAMIC_EQUATIONS_MATRIX_OFFSET,equations_column,equations_matrix,equations_matrix_idx, &
-      & equations_set_idx,global_dof,global_field_dof,global_row,jacobian_column,local_dof,LINEAR_EQUATIONS_MATRIX_OFFSET, &
-      & local_row,matrix_number,myrank,myrank_local_dof,NUMBER_OF_COLUMNS,NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES, &
-      & NUMBER_OF_LINEAR_EQUATIONS_MATRICES,NUMBER_OF_GLOBAL_SOLVER_COLS,LOCAL_SOLVER_DOF_OFFSET,NUMBER_OF_GHOST_SOLVER_DOFS, &
-      & NUMBER_OF_GLOBAL_SOLVER_ROWS,NUMBER_OF_LOCAL_SOLVER_COLS,NUMBER_OF_LOCAL_SOLVER_DOFS,NUMBER_OF_LOCAL_SOLVER_ROWS, &
-      & NUMBER_OF_VARIABLES,rank,rank_idx,row_idx,SOLVER_DOF,solver_matrix_idx,TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS,variable_idx, &
-      & variable_type,equations_row_number
+    INTEGER(INTG) :: column_idx,dof_idx,DEPENDENT_VARIABLE_TYPE,DYNAMIC_EQUATIONS_MATRIX_OFFSET,equations_column, &
+      & equations_matrix,equations_matrix_idx,equations_set_idx,global_dof,global_row,jacobian_column,local_dof, &
+      & LINEAR_EQUATIONS_MATRIX_OFFSET,local_row,matrix_number,myrank,myrank_local_dof,NUMBER_OF_COLUMNS, &
+      & NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES,NUMBER_OF_LINEAR_EQUATIONS_MATRICES,NUMBER_OF_GLOBAL_SOLVER_COLS, &
+      & LOCAL_SOLVER_DOF_OFFSET,NUMBER_OF_GHOST_SOLVER_DOFS,NUMBER_OF_GLOBAL_SOLVER_ROWS,NUMBER_OF_LOCAL_SOLVER_COLS, &
+      & NUMBER_OF_LOCAL_SOLVER_DOFS,NUMBER_OF_LOCAL_SOLVER_ROWS,NUMBER_OF_VARIABLES,rank,rank_idx,row_idx,SOLVER_DOF, &
+      & solver_matrix_idx,TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS,variable_idx,variable_type,equations_row_number
     LOGICAL :: INCLUDE_ROW,MYRANK_DOF,RANK_DOF
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: COL_DOMAIN_MAPPING,COL_DOFS_MAPPING,DEPENDENT_DOFS_MAPPING,ROW_DOMAIN_MAPPING, &
-      & ROW_DOFS_MAPPING
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: COL_DOMAIN_MAPPING,COL_DOFS_MAPPING,ROW_DOMAIN_MAPPING,ROW_DOFS_MAPPING
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
     TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING
@@ -119,7 +121,6 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE
     TYPE(JACOBIAN_TO_SOLVER_MAP_TYPE), POINTER :: JACOBIAN_TO_SOLVER_MAP
-    TYPE(EQUATIONS_SET_FIXED_CONDITIONS_TYPE), POINTER :: FIXED_CONDITIONS
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
 
     CALL ENTERS("SOLVER_MAPPING_CALCULATE",ERR,ERROR,*999)
@@ -152,75 +153,84 @@ CONTAINS
                   IF(ASSOCIATED(ROW_DOFS_MAPPING)) THEN                    
                     DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                     IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
-                      DEPENDENT_DOFS_MAPPING=>DEPENDENT_FIELD%MAPPINGS%DOMAIN_MAPPING
-                      IF(ASSOCIATED(DEPENDENT_DOFS_MAPPING)) THEN
-                        FIXED_CONDITIONS=>EQUATIONS_SET%FIXED_CONDITIONS
-                        IF(ASSOCIATED(FIXED_CONDITIONS)) THEN                      
+                      BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
+                      IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN                      
 !!TODO: see how slow this is. At the moment we go through number of ranks*number of global rows. We could presort the global rows into a list for each rank. This would take additional memory.
-                          DO rank=0,COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES-1
-                            DO global_row=1,EQUATIONS_MAPPING%NUMBER_OF_GLOBAL_ROWS
-                              RANK_DOF=.FALSE.
-                              local_row=0
-                              DO rank_idx=1,ROW_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_row)%NUMBER_OF_DOMAINS
-                                IF(ROW_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_row)%DOMAIN_NUMBER(rank_idx)==rank &
-                                  & .AND.ROW_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_row)%LOCAL_TYPE(rank_idx)/= &
-                                  & DOMAIN_LOCAL_GHOST) THEN
-                                  RANK_DOF=.TRUE.
-                                  EXIT
-                                ENDIF
-                              ENDDO !rank_idx
-                              IF(RANK_DOF) THEN
-                                INCLUDE_ROW=.FALSE.
-                                IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
-                                  DEPENDENT_VARIABLE=>DYNAMIC_MAPPING%DYNAMIC_VARIABLE
+                        DO rank=0,COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES-1
+                          DO global_row=1,EQUATIONS_MAPPING%NUMBER_OF_GLOBAL_ROWS
+                            RANK_DOF=.FALSE.
+                            local_row=0
+                            DO rank_idx=1,ROW_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_row)%NUMBER_OF_DOMAINS
+                              IF(ROW_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_row)%DOMAIN_NUMBER(rank_idx)==rank &
+                                & .AND.ROW_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_row)%LOCAL_TYPE(rank_idx)/= &
+                                & DOMAIN_LOCAL_GHOST) THEN
+                                RANK_DOF=.TRUE.
+                                EXIT
+                              ENDIF
+                            ENDDO !rank_idx
+                            IF(RANK_DOF) THEN
+                              INCLUDE_ROW=.FALSE.
+                              IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
+                                DEPENDENT_VARIABLE_TYPE=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
+                                BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP( &
+                                  & DEPENDENT_VARIABLE_TYPE)%PTR
+                                IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
                                   !This is wrong as we only have the mappings for the local rank not the global ranks.
                                   !For now assume 1-1 mapping between rows and dofs.
                                   global_dof=global_row                                  
-                                  global_field_dof=DEPENDENT_VARIABLE%GLOBAL_DOF_OFFSET+global_dof
-                                  INCLUDE_ROW= &
-                                    & FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(global_field_dof)==EQUATIONS_SET_NOT_FIXED
+                                  INCLUDE_ROW=BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)== &
+                                    & BOUNDARY_CONDITION_NOT_FIXED
                                 ELSE
-                                  IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
-                                    DEPENDENT_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLE
+                                  CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                                ENDIF
+                              ELSE
+                                IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
+                                  DEPENDENT_VARIABLE_TYPE=NONLINEAR_MAPPING%RESIDUAL_VARIABLE_TYPE
+                                  BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP( &
+                                    & DEPENDENT_VARIABLE_TYPE)%PTR
+                                  IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
                                     !This is wrong as we only have the mappings for the local rank not the global ranks.
                                     !For now assume 1-1 mapping between rows and dofs.
                                     global_dof=global_row                                  
-                                    global_field_dof=DEPENDENT_VARIABLE%GLOBAL_DOF_OFFSET+global_dof
-                                    INCLUDE_ROW= &
-                                      & FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(global_field_dof)==EQUATIONS_SET_NOT_FIXED
-                                  ELSE IF(ASSOCIATED(LINEAR_MAPPING)) THEN
-                                    !Loop over the variables in the equations set. Don't include the row in the solver matrices if
-                                    !all the variable dofs associated with this equations row are fixed.
-                                    DO equations_matrix_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
+                                    INCLUDE_ROW=BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)== &
+                                      & BOUNDARY_CONDITION_NOT_FIXED
+                                  ELSE
+                                    CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                                  ENDIF
+                                ELSE IF(ASSOCIATED(LINEAR_MAPPING)) THEN
+                                  !Loop over the variables in the equations set. Don't include the row in the solver matrices if
+                                  !all the variable dofs associated with this equations row are fixed.
+                                  DO equations_matrix_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
+                                    DEPENDENT_VARIABLE_TYPE=LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(equations_matrix_idx)% &
+                                      & VARIABLE_TYPE
+                                    BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP( &
+                                      & DEPENDENT_VARIABLE_TYPE)%PTR
+                                    IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
                                       !This is wrong as we only have the mappings for the local rank not the global ranks.
                                       !For now assume 1-1 mapping between rows and dofs.
                                       !
                                       !local_dof=EQUATIONS_MAPPING%EQUATIONS_ROW_TO_VARIABLES_MAPS(local_row)% &
                                       !  & ROW_TO_DOFS_MAP(equations_matrix_idx)
-                                      !variable_type=EQUATIONS_MAPPING%MATRIX_VARIABLE_TYPES(equations_matrix_idx)
-                                      DEPENDENT_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(equations_matrix_idx)% &
-                                        & VARIABLE
+                                      !variable_type=EQUATIONS_MAPPING%MATRIX_VARIABLE_TYPES(equations_matrix_idx)`
                                       !global_dof=DEPENDENT_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_dof)
                                       global_dof=global_row                                    
-                                      global_field_dof=DEPENDENT_VARIABLE%GLOBAL_DOF_OFFSET+global_dof
-                                      INCLUDE_ROW=INCLUDE_ROW.OR. &
-                                        & FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(global_field_dof)==EQUATIONS_SET_NOT_FIXED
-                                    ENDDO !matrix_idx
-                                  ENDIF
+                                      INCLUDE_ROW=INCLUDE_ROW.OR.BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS( &
+                                        & global_dof)==BOUNDARY_CONDITION_NOT_FIXED
+                                    ELSE
+                                      CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                                    ENDIF
+                                  ENDDO !matrix_idx
                                 ENDIF
-                                IF(INCLUDE_ROW) THEN
-                                  NUMBER_OF_GLOBAL_SOLVER_ROWS=NUMBER_OF_GLOBAL_SOLVER_ROWS+1
-                                  IF(rank==myrank) &
-                                    & NUMBER_OF_LOCAL_SOLVER_ROWS=NUMBER_OF_LOCAL_SOLVER_ROWS+1 !1-1 mapping
-                                ENDIF !include row
-                              ENDIF !rank dof
-                            ENDDO !global_row
-                          ENDDO !rank
-                        ELSE
-                          CALL FLAG_ERROR("Equations set fixed conditions is not associated.",ERR,ERROR,*999)
-                        ENDIF
+                              ENDIF
+                              IF(INCLUDE_ROW) THEN
+                                NUMBER_OF_GLOBAL_SOLVER_ROWS=NUMBER_OF_GLOBAL_SOLVER_ROWS+1
+                                IF(rank==myrank) NUMBER_OF_LOCAL_SOLVER_ROWS=NUMBER_OF_LOCAL_SOLVER_ROWS+1 !1-1 mapping
+                              ENDIF !include row
+                            ENDIF !rank dof
+                          ENDDO !global_row
+                        ENDDO !rank
                       ELSE
-                        CALL FLAG_ERROR("Dependent field domain mapping is not associated.",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Equations set fixed conditions is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
                       CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
@@ -273,7 +283,7 @@ CONTAINS
               LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
               NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
               DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-              FIXED_CONDITIONS=>EQUATIONS_SET%FIXED_CONDITIONS
+              BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
               IF(rank==myrank) THEN
                 !Initialise the equations set to solver map
                 CALL SOLVER_MAPPING_EQUATIONS_SET_TO_SOLVER_MAP_INITIALISE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
@@ -351,34 +361,51 @@ CONTAINS
                 IF(RANK_DOF) THEN
                   INCLUDE_ROW=.FALSE.
                   IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
-                    DEPENDENT_VARIABLE=>DYNAMIC_MAPPING%DYNAMIC_VARIABLE
-                    !This is wrong as we only have the mappings for the local rank not the global ranks.
-                    !For now assume 1-1 mapping between rows and dofs.
-                    global_dof=global_row
-                    global_field_dof=DEPENDENT_VARIABLE%GLOBAL_DOF_OFFSET+global_dof
-                    INCLUDE_ROW=FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(global_field_dof)==EQUATIONS_SET_NOT_FIXED
-                  ELSE
-                    IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
-                      DEPENDENT_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLE
+                    DEPENDENT_VARIABLE_TYPE=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
+                    BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP( &
+                      & DEPENDENT_VARIABLE_TYPE)%PTR
+                    IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
                       !This is wrong as we only have the mappings for the local rank not the global ranks.
                       !For now assume 1-1 mapping between rows and dofs.
-                      global_dof=global_row
-                      global_field_dof=DEPENDENT_VARIABLE%GLOBAL_DOF_OFFSET+global_dof
-                      INCLUDE_ROW=FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(global_field_dof)==EQUATIONS_SET_NOT_FIXED
-                    ELSE IF(ASSOCIATED(LINEAR_MAPPING)) THEN
-                      DO equations_matrix_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
+                      global_dof=global_row                                  
+                      INCLUDE_ROW=BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NOT_FIXED
+                    ELSE
+                      CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
+                      DEPENDENT_VARIABLE_TYPE=NONLINEAR_MAPPING%RESIDUAL_VARIABLE_TYPE
+                      BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP( &
+                        & DEPENDENT_VARIABLE_TYPE)%PTR
+                      IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
                         !This is wrong as we only have the mappings for the local rank not the global ranks.
                         !For now assume 1-1 mapping between rows and dofs.
-                        !
-                        !local_dof=EQUATIONS_MAPPING%EQUATIONS_ROW_TO_VARIABLES_MAPS(local_row)% &
-                        !  & ROW_TO_DOFS_MAP(equations_matrix_idx)
-                        !variable_type=EQUATIONS_MAPPING%MATRIX_VARIABLE_TYPES(equations_matrix_idx)
-                        DEPENDENT_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(equations_matrix_idx)%VARIABLE
-                        !global_dof=DEPENDENT_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_dof)
-                        global_dof=global_row
-                        global_field_dof=DEPENDENT_VARIABLE%GLOBAL_DOF_OFFSET+global_dof
-                        INCLUDE_ROW=INCLUDE_ROW.OR. &
-                          & FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(global_field_dof)==EQUATIONS_SET_NOT_FIXED
+                        global_dof=global_row                                  
+                        INCLUDE_ROW=BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)== &
+                          & BOUNDARY_CONDITION_NOT_FIXED
+                      ELSE
+                        CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE IF(ASSOCIATED(LINEAR_MAPPING)) THEN
+                      DO equations_matrix_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
+                        DEPENDENT_VARIABLE_TYPE=LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(equations_matrix_idx)% &
+                          & VARIABLE_TYPE
+                        BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP( &
+                          & DEPENDENT_VARIABLE_TYPE)%PTR
+                        IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+                          !This is wrong as we only have the mappings for the local rank not the global ranks.
+                          !For now assume 1-1 mapping between rows and dofs.
+                          !
+                          !local_dof=EQUATIONS_MAPPING%EQUATIONS_ROW_TO_VARIABLES_MAPS(local_row)% &
+                          !  & ROW_TO_DOFS_MAP(equations_matrix_idx)
+                          !variable_type=EQUATIONS_MAPPING%MATRIX_VARIABLE_TYPES(equations_matrix_idx)`
+                          !global_dof=DEPENDENT_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_dof)
+                          global_dof=global_row                                    
+                          INCLUDE_ROW=INCLUDE_ROW.OR.BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)== &
+                            & BOUNDARY_CONDITION_NOT_FIXED
+                        ELSE
+                          CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                        ENDIF
                       ENDDO !matrix_idx
                     ENDIF
                   ENDIF
@@ -494,7 +521,7 @@ CONTAINS
                 LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
                 NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
                 DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-                FIXED_CONDITIONS=>EQUATIONS_SET%FIXED_CONDITIONS
+                BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
                 IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
                   NUMBER_OF_VARIABLES=1
                 ELSE
@@ -546,67 +573,70 @@ CONTAINS
                   DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
                   COL_DOFS_MAPPING=>DEPENDENT_VARIABLE%DOMAIN_MAPPING
                   IF(ASSOCIATED(COL_DOFS_MAPPING)) THEN
-                    IF(rank==0) THEN
-                      SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
-                        & solver_matrix_idx)%VARIABLE_TYPES(variable_idx)=variable_type
-                      SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
-                        & solver_matrix_idx)%VARIABLES(variable_idx)%PTR=>DEPENDENT_VARIABLE
-                      !Allocate the variable to solver col maps arrays
-                      ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                        & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_idx)% &
-                        & COLUMN_NUMBERS(DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variables to solver column maps column numbers.", &
-                        & ERR,ERROR,*999)
-                      ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                        & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_idx)% &
-                        & COUPLING_COEFFICIENTS(DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variables to solver column maps coupling coefficients.", &
-                        & ERR,ERROR,*999)
-                      ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                        & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_idx)% &
-                        & ADDITIVE_CONSTANTS(DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variables to solver column maps additive constants.", &
-                        & ERR,ERROR,*999)
-                      !Setup
-                      IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
-                        NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES=NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES+DYNAMIC_MAPPING% &
-                          & VAR_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES
-                      ELSE
-                        IF(ASSOCIATED(LINEAR_MAPPING)) THEN
-                          NUMBER_OF_LINEAR_EQUATIONS_MATRICES=NUMBER_OF_LINEAR_EQUATIONS_MATRICES+LINEAR_MAPPING% &
+                    BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR
+                    IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+                      IF(rank==0) THEN
+                        SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
+                          & solver_matrix_idx)%VARIABLE_TYPES(variable_idx)=variable_type
+                        SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
+                          & solver_matrix_idx)%VARIABLES(variable_idx)%PTR=>DEPENDENT_VARIABLE
+                        !Allocate the variable to solver col maps arrays
+                        ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                          & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_idx)% &
+                          & COLUMN_NUMBERS(DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variables to solver column maps column numbers.", &
+                          & ERR,ERROR,*999)
+                        ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                          & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_idx)% &
+                          & COUPLING_COEFFICIENTS(DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variables to solver column maps coupling coefficients.", &
+                          & ERR,ERROR,*999)
+                        ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                          & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_idx)% &
+                          & ADDITIVE_CONSTANTS(DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variables to solver column maps additive constants.", &
+                          & ERR,ERROR,*999)
+                        !Setup
+                        IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
+                          NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES=NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES+DYNAMIC_MAPPING% &
                             & VAR_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES
+                        ELSE
+                          IF(ASSOCIATED(LINEAR_MAPPING)) THEN
+                            NUMBER_OF_LINEAR_EQUATIONS_MATRICES=NUMBER_OF_LINEAR_EQUATIONS_MATRICES+LINEAR_MAPPING% &
+                              & VAR_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES
+                          ENDIF
                         ENDIF
-                      ENDIF
-                    ENDIF !rank==0
-                    DO global_dof=1,DEPENDENT_VARIABLE%NUMBER_OF_GLOBAL_DOFS
-                      RANK_DOF=.FALSE.
-                      DO rank_idx=1,COL_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_dof)%NUMBER_OF_DOMAINS
-                        IF(COL_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_dof)%DOMAIN_NUMBER(rank_idx)==rank &
-                          & .AND.COL_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_dof)%LOCAL_TYPE(rank_idx)/= &
-                          & DOMAIN_LOCAL_GHOST) THEN
-                          RANK_DOF=.TRUE.
-                          local_dof=COL_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_dof)%LOCAL_NUMBER(rank_idx)
-                          EXIT
-                        ENDIF
-                      ENDDO !rank_idx                                          
-                      IF(RANK_DOF) THEN
-                        MYRANK_DOF=.FALSE.
+                      ENDIF !rank==0
+                      DO global_dof=1,DEPENDENT_VARIABLE%NUMBER_OF_GLOBAL_DOFS
+                        RANK_DOF=.FALSE.
                         DO rank_idx=1,COL_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_dof)%NUMBER_OF_DOMAINS
-                          IF(COL_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_dof)%DOMAIN_NUMBER(rank_idx)== &
-                            & myrank) THEN
-                            MYRANK_DOF=.TRUE.
+                          IF(COL_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_dof)%DOMAIN_NUMBER(rank_idx)==rank &
+                            & .AND.COL_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_dof)%LOCAL_TYPE(rank_idx)/= &
+                            & DOMAIN_LOCAL_GHOST) THEN
+                            RANK_DOF=.TRUE.
+                            local_dof=COL_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_dof)%LOCAL_NUMBER(rank_idx)
                             EXIT
                           ENDIF
-                        ENDDO
-                        global_field_dof=DEPENDENT_VARIABLE%GLOBAL_DOF_OFFSET+global_dof
-                        IF(FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(global_field_dof)==EQUATIONS_SET_NOT_FIXED) THEN
-                          NUMBER_OF_GLOBAL_SOLVER_COLS=NUMBER_OF_GLOBAL_SOLVER_COLS+1
-                          IF(MYRANK_DOF) TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS=TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS+1
-                          IF(rank==myrank) &
-                            & NUMBER_OF_LOCAL_SOLVER_COLS=NUMBER_OF_LOCAL_SOLVER_COLS+1
-                        ENDIF !field dof not fixed
-                      ENDIF !rank dof
-                    ENDDO !global_dof
+                        ENDDO !rank_idx                                          
+                        IF(RANK_DOF) THEN
+                          MYRANK_DOF=.FALSE.
+                          DO rank_idx=1,COL_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_dof)%NUMBER_OF_DOMAINS
+                            IF(COL_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(global_dof)%DOMAIN_NUMBER(rank_idx)== &
+                              & myrank) THEN
+                              MYRANK_DOF=.TRUE.
+                              EXIT
+                            ENDIF
+                          ENDDO
+                          IF(BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NOT_FIXED) THEN
+                            NUMBER_OF_GLOBAL_SOLVER_COLS=NUMBER_OF_GLOBAL_SOLVER_COLS+1
+                            IF(MYRANK_DOF) TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS=TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS+1
+                            IF(rank==myrank) NUMBER_OF_LOCAL_SOLVER_COLS=NUMBER_OF_LOCAL_SOLVER_COLS+1
+                          ENDIF !global dof not fixed
+                        ENDIF !rank dof
+                      ENDDO !global_dof
+                    ELSE
+                      CALL FLAG_ERROR("Boundary condition variable not associated.",ERR,ERROR,*999)
+                    ENDIF
                   ELSE
                     CALL FLAG_ERROR("Equations matrix columns degree of freedom mapping is not associated.",ERR,ERROR,*999)
                   ENDIF
@@ -655,7 +685,7 @@ CONTAINS
                 LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
                 NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
                 DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-                FIXED_CONDITIONS=>EQUATIONS_SET%FIXED_CONDITIONS
+                BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
                 IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
                   NUMBER_OF_VARIABLES=1
                 ELSE
@@ -738,7 +768,7 @@ CONTAINS
                       SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM( &
                         & equations_matrix_idx)%NUMBER_OF_SOLVER_MATRICES=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                         & equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM(equations_matrix_idx)%NUMBER_OF_SOLVER_MATRICES+1
-                   ENDDO !equations_matrix_idx
+                    ENDDO !equations_matrix_idx
                     !Set up nonlinear arrays
                     IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
                       ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
@@ -769,6 +799,7 @@ CONTAINS
                   ENDIF
                   DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
                   COL_DOFS_MAPPING=>DEPENDENT_VARIABLE%DOMAIN_MAPPING
+                  BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR
                   IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
                     NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES=DYNAMIC_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS(variable_type)% &
                       & NUMBER_OF_EQUATIONS_MATRICES
@@ -863,8 +894,7 @@ CONTAINS
                           EXIT
                         ENDIF
                       ENDDO                                          
-                      global_field_dof=DEPENDENT_VARIABLE%GLOBAL_DOF_OFFSET+global_dof
-                      IF(FIXED_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(global_field_dof)==EQUATIONS_SET_NOT_FIXED) THEN
+                      IF(BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NOT_FIXED) THEN
                         !DOF is not fixed so map the variable/equation dof to a new solver dof
                         NUMBER_OF_GLOBAL_SOLVER_COLS=NUMBER_OF_GLOBAL_SOLVER_COLS+1
                         !Initialise_sm

@@ -17,7 +17,7 @@
 !> License for the specific language governing rights and limitations
 !> under the License.
 !>
-!> The Original Code is openCMISS
+!> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
@@ -256,6 +256,7 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_OF_ELEMENTS !< The number of elements in the mesh.
     LOGICAL :: ELEMENTS_FINISHED !<Is .TRUE. if the mesh elements have finished being created, .FALSE. if not.
     TYPE(MESH_ELEMENT_TYPE), POINTER :: ELEMENTS(:) !<ELEMENTS(ne). The pointer to the array of information for the elements of this mesh. ELEMENTS(ne) contains the information for the ne'th global element of the mesh. \todo Should this be allocatable.
+    TYPE(TREE_TYPE), POINTER :: ELEMENTS_TREE !<A tree mapping the mesh global element number to the mesh user element number.
   END TYPE MESH_ELEMENTS_TYPE
 
   !>Contains the topology information for a global node of a mesh.
@@ -274,6 +275,7 @@ MODULE TYPES
     TYPE(MESH_TYPE), POINTER :: MESH !<The pointer to the mesh for this nodes information.
     INTEGER(INTG) :: NUMBER_OF_NODES !<The number of nodes in the mesh.
     TYPE(MESH_NODE_TYPE), POINTER :: NODES(:) !<NODES(np). The pointer to the array of topology information for the nodes of the mesh. NODES(np) contains the topological information for the np'th global node of the mesh. \todo Should this be allocatable???
+    TYPE(TREE_TYPE), POINTER :: NODES_TREE !<A tree mapping the mesh global number to the region nodes global number.
   END TYPE MESH_NODES_TYPE
 
   !>Contains information on the (global) topology of a mesh.
@@ -828,15 +830,16 @@ MODULE TYPES
   TYPE FIELD_DOF_TO_PARAM_MAP_TYPE
     INTEGER(INTG) :: NUMBER_OF_DOFS !<The number of degrees-of-freedom for the field.
     INTEGER(INTG), ALLOCATABLE :: DOF_TYPE(:,:) !<DOF_TYPE(i=1..2,ny). The parameter type of the ny'th dof. When i=1 the DOF_TYPE is the type of the dof, i.e., 1=constant field dof, 2=element based field dof, 3=node based field dof, 4=point based field dof. When i=2 the DOF_TYPE gives the nyy'th number of the different field types and is used to index the XXX_DOF2PARAM_MAP arrays.
-    INTEGER(INTG), ALLOCATABLE :: VARIABLE_DOF(:) !<VARIABLE_DOF(ny). The variable dof number for the field ny.
     INTEGER(INTG) :: NUMBER_OF_CONSTANT_DOFS !<The number of constant degrees-of-freedom in the field dofs.
     INTEGER(INTG) :: NUMBER_OF_ELEMENT_DOFS !<The number of element based degrees-of-freedom in the field dofs.
     INTEGER(INTG) :: NUMBER_OF_NODE_DOFS !<The number of node based degrees-of-freedom in the field dofs.
-    INTEGER(INTG) :: NUMBER_OF_POINT_DOFS !<The number of point based degrees-of-freedom in the field dofs.
-    INTEGER(INTG), ALLOCATABLE :: CONSTANT_DOF2PARAM_MAP(:,:) !<CONSTANT_DOF2PARAM_MAP(i=1..2,nyy). The mapping from constant field dofs to field parameters for the nyy'th constant field dof. When i=1 the DOF2PARAM_MAP gives the component number (nh) of the field parameter. When i=2 the DOF2PARAM_MAP gives the variable number (nc) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.
-    INTEGER(INTG), ALLOCATABLE :: ELEMENT_DOF2PARAM_MAP(:,:) !<ELEMENT_DOF2PARAM_MAP(i=1..3,nyy). The mapping from element based field dofs to field parameters for the nyy'th constant field dof. When i=1 the DOF2PARAM_MAP gives the element number (ne) of the field parameter. When i=2 the DOF2PARAM_MAP gives the component number (nh) of the field parameter. When i=3 the DOF2PARAM_MAP gives the variable number (nc) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.
-    INTEGER(INTG), ALLOCATABLE :: NODE_DOF2PARAM_MAP(:,:) !<NODE_DOF2PARAM_MAP(i=1..4,nyy). The mapping from node based field dofs to field parameters for the nyy'th constant field dof. When i=1 the DOF2PARAM_MAP gives the derivative number (nk) of the field parameter. When i=2 the DOF2PARAM_MAP gives the node number (np) of the field parameter. When i=3 the DOF2PARAM_MAP gives the component number (nh) of the field parameter. When i=4 the DOF2PARAM_MAP gives the variable number (nc) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.
-    INTEGER(INTG), ALLOCATABLE :: POINT_DOF2PARAM_MAP(:,:) !<POINT_DOF2PARAM_MAP(i=1..3,nyy). The mapping from point based field dofs to field parameters for the nyy'th constant field dof. When i=1 the DOF2PARAM_MAP gives the point number (nq) of the field parameter. When i=2 the DOF2PARAM_MAP gives the component number (nh) of the field parameter. When i=3 the DOF2PARAM_MAP gives the variable number (nc) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.  
+    INTEGER(INTG) :: NUMBER_OF_GRID_POINT_DOFS !<The number of grid point based degrees-of-freedom in the field dofs.
+    INTEGER(INTG) :: NUMBER_OF_GAUSS_POINT_DOFS !<The number of Gauss point based degrees-of-freedom in the field dofs.
+    INTEGER(INTG), ALLOCATABLE :: CONSTANT_DOF2PARAM_MAP(:) !<CONSTANT_DOF2PARAM_MAP(nyy). The mapping from constant field dofs to field parameters for the nyy'th constant field dof. The DOF2PARAM_MAP gives the component number (nh) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.
+    INTEGER(INTG), ALLOCATABLE :: ELEMENT_DOF2PARAM_MAP(:,:) !<ELEMENT_DOF2PARAM_MAP(i=1..2,nyy). The mapping from element based field dofs to field parameters for the nyy'th constant field dof. When i=1 the DOF2PARAM_MAP gives the element number (ne) of the field parameter. When i=2 the DOF2PARAM_MAP gives the component number (nh) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.
+    INTEGER(INTG), ALLOCATABLE :: NODE_DOF2PARAM_MAP(:,:) !<NODE_DOF2PARAM_MAP(i=1..3,nyy). The mapping from node based field dofs to field parameters for the nyy'th constant field dof. When i=1 the DOF2PARAM_MAP gives the derivative number (nk) of the field parameter. When i=2 the DOF2PARAM_MAP gives the node number (np) of the field parameter. When i=3 the DOF2PARAM_MAP gives the component number (nh) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.
+    INTEGER(INTG), ALLOCATABLE :: GRID_POINT_DOF2PARAM_MAP(:,:) !<GRID_POINT_DOF2PARAM_MAP(i=1..2,nyy). The mapping from grid point based field dofs to field parameters for the nyy'th grid point field dof. When i=1 the DOF2PARAM_MAP gives the grid point number (nq) of the field parameter. When i=2 the DOF2PARAM_MAP gives the component number (nh) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.  
+    INTEGER(INTG), ALLOCATABLE :: GAUSS_POINT_DOF2PARAM_MAP(:,:) !<GAUSS_POINT_DOF2PARAM_MAP(i=1..3,nyy). The mapping from Gauss point based field dofs to field parameters for the nyy'th grid point field dof. When i=1 the DOF2PARAM_MAP gives the Gauss point number (ng) of the field parameter. When i=2 the DOF2PARAM_MAP gives the element number (ne) of the field parameter. When i=3 the DOF2PARAM_MAP gives the component number (nh) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.  
   END TYPE FIELD_DOF_TO_PARAM_MAP_TYPE
 
   !>A type to hold the mapping from field parameters (nodes, elements, etc) to field dof numbers for a particular field variable component.
@@ -846,11 +849,13 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_OF_ELEMENT_PARAMETERS !<The number of element based field parameters for this field variable component.
     INTEGER(INTG) :: NUMBER_OF_NODE_PARAMETERS !<The number of node based field parameters for this field variable component.
     INTEGER(INTG) :: MAX_NUMBER_OF_DERIVATIVES !<The maximum number of derivatives for the node parameters for this field variable component. It is the size of the first index of the NODE_PARAM2DOF_MAP component of this type.
-    INTEGER(INTG) :: NUMBER_OF_POINT_PARAMETERS !<The number of point based field parameters for this field variable component.
-    INTEGER(INTG) :: CONSTANT_PARAM2DOF_MAP(0:1) !<CONSTANT_PARAM2DOF_MAP(nc). The field dof (nc=0) or variable dof (nc=1) number of the constant parameter for this field variable component. 
-    INTEGER(INTG), ALLOCATABLE :: ELEMENT_PARAM2DOF_MAP(:,:) !<ELEMENT_PARAM2DOF_MAP(ne,nc). The field dof (nc=0) or variable dof (nc=1) number of the ne'th element based parameter for this field variable component. \todo Allow for multiple element parameters per element.
-    INTEGER(INTG), ALLOCATABLE :: NODE_PARAM2DOF_MAP(:,:,:) !<NODE_PARAM2DOF_MAP(nk,np,nc). The field dof (nc=0) or variable dof (nc=1) number of the nk'th derivative of the np'th node based parameter for this field variable component. Note: because the first index of this array is set to the maximum number of derivatives per node this array wastes memory if there are nodes with a smaller number of derivatives than the maximum. \todo Don't allocate too much memory if there are different numbers of derivatives for different nodes.
-    INTEGER(INTG), ALLOCATABLE :: POINT_PARAM2DOF_MAP(:,:) !<POINT_PARAM2DOF_MAP(nq,nc). The field dof (nc=0) or variable dof (nc=1) number of nq'th point based parameter for this field variable component.
+    INTEGER(INTG) :: NUMBER_OF_GRID_POINT_PARAMETERS !<The number of grid point based field parameters for this field variable component.
+    INTEGER(INTG) :: NUMBER_OF_GAUSS_POINT_PARAMETERS !<The number of Gauss point based field parameters for this field variable component.
+    INTEGER(INTG) :: CONSTANT_PARAM2DOF_MAP !<The field variable dof number of the constant parameter for this field variable component. 
+    INTEGER(INTG), ALLOCATABLE :: ELEMENT_PARAM2DOF_MAP(:) !<ELEMENT_PARAM2DOF_MAP(ne). The field variable dof number of the ne'th element based parameter for this field variable component. \todo Allow for multiple element parameters per element.
+    INTEGER(INTG), ALLOCATABLE :: NODE_PARAM2DOF_MAP(:,:) !<NODE_PARAM2DOF_MAP(nk,np). The field variable dof number of the nk'th derivative of the np'th node based parameter for this field variable component. Note: because the first index of this array is set to the maximum number of derivatives per node this array wastes memory if there are nodes with a smaller number of derivatives than the maximum. \todo Don't allocate too much memory if there are different numbers of derivatives for different nodes.
+    INTEGER(INTG), ALLOCATABLE :: GRID_POINT_PARAM2DOF_MAP(:) !<GRID_POINT_PARAM2DOF_MAP(nq). The field variable dof number of nq'th point based parameter for this field variable component.
+    INTEGER(INTG), ALLOCATABLE :: GAUSS_POINT_PARAM2DOF_MAP(:,:) !<GAISS_POINT_PARAM2DOF_MAP(ng,ne). The field variable dof number of ng'th Gauss point in the ne'th element based parameter for this field variable component.
   END TYPE FIELD_PARAM_TO_DOF_MAP_TYPE
 
   !>Contains information for a component of a field variable.
@@ -862,44 +867,8 @@ MODULE TYPES
     INTEGER(INTG) :: SCALING_INDEX !<The index into the defined field scalings for this field variable component.
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<A pointer to the domain of the field decomposition for this field variable component.
     INTEGER(INTG) :: MAX_NUMBER_OF_INTERPOLATION_PARAMETERS !<The maximum number of interpolations parameters in an element for a field variable component.
-    TYPE(FIELD_PARAM_TO_DOF_MAP_TYPE) :: PARAM_TO_DOF_MAP !< The mapping of the field parameters to the field dofs for this field variable component.
+    TYPE(FIELD_PARAM_TO_DOF_MAP_TYPE) :: PARAM_TO_DOF_MAP !<The mapping of the field parameters to the field dofs for this field variable component.
   END TYPE FIELD_VARIABLE_COMPONENT_TYPE
-
-  !>Contains information for a field variable defined on a field.
-  TYPE FIELD_VARIABLE_TYPE
-    INTEGER(INTG) :: VARIABLE_NUMBER !<The number of the field variable
-    INTEGER(INTG) :: VARIABLE_TYPE !<The type of the field variable. \see FIELD_ROUTINES_VariableTypes 
-    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field for this field variable.
-    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region for this field variable.
-    INTEGER(INTG) :: MAX_NUMBER_OF_INTERPOLATION_PARAMETERS !<The maximum number of interpolation parameters in an element for a field variable. 
-    INTEGER(INTG) :: NUMBER_OF_DOFS !<Number of local degress of freedom for this field variable (excluding ghosted dofs). Old CMISS name NYNR(0,0,nc,nr,nx).
-    INTEGER(INTG) :: TOTAL_NUMBER_OF_DOFS !<Number of local degrees of freedom for this field variable (including ghosted dofs). Old CMISS name NYNR(0,0,nc,nr,nx).
-    INTEGER(INTG) :: NUMBER_OF_GLOBAL_DOFS !<Number of global degrees of freedom for this field variable. Old CMISS name NYNR(0,0,nc,nr,nx).
-    INTEGER(INTG) :: GLOBAL_DOF_OFFSET !<The offset of the start of the global dofs for this variable in the list of global field dofs.
-    INTEGER(INTG), ALLOCATABLE :: DOF_LIST(:) !<DOF_LIST(i). The list of (local) field dofs in this field variable. Old CMISS name NYNR(1..,0,nc,nr,nx).
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING !<Domain mapping for this variable. Only allocated if the field is a dependent field. May have to reconsider this as we now have a domain mapping for the field as a whole and for each variable of the field. The variable domain mapping to is allow a global matrix/vector mapping to be obtained from the field variable.
-    INTEGER(INTG) :: NUMBER_OF_COMPONENTS !<The number of components in the field variable.
-    TYPE(FIELD_VARIABLE_COMPONENT_TYPE), ALLOCATABLE :: COMPONENTS(:) !<COMPONENTS(component_idx). The array of field variable components.
-  END TYPE FIELD_VARIABLE_TYPE
-  
-  !>A buffer type to allow for an array of pointers to a FIELD_VARIABLE_TYPE.
-  TYPE FIELD_VARIABLE_PTR_TYPE
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: PTR !<The pointer to the field variable. 
-  END TYPE FIELD_VARIABLE_PTR_TYPE
-
-  !>A type to temporarily hold (cache) the user modifiable values which are used to create a field. 
-  TYPE FIELD_CREATE_VALUES_CACHE_TYPE
-    INTEGER(INTG) :: NUMBER_OF_COMPONENTS !<The number of components in the field for each field variable. NOTE: in the future this will need a variable index on it but just allow for the same number of components for each field variable for now. 
-    INTEGER(INTG), ALLOCATABLE :: VARIABLE_TYPES(:) !<VARIABLE_TYPES(variable_idx). The cache of the variable type for the given variable_idx of the field. \see FIELD_ROUTINES_VariableTypes
-    INTEGER(INTG), ALLOCATABLE :: INTERPOLATION_TYPE(:,:) !<INTERPOLATION_TYPES(component_idx,variable_idx). The cache of the interpolation type for the given component and variable of the field. \see FIELD_ROUTINES_InterpolationTypes
-    INTEGER(INTG), ALLOCATABLE :: MESH_COMPONENT_NUMBER(:,:) !<MESH_COMPONENT_NUMBER(component_idx,varaible_idx). The cache of the mesh component number for the given component and variable of the field.
-  END TYPE FIELD_CREATE_VALUES_CACHE_TYPE
-
-  !>The type containing the mappings for the field
-  TYPE FIELD_MAPPINGS_TYPE
-    TYPE(FIELD_DOF_TO_PARAM_MAP_TYPE) :: DOF_TO_PARAM_MAP !<The mappings for the field dofs to the field parameters
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING !<The domain mappings for the field dofs i.e., the local to global mpapings etc.
-  END TYPE FIELD_MAPPINGS_TYPE
 
   !>A type to hold the parameter sets for a field.
   TYPE FIELD_PARAMETER_SET_TYPE
@@ -916,12 +885,58 @@ MODULE TYPES
 
   !>A type to store the parameter sets for a field.
   TYPE FIELD_PARAMETER_SETS_TYPE    
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE !<A pointer to the field variable that these parameter sets are defined on.
     INTEGER(INTG) :: NUMBER_OF_PARAMETER_SETS !<The number of parameter sets that are currently defined on the field.
-    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field that these parameter sets are defined on.
     TYPE(FIELD_PARAMETER_SET_PTR_TYPE), POINTER :: SET_TYPE(:) !<SET_TYPE(set_type_idx). A pointer to an array of pointers to the field set types. SET_TYPE(set_type_idx)%PTR is a pointer to the parameter set type for the set_type_idx'th parameter set. set_type_idx can vary from 1 to FIELD_ROUTINES::FIELD_NUMBER_OF_SET_TYPES. The value of the pointer will be NULL if the parameter set corresponding to the set_type_idx'th parameter set has not yet been created for the field.
     TYPE(FIELD_PARAMETER_SET_PTR_TYPE), POINTER :: PARAMETER_SETS(:) !<PARAMETER_SETS(set_type_idx). A pointer to an array of pointers to the parameter sets that have been created on the field. PARAMETER_SET(set_type_idx)%PTR is a pointer to the parameter set type for the set_type_idx'th parameter set that has been created. set_type_idx can vary from 1 to the number of parameter set types that have currently been created for the field i.e., TYPES::FIELD_PARAMETER_SETS_TYPE::NUMBER_OF_PARAMETER_SETS.
   END TYPE FIELD_PARAMETER_SETS_TYPE
   
+  !>Contains information for a field variable defined on a field.
+  TYPE FIELD_VARIABLE_TYPE
+    INTEGER(INTG) :: VARIABLE_NUMBER !<The number of the field variable
+    INTEGER(INTG) :: VARIABLE_TYPE !<The type of the field variable. \see FIELD_ROUTINES_VariableTypes 
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field for this field variable.
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region for this field variable.
+    INTEGER(INTG) :: DIMENSION !<The dimension of the field. \see FIELD_ROUTINES_DimensionTypes
+    INTEGER(INTG) :: DATA_TYPE !<The data type of the field variable.  \see FIELD_ROUTINES_DataTypes,FIELD_ROUTINES
+    INTEGER(INTG) :: MAX_NUMBER_OF_INTERPOLATION_PARAMETERS !<The maximum number of interpolation parameters in an element for a field variable. 
+    INTEGER(INTG) :: NUMBER_OF_DOFS !<Number of local degress of freedom for this field variable (excluding ghosted dofs). Old CMISS name NYNR(0,0,nc,nr,nx).
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_DOFS !<Number of local degrees of freedom for this field variable (including ghosted dofs). Old CMISS name NYNR(0,0,nc,nr,nx).
+    INTEGER(INTG) :: NUMBER_OF_GLOBAL_DOFS !<Number of global degrees of freedom for this field variable. Old CMISS name NYNR(0,0,nc,nr,nx).
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING !<Domain mapping for this variable. 
+    INTEGER(INTG) :: NUMBER_OF_COMPONENTS !<The number of components in the field variable.
+    TYPE(FIELD_VARIABLE_COMPONENT_TYPE), ALLOCATABLE :: COMPONENTS(:) !<COMPONENTS(component_idx). The array of field variable components.
+    TYPE(FIELD_DOF_TO_PARAM_MAP_TYPE) :: DOF_TO_PARAM_MAP !<The mappings for the field dofs to the field parameters
+    TYPE(FIELD_PARAMETER_SETS_TYPE) :: PARAMETER_SETS !<The parameter sets for the field variable
+  END TYPE FIELD_VARIABLE_TYPE
+  
+  !>A buffer type to allow for an array of pointers to a FIELD_VARIABLE_TYPE.
+  TYPE FIELD_VARIABLE_PTR_TYPE
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: PTR !<The pointer to the field variable. 
+  END TYPE FIELD_VARIABLE_PTR_TYPE
+
+  !>A type to temporarily hold (cache) the user modifiable values which are used to create a field. 
+  TYPE FIELD_CREATE_VALUES_CACHE_TYPE
+    LOGICAL :: DECOMPOSITION_LOCKED !<Is .TRUE. if the field decomposition has been locked, .FALSE. if not.
+    LOGICAL :: DEPENDENT_TYPE_LOCKED !<Is .TRUE. if the field dependent type has been locked, .FALSE. if not.
+    LOGICAL :: NUMBER_OF_VARIABLES_LOCKED !<Is .TRUE. if the number of field variables has been locked, .FALSE. if not.
+    LOGICAL :: GEOMETRIC_FIELD_LOCKED !<Is .TRUE. if the geometric field has been locked, .FALSE. if not.
+    LOGICAL :: SCALING_TYPE_LOCKED !<Is .TRUE. if the scaling type has been locked, .FALSE. if not.        
+    LOGICAL :: TYPE_LOCKED !<Is .TRUE. if the field type has been locked, .FALSE. if not.        
+    INTEGER(INTG), ALLOCATABLE :: VARIABLE_TYPES(:) !<VARIABLE_TYPES(variable_idx). The cache of the variable type for the given variable_idx of the field. \see FIELD_ROUTINES_VariableTypes
+    LOGICAL :: VARIABLE_TYPES_LOCKED !<Is .TRUE. if the variable types have been locked, .FALSE. if not.
+    INTEGER(INTG), ALLOCATABLE :: DIMENSION(:) !<DIMENSION(variable_type_idx). The cache of the variable dimension for the variable_type_idx'th variable type of the field. \see FIELD_ROUTINES_DimensionTypes
+    LOGICAL, ALLOCATABLE :: DIMENSION_LOCKED(:) !<DIMENSION_LOCKED(variable_type_idx). Is .TRUE. if the dimension for the variable_type_idx'th variable type has been locked, .FALSE. if not.
+    INTEGER(INTG), ALLOCATABLE :: DATA_TYPES(:) !<DATA_TYPES(variable_type_idx). The cache of the variable data type for the variable_type_idx'th variable type of the field. \see FIELD_ROUTINES_DataTypes
+    LOGICAL, ALLOCATABLE :: DATA_TYPES_LOCKED(:) !<DATA_TYPES_LOCKED(variable_type_idx). Is .TRUE. if the data type for the variable_type_idx'th variable type has been locked, .FALSE. if not.
+    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_COMPONENTS(:) !<NUMBER_OF_COMPONENTS(variable_type_idx). The number of components in the field for the variable_type_idx'th field variable type.
+    LOGICAL, ALLOCATABLE :: NUMBER_OF_COMPONENTS_LOCKED(:) !<NUMBER_OF_COMPONENTS_LOCKED(variable_type_idx). Is .TRUE. if the number of components has been locked for the variable_type_idx'th variable type, .FALSE. if not.
+    INTEGER(INTG), ALLOCATABLE :: INTERPOLATION_TYPE(:,:) !<INTERPOLATION_TYPES(component_idx,variable_type_idx). The cache of the interpolation type for the given component and variable type of the field. \see FIELD_ROUTINES_InterpolationTypes
+    LOGICAL, ALLOCATABLE :: INTERPOLATION_TYPE_LOCKED(:,:) !<INTERPOLATION_TYPES(component_idx,variable_type_idx). Is .TRUE. if the interpolation type of the component_idx'th component of the variable_type_idx'th varible type has been locked, .FALSE. if not.
+    INTEGER(INTG), ALLOCATABLE :: MESH_COMPONENT_NUMBER(:,:) !<MESH_COMPONENT_NUMBER(component_idx,varaible_type_idx). The cache of the mesh component number for the given component and variable type of the field.
+    LOGICAL, ALLOCATABLE :: MESH_COMPONENT_NUMBER_LOCKED(:,:) !<MESH_COMPONENT_NUMBER_LOCKED(component_idx,variable_type_idx). Is .TRUE. if the mesh component number of the component_idx'th component of the variable_type_idx'th varible type has been locked, .FALSE. if not.
+  END TYPE FIELD_CREATE_VALUES_CACHE_TYPE
+
   !>Contains information for a field defined on a region.
   TYPE FIELD_TYPE
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the field in the list of fields for a region.
@@ -931,16 +946,13 @@ MODULE TYPES
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region for this field.
     INTEGER(INTG) :: TYPE !<The type of the field. \see FIELD_ROUTINES_FieldTypes
     INTEGER(INTG) :: DEPENDENT_TYPE !<The dependent type of the field. \see FIELD_ROUTINES_DependentTypes
-    INTEGER(INTG) :: DIMENSION !<The dimension of the field. \see FIELD_ROUTINES_DimensionTypes
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<A pointer to the decomposition of the mesh for which the field is defined on.
     INTEGER(INTG) :: NUMBER_OF_VARIABLES !<The number of variable types in the field. Old CMISS name NCT(nr,nx)
     TYPE(FIELD_VARIABLE_PTR_TYPE), ALLOCATABLE :: VARIABLE_TYPE_MAP(:) !<VARIABLE_TYPE_MAP(variable_idx). The map from the available field variable types to the field variable types that are defined for the field. variable_idx varies from 1 to FIELD_ROUTINES::FIELD_NUMBER_OF_VARIABLE_TYPES. If the particular field variable type has not been defined on the field then the VARIABLE_TYPE_MAP will be NULL. \see FIELD_ROUTINES_VariableTypes
     TYPE(FIELD_VARIABLE_TYPE), ALLOCATABLE :: VARIABLES(:) !<VARIABLES(variable_idx) .The array of field variables. 
     TYPE(FIELD_SCALINGS_TYPE) :: SCALINGS !<The scaling parameters for the field
-    TYPE(FIELD_MAPPINGS_TYPE) :: MAPPINGS !<The mappings for the field
-    TYPE(FIELD_PARAMETER_SETS_TYPE) :: PARAMETER_SETS !<The parameter sets for the field
     TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<A pointer to the geometric field that this field uses. If the field itself is a geometric field then this will be a pointer back to itself.
-    TYPE(FIELD_GEOMETRIC_PARAMETERS_TYPE), POINTER :: GEOMETRIC_FIELD_PARAMETERS !<
+    TYPE(FIELD_GEOMETRIC_PARAMETERS_TYPE), POINTER :: GEOMETRIC_FIELD_PARAMETERS !<If the field is a geometric field the pointer to the geometric parameters (lines, areas, volumes etc.). If the field is not a geometric field the pointer is NULL.
     TYPE(FIELD_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE !<The create values cache for the field.
   END TYPE FIELD_TYPE
 
@@ -1074,7 +1086,7 @@ MODULE TYPES
     TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES !<A pointer to the nonlinear matrices and vectors information for the equations matrices
     TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: RHS_VECTOR !<A pointer to the RHS vector information for the equations matrices
     TYPE(EQUATIONS_MATRICES_SOURCE_TYPE), POINTER :: SOURCE_VECTOR !<A pointer to the source vector information for the equations matrices
-   END TYPE EQUATIONS_MATRICES_TYPE
+  END TYPE EQUATIONS_MATRICES_TYPE
 
   !
   !================================================================================================================================
@@ -1272,6 +1284,34 @@ MODULE TYPES
   !
   !================================================================================================================================
   !
+  ! Boundary conditions types
+  !
+
+  !>Contains information on the boundary conditions for a dependent field variable
+  TYPE BOUNDARY_CONDITIONS_VARIABLE_TYPE
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<A pointer to the boundary conditions for this boundary conditions variable
+    INTEGER(INTG) :: VARIABLE_TYPE !<The type of variable for this variable boundary conditions
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE !<A pointer to the field varaible for this boundary condition variable
+    INTEGER(INTG), ALLOCATABLE :: GLOBAL_BOUNDARY_CONDITIONS(:) !<GLOBAL_BOUNDARY_CONDITIONS(dof_idx). The global boundary condition for the dof_idx'th dof of the dependent field variable. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
+    !TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: BOUNDARY_CONDITIONS_VALUES !<A pointer to the distributed vector containing the boundary conditions for the domain for this process.
+  END TYPE BOUNDARY_CONDITIONS_VARIABLE_TYPE
+
+  !>A buffer type to allow for an array of pointers to a VARIABLE_BOUNDARY_CONDITIONS_TYPE \see TYPES::VARIABLE_BOUNDARY_CONDITIONS_TYPE
+  TYPE BOUNDARY_CONDITIONS_VARIABLE_PTR_TYPE
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: PTR !<A pointer to the boundary conditions variable
+  END TYPE BOUNDARY_CONDITIONS_VARIABLE_PTR_TYPE
+  
+  !>Contains information on the boundary conditions for the equations set.
+  TYPE BOUNDARY_CONDITIONS_TYPE
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
+    LOGICAL :: BOUNDARY_CONDITIONS_FINISHED !<Is .TRUE. if the boundary conditions for the equations set has finished being created, .FALSE. if not.
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_PTR_TYPE), ALLOCATABLE :: BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(:) !<BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type_idx). BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type_idx)%PTR is the pointer to the variable_type_idx'th BOUNDARY_CONDITIONS_VARIABLE
+  END TYPE BOUNDARY_CONDITIONS_TYPE
+
+ 
+  !
+  !================================================================================================================================
+  !
   ! Equations set types
   !
   
@@ -1285,21 +1325,15 @@ MODULE TYPES
   TYPE EQUATIONS_SET_MATERIALS_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
     LOGICAL :: MATERIALS_FINISHED !<Is .TRUE. if the materials for the equations set has finished being created, .FALSE. if not.
+    LOGICAL :: MATERIALS_FIELD_AUTO_CREATED !<Is .TRUE. if the materials field has been auto created, .FALSE. if not.
     TYPE(FIELD_TYPE), POINTER :: MATERIALS_FIELD !<A pointer to the materials field for the equations set if one is defined. If no material field is defined the pointer is NULL.
   END TYPE EQUATIONS_SET_MATERIALS_TYPE
-
-  !>Contains information on the fixed conditions for the problem.
-  TYPE EQUATIONS_SET_FIXED_CONDITIONS_TYPE
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
-    LOGICAL :: FIXED_CONDITIONS_FINISHED !<Is .TRUE. if the fixed conditions for the equations set has finished being created, .FALSE. if not.
-    INTEGER(INTG), ALLOCATABLE :: GLOBAL_BOUNDARY_CONDITIONS(:) !<GLOBAL_BOUNDARY_CONDITIONS(dof_idx). The global boundary condition for the dof_idx'th dof of the dependent field. \see EQUATIONS_ROUTINES_FixedConditions,EQUATIONS_ROUTINES
-    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: BOUNDARY_CONDITIONS !<A pointer to the distributed vector containing the boundary conditions for the domain for this process.
-  END TYPE EQUATIONS_SET_FIXED_CONDITIONS_TYPE
 
   !>Contains information on the dependent variables for the equations set.
   TYPE EQUATIONS_SET_DEPENDENT_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
     LOGICAL :: DEPENDENT_FINISHED !<Is .TRUE. if the dependent variables for the equations set has finished being created, .FALSE. if not.
+    LOGICAL :: DEPENDENT_FIELD_AUTO_CREATED !<Is .TRUE. if the dependent field has been auto created, .FALSE. if not.
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD !<A pointer to the dependent field for the equations set.
   END TYPE EQUATIONS_SET_DEPENDENT_TYPE
 
@@ -1307,6 +1341,7 @@ MODULE TYPES
   TYPE EQUATIONS_SET_SOURCE_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
     LOGICAL :: SOURCE_FINISHED !<Is .TRUE. if the source for the equations set has finished being created, .FALSE. if not.
+    LOGICAL :: SOURCE_FIELD_AUTO_CREATED !<Is .TRUE. if the materials field has been auto created, .FALSE. if not.
     TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD !<A pointer to the source field for the equations set if one is defined. If no source is defined the pointer is NULL.
   END TYPE EQUATIONS_SET_SOURCE_TYPE
   
@@ -1336,8 +1371,9 @@ MODULE TYPES
     TYPE(EQUATIONS_SET_SOURCE_TYPE), POINTER :: SOURCE !<A pointer to the source information for the equations set.
     TYPE(EQUATIONS_SET_DEPENDENT_TYPE) :: DEPENDENT !<The depedent variable information for the equations set.
     TYPE(EQUATIONS_SET_ANALYTIC_TYPE), POINTER :: ANALYTIC !<A pointer to the analytic setup information for the equations set.
-    TYPE(EQUATIONS_SET_FIXED_CONDITIONS_TYPE), POINTER :: FIXED_CONDITIONS !<A pointer to the fixed condition information for the equations set. \todo Change name to BOUNDARY_CONDITIONS???
+    !TYPE(EQUATIONS_SET_FIXED_CONDITIONS_TYPE), POINTER :: FIXED_CONDITIONS !<A pointer to the fixed condition information for the equations set. \todo Change name to BOUNDARY_CONDITIONS???
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !A pointer to the equations information for the equations set
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<A pointer to the boundary condition information for the equations set.
   END TYPE EQUATIONS_SET_TYPE
   
   !>A buffer type to allow for an array of pointers to a EQUATIONS_SET_TYPE \see TYPES::EQUATIONS_SET_TYPE

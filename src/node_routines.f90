@@ -17,7 +17,7 @@
 !> License for the specific language governing rights and limitations
 !> under the License.
 !>
-!> The Original Code is openCMISS
+!> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
@@ -72,21 +72,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Checks that a user node number is defined on the specified region.
   SUBROUTINE NODE_CHECK_EXISTS(USER_NUMBER,REGION,NODE_EXISTS,GLOBAL_NUMBER,ERR,ERROR,*)
 
-    !#### Subroutine:_NODE_CHECK_EXISTS
-    !###  Description:
-    !###    Checks that a user node number is defined on the specified region. If the node is defined then NODE_EXISTS is set to
-    !###    .TRUE. and GLOBAL_NUMBER is set to the global node number in that region. If the node is not defined then NODE_EXISTS
-    !###    is set to .FALSE. and GLOBAL_NUMBER is set to 0.
-
     !Argument variables
-    INTEGER(INTG) :: USER_NUMBER
-    TYPE(REGION_TYPE), POINTER :: REGION
-    LOGICAL, INTENT(OUT) :: NODE_EXISTS
-    INTEGER(INTG), INTENT(OUT) :: GLOBAL_NUMBER
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG) :: USER_NUMBER !<The user node number to check if it exists
+    TYPE(REGION_TYPE), POINTER :: REGION !<The region containing the node
+    LOGICAL, INTENT(OUT) :: NODE_EXISTS !<On exit, is .TRUE. if the node user number exists in the region, .FALSE. if not
+    INTEGER(INTG), INTENT(OUT) :: GLOBAL_NUMBER !<On exit, if the node exists the global number corresponding to the user node number. If the node does not exist then global number will be 0.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error number
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(TREE_NODE_TYPE), POINTER :: TREE_NODE
     TYPE(VARYING_STRING) :: LOCAL_ERROR

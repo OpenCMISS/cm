@@ -17,7 +17,7 @@
 !> License for the specific language governing rights and limitations
 !> under the License.
 !>
-!> The Original Code is openCMISS
+!> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
@@ -95,11 +95,6 @@ MODULE PROBLEM_ROUTINES
     MODULE PROCEDURE PROBLEM_SPECIFICATION_SET_PTR
   END INTERFACE !PROBLEM_SPECIFICATION_SET
 
-  INTERFACE PROBLEM_SOLVER_EQUATIONS_EQUATIONS_SET_ADD
-    MODULE PROCEDURE PROBLEM_SOLVER_EQUATIONS_EQUATIONS_SET_ADD_0
-    MODULE PROCEDURE PROBLEM_SOLVER_EQUATIONS_EQUATIONS_SET_ADD_1
-  END INTERFACE !PROBLEM_SOLVER_EQUATIONS_EQUATIONS_SET_ADD
-
   INTERFACE PROBLEM_SOLVER_EQUATIONS_GET
     MODULE PROCEDURE PROBLEM_SOLVER_EQUATIONS_GET_0
     MODULE PROCEDURE PROBLEM_SOLVER_EQUATIONS_GET_1
@@ -118,7 +113,7 @@ MODULE PROBLEM_ROUTINES
 
   PUBLIC PROBLEM_CONTROL_LOOP_CREATE_START,PROBLEM_CONTROL_LOOP_CREATE_FINISH,PROBLEM_CONTROL_LOOP_DESTROY,PROBLEM_CONTROL_LOOP_GET
   
-  PUBLIC PROBLEM_SOLVER_EQUATIONS_CREATE_START,PROBLEM_SOLVER_EQUATIONS_CREATE_FINISH,PROBLEM_SOLVER_EQUATIONS_EQUATIONS_SET_ADD
+  PUBLIC PROBLEM_SOLVER_EQUATIONS_CREATE_START,PROBLEM_SOLVER_EQUATIONS_CREATE_FINISH
 
   PUBLIC PROBLEM_SOLVER_JACOBIAN_EVALUATE,PROBLEM_SOLVER_RESIDUAL_EVALUATE
   
@@ -889,115 +884,6 @@ CONTAINS
     CALL EXITS("PROBLEM_SETUP")
     RETURN 1
   END SUBROUTINE PROBLEM_SETUP
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Adds an equations set to a problem solver equations.
-  SUBROUTINE PROBLEM_SOLVER_EQUATIONS_EQUATIONS_SET_ADD_0(PROBLEM,CONTROL_LOOP_IDENTIFIER,SOLVER_INDEX,EQUATIONS_SET, &
-    & EQUATIONS_SET_INDEX,ERR,ERROR,*)
-    
-    !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to add the equations set to a problem solver
-    INTEGER(INTG), INTENT(IN) :: CONTROL_LOOP_IDENTIFIER !<The control loop identifier
-    INTEGER(INTG), INTENT(IN) :: SOLVER_INDEX !<The solver index in the solvers to add the equations set to
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to add
-    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_SET_INDEX !<On return, the index of the equations set that has been added.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
- 
-    CALL ENTERS("PROBLEM_SOLVER_EQUATIONS_EQUATIONS_SET_ADD_0",ERR,ERROR,*999)
-    
-    CALL PROBLEM_SOLVER_EQUATIONS_EQUATIONS_SET_ADD_1(PROBLEM,(/CONTROL_LOOP_IDENTIFIER/),SOLVER_INDEX,EQUATIONS_SET, &
-      & EQUATIONS_SET_INDEX,ERR,ERROR,*999)
-    
-    CALL EXITS("PROBLEM_SOLVER_EQUATIONS_EQUATIONS_SET_ADD_0")
-    RETURN
-999 CALL ERRORS("PROBLEM_SOLVER_EQUATIONS_EQUATIONS_SET_ADD_0",ERR,ERROR)
-    CALL EXITS("PROBLEM_SOLVER_EQUATIONS_EQUATIONS_SET_ADD_0")
-    RETURN 1
-  END SUBROUTINE PROBLEM_SOLVER_EQUATIONS_EQUATIONS_SET_ADD_0
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Adds an equations set to a problem solver equations.
-  SUBROUTINE PROBLEM_SOLVER_EQUATIONS_EQUATIONS_SET_ADD_1(PROBLEM,CONTROL_LOOP_IDENTIFIER,SOLVER_INDEX,EQUATIONS_SET, &
-    & EQUATIONS_SET_INDEX,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to add the equations set to
-    INTEGER(INTG), INTENT(IN) :: CONTROL_LOOP_IDENTIFIER(:) !<The control loop identifier
-    INTEGER(INTG), INTENT(IN) :: SOLVER_INDEX !<The solver index in the solvers to add the equations set to
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to add
-    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_SET_INDEX !<On return, the index of the equations set that has been added.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP,CONTROL_LOOP_ROOT
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER
-    TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("PROBLEM_SOLVER_EQUATIONS_EQUATIONS_SET_ADD_1",ERR,ERROR,*999)
-    
-    EQUATIONS_SET_INDEX=0
-    IF(ASSOCIATED(PROBLEM)) THEN
-      CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
-      IF(ASSOCIATED(CONTROL_LOOP_ROOT)) THEN
-        NULLIFY(CONTROL_LOOP)
-        CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_IDENTIFIER,CONTROL_LOOP,ERR,ERROR,*999)
-        SOLVERS=>CONTROL_LOOP%SOLVERS
-        IF(ASSOCIATED(SOLVERS)) THEN
-          IF(SOLVERS%SOLVERS_FINISHED) THEN
-            IF(SOLVER_INDEX>0.AND.SOLVER_INDEX<=SOLVERS%NUMBER_OF_SOLVERS) THEN
-              SOLVER=>SOLVERS%SOLVERS(SOLVER_INDEX)%PTR
-              IF(ASSOCIATED(SOLVER)) THEN
-                IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                  IF(EQUATIONS_SET%EQUATIONS_SET_FINISHED) THEN
-                    CALL PROBLEM_EQUATIONS_ADD_INITIALISE(PROBLEM,CONTROL_LOOP_IDENTIFIER,SOLVER_INDEX,EQUATIONS_SET, &
-                      ERR,ERROR,*999)                    
-                    !Add equation set via the problem specific setup
-                    CALL PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE,PROBLEM_SETUP_DO_ACTION,ERR,ERROR,*999)
-                    EQUATIONS_SET_INDEX=PROBLEM%EQUATIONS_TO_ADD%EQUATIONS_SET_ADDED_INDEX
-                    CALL PROBLEM_EQUATIONS_ADD_FINALISE(PROBLEM%EQUATIONS_TO_ADD,ERR,ERROR,*999)                   
-                  ELSE
-                    CALL FLAG_ERROR("Equations set has not been finished.",ERR,ERROR,*999)
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              LOCAL_ERROR="The specified solver index of "//TRIM(NUMBER_TO_VSTRING(SOLVER_INDEX,"*",ERR,ERROR))// &
-                & " is invalid. The index must be > 0 and <= "// &
-                & TRIM(NUMBER_TO_VSTRING(SOLVERS%NUMBER_OF_SOLVERS,"*",ERR,ERROR))//"."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("Solvers have not been finished.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("Solvers is not associated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Problem control loop is not associated.",ERR,ERROR,*999)          
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("PROBLEM_SOLVER_EQUATIONS_EQUATIONS_SET_ADD_1")
-    RETURN
-999 CALL ERRORS("PROBLEM_SOLVER_EQUATIONS_EQUATIONS_SET_ADD_1",ERR,ERROR)
-    CALL EXITS("PROBLEM_SOLVER_EQUATIONS_EQUATIONS_SET_ADD_1")
-    RETURN 1
-  END SUBROUTINE PROBLEM_SOLVER_EQUATIONS_EQUATIONS_SET_ADD_1
 
   !
   !================================================================================================================================

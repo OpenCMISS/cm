@@ -18,7 +18,7 @@
 !> License for the specific language governing rights and limitations
 !> under the License.
 !>
-!> The Original Code is openCMISS
+!> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
@@ -1351,9 +1351,10 @@ CONTAINS
                             & TOTAL_NUMBER_OF_NODES_XI(1)+1
                           node_idx(1)=MOD(MOD(global_np-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1)), &
                             & TOTAL_NUMBER_OF_NODES_XI(1))+1
-                          ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,np,0)
-                          CALL FIELD_PARAMETER_SET_UPDATE_DOF(FIELD,FIELD_VALUES_SET_TYPE,ny,MY_ORIGIN(component_idx) &
-                            & +REAL(node_idx(component_idx)-1,DP)*DELTA_COORD(component_idx),ERR,ERROR,*999)
+                          ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,np)
+                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ny, &
+                            & MY_ORIGIN(component_idx)+REAL(node_idx(component_idx)-1,DP)*DELTA_COORD(component_idx), &
+                            & ERR,ERROR,*999)
                           IF(DOMAIN_NODES%NODES(np)%NUMBER_OF_DERIVATIVES>1) THEN
                             DERIVATIVES_NUMBER_OF_LINES=0
                             DELTA=0.0_DP
@@ -1392,8 +1393,9 @@ CONTAINS
                             DO nk=1,8
                               IF(DERIVATIVES_NUMBER_OF_LINES(nk)>0) THEN
                                 DELTA(nk)=DELTA(nk)/REAL(DERIVATIVES_NUMBER_OF_LINES(nk),DP)
-                                ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(nk,np,0)
-                                CALL FIELD_PARAMETER_SET_UPDATE_DOF(FIELD,FIELD_VALUES_SET_TYPE,ny,DELTA(nk),ERR,ERROR,*999)
+                                ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(nk,np)
+                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                                  & ny,DELTA(nk),ERR,ERROR,*999)
                               ENDIF
                             ENDDO !nk
                           ENDIF
@@ -1406,8 +1408,8 @@ CONTAINS
                       ENDIF
                     ENDDO !component_idx
 !!TODO: do boundary nodes first then start the update to overlap computation and computation.
-                    CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                    CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                   ELSE
                     LOCAL_ERROR="The standard field variable is not associated for field number "// &
                       & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))

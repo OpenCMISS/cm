@@ -23,7 +23,7 @@
 !> License for the specific language governing rights and limitations
 !> under the License.
 !>
-!> The Original Code is openCMISS
+!> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
@@ -111,7 +111,7 @@ CONTAINS
     CALL BASES_FINALISE(ERR,ERROR,*999)
     !Finalise computational enviroment
     CALL COMPUTATIONAL_ENVIRONMENT_FINALISE(ERR,ERROR,*999)
-    !Initialise the base routines
+    !Finalise the base routines
     CALL BASE_ROUTINES_FINALISE(ERR,ERROR,*999)
     
     RETURN
@@ -148,7 +148,7 @@ CONTAINS
 
     !Write out the CMISS version
     IF(COMPUTATIONAL_ENVIRONMENT%MY_COMPUTATIONAL_NODE_NUMBER==0) THEN
-      VERSION_STRING="openCMISS(cm) version "//TRIM(NUMBER_TO_VSTRING(CMISS_MAJOR_VERSION,"*",ERR,ERROR))
+      VERSION_STRING="OpenCMISS(cm) version "//TRIM(NUMBER_TO_VSTRING(CMISS_MAJOR_VERSION,"*",ERR,ERROR))
       VERSION_STRING=VERSION_STRING//"."
       VERSION_STRING=VERSION_STRING//TRIM(NUMBER_TO_VSTRING(CMISS_MINOR_VERSION,"*",ERR,ERROR))
       VERSION_STRING=VERSION_STRING//"."
