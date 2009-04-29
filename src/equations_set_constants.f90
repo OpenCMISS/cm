@@ -92,7 +92,13 @@ MODULE EQUATIONS_SET_CONSTANTS
   !Elasticity class
   !  Linear elasticity
   !  Finite elasticity
+
+!SEBK 20/04/09
   !Fluid mechanics class
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_STANDARD_STOKES_SUBTYPE=1
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_GENERALISED_STOKES_SUBTYPE=2
+!END SEBK
+
   !Electromagnetics class
   !Classical field class
   !  Laplace equation

@@ -493,11 +493,11 @@ static int FieldExport_File_Nodes( FileSession *const session, const int nodeCou
 
     for( i = 0; i < nodeCount; i++ )
     {
-        FieldExport_FPrintf( session, " %5d.  #Values=%d\n", i + 1, elementDerivatives[i] );
+        FieldExport_FPrintf( session, " %5d.  #Values=%d\n", i + 1, elementDerivatives[64*i] );
         FieldExport_FPrintf( session, "      Value indices:  " );
         for( j = 0; j < derivativeCount[i]; j++ )
         {
-            FieldExport_FPrintf( session, " %3d", elementDerivatives[ i + (j * nodeCount ) ] );
+            FieldExport_FPrintf( session, " %3d", elementDerivatives[ 64*i + (j * nodeCount ) ] );
         }
         FieldExport_FPrintf( session, "\n" );
         FieldExport_FPrintf( session, "      Scale factor indices: " );

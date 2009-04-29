@@ -91,6 +91,8 @@ MODULE PROBLEM_CONSTANTS
   INTEGER(INTG), PARAMETER :: PROBLEM_NO_SUBTYPE=0
   !Elasticity class
   !Fluid mechanics class
+  INTEGER(INTG), PARAMETER :: PROBLEM_STANDARD_STOKES_SUBTYPE=1
+  INTEGER(INTG), PARAMETER :: PROBLEM_GENERALISED_STOKES_SUBTYPE=2
   !Electromagnetics class
   !Classical field class
   !  Laplace equation
