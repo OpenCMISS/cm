@@ -819,7 +819,8 @@ CONTAINS
 
   !>Interpolates the appropriate partial derivative index of the element parameters at position XI for the basis
   !>for double precision arguments. Note the interpolated value returned needs to be adjusted for the particular
-  !>coordinate system with COORDINATE_INTERPOLATE_ADJUST. 
+  !>coordinate system with COORDINATE_INTERPOLATE_ADJUST. Note for simplex basis functions the XI coordinates should
+  !>exclude the last area coordinate.
   FUNCTION BASIS_INTERPOLATE_XI_DP(BASIS,PARTIAL_DERIV_INDEX,XI,ELEMENT_PARAMETERS,ERR,ERROR)
   
     !Argument variables
@@ -833,6 +834,7 @@ CONTAINS
     REAL(DP) :: BASIS_INTERPOLATE_XI_DP
     !Local Variables
     INTEGER(INTG) :: nn,nk,ns
+    REAL(DP) :: XIL(SIZE(XI,1)+1)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("BASIS_INTERPOLATE_XI_DP",ERR,ERROR,*999)
@@ -852,11 +854,14 @@ CONTAINS
         ENDDO !nn
         IF(ERR/=0) GOTO 999
       CASE(BASIS_SIMPLEX_TYPE)
+        !Create the last area coordinate
+        XIL(1:SIZE(XI,1))=XI
+        XIL(SIZE(XI,1)+1)=1.0_DP-SUM(XI)
         ns=0
         DO nn=1,BASIS%NUMBER_OF_NODES
           ns=ns+1
           BASIS_INTERPOLATE_XI_DP=BASIS_INTERPOLATE_XI_DP+ &
-            & BASIS_SIMPLEX_BASIS_EVALUATE(BASIS,nn,PARTIAL_DERIV_INDEX,XI,ERR,ERROR)* &
+            & BASIS_SIMPLEX_BASIS_EVALUATE(BASIS,nn,PARTIAL_DERIV_INDEX,XIL,ERR,ERROR)* &
             & ELEMENT_PARAMETERS(ns)
         ENDDO !nn
         IF(ERR/=0) GOTO 999
