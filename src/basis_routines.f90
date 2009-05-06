@@ -2122,10 +2122,10 @@ CONTAINS
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
       ELSE
 !!TODO: \todo Sort this properly by having a create values cache.
-        !Reset the basis quadrature
-        CALL BASIS_QUADRATURE_FINALISE(BASIS,ERR,ERROR,*999)
-        !Initialise the basis quadrature
-        CALL BASIS_QUADRATURE_INITIALISE(BASIS,ERR,ERROR,*999)
+        !Reset the basis quadrature - 
+        !CALL BASIS_QUADRATURE_FINALISE(BASIS,ERR,ERROR,*999)      ! Kumar - I think this is not correct as it 
+        !Initialise the basis quadrature                           !         resets the quadrature scheme already set.
+        !CALL BASIS_QUADRATURE_INITIALISE(BASIS,ERR,ERROR,*999)    ! 
         SELECT CASE(BASIS%QUADRATURE%TYPE)
         CASE(BASIS_GAUSS_LEGENDRE_QUADRATURE)            
           !Allocate one scheme and add it to the list of schemes
