@@ -444,8 +444,14 @@ CONTAINS
       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S3_S4
     ELSE IF("d3/ds2ds3ds4"==LINE) THEN
       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2_S3_S4
-    ELSE IF("d4/ds1ds2ds3ds4"==LINE) THEN
-      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S2_S3_S4
+    ELSE IF("d3/ds1ds4ds4"==LINE) THEN
+      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S4_S4
+    ELSE IF("d3/ds2ds4ds4"==LINE) THEN
+      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2_S4_S4
+    ELSE IF("d3/ds3ds4ds4"==LINE) THEN
+      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S3_S4_S4
+    ELSE IF("d3/ds4ds4ds4"==LINE) THEN
+      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S4_S4_S4
     ELSE
       FIELD_IO_DERIVATIVE_INFO=-1
       CALL FLAG_ERROR("Could not recognize derivatives from input string",ERR,ERROR,*999)
@@ -3954,8 +3960,14 @@ CONTAINS
               FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds1ds3ds4"
             CASE(PART_DERIV_S2_S3_S4)
               FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds2ds3ds4"
-            CASE(PART_DERIV_S1_S2_S3_S4)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d4/ds1ds2ds3ds4"
+            CASE(PART_DERIV_S1_S4_S4)
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds1ds4ds4"
+            CASE(PART_DERIV_S2_S4_S4)
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds2ds4ds4"
+            CASE(PART_DERIV_S3_S4_S4)
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds3ds4ds4"
+            CASE(PART_DERIV_S4_S4_S4)
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds4ds4ds4"
             CASE DEFAULT
               FIELD_IO_LABEL_DERIVATIVE_INFO_GET="unknown field variable type, add more details later, #Components="!&
               !&//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_COMPONENTS,"*",ERR,ERROR))
@@ -5136,7 +5148,7 @@ CONTAINS
 
   !>Write all the nodal information from LOCAL_PROCESS_NODAL_INFO_SET to local exnode files
   SUBROUTINE FIELD_IO_EXPORT_NODES_INTO_LOCAL_FILE(LOCAL_PROCESS_NODAL_INFO_SET, NAME, my_computational_node_number, &
-    &computational_node_numbers,ERR, ERROR, *)
+    & computational_node_numbers,ERR, ERROR, *)
     !the reason that my_computational_node_number is used in the argument is for future extension
     !Argument variables
     TYPE(FIELD_IO_NODAL_INFO_SET), INTENT(INOUT):: LOCAL_PROCESS_NODAL_INFO_SET !<nodal information in this process
