@@ -256,6 +256,8 @@ CONTAINS
             CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
               & GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
             SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+
+
             CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
               CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,1, &
                 & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
@@ -264,6 +266,13 @@ CONTAINS
               !Default the scaling to the geometric field scaling
               CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
               CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
+
+
+
+
+
+
+
             CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
@@ -312,6 +321,8 @@ CONTAINS
                 !i.e., k and a and c in div(k.grad(u(x)))=a(x)u(x)+c(x)
                 NUMBER_OF_MATERIALS_COMPONENTS=NUMBER_OF_DIMENSIONS+2
               ENDIF
+
+
               !Set the number of materials components
               CALL FIELD_NUMBER_OF_COMPONENTS_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,NUMBER_OF_MATERIALS_COMPONENTS,ERR,ERROR,*999)
               !Default the k materials components to the geometric interpolation setup with constant interpolation
@@ -323,6 +334,10 @@ CONTAINS
                 CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & component_idx,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
               ENDDO !component_idx
+
+
+
+
               !Default the source materials components to the first component geometric interpolation with constant interpolation
               CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                 & 1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
@@ -338,6 +353,10 @@ CONTAINS
             ELSE
               CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
             ENDIF
+
+
+
+
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
             IF(ASSOCIATED(EQUATIONS_MATERIALS)) THEN
