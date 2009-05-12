@@ -3841,42 +3841,52 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Evaluates a simplex basis function and its derivatives with respect to external \f$\mathbf{\xi}\f$ coordinates. For Simplex line
-  !<elements there are two area coordinates which are a function of \f$\xi_1\f$ : \f$L_1 = 1 - \xi_1\f$ and \f$L_2 = \xi_1 - 1\f$.
-  !<The derivatives wrt to external coordinates are then given by \f$\frac{\del \mathbf{N}}{\del\xi_1}=
-  !<\frac{\del\matbf(x)}{\del L_2}-\frac{\del \mathbf{N}}{\del L_1}\f$ and \f$\frac{\del^2\mathbf{N}}{\del \xi_1^2} =
-  !<\frac{\del^2\mathbf{N}}{\del L_1^2}-2\frac{\del^2\mathbf{N}}{\del L_1 \del L_2}+\frac{\del^2\mathbf{N}}{\del L_2^2}\f$.
-  !<For Simplex triangle elements there are three area coordinates which are a function of \f$\xi_1\f$ and
-  !<\f$\xi_2\f$ : \f$L_1 = 1 - \xi_1\f$, \f$L_2 = 1 - \xi_2\f$ and \f$L_3=\xi_1 + \xi_2 - 1\f$. The derivatives wrt to external
-  !<coordinates are then given by \f$\frac{\del \mathbf{N}}{\del\xi_1}=\frac{\del\matbf(x)}{\del L_3}-
-  !<\frac{\del \mathbf{N}}{\del L_1}\f$, \f$\frac{\del \mathbf{N}}{\del\xi_2}=\frac{\del\matbf(x)}{\del L_3}-
-  !<\frac{\del \mathbf{N}}{\del L_2}\f$, \f$\frac{\del^2\mathbf{N}}{\del \xi_1^2} = \frac{\del^2\mathbf{N}}{\del L_1^2}-
-  !<2\frac{\del^2\mathbf{N}}{\del L_1 \del L_3}+\frac{\del^2\mathbf{N}}{\del L_3^2}\f$, \f$\frac{\del^2\mathbf{N}}{\del \xi_2^2} =
-  !<\frac{\del^2\mathbf{N}}{\del L_2^2}-2\frac{\del^2\mathbf{N}}{\del L_2 \del L_3}+\frac{\del^2\mathbf{N}}{\del L_3^2}\f$ and
-  !<\f$\frac{\del^2\mathbf{N}}{\del \xi_1 \del \xi_2} = \frac{\del^2\mathbf{N}}{\del L_3^2}-
-  !<\frac{\del^2\mathbf{N}}{\del L_1 \del L_3}-\frac{\del^2\mathbf{N}}{\del L_2 \del L_3}+
-  !<\frac{\del^2\mathbf{N}}{\del L_1 \del L_2}\f$. For Simplex tetrahedral elements there are four area coordinates which are a
-  !<function of \f$\xi_1\f$,\f$\xi_2\f$ and \f$\xi_3\f$ : \f$L_1 = 1 - \xi_1\f$, \f$L_2 = 1 - \xi_2\f$, \f$L_3 = 1 - \xi_3\f$ and
-  !<\f$L_4 = \xi_1 + \xi_2 + \xi_3 - 1\f$. The derivatives wrt to external coordinates are then given by
-  !<\f$\frac{\del \mathbf{N}}{\del\xi_1}=\frac{\del\matbf(x)}{\del L_4}-\frac{\del \mathbf{N}}{\del L_1}\f$,
-  !<\f$\frac{\del \mathbf{N}}{\del\xi_2}=\frac{\del\matbf(x)}{\del L_4}-\frac{\del \mathbf{N}}{\del L_2}\f$,
-  !<\f$\frac{\del \mathbf{N}}{\del\xi_3}=\frac{\del\matbf(x)}{\del L_4}-\frac{\del \mathbf{N}}{\del L_3}\f$,
-  !<\f$\frac{\del^2\mathbf{N}}{\del \xi_1^2} = \frac{\del^2\mathbf{N}}{\del L_1^2}-2\frac{\del^2\mathbf{N}}{\del L_1 \del L_4}+
-  !<\frac{\del^2\mathbf{N}}{\del L_4^2}\f$,
-  !<\f$\frac{\del^2\mathbf{N}}{\del \xi_2^2} = \frac{\del^2\mathbf{N}}{\del L_2^2}-2\frac{\del^2\mathbf{N}}{\del L_2 \del L_4}+
-  !<\frac{\del^2\mathbf{N}}{\del L_4^2}\f$
-  !<\f$\frac{\del^2\mathbf{N}}{\del \xi_3^2} = \frac{\del^2\mathbf{N}}{\del L_3^2}-2\frac{\del^2\mathbf{N}}{\del L_3 \del L_4}+
-  !<\frac{\del^2\mathbf{N}}{\del L_4^2}\f$,
-  !<\f$\frac{\del^2\mathbf{N}}{\del \xi_1 \del \xi_2} = \frac{\del^2\mathbf{N}}{\del L_4^2}-\frac{\del^2\mathbf{N}}{\del L_1 \del L_4}-
-  !<\frac{\del^2\mathbf{N}}{\del L_2 \del L_4}+\frac{\del^2\mathbf{N}}{\del L_1 \del L_2}\f$,
-  !<\f$\frac{\del^2\mathbf{N}}{\del \xi_1 \del \xi_3} = \frac{\del^2\mathbf{N}}{\del L_4^2}-\frac{\del^2\mathbf{N}}{\del L_1 \del L_4}-
-  !<\frac{\del^2\mathbf{N}}{\del L_3 \del L_4}+\frac{\del^2\mathbf{N}}{\del L_1 \del L_3}\f$,
-  !<\f$\frac{\del^2\mathbf{N}}{\del \xi_2 \del \xi_3} = \frac{\del^2\mathbf{N}}{\del L_4^2}-\frac{\del^2\mathbf{N}}{\del L_2 \del L_4}-
-  !<\frac{\del^2\mathbf{N}}{\del L_3 \del L_4}+\frac{\del^2\mathbf{N}}{\del L_2 \del L_3}\f$ and
-  !<\f$\frac{\del^3\mathbf{N}}{\del \xi_1 \del \xi_2 \del \xi_3} = \frac{\del^3\mathbf{N}}{\del L_4^3}-
-  !<\frac{\del^3\mathbf{N}}{\del L_1 \del L_4^2}-\frac{\del^3\mathbf{N}}{\del L_2 \del L_4^2}-\frac{\del^3\mathbf{N}}{\del L_3 \del L_4^2}+
-  !<\frac{\del^3\mathbf{N}}{\del L_1 \del 2 \del L_4}+\frac{\del^3\mathbf{N}}{\del L_1 \del L_3 \del L_4}+
-  !<\frac{\del^3\mathbf{N}}{\del L_2 \del L_3 \del L_4}-\frac{\del^3\mathbf{N}}{\del L_1 \del L_2 \del L_3}\f$.
+  !>Evaluates a simplex basis function and its derivatives with respect to external \f$\mathbf{\xi}\f$ coordinates.
+  !>For Simplex line elements there are two area coordinates which are a function of \f$\xi_1\f$ : \f$L_1 = 1 - \xi_1\f$ and
+  !>\f$L_2 = \xi_1 - 1\f$.The derivatives wrt to external coordinates are then given by \f$\frac{\partial\mathbf{N}}{\partial\xi_1}=
+  !>\frac{\partial\mathbf(x)}{\partial L_2}-\frac{\partial \mathbf{N}}{\partial L_1}\f$ and \f$\frac{\partial^2\mathbf{N}}{
+  !>\partial \xi_1^2} = \frac{\partial^2\mathbf{N}}{\partial L_1^2}-2\frac{\partial^2\mathbf{N}}{\partial L_1 \partial L_2}+
+  !>\frac{\partial^2\mathbf{N}}{\partial L_2^2}\f$.
+  !>For Simplex triangle elements there are three area coordinates which are a function of \f$\xi_1\f$ and
+  !>\f$\xi_2\f$ : \f$L_1 = 1 - \xi_1\f$, \f$L_2 = 1 - \xi_2\f$ and \f$L_3=\xi_1 + \xi_2 - 1\f$. The derivatives wrt to external
+  !>coordinates are then given by \f$\frac{\partial \mathbf{N}}{\partial\xi_1}=\frac{\partial\mathbf(N)}{\partial L_3}-
+  !>\frac{\partial \mathbf{N}}{\partial L_1}\f$, \f$\frac{\partial \mathbf{N}}{\partial\xi_2}=\frac{\partial\mathbf(x)}{
+  !>\partial L_3}-\frac{\partial \mathbf{N}}{\partial L_2}\f$, \f$\frac{\partial^2\mathbf{N}}{\partial \xi_1^2} =
+  !>\frac{\partial^2\mathbf{N}}{\partial L_1^2}-2\frac{\partial^2\mathbf{N}}{\partial L_1 \partial L_3}+
+  !>\frac{\partial^2\mathbf{N}}{\partial L_3^2}\f$, \f$\frac{\partial^2\mathbf{N}}{\partial \xi_2^2} =
+  !>\frac{\partial^2\mathbf{N}}{\partial L_2^2}-2\frac{\partial^2\mathbf{N}}{\partial L_2 \partial L_3}+
+  !>\frac{\partial^2\mathbf{N}}{\partial L_3^2}\f$ and \f$\frac{\partial^2\mathbf{N}}{\partial \xi_1 \partial \xi_2} =
+  !>\frac{\partial^2\mathbf{N}}{\partial L_3^2}-\frac{\partial^2\mathbf{N}}{\partial L_1 \partial L_3}-
+  !>\frac{\partial^2\mathbf{N}}{\partial L_2 \partial L_3}+\frac{\partial^2\mathbf{N}}{\partial L_1 \partial L_2}\f$.
+  !>For Simplex tetrahedral elements there are four area coordinates which are a function of \f$\xi_1\f$,\f$\xi_2\f$ and
+  !>\f$\xi_3\f$ : \f$L_1 = 1 - \xi_1\f$, \f$L_2 = 1 - \xi_2\f$, \f$L_3 = 1 - \xi_3\f$ and
+  !>\f$L_4 = \xi_1 + \xi_2 + \xi_3 - 1\f$. The derivatives wrt to external coordinates are then given by
+  !>\f$\frac{\partial \mathbf{N}}{\partial\xi_1}=\frac{\partial\mathbf(x)}{\partial L_4}-
+  !>\frac{\partial \mathbf{N}}{\partial L_1}\f$,
+  !>\f$\frac{\partial \mathbf{N}}{\partial\xi_2}=\frac{\partial\mathbf(x)}{\partial L_4}-
+  !>\frac{\partial \mathbf{N}}{\partial L_2}\f$,
+  !>\f$\frac{\partial \mathbf{N}}{\partial\xi_3}=\frac{\partial\mathbf(x)}{\partial L_4}-
+  !>\frac{\partial \mathbf{N}}{\partial L_3}\f$,
+  !>\f$\frac{\partial^2\mathbf{N}}{\partial \xi_1^2} = \frac{\partial^2\mathbf{N}}{\partial L_1^2}-
+  !>2\frac{\partial^2\mathbf{N}}{\partial L_1 \partial L_4}+\frac{\partial^2\mathbf{N}}{\partial L_4^2}\f$,
+  !>\f$\frac{\partial^2\mathbf{N}}{\partial \xi_2^2} = \frac{\partial^2\mathbf{N}}{\partial L_2^2}-
+  !>2\frac{\partial^2\mathbf{N}}{\partial L_2 \partial L_4}+\frac{\partial^2\mathbf{N}}{\partial L_4^2}\f$
+  !>\f$\frac{\partial^2\mathbf{N}}{\partial \xi_3^2} = \frac{\partial^2\mathbf{N}}{\partial L_3^2}-
+  !>2\frac{\partial^2\mathbf{N}}{\partial L_3 \partial L_4}+\frac{\partial^2\mathbf{N}}{\partial L_4^2}\f$,
+  !>\f$\frac{\partial^2\mathbf{N}}{\partial\xi_1\partial \xi_2}=\frac{\partial^2\mathbf{N}}{\partial L_4^2}-
+  !>\frac{\partial^2\mathbf{N}}{\partial L_1 \partial L_4}-\frac{\partial^2\mathbf{N}}{\partial L_2 \partial L_4}+
+  !>\frac{\partial^2\mathbf{N}}{\partial L_1 \partial L_2}\f$,
+  !>\f$\frac{\partial^2\mathbf{N}}{\partial\xi_1\partial\xi_3}=\frac{\partial^2\mathbf{N}}{\partial L_4^2}-
+  !>\frac{\partial^2\mathbf{N}}{\partial L_1 \partial L_4}-\frac{\partial^2\mathbf{N}}{\partial L_3 \partial L_4}+
+  !>\frac{\partial^2\mathbf{N}}{\partial L_1 \partial L_3}\f$,
+  !>\f$\frac{\partial^2\mathbf{N}}{\partial\xi_2\partial\xi_3}=\frac{\partial^2\mathbf{N}}{\partial L_4^2}-
+  !>\frac{\partial^2\mathbf{N}}{\partial L_2 \partial L_4}-\frac{\partial^2\mathbf{N}}{\partial L_3 \partial L_4}+
+  !>\frac{\partial^2\mathbf{N}}{\partial L_2 \partial L_3}\f$ and
+  !>\f$\frac{\partial^3\mathbf{N}}{\partial \xi_1 \partial \xi_2 \partial \xi_3} = \frac{\partial^3\mathbf{N}}{\partial L_4^3}-
+  !>\frac{\partial^3\mathbf{N}}{\partial L_1 \partial L_4^2}-\frac{\partial^3\mathbf{N}}{\partial L_2 \partial L_4^2}-
+  !>\frac{\partial^3\mathbf{N}}{\partial L_3 \partial L_4^2}+\frac{\partial^3\mathbf{N}}{\partial L_1 \partial 2 \partial L_4}+
+  !>\frac{\partial^3\mathbf{N}}{\partial L_1 \partial L_3 \partial L_4}+\frac{\partial^3\mathbf{N}}{\partial L_2 \partial L_3
+  !>\partial L_4}-\frac{\partial^3\mathbf{N}}{\partial L_1 \partial L_2 \partial L_3}\f$.
   FUNCTION BASIS_SIMPLEX_BASIS_EVALUATE(BASIS,NODE_NUMBER,PARTIAL_DERIV_INDEX,XL,ERR,ERROR)
     
     !Argument variables

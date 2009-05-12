@@ -244,6 +244,7 @@ MODULE TYPES
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global element number in the mesh.
     INTEGER(INTG) :: USER_NUMBER !<The corresponding user number for the element.
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function for the element.
+    INTEGER(INTG), ALLOCATABLE :: MESH_ELEMENT_NODES(:) !<MESH_ELEMENT_NODES(nn). The mesh node number in the mesh of the nn'th local node in the element. Old CMISS name NPNE(nn,nbf,ne).
     INTEGER(INTG), ALLOCATABLE :: GLOBAL_ELEMENT_NODES(:) !<GLOBAL_ELEMENT_NODES(nn). The global node number in the mesh of the nn'th local node in the element. Old CMISS name NPNE(nn,nbf,ne).
     INTEGER(INTG), ALLOCATABLE :: USER_ELEMENT_NODES(:) !<USER_ELEMENT_NODES(nn). The user node number in the mesh of the nn'th local node in the element. Old CMISS name NPNE(nn,nbf,ne).
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ADJACENT_ELEMENTS(:) !<NUMBER_OF_ADJACENT_ELEMENTS(-ni:ni). The number of elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent element before the element in the ni'th direction and +ni gives the adjacent element after the element in the ni'th direction. The ni=0 index should be 1 for the current element. Old CMISS name NXI(-ni:ni,0:nei,ne).
@@ -260,6 +261,7 @@ MODULE TYPES
 
   !>Contains the topology information for a global node of a mesh.
   TYPE MESH_NODE_TYPE
+    INTEGER(INTG) :: MESH_NUMBER !<The mesh node number in the mesh.
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global node number in the mesh.
     INTEGER(INTG) :: USER_NUMBER !<The corresponding user number for the node.
     INTEGER(INTG) :: NUMBER_OF_DERIVATIVES !<The number of global derivatives at the node for the mesh. Old CMISS name NKT(nj,np).
@@ -274,6 +276,7 @@ MODULE TYPES
     TYPE(MESH_TYPE), POINTER :: MESH !<The pointer to the mesh for this nodes information.
     INTEGER(INTG) :: NUMBER_OF_NODES !<The number of nodes in the mesh.
     TYPE(MESH_NODE_TYPE), POINTER :: NODES(:) !<NODES(np). The pointer to the array of topology information for the nodes of the mesh. NODES(np) contains the topological information for the np'th global node of the mesh. \todo Should this be allocatable???
+    TYPE(TREE_TYPE), POINTER :: NODES_TREE !<A tree mapping the mesh global number to the region nodes global number.
   END TYPE MESH_NODES_TYPE
 
   !>Contains information on the (global) topology of a mesh.
