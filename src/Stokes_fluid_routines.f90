@@ -103,7 +103,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
  !   REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
     INTEGER::DEPENDENT_FIELD_NUMBER_OF_VARIABLES,DEPENDENT_FIELD_NUMBER_OF_COMPONENTS
-    INTEGER::NUMBER_OF_DIMENSIONS,GEOMETRIC_COMPONENT_NUMBER
+    INTEGER::NUMBER_OF_DIMENSIONS,GEOMETRIC_COMPONENT_NUMBER,NUMBER_OF_MATERIALS_COMPONENTS
     INTEGER::MATERIAL_FIELD_NUMBER_OF_VARIABLES,MATERIAL_FIELD_NUMBER_OF_COMPONENTS,I
 
     CALL ENTERS("STOKES_FLUID_EQUATION_SET_STANDARD_SETUP",ERR,ERROR,*999)
@@ -278,7 +278,7 @@ CONTAINS
              !!
              !
 
-! sebk added a material field with 1 variable and 2 components (density and viscosity) 01/05/09
+! sebk added a material field with 1 variable and 1 component (viscosity) 01/05/09
           SELECT CASE(ACTION_TYPE)
 	      CASE(EQUATIONS_SET_SETUP_START_ACTION)
 
@@ -300,11 +300,11 @@ CONTAINS
 		  CALL FIELD_NUMBER_OF_COMPONENTS_SET(NEXT_NUMBER,EQUATIONS_SET%REGION,MATERIAL_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
 
 		  CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-		  & I,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
+		  & 1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
 		  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-		  & I,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
+		  & 1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
 		  CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-		  & I,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
+		  & 1,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
 
 		  !Default the field scaling to that of the geometric field
 		  CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
@@ -316,24 +316,24 @@ CONTAINS
 
 
 	CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
-
-            EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
+           EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
             IF(ASSOCIATED(EQUATIONS_MATERIALS)) THEN
               !Finish creating the materials field
               CALL FIELD_CREATE_FINISH(EQUATIONS_SET%REGION,EQUATIONS_MATERIALS%MATERIALS_FIELD,ERR,ERROR,*999)
               !Set the default values for the materials field
-
-              CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                  & 1,FIELD_VALUES_SET_TYPE,0.001_DP,ERR,ERROR,*999)
-
-
+              !First set the mu values to 0.001
+              DO I=1,MATERIAL_FIELD_NUMBER_OF_COMPONENTS
+                CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & I,FIELD_VALUES_SET_TYPE,0.001_DP,ERR,ERROR,*999)
+              ENDDO !component_idx
             ELSE
               CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
             ENDIF
+
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a linear source Poisson equation."
+              & " is invalid for Stokes equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
 
@@ -489,7 +489,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-! SEBK 20/04/09
+! SEBK 10/05/09
 
   !>Calculates the element stiffness matrices and RHS for a Stokes fluid finite element equations set.
   SUBROUTINE STOKES_FLUID_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
@@ -501,7 +501,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) ng,mh,mhs,mi,ms,nh,nhs,ni,ns,MESH_COMPONENT1,MESH_COMPONENT2
-    REAL(DP) :: RWG,SUM,PGMSI(3),PGNSI(3)
+    REAL(DP) :: RWG,SUM,PGMSI(3),PGNSI(3),PGN,PGM,MU_PARAM
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
@@ -510,12 +510,14 @@ CONTAINS
     TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
     TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: RHS_VECTOR
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("STOKES_FLUID_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
+
+WRITE(*,*)'42-1'
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
@@ -535,11 +537,15 @@ CONTAINS
              !!
              !
 
+WRITE(*,*)'42-2'
 
 !!TODO: move these and scale factor adjustment out once generalised Stokes is put in.
           !Store all these in equations matrices/somewhere else?????
           DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
           GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
+
+          MATERIALS_FIELD=>EQUATIONS%INTERPOLATION%MATERIALS_FIELD
+
           EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
           LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
           EQUATIONS_MATRIX=>LINEAR_MATRICES%MATRICES(1)%PTR
@@ -549,30 +555,33 @@ CONTAINS
           FIELD_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
           
 
+WRITE(*,*)'42-3'
+
+
           GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
             & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+          DEPENDENT_BASIS=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+            & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+
           DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
             & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+
+! DEPENDENT_BASIS??????
+
           QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
 
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
             & GEOMETRIC_INTERP_PARAMETERS,ERR,ERROR,*999)
 
-!HIER WIRD UEBER DIE GAUSSPUNKTE ITERIERT
 
-	  WRITE(*,*)'QUADRATURE_SCHEME%NUMBER_OF_GAUSS',QUADRATURE_SCHEME%NUMBER_OF_GAUSS
-	  WRITE(*,*)'FIELD_VARIABLE%NUMBER_OF_COMPONENTS',FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-	  WRITE(*,*)'DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS',DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
-	  WRITE(*,*)'DEPENDENT_BASIS%NUMBER_OF_XI',DEPENDENT_BASIS%NUMBER_OF_XI
-	WRITE(*,*)
-	WRITE(*,*)'MAX_NUMBER_OF_INTERPOLATION_PARAMETERS(1)',FIELD_VARIABLE%COMPONENTS(1)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
-	WRITE(*,*)'MAX_NUMBER_OF_INTERPOLATION_PARAMETERS(2)',FIELD_VARIABLE%COMPONENTS(2)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
-	WRITE(*,*)'MAX_NUMBER_OF_INTERPOLATION_PARAMETERS(3)',FIELD_VARIABLE%COMPONENTS(3)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
-	WRITE(*,*)'MAX_NUMBER_OF_INTERPOLATION_PARAMETERS(4)',FIELD_VARIABLE%COMPONENTS(4)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
+WRITE(*,*)'42-4'
 
+!!!DAS MUSS MAN KLAEREN
 
+          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+            & MATERIALS_INTERP_PARAMETERS,ERR,ERROR,*999)
 
-
+WRITE(*,*)'42-5'
 
           !Loop over gauss points	2^DIM... bei 3D also ng=1,8
           DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
@@ -580,13 +589,18 @@ CONTAINS
               & GEOMETRIC_INTERP_POINT,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,EQUATIONS%INTERPOLATION% &
               & GEOMETRIC_INTERP_POINT_METRICS,ERR,ERROR,*999)
+
+
+WRITE(*,*)'42-6'
+
+!!!DAS MUSS MAN KLAEREN
+
+            CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+              & MATERIALS_INTERP_POINT,ERR,ERROR,*999)
+
             !Calculate RWG.
 !!TODO: Think about symmetric problems.
 
-
-!HIER WERDEN DIE WICHTUNGSFAKTOREN BERECHNET
-
-!	    DAS IST SCHON JACOBI MAL GAUS-WICHTUNG!!!
             RWG=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)
             !Loop over field components
             mhs=0
@@ -596,68 +610,121 @@ CONTAINS
                   DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
                     & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
 
-
-
-	      !GEHT DIE ZEILEN AB
-
 !              Loop over element rows
 !TODO: CHANGE ELEMENT CALCULATE TO WORK OF ns ???
 
 
-!DAS IST DER M-ZAEHLER
-! sebk 11/05/9 input to determine number of parameters per component
-              DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS !oder halt die anzahl der indizes... die reduziert sich vielleicht durch die rb
-									!also hier u_1, u_2, ..., u_8... dann erst p_1, .... p_8 usw.
-                mhs=mhs+1						!mhs und nhs geht also von (1) bis (anzahl der komponenten*anzhal der indizes)
+
+! sebk 11/05/09 input to determine number of parameters per component
+
+              DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS 
+									
+                mhs=mhs+1						
                 nhs=0
                 IF(EQUATIONS_MATRIX%UPDATE_MATRIX) THEN
 
 
                   !Loop over element columns
 
-		  !GEHT DIE SPALTEN AB
+                  DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
 
-                  DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS		! also das gleiche nur in die andere richtung
-									! stehe also in der Zeile X und wander jetzt die Spalte runter
-
-!DAS IST DER N-ZAEHLER
 ! sebk 11/05/9 input to determine number of parameters per component
  		  MESH_COMPONENT2=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
                   DEPENDENT_BASIS2=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT2)%PTR% &
                     & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+
                    DO ns=1,DEPENDENT_BASIS2%NUMBER_OF_ELEMENT_PARAMETERS	! also das gleiche nur in die andere richtung
                       nhs=nhs+1
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! MOMENTUM EQUATION FOR VELOCITIES
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+		    IF (nh==mh.AND.nh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+
+! DEPENDENT_BASIS??????
                       DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
-
-!
-!	DAS IST DER CASUS CNACTUS... was macht PG*M*SI und PG*N*SI(ni) mit ni als Richtungszaehler!
-!
-!
-
                         PGMSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
                         PGNSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
-
-
-
                       ENDDO !ni
+
+
+
+                      MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(1,NO_PART_DERIV)
                       SUM=0.0_DP
+
+		      WRITE(*,*)'MU_PARAM',MU_PARAM
+
+! DEPENDENT_BASIS??????
                       DO mi=1,DEPENDENT_BASIS%NUMBER_OF_XI
                         DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
-                          SUM=SUM+PGMSI(mi)*PGNSI(ni)*EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%GU(mi,ni)
+                          SUM=SUM+MU_PARAM*PGMSI(mi)*PGNSI(ni)*EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%GU(mi,ni)
                         ENDDO !ni
                       ENDDO !mi
 
 
-!HIER SCHEINT DIE ELEMENTMATRIX BERECHNET ZU WERDEN
+! CHANGED TO MINUS SUM!!!!!
+
+                      EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)-SUM*RWG
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! MOMENTUM EQUATION FOR PRESSURE
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+		    ELSE IF (nh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS.AND.mh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+
+
+                      SUM=0.0_DP
+                      PGN=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+
+! DEPENDENT_BASIS??????
+                      DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
+                        PGMSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+
+!hinten beim DXI_DX steht der Spaltenzaehler !!!!!!
+                        SUM=SUM+PGN*PGMSI(ni)*EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(ni,mh)
+                      ENDDO !ni
+
+                     EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! MASS EQUATION
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+		    ELSE IF (mh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS.AND.nh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+
+                      SUM=0.0_DP
+                      PGM=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+
+! DEPENDENT_BASIS??????
+                      DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
+                        PGNSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+
+!hinten beim DXI_DX steht der Zeilenzaehler !!!!!!
+                        SUM=SUM+PGM*PGNSI(ni)*EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(ni,nh)
+                      ENDDO !ni
 
                       EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
-                    ENDDO !ns
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! SET ALL OTHER COMPONENTS TO ZERO
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+		    ELSE
+
+                      EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=0.0_DP
+
+		    END IF
+
+	            ENDDO !ns
 
 
                   ENDDO !nh
                 ENDIF
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !UND HIER PASSIERT WAS MIT DER RECHTEN SEITE
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
                 IF(RHS_VECTOR%UPDATE_VECTOR) RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=0.0_DP
               ENDDO !ms
