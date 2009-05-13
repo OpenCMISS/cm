@@ -819,7 +819,8 @@ CONTAINS
 
   !>Interpolates the appropriate partial derivative index of the element parameters at position XI for the basis
   !>for double precision arguments. Note the interpolated value returned needs to be adjusted for the particular
-  !>coordinate system with COORDINATE_INTERPOLATE_ADJUST. 
+  !>coordinate system with COORDINATE_INTERPOLATE_ADJUST. Note for simplex basis functions the XI coordinates should
+  !>exclude the last area coordinate.
   FUNCTION BASIS_INTERPOLATE_XI_DP(BASIS,PARTIAL_DERIV_INDEX,XI,ELEMENT_PARAMETERS,ERR,ERROR)
   
     !Argument variables
@@ -833,6 +834,7 @@ CONTAINS
     REAL(DP) :: BASIS_INTERPOLATE_XI_DP
     !Local Variables
     INTEGER(INTG) :: nn,nk,ns
+    REAL(DP) :: XIL(SIZE(XI,1)+1)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("BASIS_INTERPOLATE_XI_DP",ERR,ERROR,*999)
@@ -852,11 +854,14 @@ CONTAINS
         ENDDO !nn
         IF(ERR/=0) GOTO 999
       CASE(BASIS_SIMPLEX_TYPE)
+        !Create the area coordinates from the xi coordinates
+        XIL(1:SIZE(XI,1))=1.0_DP-XI
+        XIL(SIZE(XI,1)+1)=SUM(XI)-1.0_DP
         ns=0
         DO nn=1,BASIS%NUMBER_OF_NODES
           ns=ns+1
           BASIS_INTERPOLATE_XI_DP=BASIS_INTERPOLATE_XI_DP+ &
-            & BASIS_SIMPLEX_BASIS_EVALUATE(BASIS,nn,PARTIAL_DERIV_INDEX,XI,ERR,ERROR)* &
+            & BASIS_SIMPLEX_BASIS_EVALUATE(BASIS,nn,PARTIAL_DERIV_INDEX,XIL,ERR,ERROR)* &
             & ELEMENT_PARAMETERS(ns)
         ENDDO !nn
         IF(ERR/=0) GOTO 999
@@ -2923,7 +2928,7 @@ CONTAINS
         BASIS%NUMBER_OF_COLLAPSED_XI=0
         SELECT CASE(BASIS%NUMBER_OF_XI)
         CASE(1)
-          BASIS%NUMBER_OF_PARTIAL_DERIVATIVES=6
+          BASIS%NUMBER_OF_PARTIAL_DERIVATIVES=3
           SELECT CASE(BASIS%INTERPOLATION_XI(1))
           CASE(BASIS_LINEAR_SIMPLEX_INTERPOLATION)
             BASIS%INTERPOLATION_TYPE(1)=BASIS_SIMPLEX_INTERPOLATION
@@ -2953,7 +2958,7 @@ CONTAINS
             CALL FLAG_ERROR("Invalid interpolation type",ERR,ERROR,*999)
           END SELECT
         CASE(2)
-          BASIS%NUMBER_OF_PARTIAL_DERIVATIVES=11
+          BASIS%NUMBER_OF_PARTIAL_DERIVATIVES=6
           SELECT CASE(BASIS%INTERPOLATION_XI(2))
           CASE(BASIS_LINEAR_SIMPLEX_INTERPOLATION)
             BASIS%INTERPOLATION_TYPE(1)=BASIS_SIMPLEX_INTERPOLATION
@@ -2992,7 +2997,7 @@ CONTAINS
             CALL FLAG_ERROR("Invalid interpolation type",ERR,ERROR,*999)
           END SELECT
         CASE(3)
-          BASIS%NUMBER_OF_PARTIAL_DERIVATIVES=20
+          BASIS%NUMBER_OF_PARTIAL_DERIVATIVES=11
           SELECT CASE(BASIS%INTERPOLATION_XI(3))
           CASE(BASIS_LINEAR_SIMPLEX_INTERPOLATION)
             BASIS%INTERPOLATION_TYPE(1)=BASIS_SIMPLEX_INTERPOLATION
@@ -3826,61 +3831,339 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Evaluates a  simplex basis function for the given BASIS.
+  !>Evaluates a simplex basis function and its derivatives with respect to external \f$\mathbf{\xi}\f$ coordinates.
+  !>For Simplex line elements there are two area coordinates which are a function of \f$\xi_1\f$ : \f$L_1 = 1 - \xi_1\f$ and
+  !>\f$L_2 = \xi_1 - 1\f$.The derivatives wrt to external coordinates are then given by \f$\frac{\partial\mathbf{N}}{\partial\xi_1}=
+  !>\frac{\partial\mathbf(x)}{\partial L_2}-\frac{\partial \mathbf{N}}{\partial L_1}\f$ and \f$\frac{\partial^2\mathbf{N}}{
+  !>\partial \xi_1^2} = \frac{\partial^2\mathbf{N}}{\partial L_1^2}-2\frac{\partial^2\mathbf{N}}{\partial L_1 \partial L_2}+
+  !>\frac{\partial^2\mathbf{N}}{\partial L_2^2}\f$.
+  !>For Simplex triangle elements there are three area coordinates which are a function of \f$\xi_1\f$ and
+  !>\f$\xi_2\f$ : \f$L_1 = 1 - \xi_1\f$, \f$L_2 = 1 - \xi_2\f$ and \f$L_3=\xi_1 + \xi_2 - 1\f$. The derivatives wrt to external
+  !>coordinates are then given by \f$\frac{\partial \mathbf{N}}{\partial\xi_1}=\frac{\partial\mathbf(N)}{\partial L_3}-
+  !>\frac{\partial \mathbf{N}}{\partial L_1}\f$, \f$\frac{\partial \mathbf{N}}{\partial\xi_2}=\frac{\partial\mathbf(x)}{
+  !>\partial L_3}-\frac{\partial \mathbf{N}}{\partial L_2}\f$, \f$\frac{\partial^2\mathbf{N}}{\partial \xi_1^2} =
+  !>\frac{\partial^2\mathbf{N}}{\partial L_1^2}-2\frac{\partial^2\mathbf{N}}{\partial L_1 \partial L_3}+
+  !>\frac{\partial^2\mathbf{N}}{\partial L_3^2}\f$, \f$\frac{\partial^2\mathbf{N}}{\partial \xi_2^2} =
+  !>\frac{\partial^2\mathbf{N}}{\partial L_2^2}-2\frac{\partial^2\mathbf{N}}{\partial L_2 \partial L_3}+
+  !>\frac{\partial^2\mathbf{N}}{\partial L_3^2}\f$ and \f$\frac{\partial^2\mathbf{N}}{\partial \xi_1 \partial \xi_2} =
+  !>\frac{\partial^2\mathbf{N}}{\partial L_3^2}-\frac{\partial^2\mathbf{N}}{\partial L_1 \partial L_3}-
+  !>\frac{\partial^2\mathbf{N}}{\partial L_2 \partial L_3}+\frac{\partial^2\mathbf{N}}{\partial L_1 \partial L_2}\f$.
+  !>For Simplex tetrahedral elements there are four area coordinates which are a function of \f$\xi_1\f$,\f$\xi_2\f$ and
+  !>\f$\xi_3\f$ : \f$L_1 = 1 - \xi_1\f$, \f$L_2 = 1 - \xi_2\f$, \f$L_3 = 1 - \xi_3\f$ and
+  !>\f$L_4 = \xi_1 + \xi_2 + \xi_3 - 1\f$. The derivatives wrt to external coordinates are then given by
+  !>\f$\frac{\partial \mathbf{N}}{\partial\xi_1}=\frac{\partial\mathbf(x)}{\partial L_4}-
+  !>\frac{\partial \mathbf{N}}{\partial L_1}\f$,
+  !>\f$\frac{\partial \mathbf{N}}{\partial\xi_2}=\frac{\partial\mathbf(x)}{\partial L_4}-
+  !>\frac{\partial \mathbf{N}}{\partial L_2}\f$,
+  !>\f$\frac{\partial \mathbf{N}}{\partial\xi_3}=\frac{\partial\mathbf(x)}{\partial L_4}-
+  !>\frac{\partial \mathbf{N}}{\partial L_3}\f$,
+  !>\f$\frac{\partial^2\mathbf{N}}{\partial \xi_1^2} = \frac{\partial^2\mathbf{N}}{\partial L_1^2}-
+  !>2\frac{\partial^2\mathbf{N}}{\partial L_1 \partial L_4}+\frac{\partial^2\mathbf{N}}{\partial L_4^2}\f$,
+  !>\f$\frac{\partial^2\mathbf{N}}{\partial \xi_2^2} = \frac{\partial^2\mathbf{N}}{\partial L_2^2}-
+  !>2\frac{\partial^2\mathbf{N}}{\partial L_2 \partial L_4}+\frac{\partial^2\mathbf{N}}{\partial L_4^2}\f$
+  !>\f$\frac{\partial^2\mathbf{N}}{\partial \xi_3^2} = \frac{\partial^2\mathbf{N}}{\partial L_3^2}-
+  !>2\frac{\partial^2\mathbf{N}}{\partial L_3 \partial L_4}+\frac{\partial^2\mathbf{N}}{\partial L_4^2}\f$,
+  !>\f$\frac{\partial^2\mathbf{N}}{\partial\xi_1\partial \xi_2}=\frac{\partial^2\mathbf{N}}{\partial L_4^2}-
+  !>\frac{\partial^2\mathbf{N}}{\partial L_1 \partial L_4}-\frac{\partial^2\mathbf{N}}{\partial L_2 \partial L_4}+
+  !>\frac{\partial^2\mathbf{N}}{\partial L_1 \partial L_2}\f$,
+  !>\f$\frac{\partial^2\mathbf{N}}{\partial\xi_1\partial\xi_3}=\frac{\partial^2\mathbf{N}}{\partial L_4^2}-
+  !>\frac{\partial^2\mathbf{N}}{\partial L_1 \partial L_4}-\frac{\partial^2\mathbf{N}}{\partial L_3 \partial L_4}+
+  !>\frac{\partial^2\mathbf{N}}{\partial L_1 \partial L_3}\f$,
+  !>\f$\frac{\partial^2\mathbf{N}}{\partial\xi_2\partial\xi_3}=\frac{\partial^2\mathbf{N}}{\partial L_4^2}-
+  !>\frac{\partial^2\mathbf{N}}{\partial L_2 \partial L_4}-\frac{\partial^2\mathbf{N}}{\partial L_3 \partial L_4}+
+  !>\frac{\partial^2\mathbf{N}}{\partial L_2 \partial L_3}\f$ and
+  !>\f$\frac{\partial^3\mathbf{N}}{\partial \xi_1 \partial \xi_2 \partial \xi_3} = \frac{\partial^3\mathbf{N}}{\partial L_4^3}-
+  !>\frac{\partial^3\mathbf{N}}{\partial L_1 \partial L_4^2}-\frac{\partial^3\mathbf{N}}{\partial L_2 \partial L_4^2}-
+  !>\frac{\partial^3\mathbf{N}}{\partial L_3 \partial L_4^2}+\frac{\partial^3\mathbf{N}}{\partial L_1 \partial 2 \partial L_4}+
+  !>\frac{\partial^3\mathbf{N}}{\partial L_1 \partial L_3 \partial L_4}+\frac{\partial^3\mathbf{N}}{\partial L_2 \partial L_3
+  !>\partial L_4}-\frac{\partial^3\mathbf{N}}{\partial L_1 \partial L_2 \partial L_3}\f$.
   FUNCTION BASIS_SIMPLEX_BASIS_EVALUATE(BASIS,NODE_NUMBER,PARTIAL_DERIV_INDEX,XL,ERR,ERROR)
     
     !Argument variables
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function to evaluate.
     INTEGER(INTG), INTENT(IN) :: NODE_NUMBER !<The node number defines the actual basis function to evaluate.
-    INTEGER(INTG), INTENT(IN) :: PARTIAL_DERIV_INDEX !<The partial derivative index of the basis to evaluate.
+    INTEGER(INTG), INTENT(IN) :: PARTIAL_DERIV_INDEX !<The partial derivative index in Xi space of the basis to evaluate.
     REAL(DP), INTENT(IN) :: XL(:) !<XL(nic). The area coordinates to evaluate the basis function at.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
     REAL(DP) :: BASIS_SIMPLEX_BASIS_EVALUATE !<On return the evaluated basis function
     !Local variables
-    INTEGER(INTG) :: nic
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("BASIS_SIMPLEX_BASIS_EVALUATE",ERR,ERROR,*999)
     
-    BASIS_SIMPLEX_BASIS_EVALUATE=1.0_DP
+    BASIS_SIMPLEX_BASIS_EVALUATE=0.0_DP
     IF(ASSOCIATED(BASIS)) THEN
       IF(BASIS%TYPE==BASIS_SIMPLEX_TYPE) THEN
-        DO nic=1,BASIS%NUMBER_OF_XI_COORDINATES       
-          SELECT CASE(BASIS%INTERPOLATION_ORDER(nic))
-          CASE(BASIS_LINEAR_INTERPOLATION_ORDER)
-            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE* &
-              & SIMPLEX_LINEAR_EVALUATE(BASIS%NODE_POSITION_INDEX(NODE_NUMBER,nic), &
-              & PARTIAL_DERIVATIVE_INDEX(PARTIAL_DERIV_INDEX,nic),XL(nic),ERR,ERROR)
-          CASE(BASIS_QUADRATIC_INTERPOLATION_ORDER)
-            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE* &
-              & SIMPLEX_QUADRATIC_EVALUATE(BASIS%NODE_POSITION_INDEX(NODE_NUMBER,nic), &
-              & PARTIAL_DERIVATIVE_INDEX(PARTIAL_DERIV_INDEX,nic),XL(nic),ERR,ERROR)
-          CASE(BASIS_CUBIC_INTERPOLATION_ORDER)
-            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE* &
-              & SIMPLEX_CUBIC_EVALUATE(BASIS%NODE_POSITION_INDEX(NODE_NUMBER,nic), &
-              & PARTIAL_DERIVATIVE_INDEX(PARTIAL_DERIV_INDEX,nic),XL(nic),ERR,ERROR)
+        SELECT CASE(BASIS%NUMBER_OF_XI)
+        CASE(1)
+          SELECT CASE(PARTIAL_DERIV_INDEX)
+          CASE(NO_PART_DERIV)
+            BASIS_SIMPLEX_BASIS_EVALUATE= &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,NO_PART_DERIV,XL,ERR,ERROR)
+          CASE(PART_DERIV_S1)
+            BASIS_SIMPLEX_BASIS_EVALUATE= &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S2,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S1,XL,ERR,ERROR)
+          CASE(PART_DERIV_S1_S1)
+            BASIS_SIMPLEX_BASIS_EVALUATE= &
+              BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S1_S1,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & 2.0_DP*BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S1_S2,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE+ &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S2_S2,XL,ERR,ERROR)
           CASE DEFAULT
-            LOCAL_ERROR="Interpolation order value "//TRIM(NUMBER_TO_VSTRING(BASIS%INTERPOLATION_ORDER(nic),"*",ERR,ERROR))// &
-              & " for xi coordinate direction "//TRIM(NUMBER_TO_VSTRING(nic,"*",ERR,ERROR))//" is invalid"
+            LOCAL_ERROR="The specified partial derivative index of "//TRIM(NUMBER_TO_VSTRING(PARTIAL_DERIV_INDEX,"*",ERR,ERROR))// &
+              & " is invalid for a Simplex line basis."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
-          IF(ERR/=0) GOTO 999
-        ENDDO !nic
+        CASE(2)
+          SELECT CASE(PARTIAL_DERIV_INDEX)
+          CASE(NO_PART_DERIV)
+            BASIS_SIMPLEX_BASIS_EVALUATE= &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,NO_PART_DERIV,XL,ERR,ERROR)
+          CASE(PART_DERIV_S1)
+            BASIS_SIMPLEX_BASIS_EVALUATE= &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S3,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S1,XL,ERR,ERROR)
+          CASE(PART_DERIV_S1_S1)
+            BASIS_SIMPLEX_BASIS_EVALUATE= &
+              BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S1_S1,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & 2.0_DP*BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S1_S3,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE+ &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S3_S3,XL,ERR,ERROR)
+          CASE(PART_DERIV_S2)
+            BASIS_SIMPLEX_BASIS_EVALUATE= &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S3,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S2,XL,ERR,ERROR)
+          CASE(PART_DERIV_S2_S2)
+            BASIS_SIMPLEX_BASIS_EVALUATE= &
+              BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S2_S2,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & 2.0_DP*BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S2_S3,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE+ &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S3_S3,XL,ERR,ERROR)
+          CASE(PART_DERIV_S1_S2)
+            BASIS_SIMPLEX_BASIS_EVALUATE= &
+              BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S3_S3,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S1_S3,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S2_S3,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE+ &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S1_S2,XL,ERR,ERROR)
+          CASE DEFAULT
+            LOCAL_ERROR="The specified partial derivative index of "//TRIM(NUMBER_TO_VSTRING(PARTIAL_DERIV_INDEX,"*",ERR,ERROR))// &
+              & " is invalid for a Simplex triangle basis."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE(3)
+          SELECT CASE(PARTIAL_DERIV_INDEX)
+          CASE(NO_PART_DERIV)
+            BASIS_SIMPLEX_BASIS_EVALUATE= &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,NO_PART_DERIV,XL,ERR,ERROR)
+          CASE(PART_DERIV_S1)
+            BASIS_SIMPLEX_BASIS_EVALUATE= &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S4,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S1,XL,ERR,ERROR)
+          CASE(PART_DERIV_S1_S1)
+             BASIS_SIMPLEX_BASIS_EVALUATE= &
+              BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S1_S1,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & 2.0_DP*BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S1_S4,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE+ &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S4_S4,XL,ERR,ERROR)
+          CASE(PART_DERIV_S2)
+            BASIS_SIMPLEX_BASIS_EVALUATE= &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S4,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S2,XL,ERR,ERROR)
+          CASE(PART_DERIV_S2_S2)
+             BASIS_SIMPLEX_BASIS_EVALUATE= &
+              BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S2_S2,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & 2.0_DP*BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S2_S4,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE+ &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S4_S4,XL,ERR,ERROR)
+          CASE(PART_DERIV_S1_S2)
+            BASIS_SIMPLEX_BASIS_EVALUATE= &
+              BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S4_S4,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S1_S4,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S2_S4,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE+ &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S1_S2,XL,ERR,ERROR)
+          CASE(PART_DERIV_S3)
+            BASIS_SIMPLEX_BASIS_EVALUATE= &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S4,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S3,XL,ERR,ERROR)
+          CASE(PART_DERIV_S3_S3)
+             BASIS_SIMPLEX_BASIS_EVALUATE= &
+               BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S3_S3,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & 2.0_DP*BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S3_S4,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE+ &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S4_S4,XL,ERR,ERROR)
+          CASE(PART_DERIV_S1_S3)
+            BASIS_SIMPLEX_BASIS_EVALUATE= &
+              BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S4_S4,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S1_S4,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S3_S4,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE+ &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S1_S3,XL,ERR,ERROR)
+          CASE(PART_DERIV_S2_S3)
+            BASIS_SIMPLEX_BASIS_EVALUATE= &
+              BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S4_S4,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S2_S4,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S3_S4,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE+ &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S2_S3,XL,ERR,ERROR)
+          CASE(PART_DERIV_S1_S2_S3)
+            BASIS_SIMPLEX_BASIS_EVALUATE= &
+              BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S4_S4_S4,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S1_S4_S4,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S2_S4_S4,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S3_S4_S4,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE+ &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S1_S2_S4,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE+ &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S1_S3_S4,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE+ &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S2_S3_S4,XL,ERR,ERROR)
+            IF(ERR/=0) GOTO 999
+            BASIS_SIMPLEX_BASIS_EVALUATE=BASIS_SIMPLEX_BASIS_EVALUATE- &
+              & BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PART_DERIV_S1_S2_S3,XL,ERR,ERROR)
+          CASE DEFAULT
+            LOCAL_ERROR="The specified partial derivative index of "//TRIM(NUMBER_TO_VSTRING(PARTIAL_DERIV_INDEX,"*",ERR,ERROR))// &
+              & " is invalid for a Simplex tetrahedra basis."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE DEFAULT
+          LOCAL_ERROR="Invalid number of Xi coordinates. The number of xi coordinates for this basis is "// &
+            & TRIM(NUMBER_TO_VSTRING(BASIS%NUMBER_OF_XI,"*",ERR,ERROR))//" which should be between 1 and 3."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+        IF(ERR/=0) GOTO 999
       ELSE
-        CALL FLAG_ERROR("Basis is not a simplex basis",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Basis is not a simplex basis.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Basis is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("BASIS_SIMPLEX_BASIS_EVALUATE")
+    CALL EXITS("BASIS_SIMPLEX_BASIS_EVALUATE.")
     RETURN
-999 CALL ERRORS("BASIS_SIMPLEX_BASIS_EVALUATE",ERR,ERROR)
-    CALL EXITS("BASIS_SIMPLEX_BASIS_EVALUATE")
+999 CALL ERRORS("BASIS_SIMPLEX_BASIS_EVALUATE.",ERR,ERROR)
+    CALL EXITS("BASIS_SIMPLEX_BASIS_EVALUATE.")
     RETURN 
   END FUNCTION BASIS_SIMPLEX_BASIS_EVALUATE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluates partial derivatives of a simplex basis function with respect to area coordinates.
+  FUNCTION BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE(BASIS,NODE_NUMBER,PARTIAL_DERIV_INDEX,XL,ERR,ERROR)
+    
+    !Argument variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function to evaluate.
+    INTEGER(INTG), INTENT(IN) :: NODE_NUMBER !<The node number defines the actual basis function to evaluate.
+    INTEGER(INTG), INTENT(IN) :: PARTIAL_DERIV_INDEX !<The partial derivative index in area coordinates of the basis to evaluate.
+    REAL(DP), INTENT(IN) :: XL(:) !<XL(nic). The area coordinates to evaluate the basis function at.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function variable
+    REAL(DP) :: BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE !<On return the evaluated basis function
+    !Local variables
+    INTEGER(INTG) :: nic
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE",ERR,ERROR,*999)
+    
+    BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE=1.0_DP
+    IF(ASSOCIATED(BASIS)) THEN      
+      DO nic=1,BASIS%NUMBER_OF_XI_COORDINATES       
+        SELECT CASE(BASIS%INTERPOLATION_ORDER(nic))
+        CASE(BASIS_LINEAR_INTERPOLATION_ORDER)
+          BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE=BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE* &
+            & SIMPLEX_LINEAR_EVALUATE(BASIS%NODE_POSITION_INDEX(NODE_NUMBER,nic), &
+            & PARTIAL_DERIVATIVE_INDEX(PARTIAL_DERIV_INDEX,nic),XL(nic),ERR,ERROR)
+        CASE(BASIS_QUADRATIC_INTERPOLATION_ORDER)
+          BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE=BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE* &
+            & SIMPLEX_QUADRATIC_EVALUATE(BASIS%NODE_POSITION_INDEX(NODE_NUMBER,nic), &
+            & PARTIAL_DERIVATIVE_INDEX(PARTIAL_DERIV_INDEX,nic),XL(nic),ERR,ERROR)
+        CASE(BASIS_CUBIC_INTERPOLATION_ORDER)
+          BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE=BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE* &
+            & SIMPLEX_CUBIC_EVALUATE(BASIS%NODE_POSITION_INDEX(NODE_NUMBER,nic), &
+            & PARTIAL_DERIVATIVE_INDEX(PARTIAL_DERIV_INDEX,nic),XL(nic),ERR,ERROR)
+        CASE DEFAULT
+          LOCAL_ERROR="Interpolation order value "//TRIM(NUMBER_TO_VSTRING(BASIS%INTERPOLATION_ORDER(nic),"*",ERR,ERROR))// &
+            & " for xi coordinate direction "//TRIM(NUMBER_TO_VSTRING(nic,"*",ERR,ERROR))//" is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+        IF(ERR/=0) GOTO 999
+      ENDDO !nic
+    ELSE
+      CALL FLAG_ERROR("Basis is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE")
+    RETURN
+999 CALL ERRORS("BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE",ERR,ERROR)
+    CALL EXITS("BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE")
+    RETURN 
+  END FUNCTION BASIS_SIMPLEX_BASIS_DERIVATIVE_EVALUATE
 
   !
   !================================================================================================================================
@@ -5667,28 +5950,14 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !#### Generic-Function: SIMPLEX_CUBIC_EVALUATE
-  !###  Description:
-  !###     Evaluates a cubic simpelx basis function at area position XL, and with the given NODE_INDEX and
-  !###     PARTIAL_DERIVATIVE_INDEX.
-  !###  Child-functions: SIMPLEX_CUBIC_EVALUATE_DP
-
-  !
-  !================================================================================================================================
-  !
-  
+  !>Evaluates a cubic simpelx basis function at a specificed area position and node index and with a given partial derivative index
+  !>with respect to area coordinates for double precision arguments
   FUNCTION SIMPLEX_CUBIC_EVALUATE_DP(NODE_INDEX,PARTIAL_DERIVATIVE_INDEX,XL,ERR,ERROR)
-  
-    !#### Function: SIMPLEX_CUBIC_EVALUATE_DP
-    !###  Type: REAL(DP)
-    !###  Description:
-    !###     Evaluates a cubic simpelx basis function at area position XL, and with the given NODE_INDEX and
-    !###     PARTIAL_DERIVATIVE_INDEX for double precision arguments.
-    !###  Parent-function: SIMPLEX_CUBIC_EVALUATE
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: NODE_INDEX,PARTIAL_DERIVATIVE_INDEX
-    REAL(DP), INTENT(IN) :: XL
+    INTEGER(INTG), INTENT(IN) :: NODE_INDEX !<The node index to evaluate
+    INTEGER(INTG), INTENT(IN) :: PARTIAL_DERIVATIVE_INDEX !<The partial derivative index wrt area coordinates to evaluate
+    REAL(DP), INTENT(IN) :: XL !<The area coordinate to evaluate at.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
@@ -5711,7 +5980,7 @@ CONTAINS
       CASE(4)
         SIMPLEX_CUBIC_EVALUATE_DP=0.5_DP*XL*(3.0_DP*XL-1.0_DP)*(3.0_DP*XL-2.0_DP) !1/2.L(3L-1)(3L-2)
       CASE DEFAULT
-        CALL FLAG_ERROR("Invalid node index",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Invalid node index.",ERR,ERROR,*999)
       END SELECT
     CASE(FIRST_PART_DERIV)
       SELECT CASE(NODE_INDEX)
@@ -5724,7 +5993,7 @@ CONTAINS
       CASE(4)
         SIMPLEX_CUBIC_EVALUATE_DP=XL*XL-9.0_DP*XL+1.0_DP !L^2-9L+1
       CASE DEFAULT
-        CALL FLAG_ERROR("Invalid node index",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Invalid node index.",ERR,ERROR,*999)
       END SELECT
     CASE(SECOND_PART_DERIV)
       SELECT CASE(NODE_INDEX)
@@ -5737,10 +6006,23 @@ CONTAINS
       CASE(4)
         SIMPLEX_CUBIC_EVALUATE_DP=2.0_DP*XL-9.0_DP
       CASE DEFAULT
-        CALL FLAG_ERROR("Invalid node index",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Invalid node index.",ERR,ERROR,*999)
+      END SELECT
+    CASE(THIRD_PART_DERIV)
+      SELECT CASE(NODE_INDEX)
+      CASE(1)
+        SIMPLEX_CUBIC_EVALUATE_DP=0.0_DP !0
+      CASE(2)
+        SIMPLEX_CUBIC_EVALUATE_DP=0.0_DP !0
+      CASE(3)
+        SIMPLEX_CUBIC_EVALUATE_DP=0.0_DP !0
+      CASE(4)
+        SIMPLEX_CUBIC_EVALUATE_DP=2.0_DP !2
+      CASE DEFAULT
+        CALL FLAG_ERROR("Invalid node index.",ERR,ERROR,*999)
       END SELECT
     CASE DEFAULT
-      CALL FLAG_ERROR("Invalid partial derivative index",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Invalid partial derivative index.",ERR,ERROR,*999)
     END SELECT
 
     CALL EXITS("SIMPLEX_CUBIC_EVALUATE_DP")
@@ -5754,28 +6036,14 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !#### Generic-Function: SIMPLEX_LINEAR_EVALUATE
-  !###  Description:
-  !###     Evaluates a linear simpelx basis function at area position XL, and with the given NODE_INDEX and
-  !###     PARTIAL_DERIVATIVE_INDEX.
-  !###  Child-functions: SIMPLEX_LINEAR_EVALUATE_DP
-
-  !
-  !================================================================================================================================
-  !
-  
+  !>Evaluates a linear simpelx basis function at a specificed area position and node index and with a given partial derivative index
+  !>with respect to area coordinates for double precision arguments
   FUNCTION SIMPLEX_LINEAR_EVALUATE_DP(NODE_INDEX,PARTIAL_DERIVATIVE_INDEX,XL,ERR,ERROR)
   
-    !#### Function: SIMPLEX_LINEAR_EVALUATE_DP
-    !###  Type: REAL(DP)
-    !###  Description:
-    !###     Evaluates a linear simplex basis function at area position XL, and with the give NODE_INDEX and
-    !###     PARTIAL_DERIVATIVE_INDEX for double precision arguments.
-    !###  Parent-function: SIMPLEX_LINEAR_EVALUATE
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: NODE_INDEX,PARTIAL_DERIVATIVE_INDEX
-    REAL(DP), INTENT(IN) :: XL
+    INTEGER(INTG), INTENT(IN) :: NODE_INDEX !<The node index to evaluate
+    INTEGER(INTG), INTENT(IN) :: PARTIAL_DERIVATIVE_INDEX !<The partial derivative index wrt area coordinates to evaluate
+    REAL(DP), INTENT(IN) :: XL !<The area coordinate to evaluate at.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
@@ -5798,13 +6066,22 @@ CONTAINS
     CASE(FIRST_PART_DERIV)
       SELECT CASE(NODE_INDEX)
       CASE(1)
-        SIMPLEX_LINEAR_EVALUATE_DP=00_DP  !0
+        SIMPLEX_LINEAR_EVALUATE_DP=0.0_DP  !0
       CASE(2)
         SIMPLEX_LINEAR_EVALUATE_DP=1.0_DP !1
       CASE DEFAULT
         CALL FLAG_ERROR("Invalid node index",ERR,ERROR,*999)
       END SELECT
     CASE(SECOND_PART_DERIV)
+      SELECT CASE(NODE_INDEX)
+      CASE(1)
+        SIMPLEX_LINEAR_EVALUATE_DP=0.0_DP !0
+      CASE(2)
+        SIMPLEX_LINEAR_EVALUATE_DP=0.0_DP !0
+      CASE DEFAULT
+        CALL FLAG_ERROR("Invalid node index",ERR,ERROR,*999)
+      END SELECT
+    CASE(THIRD_PART_DERIV)
       SELECT CASE(NODE_INDEX)
       CASE(1)
         SIMPLEX_LINEAR_EVALUATE_DP=0.0_DP !0
@@ -5828,28 +6105,14 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !#### Generic-Function: SIMPLEX_QUADRATIC_EVALUATE
-  !###  Description:
-  !###    Evaluates a quadratic simplex basis function at area position XL, and with the given NODE_INDEX and
-  !###    PARTIAL_DERIVATIVE_INDEX.
-  !###  Child-functions: SIMPLEX_QUADRATIC_EVALUATE_DP
-
-  !
-  !================================================================================================================================
-  !
-  
-  FUNCTION SIMPLEX_QUADRATIC_EVALUATE_DP(NODE_INDEX,PARTIAL_DERIVATIVE_INDEX,XL,ERR,ERROR)
-  
-    !#### Function: SIMPLEX_QUADRATIC_EVALUATE_DP
-    !###  Type: REAL(DP)
-    !###  Description:
-    !###     Evaluates a quadratic simplex basis function at area position XL, and with the given NODE_INDEX and
-    !###     PARTIAL_DERIVATIVE_INDEX for double precision arguments.
-    !###  Parent-function: SIMPLEX_QUADRATIC_EVALUATE
-    
+  !>Evaluates a quadratic simpelx basis function at a specificed area position and node index and with a given partial derivative index
+  !>with respect to area coordinates for double precision arguments.
+   FUNCTION SIMPLEX_QUADRATIC_EVALUATE_DP(NODE_INDEX,PARTIAL_DERIVATIVE_INDEX,XL,ERR,ERROR)
+      
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: NODE_INDEX,PARTIAL_DERIVATIVE_INDEX
-    REAL(DP), INTENT(IN) :: XL
+    INTEGER(INTG), INTENT(IN) :: NODE_INDEX !<The node index to evaluate
+    INTEGER(INTG), INTENT(IN) :: PARTIAL_DERIVATIVE_INDEX !<The partial derivative index wrt area coordinates to evaluate
+    REAL(DP), INTENT(IN) :: XL !<The area coordinate to evaluate at.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
@@ -5869,7 +6132,7 @@ CONTAINS
       CASE(3)
         SIMPLEX_QUADRATIC_EVALUATE_DP=XL*(2.0_DP*XL-1.0_DP) !L(2L-1)
       CASE DEFAULT
-        CALL FLAG_ERROR("Invalid node index",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Invalid node index.",ERR,ERROR,*999)
       END SELECT
     CASE(FIRST_PART_DERIV)
       SELECT CASE(NODE_INDEX)
@@ -5891,10 +6154,21 @@ CONTAINS
       CASE(3)
         SIMPLEX_QUADRATIC_EVALUATE_DP=4.0_DP !4
       CASE DEFAULT
-        CALL FLAG_ERROR("Invalid node index",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Invalid node index.",ERR,ERROR,*999)
+      END SELECT
+    CASE(THIRD_PART_DERIV)
+      SELECT CASE(NODE_INDEX)
+      CASE(1)
+        SIMPLEX_QUADRATIC_EVALUATE_DP=0.0_DP !0
+      CASE(2)
+        SIMPLEX_QUADRATIC_EVALUATE_DP=0.0_DP !0
+      CASE(3)
+        SIMPLEX_QUADRATIC_EVALUATE_DP=0.0_DP !0
+      CASE DEFAULT
+        CALL FLAG_ERROR("Invalid node index.",ERR,ERROR,*999)
       END SELECT
     CASE DEFAULT
-      CALL FLAG_ERROR("Invalid partial derivative index",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Invalid partial derivative index.",ERR,ERROR,*999)
     END SELECT
 
     CALL EXITS("SIMPLEX_QUADRATIC_EVALUATE_DP")
