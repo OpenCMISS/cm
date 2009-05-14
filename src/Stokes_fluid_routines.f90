@@ -75,8 +75,6 @@ MODULE STOKES_FLUID_ROUTINES
     & STOKES_FLUID_EQUATIONS_SET_SUBTYPE_SET, STOKES_FLUID_PROBLEM_SUBTYPE_SET
 
 
-
-
 CONTAINS
 
   !
@@ -101,7 +99,6 @@ CONTAINS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
     TYPE(VARYING_STRING) :: LOCAL_ERROR
- !   REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
     INTEGER::DEPENDENT_FIELD_NUMBER_OF_VARIABLES,DEPENDENT_FIELD_NUMBER_OF_COMPONENTS
     INTEGER::NUMBER_OF_DIMENSIONS,GEOMETRIC_COMPONENT_NUMBER,NUMBER_OF_MATERIALS_COMPONENTS
     INTEGER::MATERIAL_FIELD_NUMBER_OF_VARIABLES,MATERIAL_FIELD_NUMBER_OF_COMPONENTS,I
@@ -116,234 +113,190 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STANDARD_STOKES_SUBTYPE) THEN
       SELECT CASE(SETUP_TYPE)
-
         CASE(EQUATIONS_SET_SETUP_INITIAL_TYPE)
-
-	    SELECT CASE(ACTION_TYPE)
-
-		CASE(EQUATIONS_SET_SETUP_START_ACTION)
-		    EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
-
-		CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
-		    !!TODO: Check valid setup
-
-		CASE DEFAULT
-		    LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
-		    & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
-		    & " is invalid for a standard Stokes fluid."
-		    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-	    END SELECT
-
-	CASE(EQUATIONS_SET_SETUP_GEOMETRY_TYPE)
+            SELECT CASE(ACTION_TYPE)
+                CASE(EQUATIONS_SET_SETUP_START_ACTION)
+                EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
+                CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
+                !!TODO: Check valid setup
+                CASE DEFAULT
+                    LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
+                    & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
+                    & " is invalid for a standard Stokes fluid."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+        CASE(EQUATIONS_SET_SETUP_GEOMETRY_TYPE)
         !Do nothing???
+        CASE(EQUATIONS_SET_SETUP_DEPENDENT_TYPE)
 
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !sebk 30/04/09: define 1 dependent variable with 3(4) components for u,v,(w),p
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ! DEPENDENT FIELD
 
-              !
-              !!
-              !!!
-              !!!!
-!!!!!!!!!!!!!!!!!!!!			DEFINED IN EXAMPLE FILE
-!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!			Z.B. dimensionen checken
-             !!!!
-             !!!
-             !!
-             !
+            SELECT CASE(ACTION_TYPE)
+                !Set start action
+                CASE(EQUATIONS_SET_SETUP_START_ACTION)
+                    ! find a user number
+                    CALL FIELD_NEXT_NUMBER_FIND(EQUATIONS_SET%REGION,NEXT_NUMBER,ERR,ERROR,*999)
+                    !start field creation with name 'DEPENDENT_FIELD'
+                    CALL FIELD_CREATE_START(NEXT_NUMBER,EQUATIONS_SET%REGION,EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,ERR, &
+                    & ERROR,*999)
+                    !start creation of a new field
+                    CALL FIELD_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+                    !define new created field to be dependent
+                    CALL FIELD_DEPENDENT_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DEPENDENT_TYPE,ERR, &
+                    & ERROR,*999)
+                    !look for decomposition rule already defined
+                    CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION,&
+                    & ERR,ERROR,*999)
+                    !apply decomposition rule found on new created field
+                    CALL FIELD_MESH_DECOMPOSITION_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,GEOMETRIC_DECOMPOSITION,ERR,&
+                    & ERROR,*999)
+                    !point new field to geometric field
+                    CALL FIELD_GEOMETRIC_FIELD_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, &
+                    & ERR,ERROR,*999)
+                    ! set number of variables to 2 (1 for U and one for DELUDELN)
+                    DEPENDENT_FIELD_NUMBER_OF_VARIABLES=2
+                    CALL FIELD_NUMBER_OF_VARIABLES_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,DEPENDENT_FIELD_NUMBER_OF_VARIABLES,&
+                    & ERR,ERROR,*999)
+                    CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                    !calculate number of components with one component for each dimension and one for pressure
+                    DEPENDENT_FIELD_NUMBER_OF_COMPONENTS=NUMBER_OF_DIMENSIONS+1
+                    CALL FIELD_NUMBER_OF_COMPONENTS_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,&
+                    DEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+                    !set first i components to velocity field (2) and the (i+1)th component to the pressure field (3)
+                    DO I=1,DEPENDENT_FIELD_NUMBER_OF_COMPONENTS
+                    IF(I<DEPENDENT_FIELD_NUMBER_OF_COMPONENTS) THEN
+                          ! set velocity components
+                          CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,&
+                          & I,2,ERR,ERROR,*999)
+                          CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,&
+                          FIELD_DELUDELN_VARIABLE_TYPE,I,2,ERR,ERROR,*999)
+                    ELSE
+                          ! set pressure component
+                          CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,&
+                          FIELD_U_VARIABLE_TYPE,I,3,ERR,ERROR,*999)
+                          CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,&
+                          FIELD_DELUDELN_VARIABLE_TYPE,I,3,ERR,ERROR,*999)
+                          END IF
+                    END DO
 
+                    SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+                    !Specify fem solution method
+                        CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+                            DO I=1,DEPENDENT_FIELD_NUMBER_OF_COMPONENTS
+                                CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,&
+                                & FIELD_U_VARIABLE_TYPE,I,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                                CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,&
+                                FIELD_DELUDELN_VARIABLE_TYPE,I,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                                END DO
+                            CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,&
+                            & ERR,ERROR,*999)
+                            CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE,&
+                            & ERR,ERROR,*999)
+                    !Other solutions not defined yet
+                        CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CASE DEFAULT
+                            LOCAL_ERROR="The solution method of "&
+                            & //TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// " is invalid."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        END SELECT
+                !Specify finish action
+                CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
+                   CALL FIELD_CREATE_FINISH(EQUATIONS_SET%REGION,EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,ERR,ERROR,*999)
 
-
-	CASE(EQUATIONS_SET_SETUP_DEPENDENT_TYPE)
-
-
-              !
-              !!
-              !!!
-              !!!!
-!!!!!!!!!!!!!!!!!!!!			ADDED DEPENDENT FIELD
-!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!
-             !!!!
-             !!!
-             !!
-             !
-
-
-	    SELECT CASE(ACTION_TYPE)
-
-! sebk changed that to 4 components 30/04/09
-
-		CASE(EQUATIONS_SET_SETUP_START_ACTION)
-		    ! find a user number
-		    CALL FIELD_NEXT_NUMBER_FIND(EQUATIONS_SET%REGION,NEXT_NUMBER,ERR,ERROR,*999)
-		    !start field creation with name 'DEPENDENT_FIELD'
-		    CALL FIELD_CREATE_START(NEXT_NUMBER,EQUATIONS_SET%REGION,EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,ERR,ERROR,*999)
-		    !start creation of a new field
-		    CALL FIELD_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
-		    !define new created field to be dependent
-		    CALL FIELD_DEPENDENT_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DEPENDENT_TYPE,ERR,ERROR,*999)
-		    !look for decomposition rule already defined
-		    CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
-		    !apply decomposition rule found on new created field
-		    CALL FIELD_MESH_DECOMPOSITION_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
-		    !point new field to geometric field
-		    CALL FIELD_GEOMETRIC_FIELD_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, &
-		    & ERR,ERROR,*999)
-		    ! set number of variables to 2 (1 for U and one for DELUDELN)
-		    DEPENDENT_FIELD_NUMBER_OF_VARIABLES=2
-		    CALL FIELD_NUMBER_OF_VARIABLES_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,DEPENDENT_FIELD_NUMBER_OF_VARIABLES,&
-		    & ERR,ERROR,*999)
-		    CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-		    & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-		    !calculate number of components with one component for each dimension and one for pressure
-		    DEPENDENT_FIELD_NUMBER_OF_COMPONENTS=NUMBER_OF_DIMENSIONS+1
-		    CALL FIELD_NUMBER_OF_COMPONENTS_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,DEPENDENT_FIELD_NUMBER_OF_COMPONENTS&
-		    &,ERR,ERROR,*999)
-
-		    !set first i components to velocity field (2) and the (i+1)th component to the pressure field (3)
-		    DO I=1,DEPENDENT_FIELD_NUMBER_OF_COMPONENTS
-			IF(I<DEPENDENT_FIELD_NUMBER_OF_COMPONENTS) THEN
-			  ! set velocity components
-			  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,&
-			  & I,2,ERR,ERROR,*999)
-			  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,&
-			  & I,2,ERR,ERROR,*999)
-			ELSE
-			  ! set pressure component
-			  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,&
-			  & I,3,ERR,ERROR,*999)
-			  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,&
-			  &I,3,ERR,ERROR,*999)
-			END IF
-		    END DO
-
-
-		    SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
-
-			CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
-
-			    DO I=1,DEPENDENT_FIELD_NUMBER_OF_COMPONENTS
-				CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,I, &
-				  & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-				CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,I, &
-				  & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-			    END DO
-
-			    CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
-			    CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
-
-			CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-			    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-			CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-			    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-			CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-			    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-			CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-			    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-			CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-			    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-			CASE DEFAULT
-			    LOCAL_ERROR="The solution method of "&
-			    & //TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// " is invalid."
-			    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-		    END SELECT
-
-		CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
-		    CALL FIELD_CREATE_FINISH(EQUATIONS_SET%REGION,EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,ERR,ERROR,*999)
-
-		CASE DEFAULT
-		    LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
-		    & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
-		    & " is invalid for a standard Stokes fluid"
-		    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-	    END SELECT
+                CASE DEFAULT
+                    LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
+                    & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
+                    & " is invalid for a standard Stokes fluid"
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+             END SELECT
 
 
         CASE(EQUATIONS_SET_SETUP_MATERIALS_TYPE)
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !sebk 02/05/09: define 1 dependent variable with 1 (2) components for viscosity (density)
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ! MATERIALS FIELD
 
-
-
-	  !variable X with has Y components, here Y represents viscosity only
-	  MATERIAL_FIELD_NUMBER_OF_VARIABLES=1	!X
-	  MATERIAL_FIELD_NUMBER_OF_COMPONENTS=1	!Y
-
-              !
-              !!
-              !!!
-              !!!!
-!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!			ADDED MATERIAL FIELD
-!!!!!!!!!!!!!!!!!!!
-             !!!!
-             !!!
-             !!
-             !
-
-! sebk added a material field with 1 variable and 1 component (viscosity) 01/05/09
+          !variable X with has Y components, here Y represents viscosity only
+          MATERIAL_FIELD_NUMBER_OF_VARIABLES=1	!X
+          MATERIAL_FIELD_NUMBER_OF_COMPONENTS=1	!Y
           SELECT CASE(ACTION_TYPE)
-	      CASE(EQUATIONS_SET_SETUP_START_ACTION)
 
-		EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
-		IF(ASSOCIATED(EQUATIONS_MATERIALS)) THEN
-		  ! find a user number
-		  CALL FIELD_NEXT_NUMBER_FIND(EQUATIONS_SET%REGION,NEXT_NUMBER,ERR,ERROR,*999)
-		  !start field creation with name 'MATERIAL_FIELD'
-		  CALL FIELD_CREATE_START(NEXT_NUMBER,EQUATIONS_SET%REGION,EQUATIONS_SET%MATERIALS%MATERIALS_FIELD,ERR,ERROR,*999)
-		  CALL FIELD_TYPE_SET(NEXT_NUMBER,EQUATIONS_SET%REGION,FIELD_MATERIAL_TYPE,ERR,ERROR,*999)
-		  CALL FIELD_DEPENDENT_TYPE_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
-		  CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
-		  !apply decomposition rule found on new created field
-		  CALL FIELD_MESH_DECOMPOSITION_SET(EQUATIONS_SET%MATERIALS%MATERIALS_FIELD,GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
-		  !point new field to geometric field
-		  CALL FIELD_GEOMETRIC_FIELD_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,&
-		  & ERR,ERROR,*999)
-		  CALL FIELD_NUMBER_OF_VARIABLES_SET(NEXT_NUMBER,EQUATIONS_SET%REGION,MATERIAL_FIELD_NUMBER_OF_VARIABLES,ERR,ERROR,*999)
-		  CALL FIELD_NUMBER_OF_COMPONENTS_SET(NEXT_NUMBER,EQUATIONS_SET%REGION,MATERIAL_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+              !Specify start action
+              CASE(EQUATIONS_SET_SETUP_START_ACTION)
 
-		  CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-		  & 1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
-		  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-		  & 1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
-		  CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-		  & 1,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
+              EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
+                  IF(ASSOCIATED(EQUATIONS_MATERIALS)) THEN
+                  ! find a user number
+                  CALL FIELD_NEXT_NUMBER_FIND(EQUATIONS_SET%REGION,NEXT_NUMBER,ERR,ERROR,*999)
+                  !start field creation with name 'MATERIAL_FIELD'
+                  CALL FIELD_CREATE_START(NEXT_NUMBER,EQUATIONS_SET%REGION,EQUATIONS_SET%MATERIALS%MATERIALS_FIELD,ERR,ERROR,*999)
+                  CALL FIELD_TYPE_SET(NEXT_NUMBER,EQUATIONS_SET%REGION,FIELD_MATERIAL_TYPE,ERR,ERROR,*999)
+                  CALL FIELD_DEPENDENT_TYPE_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
+                  CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
+                  !apply decomposition rule found on new created field
+                  CALL FIELD_MESH_DECOMPOSITION_SET(EQUATIONS_SET%MATERIALS%MATERIALS_FIELD,GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
+                  !point new field to geometric field
+                  CALL FIELD_GEOMETRIC_FIELD_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,&
+                  & ERR,ERROR,*999)
+                  CALL FIELD_NUMBER_OF_VARIABLES_SET(NEXT_NUMBER,EQUATIONS_SET%REGION,MATERIAL_FIELD_NUMBER_OF_VARIABLES,ERR &
+                  &,ERROR,*999)
+                  CALL FIELD_NUMBER_OF_COMPONENTS_SET(NEXT_NUMBER,EQUATIONS_SET%REGION,MATERIAL_FIELD_NUMBER_OF_COMPONENTS,ERR &
+                  &,ERROR,*999)
+                  CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & 1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & 1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & 1,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
+                  !Default the field scaling to that of the geometric field
+                  CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
+                  CALL FIELD_SCALING_TYPE_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
 
-		  !Default the field scaling to that of the geometric field
-		  CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
-		  CALL FIELD_SCALING_TYPE_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+                END IF
 
-		ELSE
-		  CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
-		END IF
+              !Specify start action
+              CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
 
+              EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
+                IF(ASSOCIATED(EQUATIONS_MATERIALS)) THEN
+                  !Finish creating the materials field
+                  CALL FIELD_CREATE_FINISH(EQUATIONS_SET%REGION,EQUATIONS_MATERIALS%MATERIALS_FIELD,ERR,ERROR,*999)
+                  !Set the default values for the materials field
+                  !First set the mu values to 0.001
+                  DO I=1,MATERIAL_FIELD_NUMBER_OF_COMPONENTS
+                     CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & I,FIELD_VALUES_SET_TYPE,0.001_DP,ERR,ERROR,*999)
+                  ENDDO !component_idx
+                  ELSE
+                 CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+                ENDIF
 
-	CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
-           EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
-            IF(ASSOCIATED(EQUATIONS_MATERIALS)) THEN
-              !Finish creating the materials field
-              CALL FIELD_CREATE_FINISH(EQUATIONS_SET%REGION,EQUATIONS_MATERIALS%MATERIALS_FIELD,ERR,ERROR,*999)
-              !Set the default values for the materials field
-              !First set the mu values to 0.001
-              DO I=1,MATERIAL_FIELD_NUMBER_OF_COMPONENTS
-                CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                  & I,FIELD_VALUES_SET_TYPE,0.001_DP,ERR,ERROR,*999)
-              ENDDO !component_idx
-            ELSE
-              CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
-            ENDIF
-
-          CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
+              CASE DEFAULT
+              LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for Stokes equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
 
 
-
         CASE(EQUATIONS_SET_SETUP_SOURCE_TYPE)
-
-
-	  !TO DO: INCLUDE GRAVITY AS SOURCE TYPE
-
+          !TO DO: INCLUDE GRAVITY AS SOURCE TYPE
           SELECT CASE(ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
             !Do nothing
@@ -359,7 +312,6 @@ CONTAINS
 
 
         CASE(EQUATIONS_SET_SETUP_FIXED_CONDITIONS_TYPE)
-
           SELECT CASE(ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
             IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
@@ -389,8 +341,6 @@ CONTAINS
 
 
         CASE(EQUATIONS_SET_SETUP_EQUATIONS_TYPE)
-
-
           SELECT CASE(ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
             IF(ASSOCIATED(EQUATIONS_SET%FIXED_CONDITIONS)) THEN
@@ -517,27 +467,11 @@ CONTAINS
 
     CALL ENTERS("STOKES_FLUID_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
 
-WRITE(*,*)'42-1'
-
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN
         SELECT CASE(EQUATIONS_SET%SUBTYPE)
         CASE(EQUATIONS_SET_STANDARD_STOKES_SUBTYPE)
-
-              !
-              !!
-              !!!
-              !!!!
-!!!!!!!!!!!!!!!!!!!!			HIER MUSS ICH WAS MACHEN!!!
-!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!
-             !!!!
-             !!!
-             !!
-             !
-
-WRITE(*,*)'42-2'
 
 !!TODO: move these and scale factor adjustment out once generalised Stokes is put in.
           !Store all these in equations matrices/somewhere else?????
@@ -553,35 +487,21 @@ WRITE(*,*)'42-2'
           EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
           LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
           FIELD_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
-          
-
-WRITE(*,*)'42-3'
-
 
           GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
             & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
           DEPENDENT_BASIS=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
             & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
 
-          DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-            & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-
-! DEPENDENT_BASIS??????
-
           QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
 
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
             & GEOMETRIC_INTERP_PARAMETERS,ERR,ERROR,*999)
-
-
-WRITE(*,*)'42-4'
-
-!!!DAS MUSS MAN KLAEREN
-
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
             & MATERIALS_INTERP_PARAMETERS,ERR,ERROR,*999)
 
-WRITE(*,*)'42-5'
+          !Define MU_PARAM
+          MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(1,NO_PART_DERIV)
 
           !Loop over gauss points	2^DIM... bei 3D also ng=1,8
           DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
@@ -589,11 +509,6 @@ WRITE(*,*)'42-5'
               & GEOMETRIC_INTERP_POINT,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,EQUATIONS%INTERPOLATION% &
               & GEOMETRIC_INTERP_POINT_METRICS,ERR,ERROR,*999)
-
-
-WRITE(*,*)'42-6'
-
-!!!DAS MUSS MAN KLAEREN
 
             CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
               & MATERIALS_INTERP_POINT,ERR,ERROR,*999)
@@ -605,21 +520,17 @@ WRITE(*,*)'42-6'
             !Loop over field components
             mhs=0
 
-          	DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-		  MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
+             DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                  MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
                   DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
                     & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-
-!              Loop over element rows
-!TODO: CHANGE ELEMENT CALCULATE TO WORK OF ns ???
-
 
 
 ! sebk 11/05/09 input to determine number of parameters per component
 
-              DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS 
-									
-                mhs=mhs+1						
+              DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
+
+                mhs=mhs+1
                 nhs=0
                 IF(EQUATIONS_MATRIX%UPDATE_MATRIX) THEN
 
@@ -629,7 +540,7 @@ WRITE(*,*)'42-6'
                   DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
 
 ! sebk 11/05/9 input to determine number of parameters per component
- 		  MESH_COMPONENT2=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
+                MESH_COMPONENT2=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
                   DEPENDENT_BASIS2=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT2)%PTR% &
                     & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
 
@@ -640,7 +551,7 @@ WRITE(*,*)'42-6'
 ! MOMENTUM EQUATION FOR VELOCITIES
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-		    IF (nh==mh.AND.nh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+                     IF (nh==mh.AND.nh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
 
 ! DEPENDENT_BASIS??????
                       DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
@@ -648,12 +559,7 @@ WRITE(*,*)'42-6'
                         PGNSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
                       ENDDO !ni
 
-
-
-                      MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(1,NO_PART_DERIV)
                       SUM=0.0_DP
-
-		      WRITE(*,*)'MU_PARAM',MU_PARAM
 
 ! DEPENDENT_BASIS??????
                       DO mi=1,DEPENDENT_BASIS%NUMBER_OF_XI
@@ -671,7 +577,7 @@ WRITE(*,*)'42-6'
 ! MOMENTUM EQUATION FOR PRESSURE
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-		    ELSE IF (nh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS.AND.mh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+                   ELSE IF (nh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS.AND.mh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
 
 
                       SUM=0.0_DP
@@ -681,7 +587,7 @@ WRITE(*,*)'42-6'
                       DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
                         PGMSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
 
-!hinten beim DXI_DX steht der Spaltenzaehler !!!!!!
+! NOTE mh INDEX in DXI_DX
                         SUM=SUM+PGN*PGMSI(ni)*EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(ni,mh)
                       ENDDO !ni
 
@@ -691,8 +597,11 @@ WRITE(*,*)'42-6'
 ! MASS EQUATION
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-		    ELSE IF (mh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS.AND.nh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
-
+                    ELSE IF (mh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS.AND.nh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+!!!FIX UP THIS BIT !!!!!
+!!!
+!!! CAN THIS PART BE OPTIMISED BY USING THE TRANSPOSE???
+!!!
                       SUM=0.0_DP
                       PGM=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
 
@@ -700,7 +609,7 @@ WRITE(*,*)'42-6'
                       DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
                         PGNSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
 
-!hinten beim DXI_DX steht der Zeilenzaehler !!!!!!
+! NOTE nh INDEX in DXI_DX
                         SUM=SUM+PGM*PGNSI(ni)*EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(ni,nh)
                       ENDDO !ni
 
@@ -710,20 +619,20 @@ WRITE(*,*)'42-6'
 ! SET ALL OTHER COMPONENTS TO ZERO
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-		    ELSE
+                    ELSE
 
                       EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=0.0_DP
 
-		    END IF
+                    END IF
 
-	            ENDDO !ns
+                    ENDDO !ns
 
 
                   ENDDO !nh
                 ENDIF
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!UND HIER PASSIERT WAS MIT DER RECHTEN SEITE
+! NO RIGHT HAND SIDE FOR THIS CASE
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
                 IF(RHS_VECTOR%UPDATE_VECTOR) RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=0.0_DP
@@ -731,10 +640,15 @@ WRITE(*,*)'42-6'
             ENDDO !mh
           ENDDO !ng
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! DEFINE SCALING
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-!WOFUER BRAUCHE ICH NOCHMAL SCALING FAKTOREN
-!ALSO HIER PASSIERT DEFINITIV NIX NEUES, DAS MUSS SICH ALLES DA OBEN ABSPIELEN
 
+!!!FIX UP THIS BIT !!!!!
+!!!
+!!! TO DO FIX THIS BIT FOR SCALING!
+!!!
           !Scale factor adjustment
           IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
             CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
@@ -750,9 +664,6 @@ WRITE(*,*)'42-6'
                   DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
                     DO ns=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                       nhs=nhs+1
-
-!HIER WIRD DIE ELEMENTSTEIFIGKEITSMATRRIX MIT DEN SAKLIERUNGSFAKTOREN MULTIPLIZIERT
-
                       EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)* &
                         & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS%SCALE_FACTORS(ms,mh)* &
                         & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS%SCALE_FACTORS(ns,nh)

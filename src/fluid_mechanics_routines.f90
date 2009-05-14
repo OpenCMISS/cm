@@ -114,7 +114,8 @@ CONTAINS
   !================================================================================================================================
   !
 
-! SEBK 20/04/09
+! SEBK 20/04/09 - changed for Stokes flow
+
   !>Sets/changes the problem type and subtype for a fluid mechanics equation set class.
   SUBROUTINE FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_SET(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE, &
     & ERR,ERROR,*)
@@ -151,8 +152,6 @@ CONTAINS
     CALL EXITS("FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_SET")
     RETURN 1
   END SUBROUTINE FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_SET
-
-! END SEBK 20/04/09
 
   !
   !================================================================================================================================
@@ -275,7 +274,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-! SEBK 20/04/09
+! SEBK 20/04/09 - changed for Stokes flow
 
   !>Sets up the equations set for a fluid mechanics equations set class.
   SUBROUTINE FLUID_MECHANICS_EQUATIONS_SET_SETUP(EQUATIONS_SET,SETUP_TYPE,ACTION_TYPE,ERR,ERROR,*)
@@ -313,7 +312,6 @@ CONTAINS
     RETURN 1
   END SUBROUTINE FLUID_MECHANICS_EQUATIONS_SET_SETUP
   
-! END SEBK 
 
   !
   !================================================================================================================================
