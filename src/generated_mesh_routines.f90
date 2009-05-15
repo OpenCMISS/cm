@@ -870,7 +870,7 @@ CONTAINS
                         ENDDO !ne3
                         CALL MESH_TOPOLOGY_ELEMENTS_CREATE_FINISH(GENERATED_MESH%MESH,1,ERR,ERROR,*999)
                         !Finish the mesh
-                        CALL MESH_CREATE_FINISH(REGION,GENERATED_MESH%MESH,ERR,ERROR,*999)                        
+                        CALL MESH_CREATE_FINISH(GENERATED_MESH%MESH,ERR,ERROR,*999)                        
                       ELSE
                         CALL FLAG_ERROR("The number of xi directions of the given basis does not match the size of &
                           &the number of elements for the mesh",ERR,ERROR,*999)

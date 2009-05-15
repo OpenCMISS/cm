@@ -69,7 +69,7 @@ MODULE ANALYTIC_ANALYSIS_ROUTINES
 
   !Interfaces
 
-  PUBLIC ANALYTIC_ANALYSIS_CALCULATE
+  PUBLIC ANALYTIC_ANALYSIS_OUTPUT
 
   PUBLIC ANALYTIC_ANALYSIS_EXPORT
   
@@ -88,8 +88,8 @@ CONTAINS
   !================================================================================================================================
   !  
 
-  !>Calculate the analytic error analysis for a dependent field compared to the analytic values parameter set.. 
-  SUBROUTINE ANALYTIC_ANALYSIS_CALCULATE(FIELD,FILENAME,ERR,ERROR,*)
+  !>Output the analytic error analysis for a dependent field compared to the analytic values parameter set.. 
+  SUBROUTINE ANALYTIC_ANALYSIS_OUTPUT(FIELD,FILENAME,ERR,ERROR,*)
   
     !Argument variables 
     TYPE(FIELD_TYPE), INTENT(IN), POINTER :: FIELD !<A pointer to the dependent field to calculate the analytic error analysis for
@@ -97,9 +97,10 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: component_idx,deriv_idx,element_idx,GHOST_NUMBER(8),local_ny,MESH_COMPONENT,MPI_IERROR,node_idx,NUMBER(8),OUTPUT_ID, &
-      & var_idx,variable_type
-    REAL(DP) :: GHOST_RMS_ERROR_PER(8),GHOST_RMS_ERROR_ABS(8),GHOST_RMS_ERROR_REL(8),RMS_ERROR_PER(8),RMS_ERROR_ABS(8),RMS_ERROR_REL(8),VALUES(5)
+    INTEGER(INTG) :: component_idx,deriv_idx,element_idx,GHOST_NUMBER(8),local_ny,MESH_COMPONENT,MPI_IERROR,node_idx, &
+      & NUMBER(8),OUTPUT_ID,var_idx,variable_type
+    REAL(DP) :: GHOST_RMS_ERROR_PER(8),GHOST_RMS_ERROR_ABS(8),GHOST_RMS_ERROR_REL(8),RMS_ERROR_PER(8),RMS_ERROR_ABS(8), &
+      & RMS_ERROR_REL(8),VALUES(5)
     REAL(DP), POINTER :: ANALYTIC_VALUES(:),NUMERICAL_VALUES(:)
     REAL(DP), ALLOCATABLE :: INTEGRAL_ERRORS(:,:),GHOST_INTEGRAL_ERRORS(:,:)
     CHARACTER(LEN=40) :: FIRST_FORMAT
@@ -113,7 +114,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(VARYING_STRING) :: LOCAL_ERROR,LOCAL_STRING
     
-    CALL ENTERS("ANALYTIC_ANALYSIS_CALCULATE",ERR,ERROR,*999)
+    CALL ENTERS("ANALYTIC_ANALYSIS_OUTPUT",ERR,ERROR,*999)
     
     IF(ASSOCIATED(FIELD)) THEN
       IF(FIELD%FIELD_FINISHED) THEN
@@ -170,7 +171,8 @@ CONTAINS
                           VALUES(3)=ANALYTIC_ANALYSIS_PERCENTAGE_ERROR(VALUES(1),VALUES(2))
                           VALUES(4)=ANALYTIC_ANALYSIS_ABSOLUTE_ERROR(VALUES(1),VALUES(2))
                           VALUES(5)=ANALYTIC_ANALYSIS_RELATIVE_ERROR(VALUES(1),VALUES(2))
-                          CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,5,5,5,VALUES,"(20X,5(2X,E12.5))","(20X,5(2X,E12.5))",ERR,ERROR,*999)
+                          CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,5,5,5,VALUES,"(20X,5(2X,E12.5))","(20X,5(2X,E12.5))", &
+                            & ERR,ERROR,*999)
                         CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
                           ELEMENTS_DOMAIN=>DOMAIN_TOPOLOGY%ELEMENTS
                           IF(ASSOCIATED(ELEMENTS_DOMAIN)) THEN
@@ -189,7 +191,8 @@ CONTAINS
                                   GHOST_RMS_ERROR_ABS=0.0_DP
                                   GHOST_RMS_ERROR_REL=0.0_DP
                                   CALL WRITE_STRING(OUTPUT_ID,"Element errors:",ERR,ERROR,*999)
-                                  LOCAL_STRING="  Element#             Numerical      Analytic       % error  Absolute err  Relative err"
+                                  LOCAL_STRING= &
+                                    & "  Element#             Numerical      Analytic       % error  Absolute err  Relative err"
                                   CALL WRITE_STRING(OUTPUT_ID,LOCAL_STRING,ERR,ERROR,*999)
                                   DO element_idx=1,ELEMENTS_DOMAIN%NUMBER_OF_ELEMENTS
                                     local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
@@ -206,7 +209,8 @@ CONTAINS
                                     RMS_ERROR_REL(1)=RMS_ERROR_REL(1)+VALUES(5)*VALUES(5)
                                     WRITE(FIRST_FORMAT,"(A,I10,A)") "('",ELEMENTS_DECOMPOSITION%ELEMENTS(element_idx)%USER_NUMBER, &
                                       & "',20X,3(2X,E12.5))"
-                                    CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,5,5,5,VALUES,FIRST_FORMAT,"(20X,5(2X,E12.5))",ERR,ERROR,*999)
+                                    CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,5,5,5,VALUES,FIRST_FORMAT,"(20X,5(2X,E12.5))", &
+                                      & ERR,ERROR,*999)
                                   ENDDO !element_idx
                                   DO element_idx=ELEMENTS_DOMAIN%NUMBER_OF_ELEMENTS+1,ELEMENTS_DOMAIN%TOTAL_NUMBER_OF_ELEMENTS
                                     local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
@@ -223,7 +227,8 @@ CONTAINS
                                     GHOST_RMS_ERROR_REL(1)=GHOST_RMS_ERROR_REL(1)+VALUES(5)*VALUES(5)
                                     WRITE(FIRST_FORMAT,"(A,I10,A)") "('",ELEMENTS_DECOMPOSITION%ELEMENTS(element_idx)%USER_NUMBER, &
                                       & "',20X,3(2X,E12.5))"
-                                    CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,5,5,5,VALUES,FIRST_FORMAT,"(20X,5(2X,E12.5))",ERR,ERROR,*999)
+                                    CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,5,5,5,VALUES,FIRST_FORMAT,"(20X,5(2X,E12.5))", &
+                                      & ERR,ERROR,*999)
                                   ENDDO !node_idx
                                   !Output RMS errors                  
                                   CALL WRITE_STRING(OUTPUT_ID,"",ERR,ERROR,*999)
@@ -231,48 +236,57 @@ CONTAINS
                                     IF(COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES>1) THEN
                                       !Local elements only
                                       CALL WRITE_STRING(OUTPUT_ID,"Local RMS errors:",ERR,ERROR,*999)
-                                      LOCAL_STRING="                                                     % error  Absolute err  Relative err"
+                                      LOCAL_STRING= &
+                                        & "                                                     % error  Absolute err  Relative err"
                                       CALL WRITE_STRING(OUTPUT_ID,LOCAL_STRING,ERR,ERROR,*999)
                                       VALUES(1)=SQRT(RMS_ERROR_PER(deriv_idx)/NUMBER(deriv_idx))
                                       VALUES(2)=SQRT(RMS_ERROR_ABS(deriv_idx)/NUMBER(deriv_idx))
                                       VALUES(3)=SQRT(RMS_ERROR_REL(deriv_idx)/NUMBER(deriv_idx))
-                                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,3,3,3,VALUES,"(46X,3(2X,E12.5))","(46X,3(2X,E12.5))",ERR,ERROR,*999)
+                                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,3,3,3,VALUES,"(46X,3(2X,E12.5))","(46X,3(2X,E12.5))", &
+                                        & ERR,ERROR,*999)
                                       !Local and ghost nodes
                                       CALL WRITE_STRING(OUTPUT_ID,"Local + Ghost RMS errors:",ERR,ERROR,*999)
-                                      LOCAL_STRING="                                                     % error  Absolute err  Relative err"
+                                      LOCAL_STRING= &
+                                        & "                                                     % error  Absolute err  Relative err"
                                       CALL WRITE_STRING(OUTPUT_ID,LOCAL_STRING,ERR,ERROR,*999)
                                       VALUES(1)=SQRT((RMS_ERROR_PER(1)+GHOST_RMS_ERROR_PER(1))/(NUMBER(1)+GHOST_NUMBER(1)))
                                       VALUES(2)=SQRT((RMS_ERROR_ABS(1)+GHOST_RMS_ERROR_ABS(1))/(NUMBER(1)+GHOST_NUMBER(1)))
                                       VALUES(3)=SQRT((RMS_ERROR_REL(1)+GHOST_RMS_ERROR_REL(1))/(NUMBER(1)+GHOST_NUMBER(1)))
-                                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,3,3,3,VALUES,"(46X,3(2X,E12.5))","(46X,3(2X,E12.5))",ERR,ERROR,*999)
+                                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,3,3,3,VALUES,"(46X,3(2X,E12.5))","(46X,3(2X,E12.5))", &
+                                        & ERR,ERROR,*999)
                                       !Global RMS values
                                       !Collect the values across the ranks
-                                      CALL MPI_ALLREDUCE(MPI_IN_PLACE,NUMBER,1,MPI_INTEGER,MPI_SUM,COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
+                                      CALL MPI_ALLREDUCE(MPI_IN_PLACE,NUMBER,1,MPI_INTEGER,MPI_SUM, &
+                                        & COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
                                       CALL MPI_ERROR_CHECK("MPI_ALLREDUCE",MPI_IERROR,ERR,ERROR,*999)
-                                      CALL MPI_ALLREDUCE(MPI_IN_PLACE,RMS_ERROR_PER,1,MPI_DOUBLE_PRECISION,MPI_SUM,COMPUTATIONAL_ENVIRONMENT% &
-                                        & MPI_COMM,MPI_IERROR)
+                                      CALL MPI_ALLREDUCE(MPI_IN_PLACE,RMS_ERROR_PER,1,MPI_DOUBLE_PRECISION,MPI_SUM, &
+                                        & COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
                                       CALL MPI_ERROR_CHECK("MPI_ALLREDUCE",MPI_IERROR,ERR,ERROR,*999)
-                                      CALL MPI_ALLREDUCE(MPI_IN_PLACE,RMS_ERROR_ABS,1,MPI_DOUBLE_PRECISION,MPI_SUM,COMPUTATIONAL_ENVIRONMENT% &
-                                        & MPI_COMM,MPI_IERROR)
+                                      CALL MPI_ALLREDUCE(MPI_IN_PLACE,RMS_ERROR_ABS,1,MPI_DOUBLE_PRECISION,MPI_SUM, &
+                                        & COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
                                       CALL MPI_ERROR_CHECK("MPI_ALLREDUCE",MPI_IERROR,ERR,ERROR,*999)
-                                      CALL MPI_ALLREDUCE(MPI_IN_PLACE,RMS_ERROR_REL,1,MPI_DOUBLE_PRECISION,MPI_SUM,COMPUTATIONAL_ENVIRONMENT% &
-                                        & MPI_COMM,MPI_IERROR)
+                                      CALL MPI_ALLREDUCE(MPI_IN_PLACE,RMS_ERROR_REL,1,MPI_DOUBLE_PRECISION,MPI_SUM, &
+                                        & COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
                                       CALL MPI_ERROR_CHECK("MPI_ALLREDUCE",MPI_IERROR,ERR,ERROR,*999)
                                       CALL WRITE_STRING(OUTPUT_ID,"Global RMS errors:",ERR,ERROR,*999)
-                                      LOCAL_STRING="                                                     % error  Absolute err  Relative err"
+                                      LOCAL_STRING= &
+                                        & "                                                     % error  Absolute err  Relative err"
                                       CALL WRITE_STRING(OUTPUT_ID,LOCAL_STRING,ERR,ERROR,*999)
                                       VALUES(1)=SQRT(RMS_ERROR_PER(1)/NUMBER(1))
                                       VALUES(2)=SQRT(RMS_ERROR_ABS(1)/NUMBER(1))
                                       VALUES(3)=SQRT(RMS_ERROR_REL(1)/NUMBER(1))
-                                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,3,3,3,VALUES,"(46X,3(2X,E12.5))","(46X,3(2X,E12.5))",ERR,ERROR,*999)
+                                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,3,3,3,VALUES,"(46X,3(2X,E12.5))","(46X,3(2X,E12.5))", &
+                                        & ERR,ERROR,*999)
                                     ELSE
                                       CALL WRITE_STRING(OUTPUT_ID,"RMS errors:",ERR,ERROR,*999)
-                                      LOCAL_STRING="                                                     % error  Absolute err  Relative err"
+                                      LOCAL_STRING= &
+                                        & "                                                     % error  Absolute err  Relative err"
                                       CALL WRITE_STRING(OUTPUT_ID,LOCAL_STRING,ERR,ERROR,*999)
                                       VALUES(1)=SQRT(RMS_ERROR_PER(deriv_idx)/NUMBER(deriv_idx))
                                       VALUES(2)=SQRT(RMS_ERROR_ABS(deriv_idx)/NUMBER(deriv_idx))
                                       VALUES(3)=SQRT(RMS_ERROR_REL(deriv_idx)/NUMBER(deriv_idx))
-                                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,3,3,3,VALUES,"(46X,3(2X,E12.5))","(46X,3(2X,E12.5))",ERR,ERROR,*999)
+                                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,3,3,3,VALUES,"(46X,3(2X,E12.5))","(46X,3(2X,E12.5))", &
+                                        & ERR,ERROR,*999)
                                     ENDIF
                                   ENDIF
                                 ELSE
@@ -316,8 +330,8 @@ CONTAINS
                                 RMS_ERROR_ABS(deriv_idx)=RMS_ERROR_ABS(deriv_idx)+VALUES(4)*VALUES(4)
                                 RMS_ERROR_REL(deriv_idx)=RMS_ERROR_REL(deriv_idx)+VALUES(5)*VALUES(5)
                                 IF(deriv_idx==1) THEN
-                                  WRITE(FIRST_FORMAT,"(A,I10,A,I6,A)") "('",NODES_DOMAIN%NODES(node_idx)%USER_NUMBER,"',2X,'",deriv_idx, &
-                                    & "',5(2X,E12.5))"
+                                  WRITE(FIRST_FORMAT,"(A,I10,A,I6,A)") "('",NODES_DOMAIN%NODES(node_idx)%USER_NUMBER,"',2X,'", &
+                                    & deriv_idx,"',5(2X,E12.5))"
                                 ELSE
                                   WRITE(FIRST_FORMAT,"(A,I6,A)") "(12X,'",deriv_idx,"',5(2X,E12.5))"
                                 ENDIF
@@ -339,8 +353,8 @@ CONTAINS
                                 GHOST_RMS_ERROR_ABS(deriv_idx)=GHOST_RMS_ERROR_ABS(deriv_idx)+VALUES(4)*VALUES(4)
                                 GHOST_RMS_ERROR_REL(deriv_idx)=GHOST_RMS_ERROR_REL(deriv_idx)+VALUES(5)*VALUES(5)
                                 IF(deriv_idx==1) THEN
-                                  WRITE(FIRST_FORMAT,"(A,I10,A,I6,A)") "('",NODES_DOMAIN%NODES(node_idx)%USER_NUMBER,"',2X,'",deriv_idx, &
-                                    & "',5(2X,E12.5))"
+                                  WRITE(FIRST_FORMAT,"(A,I10,A,I6,A)") "('",NODES_DOMAIN%NODES(node_idx)%USER_NUMBER, &
+                                    & "',2X,'",deriv_idx,"',5(2X,E12.5))"
                                 ELSE
                                   WRITE(FIRST_FORMAT,"(A,I6,A)") "(12X,'",deriv_idx,"',5(2X,E12.5))"
                                 ENDIF
@@ -353,7 +367,8 @@ CONTAINS
                               IF(ANY(NUMBER>0)) THEN
                                 !Local nodes only
                                 CALL WRITE_STRING(OUTPUT_ID,"Local RMS errors:",ERR,ERROR,*999)
-                                LOCAL_STRING="            Deriv#                                   % error  Absolute err  Relative err"
+                                LOCAL_STRING= &
+                                  & "            Deriv#                                   % error  Absolute err  Relative err"
                                 CALL WRITE_STRING(OUTPUT_ID,LOCAL_STRING,ERR,ERROR,*999)
                                 DO deriv_idx=1,8
                                   IF(NUMBER(deriv_idx)>0) THEN
@@ -361,12 +376,14 @@ CONTAINS
                                     VALUES(2)=SQRT(RMS_ERROR_ABS(deriv_idx)/NUMBER(deriv_idx))
                                     VALUES(3)=SQRT(RMS_ERROR_REL(deriv_idx)/NUMBER(deriv_idx))
                                     WRITE(FIRST_FORMAT,"(A,I6,A)") "(12X,'",deriv_idx,"',28X,3(2X,E12.5))"
-                                    CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,3,3,3,VALUES,FIRST_FORMAT,"(46X,3(2X,E12.5))",ERR,ERROR,*999)
+                                    CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,3,3,3,VALUES,FIRST_FORMAT,"(46X,3(2X,E12.5))", &
+                                      & ERR,ERROR,*999)
                                   ENDIF
                                 ENDDO !deriv_idx
                                 !Local and ghost nodes
                                 CALL WRITE_STRING(OUTPUT_ID,"Local + Ghost RMS errors:",ERR,ERROR,*999)
-                                LOCAL_STRING="            Deriv#                                   % error  Absolute err  Relative err"
+                                LOCAL_STRING= &
+                                  & "            Deriv#                                   % error  Absolute err  Relative err"
                                 CALL WRITE_STRING(OUTPUT_ID,LOCAL_STRING,ERR,ERROR,*999)
                                 DO deriv_idx=1,8
                                   IF(NUMBER(deriv_idx)>0) THEN
@@ -377,24 +394,27 @@ CONTAINS
                                     VALUES(3)=SQRT((RMS_ERROR_REL(deriv_idx)+GHOST_RMS_ERROR_REL(deriv_idx))/ &
                                       & (NUMBER(deriv_idx)+GHOST_NUMBER(deriv_idx)))
                                     WRITE(FIRST_FORMAT,"(A,I6,A)") "(12X,'",deriv_idx,"',28X,3(2X,E12.5))"
-                                    CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,3,3,3,VALUES,FIRST_FORMAT,"(46X,3(2X,E12.5))",ERR,ERROR,*999)
+                                    CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,3,3,3,VALUES,FIRST_FORMAT,"(46X,3(2X,E12.5))", &
+                                      & ERR,ERROR,*999)
                                   ENDIF
                                 ENDDO !deriv_idx
                                 !Global RMS values
                                 !Collect the values across the ranks
-                                CALL MPI_ALLREDUCE(MPI_IN_PLACE,NUMBER,8,MPI_INTEGER,MPI_SUM,COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
+                                CALL MPI_ALLREDUCE(MPI_IN_PLACE,NUMBER,8,MPI_INTEGER,MPI_SUM,COMPUTATIONAL_ENVIRONMENT%MPI_COMM, &
+                                  & MPI_IERROR)
                                 CALL MPI_ERROR_CHECK("MPI_ALLREDUCE",MPI_IERROR,ERR,ERROR,*999)
-                                CALL MPI_ALLREDUCE(MPI_IN_PLACE,RMS_ERROR_PER,8,MPI_DOUBLE_PRECISION,MPI_SUM,COMPUTATIONAL_ENVIRONMENT% &
-                                  & MPI_COMM,MPI_IERROR)
+                                CALL MPI_ALLREDUCE(MPI_IN_PLACE,RMS_ERROR_PER,8,MPI_DOUBLE_PRECISION,MPI_SUM, &
+                                  & COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
                                 CALL MPI_ERROR_CHECK("MPI_ALLREDUCE",MPI_IERROR,ERR,ERROR,*999)
-                                CALL MPI_ALLREDUCE(MPI_IN_PLACE,RMS_ERROR_ABS,8,MPI_DOUBLE_PRECISION,MPI_SUM,COMPUTATIONAL_ENVIRONMENT% &
-                                  & MPI_COMM,MPI_IERROR)
+                                CALL MPI_ALLREDUCE(MPI_IN_PLACE,RMS_ERROR_ABS,8,MPI_DOUBLE_PRECISION,MPI_SUM, &
+                                  & COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
                                 CALL MPI_ERROR_CHECK("MPI_ALLREDUCE",MPI_IERROR,ERR,ERROR,*999)
-                                CALL MPI_ALLREDUCE(MPI_IN_PLACE,RMS_ERROR_REL,8,MPI_DOUBLE_PRECISION,MPI_SUM,COMPUTATIONAL_ENVIRONMENT% &
-                                  & MPI_COMM,MPI_IERROR)
+                                CALL MPI_ALLREDUCE(MPI_IN_PLACE,RMS_ERROR_REL,8,MPI_DOUBLE_PRECISION,MPI_SUM, &
+                                  & COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
                                 CALL MPI_ERROR_CHECK("MPI_ALLREDUCE",MPI_IERROR,ERR,ERROR,*999)
                                 CALL WRITE_STRING(OUTPUT_ID,"Global RMS errors:",ERR,ERROR,*999)
-                                LOCAL_STRING="            Deriv#                                   % error  Absolute err  Relative err"
+                                LOCAL_STRING= &
+                                  & "            Deriv#                                   % error  Absolute err  Relative err"
                                 CALL WRITE_STRING(OUTPUT_ID,LOCAL_STRING,ERR,ERROR,*999)
                                 DO deriv_idx=1,8
                                   IF(NUMBER(deriv_idx)>0) THEN
@@ -402,14 +422,16 @@ CONTAINS
                                     VALUES(2)=SQRT(RMS_ERROR_ABS(deriv_idx)/NUMBER(deriv_idx))
                                     VALUES(3)=SQRT(RMS_ERROR_REL(deriv_idx)/NUMBER(deriv_idx))
                                     WRITE(FIRST_FORMAT,"(A,I6,A)") "(12X,'",deriv_idx,"',28X,3(2X,E12.5))"
-                                    CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,3,3,3,VALUES,FIRST_FORMAT,"(46X,3(2X,E12.5))",ERR,ERROR,*999)
+                                    CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,3,3,3,VALUES,FIRST_FORMAT,"(46X,3(2X,E12.5))", &
+                                      & ERR,ERROR,*999)
                                   ENDIF
                                 ENDDO !deriv_idx
                               ENDIF
                             ELSE
                               IF(ANY(NUMBER>0)) THEN
                                 CALL WRITE_STRING(OUTPUT_ID,"RMS errors:",ERR,ERROR,*999)
-                               LOCAL_STRING="            Deriv#                                   % error  Absolute err  Relative err"
+                               LOCAL_STRING= &
+                                 & "            Deriv#                                   % error  Absolute err  Relative err"
                                 CALL WRITE_STRING(OUTPUT_ID,LOCAL_STRING,ERR,ERROR,*999)
                                 DO deriv_idx=1,8
                                   IF(NUMBER(deriv_idx)>0) THEN
@@ -417,7 +439,8 @@ CONTAINS
                                     VALUES(2)=SQRT(RMS_ERROR_ABS(deriv_idx)/NUMBER(deriv_idx))
                                     VALUES(3)=SQRT(RMS_ERROR_REL(deriv_idx)/NUMBER(deriv_idx))
                                     WRITE(FIRST_FORMAT,"(A,I6,A)") "(12X,'",deriv_idx,"',28X,3(2X,E12.5))"
-                                    CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,3,3,3,VALUES,FIRST_FORMAT,"(46X,3(2X,E12.5))",ERR,ERROR,*999)
+                                    CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,3,3,3,VALUES,FIRST_FORMAT,"(46X,3(2X,E12.5))", &
+                                      & ERR,ERROR,*999)
                                   ENDIF
                                 ENDDO !deriv_idx
                               ENDIF
@@ -475,7 +498,7 @@ CONTAINS
                       VALUES(4)=ANALYTIC_ANALYSIS_ABSOLUTE_ERROR(VALUES(1),VALUES(2))
                       VALUES(5)=ANALYTIC_ANALYSIS_RELATIVE_ERROR(VALUES(1),VALUES(2))
                       WRITE(FIRST_FORMAT,"(A)") "(12X,'Intg^2',5(2X,E12.5))"
-                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,5,5,5,VALUES,FIRST_FORMAT,"(20X,5(2X,E12.5))",ERR,ERROR,*999)                       
+                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,5,5,5,VALUES,FIRST_FORMAT,"(20X,5(2X,E12.5))",ERR,ERROR,*999)
                     ENDDO !component_idx
                     LOCAL_STRING="Component#             Numerical      Analytic           NID        NID(%)"
                     CALL WRITE_STRING(OUTPUT_ID,LOCAL_STRING,ERR,ERROR,*999)
@@ -491,7 +514,7 @@ CONTAINS
                       VALUES(3)=ANALYTIC_ANALYSIS_NID_ERROR(VALUES(1),VALUES(2))
                       VALUES(4)=VALUES(3)*100.0_DP
                       WRITE(FIRST_FORMAT,"(A)") "(12X,'Diff^2',4(2X,E12.5))"
-                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,4,4,4,VALUES,FIRST_FORMAT,"(20X,4(2X,E12.5))",ERR,ERROR,*999)                       
+                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,4,4,4,VALUES,FIRST_FORMAT,"(20X,4(2X,E12.5))",ERR,ERROR,*999)
                     ENDDO !component_idx
                     CALL WRITE_STRING(OUTPUT_ID,"Local + Ghost Integral errors:",ERR,ERROR,*999)
                     LOCAL_STRING="Component#             Numerical      Analytic       % error  Absolute err  Relative err"
@@ -510,7 +533,7 @@ CONTAINS
                       VALUES(4)=ANALYTIC_ANALYSIS_ABSOLUTE_ERROR(VALUES(1),VALUES(2))
                       VALUES(5)=ANALYTIC_ANALYSIS_RELATIVE_ERROR(VALUES(1),VALUES(2))
                       WRITE(FIRST_FORMAT,"(A)") "(12X,'Intg^2',5(2X,E12.5))"
-                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,5,5,5,VALUES,FIRST_FORMAT,"(20X,5(2X,E12.5))",ERR,ERROR,*999)                       
+                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,5,5,5,VALUES,FIRST_FORMAT,"(20X,5(2X,E12.5))",ERR,ERROR,*999)
                     ENDDO !component_idx
                     LOCAL_STRING="Component#             Numerical      Analytic           NID        NID(%)"
                     CALL WRITE_STRING(OUTPUT_ID,LOCAL_STRING,ERR,ERROR,*999)
@@ -526,11 +549,11 @@ CONTAINS
                       VALUES(3)=ANALYTIC_ANALYSIS_NID_ERROR(VALUES(1),VALUES(2))
                       VALUES(4)=VALUES(3)*100.0_DP
                       WRITE(FIRST_FORMAT,"(A)") "(12X,'Diff^2',4(2X,E12.5))"
-                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,4,4,4,VALUES,FIRST_FORMAT,"(20X,4(2X,E12.5))",ERR,ERROR,*999)                       
+                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,4,4,4,VALUES,FIRST_FORMAT,"(20X,4(2X,E12.5))",ERR,ERROR,*999)
                     ENDDO !component_idx
                     !Collect the values across the ranks
-                    CALL MPI_ALLREDUCE(MPI_IN_PLACE,INTEGRAL_ERRORS,6*FIELD_VARIABLE%NUMBER_OF_COMPONENTS,MPI_DOUBLE_PRECISION,MPI_SUM, &
-                      & COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
+                    CALL MPI_ALLREDUCE(MPI_IN_PLACE,INTEGRAL_ERRORS,6*FIELD_VARIABLE%NUMBER_OF_COMPONENTS,MPI_DOUBLE_PRECISION, &
+                      & MPI_SUM,COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
                     CALL WRITE_STRING(OUTPUT_ID,"Global Integral errors:",ERR,ERROR,*999)
                     LOCAL_STRING="Component#             Numerical      Analytic       % error  Absolute err  Relative err"
                     CALL WRITE_STRING(OUTPUT_ID,LOCAL_STRING,ERR,ERROR,*999)
@@ -548,7 +571,7 @@ CONTAINS
                       VALUES(4)=ANALYTIC_ANALYSIS_ABSOLUTE_ERROR(VALUES(1),VALUES(2))
                       VALUES(5)=ANALYTIC_ANALYSIS_RELATIVE_ERROR(VALUES(1),VALUES(2))
                       WRITE(FIRST_FORMAT,"(A)") "(12X,'Intg^2',5(2X,E12.5))"
-                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,5,5,5,VALUES,FIRST_FORMAT,"(20X,5(2X,E12.5))",ERR,ERROR,*999)                       
+                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,5,5,5,VALUES,FIRST_FORMAT,"(20X,5(2X,E12.5))",ERR,ERROR,*999) 
                     ENDDO !component_idx
                     LOCAL_STRING="Component#             Numerical      Analytic           NID        NID(%)"
                     CALL WRITE_STRING(OUTPUT_ID,LOCAL_STRING,ERR,ERROR,*999)
@@ -564,7 +587,7 @@ CONTAINS
                       VALUES(3)=ANALYTIC_ANALYSIS_NID_ERROR(VALUES(1),VALUES(2))
                       VALUES(4)=VALUES(3)*100.0_DP
                       WRITE(FIRST_FORMAT,"(A)") "(12X,'Diff^2',4(2X,E12.5))"
-                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,4,4,4,VALUES,FIRST_FORMAT,"(20X,4(2X,E12.5))",ERR,ERROR,*999)                       
+                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,4,4,4,VALUES,FIRST_FORMAT,"(20X,4(2X,E12.5))",ERR,ERROR,*999)
                     ENDDO !component_idx
                   ELSE
                     CALL WRITE_STRING(OUTPUT_ID,"Integral errors:",ERR,ERROR,*999)
@@ -584,7 +607,7 @@ CONTAINS
                       VALUES(4)=ANALYTIC_ANALYSIS_ABSOLUTE_ERROR(VALUES(1),VALUES(2))
                       VALUES(5)=ANALYTIC_ANALYSIS_RELATIVE_ERROR(VALUES(1),VALUES(2))
                       WRITE(FIRST_FORMAT,"(A)") "(12X,'Intg^2',5(2X,E12.5))"
-                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,5,5,5,VALUES,FIRST_FORMAT,"(20X,5(2X,E12.5))",ERR,ERROR,*999)                       
+                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,5,5,5,VALUES,FIRST_FORMAT,"(20X,5(2X,E12.5))",ERR,ERROR,*999)
                     ENDDO !component_idx
                     LOCAL_STRING="Component#             Numerical      Analytic           NID        NID(%)"
                     CALL WRITE_STRING(OUTPUT_ID,LOCAL_STRING,ERR,ERROR,*999)
@@ -600,7 +623,7 @@ CONTAINS
                       VALUES(3)=ANALYTIC_ANALYSIS_NID_ERROR(VALUES(1),VALUES(2))
                       VALUES(4)=VALUES(3)*100.0_DP
                       WRITE(FIRST_FORMAT,"(A)") "(12X,'Diff^2',4(2X,E12.5))"
-                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,4,4,4,VALUES,FIRST_FORMAT,"(20X,4(2X,E12.5))",ERR,ERROR,*999)                       
+                      CALL WRITE_STRING_VECTOR(OUTPUT_ID,1,1,4,4,4,VALUES,FIRST_FORMAT,"(20X,4(2X,E12.5))",ERR,ERROR,*999)
                     ENDDO !component_idx
                     CALL WRITE_STRING(OUTPUT_ID,"",ERR,ERROR,*999)
                   ENDIF
@@ -630,14 +653,14 @@ CONTAINS
       CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
     ENDIF
           
-    CALL EXITS("ANALYTIC_ANALYSIS_CALCULATE")
+    CALL EXITS("ANALYTIC_ANALYSIS_OUTPUT")
     RETURN
 999 IF(ALLOCATED(INTEGRAL_ERRORS)) DEALLOCATE(INTEGRAL_ERRORS)
     IF(ALLOCATED(GHOST_INTEGRAL_ERRORS)) DEALLOCATE(GHOST_INTEGRAL_ERRORS)
-    CALL ERRORS("ANALYTIC_ANALYSIS_CALCULATE",ERR,ERROR)
-    CALL EXITS("ANALYTIC_ANALYSIS_CALCULATE")
+    CALL ERRORS("ANALYTIC_ANALYSIS_OUTPUT",ERR,ERROR)
+    CALL EXITS("ANALYTIC_ANALYSIS_OUTPUT")
     RETURN 1
-  END SUBROUTINE ANALYTIC_ANALYSIS_CALCULATE
+  END SUBROUTINE ANALYTIC_ANALYSIS_OUTPUT
 
   !
   !================================================================================================================================
@@ -741,9 +764,11 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: GEOMETRIC_INTERP_POINT
     TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: GEOMETRIC_INTERP_POINT_METRICS
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: ANALYTIC_INTERP_PARAMETERS,GEOMETRIC_INTERP_PARAMETERS,NUMERICAL_INTERP_PARAMETERS
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: ANALYTIC_INTERP_PARAMETERS,GEOMETRIC_INTERP_PARAMETERS, &
+      & NUMERICAL_INTERP_PARAMETERS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: GEOMETRIC_VARIABLE
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     NULLIFY(GEOMETRIC_INTERP_POINT)
     NULLIFY(GEOMETRIC_INTERP_POINT_METRICS)
@@ -756,102 +781,136 @@ CONTAINS
     INTEGRAL_ERRORS=0.0_DP
     GHOST_INTEGRAL_ERRORS=0.0_DP
     IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-      variable_type=FIELD_VARIABLE%VARIABLE_TYPE
-      DEPENDENT_FIELD=>FIELD_VARIABLE%FIELD
-      IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
-        DECOMPOSITION=>DEPENDENT_FIELD%DECOMPOSITION
-        IF(ASSOCIATED(DECOMPOSITION)) THEN
-          GEOMETRIC_FIELD=>DEPENDENT_FIELD%GEOMETRIC_FIELD
-          IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
-            GEOMETRIC_VARIABLE=>GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
-            IF(ASSOCIATED(GEOMETRIC_VARIABLE)) THEN
-              CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_INTERP_PARAMETERS,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(DEPENDENT_FIELD,variable_type,NUMERICAL_INTERP_PARAMETERS,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(DEPENDENT_FIELD,variable_type,ANALYTIC_INTERP_PARAMETERS,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATED_POINT_INITIALISE(GEOMETRIC_INTERP_PARAMETERS,GEOMETRIC_INTERP_POINT,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATED_POINT_METRICS_INITIALISE(GEOMETRIC_INTERP_POINT,GEOMETRIC_INTERP_POINT_METRICS,ERR,ERROR,*999)
-              DOMAIN_ELEMENTS1=>FIELD_VARIABLE%COMPONENTS(DECOMPOSITION%MESH_COMPONENT_NUMBER)%DOMAIN%TOPOLOGY%ELEMENTS
-              DOMAIN_ELEMENTS2=>GEOMETRIC_VARIABLE%COMPONENTS(DECOMPOSITION%MESH_COMPONENT_NUMBER)%DOMAIN%TOPOLOGY%ELEMENTS
-              DO element_idx=1,DOMAIN_ELEMENTS1%NUMBER_OF_ELEMENTS
-                DEPENDENT_BASIS=>DOMAIN_ELEMENTS1%ELEMENTS(element_idx)%BASIS
-                GEOMETRIC_BASIS=>DOMAIN_ELEMENTS2%ELEMENTS(element_idx)%BASIS
-                QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx,GEOMETRIC_INTERP_PARAMETERS,ERR,ERROR,*999)
-                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx,NUMERICAL_INTERP_PARAMETERS,ERR,ERROR,*999)
-                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_ANALYTIC_VALUES_SET_TYPE,element_idx,ANALYTIC_INTERP_PARAMETERS, &
-                  & ERR,ERROR,*999)
-                DO gauss_idx=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
-                  CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx,GEOMETRIC_INTERP_POINT,ERR,ERROR,*999)
-                  CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,GEOMETRIC_INTERP_POINT_METRICS,ERR,ERROR,*999)
-                  RWG=GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME%GAUSS_WEIGHTS(gauss_idx)
-                  DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                    DOMAIN_ELEMENTS3=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS
-                    BASIS=>DOMAIN_ELEMENTS3%ELEMENTS(element_idx)%BASIS
-                    NUMERICAL_INT=0.0_DP
-                    ANALYTIC_INT=0.0_DP
-                    DO parameter_idx=1,BASIS%NUMBER_OF_ELEMENT_PARAMETERS
-                      NUMERICAL_INT=NUMERICAL_INT+QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,NO_PART_DERIV,gauss_idx)* &
-                        & NUMERICAL_INTERP_PARAMETERS%PARAMETERS(parameter_idx,component_idx)* &
-                        & NUMERICAL_INTERP_PARAMETERS%SCALE_FACTORS(parameter_idx,component_idx)
-                      ANALYTIC_INT=ANALYTIC_INT+QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,NO_PART_DERIV,gauss_idx)* &
-                        & ANALYTIC_INTERP_PARAMETERS%PARAMETERS(parameter_idx,component_idx)* &
-                        & ANALYTIC_INTERP_PARAMETERS%SCALE_FACTORS(parameter_idx,component_idx)
-                    ENDDO !parameter_idx
-                    INTEGRAL_ERRORS(1,component_idx)=INTEGRAL_ERRORS(1,component_idx)+NUMERICAL_INT*RWG
-                    INTEGRAL_ERRORS(2,component_idx)=INTEGRAL_ERRORS(2,component_idx)+NUMERICAL_INT**2*RWG
-                    INTEGRAL_ERRORS(3,component_idx)=INTEGRAL_ERRORS(3,component_idx)+ANALYTIC_INT*RWG
-                    INTEGRAL_ERRORS(4,component_idx)=INTEGRAL_ERRORS(4,component_idx)+ANALYTIC_INT**2*RWG
-                    INTEGRAL_ERRORS(5,component_idx)=INTEGRAL_ERRORS(5,component_idx)+(ANALYTIC_INT-NUMERICAL_INT)*RWG
-                    INTEGRAL_ERRORS(6,component_idx)=INTEGRAL_ERRORS(6,component_idx)+(ANALYTIC_INT-NUMERICAL_INT)**2*RWG
-                  ENDDO !component_idx
-                ENDDO !gauss_idx
-              ENDDO !element_idx
-              DO element_idx=DOMAIN_ELEMENTS1%NUMBER_OF_ELEMENTS+1,DOMAIN_ELEMENTS1%TOTAL_NUMBER_OF_ELEMENTS
-                DEPENDENT_BASIS=>DOMAIN_ELEMENTS1%ELEMENTS(element_idx)%BASIS
-                GEOMETRIC_BASIS=>DOMAIN_ELEMENTS2%ELEMENTS(element_idx)%BASIS
-                QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx,GEOMETRIC_INTERP_PARAMETERS,ERR,ERROR,*999)
-                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx,NUMERICAL_INTERP_PARAMETERS,ERR,ERROR,*999)
-                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_ANALYTIC_VALUES_SET_TYPE,element_idx,ANALYTIC_INTERP_PARAMETERS, &
-                  & ERR,ERROR,*999)
-                DO gauss_idx=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
-                  CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx,GEOMETRIC_INTERP_POINT,ERR,ERROR,*999)
-                  CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,GEOMETRIC_INTERP_POINT_METRICS,ERR,ERROR,*999)
-                  RWG=GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME%GAUSS_WEIGHTS(gauss_idx)
-                  DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                    DOMAIN_ELEMENTS3=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS
-                    BASIS=>DOMAIN_ELEMENTS3%ELEMENTS(element_idx)%BASIS
-                    NUMERICAL_INT=0.0_DP
-                    ANALYTIC_INT=0.0_DP
-                    DO parameter_idx=1,BASIS%NUMBER_OF_ELEMENT_PARAMETERS
-                      NUMERICAL_INT=NUMERICAL_INT+QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,NO_PART_DERIV,gauss_idx)* &
-                        & NUMERICAL_INTERP_PARAMETERS%PARAMETERS(parameter_idx,component_idx)* &
-                        & NUMERICAL_INTERP_PARAMETERS%SCALE_FACTORS(parameter_idx,component_idx)
-                      ANALYTIC_INT=ANALYTIC_INT+QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,NO_PART_DERIV,gauss_idx)* &
-                        & ANALYTIC_INTERP_PARAMETERS%PARAMETERS(parameter_idx,component_idx)* &
-                        & ANALYTIC_INTERP_PARAMETERS%SCALE_FACTORS(parameter_idx,component_idx)
-                    ENDDO !parameter_idx
-                    GHOST_INTEGRAL_ERRORS(1,component_idx)=GHOST_INTEGRAL_ERRORS(1,component_idx)+NUMERICAL_INT*RWG
-                    GHOST_INTEGRAL_ERRORS(2,component_idx)=GHOST_INTEGRAL_ERRORS(2,component_idx)+NUMERICAL_INT**2*RWG
-                    GHOST_INTEGRAL_ERRORS(3,component_idx)=GHOST_INTEGRAL_ERRORS(3,component_idx)+ANALYTIC_INT*RWG
-                    GHOST_INTEGRAL_ERRORS(4,component_idx)=GHOST_INTEGRAL_ERRORS(4,component_idx)+ANALYTIC_INT**2*RWG
-                    GHOST_INTEGRAL_ERRORS(5,component_idx)=GHOST_INTEGRAL_ERRORS(5,component_idx)+(ANALYTIC_INT-NUMERICAL_INT)*RWG
-                    GHOST_INTEGRAL_ERRORS(6,component_idx)=GHOST_INTEGRAL_ERRORS(6,component_idx)+(ANALYTIC_INT-NUMERICAL_INT)**2*RWG
-                  ENDDO !component_idx
-                ENDDO !gauss_idx
-              ENDDO !element_idx
-              CALL FIELD_INTERPOLATED_POINT_METRICS_FINALISE(GEOMETRIC_INTERP_POINT_METRICS,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATED_POINT_FINALISE(GEOMETRIC_INTERP_POINT,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(ANALYTIC_INTERP_PARAMETERS,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(NUMERICAL_INTERP_PARAMETERS,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(GEOMETRIC_INTERP_PARAMETERS,ERR,ERROR,*999)
+      IF(SIZE(INTEGRAL_ERRORS,1)>=6.AND.SIZE(INTEGRAL_ERRORS,2)>=FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+        IF(SIZE(GHOST_INTEGRAL_ERRORS,1)>=6.AND.SIZE(GHOST_INTEGRAL_ERRORS,2)>=FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+          variable_type=FIELD_VARIABLE%VARIABLE_TYPE
+          DEPENDENT_FIELD=>FIELD_VARIABLE%FIELD
+          IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+            DECOMPOSITION=>DEPENDENT_FIELD%DECOMPOSITION
+            IF(ASSOCIATED(DECOMPOSITION)) THEN
+              GEOMETRIC_FIELD=>DEPENDENT_FIELD%GEOMETRIC_FIELD
+              IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
+                GEOMETRIC_VARIABLE=>GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
+                IF(ASSOCIATED(GEOMETRIC_VARIABLE)) THEN
+                  CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & GEOMETRIC_INTERP_PARAMETERS,ERR,ERROR,*999)
+                  CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(DEPENDENT_FIELD,variable_type,NUMERICAL_INTERP_PARAMETERS, &
+                    & ERR,ERROR,*999)
+                  CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(DEPENDENT_FIELD,variable_type,ANALYTIC_INTERP_PARAMETERS, &
+                    & ERR,ERROR,*999)
+                  CALL FIELD_INTERPOLATED_POINT_INITIALISE(GEOMETRIC_INTERP_PARAMETERS,GEOMETRIC_INTERP_POINT,ERR,ERROR,*999)
+                  CALL FIELD_INTERPOLATED_POINT_METRICS_INITIALISE(GEOMETRIC_INTERP_POINT,GEOMETRIC_INTERP_POINT_METRICS, &
+                    & ERR,ERROR,*999)
+                  DOMAIN_ELEMENTS1=>FIELD_VARIABLE%COMPONENTS(DECOMPOSITION%MESH_COMPONENT_NUMBER)%DOMAIN%TOPOLOGY%ELEMENTS
+                  DOMAIN_ELEMENTS2=>GEOMETRIC_VARIABLE%COMPONENTS(DECOMPOSITION%MESH_COMPONENT_NUMBER)%DOMAIN%TOPOLOGY%ELEMENTS
+                  DO element_idx=1,DOMAIN_ELEMENTS1%NUMBER_OF_ELEMENTS
+                    DEPENDENT_BASIS=>DOMAIN_ELEMENTS1%ELEMENTS(element_idx)%BASIS
+                    GEOMETRIC_BASIS=>DOMAIN_ELEMENTS2%ELEMENTS(element_idx)%BASIS
+                    QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+                    CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx, &
+                      & GEOMETRIC_INTERP_PARAMETERS,ERR,ERROR,*999)
+                    CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx, &
+                      & NUMERICAL_INTERP_PARAMETERS,ERR,ERROR,*999)
+                    CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_ANALYTIC_VALUES_SET_TYPE,element_idx, &
+                      & ANALYTIC_INTERP_PARAMETERS,ERR,ERROR,*999)
+                    DO gauss_idx=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
+                      CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
+                        & GEOMETRIC_INTERP_POINT,ERR,ERROR,*999)
+                      CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,GEOMETRIC_INTERP_POINT_METRICS, &
+                        & ERR,ERROR,*999)
+                      RWG=GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME%GAUSS_WEIGHTS(gauss_idx)
+                      DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                        DOMAIN_ELEMENTS3=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS
+                        BASIS=>DOMAIN_ELEMENTS3%ELEMENTS(element_idx)%BASIS
+                        NUMERICAL_INT=0.0_DP
+                        ANALYTIC_INT=0.0_DP
+                        DO parameter_idx=1,BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                          NUMERICAL_INT=NUMERICAL_INT+QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,NO_PART_DERIV,gauss_idx)* &
+                            & NUMERICAL_INTERP_PARAMETERS%PARAMETERS(parameter_idx,component_idx)* &
+                            & NUMERICAL_INTERP_PARAMETERS%SCALE_FACTORS(parameter_idx,component_idx)
+                          ANALYTIC_INT=ANALYTIC_INT+QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,NO_PART_DERIV,gauss_idx)* &
+                            & ANALYTIC_INTERP_PARAMETERS%PARAMETERS(parameter_idx,component_idx)* &
+                            & ANALYTIC_INTERP_PARAMETERS%SCALE_FACTORS(parameter_idx,component_idx)
+                        ENDDO !parameter_idx
+                        INTEGRAL_ERRORS(1,component_idx)=INTEGRAL_ERRORS(1,component_idx)+NUMERICAL_INT*RWG
+                        INTEGRAL_ERRORS(2,component_idx)=INTEGRAL_ERRORS(2,component_idx)+NUMERICAL_INT**2*RWG
+                        INTEGRAL_ERRORS(3,component_idx)=INTEGRAL_ERRORS(3,component_idx)+ANALYTIC_INT*RWG
+                        INTEGRAL_ERRORS(4,component_idx)=INTEGRAL_ERRORS(4,component_idx)+ANALYTIC_INT**2*RWG
+                        INTEGRAL_ERRORS(5,component_idx)=INTEGRAL_ERRORS(5,component_idx)+(ANALYTIC_INT-NUMERICAL_INT)*RWG
+                        INTEGRAL_ERRORS(6,component_idx)=INTEGRAL_ERRORS(6,component_idx)+(ANALYTIC_INT-NUMERICAL_INT)**2*RWG
+                      ENDDO !component_idx
+                    ENDDO !gauss_idx
+                  ENDDO !element_idx
+                  DO element_idx=DOMAIN_ELEMENTS1%NUMBER_OF_ELEMENTS+1,DOMAIN_ELEMENTS1%TOTAL_NUMBER_OF_ELEMENTS
+                    DEPENDENT_BASIS=>DOMAIN_ELEMENTS1%ELEMENTS(element_idx)%BASIS
+                    GEOMETRIC_BASIS=>DOMAIN_ELEMENTS2%ELEMENTS(element_idx)%BASIS
+                    QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+                    CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx,GEOMETRIC_INTERP_PARAMETERS, &
+                      & ERR,ERROR,*999)
+                    CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx,NUMERICAL_INTERP_PARAMETERS, &
+                      & ERR,ERROR,*999)
+                    CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_ANALYTIC_VALUES_SET_TYPE,element_idx, &
+                      & ANALYTIC_INTERP_PARAMETERS,ERR,ERROR,*999)
+                    DO gauss_idx=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
+                      CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
+                        & GEOMETRIC_INTERP_POINT,ERR,ERROR,*999)
+                      CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,GEOMETRIC_INTERP_POINT_METRICS, &
+                        & ERR,ERROR,*999)
+                      RWG=GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME%GAUSS_WEIGHTS(gauss_idx)
+                      DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                        DOMAIN_ELEMENTS3=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS
+                        BASIS=>DOMAIN_ELEMENTS3%ELEMENTS(element_idx)%BASIS
+                        NUMERICAL_INT=0.0_DP
+                        ANALYTIC_INT=0.0_DP
+                        DO parameter_idx=1,BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                          NUMERICAL_INT=NUMERICAL_INT+QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,NO_PART_DERIV,gauss_idx)* &
+                            & NUMERICAL_INTERP_PARAMETERS%PARAMETERS(parameter_idx,component_idx)* &
+                            & NUMERICAL_INTERP_PARAMETERS%SCALE_FACTORS(parameter_idx,component_idx)
+                          ANALYTIC_INT=ANALYTIC_INT+QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,NO_PART_DERIV,gauss_idx)* &
+                            & ANALYTIC_INTERP_PARAMETERS%PARAMETERS(parameter_idx,component_idx)* &
+                            & ANALYTIC_INTERP_PARAMETERS%SCALE_FACTORS(parameter_idx,component_idx)
+                        ENDDO !parameter_idx
+                        GHOST_INTEGRAL_ERRORS(1,component_idx)=GHOST_INTEGRAL_ERRORS(1,component_idx)+NUMERICAL_INT*RWG
+                        GHOST_INTEGRAL_ERRORS(2,component_idx)=GHOST_INTEGRAL_ERRORS(2,component_idx)+NUMERICAL_INT**2*RWG
+                        GHOST_INTEGRAL_ERRORS(3,component_idx)=GHOST_INTEGRAL_ERRORS(3,component_idx)+ANALYTIC_INT*RWG
+                        GHOST_INTEGRAL_ERRORS(4,component_idx)=GHOST_INTEGRAL_ERRORS(4,component_idx)+ANALYTIC_INT**2*RWG
+                        GHOST_INTEGRAL_ERRORS(5,component_idx)=GHOST_INTEGRAL_ERRORS(5,component_idx)+ &
+                          & (ANALYTIC_INT-NUMERICAL_INT)*RWG
+                        GHOST_INTEGRAL_ERRORS(6,component_idx)=GHOST_INTEGRAL_ERRORS(6,component_idx)+ &
+                          & (ANALYTIC_INT-NUMERICAL_INT)**2*RWG
+                      ENDDO !component_idx
+                    ENDDO !gauss_idx
+                  ENDDO !element_idx
+                  CALL FIELD_INTERPOLATED_POINT_METRICS_FINALISE(GEOMETRIC_INTERP_POINT_METRICS,ERR,ERROR,*999)
+                  CALL FIELD_INTERPOLATED_POINT_FINALISE(GEOMETRIC_INTERP_POINT,ERR,ERROR,*999)
+                  CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(ANALYTIC_INTERP_PARAMETERS,ERR,ERROR,*999)
+                  CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(NUMERICAL_INTERP_PARAMETERS,ERR,ERROR,*999)
+                  CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(GEOMETRIC_INTERP_PARAMETERS,ERR,ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("Geometric field variable is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Field geometric field is not associated.",ERR,ERROR,*999)
+              ENDIF
             ELSE
+              CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
+            CALL FLAG_ERROR("Field variable field is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
+          LOCAL_ERROR="Invalid size for GHOST_INTEGRAL_ERRORS. The size is ("// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(GHOST_INTEGRAL_ERRORS,1),"*",ERR,ERROR))//","// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(GHOST_INTEGRAL_ERRORS,2),"*",ERR,ERROR))//") and it needs to be at least (6,"// &
+            & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%NUMBER_OF_COMPONENTS,"*",ERR,ERROR))//")."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
+        LOCAL_ERROR="Invalid size for INTEGRAL_ERRORS. The size is ("// &
+          & TRIM(NUMBER_TO_VSTRING(SIZE(INTEGRAL_ERRORS,1),"*",ERR,ERROR))//","// &
+          & TRIM(NUMBER_TO_VSTRING(SIZE(INTEGRAL_ERRORS,2),"*",ERR,ERROR))//") and it needs to be at least (6,"// &
+          & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%NUMBER_OF_COMPONENTS,"*",ERR,ERROR))//")."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)

@@ -4170,11 +4170,10 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finishes the process of creating a mesh on a region. \todo remove region
-  SUBROUTINE MESH_CREATE_FINISH(REGION,MESH,ERR,ERROR,*)
+  !>Finishes the process of creating a mesh.
+  SUBROUTINE MESH_CREATE_FINISH(MESH,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the mesh
     TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to finish creating
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -4185,70 +4184,43 @@ CONTAINS
 
     CALL ENTERS("MESH_CREATE_FINISH",ERR,ERROR,*999)
 
-    IF(ASSOCIATED(REGION)) THEN
-      IF(ASSOCIATED(MESH)) THEN
-        IF(ASSOCIATED(MESH%TOPOLOGY)) THEN
-          IF(ASSOCIATED(MESH%REGION)) THEN
-            IF(MESH%REGION%USER_NUMBER==REGION%USER_NUMBER) THEN            
-              !Check that the mesh component elements have been finished
-              FINISHED=.TRUE.
-              DO component_idx=1,MESH%NUMBER_OF_COMPONENTS
-                IF(ASSOCIATED(MESH%TOPOLOGY(component_idx)%PTR%ELEMENTS)) THEN
-                  IF(.NOT.MESH%TOPOLOGY(component_idx)%PTR%ELEMENTS%ELEMENTS_FINISHED) THEN
-                    LOCAL_ERROR="The elements for mesh component "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
-                      & " have not been finished"
-                    FINISHED=.FALSE.
-                    EXIT
-                  ENDIF
-                ELSE
-                  LOCAL_ERROR="The elements for mesh topology component "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
-                    & " are not associated"
-                  FINISHED=.FALSE.
-                  EXIT
-                ENDIF
-              ENDDO !component_idx
-              IF(.NOT.FINISHED) CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              MESH%MESH_FINISHED=.TRUE.
-              !Calulcate the mesh topology
-              DO component_idx=1,MESH%NUMBER_OF_COMPONENTS
-                CALL MESH_TOPOLOGY_CALCULATE(MESH%TOPOLOGY(component_idx)%PTR,ERR,ERROR,*999)
-              ENDDO !component_idx
-!!TODO: Really create an all decomposition????
-              !Create the default domain decomposition
-              !CALL DECOMPOSITION_CREATE_START(0,MESH,DECOMPOSITION,ERR,ERROR,*999)
-              !CALL DECOMPOSITION_CREATE_FINISH(MESH,DECOMPOSITION,ERR,ERROR,*999)            
-            ELSE
-              LOCAL_ERROR="The region user number of the specified mesh ("// &
-                & TRIM(NUMBER_TO_VSTRING(MESH%REGION%USER_NUMBER,"*",ERR,ERROR))// &
-                & ") does not match the user number of the specified region ("// &
-                & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//")"
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+    IF(ASSOCIATED(MESH)) THEN
+      IF(ASSOCIATED(MESH%TOPOLOGY)) THEN
+        !Check that the mesh component elements have been finished
+        FINISHED=.TRUE.
+        DO component_idx=1,MESH%NUMBER_OF_COMPONENTS
+          IF(ASSOCIATED(MESH%TOPOLOGY(component_idx)%PTR%ELEMENTS)) THEN
+            IF(.NOT.MESH%TOPOLOGY(component_idx)%PTR%ELEMENTS%ELEMENTS_FINISHED) THEN
+              LOCAL_ERROR="The elements for mesh component "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
+                & " have not been finished"
+              FINISHED=.FALSE.
+              EXIT
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Mesh region is not associated",ERR,ERROR,*999)
+            LOCAL_ERROR="The elements for mesh topology component "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
+              & " are not associated"
+            FINISHED=.FALSE.
+            EXIT
           ENDIF
-        ELSE
-          CALL FLAG_ERROR("Mesh topology is not associated",ERR,ERROR,*999)
-        ENDIF
+        ENDDO !component_idx
+        IF(.NOT.FINISHED) CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        MESH%MESH_FINISHED=.TRUE.
+        !Calulcate the mesh topology
+        DO component_idx=1,MESH%NUMBER_OF_COMPONENTS
+          CALL MESH_TOPOLOGY_CALCULATE(MESH%TOPOLOGY(component_idx)%PTR,ERR,ERROR,*999)
+        ENDDO !component_idx
       ELSE
-        CALL FLAG_ERROR("Mesh is not associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Mesh topology is not associated",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Mesh is not associated",ERR,ERROR,*999)
     ENDIF
     
     IF(DIAGNOSTICS1) THEN
-      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Region = ",REGION%USER_NUMBER,ERR,ERROR,*999)
-      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of meshes = ",REGION%MESHES%NUMBER_OF_MESHES,ERR,ERROR,*999)
-      DO mesh_idx=1,REGION%MESHES%NUMBER_OF_MESHES
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Mesh number = ",mesh_idx,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    User number          = ", &
-          & REGION%MESHES%MESHES(mesh_idx)%PTR%USER_NUMBER,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Global number        = ", &
-          & REGION%MESHES%MESHES(mesh_idx)%PTR%GLOBAL_NUMBER,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of dimensions = ", &
-          & REGION%MESHES%MESHES(mesh_idx)%PTR%NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-      ENDDO !mesh_idx    
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Mesh number = ",mesh_idx,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    User number          = ",MESH%USER_NUMBER,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Global number        = ",MESH%GLOBAL_NUMBER,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of dimensions = ",MESH%NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("MESH_CREATE_FINISH")
@@ -6468,7 +6440,8 @@ CONTAINS
                    NODES%NODES(np)%GLOBAL_DERIVATIVE_INDEX(nk)=global_deriv
                 ELSE
                   LOCAL_ERROR="The partial derivative index of "//TRIM(NUMBER_TO_VSTRING(DERIVATIVES(nk),"*",ERR,ERROR))// &
-                    & " for derivative number "//TRIM(NUMBER_TO_VSTRING(nk,"*",ERR,ERROR))//" does not have a corresponding global derivative."
+                    & " for derivative number "//TRIM(NUMBER_TO_VSTRING(nk,"*",ERR,ERROR))// &
+                    & " does not have a corresponding global derivative."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ENDDO !nk
