@@ -63,8 +63,25 @@ MODULE NODE_ROUTINES
 
   !Interfaces
 
-  PUBLIC NODE_CHECK_EXISTS,NODE_DESTROY,NODE_INITIAL_POSITION_SET,NODE_NUMBER_SET,NODES_INITIALISE,NODES_FINALISE, &
-    & NODES_CREATE_START,NODES_CREATE_FINISH
+  !>Gets the label for a node identified by a given global number.
+  INTERFACE NODES_LABEL_GET
+    MODULE PROCEDURE NODES_LABEL_GET_C
+    MODULE PROCEDURE NODES_LABEL_GET_VS
+  END INTERFACE !NODES_LABEL_SET
+
+  !>Changes/sets the label for a node identified by a given global number.
+  INTERFACE NODES_LABEL_SET
+    MODULE PROCEDURE NODES_LABEL_SET_C
+    MODULE PROCEDURE NODES_LABEL_SET_VS
+  END INTERFACE !NODES_LABEL_SET
+
+  PUBLIC NODE_CHECK_EXISTS
+
+  PUBLIC NODES_CREATE_FINISH,NODES_CREATE_START,NODES_DESTROY
+
+  PUBLIC NODES_LABEL_GET,NODES_LABEL_SET
+  
+  PUBLIC NODES_USER_NUMBER_GET,NODES_USER_NUMBER_SET
 
 CONTAINS
 
@@ -73,38 +90,31 @@ CONTAINS
   !
 
   !>Checks that a user node number is defined on the specified region.
-  SUBROUTINE NODE_CHECK_EXISTS(USER_NUMBER,REGION,NODE_EXISTS,GLOBAL_NUMBER,ERR,ERROR,*)
+  SUBROUTINE NODE_CHECK_EXISTS(NODES,USER_NUMBER,NODE_EXISTS,GLOBAL_NUMBER,ERR,ERROR,*)
 
     !Argument variables
+    TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes to check
     INTEGER(INTG) :: USER_NUMBER !<The user node number to check if it exists
-    TYPE(REGION_TYPE), POINTER :: REGION !<The region containing the node
     LOGICAL, INTENT(OUT) :: NODE_EXISTS !<On exit, is .TRUE. if the node user number exists in the region, .FALSE. if not
     INTEGER(INTG), INTENT(OUT) :: GLOBAL_NUMBER !<On exit, if the node exists the global number corresponding to the user node number. If the node does not exist then global number will be 0.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error number
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(TREE_NODE_TYPE), POINTER :: TREE_NODE
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
+   
     CALL ENTERS("NODE_CHECK_EXISTS",ERR,ERROR,*999)
 
     NODE_EXISTS=.FALSE.
     GLOBAL_NUMBER=0
-    IF(ASSOCIATED(REGION)) THEN
-      IF(ASSOCIATED(REGION%NODES)) THEN
-        NULLIFY(TREE_NODE)
-        CALL TREE_SEARCH(REGION%NODES%NODE_TREE,USER_NUMBER,TREE_NODE,ERR,ERROR,*999)
-        IF(ASSOCIATED(TREE_NODE)) THEN
-          CALL TREE_NODE_VALUE_GET(REGION%NODES%NODE_TREE,TREE_NODE,GLOBAL_NUMBER,ERR,ERROR,*999)
-          NODE_EXISTS=.TRUE.
-        ENDIF
-      ELSE
-        LOCAL_ERROR="Region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))// &
-          & " does not have any associated nodes"
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+    IF(ASSOCIATED(NODES)) THEN
+      NULLIFY(TREE_NODE)
+      CALL TREE_SEARCH(NODES%NODES_TREE,USER_NUMBER,TREE_NODE,ERR,ERROR,*999)
+      IF(ASSOCIATED(TREE_NODE)) THEN
+        CALL TREE_NODE_VALUE_GET(NODES%NODES_TREE,TREE_NODE,GLOBAL_NUMBER,ERR,ERROR,*999)
+        NODE_EXISTS=.TRUE.
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("NODE_CHECK_EXISTS")
@@ -118,188 +128,66 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE NODE_DESTROY(NODE,ERR,ERROR,*)
-
-    !#### Subroutine: NODE_DESTROY
-    !###  Description:
-    !###    Destroys the a nodes and deallocates all memory
-
+  !>Finalises a node and deallocates all memory
+  SUBROUTINE NODE_FINALISE(NODE,ERR,ERROR,*)
+    
     !Argument variables
-    TYPE(NODE_TYPE) :: NODE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(NODE_TYPE),INTENT(OUT) :: NODE !<The node to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("NODE_DESTROY",ERR,ERROR,*999)
+    CALL ENTERS("NODE_FINALISE",ERR,ERROR,*999)
 
-    IF(ALLOCATED(NODE%INITIAL_POSITION)) DEALLOCATE(NODE%INITIAL_POSITION)
-
-    CALL EXITS("NODE_DESTROY")
+    NODE%GLOBAL_NUMBER=0
+    NODE%USER_NUMBER=0
+    
+    CALL EXITS("NODE_FINALISE")
     RETURN
-999 CALL ERRORS("NODE_DESTROY",ERR,ERROR)
-    CALL EXITS("NODE_DESTROY")
+999 CALL ERRORS("NODE_FINALISE",ERR,ERROR)
+    CALL EXITS("NODE_FINALISE")
     RETURN 1   
-  END SUBROUTINE NODE_DESTROY
+  END SUBROUTINE NODE_FINALISE
   
   !
   !================================================================================================================================
   !
 
-  SUBROUTINE NODE_INITIAL_POSITION_SET(GLOBAL_NUMBER,INITIAL_POSITION,NODES,ERR,ERROR,*)
-
-    !#### Subroutine: NODE_INITIAL_POSITION_SET
-    !###  Description:
-    !###    Changes/sets the initial position of a node identified by a given global number.
+  !>Finishes the process of creating nodes in the region.
+  SUBROUTINE NODES_CREATE_FINISH(NODES,ERR,ERROR,*)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER
-    REAL(DP), INTENT(IN) :: INITIAL_POSITION(:)
-    TYPE(NODES_TYPE), POINTER :: NODES
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes to be finished
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: NUMBER_OF_DIMENSIONS
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("NODE_INITIAL_POSITION_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(NODES)) THEN
-      IF(NODES%NODES_FINISHED) THEN
-        CALL FLAG_ERROR("Nodes have been finished",ERR,ERROR,*999)
-      ELSE
-        IF(ASSOCIATED(NODES%REGION)) THEN
-          IF(ASSOCIATED(NODES%REGION%COORDINATE_SYSTEM)) THEN
-            IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=NODES%NUMBER_OF_NODES) THEN
-              NUMBER_OF_DIMENSIONS=NODES%REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
-              IF(SIZE(INITIAL_POSITION,1)==NUMBER_OF_DIMENSIONS) THEN
-                NODES%NODES(GLOBAL_NUMBER)%INITIAL_POSITION=INITIAL_POSITION
-              ELSE
-                LOCAL_ERROR="The number of dimensions for the position ("// &
-                  & TRIM(NUMBER_TO_VSTRING(SIZE(INITIAL_POSITION,1),"*",ERR,ERROR))// &
-                  & ") do not match the number of dimensions in the region ("// &
-                  & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))//")"
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999) 
-              ENDIF
-            ELSE
-              LOCAL_ERROR="Global node number "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
-                & " is invalid. The limits are 1 to "//TRIM(NUMBER_TO_VSTRING(NODES%NUMBER_OF_NODES,"*",ERR,ERROR))
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("Nodes region coordinate system is not associated",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("Nodes region is not associated",ERR,ERROR,*999)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Nodes is not associated",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("NODE_INITIAL_POSITION_SET")
-    RETURN
-999 CALL ERRORS("NODE_INITIAL_POSITION_SET",ERR,ERROR)    
-    CALL EXITS("NODE_INITIAL_POSITION_SET")
-    RETURN 1
-   
-  END SUBROUTINE NODE_INITIAL_POSITION_SET
-        
-  !
-  !================================================================================================================================
-  !
-
-  SUBROUTINE NODE_NUMBER_SET(GLOBAL_NUMBER,USER_NUMBER,NODES,ERR,ERROR,*)
-
-    !#### Subroutine: NODE_NUMBER_SET
-    !###  Description:
-    !###    Changes/sets the user number for a node identified by a given global number.
-
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER,USER_NUMBER
-    TYPE(NODES_TYPE), POINTER :: NODES
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
-    !Local Variables
-    INTEGER(INTG) :: INSERT_STATUS
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("NODE_NUMBER_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(NODES)) THEN
-      IF(NODES%NODES_FINISHED) THEN
-        CALL FLAG_ERROR("Nodes have been finished",ERR,ERROR,*999)
-      ELSE
-        IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=NODES%NUMBER_OF_NODES) THEN
-          CALL TREE_ITEM_DELETE(NODES%NODE_TREE,NODES%NODES(GLOBAL_NUMBER)%USER_NUMBER,ERR,ERROR,*999)
-          CALL TREE_ITEM_INSERT(NODES%NODE_TREE,USER_NUMBER,GLOBAL_NUMBER,INSERT_STATUS,ERR,ERROR,*999)
-          IF(INSERT_STATUS/=TREE_NODE_INSERT_SUCESSFUL) CALL FLAG_ERROR("Unsucessful tree insert",ERR,ERROR,*999)
-          CALL TREE_ITEM_DELETE(NODES%NODE_TREE,NODES%NODES(GLOBAL_NUMBER)%USER_NUMBER,ERR,ERROR,*999)
-          CALL TREE_ITEM_INSERT(NODES%NODE_TREE,USER_NUMBER,GLOBAL_NUMBER,INSERT_STATUS,ERR,ERROR,*999)
-          IF(INSERT_STATUS/=TREE_NODE_INSERT_SUCESSFUL) CALL FLAG_ERROR("Unsucessful tree insert",ERR,ERROR,*999)
-          NODES%NODES(GLOBAL_NUMBER)%USER_NUMBER=USER_NUMBER
-        ELSE
-          LOCAL_ERROR="Global node number "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
-            & " is invalid. The limits are 1 to "//TRIM(NUMBER_TO_VSTRING(NODES%NUMBER_OF_NODES,"*",ERR,ERROR))
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Nodes is not associated",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("NODE_NUMBER_SET")
-    RETURN
-999 CALL ERRORS("NODE_NUMBER_SET",ERR,ERROR)    
-    CALL EXITS("NODE_NUMBER_SET")
-    RETURN 1
-   
-  END SUBROUTINE NODE_NUMBER_SET
-        
-  !
-  !================================================================================================================================
-  !
-
-  SUBROUTINE NODES_CREATE_FINISH(REGION,ERR,ERROR,*)
-
-    !#### Subroutine: NODES_CREATE_FINISH
-    !###  Description:
-    !###    Finishes the process of creating nodes in the region.
-
-    !Argument variables
-    TYPE(REGION_TYPE), POINTER :: REGION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
-    !Local Variables
-    INTEGER(INTG) :: np,NUMBER_OF_DIMENSIONS
+    INTEGER(INTG) :: np
     
     CALL ENTERS("NODES_CREATE_FINISH",ERR,ERROR,*999)
 
-    IF(ASSOCIATED(REGION)) THEN
-      IF(ASSOCIATED(REGION%NODES)) THEN
-        REGION%NODES%NODES_FINISHED=.TRUE.
+    IF(ASSOCIATED(NODES)) THEN
+      IF(NODES%NODES_FINISHED) THEN
+        CALL FLAG_ERROR("Nodes have already been finished.",ERR,ERROR,*999)
       ELSE
-        CALL FLAG_ERROR("Region nodes is not associated",ERR,ERROR,*999)
+        NODES%NODES_FINISHED=.TRUE.
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
     ENDIF
     
     IF(DIAGNOSTICS1) THEN
-      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Number of nodes = ",REGION%NODES%NUMBER_OF_NODES,ERR,ERROR,*999)
-      NUMBER_OF_DIMENSIONS=REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
-      DO np=1,REGION%NODES%NUMBER_OF_NODES
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Number of nodes = ",NODES%NUMBER_OF_NODES,ERR,ERROR,*999)
+      DO np=1,NODES%NUMBER_OF_NODES
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Node = ",np,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Global number    = ",REGION%NODES%NODES(np)%GLOBAL_NUMBER, &
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Global number    = ",NODES%NODES(np)%GLOBAL_NUMBER, &
           & ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    User number      = ",REGION%NODES%NODES(np)%USER_NUMBER, &
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    User number      = ",NODES%NODES(np)%USER_NUMBER, &
           & ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Label            = ",REGION%NODES%NODES(np)%LABEL, &
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Label            = ",NODES%NODES(np)%LABEL, &
           & ERR,ERROR,*999)
-        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NUMBER_OF_DIMENSIONS,3,3, &
-          & REGION%NODES%NODES(np)%INITIAL_POSITION,'("    Initial Position =",3(X,E13.6))','(18X,3(X,E13.6))',ERR,ERROR,*999)
       ENDDO !np
       CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"User->Global number tree",ERR,ERROR,*999)
-      CALL TREE_OUTPUT(DIAGNOSTIC_OUTPUT_TYPE,REGION%NODES%NODE_TREE,ERR,ERROR,*999)
+      CALL TREE_OUTPUT(DIAGNOSTIC_OUTPUT_TYPE,NODES%NODES_TREE,ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("NODES_CREATE_FINISH")
@@ -314,114 +202,119 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE NODES_CREATE_START(NUMBER_OF_NODES,REGION,NODES,ERR,ERROR,*)
-
-    !#### Subroutine: NODES_CREATE_START
-    !###  Description:
-    !###    Starts the process of creating nodes in the region identified by REGION. NUMBER_OF_NODES is the number of nodes
-    !###    that will be created and NODES is the pointer to the NODES data structure.
+  !>Starts the process of creating nodes in the region.
+  SUBROUTINE NODES_CREATE_START(REGION,NUMBER_OF_NODES,NODES,ERR,ERROR,*)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_NODES
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(NODES_TYPE), POINTER :: NODES
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region in which to create the nodes
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_NODES !<The number of nodes to create
+    TYPE(NODES_TYPE), POINTER :: NODES !<On exit, a pointer to the created nodes
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: INSERT_STATUS,np,NUMBER_OF_DIMENSIONS
-    TYPE(NODES_TYPE), POINTER :: NEW_NODES
+    INTEGER(INTG) :: DUMMY_ERR,INSERT_STATUS,np
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
 
-    NULLIFY(NEW_NODES)
-    
-    CALL ENTERS("NODES_CREATE_START",ERR,ERROR,*999)
+    CALL ENTERS("NODES_CREATE_START",ERR,ERROR,*998)
 
     NULLIFY(NODES)
     IF(ASSOCIATED(REGION)) THEN
       IF(ASSOCIATED(REGION%NODES)) THEN
-        CALL FLAG_ERROR("Region already has nodes associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Region already has nodes associated.",ERR,ERROR,*998)
       ELSE
-        IF(ASSOCIATED(REGION%COORDINATE_SYSTEM)) THEN
-          NUMBER_OF_DIMENSIONS=REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
-          ALLOCATE(NEW_NODES,STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate mesh nodes",ERR,ERROR,*999)
-          ALLOCATE(NEW_NODES%NODES(NUMBER_OF_NODES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate individual nodes",ERR,ERROR,*999)
-          NEW_NODES%NUMBER_OF_NODES=NUMBER_OF_NODES
-          NEW_NODES%NODES_FINISHED=.FALSE.
-          NULLIFY(NEW_NODES%NODE_TREE)
-          CALL TREE_CREATE_START(NEW_NODES%NODE_TREE,ERR,ERROR,*999)
-          CALL TREE_INSERT_TYPE_SET(NEW_NODES%NODE_TREE,TREE_NO_DUPLICATES_ALLOWED,ERR,ERROR,*999)
-          CALL TREE_CREATE_FINISH(NEW_NODES%NODE_TREE,ERR,ERROR,*999)
-          !Set default node numbers
-          DO np=1,NEW_NODES%NUMBER_OF_NODES
-            NEW_NODES%NODES(np)%GLOBAL_NUMBER=np
-            NEW_NODES%NODES(np)%USER_NUMBER=np
-            NEW_NODES%NODES(np)%LABEL=""
-            CALL TREE_ITEM_INSERT(NEW_NODES%NODE_TREE,np,np,INSERT_STATUS,ERR,ERROR,*999)
-            !!TODO:: Make initial position optional and not allocate etc. ???
-            ALLOCATE(NEW_NODES%NODES(np)%INITIAL_POSITION(NUMBER_OF_DIMENSIONS),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate initial position",ERR,ERROR,*999)
-            NEW_NODES%NODES(np)%INITIAL_POSITION=0.0_DP
-          ENDDO !np
-          REGION%NODES=>NEW_NODES
-          NEW_NODES%REGION=>REGION
-          NODES=>NEW_NODES
+        IF(ASSOCIATED(NODES)) THEN
+          CALL FLAG_ERROR("Nodes is already associated.",ERR,ERROR,*998)
         ELSE
-          CALL FLAG_ERROR("Region coordinate system is not associated",ERR,ERROR,*999)
+          CALL NODES_INITIALISE(REGION,ERR,ERROR,*999)
+          ALLOCATE(REGION%NODES%NODES(NUMBER_OF_NODES),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nodes nodes.",ERR,ERROR,*999)
+          REGION%NODES%NUMBER_OF_NODES=NUMBER_OF_NODES
+          CALL TREE_CREATE_START(REGION%NODES%NODES_TREE,ERR,ERROR,*999)
+          CALL TREE_INSERT_TYPE_SET(REGION%NODES%NODES_TREE,TREE_NO_DUPLICATES_ALLOWED,ERR,ERROR,*999)
+          CALL TREE_CREATE_FINISH(REGION%NODES%NODES_TREE,ERR,ERROR,*999)
+          !Set default node numbers
+          DO np=1,REGION%NODES%NUMBER_OF_NODES
+            REGION%NODES%NODES(np)%GLOBAL_NUMBER=np
+            REGION%NODES%NODES(np)%USER_NUMBER=np
+            REGION%NODES%NODES(np)%LABEL=""
+            CALL TREE_ITEM_INSERT(REGION%NODES%NODES_TREE,np,np,INSERT_STATUS,ERR,ERROR,*999)
+          ENDDO !np
+          !Return the pointer        
+          NODES=>REGION%NODES
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*998)
     ENDIF
     
     CALL EXITS("NODES_CREATE_START")
     RETURN
-999 IF(ASSOCIATED(NEW_NODES)) THEN
-      IF(ASSOCIATED(NEW_NODES%NODES)) THEN
-        DO np=1,NEW_NODES%NUMBER_OF_NODES
-          IF(ALLOCATED(NEW_NODES%NODES(np)%INITIAL_POSITION)) DEALLOCATE(NEW_NODES%NODES(np)%INITIAL_POSITION)
-        ENDDO !np
-        DEALLOCATE(NEW_NODES%NODES)
-      ENDIF
-      DEALLOCATE(NEW_NODES)
-    ENDIF
-    NULLIFY(NODES)
-    CALL ERRORS("NODES_CREATE_START",ERR,ERROR)
+999 CALL NODES_FINALISE(REGION%NODES,DUMMY_ERR,DUMMY_ERROR,*998)    
+998 CALL ERRORS("NODES_CREATE_START",ERR,ERROR)
     CALL EXITS("NODES_CREATE_START")
     RETURN 1
    
   END SUBROUTINE NODES_CREATE_START
 
   !
+  !================================================================================================================================
+  !
+
+  !>Destroys nodes
+  SUBROUTINE NODES_DESTROY(NODES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes to destroy
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    
+    CALL ENTERS("NODES_DESTROY",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(NODES)) THEN
+      IF(ASSOCIATED(NODES%REGION)) THEN
+        NULLIFY(NODES%REGION%NODES)
+      ELSE
+        CALL FLAG_ERROR("Nodes region is not associated.",ERR,ERROR,*999)
+      ENDIF
+      CALL NODES_FINALISE(NODES,ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("NODES_DESTROY")
+    RETURN
+999 CALL ERRORS("NODES_DESTROY",ERR,ERROR)
+    CALL EXITS("NODES_DESTROY")
+    RETURN 1
+   
+  END SUBROUTINE NODES_DESTROY
+    
+  !
   !===============================================================================================================================
   !
 
-  SUBROUTINE NODES_FINALISE(REGION,ERR,ERROR,*)
-
-    !#### Subroutine: NODES_FINALISE
-    !###  Description:
-    !###    Finalises the nodes data structures for a region and deallocates any memory. 
+  !>Finalises the nodes and deallocates any memory. 
+  SUBROUTINE NODES_FINALISE(NODES,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(REGION_TYPE), POINTER :: REGION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: np
 
     CALL ENTERS("NODES_FINALISE",ERR,ERROR,*999)
 
-    IF(ASSOCIATED(REGION)) THEN
-      IF(ASSOCIATED(REGION%NODES)) THEN
-        DO np=1,REGION%NODES%NUMBER_OF_NODES
-          CALL NODE_DESTROY(REGION%NODES%NODES(np),ERR,ERROR,*999)
+    IF(ASSOCIATED(NODES)) THEN
+      IF(ALLOCATED(NODES%NODES)) THEN
+        DO np=1,SIZE(NODES%NODES,1)
+          CALL NODE_FINALISE(NODES%NODES(np),ERR,ERROR,*999)
         ENDDO !np
-        DEALLOCATE(REGION%NODES%NODES)
-        IF(ASSOCIATED(REGION%NODES%NODE_TREE)) CALL TREE_DESTROY(REGION%NODES%NODE_TREE,ERR,ERROR,*999)
-        DEALLOCATE(REGION%NODES)
+        DEALLOCATE(NODES%NODES)
       ENDIF
-    ELSE
-      CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
+      IF(ASSOCIATED(NODES%NODES_TREE)) CALL TREE_DESTROY(NODES%NODES_TREE,ERR,ERROR,*999)
+      DEALLOCATE(NODES)
     ENDIF
     
     CALL EXITS("NODES_FINALISE")
@@ -435,29 +328,30 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the nodes in a given region.
   SUBROUTINE NODES_INITIALISE(REGION,ERR,ERROR,*)
 
-    !#### Subroutine: NODES_INITIALISE
-    !###  Description:
-    !###    Initialises the nodes in a given region.
-
     !Argument variables
-    TYPE(REGION_TYPE), POINTER :: REGION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to initialise the nodes for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("NODES_INITIALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(REGION)) THEN
       IF(ASSOCIATED(REGION%NODES)) THEN
-        CALL FLAG_ERROR("Region has associated nodes",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Region has associated nodes.",ERR,ERROR,*999)
       ELSE
-        NULLIFY(REGION%NODES)
-        
+        ALLOCATE(REGION%NODES,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate region nodes.",ERR,ERROR,*999)
+        REGION%NODES%REGION=>REGION
+        REGION%NODES%NODES_FINISHED=.FALSE.
+        REGION%NODES%NUMBER_OF_NODES=0
+        NULLIFY(REGION%NODES%NODES_TREE)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("NODES_INITIALISE")
@@ -467,6 +361,287 @@ CONTAINS
     RETURN 1
   END SUBROUTINE NODES_INITIALISE
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the character label for a node identified by a given global number.
+  SUBROUTINE NODES_LABEL_GET_C(NODES,GLOBAL_NUMBER,LABEL,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes to get the label for
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number to get the label for
+    CHARACTER(LEN=*), INTENT(OUT) :: LABEL !<On exit, the label of the specified global node
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER :: C_LENGTH,VS_LENGTH
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("NODES_LABEL_GET_C",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(NODES)) THEN
+      IF(NODES%NODES_FINISHED) THEN
+        IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=NODES%NUMBER_OF_NODES) THEN
+          C_LENGTH=LEN(LABEL)
+          VS_LENGTH=LEN_TRIM(NODES%NODES(GLOBAL_NUMBER)%LABEL)
+          IF(C_LENGTH>VS_LENGTH) THEN
+            LABEL=CHAR(LEN_TRIM(NODES%NODES(GLOBAL_NUMBER)%LABEL))
+          ELSE
+            LABEL=CHAR(NODES%NODES(GLOBAL_NUMBER)%LABEL,C_LENGTH)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The specified global node number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
+            & " is invalid. The global node number should be between 1 and "// &
+            & TRIM(NUMBER_TO_VSTRING(NODES%NUMBER_OF_NODES,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Nodes have not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("NODES_LABEL_GET_C")
+    RETURN
+999 CALL ERRORS("NODES_LABEL_GET_C",ERR,ERROR)    
+    CALL EXITS("NODES_LABEL_GET_C")
+    RETURN 1
+   
+  END SUBROUTINE NODES_LABEL_GET_C
+        
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the varying string label for a node identified by a given global number.
+  SUBROUTINE NODES_LABEL_GET_VS(NODES,GLOBAL_NUMBER,LABEL,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes to get the label for
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number to get the label for
+    TYPE(VARYING_STRING), INTENT(OUT) :: LABEL !<On exit, the label of the specified global node
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("NODES_LABEL_GET_VS",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(NODES)) THEN
+      IF(NODES%NODES_FINISHED) THEN
+        IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=NODES%NUMBER_OF_NODES) THEN
+          LABEL=NODES%NODES(GLOBAL_NUMBER)%LABEL
+        ELSE
+          LOCAL_ERROR="The specified global node number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
+            & " is invalid. The global node number should be between 1 and "// &
+            & TRIM(NUMBER_TO_VSTRING(NODES%NUMBER_OF_NODES,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Nodes have not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("NODES_LABEL_GET_VS")
+    RETURN
+999 CALL ERRORS("NODES_LABEL_GET_VS",ERR,ERROR)    
+    CALL EXITS("NODES_LABEL_GET_VS")
+    RETURN 1
+   
+  END SUBROUTINE NODES_LABEL_GET_VS
+        
+  !
+  !================================================================================================================================
+  !
+
+  !>Changes/sets the character label for a node identified by a given global number.
+  SUBROUTINE NODES_LABEL_SET_C(NODES,GLOBAL_NUMBER,LABEL,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes to set the label for
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number to set the label for
+    CHARACTER(LEN=*), INTENT(IN) :: LABEL !<The label to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("NODES_LABEL_SET_C",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(NODES)) THEN
+      IF(NODES%NODES_FINISHED) THEN
+        CALL FLAG_ERROR("Nodes have been finished.",ERR,ERROR,*999)
+      ELSE
+        IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=NODES%NUMBER_OF_NODES) THEN
+          NODES%NODES(GLOBAL_NUMBER)%LABEL=LABEL
+        ELSE
+          LOCAL_ERROR="The specified global node number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
+            & " is invalid. The global node number should be between 1 and "// &
+            & TRIM(NUMBER_TO_VSTRING(NODES%NUMBER_OF_NODES,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("NODES_LABEL_SET_C")
+    RETURN
+999 CALL ERRORS("NODES_LABEL_SET_C",ERR,ERROR)    
+    CALL EXITS("NODES_LABEL_SET_C")
+    RETURN 1
+   
+  END SUBROUTINE NODES_LABEL_SET_C
+        
+  !
+  !================================================================================================================================
+  !
+
+  !>Changes/sets the varying string label for a node identified by a given global number.
+  SUBROUTINE NODES_LABEL_SET_VS(NODES,GLOBAL_NUMBER,LABEL,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes to set the label for
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number to set the label for
+    TYPE(VARYING_STRING), INTENT(IN) :: LABEL !<The label to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("NODES_LABEL_SET_VS",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(NODES)) THEN
+      IF(NODES%NODES_FINISHED) THEN
+        CALL FLAG_ERROR("Nodes have been finished.",ERR,ERROR,*999)
+      ELSE
+        IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=NODES%NUMBER_OF_NODES) THEN
+          NODES%NODES(GLOBAL_NUMBER)%LABEL=LABEL
+        ELSE
+          LOCAL_ERROR="The specified global node number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
+            & " is invalid. The global node number should be between 1 and "// &
+            & TRIM(NUMBER_TO_VSTRING(NODES%NUMBER_OF_NODES,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("NODES_LABEL_SET_VS")
+    RETURN
+999 CALL ERRORS("NODES_LABEL_SET_VS",ERR,ERROR)    
+    CALL EXITS("NODES_LABEL_SET_VS")
+    RETURN 1
+   
+  END SUBROUTINE NODES_LABEL_SET_VS
+        
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the user number for a node identified by a given global number.
+  SUBROUTINE NODES_USER_NUMBER_GET(NODES,GLOBAL_NUMBER,USER_NUMBER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes to get the number for
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number to get the user number for
+    INTEGER(INTG), INTENT(OUT) :: USER_NUMBER !<On exit, the user number of the specified global node
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("NODES_USER_NUMBER_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(NODES)) THEN
+      IF(NODES%NODES_FINISHED) THEN
+        IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=NODES%NUMBER_OF_NODES) THEN
+          USER_NUMBER=NODES%NODES(GLOBAL_NUMBER)%USER_NUMBER
+        ELSE
+          LOCAL_ERROR="The specified global node number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
+            & " is invalid. The global node number should be between 1 and "// &
+            & TRIM(NUMBER_TO_VSTRING(NODES%NUMBER_OF_NODES,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Nodes have not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("NODES_USER_NUMBER_GET")
+    RETURN
+999 CALL ERRORS("NODES_USER_NUMBER_GET",ERR,ERROR)    
+    CALL EXITS("NODES_USER_NUMBER_GET")
+    RETURN 1
+   
+  END SUBROUTINE NODES_USER_NUMBER_GET
+        
+  !
+  !================================================================================================================================
+  !
+
+  !>Changes/sets the user number for a node identified by a given global number.
+  SUBROUTINE NODES_USER_NUMBER_SET(NODES,GLOBAL_NUMBER,USER_NUMBER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes to set the number for
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number to set the user number for
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: INSERT_STATUS,OLD_GLOBAL_NUMBER
+    LOGICAL :: NODE_EXISTS
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("NODES_USER_NUMBER_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(NODES)) THEN
+      IF(NODES%NODES_FINISHED) THEN
+        CALL FLAG_ERROR("Nodes have been finished.",ERR,ERROR,*999)
+      ELSE
+        IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=NODES%NUMBER_OF_NODES) THEN
+          !Check the node user number is not already used
+          CALL NODE_CHECK_EXISTS(NODES,USER_NUMBER,NODE_EXISTS,OLD_GLOBAL_NUMBER,ERR,ERROR,*999)
+          IF(NODE_EXISTS) THEN
+            IF(OLD_GLOBAL_NUMBER/=GLOBAL_NUMBER) THEN
+              LOCAL_ERROR="The specified node user number of "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))// &
+                & " is already used by global node number "//TRIM(NUMBER_TO_VSTRING(OLD_GLOBAL_NUMBER,"*",ERR,ERROR))// &
+                & ". User node numbers must be unique."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL TREE_ITEM_DELETE(NODES%NODES_TREE,NODES%NODES(GLOBAL_NUMBER)%USER_NUMBER,ERR,ERROR,*999)
+            CALL TREE_ITEM_INSERT(NODES%NODES_TREE,USER_NUMBER,GLOBAL_NUMBER,INSERT_STATUS,ERR,ERROR,*999)
+            IF(INSERT_STATUS/=TREE_NODE_INSERT_SUCESSFUL) CALL FLAG_ERROR("Unsucessful nodes tree insert.",ERR,ERROR,*999)
+            NODES%NODES(GLOBAL_NUMBER)%USER_NUMBER=USER_NUMBER
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The specified global node number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
+            & " is invalid. The global node number should be between 1 and "// &
+            & TRIM(NUMBER_TO_VSTRING(NODES%NUMBER_OF_NODES,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("NODE_USER_NUMBER_SET")
+    RETURN
+999 CALL ERRORS("NODE_USER_NUMBER_SET",ERR,ERROR)    
+    CALL EXITS("NODE_USER_NUMBER_SET")
+    RETURN 1
+   
+  END SUBROUTINE NODES_USER_NUMBER_SET
+        
   !
   !================================================================================================================================
   !

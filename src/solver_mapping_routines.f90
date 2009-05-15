@@ -122,6 +122,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE
     TYPE(JACOBIAN_TO_SOLVER_MAP_TYPE), POINTER :: JACOBIAN_TO_SOLVER_MAP
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("SOLVER_MAPPING_CALCULATE",ERR,ERROR,*999)
 
@@ -230,7 +231,7 @@ CONTAINS
                           ENDDO !global_row
                         ENDDO !rank
                       ELSE
-                        CALL FLAG_ERROR("Equations set fixed conditions is not associated.",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Equations set boundary conditions is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
                       CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
@@ -248,6 +249,10 @@ CONTAINS
               CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
             ENDIF
           ENDDO !equations set idx
+          IF(NUMBER_OF_LOCAL_SOLVER_ROWS==0) &
+            & CALL FLAG_ERROR("Invalid problem setup. The number of local solver rows is zero.",ERR,ERROR,*999)
+          IF(NUMBER_OF_GLOBAL_SOLVER_ROWS==0) &
+            & CALL FLAG_ERROR("Invalid problem setup. The number of global solver rows is zero.",ERR,ERROR,*999)
           !Allocate memory for the rows mapping
           !Allocate equations set to solver map
           ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS),STAT=ERR)
@@ -643,6 +648,16 @@ CONTAINS
                 ENDDO !variable_idx
               ENDDO !equations_set_idx
             ENDDO !rank
+            IF(NUMBER_OF_LOCAL_SOLVER_COLS==0) THEN
+              LOCAL_ERROR="Invalid problem setup. The number of local solver columns for solver matrix "// &
+                & TRIM(NUMBER_TO_VSTRING(solver_matrix_idx,"*",ERR,ERROR))//" is zero."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+            IF(NUMBER_OF_GLOBAL_SOLVER_COLS==0) THEN
+              LOCAL_ERROR="Invalid problem setup. The number of global solver columns for solver matrix "// &
+                & TRIM(NUMBER_TO_VSTRING(solver_matrix_idx,"*",ERR,ERROR))//" is zero."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
             !Allocate memory for this solver matrix
             !Allocate solver columns to equations sets maps
             ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS( &
