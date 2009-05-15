@@ -97,10 +97,8 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 
     !Local Variables
-    REAL(DP) :: DXDXI(3,3),JDXIDX(3,3),J,DPHIDXI(8,3),DPHIDX(8,3)
-    REAL(DP) :: XI(3),GAUSS_WEIGHT_J
-    INTEGER(INTG) :: DERIVATIVE_NUMBER,PARTIAL_DERIV_INDEX
-    INTEGER(INTG) :: ng,ni,np
+    REAL(DP) :: DX_DXI(3,3),DXI_DX(3,3),J,DPHIDX(8,3),RWG,DIAGC(3,3),TEMP1(3)
+    INTEGER(INTG) :: ng,ni,ns,ms,tot_ns
     INTEGER(INTG) :: i,k
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
@@ -109,6 +107,14 @@ CONTAINS
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,GEOMETRIC_BASIS
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME
+    TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: RHS_VECTOR
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
+    TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: GEOMETRIC_INTERPOLATION_PARAMETERS
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: MATERIALS_INTERPOLATION_PARAMETERS
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: DEPENDENT_INTERPOLATION_PARAMETERS
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: MATERIALS_INTERPOLATED_POINT
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     !Temporary Lapack Variable 
@@ -129,16 +135,14 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN
+        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        CASE(EQUATIONS_SET_THREE_DIMENSIONAL_LINEAR_ELASTICITY_SUBTYPE)
+	
 	CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," *** ELEMENT_CALCULATE  ***",ERR,ERROR,*999)
   	CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE," ELEMENT_NUMBER  = ",ELEMENT_NUMBER, &
     	& ERR,ERROR,*999)
 
-!!CPB: need to take into account what sort of linear element we are dealing with e.g., truss, shell, plate, plane strain etc.
-!! Have a look at XPES40.f in the old CMISS code.
-!!CPB: where are the material properties interpolated???
-   
-	!!TODO: Calculate elasticity tensor from outside element loop
-	CALL LINEAR_ELASTICITY_TENSOR(C,ERR,ERROR,*999) !Create Stress Tensor
+	!! Have a look at XPES40.f in the old CMISS code.
 
         DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
         GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
@@ -150,128 +154,194 @@ CONTAINS
         GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
           & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
 	QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-
-!!CPB: not sure what this comment is about???
-        ! GEOMETRIC_INTERP_PARAMETERS for GEOMETRIC_INTERPOLATED_POINT & UNIT_GEOMETRIC_INTERPOLATED_POINT automatically updated 
-	! since FIELD_INTERPOLATED_POINT_TYPE has a FIELD_INTERPOLATION_PARAMETERS_TYPE subtype
-	CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
-	  & GEOMETRIC_INTERP_PARAMETERS,ERR,ERROR,*999)
-!!CPB: need to get the interpolation for the materials field.
-
-!!CPB: no need to initialise as this is done in EQUATIONS_MATRICES_ELEMENT_CALCULATE
- !Construct Element Stiffness Matrix
-	EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX = 0.0_DP !Initialize Element Stiffness Matrix
+	MATERIALS_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT
+        RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
+        EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
+        LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
+        FIELD_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
+        tot_ns = DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+	!Get the interpolation parameters for the geometric and material fields
+        GEOMETRIC_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS
+        MATERIALS_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%MATERIALS_INTERP_PARAMETERS
+	CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,GEOMETRIC_INTERPOLATION_PARAMETERS, &
+             & ERR,ERROR,*999)
+        CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,MATERIALS_INTERPOLATION_PARAMETERS, &
+             & ERR,ERROR,*999)
+	CALL LINEAR_ELASTICITY_TENSOR(C,ERR,ERROR,*999) !Create Stress Tensor
 	!Loop over gauss points & integrate upper triangular portion of Stiffness matrix
 	DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS !Gauss point index
+          CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+            & GEOMETRIC_INTERP_POINT,ERR,ERROR,*999)
+          CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,EQUATIONS%INTERPOLATION% &
+            & GEOMETRIC_INTERP_POINT_METRICS,ERR,ERROR,*999)
+          !Calculate RWG.
+          RWG=QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)*EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN
+	  !Store Elasticity Tensor elements retated to the normal directions 
+	  diagC(1,:) = (/RWG*C(1,1),RWG*C(6,6),RWG*C(4,4)/)
+	  diagC(2,:) = (/diagC(1,2),RWG*C(2,2),RWG*C(5,5)/)
+	  diagC(3,:) = (/diagC(1,3),diagC(2,3),RWG*C(3,3)/)
 
-!!CPB: No, you need to use the FIELD_INTERPOLATE_GAUSS and FIELD_INTERPOLATED_POINT_METRICS_CALCULATE routines to interpolate at
-!! at Gauss point and to calculate the Jacobian etc. All the basis functions have been pre-evaluated at Gauss points. Have a look
-!! at the LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE routine
-	  !Define XI values of current Gauss point
-	  XI = (/QUADRATURE_SCHEME%gauss_positions(1,ng),QUADRATURE_SCHEME%gauss_positions(2,ng), &
-		& QUADRATURE_SCHEME%gauss_positions(3,ng)/)
-	  !Evaluate first partial derivatives
-	  DERIVATIVE_NUMBER = 1 ! Note Lagrange Basis family does not have derivatives associated with nodes. Set to 1
-	  DPHIDXI = 0.0_DP
-	  DXDXI = 0.0_DP
-	  DO ni=1,3 !xi index
-	    PARTIAL_DERIV_INDEX=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni)  !2,4,7     
-	    DO np=1,8 !node index
-!!CPB: The BASIS_LHTP_BASIS_EVALUATE_DP should be private. This routine does not know what type of basis function is being used and should go through the field interpolate routines. 
-       !	      DPHIDXI(np,ni) = BASIS_LHTP_BASIS_EVALUATE_DP(GEOMETRIC_BASIS,np,DERIVATIVE_NUMBER,PARTIAL_DERIV_INDEX,XI,ERR,ERROR)
-	    ENDDO !np
-	    DXDXI(:,ni) = (/DOT_PRODUCT(DPHIDXI(:,ni),EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS%parameters(:,1)), &
-			  & DOT_PRODUCT(DPHIDXI(:,ni),EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS%parameters(:,2)), &
-			  & DOT_PRODUCT(DPHIDXI(:,ni),EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS%parameters(:,3))/)
-	  ENDDO !xi
-	  !Invert DXDXI returning the Jacobian & the matrix (J*DXIDX) seperately. 
-	  CALL INVERT_VER2(DXDXI,JDXIDX,J,ERR,ERROR,*999) 
-	  !Divide the Gauss weights by Jacobian once (only place J is used), This is because in the final integral equations below,
-	  !the term GAUSS_WEIGHT*(DXIDX/J)*(DXIDX/J)*J (last J term is from coordinate transformation) can be simplified to 
-	  !(GAUSS_WEIGHT/J)*(DXIDX)*(DXIDX)
-	  GAUSS_WEIGHT_J = QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)/J
+          DXI_DX=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX  !dxi/dx
 	  DPHIDX = 0.0_DP
-!!CPB: Do not hard code loops here. Need to loop over the appropriate number of nodes, derivatives etc. for the dependent basis.
-!! See LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE for further information
-	  DO np=1,8 !node index
-	    DPHIDX(np,1) = DPHIDXI(np,1)*JDXIDX(1,1)+DPHIDXI(np,2)*JDXIDX(1,2)+DPHIDXI(np,3)*JDXIDX(1,3) 
-	    DPHIDX(np,2) = DPHIDXI(np,1)*JDXIDX(2,1)+DPHIDXI(np,2)*JDXIDX(2,2)+DPHIDXI(np,3)*JDXIDX(2,3)
-	    DPHIDX(np,3) = DPHIDXI(np,1)*JDXIDX(3,1)+DPHIDXI(np,2)*JDXIDX(3,2)+DPHIDXI(np,3)*JDXIDX(3,3)
-	  ENDDO !np
-	  !Change indices
-	  DO i=1,8
-	    DO k=i,8 ! Matrices symmetric
-		EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(i,k) = EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(i,k) + &
-							  & GAUSS_WEIGHT_J*C(1,1)*DPHIDX(i,1)*DPHIDX(k,1) + &
-							  & GAUSS_WEIGHT_J*C(6,6)*DPHIDX(i,2)*DPHIDX(k,2) + &
-							  & GAUSS_WEIGHT_J*C(4,4)*DPHIDX(i,3)*DPHIDX(k,3)
-		EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(8+i,8+k)	= EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(8+i,8+k) + &
-							      &	GAUSS_WEIGHT_J*C(6,6)*DPHIDX(i,1)*DPHIDX(k,1) + &
-							      & GAUSS_WEIGHT_J*C(2,2)*DPHIDX(i,2)*DPHIDX(k,2) + &
-							      & GAUSS_WEIGHT_J*C(5,5)*DPHIDX(i,3)*DPHIDX(k,3)
-		EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(16+i,16+k) = EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(16+i,16+k) + &
-								& GAUSS_WEIGHT_J*C(4,4)*DPHIDX(i,1)*DPHIDX(k,1) + &
-					       			& GAUSS_WEIGHT_J*C(5,5)*DPHIDX(i,2)*DPHIDX(k,2) + &
-					  			& GAUSS_WEIGHT_J*C(3,3)*DPHIDX(i,3)*DPHIDX(k,3)
-	    ENDDO !k
-	    DO k=1,8
-		EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(i,8+k) = EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(i,8+k) + &
-							    & GAUSS_WEIGHT_J*C(1,2)*DPHIDX(i,1)*DPHIDX(k,2) + &
-							    & GAUSS_WEIGHT_J*C(6,6)*DPHIDX(i,2)*DPHIDX(k,1)
-		EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(i,16+k) = EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(i,16+k) + &
-							     & GAUSS_WEIGHT_J*C(1,3)*DPHIDX(i,1)*DPHIDX(k,3) + &
-						 	     & GAUSS_WEIGHT_J*C(4,4)*DPHIDX(i,3)*DPHIDX(k,1)
-		EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(8+i,16+k) = EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(8+i,16+k) + &
-							       & GAUSS_WEIGHT_J*C(2,3)*DPHIDX(i,2)*DPHIDX(k,3) + &
-					 	  	       & GAUSS_WEIGHT_J*C(5,5)*DPHIDX(i,3)*DPHIDX(k,2)
-	    ENDDO !k
-	  ENDDO !i
+   	  DO ns=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+	    DO ms=1,DEPENDENT_BASIS%NUMBER_OF_XI
+	      DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
+		  DPHIDX(ns,ms)=DPHIDX(ns,ms)+DXI_DX(ms,ni)*QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+              ENDDO	  
+	    ENDDO
+          ENDDO 
+
+	  !Interpolate material field at gauss points
+          CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+            & MATERIALS_INTERP_POINT,ERR,ERROR,*999)
+	  !! Will update code with material field being interpolated soon
+	  !Construct Element Matrix taking into account symmetry
+	  DO ns=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+	    !Diagonal Terms of Stiffness matrix, If material is isotropic then diagonal terms will be identical
+	    DO ms=ns,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+	      TEMP1 = DPHIDX(ns,:)*DPHIDX(ms,:)
+	      DO j=1,DEPENDENT_BASIS%NUMBER_OF_XI
+		EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(tot_ns*(j-1)+ns,tot_ns*(j-1)+ms)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(tot_ns*(j-1)+ns,tot_ns*(j-1)+ms) + DOT_PRODUCT(TEMP1,diagC(j,:))
+	      ENDDO
+	    ENDDO !ms
+	    !Off-diagonal Terms of Stiffness matrix
+	    DO ms=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS 
+	      EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(ns,tot_ns+ms)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(ns,tot_ns+ms) + &
+							    & RWG*C(1,2)*DPHIDX(ns,1)*DPHIDX(ms,2) + &
+							    & RWG*C(6,6)*DPHIDX(ns,2)*DPHIDX(ms,1)
+	      EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(ns,tot_ns*2+ms)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(ns,tot_ns*2+ms) + &
+							     & RWG*C(1,3)*DPHIDX(ns,1)*DPHIDX(ms,3) + &
+						 	     & RWG*C(4,4)*DPHIDX(ns,3)*DPHIDX(ms,1)
+	      EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(tot_ns+ns,tot_ns*2+ms)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(tot_ns+ns,tot_ns*2+ms) + &
+							       & RWG*C(2,3)*DPHIDX(ns,2)*DPHIDX(ms,3) + &
+					 	  	       & RWG*C(5,5)*DPHIDX(ns,3)*DPHIDX(ms,2)
+	    ENDDO !ms
+	  ENDDO !ns
+
         ENDDO !ng
 	!Transpose upper triangular portion of Stiffness matrix to give lower triangular portion
-	DO i=2,24
+	DO i=2,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS*DEPENDENT_BASIS%NUMBER_OF_XI
 	  DO k=1,i-1
 	    EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(i,k) = EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(k,i)
 	  ENDDO !k
 	ENDDO !i
 
-	! Temp assemble of global matrix & RHS b
-	ll = 0
-	mm = 0
-	BC = (/1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0/)
-	DO i=1,24
-	  IF(BC(i) == 0)THEN
-	    ll = ll +1
-	    DO k=1,24
-	      IF(BC(k) == 0)THEN
-		mm = mm +1
-	        GKK(ll,mm) = EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(i,k)
-	      ENDIF
-	    ENDDO
-	    mm = 0
-	  ENDIF
-	ENDDO
+	  !!CPB: No, you need to use the FIELD_INTERPOLATE_GAUSS and FIELD_INTERPOLATED_POINT_METRICS_CALCULATE routines to interpolate at
+	  !! at Gauss point and to calculate the Jacobian etc. All the basis functions have been pre-evaluated at Gauss points. Have a look
+	  !! at the LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE routine
+	  !Define XI values of current Gauss point
+	  !XI = QUADRATURE_SCHEME%GAUSS_POSITIONS(:,ng)
+	  !Evaluate first partial derivatives
+	  !DPHIDXI = 0.0_DP
+	  !DX_DXI = 0.0_DP
+	  !DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI !3 !xi index
+	  !  DO np=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS !8 !node index
+       	  !	DPHIDXI(np,ni) = QUADRATURE_SCHEME%GAUSS_BASIS_FNS(np,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+	  !  ENDDO !np
+	  !  DX_DXI(:,ni) = (/DOT_PRODUCT(DPHIDXI(:,ni),EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS%parameters(:,1)), &
+	  !		  & DOT_PRODUCT(DPHIDXI(:,ni),EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS%parameters(:,2)), &
+	  !		  & DOT_PRODUCT(DPHIDXI(:,ni),EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS%parameters(:,3))/)
+	  !ENDDO !xi
+	  !Invert DX_DXI returning the Jacobian & the matrix (J*DXIDX) seperately. 
+	  !CALL INVERT_VER2(DX_DXI,JDXIDX,J,ERR,ERROR,*999) 
+	  !Divide the Gauss weights by Jacobian once (only place J is used), This is because in the final integral equations below,
+	  !the term GAUSS_WEIGHT*(DXIDX/J)*(DXIDX/J)*J (last J term is from coordinate transformation) can be simplified to 
+	  !(GAUSS_WEIGHT/J)*(DXIDX)*(DXIDX)
+	  !GAUSS_WEIGHT_J = QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)/J
+	  !DPHIDX = 0.0_DP
+	  !!CPB: Do not hard code loops here. Need to loop over the appropriate number of nodes, derivatives etc. for the dependent basis.
+	  !! See LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE for further information
+	  !DO np=1,8 !node index
+	  !  DPHIDX(np,1) = DPHIDXI(np,1)*JDXIDX(1,1)+DPHIDXI(np,2)*JDXIDX(1,2)+DPHIDXI(np,3)*JDXIDX(1,3) 
+	  !  DPHIDX(np,2) = DPHIDXI(np,1)*JDXIDX(2,1)+DPHIDXI(np,2)*JDXIDX(2,2)+DPHIDXI(np,3)*JDXIDX(2,3)
+	  !  DPHIDX(np,3) = DPHIDXI(np,1)*JDXIDX(3,1)+DPHIDXI(np,2)*JDXIDX(3,2)+DPHIDXI(np,3)*JDXIDX(3,3)
+	  !ENDDO !np
 
-    	!Temp. Solve Problem using LAPACK DGESV (D-Double Precision, GE-general matrix, SV-Solve a system of Linear Equations)
-	! Ax = b, !Matrix A of dimension (LDA,N), Matrix B of dimension (LDB,NRHS), IPIV(*) Pivot vector
-	B(:,1) = (/400.0_DP,400.0_DP,400.0_DP,400.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP/)
-	N = 12 ! Problem Dimension (rows)
-	NRHS = 1 ! Number of RHS b vectors
-	LDA = 12 ! Leading dimension of the array A (number of rows). LDA >= max(1,M), (M = rows)
-	LDB = 12 ! Leading dimension of the array B (number of rows). LDB >= max(1,M), (M = rows)
-	CALL DGESV(N, NRHS, GKK, LDA, IPIV, B, LDB, INFO )
-	WRITE(*,*) INFO
-	WRITE(*,*) b
+!	  DO ns=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+!	    DO ms=ns,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS !8 ! Matrices symmetric
+!		! Diagonal Terms of Stiffness matrix
+!		EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(ns,ms) = EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(ns,ms) + &
+!							  & RWG*C(1,1)*DPHIDX(ns,1)*DPHIDX(ms,1) + &
+!							  & RWG*C(6,6)*DPHIDX(ns,2)*DPHIDX(ms,2) + &
+!							  & RWG*C(4,4)*DPHIDX(ns,3)*DPHIDX(ms,3)
+!		EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(8+ns,8+ms)= EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(8+ns,8+ms) + &
+!							      &	RWG*C(6,6)*DPHIDX(ns,1)*DPHIDX(ms,1) + &
+!							      & RWG*C(2,2)*DPHIDX(ns,2)*DPHIDX(ms,2) + &
+!							      & RWG*C(5,5)*DPHIDX(ns,3)*DPHIDX(ms,3)
+!		EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(16+ns,16+ms) = EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(16+ns,16+ms) + &
+!								& RWG*C(4,4)*DPHIDX(ns,1)*DPHIDX(ms,1) + &
+!					       			& RWG*C(5,5)*DPHIDX(ns,2)*DPHIDX(ms,2) + &
+!					  			& RWG*C(3,3)*DPHIDX(ns,3)*DPHIDX(ms,3)
+!	    ENDDO !ms
+!	    DO ms=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS 
+!		EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(ns,8+ms) = EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(ns,8+ms) + &
+!							    & RWG*C(1,2)*DPHIDX(ns,1)*DPHIDX(ms,2) + &
+!							    & RWG*C(6,6)*DPHIDX(ns,2)*DPHIDX(ms,1)
+!		EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(ns,16+ms) = EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(ns,16+ms) + &
+!							     & RWG*C(1,3)*DPHIDX(ns,1)*DPHIDX(ms,3) + &
+!						 	     & RWG*C(4,4)*DPHIDX(ns,3)*DPHIDX(ms,1)
+!		EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(8+ns,16+ms) = EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(8+ns,16+ms) + &
+!							       & RWG*C(2,3)*DPHIDX(ns,2)*DPHIDX(ms,3) + &
+!					 	  	       & RWG*C(5,5)*DPHIDX(ns,3)*DPHIDX(ms,2)
+!	    ENDDO !ms
+!	  ENDDO !ns
 
-!!CPB: Not sure what you are doing here.
+!	! Temp assemble of global matrix & RHS b
+!	ll = 0
+!	mm = 0
+!	BC = (/1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0/)
+!	DO i=1,24
+!	  IF(BC(i) == 0)THEN
+!	    ll = ll +1
+!	    DO k=1,24
+!	      IF(BC(k) == 0)THEN
+!		mm = mm +1
+!	        GKK(ll,mm) = EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(i,k)
+!	      ENDIF
+!	    ENDDO
+!	    mm = 0
+!	  ENDIF
+!	ENDDO
+
+!    	!Temp. Solve Problem using LAPACK DGESV (D-Double Precision, GE-general matrix, SV-Solve a system of Linear Equations)
+!	! Ax = b, !Matrix A of dimension (LDA,N), Matrix B of dimension (LDB,NRHS), IPIV(*) Pivot vector
+!	B(:,1) = (/400.0_DP,400.0_DP,400.0_DP,400.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP/)
+!	N = 12 ! Problem Dimension (rows)
+!	NRHS = 1 ! Number of RHS b vectors
+!	LDA = 12 ! Leading dimension of the array A (number of rows). LDA >= max(1,M), (M = rows)
+!	LDB = 12 ! Leading dimension of the array B (number of rows). LDB >= max(1,M), (M = rows)
+!	CALL DGESV(N, NRHS, GKK, LDA, IPIV, B, LDB, INFO )
+!	WRITE(*,*) INFO
+!	WRITE(*,*) b
+
 	!Construct RHS Vector
-        CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION &
-          & %DEPENDENT_INTERP_PARAMETERS,ERR,ERROR,*999)
-	!!TODO:Construct RHS vector taking into account multiple elements
+	DEPENDENT_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS
+        CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(2,ELEMENT_NUMBER,DEPENDENT_INTERPOLATION_PARAMETERS, &
+          & ERR,ERROR,*999)
+!!CPB: Not sure what you are doing here.
+        !!Linear Elasticity solves for nodal displacements (x,y,z) and forces (fx,fy,fz). Both displacement and force BC 
+	!are prescribed. Eg displacement fixed BC applied to a few nodes (applied through EQUATIONS_SET_FIXED_CONDITIONS_SET_NODE)
+	!The forces are part of the dependent field and so are applied by updating the dependent fields 2nd variable for the nodes
+	!that you want to apply force BC to. The linear system Kx=RHS is solved for the displacements (x,y,z) using an assembled
+	!matrix with the rows/columns related to the fixed BC nodes removed. The displacment solutions at the free dof's are then
+	!substituted back into the fixed BC rows to calculated the reaction forces at these fixed BC nodes.
+	!This is where the RHS force vector is constructed for each element. But I have been having trouble getting these nodal quantities from the dependent field (variable 2)
+	!!TODO:
         EQUATIONS_MATRICES%RHS_VECTOR%ELEMENT_VECTOR%VECTOR = DEPENDENT_FIELD%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS%CMISS%DATA_DP(25:48)
-
-        !!TODO: Should values below certain limit be set to zero eg 0.277556E-16
-        ! eg Contravariant metric tensor:GU(1,:)     :  0.100000E+01  0.154074E-32  0.277556E-16 or is it unnecessary
-        !!TODO: Add subtype for 2D or 3D problems
+        
+        CASE(EQUATIONS_SET_PLANE_STRESS_SUBTYPE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(EQUATIONS_SET_PLANE_STRAIN_SUBTYPE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(EQUATIONS_SET_PLATE_SUBTYPE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(EQUATIONS_SET_SHELL_SUBTYPE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE DEFAULT
+          LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+            & " is not valid for a Laplace equation type of a classical field equations set class."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
 
        ELSE
         CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
@@ -357,7 +427,7 @@ CONTAINS
   SUBROUTINE LINEAR_ELASTICITY_EQUATIONS_SET_SETUP(EQUATIONS_SET,SETUP_TYPE,ACTION_TYPE,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to setup a Laplace equation on.
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to setup a linear elasticity equation on.
     INTEGER(INTG), INTENT(IN) :: SETUP_TYPE !<The setup type
     INTEGER(INTG), INTENT(IN) :: ACTION_TYPE !<The action type
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -381,7 +451,7 @@ CONTAINS
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%SUBTYPE)
-      CASE(EQUATIONS_SET_NO_SUBTYPE)
+      CASE(EQUATIONS_SET_THREE_DIMENSIONAL_LINEAR_ELASTICITY_SUBTYPE)
         SELECT CASE(SETUP_TYPE)
         CASE(EQUATIONS_SET_SETUP_INITIAL_TYPE)
           SELECT CASE(ACTION_TYPE)
@@ -633,12 +703,20 @@ CONTAINS
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET_SUBTYPE)
-      CASE(EQUATIONS_SET_NO_SUBTYPE)        
+      CASE(EQUATIONS_SET_THREE_DIMENSIONAL_LINEAR_ELASTICITY_SUBTYPE)        
         EQUATIONS_SET%CLASS=EQUATIONS_SET_ELASTICITY_CLASS
         EQUATIONS_SET%TYPE=EQUATIONS_SET_LINEAR_ELASTICITY_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_NO_SUBTYPE       
+        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_THREE_DIMENSIONAL_LINEAR_ELASTICITY_SUBTYPE  
         CALL LINEAR_ELASTICITY_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INITIAL_TYPE, &
           & EQUATIONS_SET_SETUP_START_ACTION,ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_PLANE_STRESS_SUBTYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_PLANE_STRAIN_SUBTYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_PLATE_SUBTYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_SHELL_SUBTYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
           & " is not valid for a linear elasticity equation type of an elasticity equations set class."
@@ -663,7 +741,7 @@ CONTAINS
   SUBROUTINE LINEAR_ELASTICITY_PROBLEM_SETUP(PROBLEM,SETUP_TYPE,ACTION_TYPE,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem set to setup a Laplace equation on.
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem set to setup a linear elasticity equation on.
     INTEGER(INTG), INTENT(IN) :: SETUP_TYPE !<The setup type
     INTEGER(INTG), INTENT(IN) :: ACTION_TYPE !<The action type
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -685,7 +763,7 @@ CONTAINS
     NULLIFY(SOLVERS)
     IF(ASSOCIATED(PROBLEM)) THEN
       SELECT CASE(PROBLEM%SUBTYPE)
-      CASE(EQUATIONS_SET_NO_SUBTYPE)
+      CASE(PROBLEM_NO_SUBTYPE)
         SELECT CASE(SETUP_TYPE)
         CASE(PROBLEM_SETUP_INITIAL_TYPE)
           SELECT CASE(ACTION_TYPE)
@@ -777,18 +855,27 @@ CONTAINS
               IF(ASSOCIATED(EQUATIONS_SET)) THEN
                 !Check the equations set is from a linear elasticity equations set
                 IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS.AND. &
-                  & EQUATIONS_SET%TYPE==EQUATIONS_SET_LINEAR_ELASTICITY_TYPE.AND. &
-                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_NO_SUBTYPE) THEN
-                  !Get the control loop
-                  CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
-                  CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,EQUATIONS_TO_ADD%CONTROL_LOOP_IDENTIFIER,CONTROL_LOOP,ERR,ERROR,*999)
-                  !Get the solver equations
-                  CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
-                  CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
-                  CALL SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SOLVER_EQUATIONS,ERR,ERROR,*999)
-                  !Add in the equations set
-                  CALL SOLVER_EQUATIONS_EQUATIONS_SET_ADD(SOLVER_EQUATIONS,EQUATIONS_TO_ADD%EQUATIONS_SET_TO_ADD, &
-                    & EQUATIONS_TO_ADD%EQUATIONS_SET_ADDED_INDEX,ERR,ERROR,*999)
+                  & EQUATIONS_SET%TYPE==EQUATIONS_SET_LINEAR_ELASTICITY_TYPE) THEN
+                  IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_THREE_DIMENSIONAL_LINEAR_ELASTICITY_SUBTYPE.OR. &
+		    & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PLANE_STRESS_SUBTYPE.OR. &
+		    & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PLANE_STRAIN_SUBTYPE.OR. &
+		    & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PLATE_SUBTYPE.OR. &
+		    & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_SHELL_SUBTYPE)THEN
+                    !Get the control loop
+                    CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
+                    CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,EQUATIONS_TO_ADD%CONTROL_LOOP_IDENTIFIER,CONTROL_LOOP,ERR,ERROR,*999)
+                    !Get the solver equations
+                    CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
+                    CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
+                    CALL SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SOLVER_EQUATIONS,ERR,ERROR,*999)
+                    !Add in the equations set
+                    CALL SOLVER_EQUATIONS_EQUATIONS_SET_ADD(SOLVER_EQUATIONS,EQUATIONS_TO_ADD%EQUATIONS_SET_TO_ADD, &
+                      & EQUATIONS_TO_ADD%EQUATIONS_SET_ADDED_INDEX,ERR,ERROR,*999)
+                  ELSE
+                    LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+                      & " is not valid for a linear elasticity equation type of a elasticity equations set class."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
                 ELSE
                   CALL FLAG_ERROR("The equations set to add is not a linear elasticity equations set.",ERR,ERROR,*999)
                 ENDIF
@@ -841,13 +928,13 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("LINEAR_ELASTICITY_PROBLEM_SUBTYPE_SET",ERR,ERROR,*999)
-    
+
     IF(ASSOCIATED(PROBLEM)) THEN
       SELECT CASE(PROBLEM_SUBTYPE)
       CASE(PROBLEM_NO_SUBTYPE)        
         PROBLEM%CLASS=PROBLEM_ELASTICITY_CLASS
         PROBLEM%TYPE=PROBLEM_LINEAR_ELASTICITY_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_NO_SUBTYPE      
+        PROBLEM%SUBTYPE=PROBLEM_NO_SUBTYPE
         CALL LINEAR_ELASTICITY_PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP_INITIAL_TYPE,PROBLEM_SETUP_START_ACTION, &
           & ERR,ERROR,*999)
       CASE DEFAULT
@@ -858,7 +945,7 @@ CONTAINS
     ELSE
       CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
-       
+
     CALL EXITS("LINEAR_ELASTICITY_PROBLEM_SUBTYPE_SET")
     RETURN
 999 CALL ERRORS("LINEAR_ELASTICITY_PROBLEM_SUBTYPE_SET",ERR,ERROR)

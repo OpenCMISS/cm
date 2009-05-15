@@ -90,6 +90,8 @@ MODULE PROBLEM_CONSTANTS
   !Problem subtypes
   INTEGER(INTG), PARAMETER :: PROBLEM_NO_SUBTYPE=0
   !Elasticity class
+  !  Linear elasticity - uses PROBLEM_NO_SUBTYPE=0
+  !  Finite elasticity
   !Fluid mechanics class
   !Electromagnetics class
   !Classical field class
