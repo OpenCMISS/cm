@@ -3225,7 +3225,7 @@ CONTAINS
             ENDIF
           ENDDO !equations_set_idx
           !Check number of matrices to set is valid
-          IF(NUMBER_OF_SOLVER_MATRICES>0.AND.NUMBER_OF_SOLVER_MATRICES<=MAXIMUM_NUMBER_OF_EQUATIONS_MATRICES) THEN
+          IF(NUMBER_OF_SOLVER_MATRICES>=0.AND.NUMBER_OF_SOLVER_MATRICES<=MAXIMUM_NUMBER_OF_EQUATIONS_MATRICES) THEN
             !If we need to reallocate and reset all the create values cache arrays and change the number of matrices
             IF(NUMBER_OF_SOLVER_MATRICES/=SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES) THEN
               ALLOCATE(OLD_MATRIX_VARIABLE_TYPES(0:FIELD_NUMBER_OF_VARIABLE_TYPES, &

@@ -971,7 +971,7 @@ MODULE TYPES
     INTEGER(INTG) :: MAX_NUMBER_OF_COLUMNS !<The maximu (allocated) number of columns in the element matrix.
     INTEGER(INTG), ALLOCATABLE :: ROW_DOFS(:) !<ROW_DOFS(i). The equations row that the i'th row of the element matrix belongs to.
     INTEGER(INTG), ALLOCATABLE :: COLUMN_DOFS(:) !<COLUMN_DOFS(j). The equations column that the j'th column of the element matrix bleongs to.
-    REAL(DP), ALLOCATABLE :: MATRIX(:,:) !<MATRIX(i,j). The vlaue of the i'th row and the j'th column of the element matrix.
+    REAL(DP), ALLOCATABLE :: MATRIX(:,:) !<MATRIX(i,j). The value of the i'th row and the j'th column of the element matrix.
   END TYPE ELEMENT_MATRIX_TYPE
 
   !>Contains information for an element vector.
@@ -1444,8 +1444,15 @@ MODULE TYPES
   !>Contains information for an integration solver
   TYPE INTEGRATION_SOLVER_TYPE
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the integration solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
     INTEGER(INTG) :: INTEGRATION_TYPE !<The integration type for the integration solver \see SOLVER_ROUTINES_IntegratorType,SOLVER_ROUTINES
+    
+    REAL(DP) :: CURRENT_TIME !<The current time value for the integration solver.
+    REAL(DP) :: TIME_INCREMENT !<The time increment for the integration solver to solve for.
+
+    INTEGER(INTG) :: EQUATION !<The function to call to obtain the RHS values
+
   END TYPE INTEGRATION_SOLVER_TYPE
   
   !>Contains information for a direct linear solver
