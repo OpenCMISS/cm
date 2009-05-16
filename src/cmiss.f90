@@ -3,7 +3,7 @@
 !> \author Chris Bradley
 !> \brief The top level cmiss module.
 !>
-!> \mainpage openCMISS Documentation
+!> \mainpage OpenCMISS Documentation
 !>
 !> An open source interactive computer program for Continuum Mechanics, Image analysis, Signal processing and System
 !> Identification. Target usage: Bioengineering application of finite element analysis, boundary element and collocation
@@ -23,7 +23,7 @@
 !> License for the specific language governing rights and limitations
 !> under the License.
 !>
-!> The Original Code is openCMISS
+!> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
@@ -44,6 +44,14 @@
 !> and other provisions required by the GPL or the LGPL. If you do not delete
 !> the provisions above, a recipient may use your version of this file under
 !> the terms of any one of the MPL, the GPL or the LGPL.
+!>
+!> \example examples/AnalyticLaplace/src/AnalyticLaplaceExample.f90
+!> \example examples/Diffusion/src/DiffusionExample.f90
+!> \example examples/FiniteElasticity/src/FiniteElasticityExample.f90
+!> \example examples/Helmholtz/src/HelmholtzExample.f90
+!> \example examples/Laplace/src/LaplaceExample.f90
+!> \example examples/Monodomain/src/MonodomainExample.f90
+!> \example examples/NonlinearPoisson/src/NonlinearPoissonExample.f90
 !>
 
 !> The top level cmiss module.
@@ -111,7 +119,7 @@ CONTAINS
     CALL BASES_FINALISE(ERR,ERROR,*999)
     !Finalise computational enviroment
     CALL COMPUTATIONAL_ENVIRONMENT_FINALISE(ERR,ERROR,*999)
-    !Initialise the base routines
+    !Finalise the base routines
     CALL BASE_ROUTINES_FINALISE(ERR,ERROR,*999)
     
     RETURN
@@ -148,7 +156,7 @@ CONTAINS
 
     !Write out the CMISS version
     IF(COMPUTATIONAL_ENVIRONMENT%MY_COMPUTATIONAL_NODE_NUMBER==0) THEN
-      VERSION_STRING="openCMISS(cm) version "//TRIM(NUMBER_TO_VSTRING(CMISS_MAJOR_VERSION,"*",ERR,ERROR))
+      VERSION_STRING="OpenCMISS(cm) version "//TRIM(NUMBER_TO_VSTRING(CMISS_MAJOR_VERSION,"*",ERR,ERROR))
       VERSION_STRING=VERSION_STRING//"."
       VERSION_STRING=VERSION_STRING//TRIM(NUMBER_TO_VSTRING(CMISS_MINOR_VERSION,"*",ERR,ERROR))
       VERSION_STRING=VERSION_STRING//"."

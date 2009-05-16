@@ -17,7 +17,7 @@
 !> License for the specific language governing rights and limitations
 !> under the License.
 !>
-!> The Original Code is openCMISS
+!> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
@@ -128,9 +128,8 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_SETUP_SOURCE_TYPE=5 !<Source setup. \see EQUATIONS_SET_CONSTANTS_SetupTypes,EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_SETUP_SOURCE_MATERIALS_TYPE=6 !<Source materials setup. \see EQUATIONS_SET_CONSTANTS_SetupTypes,EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_SETUP_ANALYTIC_TYPE=7 !<Analytic setup. \see EQUATIONS_SET_CONSTANTS_SetupTypes,EQUATIONS_SET_CONSTANTS
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_SETUP_FIXED_CONDITIONS_TYPE=8 !<Fixed conditions. \see EQUATIONS_SET_CONSTANTS_SetupTypes,EQUATIONS_SET_CONSTANTS
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_SETUP_EQUATIONS_TYPE=9 !<Equations setup. \see EQUATIONS_SET_CONSTANTS_SetupTypes,EQUATIONS_SET_CONSTANTS
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_SETUP_FINAL_TYPE=9 !<Final setup. \see EQUATIONS_SET_CONSTANTS_SetupTypes,EQUATIONS_SET_CONSTANTS
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_SETUP_EQUATIONS_TYPE=8 !<Equations setup. \see EQUATIONS_SET_CONSTANTS_SetupTypes,EQUATIONS_SET_CONSTANTS
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_SETUP_BOUNDARY_CONDITIONS_TYPE=9 !<Boundary conditions. \see EQUATIONS_SET_CONSTANTS_SetupTypes,EQUATIONS_SET_CONSTANTS
   !>@}
   
   !> \addtogroup EQUATIONS_SET_CONSTANTS_SetupActionTypes EQUATIONS_SET_CONSTANTS::SetupActionTypes
@@ -139,6 +138,7 @@ MODULE EQUATIONS_SET_CONSTANTS
   !>@{
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_SETUP_START_ACTION=1 !<Start setup action. \see EQUATIONS_SET_CONSTANTS_SetupActionTypes,EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_SETUP_FINISH_ACTION=2 !<Finish setup action. \see EQUATIONS_SET_CONSTANTS_SetupActionTypes,EQUATIONS_SET_CONSTANTS
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_SETUP_GENERATE_ACTION=3 !<Generate setup action. \see EQUATIONS_SET_CONSTANTS_SetupActionTypes,EQUATIONS_SET_CONSTANTS
   !>@}
 
   !> \addtogroup EQUATIONS_SET_CONSTANTS_FixedConditions EQUATIONS_SET_CONSTANTS::FixedConditions
@@ -186,14 +186,24 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_FIRST_ORDER_DYNAMIC=3 !<The equations are first order dynamic. \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SECOND_ORDER_DYNAMIC=4 !<The equations are a second order dynamic. \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_ROUTINES
   !>@}
-  !> \addtogroup EQUATIONS_SET_CONSTANTS_EquationAnalyticFunction EQUATIONS_SET_CONSTANTS::EquationAnalyticFunction
-  !> \brief the analytic representive of laplace equation
-  !> \see LAPLACE_EQUATIONS_ROUTINES
+  
+  !> \addtogroup EQUATIONS_SET_CONSTANTS_AnalyticFunctionTypes EQUATIONS_SET_CONSTANTS::AnalyticFunctionTypes
+  !> \brief The analytic function types
+  !> \see 
   !>@{
+  !> \addtogroup EQUATIONS_SET_CONSTANTS_LaplaceAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:LaplaceAnalyticFunctionTypes
+  !> \brief The analytic function types for a Laplace equation
+  !>@{  
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_1=1 !<u=x**2+2*x*y-y**2 
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_2=2 !<u=cos(x)cosh(y)
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_1=3 !<u=x**2-2*y**2+z**2
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_2=4 !<u=cos(x)*cosh(y)*z
- !>@}
+  !>@}
+  !> \addtogroup EQUATIONS_SET_CONSTANTS_PoissonAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:PoissonAnalyticFunctionTypes
+  !> \brief The analytic function types for a Poisson equation
+  !>@{  
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_1=1 !<u=ln(4/(x+y+1^2))
+  !>@}
+  !>@}
   
 END MODULE EQUATIONS_SET_CONSTANTS

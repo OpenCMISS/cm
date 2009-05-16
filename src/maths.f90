@@ -17,7 +17,7 @@
 !> License for the specific language governing rights and limitations
 !> under the License.
 !>
-!> The Original Code is openCMISS
+!> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
@@ -58,12 +58,14 @@ MODULE MATHS
 
   !Interfaces
 
+  !>Calculates the vector cross product of two vectors
   INTERFACE CROSS_PRODUCT
     MODULE PROCEDURE CROSS_PRODUCT_INTG
     MODULE PROCEDURE CROSS_PRODUCT_SP
     MODULE PROCEDURE CROSS_PRODUCT_DP
   END INTERFACE !CROSS_PRODUCT
 
+  !>Calculates the the vector cross product of A*B in C and the N derivatives, D_C, of the vector cross product given the derivatives D_A and D_B of A and B
   INTERFACE D_CROSS_PRODUCT
     MODULE PROCEDURE D_CROSS_PRODUCT_INTG
     MODULE PROCEDURE D_CROSS_PRODUCT_SP
@@ -150,28 +152,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-subroutine: CROSS_PRODUCT
-  !###  Description:
-  !###    Calculates the vector cross product of two vectors
-  !###  Child-subroutines: CROSS_PRODUCT_INTG,CROSS_PRODUCT_SP,CROSS_PRODUCT_DP
 
-  !
-  !================================================================================================================================
-  !
-  
+  !>Calculates and returns the vector cross-prouct of the integer vectors A*B in C.
   SUBROUTINE CROSS_PRODUCT_INTG(A,B,C,ERR,ERROR,*)
-  
-    !#### Subroutine: CROSS_PRODUCT_INTG
-    !###  Description:
-    !###    Calculates and returns the vector cross-prouct of the integer vectors A*B in C.
-    !###  Parent-function: CROSS_PRODUCT
-    
+      
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: A(:),B(:)
-    INTEGER(INTG), INTENT(OUT) :: C(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: A(:) !<The first vector in the cross product
+    INTEGER(INTG), INTENT(IN) :: B(:) !<The second vector in the cross product
+    INTEGER(INTG), INTENT(OUT) :: C(:) !<On exit, the cross product of the first and second vectors
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     
     CALL ENTERS("CROSS_PRODUCT_INTG",ERR,ERROR,*999)
@@ -203,19 +193,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Calculates and returns the vector cross-prouct of the single precision vectors A*B in C.
   SUBROUTINE CROSS_PRODUCT_SP(A,B,C,ERR,ERROR,*)
   
-    !#### Subroutine: CROSS_PRODUCT_SP
-    !###  Description:
-    !###    Calculates and returns the vector cross-prouct of the single precision vectors A*B in C.
-    !###  Parent-function: CROSS_PRODUCT
-    
     !Argument variables
-    REAL(SP), INTENT(IN) :: A(:),B(:)
-    REAL(SP), INTENT(OUT) :: C(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(SP), INTENT(IN) :: A(:) !<The first vector in the cross product
+    REAL(SP), INTENT(IN) :: B(:) !<The second vector in the cross product
+    REAL(SP), INTENT(OUT) :: C(:) !<On exit, the cross product of the first and second vectors
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     
     CALL ENTERS("CROSS_PRODUCT_SP",ERR,ERROR,*999)
@@ -247,19 +234,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Calculates and returns the vector cross-prouct of the double precision vectors A*B in C.
   SUBROUTINE CROSS_PRODUCT_DP(A,B,C,ERR,ERROR,*)
   
-    !#### Subroutine: CROSS_PRODUCT_DP
-    !###  Description:
-    !###    Calculates and returns the vector cross-prouct of the double precision vectors A*B in C.
-    !###  Parent-function: CROSS_PRODUCT
-    
     !Argument variables
-    REAL(DP), INTENT(IN) :: A(:),B(:)
-    REAL(DP), INTENT(OUT) :: C(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(DP), INTENT(IN) :: A(:) !<The first vector in the cross product
+    REAL(DP), INTENT(IN) :: B(:) !<The second vector in the cross product
+    REAL(DP), INTENT(OUT) :: C(:) !<On exit, the cross product of the first and second vectors
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     
     CALL ENTERS("CROSS_PRODUCT_DP",ERR,ERROR,*999)
@@ -292,31 +276,18 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !#### Generic-subroutine: D_CROSS_PRODUCT
-  !###  Description:
-  !###    Calculates the the vector cross product of A*B in C and the N derivatives, D_C, of the vector cross product given the 
-  !###    derivatives D_A and D_B of A and B
-  !###  Child-subroutines: D_CROSS_PRODUCT_INTG,D_CROSS_PRODUCT_SP,D_CROSS_PRODUCT_DP
-
-  !
-  !================================================================================================================================
-  !
-  
+  !>Calculates the the vector cross product of A*B in C and the N derivatives, D_C, of the vector cross product given the 
+  !>derivatives D_A and D_B of A and B for integer vectors.
   SUBROUTINE D_CROSS_PRODUCT_INTG(N,A,B,C,D_A,D_B,D_C,ERR,ERROR,*)
-  
-    !#### Subroutine: D_CROSS_PRODUCT_INTG
-    !###  Description:
-    !###    Calculates the the vector cross product of A*B in C and the N derivatives, D_C, of the vector cross product given the 
-    !###    derivatives D_A and D_B of A and B for integer vectors.
-    !###  Parent-function: D_CROSS_PRODUCT
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: N,A(:),B(:)
+    INTEGER(INTG), INTENT(IN) :: N
+    INTEGER(INTG), INTENT(IN) :: A(:),B(:)
     INTEGER(INTG), INTENT(OUT) :: C(:)
     INTEGER(INTG), INTENT(IN) :: D_A(:,:),D_B(:,:)
     INTEGER(INTG), INTENT(OUT) :: D_C(:,:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: ni
     
@@ -371,8 +342,8 @@ CONTAINS
     REAL(SP), INTENT(OUT) :: C(:)
     REAL(SP), INTENT(IN) :: D_A(:,:),D_B(:,:)
     REAL(SP), INTENT(OUT) :: D_C(:,:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: ni
     
@@ -427,8 +398,8 @@ CONTAINS
     REAL(DP), INTENT(OUT) :: C(:)
     REAL(DP), INTENT(IN) :: D_A(:,:),D_B(:,:)
     REAL(DP), INTENT(OUT) :: D_C(:,:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: ni
     
@@ -488,8 +459,8 @@ CONTAINS
     
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: A(:,:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
     INTEGER(INTG) :: DETERMINANT_FULL_INTG
     
@@ -534,8 +505,8 @@ CONTAINS
     
     !Argument variables
     REAL(SP), INTENT(IN) :: A(:,:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
     REAL(SP) :: DETERMINANT_FULL_SP
     
@@ -580,8 +551,8 @@ CONTAINS
     
     !Argument variables
     REAL(DP), INTENT(IN) :: A(:,:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
     REAL(DP) :: DETERMINANT_FULL_DP
     
@@ -716,8 +687,8 @@ CONTAINS
     !Argument variables
     REAL(SP), INTENT(IN) :: A(:,:)
     REAL(SP), INTENT(OUT) :: EVALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: i
     REAL(SP) :: ANGLE,B2,B3,C1,C2,D,Q,Q3,R,RI1,RI2,RI3,RI4,RQ,TEMP,THETA
@@ -808,8 +779,8 @@ CONTAINS
     !Argument variables
     REAL(DP), INTENT(IN) :: A(:,:)
     REAL(DP), INTENT(OUT) :: EVALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: i
     REAL(DP) :: ANGLE,B2,B3,C1,C2,D,Q,Q3,R,RI1,RI2,RI3,RI4,RQ,TEMP,THETA
@@ -910,8 +881,8 @@ CONTAINS
     !Argument variables
     REAL(SP), INTENT(IN) :: A(:,:), EVALUE
     REAL(SP), INTENT(OUT) :: EVECTOR(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: i,i1,i2,i3,ICYCLE(3,3)
     REAL(SP) :: AL,b(SIZE(A,1)),SUM,U(SIZE(A,1),SIZE(A,2)),x(SIZE(A,1))
@@ -1001,8 +972,8 @@ CONTAINS
     !Argument variables
     REAL(DP), INTENT(IN) :: A(:,:), EVALUE
     REAL(DP), INTENT(OUT) :: EVECTOR(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: i,i1,i2,i3,ICYCLE(3,3)
     REAL(DP) :: AL,b(SIZE(A,1)),SUM,U(SIZE(A,1),SIZE(A,2)),x(SIZE(A,1))
@@ -1259,8 +1230,8 @@ CONTAINS
     REAL(SP), INTENT(IN) :: A(:,:)
     REAL(SP), INTENT(OUT) :: B(:,:)
     REAL(SP), INTENT(OUT) :: DET
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
 
     CALL ENTERS("INVERT_FULL_SP",ERR,ERROR,*999)
@@ -1336,8 +1307,8 @@ CONTAINS
     REAL(DP), INTENT(IN) :: A(:,:)
     REAL(DP), INTENT(OUT) :: B(:,:)
     REAL(DP), INTENT(OUT) :: DET
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
 
     CALL ENTERS("INVERT_FULL_DP",ERR,ERROR,*999)
@@ -1779,19 +1750,19 @@ CONTAINS
     !Argument variables
     REAL(SP), INTENT(IN) :: A(3,3),B(3,3)
     REAL(SP), INTENT(OUT) :: C(3,3)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: i,j,k 
     
     CALL ENTERS("MATRIX_PRODUCT_SP",ERR,ERROR,*999)
 
-    DO i=1,3,1
-      DO j=1,3,1
+    DO i=1,3
+      DO j=1,3
         C(i,j)=0.0_SP
-	DO k=1,3,1	      
-	  C(i,j)=C(i,j)+A(i,k)*B(k,j) 
-	ENDDO  	    
+        DO k=1,3
+          C(i,j)=C(i,j)+A(i,k)*B(k,j)
+        ENDDO
       ENDDO
     ENDDO
 
@@ -1817,19 +1788,19 @@ CONTAINS
     !Argument variables
     REAL(DP), INTENT(IN) :: A(3,3),B(3,3)
     REAL(DP), INTENT(OUT) :: C(3,3)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: i,j,k 
         
     CALL ENTERS("MATRIX_PRODUCT_DP",ERR,ERROR,*999)
-
-    DO i=1,3,1
-      DO j=1,3,1
+    
+    DO i=1,3
+      DO j=1,3
         C(i,j)=0.0_DP
-	DO k=1,3,1	      
-	  C(i,j)=C(i,j)+A(i,k)*B(k,j) 
-	ENDDO  	    
+        DO k=1,3
+          C(i,j)=C(i,j)+A(i,k)*B(k,j)
+        ENDDO
       ENDDO
     ENDDO
 
@@ -1855,16 +1826,16 @@ CONTAINS
     !Argument variables
     REAL(SP), INTENT(IN) :: A(3,3)
     REAL(SP), INTENT(OUT) :: AT(3,3)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: i,j
     
     CALL ENTERS("MATRIX_TRANSPOSE_SP",ERR,ERROR,*999)
 
-    DO i=1,3,1
-      DO j=1,3,1
-	AT(i,j)=A(j,i)
+    DO i=1,3
+      DO j=1,3
+        AT(i,j)=A(j,i)
       ENDDO
     ENDDO
 
@@ -1890,16 +1861,16 @@ CONTAINS
     !Argument variables
     REAL(DP), INTENT(IN) :: A(3,3)
     REAL(DP), INTENT(OUT) :: AT(3,3)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: i,j
         
     CALL ENTERS("MATRIX_TRANSPOSE_DP",ERR,ERROR,*999)
 
-    DO i=1,3,1
-      DO j=1,3,1
-	AT(i,j)=A(j,i)
+    DO i=1,3
+      DO j=1,3
+        AT(i,j)=A(j,i)
       ENDDO
     ENDDO
 
@@ -1932,8 +1903,8 @@ CONTAINS
 
     !Argument variables
     REAL(SP), INTENT(IN) :: A(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
     REAL(SP) :: NORMALISE_SP(SIZE(A,1))
     !Local variables
@@ -1969,8 +1940,8 @@ CONTAINS
 
     !Argument variables
     REAL(DP), INTENT(IN) :: A(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
     REAL(DP) :: NORMALISE_DP(SIZE(A,1))
     !Local variables
@@ -2017,8 +1988,8 @@ CONTAINS
     REAL(SP), INTENT(IN) :: A(:,:)
     REAL(SP), INTENT(OUT) :: x(:)
     REAL(SP), INTENT(IN) :: b(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     REAL(SP) :: AINV(SIZE(A,1),SIZE(A,2)),ADET
     
@@ -2066,8 +2037,8 @@ CONTAINS
     REAL(DP), INTENT(IN) :: A(:,:)
     REAL(DP), INTENT(OUT) :: x(:)
     REAL(DP), INTENT(IN) :: b(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     REAL(DP) :: AINV(SIZE(A,1),SIZE(A,2)),ADET
     
