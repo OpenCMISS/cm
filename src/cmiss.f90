@@ -3,7 +3,7 @@
 !> \author Chris Bradley
 !> \brief The top level cmiss module.
 !>
-!> \mainpage openCMISS Documentation
+!> \mainpage OpenCMISS Documentation
 !>
 !> An open source interactive computer program for Continuum Mechanics, Image analysis, Signal processing and System
 !> Identification. Target usage: Bioengineering application of finite element analysis, boundary element and collocation
@@ -44,6 +44,14 @@
 !> and other provisions required by the GPL or the LGPL. If you do not delete
 !> the provisions above, a recipient may use your version of this file under
 !> the terms of any one of the MPL, the GPL or the LGPL.
+!>
+!> \example examples/AnalyticLaplace/src/AnalyticLaplaceExample.f90
+!> \example examples/Diffusion/src/DiffusionExample.f90
+!> \example examples/FiniteElasticity/src/FiniteElasticityExample.f90
+!> \example examples/Helmholtz/src/HelmholtzExample.f90
+!> \example examples/Laplace/src/LaplaceExample.f90
+!> \example examples/Monodomain/src/MonodomainExample.f90
+!> \example examples/NonlinearPoisson/src/NonlinearPoissonExample.f90
 !>
 
 !> The top level cmiss module.
