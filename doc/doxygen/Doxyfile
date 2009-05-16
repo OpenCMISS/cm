@@ -25,13 +25,13 @@ DOXYFILE_ENCODING      = UTF-8
 # The PROJECT_NAME tag is a single word (or a sequence of words surrounded 
 # by quotes) that should identify the project.
 
-PROJECT_NAME           = openCMISS
+PROJECT_NAME           = OpenCMISS
 
 # The PROJECT_NUMBER tag can be used to enter a project or revision number. 
 # This could be handy for archiving the generated documentation or 
 # if some version control system is used.
 
-PROJECT_NUMBER         = 0.1-andre
+PROJECT_NUMBER         = 0.3
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute) 
 # base path where the generated documentation will be put. 
@@ -550,7 +550,7 @@ EXCLUDE_SYMBOLS        = INTEGER(INTG) REAL(SP) REAL(DP) LOGICAL
 
 # Andre notes: seems you have to put the actual folder here even if you specify a deeper path in the \example...
 
-EXAMPLE_PATH           = ../../examples/cellml/src/ ../../examples/define-geometry-and-export/src/ ../../examples/simple-field-manipulation/src/
+EXAMPLE_PATH           = ../../examples/AnalyticLaplace/src/ ../../examples/cellml/src/ ../../examples/define-geometry-and-export/src/ ../../examples/Diffusion/src/ ../../examples/FiniteElasticity/src/  ../../examples/Helmholtz/src/ ../../examples/Laplace/src/  ../../examples/Monodomain/src/  ../../examples/NonlinearPoisson/src/ ../../examples/simple-field-manipulation/src/
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the 
 # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 

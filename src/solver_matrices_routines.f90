@@ -17,7 +17,7 @@
 !> License for the specific language governing rights and limitations
 !> under the License.
 !>
-!> The Original Code is openCMISS
+!> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
@@ -487,7 +487,7 @@ CONTAINS
           SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(matrix_idx)%PTR
           IF(ASSOCIATED(SOLVER_MATRIX)) THEN
             CALL WRITE_STRING_VALUE(ID,"Solver matrix : ",matrix_idx,ERR,ERROR,*999)  
-            !CALL DISTRIBUTED_MATRIX_OUTPUT(ID,SOLVER_MATRIX%MATRIX,ERR,ERROR,*999)    ! Kumar - There is a bug here    
+            CALL DISTRIBUTED_MATRIX_OUTPUT(ID,SOLVER_MATRIX%MATRIX,ERR,ERROR,*999)    
           ELSE
             CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
           ENDIF

@@ -17,7 +17,7 @@
 !> License for the specific language governing rights and limitations
 !> under the License.
 !>
-!> The Original Code is openCMISS
+!> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
@@ -250,12 +250,14 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
  
-    CALL ENTERS("EQUATIONS_INITIALISE",ERR,ERROR,*999)
+    CALL ENTERS("EQUATIONS_INITIALISE",ERR,ERROR,*998)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       IF(ASSOCIATED(EQUATIONS_SET%EQUATIONS)) THEN
-        CALL FLAG_ERROR("Equations is already associated for this equations set.",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Equations is already associated for this equations set.",ERR,ERROR,*998)
       ELSE
         ALLOCATE(EQUATIONS_SET%EQUATIONS,STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations.",ERR,ERROR,*999)
@@ -272,12 +274,13 @@ CONTAINS
         CALL EQUATIONS_INTERPOLATION_INITIALISE(EQUATIONS_SET%EQUATIONS,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*998)
     ENDIF
        
     CALL EXITS("EQUATIONS_INITIALISE")
     RETURN
-999 CALL ERRORS("EQUATIONS_INITIALISE",ERR,ERROR)
+999 CALL EQUATIONS_FINALISE(EQUATIONS_SET%EQUATIONS,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("EQUATIONS_INITIALISE",ERR,ERROR)
     CALL EXITS("EQUATIONS_INITIALISE")
     RETURN 1
     
@@ -334,15 +337,17 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
     
-    CALL ENTERS("EQUATIONS_INTERPOLATION_INITIALISE",ERR,ERROR,*999)
+    CALL ENTERS("EQUATIONS_INTERPOLATION_INITIALISE",ERR,ERROR,*998)
 
     IF(ASSOCIATED(EQUATIONS)) THEN
       EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         IF(ASSOCIATED(EQUATIONS%INTERPOLATION)) THEN
-          CALL FLAG_ERROR("Interpolation is already associated for these equations.",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Interpolation is already associated for these equations.",ERR,ERROR,*998)
         ELSE
           ALLOCATE(EQUATIONS%INTERPOLATION,STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations interpolation",ERR,ERROR,*999)
@@ -413,15 +418,16 @@ CONTAINS
           
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Equations equation set is not associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Equations equation set is not associated",ERR,ERROR,*998)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Equations is not associated",ERR,ERROR,*998)
     ENDIF
        
     CALL EXITS("EQUATIONS_INTERPOLATION_INITIALISE")
     RETURN
-999 CALL ERRORS("EQUATIONS_INTERPOLATION_INITIALISE",ERR,ERROR)
+999 CALL EQUATIONS_INTERPOLATION_FINALISE(EQUATIONS%INTERPOLATION,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("EQUATIONS_INTERPOLATION_INITIALISE",ERR,ERROR)
     CALL EXITS("EQUATIONS_INTERPOLATION_INITIALISE")
     RETURN 1
   END SUBROUTINE EQUATIONS_INTERPOLATION_INITIALISE
