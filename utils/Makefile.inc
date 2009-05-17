@@ -175,3 +175,9 @@ cygwintowin = $($1)
 #ifeq ($(call olist_args,test),)
 #  $(error call function not available.  Use GNU make version 3.78 or newer)
 #endif
+
+# Create a shell that can pass environment variables
+ENV_FILE = /tmp/env
+env_shell1 = $(shell rm -f $(ENV_FILE))$(foreach V,$1,$(shell echo export $V=$($V) >> $(ENV_FILE)))$(shell echo 'rm -f $3' >> $(ENV_FILE))$(shell echo '$2 >& $3' >> $(ENV_FILE))$(shell /bin/bash -e $(ENV_FILE) )
+env_shell2 = $(shell rm -f $(ENV_FILE))$(foreach V,$1,$(shell echo export $V=$($V) >> $(ENV_FILE)))$(shell echo '$2' >> $(ENV_FILE))$(shell echo 'rm -f $4'>> $(ENV_FILE))$(shell echo '$3 >& $4' >> $(ENV_FILE))$(shell /bin/bash -e $(ENV_FILE))
+
