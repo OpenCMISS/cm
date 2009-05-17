@@ -17,7 +17,7 @@
 !> License for the specific language governing rights and limitations
 !> under the License.
 !>
-!> The Original Code is openCMISS
+!> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
@@ -58,91 +58,113 @@ MODULE MATHS
 
   !Interfaces
 
+  !>Calculates the vector cross product of two vectors
   INTERFACE CROSS_PRODUCT
     MODULE PROCEDURE CROSS_PRODUCT_INTG
     MODULE PROCEDURE CROSS_PRODUCT_SP
     MODULE PROCEDURE CROSS_PRODUCT_DP
   END INTERFACE !CROSS_PRODUCT
 
+  !>Calculates the the vector cross product of A*B in C and the N derivatives, D_C, of the vector cross product given the derivatives D_A and D_B of A and B
   INTERFACE D_CROSS_PRODUCT
     MODULE PROCEDURE D_CROSS_PRODUCT_INTG
     MODULE PROCEDURE D_CROSS_PRODUCT_SP
     MODULE PROCEDURE D_CROSS_PRODUCT_DP
   END INTERFACE !D_CROSS_PRODUCT
 
+  !>Returns the determinant of a matrix
   INTERFACE DETERMINANT
     MODULE PROCEDURE DETERMINANT_FULL_INTG
     MODULE PROCEDURE DETERMINANT_FULL_SP
     MODULE PROCEDURE DETERMINANT_FULL_DP
   END INTERFACE !DETERMINANT
     
+  !>Calculates the elliptic integral of the second kind - E(m).
   INTERFACE EDP
     MODULE PROCEDURE EDP_DP
     MODULE PROCEDURE EDP_SP
   END INTERFACE !EDP
 
+  !>Returns the eigenvalues of a matrix.
   INTERFACE EIGENVALUE
     MODULE PROCEDURE EIGENVALUE_FULL_SP
     MODULE PROCEDURE EIGENVALUE_FULL_DP
   END INTERFACE !EIGENVALUE
 
+  !>Returns the eigenvectors of a matrix.
   INTERFACE EIGENVECTOR
     MODULE PROCEDURE EIGENVECTOR_FULL_SP
     MODULE PROCEDURE EIGENVECTOR_FULL_DP
   END INTERFACE !EIGENVECTOR
 
+  !>Calculates the modified Bessel function of the first kind of order 0 using the approximation of Abromowitz and Stegun.
   INTERFACE I0
     MODULE PROCEDURE I0_DP
     MODULE PROCEDURE I0_SP
   END INTERFACE !I0
 
+  !>Calculates the modified Bessel function of the first kind of order 1 using the approximation of Abromowitz and Stegun.
   INTERFACE I1
     MODULE PROCEDURE I1_DP
     MODULE PROCEDURE I1_SP
   END INTERFACE !I1
 
+  !>Returns the inverse of a matrix.
   INTERFACE INVERT
     MODULE PROCEDURE INVERT_FULL_SP
     MODULE PROCEDURE INVERT_FULL_DP
   END INTERFACE !INVERT
 
+  !>Calculates the modified Bessel FUNCTION of the second kind of order 0 using the approximation of Abromowitz and Stegun.
   INTERFACE K0
     MODULE PROCEDURE K0_DP
     MODULE PROCEDURE K0_SP
   END INTERFACE !K0
 
+  !>Calculates the modified Bessel function of the second kind of order 1 using the approximation of Abromowitz and Stegun.
   INTERFACE K1
     MODULE PROCEDURE K1_DP
     MODULE PROCEDURE K1_SP
   END INTERFACE !K1
 
+  !>Calculates the elliptic integral of the first kind - K(m).
+  INTERFACE KDP
+    MODULE PROCEDURE KDP_DP
+    MODULE PROCEDURE K1_SP
+  END INTERFACE !KDP
+
+  !>Returns the L2 norm of a vector.
   INTERFACE L2NORM
     MODULE PROCEDURE L2NORM_SP
     MODULE PROCEDURE L2NORM_DP
   END INTERFACE !L2NORM
 
+  !>Calculates and returns the matrix-prouct of the single precision matrix A*B in C.
   INTERFACE MATRIX_PRODUCT
     MODULE PROCEDURE MATRIX_PRODUCT_SP
     MODULE PROCEDURE MATRIX_PRODUCT_DP
   END INTERFACE !MATRIX_PRODUCT
   
+  !>Returns the transpose of a matrix A in AT.
   INTERFACE MATRIX_TRANSPOSE
     MODULE PROCEDURE MATRIX_TRANSPOSE_SP
     MODULE PROCEDURE MATRIX_TRANSPOSE_DP
   END INTERFACE !MATRIX_TRANSPOSE 
 
+  !>Normalises a vector
   INTERFACE NORMALISE
     MODULE PROCEDURE NORMALISE_SP
     MODULE PROCEDURE NORMALISE_DP
   END INTERFACE !NORMALISE
 
+  !>Solves a small linear system Ax=b.
   INTERFACE SOLVE_SMALL_LINEAR_SYSTEM
     MODULE PROCEDURE SOLVE_SMALL_LINEAR_SYSTEM_SP
     MODULE PROCEDURE SOLVE_SMALL_LINEAR_SYSTEM_DP
   END INTERFACE !SOLVE_SMALL_LINEAR_SYSTEM
 
-  PUBLIC CROSS_PRODUCT,D_CROSS_PRODUCT,DETERMINANT,EIGENVALUE,EIGENVECTOR,INVERT,L2NORM,MATRIX_PRODUCT,MATRIX_TRANSPOSE, &
-    & NORMALISE,SOLVE_SMALL_LINEAR_SYSTEM
+  PUBLIC CROSS_PRODUCT,D_CROSS_PRODUCT,DETERMINANT,EIGENVALUE,EIGENVECTOR,INVERT,L2NORM,MATRIX_PRODUCT, &
+    & MATRIX_TRANSPOSE,NORMALISE,SOLVE_SMALL_LINEAR_SYSTEM
   
   
 CONTAINS
@@ -150,28 +172,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-subroutine: CROSS_PRODUCT
-  !###  Description:
-  !###    Calculates the vector cross product of two vectors
-  !###  Child-subroutines: CROSS_PRODUCT_INTG,CROSS_PRODUCT_SP,CROSS_PRODUCT_DP
 
-  !
-  !================================================================================================================================
-  !
-  
+  !>Calculates and returns the vector cross-prouct of the integer vectors A*B in C.
   SUBROUTINE CROSS_PRODUCT_INTG(A,B,C,ERR,ERROR,*)
-  
-    !#### Subroutine: CROSS_PRODUCT_INTG
-    !###  Description:
-    !###    Calculates and returns the vector cross-prouct of the integer vectors A*B in C.
-    !###  Parent-function: CROSS_PRODUCT
-    
+      
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: A(:),B(:)
-    INTEGER(INTG), INTENT(OUT) :: C(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: A(:) !<The first vector in the cross product
+    INTEGER(INTG), INTENT(IN) :: B(:) !<The second vector in the cross product
+    INTEGER(INTG), INTENT(OUT) :: C(:) !<On exit, the cross product of the first and second vectors
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     
     CALL ENTERS("CROSS_PRODUCT_INTG",ERR,ERROR,*999)
@@ -203,19 +213,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Calculates and returns the vector cross-prouct of the single precision vectors A*B in C.
   SUBROUTINE CROSS_PRODUCT_SP(A,B,C,ERR,ERROR,*)
   
-    !#### Subroutine: CROSS_PRODUCT_SP
-    !###  Description:
-    !###    Calculates and returns the vector cross-prouct of the single precision vectors A*B in C.
-    !###  Parent-function: CROSS_PRODUCT
-    
     !Argument variables
-    REAL(SP), INTENT(IN) :: A(:),B(:)
-    REAL(SP), INTENT(OUT) :: C(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(SP), INTENT(IN) :: A(:) !<The first vector in the cross product
+    REAL(SP), INTENT(IN) :: B(:) !<The second vector in the cross product
+    REAL(SP), INTENT(OUT) :: C(:) !<On exit, the cross product of the first and second vectors
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     
     CALL ENTERS("CROSS_PRODUCT_SP",ERR,ERROR,*999)
@@ -247,19 +254,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Calculates and returns the vector cross-prouct of the double precision vectors A*B in C.
   SUBROUTINE CROSS_PRODUCT_DP(A,B,C,ERR,ERROR,*)
   
-    !#### Subroutine: CROSS_PRODUCT_DP
-    !###  Description:
-    !###    Calculates and returns the vector cross-prouct of the double precision vectors A*B in C.
-    !###  Parent-function: CROSS_PRODUCT
-    
     !Argument variables
-    REAL(DP), INTENT(IN) :: A(:),B(:)
-    REAL(DP), INTENT(OUT) :: C(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(DP), INTENT(IN) :: A(:) !<The first vector in the cross product
+    REAL(DP), INTENT(IN) :: B(:) !<The second vector in the cross product
+    REAL(DP), INTENT(OUT) :: C(:) !<On exit, the cross product of the first and second vectors
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     
     CALL ENTERS("CROSS_PRODUCT_DP",ERR,ERROR,*999)
@@ -292,31 +296,20 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !#### Generic-subroutine: D_CROSS_PRODUCT
-  !###  Description:
-  !###    Calculates the the vector cross product of A*B in C and the N derivatives, D_C, of the vector cross product given the 
-  !###    derivatives D_A and D_B of A and B
-  !###  Child-subroutines: D_CROSS_PRODUCT_INTG,D_CROSS_PRODUCT_SP,D_CROSS_PRODUCT_DP
-
-  !
-  !================================================================================================================================
-  !
-  
+  !>Calculates the the vector cross product of A*B in C and the N derivatives, D_C, of the vector cross product given the 
+  !>derivatives D_A and D_B of A and B for integer vectors.
   SUBROUTINE D_CROSS_PRODUCT_INTG(N,A,B,C,D_A,D_B,D_C,ERR,ERROR,*)
-  
-    !#### Subroutine: D_CROSS_PRODUCT_INTG
-    !###  Description:
-    !###    Calculates the the vector cross product of A*B in C and the N derivatives, D_C, of the vector cross product given the 
-    !###    derivatives D_A and D_B of A and B for integer vectors.
-    !###  Parent-function: D_CROSS_PRODUCT
     
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: N,A(:),B(:)
-    INTEGER(INTG), INTENT(OUT) :: C(:)
-    INTEGER(INTG), INTENT(IN) :: D_A(:,:),D_B(:,:)
-    INTEGER(INTG), INTENT(OUT) :: D_C(:,:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: N !<The number of derivatives
+    INTEGER(INTG), INTENT(IN) :: A(:) !<The A vector
+    INTEGER(INTG), INTENT(IN) :: B(:) !<The B vector
+    INTEGER(INTG), INTENT(OUT) :: C(:) !<On exit, the cross product of A*B
+    INTEGER(INTG), INTENT(IN) :: D_A(:,:) !<The N derivatives of A
+    INTEGER(INTG), INTENT(IN) :: D_B(:,:) !<The N derivatives of B
+    INTEGER(INTG), INTENT(OUT) :: D_C(:,:) !<On exit, the derivatives of C
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: ni
     
@@ -357,22 +350,20 @@ CONTAINS
   !================================================================================================================================
   !
   
+  !>Calculates the the vector cross product of A*B in C and the N derivatives, D_C, of the vector cross product given the 
+  !>derivatives D_A and D_B of A and B for single precision vectors.
   SUBROUTINE D_CROSS_PRODUCT_SP(N,A,B,C,D_A,D_B,D_C,ERR,ERROR,*)
   
-    !#### Subroutine: D_CROSS_PRODUCT_SP
-    !###  Description:
-    !###    Calculates the the vector cross product of A*B in C and the N derivatives, D_C, of the vector cross product given the 
-    !###    derivatives D_A and D_B of A and B for single precision vectors.
-    !###  Parent-function: D_CROSS_PRODUCT
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: N
-    REAL(SP), INTENT(IN) :: A(:),B(:)
-    REAL(SP), INTENT(OUT) :: C(:)
-    REAL(SP), INTENT(IN) :: D_A(:,:),D_B(:,:)
-    REAL(SP), INTENT(OUT) :: D_C(:,:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: N !<The number of derivatives
+    REAL(SP), INTENT(IN) :: A(:) !<The A vector
+    REAL(SP), INTENT(IN) :: B(:) !<The B vector
+    REAL(SP), INTENT(OUT) :: C(:) !<On exit, the cross product of A*B
+    REAL(SP), INTENT(IN) :: D_A(:,:) !<The N derivatives of A
+    REAL(SP), INTENT(IN) :: D_B(:,:) !<The N derivatives of B
+    REAL(SP), INTENT(OUT) :: D_C(:,:) !<On exit, the derivatives of C
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: ni
     
@@ -412,23 +403,21 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Calculates the the vector cross product of A*B in C and the N derivatives, D_C, of the vector cross product given the 
+  !>derivatives D_A and D_B of A and B for double precision vectors.
   SUBROUTINE D_CROSS_PRODUCT_DP(N,A,B,C,D_A,D_B,D_C,ERR,ERROR,*)
   
-    !#### Subroutine: D_CROSS_PRODUCT_DP
-    !###  Description:
-    !###    Calculates the the vector cross product of A*B in C and the N derivatives, D_C, of the vector cross product given the 
-    !###    derivatives D_A and D_B of A and B for double precision vectors.
-    !###  Parent-function: D_CROSS_PRODUCT
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: N
-    REAL(DP), INTENT(IN) :: A(:),B(:)
-    REAL(DP), INTENT(OUT) :: C(:)
-    REAL(DP), INTENT(IN) :: D_A(:,:),D_B(:,:)
-    REAL(DP), INTENT(OUT) :: D_C(:,:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: N !<The number of derivatives
+    REAL(DP), INTENT(IN) :: A(:) !<The A vector
+    REAL(DP), INTENT(IN) :: B(:) !<The B vector
+    REAL(DP), INTENT(OUT) :: C(:) !<On exit, the cross product of A*B
+    REAL(DP), INTENT(IN) :: D_A(:,:) !<The N derivatives of A
+    REAL(DP), INTENT(IN) :: D_B(:,:) !<The N derivatives of B
+    REAL(DP), INTENT(OUT) :: D_C(:,:) !<On exit, the derivatives of C
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: ni
     
@@ -468,28 +457,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Function: DETERMINANT
-  !###  Description:
-  !###    Returns the determinant of a matrix
-  !###  Child-functions: DETERMINANT_FULL_INTG,DETERMINANT_FULL_SP,DETERMINANT_FULL_DP
 
-  !
-  !================================================================================================================================
-  !
-  
+  !>Returns the determinant of a full integer matrix A.
   FUNCTION DETERMINANT_FULL_INTG(A,ERR,ERROR)
   
-    !#### Function: DETERMINANT_FULL_INTG
-    !###  Type: INTEGER(INTG)
-    !###  Description:
-    !###    Returns the determinant of a full single precision matrix A.
-    !###  Parent-function: DETERMINANT
-    
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: A(:,:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: A(:,:) !<The matrix to find the determinant of
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
     INTEGER(INTG) :: DETERMINANT_FULL_INTG
     
@@ -523,19 +498,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Returns the determinant of a full single precision matrix A.
   FUNCTION DETERMINANT_FULL_SP(A,ERR,ERROR)
-  
-    !#### Function: DETERMINANT_FULL_SP
-    !###  Type: REAL(SP)
-    !###  Description:
-    !###    Returns the determinant of a full single precision matrix A.
-    !###  Parent-function: DETERMINANT
     
     !Argument variables
-    REAL(SP), INTENT(IN) :: A(:,:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(SP), INTENT(IN) :: A(:,:) !<The matrix to find the determinant of
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
     REAL(SP) :: DETERMINANT_FULL_SP
     
@@ -569,19 +539,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Returns the determinant of a full double precision matrix A
   FUNCTION DETERMINANT_FULL_DP(A,ERR,ERROR)
   
-    !#### Function: DETERMINANT_FULL_DP
-    !###  Type: REAL(DP)
-    !###  Description:
-    !###    Returns the determinant of a full double precision matrix A
-    !###  Parent-function: DETERMINANT
-    
     !Argument variables
-    REAL(DP), INTENT(IN) :: A(:,:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(DP), INTENT(IN) :: A(:,:) !<The matrix to find the determinant of
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
     REAL(DP) :: DETERMINANT_FULL_DP
     
@@ -615,26 +580,12 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Function: EDP
-  !###  Description:
-  !###    Calculates the elliptic integral of the second kind - E(m).
-  !###  Child-functions: EDP_DP,EDP_SP
 
-  !
-  !================================================================================================================================
-  !
+  !>Calculates the elliptic integral of the second kind - E(m), for a double precision argument.
+  PURE FUNCTION EDP_DP(X)
   
-  FUNCTION EDP_DP(X)
-  
-    !#### Function: EDP_DP
-    !###  Type: REAL(DP)
-    !###  Description:
-    !###    Calculates the elliptic integral of the second kind - E(m), for a double precision argument.
-    !###  Parent-function: EDP
-    
     !Argument variables
-    REAL(DP), INTENT(IN) :: X
+    REAL(DP), INTENT(IN) :: X !<The value to evaluate the function at
     !Function variable
     REAL(DP) :: EDP_DP
     !Local variables
@@ -660,17 +611,12 @@ CONTAINS
   !
   !================================================================================================================================
   !
+
+  !>Calculates the elliptic integral of the second kind - E(m), for a single precision argument.
+  PURE FUNCTION EDP_SP(X)
   
-  FUNCTION EDP_SP(X)
-  
-    !#### Function: EDP_SP
-    !###  Type: REAL(SP)
-    !###  Description:
-    !###    Calculates the elliptic integral of the second kind - E(m), for a single precision argument.
-    !###  Parent-function: EDP
-    
     !Argument variables
-    REAL(SP), INTENT(IN) :: X
+    REAL(SP), INTENT(IN) :: X !<The value to evaluate the function at
     !Function variable
     REAL(SP) :: EDP_SP
     !Local variables
@@ -696,28 +642,15 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-subroutine: EIGENVALUE
-  !###  Description:
-  !###    Returns the eigenvalues of a matrix.
-  !###  Child-subroutines: EIGENVALUE_FULL_SP,EIGNEVECTOR_FULL_DP
 
-  !
-  !================================================================================================================================
-  !
-  
+  !>Returns the eigenvalues of a full single precision matrix A.
   SUBROUTINE EIGENVALUE_FULL_SP(A,EVALUES,ERR,ERROR,*)
-  
-    !#### Subroutine: EIGENVALUE_FULL_SP
-    !###  Description:
-    !###    Returns the eigenvalues of a full single precision matrix A.
-    !###  Parent-subroutine: EIGENVALUE
     
     !Argument variables
-    REAL(SP), INTENT(IN) :: A(:,:)
-    REAL(SP), INTENT(OUT) :: EVALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(SP), INTENT(IN) :: A(:,:) !<The matrix to find the eignenvalues for
+    REAL(SP), INTENT(OUT) :: EVALUES(:) !<On exit, the eignevalues
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: i
     REAL(SP) :: ANGLE,B2,B3,C1,C2,D,Q,Q3,R,RI1,RI2,RI3,RI4,RQ,TEMP,THETA
@@ -797,19 +730,15 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Returns the eigenvalues of a full double precision matrix A.
   SUBROUTINE EIGENVALUE_FULL_DP(A,EVALUES,ERR,ERROR,*)
   
-    !#### Subroutine: EIGENVALUE_FULL_DP
-    !###  Description:
-    !###    Returns the eigenvalues of a full double precision matrix A.
-    !###  Parent-subroutine: EIGENVALUE
-    
     !Argument variables
-    REAL(DP), INTENT(IN) :: A(:,:)
-    REAL(DP), INTENT(OUT) :: EVALUES(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(DP), INTENT(IN) :: A(:,:) !<The matrix to find the eigenvalues of
+    REAL(DP), INTENT(OUT) :: EVALUES(:) !<On exit, the eigenvalues of the matrix
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: i
     REAL(DP) :: ANGLE,B2,B3,C1,C2,D,Q,Q3,R,RI1,RI2,RI3,RI4,RQ,TEMP,THETA
@@ -889,29 +818,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-subroutine: EIGENVECTOR
-  !###  Description:
-  !###    Returns the eigenvectors of a matrix.
-  !###  Child-subroutines: EIGENVECTOR_FULL_SP,EIGENVECTOR_FULL_DP
 
-  !
-  !================================================================================================================================
-  !
-  
+  !>Returns the normalised eigenvector of a full single precision symmetric matrix A that corresponds to the eigenvalue EVALUE. 
   SUBROUTINE EIGENVECTOR_FULL_SP(A,EVALUE,EVECTOR,ERR,ERROR,*)
   
-    !#### Subroutine: EIGENVECTOR_FULL_SP
-    !###  Description:
-    !###    Returns the normalised eigenvector of a full single precision symmetric matrix A that corresponds to the eigenvalue
-    !###    EVALUE. 
-    !###  Parent-subroutine: EIGENVECTOR
-    
     !Argument variables
-    REAL(SP), INTENT(IN) :: A(:,:), EVALUE
-    REAL(SP), INTENT(OUT) :: EVECTOR(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(SP), INTENT(IN) :: A(:,:) !<The matrix to find the eignevectors for
+    REAL(SP), INTENT(IN) :: EVALUE !<The eigenvalue to find the eignevector for
+    REAL(SP), INTENT(OUT) :: EVECTOR(:) !<On exit, the eigenvector corresponding the the eigenvalue
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: i,i1,i2,i3,ICYCLE(3,3)
     REAL(SP) :: AL,b(SIZE(A,1)),SUM,U(SIZE(A,1),SIZE(A,2)),x(SIZE(A,1))
@@ -989,20 +905,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Returns the normalised eigenvector of a full double precision symmetric matrix A that corresponds to the eigenvalue EVALUE.
   SUBROUTINE EIGENVECTOR_FULL_DP(A,EVALUE,EVECTOR,ERR,ERROR,*)
   
-    !#### Subroutine: EIGENVECTOR_FULL_DP
-    !###  Description:
-    !###    Returns the normalised eigenvector of a full double precision symmetric matrix A that corresponds to the eigenvalue
-    !###    EVALUE.
-    !###  Parent-subroutine: EIGENVECTOR
-    
     !Argument variables
-    REAL(DP), INTENT(IN) :: A(:,:), EVALUE
-    REAL(DP), INTENT(OUT) :: EVECTOR(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(DP), INTENT(IN) :: A(:,:) !<The matrix to find the eignevectors for
+    REAL(DP), INTENT(IN) :: EVALUE !<The eigenvalue to find the eignevector for
+    REAL(DP), INTENT(OUT) :: EVECTOR(:) !<On exit, the eigenvector corresponding the the eigenvalue
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: i,i1,i2,i3,ICYCLE(3,3)
     REAL(DP) :: AL,b(SIZE(A,1)),SUM,U(SIZE(A,1),SIZE(A,2)),x(SIZE(A,1))
@@ -1081,26 +993,12 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !#### Generic-Function: I0
-  !###  Description:
-  !###    Calculates the modified Bessel function of the first kind of order 0 using the approximation of Abromowitz and Stegun.
-  !###  Child-functions: I0_DP,I0_SP
-
-  !
-  !================================================================================================================================
-  !
-  
-  FUNCTION I0_DP(X)
-  
-    !#### Function: I0_DP
-    !###  Type: REAL(DP)
-    !###  Description:
-    !###    Calculates the modified Bessel function of the first kind of order 0 using the approximation of Abromowitz and Stegun,
-    !###    for a double precision argument.
-    !###  Parent-function: I0
-    
+  !>Calculates the modified Bessel function of the first kind of order 0 using the approximation of Abromowitz and Stegun,
+  !>for a double precision argument.
+  PURE FUNCTION I0_DP(X)
+      
     !Argument variables
-    REAL(DP), INTENT(IN) :: X
+    REAL(DP), INTENT(IN) :: X !<The value to evaluate the function at
     !Function variable
     REAL(DP) :: I0_DP
     !Local variables
@@ -1125,17 +1023,12 @@ CONTAINS
   !================================================================================================================================
   !
   
-  FUNCTION I0_SP(X)
+  !>Calculates the modified Bessel function of the first kind of order 0 using the approximation of Abromowitz and Stegun,
+  !>for a single precision argument.
+  PURE FUNCTION I0_SP(X)
   
-    !#### Function: I0_SP
-    !###  Type: REAL(SP)
-    !###  Description:
-    !###    Calculates the modified Bessel function of the first kind of order 0 using the approximation of Abromowitz and Stegun,
-    !###    for a single precision argument.
-    !###  Parent-function: I0
-    
     !Argument variables
-    REAL(SP), INTENT(IN) :: X
+    REAL(SP), INTENT(IN) :: X !<The value to evaluate the function at
     !Function variable
     REAL(SP) :: I0_SP
     !Local variables
@@ -1160,26 +1053,12 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !#### Generic-Function: I1
-  !###  Description:
-  !###    Calculates the modified Bessel function of the first kind of order 1 using the approximation of Abromowitz and Stegun.
-  !###  Child-functions: I1_DP,I1_SP
-
-  !
-  !================================================================================================================================
-  !
+  !>Calculates the modified Bessel function of the first kind of order 1 using the approximation of Abromowitz and Stegun,
+  !>for a double precision argument.
+  PURE FUNCTION I1_DP(X)
   
-  FUNCTION I1_DP(X)
-  
-    !#### Function: I1_DP
-    !###  Type: REAL(DP)
-    !###  Description:
-    !###    Calculates the modified Bessel function of the first kind of order 1 using the approximation of Abromowitz and Stegun,
-    !###    for a double precision argument.
-    !###  Parent-function: I1
-    
     !Argument variables
-    REAL(DP), INTENT(IN) :: X
+    REAL(DP), INTENT(IN) :: X !<The value to evaluate the function at
     !Function variable
     REAL(DP) :: I1_DP
     !Local variables
@@ -1204,17 +1083,12 @@ CONTAINS
   !================================================================================================================================
   !
   
-  FUNCTION I1_SP(X)
+  !>Calculates the modified Bessel function of the first kind of order 1 using the approximation of Abromowitz and Stegun,
+  !>for a single precision argument.
+  PURE FUNCTION I1_SP(X)
   
-    !#### Function: I1_SP
-    !###  Type: REAL(SP)
-    !###  Description:
-    !###    Calculates the modified Bessel function of the first kind of order 1 using the approximation of Abromowitz and Stegun,
-    !###    for a single precision argument.
-    !###  Parent-function: I1
-    
-    !Argument variables
-    REAL(SP), INTENT(IN) :: X
+   !Argument variables
+    REAL(SP), INTENT(IN) :: X !<The value to evaluate the function at
     !Function variable
     REAL(SP) :: I1_SP
     !Local variables
@@ -1238,29 +1112,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Subroutine: INVERT
-  !###  Description:
-  !###    Returns the inverse of a matrix.
-  !###  Child-Subroutines: INVERT_FULL_SP,INVERT_FULL_DP
 
-  !
-  !================================================================================================================================
-  !
-
+  !>Inverts a full single precision matrix A to give matrix B and returns the determinant of A in DET.
   SUBROUTINE INVERT_FULL_SP(A,B,DET,ERR,ERROR,*)
     
-    !#### Subroutine: INVERT_FULL_SP
-    !###  Description:
-    !###    INVERT_FULL_SP inverts a full single precision matrix A to give matrix B and returns the determinant of A in DET.
-    !###  Parent-Subroutine: INVERT
-
     !Argument variables
-    REAL(SP), INTENT(IN) :: A(:,:)
-    REAL(SP), INTENT(OUT) :: B(:,:)
-    REAL(SP), INTENT(OUT) :: DET
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(SP), INTENT(IN) :: A(:,:) !<The A matrix to invert
+    REAL(SP), INTENT(OUT) :: B(:,:) !<On exit, the inverse of A
+    REAL(SP), INTENT(OUT) :: DET !<On exit, the determinant of A
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
 
     CALL ENTERS("INVERT_FULL_SP",ERR,ERROR,*999)
@@ -1324,20 +1185,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Inverts a full double precision matrix A to give matrix B and returns the determinant of A in DET.
   SUBROUTINE INVERT_FULL_DP(A,B,DET,ERR,ERROR,*)
     
-    !#### Subroutine: INVERT_FULL_DP
-    !###  Description:
-    !###    INVERT_FULL_DP inverts a full double precision matrix A to give matrix B and returns the determinant of A in DET.
-    !###  Parent-Subroutine: INVERT
-
     !Argument variables
-    REAL(DP), INTENT(IN) :: A(:,:)
-    REAL(DP), INTENT(OUT) :: B(:,:)
-    REAL(DP), INTENT(OUT) :: DET
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(DP), INTENT(IN) :: A(:,:) !<The matrix A to invert
+    REAL(DP), INTENT(OUT) :: B(:,:) !<On exit, the inverse of A
+    REAL(DP), INTENT(OUT) :: DET !<On exit, the determinant of A
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
 
     CALL ENTERS("INVERT_FULL_DP",ERR,ERROR,*999)
@@ -1397,31 +1254,17 @@ CONTAINS
     CALL EXITS("INVERT_FULL_DP")
     RETURN 1
   END SUBROUTINE INVERT_FULL_DP
-
+  
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Function: K0
-  !###  Description:
-  !###    Calculates the modified Bessel function of the second kind of order 1 using the approximation of Abromowitz and Stegun.
-  !###  Child-functions: K0_DP,K0_SP
 
-  !
-  !================================================================================================================================
-  !
+  !>Calculates the modified Bessel function of the second kind of order 1 using the approximation of Abromowitz and Stegun,
+  !>for a double precision argument.
+  PURE FUNCTION K0_DP(X)
   
-  FUNCTION K0_DP(X)
-  
-    !#### Function: K0_DP
-    !###  Type: REAL(DP)
-    !###  Description:
-    !###    Calculates the modified Bessel function of the second kind of order 1 using the approximation of Abromowitz and Stegun,
-    !###    for a double precision argument.
-    !###  Parent-function: K0
-    
     !Argument variables
-    REAL(DP), INTENT(IN) :: X
+    REAL(DP), INTENT(IN) :: X !<The value to evaluate the function at
     !Function variable
     REAL(DP) :: K0_DP
     !Local variables
@@ -1462,17 +1305,12 @@ CONTAINS
   !================================================================================================================================
   !
   
-  FUNCTION K0_SP(X)
+  !>Calculates the modified Bessel function of the second kind of order 0 using the approximation of Abromowitz and Stegun,
+  !>for a single precision argument.
+  PURE FUNCTION K0_SP(X)
   
-    !#### Function: K0_SP
-    !###  Type: REAL(SP)
-    !###  Description:
-    !###    Calculates the modified Bessel function of the second kind of order 0 using the approximation of Abromowitz and Stegun,
-    !###    for a single precision argument.
-    !###  Parent-function: K0
-    
     !Argument variables
-    REAL(SP), INTENT(IN) :: X
+    REAL(SP), INTENT(IN) :: X !<The value to evaluate the function at
     !Function variable
     REAL(SP) :: K0_SP
     !Local variables
@@ -1513,26 +1351,12 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !#### Generic-Function: K1
-  !###  Description:
-  !###    Calculates the modified Bessel function of the second kind of order 1 using the approximation of Abromowitz and Stegun.
-  !###  Child-functions: K1_DP,K1_SP
-
-  !
-  !================================================================================================================================
-  !
+  !>Calculates the modified Bessel function of the second kind of order 1 using the approximation of Abromowitz and Stegun,
+  !>for a double precision argument.
+  PURE FUNCTION K1_DP(X)
   
-  FUNCTION K1_DP(X)
-  
-    !#### Function: K1_DP
-    !###  Type: REAL(DP)
-    !###  Description:
-    !###    Calculates the modified Bessel function of the second kind of order 1 using the approximation of Abromowitz and Stegun,
-    !###    for a double precision argument.
-    !###  Parent-function: K1
-    
     !Argument variables
-    REAL(DP), INTENT(IN) :: X
+    REAL(DP), INTENT(IN) :: X !<The value to evaluate the function at
     !Function variable
     REAL(DP) :: K1_DP
     !Local variables
@@ -1574,17 +1398,12 @@ CONTAINS
   !================================================================================================================================
   !
   
-  FUNCTION K1_SP(X)
+  !>Calculates the modified Bessel function of the second kind of order 1 using the approximation of Abromowitz and Stegun,
+  !>for a single precision argument.
+  PURE FUNCTION K1_SP(X)
   
-    !#### Function: K1_SP
-    !###  Type: REAL(SP)
-    !###  Description:
-    !###    Calculates the modified Bessel function of the second kind of order 1 using the approximation of Abromowitz and Stegun,
-    !###    for a single precision argument.
-    !###  Parent-function: K1
-    
     !Argument variables
-    REAL(SP), INTENT(IN) :: X
+    REAL(SP), INTENT(IN) :: X !<The value to evaluate the function at
     !Function variable
     REAL(SP) :: K1_SP
     !Local variables
@@ -1626,25 +1445,11 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !#### Generic-Function: KDP
-  !###  Description:
-  !###    Calculates the elliptic integral of the first kind - K(m).
-  !###  Child-functions: KDP_DP,KDP_SP
-
-  !
-  !================================================================================================================================
-  !
+  !>Calculates the elliptic integral of the first kind - K(m), for a double precision argument.
+  PURE FUNCTION KDP_DP(X)
   
-  FUNCTION KDP_DP(X)
-  
-    !#### Function: KDP_DP
-    !###  Type: REAL(DP)
-    !###  Description:
-    !###    Calculates the elliptic integral of the first kind - K(m), for a double precision argument.
-    !###  Parent-function: KDP
-    
     !Argument variables
-    REAL(DP), INTENT(IN) :: X
+    REAL(DP), INTENT(IN) :: X !<The value to evaluate the function at
     !Function variable
     REAL(DP) :: KDP_DP
     !Local variables
@@ -1673,16 +1478,11 @@ CONTAINS
   !================================================================================================================================
   !
   
-  FUNCTION KDP_SP(X)
+  !>Calculates the elliptic integral of the first kind - K(m), for a single precision argument.
+  PURE FUNCTION KDP_SP(X)
   
-    !#### Function: KDP_SP
-    !###  Type: REAL(SP)
-    !###  Description:
-    !###    Calculates the elliptic integral of the first kind - K(m), for a single precision argument.
-    !###  Parent-function: KDP
-    
     !Argument variables
-    REAL(SP), INTENT(IN) :: X
+    REAL(SP), INTENT(IN) :: X !<The value to evaluate the function at
     !Function variable
     REAL(SP) :: KDP_SP
     !Local variables
@@ -1711,24 +1511,11 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !#### Generic-Function: L2NORM
-  !###  Description:
-  !###    Returns the L2 norm of a vector.
-  !###  Child-functions: L2NORM_SP,L2NORM_DP
-
-  !
-  !================================================================================================================================
-  !
-  
-  FUNCTION L2NORM_SP(A)
-
-    !#### Function: L2NORM_SP
-    !###  Description:
-    !###    L2NORM_SP returns the L2-norm of the single precision vector A.
-    !###  Parent-function: L2NORM
+  !>Returns the L2-norm of the single precision vector A.
+  PURE FUNCTION L2NORM_SP(A)
 
     !Argument variables
-    REAL(SP), INTENT(IN) :: A(:)
+    REAL(SP), INTENT(IN) :: A(:) !<The vector to calculate the L2 norm of
     !Function variable
     REAL(SP) :: L2NORM_SP
     !Local variables
@@ -1743,16 +1530,12 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Returns the L2-norm of the double precision vector A.
   FUNCTION L2NORM_DP(A)
 
-    !#### Function: L2NORM_DP
-    !###  Description:
-    !###    L2NORM_DP returns the L2-norm of the double precision vector A.
-    !###  Parent-function: L2NORM
-
     !Argument variables
-    REAL(DP), INTENT(IN) :: A(:)
+    REAL(DP), INTENT(IN) :: A(:) !<The vector to calculate the L2 norm of
     !Function variable
     REAL(DP) :: L2NORM_DP
     !Local variables
@@ -1768,32 +1551,44 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Calculates and returns the matrix-prouct of the single precision matrix A*B in C for single precision arguments.
   SUBROUTINE MATRIX_PRODUCT_SP(A,B,C,ERR,ERROR,*)
   
-    !#### Subroutine: MATRIX_PRODUCT_SP
-    !###  Description:
-    !###    Calculates and returns the matrix-prouct of the single precision matrix A*B in C.
-    !###  Parent-function: MATRIX_PRODUCT
-    !Author: Kumar Mithraratne
-    
     !Argument variables
-    REAL(SP), INTENT(IN) :: A(3,3),B(3,3)
-    REAL(SP), INTENT(OUT) :: C(3,3)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(SP), INTENT(IN) :: A(:,:) !<The first matrix A
+    REAL(SP), INTENT(IN) :: B(:,:) !<The second matrix B
+    REAL(SP), INTENT(OUT) :: C(:,:) !<On exit, the product matrix C=A*B
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
-    INTEGER(INTG) :: i,j,k 
     
     CALL ENTERS("MATRIX_PRODUCT_SP",ERR,ERROR,*999)
 
-    DO i=1,3,1
-      DO j=1,3,1
-        C(i,j)=0.0_SP
-	DO k=1,3,1	      
-	  C(i,j)=C(i,j)+A(i,k)*B(k,j) 
-	ENDDO  	    
-      ENDDO
-    ENDDO
+    IF(SIZE(A,2)==SIZE(B,1).AND.SIZE(A,1)==SIZE(C,1).AND.SIZE(B,2)==SIZE(C,2)) THEN
+      SELECT CASE(SIZE(A,1))
+      CASE(1)
+        C(1,1)=A(1,1)*B(1,1)
+      CASE(2)
+        C(1,1)=A(1,1)*B(1,1)+A(1,2)*B(2,1)
+        C(1,2)=A(1,1)*B(1,2)+A(1,2)*B(2,2)
+        C(2,1)=A(2,1)*B(1,1)+A(2,2)*B(2,1)
+        C(2,2)=A(2,1)*B(1,2)+A(2,2)*B(2,2)
+      CASE(3)
+        C(1,1)=A(1,1)*B(1,1)+A(1,2)*B(2,1)+A(1,3)*B(3,1)
+        C(1,2)=A(1,1)*B(1,2)+A(1,2)*B(2,2)+A(1,3)*B(3,2)
+        C(1,2)=A(1,1)*B(1,3)+A(1,2)*B(2,3)+A(1,3)*B(3,3)        
+        C(2,1)=A(2,1)*B(1,1)+A(2,2)*B(2,1)+A(2,3)*B(3,1)
+        C(2,2)=A(2,1)*B(1,2)+A(2,2)*B(2,2)+A(2,3)*B(3,2)
+        C(2,3)=A(2,1)*B(1,3)+A(2,2)*B(2,3)+A(2,3)*B(3,3)
+        C(3,1)=A(3,1)*B(1,1)+A(3,2)*B(2,1)+A(3,3)*B(3,1)
+        C(3,2)=A(3,1)*B(1,2)+A(3,2)*B(2,2)+A(3,3)*B(3,2)
+        C(3,3)=A(3,1)*B(1,3)+A(3,2)*B(2,3)+A(3,3)*B(3,3)
+      CASE DEFAULT
+        CALL FLAG_ERROR("Invalid matrix size.",ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Invalid matrix sizes.",ERR,ERROR,*999)
+    ENDIF
 
     CALL EXITS("MATRIX_PRODUCT_SP")
     RETURN
@@ -1806,32 +1601,44 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Calculates and returns the matrix-prouct of the double precision matrix A*B in C.
   SUBROUTINE MATRIX_PRODUCT_DP(A,B,C,ERR,ERROR,*)
   
-    !#### Subroutine: MATRIX_PRODUCT_DP
-    !###  Description:
-    !###    Calculates and returns the matrix-prouct of the double precision matrix A*B in C.
-    !###  Parent-function: MATRIX_PRODUCT
-    !Author: Kumar Mithraratne
-        
     !Argument variables
-    REAL(DP), INTENT(IN) :: A(3,3),B(3,3)
-    REAL(DP), INTENT(OUT) :: C(3,3)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(DP), INTENT(IN) :: A(:,:) !<The A matrix
+    REAL(DP), INTENT(IN) :: B(:,:) !<The B matrix
+    REAL(DP), INTENT(OUT) :: C(:,:) !<On exit, the product matrix C=A*B
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
-    INTEGER(INTG) :: i,j,k 
         
     CALL ENTERS("MATRIX_PRODUCT_DP",ERR,ERROR,*999)
-
-    DO i=1,3,1
-      DO j=1,3,1
-        C(i,j)=0.0_DP
-	DO k=1,3,1	      
-	  C(i,j)=C(i,j)+A(i,k)*B(k,j) 
-	ENDDO  	    
-      ENDDO
-    ENDDO
+    
+   IF(SIZE(A,2)==SIZE(B,1).AND.SIZE(A,1)==SIZE(C,1).AND.SIZE(B,2)==SIZE(C,2)) THEN
+      SELECT CASE(SIZE(A,1))
+      CASE(1)
+        C(1,1)=A(1,1)*B(1,1)
+      CASE(2)
+        C(1,1)=A(1,1)*B(1,1)+A(1,2)*B(2,1)
+        C(1,2)=A(1,1)*B(1,2)+A(1,2)*B(2,2)
+        C(2,1)=A(2,1)*B(1,1)+A(2,2)*B(2,1)
+        C(2,2)=A(2,1)*B(1,2)+A(2,2)*B(2,2)
+      CASE(3)
+        C(1,1)=A(1,1)*B(1,1)+A(1,2)*B(2,1)+A(1,3)*B(3,1)
+        C(1,2)=A(1,1)*B(1,2)+A(1,2)*B(2,2)+A(1,3)*B(3,2)
+        C(1,2)=A(1,1)*B(1,3)+A(1,2)*B(2,3)+A(1,3)*B(3,3)        
+        C(2,1)=A(2,1)*B(1,1)+A(2,2)*B(2,1)+A(2,3)*B(3,1)
+        C(2,2)=A(2,1)*B(1,2)+A(2,2)*B(2,2)+A(2,3)*B(3,2)
+        C(2,3)=A(2,1)*B(1,3)+A(2,2)*B(2,3)+A(2,3)*B(3,3)
+        C(3,1)=A(3,1)*B(1,1)+A(3,2)*B(2,1)+A(3,3)*B(3,1)
+        C(3,2)=A(3,1)*B(1,2)+A(3,2)*B(2,2)+A(3,3)*B(3,2)
+        C(3,3)=A(3,1)*B(1,3)+A(3,2)*B(2,3)+A(3,3)*B(3,3)
+      CASE DEFAULT
+        CALL FLAG_ERROR("Invalid matrix size.",ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Invalid matrix sizes.",ERR,ERROR,*999)
+    ENDIF
 
     CALL EXITS("MATRIX_PRODUCT_DP")
     RETURN
@@ -1844,30 +1651,44 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns the transpose of a single precision matrix A in AT.
   SUBROUTINE MATRIX_TRANSPOSE_SP(A,AT,ERR,ERROR,*)
-  
-    !#### Subroutine: MATRIX_TRANSPOSE_SP
-    !###  Description:
-    !###    Returns the transpose of a single precision matrix Ain AT.
-    !###  Parent-function: MATRIX_TRANSPOSE
-    !Author: Kumar Mithraratne
-        
+          
     !Argument variables
-    REAL(SP), INTENT(IN) :: A(3,3)
-    REAL(SP), INTENT(OUT) :: AT(3,3)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(SP), INTENT(IN) :: A(:,:) !<The matrix to take the transpose of
+    REAL(SP), INTENT(OUT) :: AT(:,:) !<On exit, the transpose of the matrix
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
-    INTEGER(INTG) :: i,j
     
     CALL ENTERS("MATRIX_TRANSPOSE_SP",ERR,ERROR,*999)
 
-    DO i=1,3,1
-      DO j=1,3,1
-	AT(i,j)=A(j,i)
-      ENDDO
-    ENDDO
-
+    IF(SIZE(A,1)==SIZE(AT,2).AND.SIZE(A,2)==SIZE(AT,1)) THEN
+      SELECT CASE(SIZE(A,1))
+      CASE(1)
+        AT(1,1)=A(1,1)
+      CASE(2)
+        AT(1,1)=A(1,1)
+        AT(1,2)=A(2,1)
+        AT(2,1)=A(1,2)
+        AT(2,2)=A(2,2)
+      CASE(3)
+        AT(1,1)=A(1,1)
+        AT(1,2)=A(2,1)
+        AT(1,3)=A(3,1)
+        AT(2,1)=A(1,2)
+        AT(2,2)=A(2,2)
+        AT(2,3)=A(3,2)
+        AT(3,1)=A(1,3)
+        AT(3,2)=A(2,3)
+        AT(3,3)=A(3,3)
+      CASE DEFAULT
+        CALL FLAG_ERROR("Invalid matrix size.",ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Invalid matrix size.",ERR,ERROR,*999)
+    ENDIF
+ 
     CALL EXITS("MATRIX_TRANSPOSE_SP")
     RETURN
 999 CALL ERRORS("MATRIX_TRANSPOSE_SP",ERR,ERROR)
@@ -1879,30 +1700,44 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns the transpose of a double precision matrix A in AT.
   SUBROUTINE MATRIX_TRANSPOSE_DP(A,AT,ERR,ERROR,*)
-  
-    !#### Subroutine: MATRIX_TRANSPOSE_DP
-    !###  Description:
-    !###    Returns the transpose of a double precision matrix Ain AT.
-    !###  Parent-function: MATRIX_TRANSPOSE
-    !Author: Kumar Mithraratne
-        
+    
     !Argument variables
-    REAL(DP), INTENT(IN) :: A(3,3)
-    REAL(DP), INTENT(OUT) :: AT(3,3)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(DP), INTENT(IN) :: A(:,:) !<The matrix to take the transpose of
+    REAL(DP), INTENT(OUT) :: AT(:,:) !<On exit, the transpose of the matrix
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
-    INTEGER(INTG) :: i,j
         
     CALL ENTERS("MATRIX_TRANSPOSE_DP",ERR,ERROR,*999)
 
-    DO i=1,3,1
-      DO j=1,3,1
-	AT(i,j)=A(j,i)
-      ENDDO
-    ENDDO
-
+    IF(SIZE(A,1)==SIZE(AT,2).AND.SIZE(A,2)==SIZE(AT,1)) THEN
+      SELECT CASE(SIZE(A,1))
+      CASE(1)
+        AT(1,1)=A(1,1)
+      CASE(2)
+        AT(1,1)=A(1,1)
+        AT(1,2)=A(2,1)
+        AT(2,1)=A(1,2)
+        AT(2,2)=A(2,2)
+      CASE(3)
+        AT(1,1)=A(1,1)
+        AT(1,2)=A(2,1)
+        AT(1,3)=A(3,1)
+        AT(2,1)=A(1,2)
+        AT(2,2)=A(2,2)
+        AT(2,3)=A(3,2)
+        AT(3,1)=A(1,3)
+        AT(3,2)=A(2,3)
+        AT(3,3)=A(3,3)
+      CASE DEFAULT
+        CALL FLAG_ERROR("Invalid matrix size.",ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Invalid matrix size.",ERR,ERROR,*999)
+    ENDIF
+    
     CALL EXITS("MATRIX_TRANSPOSE_DP")
     RETURN
 999 CALL ERRORS("MATRIX_TRANSPOSE_DP",ERR,ERROR)
@@ -1914,26 +1749,13 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !#### Generic-Function: NORMALISE
-  !###  Description:
-  !###    Normalises a vector
-  !###  Child-functions: NORMALISE_SP, NORMALISE_DP
-
-  !
-  !================================================================================================================================
-  !
-  
+  !>Normalises a real single precision vector A.
   FUNCTION NORMALISE_SP(A,ERR,ERROR)
 
-    !#### Function: NORMALISE_SP
-    !###  Description:
-    !###    NORMALISE_SP normalises a real single precision vector A.
-    !###  Parent-function: NORMALISE
-
     !Argument variables
-    REAL(SP), INTENT(IN) :: A(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(SP), INTENT(IN) :: A(:) !<The vector to normalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
     REAL(SP) :: NORMALISE_SP(SIZE(A,1))
     !Local variables
@@ -1959,18 +1781,14 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Normalises a real double precision vector A.
   FUNCTION NORMALISE_DP(A,ERR,ERROR)
 
-    !#### Function: NORMALISE_DP
-    !###  Description:
-    !###    NORMALISE_DP normalises a real double precision vector A.
-    !###  Parent-function: NORMALISE
-
     !Argument variables
-    REAL(DP), INTENT(IN) :: A(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(DP), INTENT(IN) :: A(:) !<The vector to normalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
     REAL(DP) :: NORMALISE_DP(SIZE(A,1))
     !Local variables
@@ -1996,29 +1814,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-subroutine: SOLVE_SMALL_LINEAR_SYSTEM
-  !###  Description:
-  !###    Solves a small linear system Ax=b.
-  !###  Child-subroutines: SOLVE_SMALL_LINEAR_SYSTEM_SP,SOLVE_SMALL_LINEAR_SYSTEM_DP
 
-  !
-  !================================================================================================================================
-  !
-  
+  !>Finds the solution to a small single precision linear system Ax=b.
   SUBROUTINE SOLVE_SMALL_LINEAR_SYSTEM_SP(A,x,b,ERR,ERROR,*)
   
-    !#### Subroutine: SOLVE_SMALL_LINEAR_SYSTEM_SP
-    !###  Description:
-    !###    Finds the solution to a small single precision linear system Ax=b.
-    !###  Parent-subroutine: SOLVE_SMALL_LINEAR_SYSTEM
-    
     !Argument variables
-    REAL(SP), INTENT(IN) :: A(:,:)
-    REAL(SP), INTENT(OUT) :: x(:)
-    REAL(SP), INTENT(IN) :: b(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(SP), INTENT(IN) :: A(:,:) !<The A matrix
+    REAL(SP), INTENT(OUT) :: x(:) !<On exit, the solution vector x
+    REAL(SP), INTENT(IN) :: b(:) !<The RHS vector b
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     REAL(SP) :: AINV(SIZE(A,1),SIZE(A,2)),ADET
     
@@ -2054,20 +1859,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Finds the solution to a small double precision linear system Ax=b.
   SUBROUTINE SOLVE_SMALL_LINEAR_SYSTEM_DP(A,x,b,ERR,ERROR,*)
   
-    !#### Subroutine: SOLVE_SMALL_LINEAR_SYSTEM_DP
-    !###  Description:
-    !###    Finds the solution to a small double precision linear system Ax=b.
-    !###  Parent-subroutine: SOLVE_SMALL_LINEAR_SYSTEM
-    
     !Argument variables
-    REAL(DP), INTENT(IN) :: A(:,:)
-    REAL(DP), INTENT(OUT) :: x(:)
-    REAL(DP), INTENT(IN) :: b(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    REAL(DP), INTENT(IN) :: A(:,:) !<The A matrix
+    REAL(DP), INTENT(OUT) :: x(:) !<On exit, the solution vector x
+    REAL(DP), INTENT(IN) :: b(:) !<The RHS vector b
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     REAL(DP) :: AINV(SIZE(A,1),SIZE(A,2)),ADET
     
@@ -2105,3 +1906,4 @@ CONTAINS
   !
   
 END MODULE MATHS
+

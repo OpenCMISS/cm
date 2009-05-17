@@ -1,6 +1,6 @@
 !> \file
-!> $Id$
-!> \author Chris Bradley
+!> $Id: fluid_mechanics_routines.f90 177 2009-04-20 
+!> \author Sebastian Krittian
 !> \brief This module handles all fluid mechanics routines.
 !>
 !> \section LICENSE
@@ -17,7 +17,7 @@
 !> License for the specific language governing rights and limitations
 !> under the License.
 !>
-!> The Original Code is openCMISS
+!> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
@@ -44,8 +44,15 @@
 MODULE FLUID_MECHANICS_ROUTINES
 
   USE BASE_ROUTINES
+  !USE DARCY_EQUATIONS_ROUTINES
+  USE EQUATIONS_SET_CONSTANTS
+  USE ISO_VARYING_STRING
   USE KINDS
+  USE STOKES_FLUID_ROUTINES
+  USE PROBLEM_CONSTANTS
+  USE STRINGS
   USE TYPES
+
 
   IMPLICIT NONE
 
@@ -58,15 +65,425 @@ MODULE FLUID_MECHANICS_ROUTINES
   !Module variables
 
   !Interfaces
-
-!CONTAINS
-
-  !
-  !================================================================================================================================
-  !
-
-  !
-  !================================================================================================================================
-  !
   
+  PUBLIC FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_GET,FLUID_MECHANICS_PROBLEM_CLASS_TYPE_GET
+
+  PUBLIC FLUID_MECHANICS_FINITE_ELEMENT_JACOBIAN_EVALUATE,FLUID_MECHANICS_FINITE_ELEMENT_RESIDUAL_EVALUATE
+  
+  PUBLIC FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_SET,FLUID_MECHANICS_FINITE_ELEMENT_CALCULATE, &
+    & FLUID_MECHANICS_EQUATIONS_SET_SETUP,FLUID_MECHANICS_EQUATIONS_SET_SOLUTION_METHOD_SET, &
+    & FLUID_MECHANICS_PROBLEM_CLASS_TYPE_SET,FLUID_MECHANICS_PROBLEM_SETUP
+  
+CONTAINS
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the problem type and subtype for a fluid mechanics equation set class.
+  SUBROUTINE FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_GET(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE, &
+    & ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_TYPE !<On return, the equation type
+    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_SUBTYPE !<On return, the equation subtype
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    
+    CALL ENTERS("FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) THEN
+        EQUATIONS_TYPE=EQUATIONS_SET%TYPE
+        EQUATIONS_SUBTYPE=EQUATIONS_SET%SUBTYPE
+      ELSE
+        CALL FLAG_ERROR("Equations set is not the fluid mechanics type",ERR,ERROR,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_GET")
+    RETURN
+999 CALL ERRORS("FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_GET",ERR,ERROR)
+    CALL EXITS("FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_GET")
+    RETURN 1
+  END SUBROUTINE FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_GET
+
+  !
+  !================================================================================================================================
+  !
+
+! SEBK 20/04/09 - changed for Stokes flow
+
+  !>Sets/changes the problem type and subtype for a fluid mechanics equation set class.
+  SUBROUTINE FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_SET(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE, &
+    & ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    INTEGER(INTG), INTENT(IN) :: EQUATIONS_TYPE !<The equation type
+    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SUBTYPE !<The equation subtype
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("FLUID_MECHANICS_EQUATIONS_SET_CLASS_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      SELECT CASE(EQUATIONS_TYPE)
+      CASE(EQUATIONS_SET_STOKES_FLUID_TYPE)
+        CALL STOKES_FLUID_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SUBTYPE,ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_NAVIER_STOKES_FLUID_TYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
+        !CALL DARCY_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SUBTYPE,ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="Equations set equation type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_TYPE,"*",ERR,ERROR))// &
+          & " is not valid for a fluid mechanics equations set class."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_SET")
+    RETURN
+999 CALL ERRORS("FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_SET",ERR,ERROR)
+    CALL EXITS("FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_SET")
+    RETURN 1
+  END SUBROUTINE FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculates the element stiffness matries and rhs vector for the given element number for a fluid mechanics class finite element equation set.
+  SUBROUTINE FLUID_MECHANICS_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to calcualate
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("FLUID_MECHANICS_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      SELECT CASE(EQUATIONS_SET%TYPE)
+      CASE(EQUATIONS_SET_STOKES_FLUID_TYPE)
+        CALL STOKES_FLUID_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_NAVIER_STOKES_FLUID_TYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
+        !CALL DARCY_EQUATION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+          & " is not valid for a fluid mechanics equation set class."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("FLUID_MECHANICS_FINITE_ELEMENT_CALCULATE")
+    RETURN
+999 CALL ERRORS("FLUID_MECHANICS_FINITE_ELEMENT_CALCULATE",ERR,ERROR)
+    CALL EXITS("FLUID_MECHANICS_FINITE_ELEMENT_CALCULATE")
+    RETURN 1
+  END SUBROUTINE FLUID_MECHANICS_FINITE_ELEMENT_CALCULATE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluates the element Jacobian matrix for the given element number for a fluid mechanics class finite element equation set.
+  SUBROUTINE FLUID_MECHANICS_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to evaluate the Jacobian for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("FLUID_MECHANICS_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      SELECT CASE(EQUATIONS_SET%TYPE)
+      CASE(EQUATIONS_SET_STOKES_FLUID_TYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_NAVIER_STOKES_FLUID_TYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+          & " is not valid for a fluid mechanics equation set class."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("FLUID_MECHANICS_FINITE_ELEMENT_JACOBIAN_EVALUATE")
+    RETURN
+999 CALL ERRORS("FLUID_MECHANICS_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR)
+    CALL EXITS("FLUID_MECHANICS_FINITE_ELEMENT_JACOBIAN_EVALUATE")
+    RETURN 1
+  END SUBROUTINE FLUID_MECHANICS_FINITE_ELEMENT_JACOBIAN_EVALUATE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluates the element residual and rhs vectors for the given element number for a fluid mechanics class finite element equation set.
+  SUBROUTINE FLUID_MECHANICS_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to evaluate the residual for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("FLUID_MECHANICS_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      SELECT CASE(EQUATIONS_SET%TYPE)
+      CASE(EQUATIONS_SET_STOKES_FLUID_TYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_NAVIER_STOKES_FLUID_TYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+          & " is not valid for a fluid mechanics equation set class."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("FLUID_MECHANICS_FINITE_ELEMENT_RESIDUAL_EVALUATE")
+    RETURN
+999 CALL ERRORS("FLUID_MECHANICS_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR)
+    CALL EXITS("FLUID_MECHANICS_FINITE_ELEMENT_RESIDUAL_EVALUATE")
+    RETURN 1
+  END SUBROUTINE FLUID_MECHANICS_FINITE_ELEMENT_RESIDUAL_EVALUATE
+
+  !
+  !================================================================================================================================
+  !
+
+! SEBK 20/04/09 - changed for Stokes flow
+
+  !>Sets up the equations set for a fluid mechanics equations set class.
+  SUBROUTINE FLUID_MECHANICS_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    TYPE(EQUATIONS_SET_SETUP_TYPE), INTENT(INOUT) :: EQUATIONS_SET_SETUP !<The equations set setup information
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("FLUID_MECHANICS_EQUATIONS_SET_SETUP",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      SELECT CASE(EQUATIONS_SET%TYPE)
+      CASE(EQUATIONS_SET_STOKES_FLUID_TYPE)
+        CALL STOKES_FLUID_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_NAVIER_STOKES_FLUID_TYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
+        !CALL DARCY_EQUATION_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="Equation set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+          & " is not valid for a fluid mechanics equation set class."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("FLUID_MECHANICS_EQUATIONS_SET_SETUP")
+    RETURN
+999 CALL ERRORS("FLUID_MECHANICS_EQUATIONS_SET_SETUP",ERR,ERROR)
+    CALL EXITS("FLUID_MECHANICS_EQUATIONS_SET_SETUP")
+    RETURN 1
+  END SUBROUTINE FLUID_MECHANICS_EQUATIONS_SET_SETUP
+  
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the solution method for a fluid mechanics equation set class.
+  SUBROUTINE FLUID_MECHANICS_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the solution method for
+    INTEGER(INTG), INTENT(IN) :: SOLUTION_METHOD !<The solution method to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("FLUID_MECHANICS_EQUATIONS_SOLUTION_METHOD_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      SELECT CASE(EQUATIONS_SET%TYPE)
+      CASE(EQUATIONS_SET_STOKES_FLUID_TYPE)
+        CALL STOKES_FLUID_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_NAVIER_STOKES_FLUID_TYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="Equations set equation type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+          & " is not valid for a fluid mechancis equations set class."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("FLUID_MECHANICS_EQUATIONS_SET_SOLUTION_METHOD_SET")
+    RETURN
+999 CALL ERRORS("FLUID_MECHANICS_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR)
+    CALL EXITS("FLUID_MECHANICS_EQUATIONS_SET_SOLUTION_METHOD_SET")
+    RETURN 1
+  END SUBROUTINE FLUID_MECHANICS_EQUATIONS_SET_SOLUTION_METHOD_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the problem type and subtype for a fluid mechanics problem class.
+  SUBROUTINE FLUID_MECHANICS_PROBLEM_CLASS_TYPE_GET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_EQUATION_TYPE !<On return, the problem type
+    INTEGER(INTG), INTENT(OUT) :: PROBLEM_SUBTYPE !<On return, the proboem subtype
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    
+    CALL ENTERS("FLUID_MECHANICS_PROBLEM_CLASS_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(PROBLEM)) THEN
+      IF(PROBLEM%CLASS==PROBLEM_FLUID_MECHANICS_CLASS) THEN
+        PROBLEM_EQUATION_TYPE=PROBLEM%TYPE
+        PROBLEM_SUBTYPE=PROBLEM%SUBTYPE
+      ELSE
+        CALL FLAG_ERROR("Problem is not fluid mechanics class",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Problem is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("FLUID_MECHANICS_PROBLEM_CLASS_TYPE_GET")
+    RETURN
+999 CALL ERRORS("FLUID_MECHANICS_PROBLEM_CLASS_TYPE_GET",ERR,ERROR)
+    CALL EXITS("FLUID_MECHANICS_PROBLEM_CLASS_TYPE_GET")
+    RETURN 1
+  END SUBROUTINE FLUID_MECHANICS_PROBLEM_CLASS_TYPE_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the problem type and subtype for a fluid mechanics problem class.
+  SUBROUTINE FLUID_MECHANICS_PROBLEM_CLASS_TYPE_SET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem
+    INTEGER(INTG), INTENT(IN) :: PROBLEM_EQUATION_TYPE !<The problem type
+    INTEGER(INTG), INTENT(IN) :: PROBLEM_SUBTYPE !<The proboem subtype
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("FLUID_MECHANICS_PROBLEM_CLASS_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(PROBLEM)) THEN
+      SELECT CASE(PROBLEM_EQUATION_TYPE)
+      CASE(PROBLEM_STOKES_FLUID_TYPE)
+        CALL STOKES_FLUID_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*999)
+      CASE(PROBLEM_NAVIER_STOKES_FLUID_TYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(PROBLEM_DARCY_EQUATION_TYPE)
+        !CALL DARCY_EQUATION_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="Problem equation type "//TRIM(NUMBER_TO_VSTRING(PROBLEM_EQUATION_TYPE,"*",ERR,ERROR))// &
+          & " is not valid for a fluid mechanics problem class."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Problem is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("FLUID_MECHANICS_PROBLEM_CLASS_TYPE_SET")
+    RETURN
+999 CALL ERRORS("FLUID_MECHANICS_PROBLEM_CLASS_TYPE_SET",ERR,ERROR)
+    CALL EXITS("FLUID_MECHANICS_PROBLEM_CLASS_TYPE_SET")
+    RETURN 1
+  END SUBROUTINE FLUID_MECHANICS_PROBLEM_CLASS_TYPE_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets up the problem for a fluid mechanics problem class.
+  SUBROUTINE FLUID_MECHANICS_PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem
+    TYPE(PROBLEM_SETUP_TYPE), INTENT(INOUT) :: PROBLEM_SETUP !<The problem setup information
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("FLUID_MECHANICS_PROBLEM_SETUP",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(PROBLEM)) THEN
+      SELECT CASE(PROBLEM%TYPE)
+      CASE(PROBLEM_STOKES_FLUID_TYPE)
+        CALL STOKES_FLUID_PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
+      CASE(PROBLEM_NAVIER_STOKES_FLUID_TYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(PROBLEM_DARCY_EQUATION_TYPE)
+        !CALL DARCY_EQUATION_PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
+          & " is not valid for a fluid mechanics problem class."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("FLUID_MECHANICS_PROBLEM_SETUP")
+    RETURN
+999 CALL ERRORS("FLUID_MECHANICS_PROBLEM_SETUP",ERR,ERROR)
+    CALL EXITS("FLUID_MECHANICS_PROBLEM_SETUP")
+    RETURN 1
+  END SUBROUTINE FLUID_MECHANICS_PROBLEM_SETUP
+
+  !
+  !================================================================================================================================
+  !
+
 END MODULE FLUID_MECHANICS_ROUTINES
+

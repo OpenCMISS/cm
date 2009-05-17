@@ -17,7 +17,7 @@
 !> License for the specific language governing rights and limitations
 !> under the License.
 !>
-!> The Original Code is openCMISS
+!> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
@@ -110,8 +110,8 @@ MODULE TREES
 
   PUBLIC TREE_DUPLICATES_ALLOWED_TYPE,TREE_NO_DUPLICATES_ALLOWED
   
-  PUBLIC TREE_CREATE_FINISH,TREE_CREATE_START,TREE_DESTROY,TREE_DETACH_AND_DESTROY,TREE_INSERT_TYPE_SET,TREE_ITEM_DELETE, &
-    & TREE_ITEM_INSERT,TREE_NODE_KEY_GET,TREE_NODE_VALUE_GET,TREE_NODE_VALUE_SET,TREE_OUTPUT,TREE_SEARCH
+  PUBLIC TREE_CREATE_FINISH,TREE_CREATE_START,TREE_DESTROY,TREE_DETACH,TREE_DETACH_AND_DESTROY,TREE_INSERT_TYPE_SET, &
+    & TREE_ITEM_DELETE,TREE_ITEM_INSERT,TREE_NODE_KEY_GET,TREE_NODE_VALUE_GET,TREE_NODE_VALUE_SET,TREE_OUTPUT,TREE_SEARCH 
 
 CONTAINS
   
@@ -219,6 +219,50 @@ CONTAINS
     CALL EXITS("TREE_DESTROY")
     RETURN 1
   END SUBROUTINE TREE_DESTROY
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Detaches the tree values and returns them as a pointer to the an array
+  SUBROUTINE TREE_DETACH(TREE,NUMBER_IN_TREE,TREE_VALUES,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(TREE_TYPE), POINTER :: TREE !<A pointer to the tree to detach
+    INTEGER(INTG), INTENT(OUT) :: NUMBER_IN_TREE !<On exit, the number in the array that has been detached
+    INTEGER(INTG), POINTER :: TREE_VALUES(:) !<On exit, a pointer to the dettached tree values. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
+    !Local Variables
+    
+    CALL ENTERS("TREE_DETACH",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(TREE)) THEN
+      IF(TREE%TREE_FINISHED) THEN
+        IF(ASSOCIATED(TREE_VALUES)) THEN
+          CALL FLAG_ERROR("Tree values is already associated.",ERR,ERROR,*998)
+        ELSE
+          NULLIFY(TREE_VALUES)
+          ALLOCATE(TREE_VALUES(TREE%NUMBER_IN_TREE),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate tree values.",ERR,ERROR,*999)
+          NUMBER_IN_TREE=0
+          CALL TREE_DETACH_IN_ORDER(TREE,TREE%ROOT,NUMBER_IN_TREE,TREE_VALUES,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Tree has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Tree is not associated.",ERR,ERROR,*998)
+    ENDIF
+
+    CALL EXITS("TREE_DETACH")
+    RETURN
+999 IF(ASSOCIATED(TREE_VALUES)) DEALLOCATE(TREE_VALUES)
+    NUMBER_IN_TREE=0
+998 CALL ERRORS("TREE_DETACH",ERR,ERROR)
+    CALL EXITS("TREE_DETACH")
+    RETURN 1
+  END SUBROUTINE TREE_DETACH
 
   !
   !================================================================================================================================

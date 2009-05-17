@@ -17,7 +17,7 @@
 !> License for the specific language governing rights and limitations
 !> under the License.
 !>
-!> The Original Code is openCMISS
+!> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
@@ -123,47 +123,21 @@ MODULE COORDINATE_ROUTINES
     MODULE PROCEDURE COORDINATE_CONVERT_FROM_RC_SP
   END INTERFACE !COORDINATE_CONVERT_FROM_RC
 
+  !>COORDINATE_CONVERT_TO_RC performs a coordinate transformation from a coordinate system identified by COORDINATE_SYSTEM
+  !>at the point X(:) to the returned point Z(:) in rectangular cartesian coordinates.
   INTERFACE COORDINATE_CONVERT_TO_RC
     MODULE PROCEDURE COORDINATE_CONVERT_TO_RC_DP
     MODULE PROCEDURE COORDINATE_CONVERT_TO_RC_SP
   END INTERFACE !COORDINATE_CONVERT_TO_RC
 
+  !>Calculates the difference (or delta) between two points in a coordinate system. Discontinuities for polar coordinate
+  !>systems are accounted for
   INTERFACE COORDINATE_DELTA_CALCULATE
     MODULE PROCEDURE COORDINATE_DELTA_CALCULATE_DP
     !MODULE PROCEDURE COORDINATE_DELTA_CALCULATE_SP
   END INTERFACE !COORDINATE_DELTA_CALCULATE
 
-  INTERFACE COORDINATE_SYSTEM_DIMENSION_SET
-    MODULE PROCEDURE COORDINATE_SYSTEM_DIMENSION_SET_NUMBER
-    MODULE PROCEDURE COORDINATE_SYSTEM_DIMENSION_SET_PTR
-  END INTERFACE !COORDINATE_SYSTEM_DIMENSION_SET
-
-  INTERFACE COORDINATE_SYSTEM_FOCUS_SET
-    MODULE PROCEDURE COORDINATE_SYSTEM_FOCUS_SET_NUMBER
-    MODULE PROCEDURE COORDINATE_SYSTEM_FOCUS_SET_PTR
-  END INTERFACE !COORDINATE_SYSTEM_FOCUS_SET
-
-  INTERFACE COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET
-    MODULE PROCEDURE COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET_NUMBER
-    MODULE PROCEDURE COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET_PTR
-  END INTERFACE !COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET
-
-  INTERFACE COORDINATE_SYSTEM_TYPE_SET
-    MODULE PROCEDURE COORDINATE_SYSTEM_TYPE_SET_NUMBER
-    MODULE PROCEDURE COORDINATE_SYSTEM_TYPE_SET_PTR
-  END INTERFACE !COORDINATE_SYSTEM_TYPE_SET
-
-  INTERFACE COORDINATE_SYSTEM_ORIGIN_SET
-    MODULE PROCEDURE COORDINATE_SYSTEM_ORIGIN_SET_NUMBER
-    MODULE PROCEDURE COORDINATE_SYSTEM_ORIGIN_SET_PTR
-  END INTERFACE !COORDINATE_SYSTEM_ORIGIN_SET
-
-  INTERFACE COORDINATE_SYSTEM_ORIENTATION_SET
-    MODULE PROCEDURE COORDINATE_SYSTEM_ORIENTATION_SET_NUMBER
-    MODULE PROCEDURE COORDINATE_SYSTEM_ORIENTATION_SET_PTR
-  END INTERFACE !COORDINATE_SYSTEM_ORIENTATION_SET
-
-  !!TODO:: CHANGE NAME TO SOMETHING MORE MEANINGFULL?
+  !>Calculates DX(:)/DZ(I) at X, where Z(I) are rectangular cartesian and X(:) are curvilinear coordinates defined by COORDINATE_SYSTEM. \todo CHANGE NAME TO SOMETHING MORE MEANINGFULL?
   INTERFACE DXZ
     MODULE PROCEDURE DXZ_DP
     !MODULE PROCEDURE DXZ_SP
@@ -185,11 +159,6 @@ MODULE COORDINATE_ROUTINES
     MODULE PROCEDURE COORDINATE_DERIVATIVE_CONVERT_TO_RC_DP
     MODULE PROCEDURE COORDINATE_DERIVATIVE_CONVERT_TO_RC_SP
   END INTERFACE !COORDINATE_DERIVATIVE_CONVERT_TO_RC
-
-  INTERFACE COORDINATE_SYSTEM_DESTROY
-    MODULE PROCEDURE COORDINATE_SYSTEM_DESTROY_NUMBER
-    MODULE PROCEDURE COORDINATE_SYSTEM_DESTROY_PTR
-  END INTERFACE !COORDINATE_SYSTEM_DESTROY
 
   PUBLIC COORDINATE_RECTANGULAR_CARTESIAN_TYPE,COORDINATE_CYCLINDRICAL_POLAR_TYPE,COORDINATE_SPHERICAL_POLAR_TYPE, &
     & COORDINATE_PROLATE_SPHEROIDAL_TYPE,COORDINATE_OBLATE_SPHEROIDAL_TYPE
@@ -234,7 +203,7 @@ CONTAINS
     COORDINATE_CONVERT_FROM_RC_DP=0.0_DP
 
     IF(SIZE(Z,1)<COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS) &
-      & CALL FLAG_ERROR("Size of Z is less than the number of dimensions",ERR,ERROR,*999)
+      & CALL FLAG_ERROR("Size of Z is less than the number of dimensions.",ERR,ERROR,*999)
     
     SELECT CASE(COORDINATE_SYSTEM%TYPE)
     CASE(COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
@@ -249,7 +218,7 @@ CONTAINS
         COORDINATE_CONVERT_FROM_RC_DP(2)=ATAN2(Z(1),Z(2))
         COORDINATE_CONVERT_FROM_RC_DP(3)=Z(3)
       CASE DEFAULT
-        CALL FLAG_ERROR("Invalid number of coordinates",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Invalid number of coordinates.",ERR,ERROR,*999)
       END SELECT
       IF(COORDINATE_CONVERT_FROM_RC_DP(2)<0.0_DP) &
         & COORDINATE_CONVERT_FROM_RC_DP(2)=COORDINATE_CONVERT_FROM_RC_DP(2)+2.0_DP*PI !reference coordinate 0->2*pi
@@ -268,7 +237,7 @@ CONTAINS
           COORDINATE_CONVERT_FROM_RC_DP(3)=0.0_DP
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Invalid number of coordinates",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Invalid number of coordinates.",ERR,ERROR,*999)
       ENDIF
     CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE)
       FOCUS=COORDINATE_SYSTEM%FOCUS
@@ -284,7 +253,7 @@ CONTAINS
           A8=ASIN(A7)
         ELSE
           A8=0.0_DP
-          CALL FLAG_WARNING("Put A8=0 since ABS(A8)>1",ERR,ERROR,*999)
+          CALL FLAG_WARNING("Put A8=0 since ABS(A8)>1.",ERR,ERROR,*999)
         ENDIF
         IF((Z(3)==0.0_DP).OR.(A6==0.0_DP).OR.(A7==0.0_DP)) THEN
           A9=0.0_DP
@@ -293,7 +262,7 @@ CONTAINS
             A9=Z(3)/(FOCUS*A6*A7)
           ELSE
             A9=0.0_DP
-            CALL FLAG_WARNING("Put A9=0 since A6*A7=0",ERR,ERROR,*999)
+            CALL FLAG_WARNING("Put A9=0 since A6*A7=0.",ERR,ERROR,*999)
           ENDIF
           IF(A9>=1.0_DP) THEN
             A9=PI/2.0_DP
@@ -315,12 +284,12 @@ CONTAINS
           COORDINATE_CONVERT_FROM_RC_DP(3)=PI-A9
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Invalid number of coordinates",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Invalid number of coordinates.",ERR,ERROR,*999)
       ENDIF
     CASE(COORDINATE_OBLATE_SPHEROIDAL_TYPE)
-      CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
     CASE DEFAULT
-      CALL FLAG_ERROR("Invalid coordinate type",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Invalid coordinate type.",ERR,ERROR,*999)
     END SELECT
 
     CALL EXITS("COORDINATE_CONVERT_FROM_RC_DP")
@@ -333,22 +302,17 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>COORDINATE_CONVERT_FROM_RC_SP performs a coordinate transformation from a rectangular cartesian coordinate at the
+  !>point with coordinate Z(:) to the returned point with coordinate X(:) in the coordinate system identified by
+  !>COORDINATE_SYSTEM for single precision coordinates.
   FUNCTION COORDINATE_CONVERT_FROM_RC_SP(COORDINATE_SYSTEM,Z,ERR,ERROR)
   
-    !#### Function: COORDINATE_CONVERT_FROM_RC_SP
-    !###  Type: REAL(SP)(SIZE(Z,1))
-    !###  Description:
-    !###    COORDINATE_CONVERT_FROM_RC_SP performs a coordinate transformation from a rectangular cartesian coordinate at the
-    !###    point with coordinate Z(:) to the returned point with coordinate X(:) in the coordinate system identified by
-    !###    COORDINATE_SYSTEM for single precision coordinates.
-    !###  Parent-function: COORDINATE_CONVERT_FROM_RC
-    
     !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM
-    REAL(SP), INTENT(IN) :: Z(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM !<The coordinate system to convert from RC to
+    REAL(SP), INTENT(IN) :: Z(:) !<The coordinate to convert from rectangular cartesian
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
     REAL(SP) :: COORDINATE_CONVERT_FROM_RC_SP(SIZE(Z,1))
     !Local variables
@@ -359,7 +323,7 @@ CONTAINS
     COORDINATE_CONVERT_FROM_RC_SP=0.0_SP
     
     IF(SIZE(Z,1)<COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS) &
-      & CALL FLAG_ERROR("Size of Z is less than the number of dimensions",ERR,ERROR,*999)
+      & CALL FLAG_ERROR("Size of Z is less than the number of dimensions.",ERR,ERROR,*999)
     
     SELECT CASE(COORDINATE_SYSTEM%TYPE)
     CASE(COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
@@ -374,7 +338,7 @@ CONTAINS
         COORDINATE_CONVERT_FROM_RC_SP(2)=ATAN2(Z(1),Z(2))
         COORDINATE_CONVERT_FROM_RC_SP(3)=Z(3)
       CASE DEFAULT
-        CALL FLAG_ERROR("Invalid number of coordinates",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Invalid number of coordinates.",ERR,ERROR,*999)
       END SELECT
       IF(COORDINATE_CONVERT_FROM_RC_SP(2)<0.0_SP)  &
         & COORDINATE_CONVERT_FROM_RC_SP(2)=COORDINATE_CONVERT_FROM_RC_SP(2)+2.0_SP*REAL(PI,SP) !reference coordinate 0->2*pi
@@ -393,7 +357,7 @@ CONTAINS
           COORDINATE_CONVERT_FROM_RC_SP(3)=0.0_SP
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Invalid number of coordinates",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Invalid number of coordinates.",ERR,ERROR,*999)
       ENDIF
     CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE)
       FOCUS=REAL(COORDINATE_SYSTEM%FOCUS,SP)
@@ -409,7 +373,7 @@ CONTAINS
           A8=ASIN(A7)
         ELSE
           A8=0.0_SP
-          CALL FLAG_WARNING("Put A8=0 since ABS(A8)>1",ERR,ERROR,*999)
+          CALL FLAG_WARNING("Put A8=0 since ABS(A8)>1.",ERR,ERROR,*999)
         ENDIF
         IF((Z(3)==0.0_SP).OR.(A6==0.0_SP).OR.(A7==0.0_SP)) THEN
           A9=0.0_SP
@@ -418,7 +382,7 @@ CONTAINS
             A9=Z(3)/(FOCUS*A6*A7)
           ELSE
             A9=0.0_SP
-            CALL FLAG_WARNING("Put A9=0 since A6*A7=0",ERR,ERROR,*999)
+            CALL FLAG_WARNING("Put A9=0 since A6*A7=0.",ERR,ERROR,*999)
           ENDIF
           IF(A9>=1.0_SP) THEN
             A9=REAL(PI,SP)/2.0_SP
@@ -441,12 +405,12 @@ CONTAINS
           COORDINATE_CONVERT_FROM_RC_SP(3)=REAL(PI,SP)-A9
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Invalid number of coordinates",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Invalid number of coordinates.",ERR,ERROR,*999)
       ENDIF
     CASE(COORDINATE_OBLATE_SPHEROIDAL_TYPE)
-      CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
     CASE DEFAULT
-      CALL FLAG_ERROR("Invalid coordinate type",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Invalid coordinate type.",ERR,ERROR,*999)
     END SELECT
 
     CALL EXITS("COORDINATE_CONVERT_FROM_RC_SP")
@@ -459,32 +423,17 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !#### Generic-Function: COORDINATE_CONVERT_TO_RC
-  !###  Description:
-  !###    COORDINATE_CONVERT_TO_RC performs a coordinate transformation from a coordinate system identified by COORDINATE_SYSTEM
-  !###    at the point X(:) to the returned point Z(:) in rectangular cartesian coordinates.
-  !###  Child-functions: COORDINATE_CONVERT_TO_RC_DP,COORDINATE_CONVERT_TO_RC_SP
 
-  !
-  !================================================================================================================================
-  !
-  
+  !>COORDINATE_CONVERT_TO_RC_DP performs a coordinate transformation from a coordinate system identified by
+  !>COORDINATE_SYSTEM at the point X(:) to the returned point Z(:) in rectangular cartesian coordinates for
+  !>double precision coordinates.
   FUNCTION COORDINATE_CONVERT_TO_RC_DP(COORDINATE_SYSTEM,X,ERR,ERROR)
   
-    !#### Function: COORDINATE_CONVERT_TO_RC_DP
-    !###  Type: REAL(DP)(SIZE(X,1))
-    !###  Description:
-    !###    COORDINATE_CONVERT_TO_RC_DP performs a coordinate transformation from a coordinate system identified by
-    !###    COORDINATE_SYSTEM at the point X(:) to the returned point Z(:) in rectangular cartesian coordinates for
-    !###    double precision coordinates.
-    !###  Parent-function: COORDINATE_CONVERT_TO_RC
-    
     !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM
-    REAL(DP), INTENT(IN) :: X(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM !<The coordinate system to convert to rectangular cartesian
+    REAL(DP), INTENT(IN) :: X(:) !<The coordiante to convert
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error coode
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
     REAL(DP) :: COORDINATE_CONVERT_TO_RC_DP(SIZE(X,1))
     !Local variables
@@ -495,7 +444,7 @@ CONTAINS
     COORDINATE_CONVERT_TO_RC_DP=0.0_DP
 
     IF(SIZE(X,1)<COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS) &
-      & CALL FLAG_ERROR("Size of X is less than the number of dimensions",ERR,ERROR,*999)
+      & CALL FLAG_ERROR("Size of X is less than the number of dimensions.",ERR,ERROR,*999)
 
     SELECT CASE(COORDINATE_SYSTEM%TYPE)
     CASE(COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
@@ -510,7 +459,7 @@ CONTAINS
         COORDINATE_CONVERT_TO_RC_DP(2)=X(1)*SIN(X(2))
         COORDINATE_CONVERT_TO_RC_DP(3)=X(3)
       CASE DEFAULT
-        CALL FLAG_ERROR("Invalid number of coordinates",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Invalid number of coordinates.",ERR,ERROR,*999)
       END SELECT
     CASE(COORDINATE_SPHERICAL_POLAR_TYPE)
       IF(COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS==3) THEN  
@@ -518,7 +467,7 @@ CONTAINS
         COORDINATE_CONVERT_TO_RC_DP(2)=X(1)*SIN(X(2))*COS(X(3))
         COORDINATE_CONVERT_TO_RC_DP(3)=X(1)*SIN(X(3))
       ELSE
-        CALL FLAG_ERROR("Invalid number of coordinates",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Invalid number of coordinates.",ERR,ERROR,*999)
       ENDIF
     CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE)
       IF(COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS==3) THEN
@@ -527,7 +476,7 @@ CONTAINS
         COORDINATE_CONVERT_TO_RC_DP(2)=FOCUS*SINH(X(1))*SIN(X(2))*COS(X(3))
         COORDINATE_CONVERT_TO_RC_DP(3)=FOCUS*SINH(X(1))*SIN(X(2))*SIN(X(3))
       ELSE
-        CALL FLAG_ERROR("Invalid number of coordinates",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Invalid number of coordinates.",ERR,ERROR,*999)
       ENDIF
     CASE(COORDINATE_OBLATE_SPHEROIDAL_TYPE)
       IF(COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS==3) THEN
@@ -536,10 +485,10 @@ CONTAINS
         COORDINATE_CONVERT_TO_RC_DP(2)=FOCUS*SINH(X(1))*SIN(X(2))
         COORDINATE_CONVERT_TO_RC_DP(3)=FOCUS*COSH(X(1))*COS(X(2))*SIN(X(3))
       ELSE
-        CALL FLAG_ERROR("Invalid number of coordinates",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Invalid number of coordinates.",ERR,ERROR,*999)
       ENDIF
     CASE DEFAULT
-      CALL FLAG_ERROR("Invalid coordinate type",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Invalid coordinate type.",ERR,ERROR,*999)
     END SELECT
 
     CALL EXITS("COORDINATE_CONVERT_TO_RC_DP")
@@ -552,22 +501,17 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>COORDINATE_CONVERT_TO_RC_SP performs a coordinate transformation from a coordinate system identified by
+  !>COORDINATE_SYSTEM at the point X(:) to the returned point Z(:) in rectangular cartesian coordinates for
+  !>single precision coordinates.
   FUNCTION COORDINATE_CONVERT_TO_RC_SP(COORDINATE_SYSTEM,X,ERR,ERROR)
   
-    !#### Function: COORDINATE_CONVERT_TO_RC_SP
-    !###  Type: REAL(SP)(SIZE(X,1))
-    !###  Description:
-    !###    COORDINATE_CONVERT_TO_RC_SP performs a coordinate transformation from a coordinate system identified by
-    !###    COORDINATE_SYSTEM at the point X(:) to the returned point Z(:) in rectangular cartesian coordinates for
-    !###    single precision coordinates.
-    !###  Parent-function: COORDINATE_CONVERT_TO_RC
-    
     !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM
-    REAL(SP), INTENT(IN) :: X(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM !<The coordinate system to convert to rectangular cartesian
+    REAL(SP), INTENT(IN) :: X(:) !<The coordinate to convert
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
     REAL(SP) :: COORDINATE_CONVERT_TO_RC_SP(SIZE(X,1))
     !Local variables
@@ -578,7 +522,7 @@ CONTAINS
     COORDINATE_CONVERT_TO_RC_SP=0.0_SP
 
     IF(SIZE(X,1)<COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS) &
-      & CALL FLAG_ERROR("Size of X is less than the number of dimensions",ERR,ERROR,*999)
+      & CALL FLAG_ERROR("Size of X is less than the number of dimensions.",ERR,ERROR,*999)
 
     SELECT CASE(COORDINATE_SYSTEM%TYPE)
     CASE(COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
@@ -593,7 +537,7 @@ CONTAINS
         COORDINATE_CONVERT_TO_RC_SP(2)=X(1)*SIN(X(2))
         COORDINATE_CONVERT_TO_RC_SP(3)=X(3)
       CASE DEFAULT
-        CALL FLAG_ERROR("Invalid number of coordinates",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Invalid number of coordinates.",ERR,ERROR,*999)
       END SELECT
     CASE(COORDINATE_SPHERICAL_POLAR_TYPE)
       IF(COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS==3) THEN  
@@ -601,7 +545,7 @@ CONTAINS
         COORDINATE_CONVERT_TO_RC_SP(2)=X(1)*SIN(X(2))*COS(X(3))
         COORDINATE_CONVERT_TO_RC_SP(3)=X(1)*SIN(X(3))
       ELSE
-        CALL FLAG_ERROR("Invalid number of coordinates",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Invalid number of coordinates.",ERR,ERROR,*999)
       ENDIF
     CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE)
       IF(COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS==3) THEN
@@ -610,7 +554,7 @@ CONTAINS
         COORDINATE_CONVERT_TO_RC_SP(2)=FOCUS*SINH(X(1))*SIN(X(2))*COS(X(3))
         COORDINATE_CONVERT_TO_RC_SP(3)=FOCUS*SINH(X(1))*SIN(X(2))*SIN(X(3))
       ELSE
-        CALL FLAG_ERROR("Invalid number of coordinates",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Invalid number of coordinates.",ERR,ERROR,*999)
       ENDIF
     CASE(COORDINATE_OBLATE_SPHEROIDAL_TYPE)
       IF(COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS==3) THEN
@@ -619,10 +563,10 @@ CONTAINS
         COORDINATE_CONVERT_TO_RC_SP(2)=FOCUS*SINH(X(1))*SIN(X(2))
         COORDINATE_CONVERT_TO_RC_SP(3)=FOCUS*COSH(X(1))*COS(X(2))*SIN(X(3))
       ELSE
-        CALL FLAG_ERROR("Invalid number of coordinates",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Invalid number of coordinates.",ERR,ERROR,*999)
       ENDIF
     CASE DEFAULT
-      CALL FLAG_ERROR("Invalid coordinate type",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Invalid coordinate type.",ERR,ERROR,*999)
     END SELECT
 
     CALL EXITS("COORDINATE_CONVERT_TO_RC_SP")
@@ -636,31 +580,16 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !#### Generic-Function: COORDINATE_DELTA_CALCULATE
-  !###  Description:
-  !###    Calculates the difference (or delta) between two points in a coordinate system. Discontinuities for polar coordinate
-  !###    systems are accounted for
-  !###  Child-functions: COORDINATE_DELTA_CALCULATE_DP,COORDINATE_DELTA_CALCUALTE_SP
-
-  !
-  !================================================================================================================================
-  !
-  
+  !>Calculates the difference (or detlta) between the point X and the point Y i.e., Y-X, in the given coordinate system.
+  !>0->2Pi discontinuities with polar coordinates are accounted for.
   FUNCTION COORDINATE_DELTA_CALCULATE_DP(COORDINATE_SYSTEM,X,Y,ERR,ERROR)
   
-    !#### Function: COORDINATE_DELTA_CALCULATE_DP
-    !###  Type: REAL(DP)(SIZE(X,1))
-    !###  Description:
-    !###    Calculates the difference (or detlta) between the point X and the point Y i.e., Y-X, in the given coordinate system.
-    !###    0->2Pi discontinuities with polar coordinates are accounted for.
-    !###  Parent-function: COORDINATE_DELTA_CALCULATE
-    
     !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM
-    REAL(DP), INTENT(IN) :: X(:)
-    REAL(DP), INTENT(IN) :: Y(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM !<The coordinate system to calculate the delta for
+    REAL(DP), INTENT(IN) :: X(:) !<The first coordinate
+    REAL(DP), INTENT(IN) :: Y(:) !<The second coordinate
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function variable
     REAL(DP) :: COORDINATE_DELTA_CALCULATE_DP(SIZE(X,1))
     !Local variables
@@ -670,10 +599,10 @@ CONTAINS
     COORDINATE_DELTA_CALCULATE_DP=0.0_DP
 
     IF(SIZE(X,1)<COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS) &
-      & CALL FLAG_ERROR("Size of X is less than the number of dimensions",ERR,ERROR,*999)
+      & CALL FLAG_ERROR("Size of X is less than the number of dimensions.",ERR,ERROR,*999)
 
     IF(SIZE(X,1)/=SIZE(Y,1)) &
-      & CALL FLAG_ERROR("Size of X is different to the size of Y",ERR,ERROR,*999)
+      & CALL FLAG_ERROR("Size of X is different to the size of Y.",ERR,ERROR,*999)
    
     COORDINATE_DELTA_CALCULATE_DP(1:COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS)=Y(1:COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS)- &
       & X(1:COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS)
@@ -681,15 +610,15 @@ CONTAINS
     CASE(COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
       !Do nothing
     CASE(COORDINATE_CYCLINDRICAL_POLAR_TYPE)
-      CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
     CASE(COORDINATE_SPHERICAL_POLAR_TYPE)
-      CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
     CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE)
-      CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
     CASE(COORDINATE_OBLATE_SPHEROIDAL_TYPE)
-      CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
     CASE DEFAULT
-      CALL FLAG_ERROR("Invalid coordinate type",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Invalid coordinate type.",ERR,ERROR,*999)
     END SELECT
 
     CALL EXITS("COORDINATE_DELTA_CALCULATE_DP")
@@ -768,7 +697,7 @@ CONTAINS
                 ENDDO !mi
               CASE DEFAULT
                 LOCAL_ERROR=TRIM(NUMBER_TO_VSTRING(METRICS%NUMBER_OF_X_DIMENSIONS,"*",ERR,ERROR))// &
-                  & " is an invalid number of dimensions for a rectangular cartesian coordinate system"
+                  & " is an invalid number of dimensions for a rectangular cartesian coordinate system."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE(COORDINATE_CYCLINDRICAL_POLAR_TYPE)
@@ -789,7 +718,7 @@ CONTAINS
                 ENDDO !mi
               ELSE
                 LOCAL_ERROR=TRIM(NUMBER_TO_VSTRING(METRICS%NUMBER_OF_X_DIMENSIONS,"*",ERR,ERROR))// &
-                  & " is an invalid number of dimensions for a cylindrical polar coordinate system"
+                  & " is an invalid number of dimensions for a cylindrical polar coordinate system."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             CASE(COORDINATE_SPHERICAL_POLAR_TYPE)
@@ -805,7 +734,7 @@ CONTAINS
               ENDDO !mi
             CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE)
               IF(ABS(INTERPOLATED_POINT%VALUES(2,1))<ZERO_TOLERANCE) THEN
-                CALL FLAG_WARNING("Mu is zero",ERR,ERROR,*999)
+                CALL FLAG_WARNING("Mu is zero.",ERR,ERROR,*999)
               ELSE
                 FF=COORDINATE_SYSTEM%FOCUS*COORDINATE_SYSTEM%FOCUS
                 R=INTERPOLATED_POINT%VALUES(1,1)
@@ -827,15 +756,15 @@ CONTAINS
                   ENDDO !mi
                 ELSE
                   LOCAL_ERROR=TRIM(NUMBER_TO_VSTRING(METRICS%NUMBER_OF_X_DIMENSIONS,"*",ERR,ERROR))// &
-                    & " is an invalid number of dimensions for a prolate spheroidal coordinate system"
+                    & " is an invalid number of dimensions for a prolate spheroidal coordinate system."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ENDIF
             CASE(COORDINATE_OBLATE_SPHEROIDAL_TYPE)
-              CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The coordinate system type of "//TRIM(NUMBER_TO_VSTRING(COORDINATE_SYSTEM%TYPE,"*",ERR,ERROR))// &
-                & " is invalid"
+                & " is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
             
@@ -866,20 +795,20 @@ CONTAINS
               METRICS%JACOBIAN_TYPE=COORDINATE_JACOBIAN_VOLUME_TYPE
             CASE DEFAULT
               LOCAL_ERROR="The Jacobian type of "//TRIM(NUMBER_TO_VSTRING(JACOBIAN_TYPE,"*",ERR,ERROR))// &
-                & " is invalid"
+                & " is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE
-            CALL FLAG_ERROR("Metrics interpolated point has not been interpolated to include first derivatives",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Metrics interpolated point has not been interpolated to include first derivatives.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Metrics interpolated point is not associated",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Metrics interpolated point is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Metrics is not associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Metrics is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Coordinate system is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
     ENDIF
     
     IF(DIAGNOSTICS1) THEN
@@ -922,20 +851,16 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Calculates the normal vector, N, at the point X. IF REVERSE is true the reversed normal is returned. Old-cmiss-name: NORMAL
   SUBROUTINE COORDINATE_SYSTEM_NORMAL_CALCULATE(COORDINATE_SYSTEM,REVERSE,X,N,ERR,ERROR,*)
 
-    !#### Subroutine: COORDINATE_SYSTEM_NORMAL_CALCUALTE
-    !###  Description:
-    !###    Calculates the normal vector, N, at the point X. If REVERSE is true the reversed normal is returned 
-    !###    Old-cmiss-name: NORMAL
-
     !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-    LOGICAL, INTENT(IN) :: REVERSE
-    REAL(DP), INTENT(IN) :: X(:,:)
-    REAL(DP), INTENT(OUT) :: N(3)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<The coordinate system to calculate the normal for
+    LOGICAL, INTENT(IN) :: REVERSE !<If .TRUE. the reversed normal is returned.
+    REAL(DP), INTENT(IN) :: X(:,:) !<The coordinate and it's derivatives to calcualte the normal at
+    REAL(DP), INTENT(OUT) :: N(3) !<On exit, the normal vector
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: NUMBER_OF_X_DIMENSIONS,d_s1,d_s2,d2_s1
     REAL(DP) :: LENGTH,R,TANGENT1(3),TANGENT2(3)
@@ -945,7 +870,7 @@ CONTAINS
 
     IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
       IF(COORDINATE_SYSTEM%COORDINATE_SYSTEM_FINISHED) THEN
-        CALL FLAG_ERROR("Coordinate system has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Coordinate system has been finished.",ERR,ERROR,*999)
       ELSE
         NUMBER_OF_X_DIMENSIONS=COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
         d_s1=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1)
@@ -965,7 +890,7 @@ CONTAINS
             TANGENT2(3)=X(3,d_s2)
           ELSE
             LOCAL_ERROR=TRIM(NUMBER_TO_VSTRING(NUMBER_OF_X_DIMENSIONS,"*",ERR,ERROR))// &
-              & " is an invalid number of dimensions to calculate a normal from in a rectangular cartesian coordinate system"
+              & " is an invalid number of dimensions to calculate a normal from in a rectangular cartesian coordinate system."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         CASE(COORDINATE_CYCLINDRICAL_POLAR_TYPE)
@@ -982,7 +907,7 @@ CONTAINS
             TANGENT2(3)=X(3,d_s2)
            ELSE
             LOCAL_ERROR=TRIM(NUMBER_TO_VSTRING(NUMBER_OF_X_DIMENSIONS,"*",ERR,ERROR))// &
-              & " is an invalid number of dimensions to calculate a normal from in a rectangular cartesian coordinate system"
+              & " is an invalid number of dimensions to calculate a normal from in a rectangular cartesian coordinate system."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF          
         CASE(COORDINATE_SPHERICAL_POLAR_TYPE)
@@ -1002,19 +927,19 @@ CONTAINS
             &                 R*COS(X(1,d2_s1))*COS(X(1,d_s1))*X(2,d_s2)
           TANGENT2(3)=X(1,d_s2)*SIN(X(1,d2_s1))+R*COS(X(1,d2_s1))*X(3,d_s2)
         CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE)
-          CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         CASE(COORDINATE_OBLATE_SPHEROIDAL_TYPE)
-          CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="The coordinate system type of "//TRIM(NUMBER_TO_VSTRING(COORDINATE_SYSTEM%TYPE,"*",ERR,ERROR))// &
-            & " is invalid"
+            & " is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
         IF(NUMBER_OF_X_DIMENSIONS==2) THEN
           N(1)=-TANGENT1(2)
           N(2)=TANGENT1(1)
           LENGTH=SQRT(N(1)*N(1)+N(2)*N(2))
-          IF(ABS(LENGTH)<ZERO_TOLERANCE) CALL FLAG_ERROR("Zero normal vector length",ERR,ERROR,*999)
+          IF(ABS(LENGTH)<ZERO_TOLERANCE) CALL FLAG_ERROR("Zero normal vector length.",ERR,ERROR,*999)
           IF(REVERSE) THEN
             N(1)=-N(1)/LENGTH
             N(2)=-N(2)/LENGTH
@@ -1039,7 +964,7 @@ CONTAINS
         ENDIF        
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Coordinate system is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
     ENDIF
 
     IF(DIAGNOSTICS1) THEN
@@ -1070,16 +995,11 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Gets the coordinate system dimension. Note: no error handling at the moment as there can be no errors for now. \todo Change to subroutine
   PURE FUNCTION COORDINATE_SYSTEM_DIMENSION_GET(COORDINATE_SYSTEM)
 
-    !#### Function: COORDINATE_SYSTEM_DIMENSION_GET
-    !###  Type: INTEGER(INT
-    !###  Description:
-    !###    Gets the coordinate system dimension. Note: no error handling at the moment as there can be no errors for now.
-    !###  See-Also: COORDINATE_SYSTEM_DIMENSION_SET
-
     !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM
+    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM !<The coordinate system to get the dimension for
     !Function Result
     INTEGER(INTG) :: COORDINATE_SYSTEM_DIMENSION_GET
     !Local Variables
@@ -1093,18 +1013,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Gets the coordinate system focus. \todo change to subroutine
   FUNCTION COORDINATE_SYSTEM_FOCUS_GET(COORDINATE_SYSTEM,ERR,ERROR)
 
-    !#### Function: COORDINATE_SYSTEM_FOCUS_GET
-    !###  Type: REAL(DP)
-    !###  Description:
-    !###    Gets the coordinate system focus. 
-    !###  See-Also: COORDINATE_SYSTEM_FOCUS_SET
-
     !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM !<The coordinate system to get the focus for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Function Result
     REAL(DP) :: COORDINATE_SYSTEM_FOCUS_GET
     !Local Variables
@@ -1115,7 +1030,7 @@ CONTAINS
     CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE,COORDINATE_OBLATE_SPHEROIDAL_TYPE)
       COORDINATE_SYSTEM_FOCUS_GET=COORDINATE_SYSTEM%FOCUS
     CASE DEFAULT
-      CALL FLAG_ERROR("No focus defined for this coordinate system type",ERR,ERROR,*999)
+      CALL FLAG_ERROR("No focus defined for this coordinate system type.",ERR,ERROR,*999)
     END SELECT
     
     CALL EXITS("COORDINATE_SYSTEM_FOCUS_GET")
@@ -1129,17 +1044,12 @@ CONTAINS
   !================================================================================================================================
   !
 
+
+  !>Gets the coordinate system radial interpolation type. Note: no error handling at the moment as there can be no errors for now. \todo change to subroutine
   PURE FUNCTION COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET(COORDINATE_SYSTEM)
 
-    !#### Function: COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET
-    !###  Type: INTEGER(INTG)
-    !###  Description:
-    !###    Gets the coordinate system radial interpolation type. Note: no error handling at the moment as there can be no
-    !###    errors for now.
-    !###  See-Also: COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET
-
     !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM
+    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM !<The coordinate system to get the radial interpolation for
     !Function Result
     INTEGER(INTG) :: COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET
     !Local Variables
@@ -1153,16 +1063,11 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Gets the coordinate system type. Note: no error handling at the moment as there can be no errors for now. \todo change to subroutine
   PURE FUNCTION COORDINATE_SYSTEM_TYPE_GET(COORDINATE_SYSTEM)
 
-    !#### Function: COORDINATE_SYSTEM_TYPE_GET
-    !###  Type: INTEGER(INTG)
-    !###  Description:
-    !###    Gets the coordinate system type. Note: no error handling at the moment as there can be no errors for now.
-    !###  See-Also: COORDINATE_SYSTEM_TYPE_SET
-
     !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM
+    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM !<The coordinate system to get the type for
     !Function Result
     INTEGER(INTG) :: COORDINATE_SYSTEM_TYPE_GET
     !Local Variables
@@ -1176,241 +1081,136 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE COORDINATE_SYSTEM_DIMENSION_SET_NUMBER(USER_NUMBER,DIMENSION,ERR,ERROR,*)
-
-    !#### Subroutine: COORDINATE_SYSTEM_DIMENSION_SET_NUMBER
-    !###  Description:
-    !###    Sets/changes the dimension of the coordinate system identified by a USER_NUMBER.
-    !###  See-Also: COORDINATE_SYSTEM_DIMENSION_GET
+  !>Sets/changes the dimension of the coordinate system
+  SUBROUTINE COORDINATE_SYSTEM_DIMENSION_SET(COORDINATE_SYSTEM,DIMENSION,ERR,ERROR,*)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    INTEGER(INTG), INTENT(IN) :: DIMENSION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
-    !Local Variables
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-
-    CALL ENTERS("COORDINATE_SYSTEM_DIMENSION_SET_NUMBER",ERR,ERROR,*999)
-
-    CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(USER_NUMBER,COORDINATE_SYSTEM,ERR,ERROR,*999)
-    CALL COORDINATE_SYSTEM_DIMENSION_SET_PTR(COORDINATE_SYSTEM,DIMENSION,ERR,ERROR,*999)
-    
-    CALL EXITS("COORDINATE_SYSTEM_DIMENSION_SET_NUMBER")
-    RETURN
-999 CALL ERRORS("COORDINATE_SYSTEM_DIMENSION_SET_NUMBER",ERR,ERROR)
-    CALL EXITS("COORDINATE_SYSTEM_DIMENSION_SET_NUMBER")
-    RETURN 1
-  END SUBROUTINE COORDINATE_SYSTEM_DIMENSION_SET_NUMBER
-
-  !
-  !================================================================================================================================
-  !
-
-  SUBROUTINE COORDINATE_SYSTEM_DIMENSION_SET_PTR(COORDINATE_SYSTEM,DIMENSION,ERR,ERROR,*)
-
-    !#### Subroutine: COORDINATE_SYSTEM_DIMENSION_SET_PTR
-    !###  Description:
-    !###    Sets/changes the dimension of the coordinate system identified by a ptr
-    !###  See-Also: COORDINATE_SYSTEM_DIMENSION_GET
-
-    !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-    INTEGER(INTG), INTENT(IN) :: DIMENSION
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<A pointer the coordinate system to set the dimension for
+    INTEGER(INTG), INTENT(IN) :: DIMENSION !<The dimension to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("COORDINATE_SYSTEM_DIMENSION_SET_PTR",ERR,ERROR,*999)
+    CALL ENTERS("COORDINATE_SYSTEM_DIMENSION_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
       IF(COORDINATE_SYSTEM%COORDINATE_SYSTEM_FINISHED) THEN
-        CALL FLAG_ERROR("Coordinate system has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Coordinate system has been finished.",ERR,ERROR,*999)
       ELSE
         SELECT CASE(COORDINATE_SYSTEM%TYPE)
         CASE(COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
           IF(DIMENSION>=1.AND.DIMENSION<=3) THEN
             COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS=DIMENSION
           ELSE
-            CALL FLAG_ERROR("Invalid number of dimensions",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Invalid number of dimensions.",ERR,ERROR,*999)
           ENDIF
         CASE(COORDINATE_CYCLINDRICAL_POLAR_TYPE)
           IF(DIMENSION>=2.AND.DIMENSION<=3) THEN
             COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS=DIMENSION
           ELSE
-            CALL FLAG_ERROR("Invalid number of dimensions",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Invalid number of dimensions.",ERR,ERROR,*999)
           ENDIF
         CASE(COORDINATE_SPHERICAL_POLAR_TYPE)
           IF(DIMENSION==3) THEN
             COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS=DIMENSION
           ELSE
-            CALL FLAG_ERROR("Invalid number of dimensions",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Invalid number of dimensions.",ERR,ERROR,*999)
           ENDIF
         CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE)
           IF(DIMENSION==3) THEN
             COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS=DIMENSION
           ELSE
-            CALL FLAG_ERROR("Invalid number of dimensions",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Invalid number of dimensions.",ERR,ERROR,*999)
           ENDIF
         CASE(COORDINATE_OBLATE_SPHEROIDAL_TYPE)
           IF(DIMENSION==3) THEN
             COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS=DIMENSION
           ELSE
-            CALL FLAG_ERROR("Invalid number of dimensions",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Invalid number of dimensions.",ERR,ERROR,*999)
           ENDIF
         CASE DEFAULT
-          CALL FLAG_ERROR("Invalid coordinate system type",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Invalid coordinate system type.",ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Coordinate system is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("COORDINATE_SYSTEM_DIMENSION_SET_PTR")
+    CALL EXITS("COORDINATE_SYSTEM_DIMENSION_SET")
     RETURN
-999 CALL ERRORS("COORDINATE_SYSTEM_DIMENSION_SET_PTR",ERR,ERROR)
-    CALL EXITS("COORDINATE_SYSTEM_DIMENSION_SET_PTR")
+999 CALL ERRORS("COORDINATE_SYSTEM_DIMENSION_SET",ERR,ERROR)
+    CALL EXITS("COORDINATE_SYSTEM_DIMENSION_SET")
     RETURN 1
-  END SUBROUTINE COORDINATE_SYSTEM_DIMENSION_SET_PTR
+  END SUBROUTINE COORDINATE_SYSTEM_DIMENSION_SET
 
   !
   !================================================================================================================================
   !
 
-  SUBROUTINE COORDINATE_SYSTEM_FOCUS_SET_NUMBER(USER_NUMBER,FOCUS,ERR,ERROR,*)
-
-    !#### Subroutine: COORDINATE_SYSTEM_FOCUS_SET_NUMBER
-    !###  Description:
-    !###    Sets/changes the focus of a coordinate system identified by a USER_NUMBER.
-    !###  See-Also: COORDINATE_SYSTEM_FOCUS_GET
+  !>Sets/changes the focus of a coordinate system.
+  SUBROUTINE COORDINATE_SYSTEM_FOCUS_SET(COORDINATE_SYSTEM,FOCUS,ERR,ERROR,*)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    REAL(DP), INTENT(IN) :: FOCUS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
-    !Local Variables
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-
-    CALL ENTERS("COORDINATE_SYSTEM_FOCUS_SET_NUMBER",ERR,ERROR,*999)
-
-    CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(USER_NUMBER,COORDINATE_SYSTEM,ERR,ERROR,*999)
-    CALL COORDINATE_SYSTEM_FOCUS_SET_PTR(COORDINATE_SYSTEM,FOCUS,ERR,ERROR,*999)
-    
-    CALL EXITS("COORDINATE_SYSTEM_FOCUS_SET_NUMBER")
-    RETURN
-999 CALL ERRORS("COORDINATE_SYSTEM_FOCUS_SET_NUMBER",ERR,ERROR)
-    CALL EXITS("COORDINATE_SYSTEM_FOCUS_SET_NUMBER")
-    RETURN 1
-  END SUBROUTINE COORDINATE_SYSTEM_FOCUS_SET_NUMBER
-
-  !
-  !================================================================================================================================
-  !
-
-  SUBROUTINE COORDINATE_SYSTEM_FOCUS_SET_PTR(COORDINATE_SYSTEM,FOCUS,ERR,ERROR,*)
-
-    !#### Subroutine: COORDINATE_SYSTEM_FOCUS_SET_PTR
-    !###  Description:
-    !###    Sets/changes the focus of a coordinate system identified by a pointer.
-    !###  See-Also: COORDINATE_SYSTEM_FOCUS_GET
-
-    !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-    REAL(DP), INTENT(IN) :: FOCUS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<A pointer to the coordinate system to set the focus for
+    REAL(DP), INTENT(IN) :: FOCUS !<The focus to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("COORDINATE_SYSTEM_FOCUS_SET_PTR",ERR,ERROR,*999)
+    CALL ENTERS("COORDINATE_SYSTEM_FOCUS_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
       IF(COORDINATE_SYSTEM%COORDINATE_SYSTEM_FINISHED) THEN
-        CALL FLAG_ERROR("Coordinate system has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Coordinate system has been finished.",ERR,ERROR,*999)
       ELSE
         SELECT CASE(COORDINATE_SYSTEM%TYPE)
         CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE)
           IF(FOCUS>ZERO_TOLERANCE) THEN
             COORDINATE_SYSTEM%FOCUS=FOCUS
           ELSE
-            CALL FLAG_ERROR("Focus is less than zero",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Focus is less than zero.",ERR,ERROR,*999)
           ENDIF
         CASE(COORDINATE_OBLATE_SPHEROIDAL_TYPE)
           IF(FOCUS>ZERO_TOLERANCE) THEN
             COORDINATE_SYSTEM%FOCUS=FOCUS
           ELSE
-            CALL FLAG_ERROR("Focus is less than zero",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Focus is less than zero.",ERR,ERROR,*999)
           ENDIF
         CASE DEFAULT
-          CALL FLAG_ERROR("Invalid coordinate system type",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Invalid coordinate system type.",ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Coordinate system is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
     ENDIF
       
-    CALL EXITS("COORDINATE_SYSTEM_FOCUS_SET_PTR")
+    CALL EXITS("COORDINATE_SYSTEM_FOCUS_SET")
     RETURN
-999 CALL ERRORS("COORDINATE_SYSTEM_FOCUS_SET_PTR",ERR,ERROR)
-    CALL EXITS("COORDINATE_SYSTEM_FOCUS_SET_PTR")
+999 CALL ERRORS("COORDINATE_SYSTEM_FOCUS_SET",ERR,ERROR)
+    CALL EXITS("COORDINATE_SYSTEM_FOCUS_SET")
     RETURN 1
-  END SUBROUTINE COORDINATE_SYSTEM_FOCUS_SET_PTR
+  END SUBROUTINE COORDINATE_SYSTEM_FOCUS_SET
 
   !
   !================================================================================================================================
   !
 
-  SUBROUTINE COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET_NUMBER(USER_NUMBER,RADIAL_INTERPOLATION_TYPE,ERR,ERROR,*)
-
-    !#### Subroutine: COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET_NUMBER
-    !###  Description:
-    !###    Sets/changes the radial interpolation type of a coordinate system identified by a USER_NUMBER.
-    !###  See-Also: COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET
+  !>Sets/changes the radial interpolation type of a coordinate system.
+  SUBROUTINE COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET(COORDINATE_SYSTEM,RADIAL_INTERPOLATION_TYPE,ERR,ERROR,*)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    INTEGER(INTG), INTENT(IN) :: RADIAL_INTERPOLATION_TYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
-    !Local Variables
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-
-    CALL ENTERS("COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET_NUMBER",ERR,ERROR,*999)
-
-    CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(USER_NUMBER,COORDINATE_SYSTEM,ERR,ERROR,*999)
-    CALL COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET_PTR(COORDINATE_SYSTEM,RADIAL_INTERPOLATION_TYPE,ERR,ERROR,*999)
-    
-    CALL EXITS("COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET_NUMBER")
-    RETURN
-999 CALL ERRORS("COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET_NUMBER",ERR,ERROR)
-    CALL EXITS("COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET_NUMBER")
-    RETURN 1
-  END SUBROUTINE COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET_NUMBER
-
-  !
-  !================================================================================================================================
-  !
-
-  SUBROUTINE COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET_PTR(COORDINATE_SYSTEM,RADIAL_INTERPOLATION_TYPE,ERR,ERROR,*)
-
-    !#### Subroutine: COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET_PTR
-    !###  Description:
-    !###    Sets/changes the radial interpolation type of a coordinate system identified by a pointer.
-    !###  See-Also: COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET
-
-    !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-    INTEGER(INTG), INTENT(IN) :: RADIAL_INTERPOLATION_TYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<The coordinate system to set the interpolation type for
+    INTEGER(INTG), INTENT(IN) :: RADIAL_INTERPOLATION_TYPE !<The interpolation type to set \see COORDINATE_ROUTINES_RadialInterpolations,COORDINATE_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("COORDINATE_SYSTEM_INTERPOLATION_TYPE_SET_PTR",ERR,ERROR,*999)
+    CALL ENTERS("COORDINATE_SYSTEM_INTERPOLATION_TYPE_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
       IF(COORDINATE_SYSTEM%COORDINATE_SYSTEM_FINISHED) THEN
-        CALL FLAG_ERROR("Coordinate system has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Coordinate system has been finished.",ERR,ERROR,*999)
       ELSE
         SELECT CASE(COORDINATE_SYSTEM%TYPE)
         CASE(COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
@@ -1419,7 +1219,7 @@ CONTAINS
             COORDINATE_SYSTEM%RADIAL_INTERPOLATION_TYPE=COORDINATE_NO_RADIAL_INTERPOLATION_TYPE
           CASE DEFAULT
             LOCAL_ERROR="The radial interpolation type of "//TRIM(NUMBER_TO_VSTRING(RADIAL_INTERPOLATION_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a rectangular cartesian coordinate system"
+              & " is invalid for a rectangular cartesian coordinate system."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(COORDINATE_CYCLINDRICAL_POLAR_TYPE,COORDINATE_SPHERICAL_POLAR_TYPE)
@@ -1430,7 +1230,7 @@ CONTAINS
             COORDINATE_SYSTEM%RADIAL_INTERPOLATION_TYPE=COORDINATE_RADIAL_SQUARED_INTERPOLATION_TYPE
           CASE DEFAULT
             LOCAL_ERROR="The radial interpolation type of "//TRIM(NUMBER_TO_VSTRING(RADIAL_INTERPOLATION_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a cylindrical/spherical coordinate system"
+              & " is invalid for a cylindrical/spherical coordinate system."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE)
@@ -1443,80 +1243,45 @@ CONTAINS
             COORDINATE_SYSTEM%RADIAL_INTERPOLATION_TYPE=COORDINATE_RADIAL_CUBED_INTERPOLATION_TYPE
           CASE DEFAULT
             LOCAL_ERROR="The radial interpolation type of "//TRIM(NUMBER_TO_VSTRING(RADIAL_INTERPOLATION_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a prolate spheroidal coordinate system"
+              & " is invalid for a prolate spheroidal coordinate system."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(COORDINATE_OBLATE_SPHEROIDAL_TYPE)
-          CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
-          CALL FLAG_ERROR("Invalid coordinate system type",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Invalid coordinate system type.",ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Coordinate system is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET_PTR")
+    CALL EXITS("COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET")
     RETURN
-999 CALL ERRORS("COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET_PTR",ERR,ERROR)
-    CALL EXITS("COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET_PTR")
+999 CALL ERRORS("COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET",ERR,ERROR)
+    CALL EXITS("COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET")
     RETURN 1
-  END SUBROUTINE COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET_PTR
+  END SUBROUTINE COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET
 
   !
   !================================================================================================================================
   !
 
-  SUBROUTINE COORDINATE_SYSTEM_TYPE_SET_NUMBER(USER_NUMBER,TYPE,ERR,ERROR,*)
-
-    !#### Subroutine: COORDINATE_SYSTEM_TYPE_SET_NUMBER
-    !###  Description:
-    !###    Sets/changes the type of a coordinate system identified by a USER_NUMBER.
-    !###  See-Also: COORDINATE_SYSTEM_TYPE_GET
+  !>Sets/changes the type of a coordinate system.
+  SUBROUTINE COORDINATE_SYSTEM_TYPE_SET(COORDINATE_SYSTEM,TYPE,ERR,ERROR,*)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    INTEGER(INTG), INTENT(IN) :: TYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
-    !Local Variables
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-
-    CALL ENTERS("COORDINATE_SYSTEM_TYPE_SET_NUMBER",ERR,ERROR,*999)
-
-    CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(USER_NUMBER,COORDINATE_SYSTEM,ERR,ERROR,*999)
-    CALL COORDINATE_SYSTEM_TYPE_SET_PTR(COORDINATE_SYSTEM,TYPE,ERR,ERROR,*999)
-    
-    CALL EXITS("COORDINATE_SYSTEM_TYPE_SET_NUMBER")
-    RETURN
-999 CALL ERRORS("COORDINATE_SYSTEM_TYPE_SET_NUMBER",ERR,ERROR)
-    CALL EXITS("COORDINATE_SYSTEM_TYPE_SET_NUMBER")
-    RETURN 1
-  END SUBROUTINE COORDINATE_SYSTEM_TYPE_SET_NUMBER
-
-  !
-  !================================================================================================================================
-  !
-
-  SUBROUTINE COORDINATE_SYSTEM_TYPE_SET_PTR(COORDINATE_SYSTEM,TYPE,ERR,ERROR,*)
-
-    !#### Subroutine: COORDINATE_SYSTEM_TYPE_SET_PTR
-    !###  Description:
-    !###    Sets/changes the type of a coordinate system identified by a pointer.
-    !###  See-Also: COORDINATE_SYSTEM_TYPE_GET
-
-    !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-    INTEGER(INTG), INTENT(IN) :: TYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<The coordinate system to set the type for
+    INTEGER(INTG), INTENT(IN) :: TYPE !<The coordinate system type to set \see COORDINATE_ROUTINES_CoordinateSystemTypes,COORDINATE_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("COORDINATE_SYSTEM_TYPE_SET_PTR",ERR,ERROR,*999)
+    CALL ENTERS("COORDINATE_SYSTEM_TYPE_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
       IF(COORDINATE_SYSTEM%COORDINATE_SYSTEM_FINISHED) THEN
-        CALL FLAG_ERROR("Coordinate system has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Coordinate system has been finished.",ERR,ERROR,*999)
       ELSE
         SELECT CASE(TYPE)
         CASE(COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
@@ -1530,165 +1295,95 @@ CONTAINS
         CASE(COORDINATE_OBLATE_SPHEROIDAL_TYPE)
           COORDINATE_SYSTEM%TYPE=COORDINATE_OBLATE_SPHEROIDAL_TYPE
         CASE DEFAULT
-          CALL FLAG_ERROR("Invalid coordinate system type",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Invalid coordinate system type.",ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Coordinate system is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("COORDINATE_SYSTEM_TYPE_SET_PTR")
+    CALL EXITS("COORDINATE_SYSTEM_TYPE_SET")
     RETURN
-999 CALL ERRORS("COORDINATE_SYSTEM_TYPE_SET_PTR",ERR,ERROR)
-    CALL EXITS("COORDINATE_SYSTEM_TYPE_SET_PTR")
+999 CALL ERRORS("COORDINATE_SYSTEM_TYPE_SET",ERR,ERROR)
+    CALL EXITS("COORDINATE_SYSTEM_TYPE_SET")
     RETURN 1
-  END SUBROUTINE COORDINATE_SYSTEM_TYPE_SET_PTR
+  END SUBROUTINE COORDINATE_SYSTEM_TYPE_SET
 
   !
   !================================================================================================================================
   !
 
-  SUBROUTINE COORDINATE_SYSTEM_ORIGIN_SET_NUMBER(USER_NUMBER,ORIGIN,ERR,ERROR,*)
-
-    !#### Subroutine: COORDINATE_SYSTEM_ORIGIN_SET_NUMBER
-    !###  Description:
-    !###    Sets/changes the origin of a coordinate system identified by a number.
-    !###  See-Also: COORDINATE_SYSTEM_TYPE_GET
+  !>Sets/changes the origin of a coordinate system.
+  SUBROUTINE COORDINATE_SYSTEM_ORIGIN_SET(COORDINATE_SYSTEM,ORIGIN,ERR,ERROR,*)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    REAL(DP), INTENT(IN) :: ORIGIN(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
-    !Local Variables
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-
-    CALL ENTERS("COORDINATE_SYSTEM_ORIGIN_SET_NUMBER",ERR,ERROR,*999)
-
-    CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(USER_NUMBER,COORDINATE_SYSTEM,ERR,ERROR,*999)
-    CALL COORDINATE_SYSTEM_ORIGIN_SET_PTR(COORDINATE_SYSTEM,ORIGIN,ERR,ERROR,*999)
-    
-    CALL EXITS("COORDINATE_SYSTEM_ORIGIN_SET_NUMBER")
-    RETURN
-999 CALL ERRORS("COORDINATE_SYSTEM_ORIGIN_SET_NUMBER",ERR,ERROR)
-    CALL EXITS("COORDINATE_SYSTEM_ORIGIN_SET_NUMBER")
-    RETURN 1
-  END SUBROUTINE COORDINATE_SYSTEM_ORIGIN_SET_NUMBER
-
-  !
-  !================================================================================================================================
-  !
-
-  SUBROUTINE COORDINATE_SYSTEM_ORIGIN_SET_PTR(COORDINATE_SYSTEM,ORIGIN,ERR,ERROR,*)
-
-    !#### Subroutine: COORDINATE_SYSTEM_ORIGIN_SET_PTR
-    !###  Description:
-    !###    Sets/changes the origin of a coordinate system identified by a pointer.
-    !###  See-Also: COORDINATE_SYSTEM_ORIGIN_GET
-
-    !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-    REAL(DP), INTENT(IN) :: ORIGIN(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<A pointer to the coordinate system to set the origin for
+    REAL(DP), INTENT(IN) :: ORIGIN(:) !<The origin to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("COORDINATE_SYSTEM_ORIGIN_SET_PTR",ERR,ERROR,*999)
+    CALL ENTERS("COORDINATE_SYSTEM_ORIGIN_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
       IF(COORDINATE_SYSTEM%COORDINATE_SYSTEM_FINISHED) THEN
-        CALL FLAG_ERROR("Coordinate system has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Coordinate system has been finished.",ERR,ERROR,*999)
       ELSE
         IF(SIZE(ORIGIN)==3) THEN
           COORDINATE_SYSTEM%ORIGIN=ORIGIN
         ELSE
-          CALL FLAG_ERROR("The origin must have exactly 3 components",ERR,ERROR,*999)
+          CALL FLAG_ERROR("The origin must have exactly 3 components.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Coordinate system is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("COORDINATE_SYSTEM_ORIGIN_SET_PTR")
+    CALL EXITS("COORDINATE_SYSTEM_ORIGIN_SET")
     RETURN
-999 CALL ERRORS("COORDINATE_SYSTEM_ORIGIN_SET_PTR",ERR,ERROR)
-    CALL EXITS("COORDINATE_SYSTEM_ORIGIN_SET_PTR")
+999 CALL ERRORS("COORDINATE_SYSTEM_ORIGIN_SET",ERR,ERROR)
+    CALL EXITS("COORDINATE_SYSTEM_ORIGIN_SET")
     RETURN 1
-  END SUBROUTINE COORDINATE_SYSTEM_ORIGIN_SET_PTR
+  END SUBROUTINE COORDINATE_SYSTEM_ORIGIN_SET
 
   !
   !================================================================================================================================
   !
 
-  SUBROUTINE COORDINATE_SYSTEM_ORIENTATION_SET_NUMBER(USER_NUMBER,ORIENTATION,ERR,ERROR,*)
-
-    !#### Subroutine: COORDINATE_SYSTEM_ORIENTATION_SET_NUMBER
-    !###  Description:
-    !###    Sets/changes the orientation of a coordinate system identified by a USER_NUMBER.
-    !###  See-Also: COORDINATE_SYSTEM_ORIENTATION_GET
+  !>Sets/changes the orientation of a coordinate system.
+  SUBROUTINE COORDINATE_SYSTEM_ORIENTATION_SET(COORDINATE_SYSTEM,ORIENTATION,ERR,ERROR,*)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    REAL(DP), INTENT(IN) :: ORIENTATION(:,:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
-    !Local Variables
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-
-    CALL ENTERS("COORDINATE_SYSTEM_ORIENTATION_SET_NUMBER",ERR,ERROR,*999)
-
-    CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(USER_NUMBER,COORDINATE_SYSTEM,ERR,ERROR,*999)
-    CALL COORDINATE_SYSTEM_ORIENTATION_SET_PTR(COORDINATE_SYSTEM,ORIENTATION,ERR,ERROR,*999)
-    
-    CALL EXITS("COORDINATE_SYSTEM_ORIENTATION_SET_NUMBER")
-    RETURN
-999 CALL ERRORS("COORDINATE_SYSTEM_ORIENTATION_SET_NUMBER",ERR,ERROR)
-    CALL EXITS("COORDINATE_SYSTEM_ORIENTATION_SET_NUMBER")
-    RETURN 1
-  END SUBROUTINE COORDINATE_SYSTEM_ORIENTATION_SET_NUMBER
-
-  !
-  !================================================================================================================================
-  !
-
-  SUBROUTINE COORDINATE_SYSTEM_ORIENTATION_SET_PTR(COORDINATE_SYSTEM,ORIENTATION,ERR,ERROR,*)
-
-    !#### Subroutine: COORDINATE_SYSTEM_ORIENTATION_SET_PTR
-    !###  Description:
-    !###    Sets/changes the orientation of a coordinate system identified by a pointer.
-    !###  See-Also: COORDINATE_SYSTEM_ORIENTATION_GET
-
-    !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-    REAL(DP), INTENT(IN) :: ORIENTATION(:,:)
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<A pointer to the coordinate system to set the orientation for
+    REAL(DP), INTENT(IN) :: ORIENTATION(:,:) !<The orientation to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("COORDINATE_SYSTEM_ORIENTATION_SET_PTR",ERR,ERROR,*999)
+    CALL ENTERS("COORDINATE_SYSTEM_ORIENTATION_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
       IF(COORDINATE_SYSTEM%COORDINATE_SYSTEM_FINISHED) THEN
-        CALL FLAG_ERROR("Coordinate system has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Coordinate system has been finished.",ERR,ERROR,*999)
       ELSE
         IF(SIZE(ORIENTATION,1)==3.AND.SIZE(ORIENTATION,2)==3) THEN
-          !!TODO: Check orientation matrix vectors are orthogonal to each other etc.
+!!TODO: \todo Check orientation matrix vectors are orthogonal to each other etc.
           COORDINATE_SYSTEM%ORIENTATION=ORIENTATION
         ELSE
-          CALL FLAG_ERROR("The orientation matrix must have exactly 3x3 components",ERR,ERROR,*999)
+          CALL FLAG_ERROR("The orientation matrix must have exactly 3x3 components.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Coordinate system is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("COORDINATE_SYSTEM_ORIENTATION_SET_PTR")
+    CALL EXITS("COORDINATE_SYSTEM_ORIENTATION_SET")
     RETURN
-999 CALL ERRORS("COORDINATE_SYSTEM_ORIENTATION_SET_PTR",ERR,ERROR)
-    CALL EXITS("COORDINATE_SYSTEM_ORIENTATION_SET_PTR")
+999 CALL ERRORS("COORDINATE_SYSTEM_ORIENTATION_SET",ERR,ERROR)
+    CALL EXITS("COORDINATE_SYSTEM_ORIENTATION_SET")
     RETURN 1
-  END SUBROUTINE COORDINATE_SYSTEM_ORIENTATION_SET_PTR
-
+  END SUBROUTINE COORDINATE_SYSTEM_ORIENTATION_SET
+  
   !
   !================================================================================================================================
   !
@@ -1704,10 +1399,10 @@ CONTAINS
   SUBROUTINE COORDINATE_SYSTEM_CREATE_START(USER_NUMBER,COORDINATE_SYSTEM,ERR,ERROR,*)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number for the created coordinate system
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<On exit, a pointer to the created coordinate system. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: coord_system_idx
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: NEW_COORDINATE_SYSTEM
@@ -1717,43 +1412,47 @@ CONTAINS
     NULLIFY(NEW_COORDINATE_SYSTEM)
     NULLIFY(NEW_COORDINATE_SYSTEMS)
 
-    CALL ENTERS("COORDINATE_SYSTEM_CREATE_START",ERR,ERROR,*999)
+    CALL ENTERS("COORDINATE_SYSTEM_CREATE_START",ERR,ERROR,*998)
 
-    NULLIFY(COORDINATE_SYSTEM)
-    CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(USER_NUMBER,COORDINATE_SYSTEM,ERR,ERROR,*999)
-    IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
+    NULLIFY(NEW_COORDINATE_SYSTEM)
+    CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(USER_NUMBER,NEW_COORDINATE_SYSTEM,ERR,ERROR,*999)
+    IF(ASSOCIATED(NEW_COORDINATE_SYSTEM)) THEN
       LOCAL_ERROR="Coordinate system number "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))// &
-        & " has already been created"
-      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        & " has already been created."
+      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
     ELSE
-      ALLOCATE(NEW_COORDINATE_SYSTEM,STAT=ERR)
-      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new coordinate system",ERR,ERROR,*999)
+      IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
+        CALL FLAG_ERROR("Coordinate system is already associated.",ERR,ERROR,*999)
+      ELSE
+        NULLIFY(NEW_COORDINATE_SYSTEM)
+        ALLOCATE(NEW_COORDINATE_SYSTEM,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new coordinate system.",ERR,ERROR,*999)
       
-      NEW_COORDINATE_SYSTEM%USER_NUMBER=USER_NUMBER
-      NEW_COORDINATE_SYSTEM%COORDINATE_SYSTEM_FINISHED=.FALSE.
-      NEW_COORDINATE_SYSTEM%TYPE=COORDINATE_RECTANGULAR_CARTESIAN_TYPE
-      NEW_COORDINATE_SYSTEM%RADIAL_INTERPOLATION_TYPE=COORDINATE_NO_RADIAL_INTERPOLATION_TYPE
-      NEW_COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS=3
-      NEW_COORDINATE_SYSTEM%FOCUS=1.0_DP    
-      NEW_COORDINATE_SYSTEM%ORIGIN=(/0.0_DP,0.0_DP,0.0_DP/)
-      NEW_COORDINATE_SYSTEM%ORIENTATION=RESHAPE(&
-        & (/1.0_DP,0.0_DP,0.0_DP, &
-        &   0.0_DP,1.0_DP,0.0_DP, &
-        &   0.0_DP,0.0_DP,1.0_DP/), &
-        & (/3,3/))
-      
-      ALLOCATE(NEW_COORDINATE_SYSTEMS(COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS+1),STAT=ERR)
-      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new coordinate systems",ERR,ERROR,*999)
-      DO coord_system_idx=1,COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS
-        NEW_COORDINATE_SYSTEMS(coord_system_idx)%PTR=>COORDINATE_SYSTEMS%COORDINATE_SYSTEMS(coord_system_idx)%PTR
-      ENDDO !coord_system_idx
-      NEW_COORDINATE_SYSTEMS(COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS+1)%PTR=>NEW_COORDINATE_SYSTEM
-      DEALLOCATE(COORDINATE_SYSTEMS%COORDINATE_SYSTEMS)
-      COORDINATE_SYSTEMS%COORDINATE_SYSTEMS=>NEW_COORDINATE_SYSTEMS
-      COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS=COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS+1
-      
-      COORDINATE_SYSTEM=>NEW_COORDINATE_SYSTEM
-
+        NEW_COORDINATE_SYSTEM%USER_NUMBER=USER_NUMBER
+        NEW_COORDINATE_SYSTEM%COORDINATE_SYSTEM_FINISHED=.FALSE.
+        NEW_COORDINATE_SYSTEM%TYPE=COORDINATE_RECTANGULAR_CARTESIAN_TYPE
+        NEW_COORDINATE_SYSTEM%RADIAL_INTERPOLATION_TYPE=COORDINATE_NO_RADIAL_INTERPOLATION_TYPE
+        NEW_COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS=3
+        NEW_COORDINATE_SYSTEM%FOCUS=1.0_DP    
+        NEW_COORDINATE_SYSTEM%ORIGIN=(/0.0_DP,0.0_DP,0.0_DP/)
+        NEW_COORDINATE_SYSTEM%ORIENTATION=RESHAPE(&
+          & (/1.0_DP,0.0_DP,0.0_DP, &
+          &   0.0_DP,1.0_DP,0.0_DP, &
+          &   0.0_DP,0.0_DP,1.0_DP/), &
+          & (/3,3/))
+        
+        ALLOCATE(NEW_COORDINATE_SYSTEMS(COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS+1),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new coordinate systems.",ERR,ERROR,*999)
+        DO coord_system_idx=1,COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS
+          NEW_COORDINATE_SYSTEMS(coord_system_idx)%PTR=>COORDINATE_SYSTEMS%COORDINATE_SYSTEMS(coord_system_idx)%PTR
+        ENDDO !coord_system_idx
+        NEW_COORDINATE_SYSTEMS(COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS+1)%PTR=>NEW_COORDINATE_SYSTEM
+        DEALLOCATE(COORDINATE_SYSTEMS%COORDINATE_SYSTEMS)
+        COORDINATE_SYSTEMS%COORDINATE_SYSTEMS=>NEW_COORDINATE_SYSTEMS
+        COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS=COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS+1
+        
+        COORDINATE_SYSTEM=>NEW_COORDINATE_SYSTEM
+      ENDIF
     ENDIF
         
     CALL EXITS("COORDINATE_SYSTEM_CREATE_START")
@@ -1761,7 +1460,7 @@ CONTAINS
 999 IF(ASSOCIATED(NEW_COORDINATE_SYSTEM)) DEALLOCATE(NEW_COORDINATE_SYSTEM)
     IF(ASSOCIATED(NEW_COORDINATE_SYSTEMS)) DEALLOCATE(NEW_COORDINATE_SYSTEMS)
     NULLIFY(COORDINATE_SYSTEM)
-    CALL ERRORS("COORDINATE_SYSTEM_CREATE_START",ERR,ERROR)
+998 CALL ERRORS("COORDINATE_SYSTEM_CREATE_START",ERR,ERROR)
     CALL EXITS("COORDINATE_SYSTEM_CREATE_START")
     RETURN 1
   END SUBROUTINE COORDINATE_SYSTEM_CREATE_START
@@ -1770,16 +1469,13 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finishes the creation of a new coordinate system.
   SUBROUTINE COORDINATE_SYSTEM_CREATE_FINISH(COORDINATE_SYSTEM,ERR,ERROR,*)
 
-    !#### Subroutine: COORDINATE_SYSTEM_CREATE_FINISH
-    !###  Description:
-    !###    Finishes the creation of a new coordinate system.
-
     !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<A pointer to the coordinate system to finish
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: coord_system_idx
 
@@ -1788,7 +1484,7 @@ CONTAINS
     IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
       COORDINATE_SYSTEM%COORDINATE_SYSTEM_FINISHED=.TRUE.
     ELSE
-      CALL FLAG_ERROR("Coordinate system is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
     ENDIF
     
     IF(DIAGNOSTICS1) THEN
@@ -1816,87 +1512,28 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE COORDINATE_SYSTEM_DESTROY_NUMBER(USER_NUMBER,ERR,ERROR,*)
-
-    !#### Subroutine: COORDINATE_SYSTEM_DESTROY_NUMBER
-    !###  Description:
-    !###    Destroys a coordinate system with the the given USER_NUMBER.
+  !>Destroys a coordinate system.
+  SUBROUTINE COORDINATE_SYSTEM_DESTROY(COORDINATE_SYSTEM,ERR,ERROR,*)
 
     !Argument variables
-    INTEGER(INTG) :: USER_NUMBER
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
-    !Local Variables
-    INTEGER(INTG) :: coord_system_idx,new_coord_system_idx
-    LOGICAL :: FOUND
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-    TYPE(COORDINATE_SYSTEM_PTR_TYPE), POINTER :: NEW_COORDINATE_SYSTEMS(:)
-
-    CALL ENTERS("COORDINATE_SYSTEM_DESTROY_NUMBER",ERR,ERROR,*999)
-
-    IF(USER_NUMBER==0) THEN
-      CALL FLAG_ERROR("Cannot destroy the global coordinate system",ERR,ERROR,*999)
-    ELSE
-      FOUND=.FALSE.
-      new_coord_system_idx=0
-      ALLOCATE(NEW_COORDINATE_SYSTEMS(COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS-1),STAT=ERR)
-      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new coordianate systems",ERR,ERROR,*999)
-      DO coord_system_idx=1,COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS
-        IF(COORDINATE_SYSTEMS%COORDINATE_SYSTEMS(coord_system_idx)%PTR%USER_NUMBER==USER_NUMBER) THEN
-          FOUND=.TRUE.
-          COORDINATE_SYSTEM=>COORDINATE_SYSTEMS%COORDINATE_SYSTEMS(coord_system_idx)%PTR
-        ELSE
-          new_coord_system_idx=new_coord_system_idx+1
-          NEW_COORDINATE_SYSTEMS(new_coord_system_idx)%PTR=>COORDINATE_SYSTEMS%COORDINATE_SYSTEMS(coord_system_idx)%PTR
-        ENDIF
-      ENDDO !coord_system_idx
-      IF(FOUND) THEN
-        DEALLOCATE(COORDINATE_SYSTEM)
-        DEALLOCATE(COORDINATE_SYSTEMS%COORDINATE_SYSTEMS)
-        COORDINATE_SYSTEMS%COORDINATE_SYSTEMS=>NEW_COORDINATE_SYSTEMS
-        COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS=COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS-1
-      ELSE
-        DEALLOCATE(NEW_COORDINATE_SYSTEMS)
-        CALL FLAG_ERROR("Coordinate system number to destroy does not exist",ERR,ERROR,*999)
-      ENDIF
-    ENDIF
-        
-    CALL EXITS("COORDINATE_SYSTEM_DESTROY_NUMBER")
-    RETURN
-999 CALL ERRORS("COORDINATE_SYSTEM_DESTROY_NUMBER",ERR,ERROR)
-    CALL EXITS("COORDINATE_SYSTEM_DESTROY_NUMBER")
-    RETURN 1
-  END SUBROUTINE COORDINATE_SYSTEM_DESTROY_NUMBER
-
-  !
-  !================================================================================================================================
-  !
-
-  SUBROUTINE COORDINATE_SYSTEM_DESTROY_PTR(COORDINATE_SYSTEM,ERR,ERROR,*)
-
-    !#### Subroutine: COORDINATE_SYSTEM_DESTROY_PTR
-    !###  Description:
-    !###    Destroys a coordinate system given by a pointer to the coordinate system
-
-    !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<A pointer to the coordinate system to destroy
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: coord_system_no,new_coord_system_no
     LOGICAL :: FOUND
     TYPE(COORDINATE_SYSTEM_PTR_TYPE), POINTER :: NEW_COORDINATE_SYSTEMS(:)
 
-    CALL ENTERS("COORDINATE_SYSTEM_DESTROY_PTR",ERR,ERROR,*999)
+    CALL ENTERS("COORDINATE_SYSTEM_DESTROY",ERR,ERROR,*999)
 
     IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
       IF(COORDINATE_SYSTEM%USER_NUMBER==0) THEN
-        CALL FLAG_ERROR("Cannot destroy the global coordinate system",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Cannot destroy the global coordinate system.",ERR,ERROR,*999)
       ELSE
         FOUND=.FALSE.
         new_coord_system_no=0
         ALLOCATE(NEW_COORDINATE_SYSTEMS(COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS-1),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new coordianate systems",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new coordianate systems.",ERR,ERROR,*999)
         DO coord_system_no=1,COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS
           IF(COORDINATE_SYSTEMS%COORDINATE_SYSTEMS(coord_system_no)%PTR%USER_NUMBER==COORDINATE_SYSTEM%USER_NUMBER) THEN
             FOUND=.TRUE.
@@ -1912,45 +1549,27 @@ CONTAINS
           COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS=COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS-1
         ELSE
           DEALLOCATE(NEW_COORDINATE_SYSTEMS)
-          CALL FLAG_ERROR("Coordinate system number to destroy does not exist",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Coordinate system number to destroy does not exist.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Coordinate system is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
     ENDIF
       
-    CALL EXITS("COORDINATE_SYSTEM_DESTROY_PTR")
+    CALL EXITS("COORDINATE_SYSTEM_DESTROY")
     RETURN
-999 CALL ERRORS("COORDINATE_SYSTEM_DESTROY_PTR",ERR,ERROR)
-    CALL EXITS("COORDINATE_SYSTEM_DESTROY_PTR")
+999 CALL ERRORS("COORDINATE_SYSTEM_DESTROY",ERR,ERROR)
+    CALL EXITS("COORDINATE_SYSTEM_DESTROY")
     RETURN 1
-  END SUBROUTINE COORDINATE_SYSTEM_DESTROY_PTR
+  END SUBROUTINE COORDINATE_SYSTEM_DESTROY
 
   !
   !================================================================================================================================
   !
   
-  !#### Generic-Function: DXZ
-  !###  Description:
-  !###    Calculates DX(:)/DZ(I) at X, where Z(I) are rectangular 
-  !###    Cartesian and X(:) are curvilinear coordinates defined by 
-  !###    COORDINATE_SYSTEM.
-  !###  Child-functions: DXZ_DP,DXZ_SP
-
-  !
-  !================================================================================================================================
-  !
-  
+  !>Calculates DX(:)/DZ(I) at X, where Z(I) are rectangular cartesian and X(:) are curvilinear coordinates defined by COORDINATE_SYSTEM for double precision coordinates.
   FUNCTION DXZ_DP(COORDINATE_SYSTEM,I,X,ERR,ERROR)
   
-    !#### Function: DXZ_DP
-    !###  Type: REAL(DP)(SIZE(X,1))
-    !###  Description:
-    !###    Calculates DX(:)/DZ(I) at X, where Z(I) are rectangular 
-    !###    Cartesian and X(:) are curvilinear coordinates defined by 
-    !###    COORDINATE_SYSTEM for double precision coordinates.
-    !###  Parent-function: DXZ
-    
     !Argument variables
     TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM
     INTEGER(INTG), INTENT(IN) :: I
@@ -3651,22 +3270,19 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Calculates the norm of a derivative in a coordinate system identified by COORDINATE_SYSTEM at the given interpolated
+  !>point and returns the value in NORM for single precision coordinates. PART_DERIV_INDEX is used to select the
+  !>appropriate partial derivative (i.e., wrt S1, S2 or S3) to normalise.
   SUBROUTINE COORDINATE_DERIVATIVE_NORM(COORDINATE_SYSTEM,PART_DERIV_INDEX,INTERPOLATED_POINT,DERIV_NORM,ERR,ERROR,*)
   
-    !#### Subroutine: COORDINATE_DERIVATIVE_NORM
-    !###  Description:
-    !###    Calculates the norm of a derivative in a coordinate system identified by COORDINATE_SYSTEM at the given interpolated
-    !###    point and returns the value in NORM for single precision coordinates. PART_DERIV_INDEX is used to select the
-    !###    appropriate partial derivative (i.e., wrt S1, S2 or S3) to normalise.
-    
     !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-    INTEGER(INTG), INTENT(IN) :: PART_DERIV_INDEX
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT
-    REAL(DP), INTENT(OUT) :: DERIV_NORM
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<A pointer to the coordinate system to calculate the derivative norm for
+    INTEGER(INTG), INTENT(IN) :: PART_DERIV_INDEX !<The partial derivative index to select the direction to normalise
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT !<A pointer to the interpolated point 
+    REAL(DP), INTENT(OUT) :: DERIV_NORM !<On exit, the derivative norm of the coordinate
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: component_idx,NUMBER_OF_COMPONENTS
     REAL(DP) :: FOCUS,SL,SM
@@ -3697,7 +3313,7 @@ CONTAINS
                 ELSE
                   LOCAL_ERROR="The number of components for the interpolated point of "// &
                     & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_COMPONENTS,"*",ERR,ERROR))// &
-                    & " is invalid for a cylindrical polar coordinate system"
+                    & " is invalid for a cylindrical polar coordinate system."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               CASE(COORDINATE_SPHERICAL_POLAR_TYPE)
@@ -3711,32 +3327,32 @@ CONTAINS
                 DERIV_NORM=FOCUS*FOCUS*((SL*SL+SM*SM)*(INTERPOLATED_POINT%VALUES(1,PART_DERIV_INDEX)**2+ &
                   & INTERPOLATED_POINT%VALUES(2,PART_DERIV_INDEX))**2)+(SL*SM*INTERPOLATED_POINT%VALUES(3,PART_DERIV_INDEX))**2
               CASE(COORDINATE_OBLATE_SPHEROIDAL_TYPE)
-                CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The coordinate system type of "//TRIM(NUMBER_TO_VSTRING(COORDINATE_SYSTEM%TYPE,"*",ERR,ERROR))// &
-                  & " is invalid"
+                  & " is invalid."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
               DERIV_NORM=SQRT(DERIV_NORM)
             CASE DEFAULT
               LOCAL_ERROR="The partial derivative index of "//TRIM(NUMBER_TO_VSTRING(PART_DERIV_INDEX,"*",ERR,ERROR))// &
-                & " is invalid"
+                & " is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE
             LOCAL_ERROR="The partial derivative index of "//TRIM(NUMBER_TO_VSTRING(PART_DERIV_INDEX,"*",ERR,ERROR))// &
               & " is invalid. The interpolated point has a maximum number of partial derivatives of "// &
-              & TRIM(NUMBER_TO_VSTRING(INTERPOLATED_POINT%MAX_PARTIAL_DERIVATIVE_INDEX,"*",ERR,ERROR))
+              & TRIM(NUMBER_TO_VSTRING(INTERPOLATED_POINT%MAX_PARTIAL_DERIVATIVE_INDEX,"*",ERR,ERROR))//"."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The point has not been interpolated to include first derivative values",ERR,ERROR,*999)
+          CALL FLAG_ERROR("The point has not been interpolated to include first derivative values.",ERR,ERROR,*999)
         ENDIF          
       ELSE
-        CALL FLAG_ERROR("Interpolated point is not associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Interpolated point is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Coordinate system is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("COORDINATE_DERIVATIVE_NORM")
@@ -3749,19 +3365,16 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Adjusts the interpolation for non-rectangular cartesian coordinate systems.
   SUBROUTINE COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,PARTIAL_DERIVATIVE_INDEX,VALUE,ERR,ERROR,*)
   
-    !#### Subroutine: COORDINATE_INTERPOLATION_ADJUST
-    !###  Description:
-    !###    Adjusts the interpolation for non-rectangular cartesian coordinate systems.
-    
     !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-    INTEGER(INTG), INTENT(IN) :: PARTIAL_DERIVATIVE_INDEX
-    REAL(DP), INTENT(INOUT) :: VALUE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<A pointer to the coordinate system to adjust
+    INTEGER(INTG), INTENT(IN) :: PARTIAL_DERIVATIVE_INDEX !<The partial derivative index to adjust
+    REAL(DP), INTENT(INOUT) :: VALUE !<On entry, the coordinate value to adjust. On exit, the adjusted value.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     REAL(DP) :: COSHX,CSS,D,DES,FOCUS,R,SS,SINHX,THETA
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -3785,7 +3398,7 @@ CONTAINS
           ENDIF
         CASE DEFAULT
           LOCAL_ERROR="The radial interpolation type of "//TRIM(NUMBER_TO_VSTRING(COORDINATE_SYSTEM% &
-            & RADIAL_INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for a cylindrical coordinate system"
+            & RADIAL_INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for a cylindrical coordinate system."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE(COORDINATE_SPHERICAL_POLAR_TYPE)
@@ -3801,7 +3414,7 @@ CONTAINS
           ENDIF
         CASE DEFAULT
           LOCAL_ERROR="The radial interpolation type of "//TRIM(NUMBER_TO_VSTRING(COORDINATE_SYSTEM% &
-            & RADIAL_INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for a cylindrical/spherical coordinate system"
+            & RADIAL_INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for a cylindrical/spherical coordinate system."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE)
@@ -3837,18 +3450,18 @@ CONTAINS
           ENDIF
         CASE DEFAULT
           LOCAL_ERROR="The radial interpolation type of "//TRIM(NUMBER_TO_VSTRING(COORDINATE_SYSTEM% &
-            & RADIAL_INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for a prolate spheroidal coordinate system"
+            & RADIAL_INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for a prolate spheroidal coordinate system."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE(COORDINATE_OBLATE_SPHEROIDAL_TYPE)
-        CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="The coordinate system type of "//TRIM(NUMBER_TO_VSTRING(COORDINATE_SYSTEM%TYPE,"*",ERR,ERROR))// &
-          & " is invalid"
+          & " is invalid."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Coordinate system is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
     ENDIF
       
     CALL EXITS("COORDINATE_INTERPOLATION_ADJUST")
@@ -3861,18 +3474,15 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
+  !>Adjusts the interpolation parameters for non-rectangular cartesian coordinate systems.
   SUBROUTINE COORDINATE_INTERPOLATION_PARAMETERS_ADJUST(COORDINATE_SYSTEM,INTERPOLATION_PARAMETERS,ERR,ERROR,*)
   
-    !#### Subroutine: COORDINATE_INTERPOLATION_PARAMETERS_ADJUST
-    !###  Description:
-    !###    Adjusts the interpolation parameters for non-rectangular cartesian coordinate systems.
-    
     !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<A pointer to the coordinate system to adjust
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS !<A pointer to the interpolation parameters to adjust
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
@@ -3892,7 +3502,7 @@ CONTAINS
           CASE(COORDINATE_RADIAL_SQUARED_INTERPOLATION_TYPE)
           CASE DEFAULT
             LOCAL_ERROR="The radial interpolation type of "//TRIM(NUMBER_TO_VSTRING(COORDINATE_SYSTEM% &
-              & RADIAL_INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for a cylindrical coordinate system"
+              & RADIAL_INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for a cylindrical coordinate system."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
           CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
@@ -3903,10 +3513,10 @@ CONTAINS
           CASE(COORDINATE_RADIAL_SQUARED_INTERPOLATION_TYPE)
           CASE DEFAULT
             LOCAL_ERROR="The radial interpolation type of "//TRIM(NUMBER_TO_VSTRING(COORDINATE_SYSTEM% &
-              & RADIAL_INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for a spherical coordinate system"
+              & RADIAL_INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for a spherical coordinate system."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
-          CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE)
           SELECT CASE(COORDINATE_SYSTEM%RADIAL_INTERPOLATION_TYPE)
           CASE(COORDINATE_RADIAL_INTERPOLATION_TYPE)
@@ -3915,22 +3525,22 @@ CONTAINS
           CASE(COORDINATE_RADIAL_CUBED_INTERPOLATION_TYPE)
           CASE DEFAULT
             LOCAL_ERROR="The radial interpolation type of "//TRIM(NUMBER_TO_VSTRING(COORDINATE_SYSTEM% &
-              & RADIAL_INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for a prolate spheroidal coordinate system"
+              & RADIAL_INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for a prolate spheroidal coordinate system."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
-          CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         CASE(COORDINATE_OBLATE_SPHEROIDAL_TYPE)
-          CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="The coordinate system type of "//TRIM(NUMBER_TO_VSTRING(COORDINATE_SYSTEM%TYPE,"*",ERR,ERROR))// &
-            & " is invalid"
+            & " is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Interpolation parameters is not associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Interpolation parameters is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Coordinate system is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
     ENDIF
       
     CALL EXITS("COORDINATE_INTERPOLATION_PARAMETERS_ADJUST")
@@ -3944,18 +3554,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns a pointer to the coordinate system identified by USER_NUMBER. If a coordinate system with that number is not
+  !>found then COORDINATE_SYSTEM is set to NULL.
   SUBROUTINE COORDINATE_SYSTEM_USER_NUMBER_FIND(USER_NUMBER,COORDINATE_SYSTEM,ERR,ERROR,*)
 
-    !#### Subroutine: COORDINATE_SYSTEM_USER_NUMBER_FIND
-    !###  Description:
-    !###   Returns a pointer to the coordinate system identified by USER_NUMBER. If a coordinate system with that number is not
-    !###   found then COORDINATE_SYSTEM is set to NULL.
-
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the coordinate system to find.
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<On exit, a pointer to the coordinate system with the specified user number if it exists. If no coordinate system has the specified user number the pointer is returned as NULL.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: coord_system_idx
     
@@ -3986,17 +3593,12 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !
+  !>Finalises the coordinate systems and destroys all coordinate systems.
   SUBROUTINE COORDINATE_SYSTEMS_FINALISE(ERR,ERROR,*)
 
-    !#### Subroutine: COORDINATE_SYSTEMS_FINALISE
-    !###  Description:
-    !###   Finalises the coordinate systems and destroys all coordinate systems.
-    !###  See-Also: COORDINATE_SYSTEMS_INITIALISE
-
     !Argument variables
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: coord_system_idx
     
@@ -4021,19 +3623,18 @@ CONTAINS
   !
    
   !>Initialises the coordinate systems and creates the world coordinate system.
-  !>\sa COORDINATE_SYSTEMS_FINALISE
   SUBROUTINE COORDINATE_SYSTEMS_INITIALISE(ERR,ERROR,*)
 
     !Argument variables
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
     CALL ENTERS("COORDINATE_SYSTEMS_INITIALISE",ERR,ERROR,*999)
 
     !Create the default RC World cooordinate system
     ALLOCATE(GLOBAL_COORDINATE_SYSTEM,STAT=ERR)
-    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global coordinate system",ERR,ERROR,*999)
+    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global coordinate system.",ERR,ERROR,*999)
     GLOBAL_COORDINATE_SYSTEM%USER_NUMBER=0
     GLOBAL_COORDINATE_SYSTEM%TYPE=COORDINATE_RECTANGULAR_CARTESIAN_TYPE
     GLOBAL_COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS=3
@@ -4046,7 +3647,7 @@ CONTAINS
       & (/3,3/))    
     !Store the global system in the list of coordinate systems
     ALLOCATE(COORDINATE_SYSTEMS%COORDINATE_SYSTEMS(1),STAT=ERR)
-    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate coordinate systems",ERR,ERROR,*999)
+    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate coordinate systems.",ERR,ERROR,*999)
     COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS=1
     COORDINATE_SYSTEMS%COORDINATE_SYSTEMS(1)%PTR=>GLOBAL_COORDINATE_SYSTEM
     
