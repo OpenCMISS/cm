@@ -689,6 +689,10 @@ CONTAINS
             ELSE
               CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
             ENDIF
+
+
+
+
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
             IF(ASSOCIATED(EQUATIONS_MATERIALS)) THEN
