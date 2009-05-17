@@ -17,7 +17,7 @@
 !> License for the specific language governing rights and limitations
 !> under the License.
 !>
-!> The Original Code is openCMISS
+!> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
@@ -4595,14 +4595,13 @@ CONTAINS
   !>Calculates the matrix vector product of a distrubted matrix times a distributed vector and adds it to the distributed
   !>product vector. NOTE: This will only work for specific CMISS distributed matrices i.e., ones in which the columns of the
   !>matrix are distributed in the same way as the rows of the vectors are distributed.
-  SUBROUTINE DISTRIBUTED_MATRIX_BY_VECTOR_ADD(ROW_SELECTION_TYPE,DISTRIBUTED_MATRIX,DISTRIBUTED_VECTOR, &
-    & DISTRIBUTED_VECTOR_OFFSET,DISTRIBUTED_PRODUCT, ERR,ERROR,*)
+  SUBROUTINE DISTRIBUTED_MATRIX_BY_VECTOR_ADD(ROW_SELECTION_TYPE,DISTRIBUTED_MATRIX,DISTRIBUTED_VECTOR,DISTRIBUTED_PRODUCT, &
+    & ERR,ERROR,*)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: ROW_SELECTION_TYPE !<The row selection for the matrix-vector product \see DISTRIBUTED_MATRIX_VECTOR_GhostingTypes,DISTRIBUTED_MATRIX_VECTOR
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: DISTRIBUTED_MATRIX !<A pointer to the distributed matrix
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: DISTRIBUTED_VECTOR !<A pointer to the distributed vector
-    INTEGER(INTG), INTENT(IN) :: DISTRIBUTED_VECTOR_OFFSET !<TEMPORARY UNTIL FIELDS FIXED. Offset into distributed vector
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: DISTRIBUTED_PRODUCT !<On exit, the value of the matrix vector product added to the distributed product vector.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -4627,8 +4626,7 @@ CONTAINS
                   IF(DISTRIBUTED_MATRIX%LIBRARY_TYPE==DISTRIBUTED_PRODUCT%LIBRARY_TYPE) THEN
                     DOMAIN_MAPPING=>DISTRIBUTED_MATRIX%COLUMN_DOMAIN_MAPPING
                     IF(ASSOCIATED(DOMAIN_MAPPING)) THEN
-!!TODO \todo fix once fields are fixed
-                      !IF(ASSOCIATED(DOMAIN_MAPPING,DISTRIBUTED_VECTOR%DOMAIN_MAPPING)) THEN
+                      IF(ASSOCIATED(DOMAIN_MAPPING,DISTRIBUTED_VECTOR%DOMAIN_MAPPING)) THEN
                         IF(ASSOCIATED(DOMAIN_MAPPING,DISTRIBUTED_PRODUCT%DOMAIN_MAPPING)) THEN
                           SELECT CASE(DISTRIBUTED_MATRIX%LIBRARY_TYPE)
                           CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
@@ -4665,7 +4663,7 @@ CONTAINS
                                               DO local_column=1,DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
                                                 global_column=DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
                                                 SUM=SUM+MATRIX%DATA_DP(row+(global_column-1)*MATRIX%M)* &
-                                                  & CMISS_VECTOR%DATA_DP(DISTRIBUTED_VECTOR_OFFSET+row)
+                                                  & CMISS_VECTOR%DATA_DP(row)
                                               ENDDO !local_column
                                               CMISS_PRODUCT%DATA_DP(row)=CMISS_PRODUCT%DATA_DP(row)+SUM
                                             ENDDO !row                                
@@ -4680,7 +4678,7 @@ CONTAINS
                                               DO local_column=1,DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
                                                 global_column=DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
                                                 SUM=SUM+MATRIX%DATA_DP(row+(global_column-1)*MATRIX%MAX_M)* &
-                                                  & CMISS_VECTOR%DATA_DP(DISTRIBUTED_VECTOR_OFFSET+row)
+                                                  & CMISS_VECTOR%DATA_DP(row)
                                               ENDDO !local_column
                                               CMISS_PRODUCT%DATA_DP(row)=CMISS_PRODUCT%DATA_DP(row)+SUM
                                             ENDDO !row                                
@@ -4690,7 +4688,7 @@ CONTAINS
                                               DO local_column=1,DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
                                                 global_column=DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
                                                 SUM=SUM+MATRIX%DATA_DP((row-1)*MATRIX%MAX_N+global_column)* &
-                                                  & CMISS_VECTOR%DATA_DP(DISTRIBUTED_VECTOR_OFFSET+row)
+                                                  & CMISS_VECTOR%DATA_DP(row)
                                               ENDDO !local_column
                                               CMISS_PRODUCT%DATA_DP(row)=CMISS_PRODUCT%DATA_DP(row)+SUM
                                             ENDDO !row                                
@@ -4702,7 +4700,7 @@ CONTAINS
                                                 !This ranks global to local mappings are stored in the first position
                                                 local_column=DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(global_column)%LOCAL_NUMBER(1)
                                                 SUM=SUM+MATRIX%DATA_DP(column_idx)* &
-                                                  & CMISS_VECTOR%DATA_DP(DISTRIBUTED_VECTOR_OFFSET+local_column)
+                                                  & CMISS_VECTOR%DATA_DP(local_column)
                                               ENDDO !local_column
                                               CMISS_PRODUCT%DATA_DP(row)=CMISS_PRODUCT%DATA_DP(row)+SUM
                                             ENDDO !row                                
@@ -4759,10 +4757,10 @@ CONTAINS
                           CALL FLAG_ERROR("The distributed matrix and the distributed product vector have different "// &
                             & "domain mappings.",ERR,ERROR,*999)
                         ENDIF
-                      !ELSE
-                      !  CALL FLAG_ERROR("The distributed matrix and the distributed vector have different domain mappings.", &
-                      !    & ERR,ERROR,*999)
-                      !ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("The distributed matrix and the distributed vector have different domain mappings.", &
+                          & ERR,ERROR,*999)
+                      ENDIF
                     ELSE
                       CALL FLAG_ERROR("The distributed matrix domain mapping is not associated.",ERR,ERROR,*999)
                     ENDIF

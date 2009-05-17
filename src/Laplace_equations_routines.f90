@@ -17,7 +17,7 @@
 !> License for the specific language governing rights and limitations
 !> under the License.
 !>
-!> The Original Code is openCMISS
+!> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
@@ -45,7 +45,7 @@ MODULE LAPLACE_EQUATIONS_ROUTINES
 
   USE BASE_ROUTINES
   USE BASIS_ROUTINES
-  USE BOUNDARY_CONDITION_ROUTINES
+  USE BOUNDARY_CONDITIONS_ROUTINES
   USE CONSTANTS
   USE CONTROL_LOOP_ROUTINES
   USE DISTRIBUTED_MATRIX_VECTOR
@@ -81,7 +81,8 @@ MODULE LAPLACE_EQUATIONS_ROUTINES
 !!MERGE: move
 
   PUBLIC LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE,LAPLACE_EQUATION_EQUATIONS_SET_SETUP, &
-    & LAPLACE_EQUATION_EQUATIONS_SET_SUBTYPE_SET,LAPLACE_EQUATION_PROBLEM_SUBTYPE_SET,LAPLACE_EQUATION_PROBLEM_SETUP
+    & LAPLACE_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET,LAPLACE_EQUATION_EQUATIONS_SET_SUBTYPE_SET, &
+    & LAPLACE_EQUATION_PROBLEM_SUBTYPE_SET,LAPLACE_EQUATION_PROBLEM_SETUP
   
 CONTAINS
 
@@ -89,159 +90,309 @@ CONTAINS
   !================================================================================================================================
   !
 
-!!MERGE: check
 
-  !>Calculates the element stiffness matrices and RHS for a Laplace equation finite element equations set. \todo for regular mesh only
-  SUBROUTINE LAPLACE_EQUATION_ANALYTIC_CALCULATE(FIELD,ANALYTIC_FUNCTION,GEOMETRIC_PARAMETERS,DERIVATIVE_NUMBER,NODE_NUMBER, &
-    & COMPONENT_NUMBER,VARIABLE_NUMBER,VALUE,ERR,ERROR,*)
+  !>Calculates the analytic solution and sets the boundary conditions for an analytic problem.
+  SUBROUTINE LAPLACE_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD 
-    INTEGER(INTG), INTENT(IN) :: ANALYTIC_FUNCTION 
-    REAL(DP), INTENT(IN) :: GEOMETRIC_PARAMETERS(:)  
-    INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBER 
-    INTEGER(INTG), INTENT(IN) :: NODE_NUMBER
-    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER
-    INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER
-    REAL(DP), INTENT(OUT)     :: VALUE
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET 
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: NUMBER_OF_DIMENSIONS, NUMBER_OF_DERIVATIVES,NUMBER_OF_NODES
-    REAL(DP) :: x,y,z
-    INTEGER(INTG), POINTER :: NODE_PARAM2DOF_MAP_X(:,:,:),NODE_PARAM2DOF_MAP_Y(:,:,:),NODE_PARAM2DOF_MAP_Z(:,:,:)
+    INTEGER(INTG) :: component_idx,deriv_idx,dim_idx,local_ny,node_idx,NUMBER_OF_DIMENSIONS,variable_idx,variable_type
+    REAL(DP) :: VALUE,X(3)
+    REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE
+    TYPE(VARYING_STRING) :: LOCAL_ERROR    
     
     CALL ENTERS("LAPLACE_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR,*999)
     
-    IF(ASSOCIATED(FIELD)) THEN
-      NUMBER_OF_DIMENSIONS=FIELD%REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
-      NUMBER_OF_NODES=FIELD%VARIABLES(VARIABLE_NUMBER)%COMPONENTS(COMPONENT_NUMBER)%DOMAIN%TOPOLOGY%NODES%NUMBER_OF_NODES
-      NUMBER_OF_DERIVATIVES=FIELD%VARIABLES(VARIABLE_NUMBER)%COMPONENTS(COMPONENT_NUMBER)%DOMAIN%TOPOLOGY%NODES% &
-        & NODES(NODE_NUMBER)%NUMBER_OF_DERIVATIVES
-      NODE_PARAM2DOF_MAP_X=>FIELD%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP
-      NODE_PARAM2DOF_MAP_Y=>FIELD%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP
-      x = GEOMETRIC_PARAMETERS(NODE_PARAM2DOF_MAP_X(1,NODE_NUMBER,1))
-      y = GEOMETRIC_PARAMETERS(NODE_PARAM2DOF_MAP_Y(1,NODE_NUMBER,1))
-      
-      IF(NUMBER_OF_DIMENSIONS==2) THEN
-        SELECT CASE(VARIABLE_NUMBER)
-        CASE(FIELD_U_VARIABLE_TYPE)
-          SELECT CASE(ANALYTIC_FUNCTION)
-          CASE(EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_1)
-            !TODO Analytical calculation for regular mesh only, need to implement generic analytical calculation,
-            !i.e. du/ds1=(du/dxi1)(dxi1/ds1)=(du/dx)*(dx/dxi1)*(dxi1/ds1),du/ds2=(du/dxi2)(dxi2/ds2)=(du/dx)*(dx/dxi2)*(dxi2/ds2)
-            SELECT CASE(DERIVATIVE_NUMBER)
-            CASE(NO_GLOBAL_DERIV)
-              VALUE=x**2+2*x*y-y**2
-            CASE(GLOBAL_DERIV_S1)
-              VALUE=2*x+2*y
-            CASE(GLOBAL_DERIV_S2)
-              VALUE=2*x-2*y
-            CASE(GLOBAL_DERIV_S1_S2)
-              VALUE=2.0_DP
-            CASE DEFAULT
-              CALL FLAG_ERROR("The derivativehas not been implemented.",ERR,ERROR,*999)
-            END SELECT
-          CASE(EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_2)
-            !TODO Analytical calculation for regular mesh only, need to implement generic analytical calculation,
-            !i.e. du/ds1=(du/dxi1)(dxi1/ds1)=(du/dx)*(dx/dxi1)*(dxi1/ds1),du/ds2=(du/dxi2)(dxi2/ds2)=(du/dx)*(dx/dxi2)*(dxi2/ds2)
-            SELECT CASE(DERIVATIVE_NUMBER)
-            CASE(NO_GLOBAL_DERIV)
-              VALUE=COS(x)*COSH(y)
-            CASE(GLOBAL_DERIV_S1)
-              VALUE=-SIN(x)*COSH(y)
-            CASE(GLOBAL_DERIV_S2)
-              VALUE=COS(x)*SINH(y)
-            CASE(GLOBAL_DERIV_S1_S2)
-              VALUE=-SIN(x)*SINH(y)
-            CASE DEFAULT
-              CALL FLAG_ERROR("The derivativehas not been implemented.",ERR,ERROR,*999)
-            END SELECT
-          CASE DEFAULT
-            CALL FLAG_ERROR("The equation is not implemented.",ERR,ERROR,*999)
-          END SELECT
-        CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-          ! TODO fill the calculation
-          SELECT CASE(ANALYTIC_FUNCTION)
-          CASE(EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_1)            
-            VALUE=(2*x+2*y)*x+(2*x-2*y)*y
-          CASE(EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_2) 
-            VALUE=-SIN(x)*COSH(y)*x+COS(x)*SINH(y)*y
-          CASE DEFAULT
-            CALL FLAG_ERROR("The equation is not implemented.",ERR,ERROR,*999)
-          END SELECT
-        CASE DEFAULT
-          CALL FLAG_ERROR("This variable type is either not implemented or not valid.",ERR,ERROR,*999)
-        END SELECT
-      ELSE IF(NUMBER_OF_DIMENSIONS==3)THEN
-        NODE_PARAM2DOF_MAP_Z=>FIELD%GEOMETRIC_FIELD%VARIABLES(1)%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP
-        z = GEOMETRIC_PARAMETERS(NODE_PARAM2DOF_MAP_Z(1,NODE_NUMBER,1))
-        SELECT CASE(VARIABLE_NUMBER)
-        CASE(FIELD_U_VARIABLE_TYPE)
-          SELECT CASE(ANALYTIC_FUNCTION)
-          CASE(EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_1)
-            !TODO Analytical calculation for regular mesh only, need to implement generic analytical calculation            
-            SELECT CASE(DERIVATIVE_NUMBER)
-            CASE(NO_GLOBAL_DERIV)
-              VALUE=x**2-2*y**2+z**2
-            CASE(GLOBAL_DERIV_S1)
-              VALUE=2*x
-            CASE(GLOBAL_DERIV_S2)
-              VALUE=-4*y
-            CASE(GLOBAL_DERIV_S1_S2)
-              VALUE=0.0_DP
-            CASE(GLOBAL_DERIV_S3)
-              VALUE=2*z
-            CASE(GLOBAL_DERIV_S1_S3)
-              VALUE=0.0_DP
-            CASE(GLOBAL_DERIV_S2_S3)
-              VALUE=0.0_DP
-            CASE(GLOBAL_DERIV_S1_S2_S3)
-              VALUE=0.0_DP
-            CASE DEFAULT
-              CALL FLAG_ERROR("The derivativehas not been implemented.",ERR,ERROR,*999)
-            END SELECT
-          CASE(EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_2) 
-            !TODO Analytical calculation for regular mesh only, need to implement generic analytical calculation 
-            SELECT CASE(DERIVATIVE_NUMBER)
-            CASE(NO_GLOBAL_DERIV)
-              VALUE=COS(x)*COSH(y)*z
-            CASE(GLOBAL_DERIV_S1)
-              VALUE=-SIN(x)*COSH(y)*z
-            CASE(GLOBAL_DERIV_S2)
-              VALUE=COS(x)*SINH(y)*z
-            CASE(GLOBAL_DERIV_S1_S2)
-              VALUE=-SIN(x)*SINH(y)*z
-            CASE(GLOBAL_DERIV_S3)
-              VALUE=COS(x)*COSH(y)
-            CASE(GLOBAL_DERIV_S1_S3)
-              VALUE=-SIN(x)*COSH(y)
-            CASE(GLOBAL_DERIV_S2_S3)
-              VALUE=COS(x)*SINH(y) 
-            CASE(GLOBAL_DERIV_S1_S2_S3)
-              VALUE=-SIN(x)*SINH(y)
-            CASE DEFAULT
-              CALL FLAG_ERROR("The derivativehas not been implemented.",ERR,ERROR,*999)
-            END SELECT
-          CASE DEFAULT
-            CALL FLAG_ERROR("The equation is not implemented.",ERR,ERROR,*999)
-          END SELECT
-        CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-          !TODO fill the calculation
-          SELECT CASE(ANALYTIC_FUNCTION)
-          CASE(EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_1)            
-            VALUE=2*x**2-4*y**2+2*z**2
-          CASE(EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_2) 
-            VALUE=-SIN(x)*COSH(y)*z*x+COS(x)*SINH(y)*z*y+COS(x)*COSH(y)*z
-          CASE DEFAULT
-            CALL FLAG_ERROR("The equation is not implemented.",ERR,ERROR,*999)
-          END SELECT
-        CASE DEFAULT
-          CALL FLAG_ERROR("This variable type is either not implemented or not valid.",ERR,ERROR,*999)
-        END SELECT
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+        DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+        IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+          GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+          IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN            
+            CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+            NULLIFY(GEOMETRIC_VARIABLE)
+            CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
+            CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS, &
+              & ERR,ERROR,*999)
+            NULLIFY(BOUNDARY_CONDITIONS)
+            CALL BOUNDARY_CONDITIONS_CREATE_START(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+            DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
+              variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
+              FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+              IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
+                DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                  IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
+                    DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+                    IF(ASSOCIATED(DOMAIN)) THEN
+                      IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+                        DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                        IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                          !Loop over the local nodes excluding the ghosts.
+                          DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                            !!TODO \todo We should interpolate the geometric field here and the node position.
+                            DO dim_idx=1,NUMBER_OF_DIMENSIONS
+                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
+                              X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
+                            ENDDO !dim_idx
+                            !Loop over the derivatives
+                            DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                              SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
+                              CASE(EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_1)
+                                !u=x^2+2.x.y-y^2
+                                SELECT CASE(variable_type)
+                                CASE(FIELD_U_VARIABLE_TYPE)
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  CASE(NO_GLOBAL_DERIV)
+                                    VALUE=X(1)*X(1)-2.0_DP*X(1)*X(2)-X(2)*X(2)
+                                  CASE(GLOBAL_DERIV_S1)
+                                    VALUE=2.0_DP*X(1)+2.0_DP*X(2)
+                                  CASE(GLOBAL_DERIV_S2)
+                                    VALUE=2.0_DP*X(1)-2.0_DP*X(2)
+                                  CASE(GLOBAL_DERIV_S1_S2)
+                                    VALUE=2.0_DP
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
+                                      & " is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                 SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  CASE(NO_GLOBAL_DERIV)
+                                    VALUE=0.0_DP !!TODO
+                                  CASE(GLOBAL_DERIV_S1)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S2)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                  CASE(GLOBAL_DERIV_S1_S2)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
+                                      & " is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                CASE DEFAULT
+                                  LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+                                    & " is invalid."
+                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                END SELECT                                
+                              CASE(EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_2)
+                                !u=cos(x).cosh(y)
+                                SELECT CASE(variable_type)
+                                CASE(FIELD_U_VARIABLE_TYPE)
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  CASE(NO_GLOBAL_DERIV)
+                                    VALUE=COS(X(1))*COSH(X(2))
+                                  CASE(GLOBAL_DERIV_S1)
+                                    VALUE=-SIN(X(1))*COSH(X(2))
+                                  CASE(GLOBAL_DERIV_S2)
+                                    VALUE=COS(X(1))*SINH(X(2))
+                                  CASE(GLOBAL_DERIV_S1_S2)
+                                    VALUE=-SIN(X(1))*SINH(X(2))
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
+                                      & " is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  CASE(NO_GLOBAL_DERIV)
+                                    VALUE=0.0_DP !!TODO
+                                  CASE(GLOBAL_DERIV_S1)
+                                    !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S2)
+                                    !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                  CASE(GLOBAL_DERIV_S1_S2)
+                                    !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
+                                      & " is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                CASE DEFAULT
+                                  LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+                                    & " is invalid."
+                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                END SELECT                                
+                              CASE(EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_1)
+                                !u=x^2+y^2-2.z^2
+                                SELECT CASE(variable_type)
+                                CASE(FIELD_U_VARIABLE_TYPE)
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  CASE(NO_GLOBAL_DERIV)
+                                    VALUE=X(1)*X(1)+X(2)*X(2)-2.0_DP*X(3)*X(3)
+                                  CASE(GLOBAL_DERIV_S1)
+                                    VALUE=2.0_DP*X(1)
+                                  CASE(GLOBAL_DERIV_S2)
+                                    VALUE=2.0_DP*X(2)
+                                  CASE(GLOBAL_DERIV_S1_S2)
+                                    VALUE=0.0_DP
+                                  CASE(GLOBAL_DERIV_S3)
+                                    VALUE=-4.0_DP*X(3)
+                                  CASE(GLOBAL_DERIV_S1_S3)
+                                    VALUE=0.0_DP
+                                  CASE(GLOBAL_DERIV_S2_S3)
+                                    VALUE=0.0_DP
+                                  CASE(GLOBAL_DERIV_S1_S2_S3)
+                                    VALUE=0.0_DP
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
+                                      & " is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  CASE(NO_GLOBAL_DERIV)
+                                    VALUE=0.0_DP !!TODO
+                                  CASE(GLOBAL_DERIV_S1)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S2)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                  CASE(GLOBAL_DERIV_S1_S2)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S3)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S1_S3)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S2_S3)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S1_S2_S3)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
+                                      & " is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                CASE DEFAULT
+                                  LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+                                    & " is invalid."
+                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                END SELECT                                
+                              CASE(EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_2)
+                                !u=cos(x).cosh(y).z
+                                SELECT CASE(variable_type)
+                                CASE(FIELD_U_VARIABLE_TYPE)
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  CASE(NO_GLOBAL_DERIV)
+                                    VALUE=COS(X(1))*COSH(X(2))*X(3)
+                                  CASE(GLOBAL_DERIV_S1)
+                                    VALUE=-SIN(X(1))*COSH(X(2))*X(3)
+                                  CASE(GLOBAL_DERIV_S2)
+                                    VALUE=COS(X(1))*SINH(X(2))*X(3)
+                                  CASE(GLOBAL_DERIV_S1_S2)
+                                    VALUE=-SIN(X(1))*SINH(X(2))*X(3)
+                                  CASE(GLOBAL_DERIV_S3)
+                                    VALUE=COS(X(1))*COSH(X(2))
+                                  CASE(GLOBAL_DERIV_S1_S3)
+                                    VALUE=-SIN(X(1))*COSH(X(2))
+                                  CASE(GLOBAL_DERIV_S2_S3)
+                                    VALUE=COS(X(1))*SINH(X(2))
+                                  CASE(GLOBAL_DERIV_S1_S2_S3)
+                                    VALUE=-SIN(X(1))*SINH(X(2))
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
+                                      & " is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  CASE(NO_GLOBAL_DERIV)
+                                    VALUE=0.0_DP !!TODO
+                                  CASE(GLOBAL_DERIV_S1)
+                                    !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S2)
+                                    !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                  CASE(GLOBAL_DERIV_S1_S2)
+                                    !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S3)
+                                    !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S1_S3)
+                                    !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S2_S3)
+                                    !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S1_S2_S3)
+                                    !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
+                                      & " is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                CASE DEFAULT
+                                  LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+                                    & " is invalid."
+                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                END SELECT                                
+                              CASE DEFAULT
+                                LOCAL_ERROR="The analytic function type of "// &
+                                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                                  & " is invalid."
+                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              END SELECT
+                              local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
+                              IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
+                                IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
+                                  !If we are a boundary node then set the analytic value on the boundary
+                                  CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+                                    & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                ENDIF
+                              ENDIF
+                            ENDDO !deriv_idx
+                          ENDDO !node_idx
+                        ELSE
+                          CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                  ENDIF
+                ENDDO !component_idx
+                CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
+                  & ERR,ERROR,*999)
+                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
+                  & ERR,ERROR,*999)
+              ELSE
+                CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+              ENDIF
+
+            ENDDO !variable_idx
+            CALL BOUNDARY_CONDITIONS_CREATE_FINISH(BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+            CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+          ELSE
+            CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+          ENDIF            
+        ELSE
+          CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("The field is not associated.",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("LAPLACE_EQUATION_ANALYTIC_CALCULATE")
@@ -250,66 +401,6 @@ CONTAINS
     CALL EXITS("LAPLACE_EQUATION_ANALYTIC_CALCULATE")
     RETURN 1
   END SUBROUTINE LAPLACE_EQUATION_ANALYTIC_CALCULATE
-  
-  !
-  !================================================================================================================================
-  !
-
-!!MERGE: what is this
-  
-  !>Calculates the element stiffness matrices and RHS for a Laplace equation finite element equations set.
-  SUBROUTINE LAPLACE_EQUATION_ANALYTIC_PARAMETER_SET_UPDATE(EQUATIONS_SET,GEOMETRIC_PARAMETERS,NODE_TYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET 
-    REAL(DP), INTENT(IN) :: GEOMETRIC_PARAMETERS(:)
-    INTEGER(INTG), INTENT(IN) :: NODE_TYPE 
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD 
-    INTEGER(INTG) :: ANALYTIC_FUNCTION 
-    INTEGER(INTG) :: var_idx,comp_idx,node_idx,node_number,dev_idx
-    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES_MAPPING
-    REAL(DP) :: VALUE
-    
-    
-    CALL ENTERS("LAPLACE_EQUATION_ANALYTIC_PARAMETER_SET_UPDATE",ERR,ERROR,*999)
-    
-    FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-    ANALYTIC_FUNCTION=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION
-    IF(ASSOCIATED(FIELD)) THEN
-      DO var_idx=1,FIELD%NUMBER_OF_VARIABLES
-        DO comp_idx=1,FIELD%VARIABLES(var_idx)%NUMBER_OF_COMPONENTS
-          DOMAIN_NODES=>FIELD%VARIABLES(1)%COMPONENTS(comp_idx)%DOMAIN%TOPOLOGY%NODES
-          IF(ASSOCIATED(DOMAIN_NODES)) THEN
-            NODES_MAPPING=>FIELD%VARIABLES(1)%COMPONENTS(comp_idx)%DOMAIN%MAPPINGS%NODES
-            DO node_idx=NODES_MAPPING%INTERNAL_START,NODES_MAPPING%BOUNDARY_FINISH
-              node_number=NODES_MAPPING%DOMAIN_LIST(node_idx)
-              
-              DO dev_idx=1,DOMAIN_NODES%NODES(node_number)%NUMBER_OF_DERIVATIVES
-                CALL LAPLACE_EQUATION_ANALYTIC_CALCULATE(FIELD,ANALYTIC_FUNCTION,GEOMETRIC_PARAMETERS,dev_idx,node_number, &
-                  & comp_idx,var_idx,VALUE,ERR,ERROR,*999)            
-                CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_ANALYTIC_VALUES_SET_TYPE,dev_idx,node_number,comp_idx, &
-                  & var_idx,VALUE,ERR,ERROR,*999)   
-              ENDDO ! dev_idx
-            ENDDO ! node_idx
-          ELSE
-            CALL FLAG_ERROR("Domain nodes are not associated",ERR,ERROR,*999)
-          ENDIF
-        ENDDO ! comp_idx
-      ENDDO ! var_idx
-    ELSE
-      CALL FLAG_ERROR("The field is not associated.",ERR,ERROR,*999) 
-    ENDIF
-    
-    CALL EXITS("LAPLACE_EQUATION_ANALYTIC_PARAMETER_SET_UPDATE")
-    RETURN
-999 CALL ERRORS("LAPLACE_EQUATION_ANALYTIC_PARAMETER_SET_UPDATE",ERR,ERROR)
-    CALL EXITS("LAPLACE_EQUATION_ANALYTIC_PARAMETER_SET_UPDATE")
-    RETURN 1
-  END SUBROUTINE LAPLACE_EQUATION_ANALYTIC_PARAMETER_SET_UPDATE
   
   !
   !================================================================================================================================
@@ -459,12 +550,11 @@ CONTAINS
   !
 
   !>Sets up the Laplace equation type of a classical field equations set class.
-  SUBROUTINE LAPLACE_EQUATION_EQUATIONS_SET_SETUP(EQUATIONS_SET,SETUP_TYPE,ACTION_TYPE,ERR,ERROR,*)
+  SUBROUTINE LAPLACE_EQUATION_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to setup a Laplace equation on.
-    INTEGER(INTG), INTENT(IN) :: SETUP_TYPE !<The setup type
-    INTEGER(INTG), INTENT(IN) :: ACTION_TYPE !<The action type
+    TYPE(EQUATIONS_SET_SETUP_TYPE), INTENT(INOUT) :: EQUATIONS_SET_SETUP !<The equations set setup information
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -475,7 +565,7 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%SUBTYPE)
       CASE(EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE)
-        CALL LAPLACE_EQUATION_EQUATIONS_SET_STANDARD_SETUP(EQUATIONS_SET,SETUP_TYPE,ACTION_TYPE,ERR,ERROR,*999)
+        CALL LAPLACE_EQUATION_EQUATIONS_SET_STANDARD_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_GENERALISED_LAPLACE_SUBTYPE)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
@@ -484,7 +574,7 @@ CONTAINS
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
     CALL EXITS("LAPLACE_EQUATION_EQUATIONS_SET_SETUP")
@@ -493,6 +583,77 @@ CONTAINS
     CALL EXITS("LAPLACE_EQUATION_EQUATIONS_SET_SETUP")
     RETURN 1
   END SUBROUTINE LAPLACE_EQUATION_EQUATIONS_SET_SETUP
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the solution method for a Laplace equation type of an classical field equations set class.
+  SUBROUTINE LAPLACE_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the solution method for
+    INTEGER(INTG), INTENT(IN) :: SOLUTION_METHOD !<The solution method to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("LAPLACE_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      CASE(EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE)        
+        SELECT CASE(SOLUTION_METHOD)
+        CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+          EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
+        CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE DEFAULT
+          LOCAL_ERROR="The specified solution method of "//TRIM(NUMBER_TO_VSTRING(SOLUTION_METHOD,"*",ERR,ERROR))//" is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      CASE(EQUATIONS_SET_GENERALISED_LAPLACE_SUBTYPE)        
+        SELECT CASE(SOLUTION_METHOD)
+        CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+          EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
+        CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE DEFAULT
+          LOCAL_ERROR="The specified solution method of "//TRIM(NUMBER_TO_VSTRING(SOLUTION_METHOD,"*",ERR,ERROR))//" is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      CASE DEFAULT
+        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+          & " is not valid for a Laplace equation type of an classical field equations set class."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("LAPLACE_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET")
+    RETURN
+999 CALL ERRORS("LAPLACE_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR)
+    CALL EXITS("LAPLACE_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET")
+    RETURN 1
+  END SUBROUTINE LAPLACE_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET
 
   !
   !================================================================================================================================
@@ -517,8 +678,6 @@ CONTAINS
         EQUATIONS_SET%CLASS=EQUATIONS_SET_CLASSICAL_FIELD_CLASS
         EQUATIONS_SET%TYPE=EQUATIONS_SET_LAPLACE_EQUATION_TYPE
         EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE
-        CALL LAPLACE_EQUATION_EQUATIONS_SET_STANDARD_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INITIAL_TYPE, &
-          & EQUATIONS_SET_SETUP_START_ACTION,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_GENERALISED_LAPLACE_SUBTYPE)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
@@ -542,26 +701,26 @@ CONTAINS
   !
 
   !>Sets up the standard Laplace equation.
-  SUBROUTINE LAPLACE_EQUATION_EQUATIONS_SET_STANDARD_SETUP(EQUATIONS_SET,SETUP_TYPE,ACTION_TYPE,ERR,ERROR,*)
+  SUBROUTINE LAPLACE_EQUATION_EQUATIONS_SET_STANDARD_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to setup
-    INTEGER(INTG), INTENT(IN) :: SETUP_TYPE !<The setup type to perform
-    INTEGER(INTG), INTENT(IN) :: ACTION_TYPE !<The action type to perform
+    TYPE(EQUATIONS_SET_SETUP_TYPE), INTENT(INOUT) :: EQUATIONS_SET_SETUP !<The equations set setup information
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: GEOMETRIC_MESH_COMPONENT,GEOMETRIC_SCALING_TYPE,NEXT_NUMBER
+    INTEGER(INTG) :: GEOMETRIC_MESH_COMPONENT,GEOMETRIC_SCALING_TYPE,NUMBER_OF_DIMENSIONS
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(DECOMPOSITION_TYPE), POINTER :: GEOMETRIC_DECOMPOSITION
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    TYPE(FIELD_TYPE), POINTER :: ANALYTIC_FIELD,DEPENDENT_FIELD,GEOMETRIC_FIELD
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
     
     CALL ENTERS("LAPLACE_EQUATION_EQUATION_SET_STANDARD_SETUP",ERR,ERROR,*999)
 
+    NULLIFY(BOUNDARY_CONDITIONS)
     NULLIFY(EQUATIONS)
     NULLIFY(EQUATIONS_MAPPING)
     NULLIFY(EQUATIONS_MATRICES)
@@ -569,189 +728,275 @@ CONTAINS
    
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE) THEN
-        SELECT CASE(SETUP_TYPE)
+        SELECT CASE(EQUATIONS_SET_SETUP%SETUP_TYPE)
         CASE(EQUATIONS_SET_SETUP_INITIAL_TYPE)
-          SELECT CASE(ACTION_TYPE)
+          SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
-            EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
+            CALL LAPLACE_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,EQUATIONS_SET_FEM_SOLUTION_METHOD,ERR,ERROR,*999)
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
-!!TODO: Check valid setup
+            !Do nothing
           CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
-              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard Laplace equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(EQUATIONS_SET_SETUP_GEOMETRY_TYPE)
-          !Do nothing???
+          !Do nothing
         CASE(EQUATIONS_SET_SETUP_DEPENDENT_TYPE)
-          SELECT CASE(ACTION_TYPE)
+          SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
-!!TODO: maybe given negative user numbers to openCMISS generated fields???
-            CALL FIELD_NEXT_NUMBER_FIND(EQUATIONS_SET%REGION,NEXT_NUMBER,ERR,ERROR,*999)
-            CALL FIELD_CREATE_START(NEXT_NUMBER,EQUATIONS_SET%REGION,EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,ERR,ERROR,*999)
-            CALL FIELD_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
-            CALL FIELD_DEPENDENT_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DEPENDENT_TYPE,ERR,ERROR,*999)
-            CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
-            CALL FIELD_MESH_DECOMPOSITION_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
-            CALL FIELD_GEOMETRIC_FIELD_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, &
-              & ERR,ERROR,*999)
-            CALL FIELD_NUMBER_OF_VARIABLES_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,2,ERR,ERROR,*999)
-            CALL FIELD_NUMBER_OF_COMPONENTS_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,1,ERR,ERROR,*999)
-            !Default to the geometric interpolation setup
-            CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,1, &
-              & GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
-            CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,1, &
-              & GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
-            CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
-              & GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
-            SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
-            CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
-              CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,1, &
-                & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-              CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
-                & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-              CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
-              CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
-            CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-            CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-            CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-            CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-            CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-            CASE DEFAULT
-              LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
-                & " is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT
+            IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD_AUTO_CREATED) THEN
+              !Create the auto created dependent field
+              CALL FIELD_CREATE_START(EQUATIONS_SET_SETUP%FIELD_USER_NUMBER,EQUATIONS_SET%REGION,EQUATIONS_SET%DEPENDENT% &
+                & DEPENDENT_FIELD,ERR,ERROR,*999)
+              CALL FIELD_LABEL_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,"Dependent Field",ERR,ERROR,*999)
+              CALL FIELD_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+              CALL FIELD_DEPENDENT_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DEPENDENT_TYPE,ERR,ERROR,*999)
+              CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
+              CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,GEOMETRIC_DECOMPOSITION, &
+                & ERR,ERROR,*999)
+              CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,EQUATIONS_SET%GEOMETRY% &
+                & GEOMETRIC_FIELD,ERR,ERROR,*999)
+              CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,2,ERR,ERROR,*999)
+              CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,(/FIELD_U_VARIABLE_TYPE, &
+                & FIELD_DELUDELN_VARIABLE_TYPE/),ERR,ERROR,*999)
+              CALL FIELD_VARIABLE_LABEL_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,"Phi",ERR,ERROR,*999)
+              CALL FIELD_VARIABLE_LABEL_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,"del Phi/del n", &
+                & ERR,ERROR,*999)
+              CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                & FIELD_SCALAR_DIMENSION_TYPE,ERR,ERROR,*999)
+              CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
+                & FIELD_SCALAR_DIMENSION_TYPE,ERR,ERROR,*999)
+              CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                & FIELD_DP_TYPE,ERR,ERROR,*999)
+              CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
+                & FIELD_DP_TYPE,ERR,ERROR,*999)
+              CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,1, &
+                & ERR,ERROR,*999)
+              CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
+                & ERR,ERROR,*999)
+              CALL FIELD_COMPONENT_LABEL_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,1,"Phi",ERR,ERROR,*999)
+              CALL FIELD_COMPONENT_LABEL_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
+                & "del Phi/del n",ERR,ERROR,*999)
+              !Default to the geometric interpolation setup
+              CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,1, &
+                & GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+              CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,1, &
+                & GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+              CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
+                & GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+              SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+              CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+                CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
+                  & FIELD_U_VARIABLE_TYPE,1,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
+                  & FIELD_DELUDELN_VARIABLE_TYPE,1,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                !Default the scaling to the geometric field scaling
+                CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
+                CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
+                  & " is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+            ELSE
+              !Check the user specified field
+              CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+              CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DEPENDENT_TYPE,ERR,ERROR,*999)
+              CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,2,ERR,ERROR,*999)
+              CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE,FIELD_DELUDELN_VARIABLE_TYPE/), &
+                & ERR,ERROR,*999)
+              CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_SCALAR_DIMENSION_TYPE,ERR,ERROR,*999)
+              CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_SCALAR_DIMENSION_TYPE, &
+                & ERR,ERROR,*999)
+              CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
+              CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
+              CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1,ERR,ERROR,*999)
+              CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1,ERR,ERROR,*999)
+              SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+              CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+                CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1, &
+                  & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
+                  & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
+                  & " is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+            ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
-            CALL FIELD_CREATE_FINISH(EQUATIONS_SET%REGION,EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,ERR,ERROR,*999)
+            IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD_AUTO_CREATED) THEN
+              CALL FIELD_CREATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,ERR,ERROR,*999)
+            ENDIF
           CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
-              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard Laplace equation"
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(EQUATIONS_SET_SETUP_MATERIALS_TYPE)
-          SELECT CASE(ACTION_TYPE)
+          SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
             !Do nothing
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             !Do nothing
-            !? Maybe set finished flag????
           CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
-              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard Laplace equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(EQUATIONS_SET_SETUP_SOURCE_TYPE)
-          SELECT CASE(ACTION_TYPE)
+          SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
             !Do nothing
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             !Do nothing
-            !? Maybe set finished flag????
           CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
-              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard Laplace equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(EQUATIONS_SET_SETUP_ANALYTIC_TYPE)
-          SELECT CASE(ACTION_TYPE)
+          SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
             IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
               DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
               IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
-                EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION=EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_1
-                CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
-              ELSE
+                GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+                IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
+                  CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                  SELECT CASE(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE)
+                  CASE(EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_1)
+                    !Check that we are in 2D
+                    IF(NUMBER_OF_DIMENSIONS/=2) THEN
+                      LOCAL_ERROR="The number of geometric dimensions of "// &
+                        & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+                        & " is invalid. The analytic function type of "// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                        & " requires that there be 2 geometric dimensions."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                    !Create analytic field if required
+                    !Set analtyic function type
+                    EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_1
+                  CASE(EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_2)
+                    !Check that we are in 2D
+                    IF(NUMBER_OF_DIMENSIONS/=2) THEN
+                      LOCAL_ERROR="The number of geometric dimensions of "// &
+                        & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+                        & " is invalid. The analytic function type of "// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                        & " requires that there be 2 geometric dimensions."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                    !Create analytic field if required
+                    !Set analtyic function type
+                    EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_2
+                  CASE(EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_1)
+                    !Check that we are in 3D
+                    IF(NUMBER_OF_DIMENSIONS/=3) THEN
+                      LOCAL_ERROR="The number of geometric dimensions of "// &
+                        & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+                        & " is invalid. The analytic function type of "// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                        & " requires that there be 3 geometric dimensions."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                    !Create analytic field if required
+                    !Set analtyic function type
+                    EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_1
+                  CASE(EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_2)
+                    !Check that we are in 3D
+                    IF(NUMBER_OF_DIMENSIONS/=3) THEN
+                      LOCAL_ERROR="The number of geometric dimensions of "// &
+                        & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+                        & " is invalid. The analytic function type of "// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                        & " requires that there be 3 geometric dimensions."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                    !Create analytic field if required
+                    !Set analtyic function type
+                    EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_2
+                  CASE DEFAULT
+                    LOCAL_ERROR="The specified analytic function type of "// &
+                      & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                      & " is invalid for a standard Laplace equation."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
+                ELSE
+                  CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+                ENDIF
+             ELSE
                 CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
               CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
-            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-            CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
-            IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
-              
-              CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD%GEOMETRIC_FIELD,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS, &
-                & ERR,ERROR,*999)
-              
-              ! Set up boundary nodes 
-              CALL LAPLACE_EQUATION_ANALYTIC_PARAMETER_SET_UPDATE(EQUATIONS_SET,GEOMETRIC_PARAMETERS,DOMAIN_LOCAL_BOUNDARY, &
-                & ERR,ERROR,*999)
-              
-              CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
-              
-              ! Set up internal nodes
-              CALL LAPLACE_EQUATION_ANALYTIC_PARAMETER_SET_UPDATE(EQUATIONS_SET,GEOMETRIC_PARAMETERS,DOMAIN_LOCAL_INTERNAL, &
-                & ERR,ERROR,*999)
-              
-              CALL BOUNDARY_CONDITION_PARAM_SET_UPDATE_FROM_ANAL_VALUE(EQUATIONS_SET,ERR,ERROR,*999)
-              
-              CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
-
-              CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD%GEOMETRIC_FIELD,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS, &
-                & ERR,ERROR,*999)
-              
-              EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED=.TRUE.
-            ELSE
-              CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
-            ENDIF
-            EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED=.TRUE.
-          CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
-              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a standard Laplace equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          END SELECT
-        CASE(EQUATIONS_SET_SETUP_FIXED_CONDITIONS_TYPE)
-          SELECT CASE(ACTION_TYPE)
-          CASE(EQUATIONS_SET_SETUP_START_ACTION)
-            IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-              DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-              IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
-                CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999)
-              ELSE
-                CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+            IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+              ANALYTIC_FIELD=>EQUATIONS_SET%ANALYTIC%ANALYTIC_FIELD
+              IF(ASSOCIATED(ANALYTIC_FIELD)) THEN
+                IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FIELD_AUTO_CREATED) THEN
+                  CALL FIELD_CREATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,ERR,ERROR,*999)
+                ENDIF
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
             ENDIF
-          CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
-            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-            IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
-              CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999)
+          CASE(EQUATIONS_SET_SETUP_GENERATE_ACTION)
+            IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
+              IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+                IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED) THEN
+                  CALL LAPLACE_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("Equations set analtyic has not been finished.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Equations set analtyic is not associated.",ERR,ERROR,*999)
+              ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Equations set dependent has not been finished.",ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
-              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard Laplace equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(EQUATIONS_SET_SETUP_EQUATIONS_TYPE)
-          SELECT CASE(ACTION_TYPE)
+          SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
-            IF(ASSOCIATED(EQUATIONS_SET%FIXED_CONDITIONS)) THEN
-              IF(EQUATIONS_SET%FIXED_CONDITIONS%FIXED_CONDITIONS_FINISHED) THEN
-                CALL EQUATIONS_CREATE_START(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
-                CALL EQUATIONS_LINEARITY_TYPE_SET(EQUATIONS,EQUATIONS_LINEAR,ERR,ERROR,*999)
-                CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_STATIC,ERR,ERROR,*999)
-              ELSE
-                CALL FLAG_ERROR("Equations set fixed conditions has not been finished.",ERR,ERROR,*999)
-              ENDIF
+            IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
+              CALL EQUATIONS_CREATE_START(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
+              CALL EQUATIONS_LINEARITY_TYPE_SET(EQUATIONS,EQUATIONS_LINEAR,ERR,ERROR,*999)
+              CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_STATIC,ERR,ERROR,*999)
             ELSE
-              CALL FLAG_ERROR("Equations set fixed conditions is not associated.",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
@@ -799,13 +1044,35 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
-              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+              & " is invalid for a standard Laplace equation."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE(EQUATIONS_SET_SETUP_BOUNDARY_CONDITIONS_TYPE)
+          SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
+          CASE(EQUATIONS_SET_SETUP_START_ACTION)
+            CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
+            IF(ASSOCIATED(EQUATIONS)) THEN
+              IF(EQUATIONS%EQUATIONS_FINISHED) THEN
+                CALL BOUNDARY_CONDITIONS_CREATE_START(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+              ELSE
+                CALL FLAG_ERROR("Equations set equations has not been finished.",ERR,ERROR,*999)               
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+            ENDIF
+          CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
+            CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+            CALL BOUNDARY_CONDITIONS_CREATE_FINISH(BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard Laplace equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
-          LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a standard Laplace equation."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
@@ -830,12 +1097,11 @@ CONTAINS
   !
  
   !>Sets up the Laplace problem.
-  SUBROUTINE LAPLACE_EQUATION_PROBLEM_SETUP(PROBLEM,SETUP_TYPE,ACTION_TYPE,ERR,ERROR,*)
+  SUBROUTINE LAPLACE_EQUATION_PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem set to setup a Laplace equation on.
-    INTEGER(INTG), INTENT(IN) :: SETUP_TYPE !<The setup type
-    INTEGER(INTG), INTENT(IN) :: ACTION_TYPE !<The action type
+    TYPE(PROBLEM_SETUP_TYPE), INTENT(INOUT) :: PROBLEM_SETUP !<The problem setup information
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -846,7 +1112,7 @@ CONTAINS
     IF(ASSOCIATED(PROBLEM)) THEN
       SELECT CASE(PROBLEM%SUBTYPE)
       CASE(PROBLEM_STANDARD_LAPLACE_SUBTYPE)
-        CALL LAPLACE_EQUATION_PROBLEM_STANDARD_SETUP(PROBLEM,SETUP_TYPE,ACTION_TYPE,ERR,ERROR,*999)
+        CALL LAPLACE_EQUATION_PROBLEM_STANDARD_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE(PROBLEM_GENERALISED_LAPLACE_SUBTYPE)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
@@ -888,8 +1154,6 @@ CONTAINS
         PROBLEM%CLASS=PROBLEM_CLASSICAL_FIELD_CLASS
         PROBLEM%TYPE=PROBLEM_LAPLACE_EQUATION_TYPE
         PROBLEM%SUBTYPE=PROBLEM_STANDARD_LAPLACE_SUBTYPE     
-        CALL LAPLACE_EQUATION_PROBLEM_STANDARD_SETUP(PROBLEM,PROBLEM_SETUP_INITIAL_TYPE,PROBLEM_SETUP_START_ACTION, &
-          & ERR,ERROR,*999)
       CASE(PROBLEM_GENERALISED_LAPLACE_SUBTYPE)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
@@ -913,18 +1177,15 @@ CONTAINS
   !
 
   !>Sets up the standard Laplace equations problem.
-  SUBROUTINE LAPLACE_EQUATION_PROBLEM_STANDARD_SETUP(PROBLEM,SETUP_TYPE,ACTION_TYPE,ERR,ERROR,*)
+  SUBROUTINE LAPLACE_EQUATION_PROBLEM_STANDARD_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to setup
-    INTEGER(INTG), INTENT(IN) :: SETUP_TYPE !<The setup type to perform
-    INTEGER(INTG), INTENT(IN) :: ACTION_TYPE !<The action type to perform
+    TYPE(PROBLEM_SETUP_TYPE), INTENT(INOUT) :: PROBLEM_SETUP !<The problem setup information
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP,CONTROL_LOOP_ROOT
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    TYPE(PROBLEM_EQUATIONS_ADD_TYPE), POINTER :: EQUATIONS_TO_ADD
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
@@ -938,23 +1199,21 @@ CONTAINS
     NULLIFY(SOLVERS)
     IF(ASSOCIATED(PROBLEM)) THEN
       IF(PROBLEM%SUBTYPE==PROBLEM_STANDARD_LAPLACE_SUBTYPE) THEN
-        SELECT CASE(SETUP_TYPE)
+        SELECT CASE(PROBLEM_SETUP%SETUP_TYPE)
         CASE(PROBLEM_SETUP_INITIAL_TYPE)
-          SELECT CASE(ACTION_TYPE)
+          SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
           CASE(PROBLEM_SETUP_START_ACTION)
             !Do nothing????
           CASE(PROBLEM_SETUP_FINISH_ACTION)
             !Do nothing???
-          CASE(PROBLEM_SETUP_DO_ACTION)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
-              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard Laplace equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_CONTROL_TYPE)
-          SELECT CASE(ACTION_TYPE)
+          SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
           CASE(PROBLEM_SETUP_START_ACTION)
             !Set up a simple control loop
             CALL CONTROL_LOOP_CREATE_START(PROBLEM,CONTROL_LOOP,ERR,ERROR,*999)
@@ -963,11 +1222,9 @@ CONTAINS
             CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
             CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
             CALL CONTROL_LOOP_CREATE_FINISH(CONTROL_LOOP,ERR,ERROR,*999)            
-          CASE(PROBLEM_SETUP_DO_ACTION)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
-              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard Laplace equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -975,7 +1232,7 @@ CONTAINS
           !Get the control loop
           CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
           CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
-          SELECT CASE(ACTION_TYPE)
+          SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
           CASE(PROBLEM_SETUP_START_ACTION)
             !Start the solvers creation
             CALL SOLVERS_CREATE_START(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
@@ -990,16 +1247,14 @@ CONTAINS
             CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
             !Finish the solvers creation
             CALL SOLVERS_CREATE_FINISH(SOLVERS,ERR,ERROR,*999)
-          CASE(PROBLEM_SETUP_DO_ACTION)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
-              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a standard Laplace equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
-          SELECT CASE(ACTION_TYPE)
+          SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
           CASE(PROBLEM_SETUP_START_ACTION)
             !Get the control loop
             CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
@@ -1022,42 +1277,14 @@ CONTAINS
             CALL SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SOLVER_EQUATIONS,ERR,ERROR,*999)
             !Finish the solver equations creation
             CALL SOLVER_EQUATIONS_CREATE_FINISH(SOLVER_EQUATIONS,ERR,ERROR,*999)             
-          CASE(PROBLEM_SETUP_DO_ACTION)
-            EQUATIONS_TO_ADD=>PROBLEM%EQUATIONS_TO_ADD
-            IF(ASSOCIATED(EQUATIONS_TO_ADD)) THEN
-              EQUATIONS_SET=>EQUATIONS_TO_ADD%EQUATIONS_SET_TO_ADD
-              IF(ASSOCIATED(EQUATIONS_SET)) THEN
-               !Check the equations set is from a standard Laplace equation
-                IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS.AND. &
-                  & EQUATIONS_SET%TYPE==EQUATIONS_SET_LAPLACE_EQUATION_TYPE.AND. &
-                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE) THEN
-                  !Get the control loop
-                  CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
-                  CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,EQUATIONS_TO_ADD%CONTROL_LOOP_IDENTIFIER,CONTROL_LOOP,ERR,ERROR,*999)
-                  !Get the solver equations
-                  CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
-                  CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
-                  CALL SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SOLVER_EQUATIONS,ERR,ERROR,*999)
-                  !Add in the equations set
-                  CALL SOLVER_EQUATIONS_EQUATIONS_SET_ADD(SOLVER_EQUATIONS,EQUATIONS_TO_ADD%EQUATIONS_SET_TO_ADD, &
-                    & EQUATIONS_TO_ADD%EQUATIONS_SET_ADDED_INDEX,ERR,ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("The equations set to add is not a standard Laplace equations set.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Equations set to add is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("Problem equations to add is not associated.",ERR,ERROR,*999)
-            ENDIF
           CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(ACTION_TYPE,"*",ERR,ERROR))// &
-              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard Laplace equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
        CASE DEFAULT
-          LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(SETUP_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a standard Laplace equation."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT

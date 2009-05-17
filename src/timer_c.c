@@ -17,7 +17,7 @@
  * License for the specific language governing rights and limitations
  * under the License.
  * 
- * The Original Code is openCMISS
+ * The Original Code is OpenCMISS
  * 
  * The Initial Developer of the Original Code is University of Auckland,
  * Auckland, New Zealand and University of Oxford, Oxford, United
