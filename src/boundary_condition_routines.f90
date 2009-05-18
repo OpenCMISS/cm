@@ -80,6 +80,13 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
 
   !Interfaces
 
+  !>Adds to the value of the specified local DOF and sets this as a boundary condition on the specified local DOF.
+  INTERFACE BOUNDARY_CONDITIONS_ADD_LOCAL_DOF
+    MODULE PROCEDURE BOUNDARY_CONDITIONS_ADD_LOCAL_DOF1
+    MODULE PROCEDURE BOUNDARY_CONDITIONS_ADD_LOCAL_DOFS
+  END INTERFACE !BOUNDARY_CONDITIONS_ADD_LOCAL_DOF
+
+  !>Sets a boundary condition on the specified local DOF.
   INTERFACE BOUNDARY_CONDITIONS_SET_LOCAL_DOF
     MODULE PROCEDURE BOUNDARY_CONDITIONS_SET_LOCAL_DOF1
     MODULE PROCEDURE BOUNDARY_CONDITIONS_SET_LOCAL_DOFS
@@ -89,6 +96,9 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
 
   PUBLIC BOUNDARY_CONDITIONS_CREATE_FINISH,BOUNDARY_CONDITIONS_CREATE_START,BOUNDARY_CONDITIONS_DESTROY
   
+  PUBLIC BOUNDARY_CONDITIONS_ADD_CONSTANT,BOUNDARY_CONDITIONS_ADD_LOCAL_DOF,BOUNDARY_CONDITIONS_ADD_ELEMENT, &
+    & BOUNDARY_CONDITIONS_ADD_NODE
+
   PUBLIC BOUNDARY_CONDITIONS_SET_CONSTANT,BOUNDARY_CONDITIONS_SET_LOCAL_DOF,BOUNDARY_CONDITIONS_SET_ELEMENT, &
     & BOUNDARY_CONDITIONS_SET_NODE
   
@@ -449,6 +459,83 @@ CONTAINS
   !================================================================================================================================
   !
  
+  !>Adds to the value of the specified constant and sets this as a boundary condition on the specified constant.
+  SUBROUTINE BOUNDARY_CONDITIONS_ADD_CONSTANT(BOUNDARY_CONDITIONS,VARIABLE_TYPE,COMPONENT_NUMBER,CONDITION,VALUE,ERR,ERROR,*)
+    
+    !Argument variables
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<A pointer to the boundary conditions to set the boundary condition for
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The variable type to set the boundary condition at
+    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<The component number to set the boundary condition at
+    INTEGER(INTG), INTENT(IN) :: CONDITION !<The boundary condition type to set \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
+    REAL(DP), INTENT(IN) :: VALUE !<The value of the boundary condition to add
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: local_ny,global_ny
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+ 
+    CALL ENTERS("BOUNDARY_CONDITIONS_ADD_CONSTANT",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+      IF(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_FINISHED) THEN
+        CALL FLAG_ERROR("Boundary conditions have been finished.",ERR,ERROR,*999)
+      ELSE
+        EQUATIONS_SET=>BOUNDARY_CONDITIONS%EQUATIONS_SET
+        IF(ASSOCIATED(EQUATIONS_SET)) THEN
+          IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
+            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD           
+            IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+              CALL FIELD_COMPONENT_DOF_GET_CONSTANT(DEPENDENT_FIELD,VARIABLE_TYPE,COMPONENT_NUMBER,local_ny,global_ny, &
+                & ERR,ERROR,*999)
+              BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(VARIABLE_TYPE)%PTR
+              IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+                SELECT CASE(CONDITION)
+                CASE(BOUNDARY_CONDITION_NOT_FIXED)
+                  BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_ny)=BOUNDARY_CONDITION_NOT_FIXED
+                CASE(BOUNDARY_CONDITION_FIXED)
+                  BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_ny)=BOUNDARY_CONDITION_FIXED
+                  CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(DEPENDENT_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, &
+                    & VALUE,ERR,ERROR,*999)
+                CASE(BOUNDARY_CONDITION_MIXED)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE DEFAULT
+                  LOCAL_ERROR="The specified boundary condition type of "//TRIM(NUMBER_TO_VSTRING(CONDITION,"*",ERR,ERROR))// &
+                    & " is invalid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+              ELSE
+                LOCAL_ERROR="The boundary conditions for variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+                  & " has not been created."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("The equations set dependent field is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The equations set dependent field has not been finished.",ERR,ERROR,*999)              
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The boundary conditions equations set is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("BOUNDARY_CONDITION_ADD_CONSTANT")
+    RETURN
+999 CALL ERRORS("BOUNDARY_CONDITION_ADD_CONSTANT",ERR,ERROR)
+    CALL EXITS("BOUNDARY_CONDITION_ADD_CONSTANT")
+    RETURN 1
+  END SUBROUTINE BOUNDARY_CONDITIONS_ADD_CONSTANT
+  
+ !
+  !================================================================================================================================
+  !
+ 
   !>Sets a boundary condition on the specified constant.
   SUBROUTINE BOUNDARY_CONDITIONS_SET_CONSTANT(BOUNDARY_CONDITIONS,VARIABLE_TYPE,COMPONENT_NUMBER,CONDITION,VALUE,ERR,ERROR,*)
     
@@ -521,6 +608,148 @@ CONTAINS
     CALL EXITS("BOUNDARY_CONDITION_SET_CONSTANT")
     RETURN 1
   END SUBROUTINE BOUNDARY_CONDITIONS_SET_CONSTANT
+  
+  !
+  !================================================================================================================================
+  !
+ 
+  !>Adds to the value of the specified DOF and sets this as a boundary condition on the specified DOF.
+  SUBROUTINE BOUNDARY_CONDITIONS_ADD_LOCAL_DOF1(BOUNDARY_CONDITIONS,VARIABLE_TYPE,DOF_INDEX,CONDITION,VALUE,ERR,ERROR,*)
+    
+    !Argument variables
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<A pointer to the boundary conditions to set the boundary condition for
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The variable type to set the boundary condition at
+    INTEGER(INTG), INTENT(IN) :: DOF_INDEX !<The local dof index to set the boundary condition at
+    INTEGER(INTG), INTENT(IN) :: CONDITION !<The boundary condition type to set \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
+    REAL(DP), INTENT(IN) :: VALUE !<The value of the boundary condition to add
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    
+ 
+    CALL ENTERS("BOUNDARY_CONDITIONS_ADD_LOCAL_DOF1",ERR,ERROR,*999)
+
+    CALL BOUNDARY_CONDITIONS_ADD_LOCAL_DOFS(BOUNDARY_CONDITIONS,VARIABLE_TYPE,(/DOF_INDEX/),(/CONDITION/),(/VALUE/),ERR,ERROR,*999)
+           
+    CALL EXITS("BOUNDARY_CONDITION_ADD_LOCAL_DOF1")
+    RETURN
+999 CALL ERRORS("BOUNDARY_CONDITION_ADD_LOCAL_DOF1",ERR,ERROR)
+    CALL EXITS("BOUNDARY_CONDITION_ADD_LOCAL_DOF1")
+    RETURN 1
+  END SUBROUTINE BOUNDARY_CONDITIONS_ADD_LOCAL_DOF1
+  
+  !
+  !================================================================================================================================
+  !
+ 
+  !>Adds to the value of the specified DOF and sets this as a boundary condition on the specified DOFs.
+  SUBROUTINE BOUNDARY_CONDITIONS_ADD_LOCAL_DOFS(BOUNDARY_CONDITIONS,VARIABLE_TYPE,DOF_INDICES,CONDITIONS,VALUES,ERR,ERROR,*)
+    
+    !Argument variables
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<A pointer to the boundary conditions to set the boundary condition for
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The variable type to set the boundary condition at
+    INTEGER(INTG), INTENT(IN) :: DOF_INDICES(:) !<DOF_INDICES(:). The local dof index for the i'th dof to set the boundary condition at
+    INTEGER(INTG), INTENT(IN) :: CONDITIONS(:) !<CONDITIONS(:). The boundary condition type to set for the i'th dof \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
+    REAL(DP), INTENT(IN) :: VALUES(:) !<VALUES(:). The value of the boundary condition for the i'th dof to add
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: i,global_ny,local_ny
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+ 
+    CALL ENTERS("BOUNDARY_CONDITIONS_ADD_LOCAL_DOFS",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+      IF(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_FINISHED) THEN
+        CALL FLAG_ERROR("Boundary conditions have been finished.",ERR,ERROR,*999)
+      ELSE
+        EQUATIONS_SET=>BOUNDARY_CONDITIONS%EQUATIONS_SET
+        IF(ASSOCIATED(EQUATIONS_SET)) THEN
+          IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
+            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+            IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+              NULLIFY(DEPENDENT_VARIABLE)
+              CALL FIELD_VARIABLE_GET(DEPENDENT_FIELD,VARIABLE_TYPE,DEPENDENT_VARIABLE,ERR,ERROR,*999)
+              DOMAIN_MAPPING=>DEPENDENT_VARIABLE%DOMAIN_MAPPING
+              IF(ASSOCIATED(DOMAIN_MAPPING)) THEN
+                BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(VARIABLE_TYPE)%PTR
+                IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+                  IF(SIZE(DOF_INDICES,1)==SIZE(CONDITIONS,1)) THEN
+                    IF(SIZE(DOF_INDICES,1)==SIZE(VALUES,1)) THEN
+                      DO i=1,SIZE(DOF_INDICES,1)
+                        local_ny=DOF_INDICES(i)
+                        IF(local_ny>=1.AND.local_ny<=DOMAIN_MAPPING%NUMBER_OF_LOCAL) THEN
+                          global_ny=DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
+                          SELECT CASE(CONDITIONS(i))
+                          CASE(BOUNDARY_CONDITION_NOT_FIXED)
+                            BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_ny)=BOUNDARY_CONDITION_NOT_FIXED
+                          CASE(BOUNDARY_CONDITION_FIXED)
+                            BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_ny)= &
+                              & BOUNDARY_CONDITION_FIXED
+                            CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(DEPENDENT_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                              & local_ny,VALUES(i),ERR,ERROR,*999)
+                          CASE(BOUNDARY_CONDITION_MIXED)
+                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          CASE DEFAULT
+                            LOCAL_ERROR="The specified boundary condition type for dof index "// &
+                              & TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" of "// &
+                              & TRIM(NUMBER_TO_VSTRING(CONDITIONS(i),"*",ERR,ERROR))//" is invalid."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          END SELECT
+                        ELSE 
+                          LOCAL_ERROR="The local dof of  "//&
+                            & TRIM(NUMBER_TO_VSTRING(local_ny,"*",ERR,ERROR))//" at dof index "// &
+                            & TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))// &
+                            & " is invalid. The dof should be between 1 and "// &
+                            & TRIM(NUMBER_TO_VSTRING(DOMAIN_MAPPING%NUMBER_OF_LOCAL,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)                            
+                        ENDIF
+                      ENDDO !i
+                    ELSE
+                      LOCAL_ERROR="The size of the dof indices array ("// &
+                        & TRIM(NUMBER_TO_VSTRING(SIZE(DOF_INDICES,1),"*",ERR,ERROR))// &
+                        & ") does not match the size of the values array ("// &
+                        & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    LOCAL_ERROR="The size of the dof indices array ("// &
+                      & TRIM(NUMBER_TO_VSTRING(SIZE(DOF_INDICES,1),"*",ERR,ERROR))// &
+                      & ") does not match the size of the fixed conditions array ("// &
+                      & TRIM(NUMBER_TO_VSTRING(SIZE(CONDITIONS,1),"*",ERR,ERROR))//")."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Boundary conditions variable is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("The dependent field variable domain mapping is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("The equations set dependent field is not associated..",ERR,ERROR,*999)              
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The equations set dependent field has not been finished.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The boundary conditions equations set is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("BOUNDARY_CONDITION_ADD_LOCAL_DOFS")
+    RETURN
+999 CALL ERRORS("BOUNDARY_CONDITION_ADD_LOCAL_DOFS",ERR,ERROR)
+    CALL EXITS("BOUNDARY_CONDITION_ADD_LOCAL_DOFS")
+    RETURN 1
+  END SUBROUTINE BOUNDARY_CONDITIONS_ADD_LOCAL_DOFS
   
   !
   !================================================================================================================================
@@ -668,6 +897,85 @@ CONTAINS
   !================================================================================================================================
   !
  
+  !>Adds to the value of the specified constant and sets this as a boundary condition on the specified user element.
+  SUBROUTINE BOUNDARY_CONDITIONS_ADD_ELEMENT(BOUNDARY_CONDITIONS,VARIABLE_TYPE,USER_ELEMENT_NUMBER,COMPONENT_NUMBER, &
+    & CONDITION,VALUE,ERR,ERROR,*)
+    
+    !Argument variables
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<A pointer to the boundary conditions to set the boundary condition for
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The variable type to set the boundary condition at
+    INTEGER(INTG), INTENT(IN) :: USER_ELEMENT_NUMBER !<The user element number to set the boundary condition at
+    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<The component number to set the boundary condition at
+    INTEGER(INTG), INTENT(IN) :: CONDITION !<The boundary condition type to set \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
+    REAL(DP), INTENT(IN) :: VALUE !<The value of the boundary condition to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: local_ny,global_ny
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+ 
+    CALL ENTERS("BOUNDARY_CONDITIONS_ADD_ELEMENT",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+      IF(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_FINISHED) THEN
+        CALL FLAG_ERROR("Boundary conditions have been finished.",ERR,ERROR,*999)
+      ELSE
+        EQUATIONS_SET=>BOUNDARY_CONDITIONS%EQUATIONS_SET
+        IF(ASSOCIATED(EQUATIONS_SET)) THEN
+          IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
+            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD           
+            IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+              CALL FIELD_COMPONENT_DOF_GET_USER_ELEMENT(DEPENDENT_FIELD,VARIABLE_TYPE,USER_ELEMENT_NUMBER,COMPONENT_NUMBER, &
+                & local_ny,global_ny,ERR,ERROR,*999)
+              BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(VARIABLE_TYPE)%PTR
+              IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+                SELECT CASE(CONDITION)
+                CASE(BOUNDARY_CONDITION_NOT_FIXED)
+                  BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_ny)=BOUNDARY_CONDITION_NOT_FIXED
+                CASE(BOUNDARY_CONDITION_FIXED)
+                  BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_ny)=BOUNDARY_CONDITION_FIXED
+                  CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(DEPENDENT_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, &
+                    & VALUE,ERR,ERROR,*999)
+                CASE(BOUNDARY_CONDITION_MIXED)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE DEFAULT
+                  LOCAL_ERROR="The specified boundary condition type of "//TRIM(NUMBER_TO_VSTRING(CONDITION,"*",ERR,ERROR))// &
+                    & " is invalid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+              ELSE
+                LOCAL_ERROR="The boundary conditions for variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+                  & " has not been created."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("The equations set dependent field is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The equations set dependent field has not been finished.",ERR,ERROR,*999)              
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The boundary conditions equations set is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("BOUNDARY_CONDITION_ADD_ELEMENT")
+    RETURN
+999 CALL ERRORS("BOUNDARY_CONDITION_ADD_ELEMENT",ERR,ERROR)
+    CALL EXITS("BOUNDARY_CONDITION_ADD_ELEMENT")
+    RETURN 1
+  END SUBROUTINE BOUNDARY_CONDITIONS_ADD_ELEMENT
+  
+  !
+  !================================================================================================================================
+  !
+ 
   !>Sets a boundary condition on the specified user element.
   SUBROUTINE BOUNDARY_CONDITIONS_SET_ELEMENT(BOUNDARY_CONDITIONS,VARIABLE_TYPE,USER_ELEMENT_NUMBER,COMPONENT_NUMBER, &
     & CONDITION,VALUE,ERR,ERROR,*)
@@ -746,7 +1054,86 @@ CONTAINS
   !
   !================================================================================================================================
   !
+ 
+  !>Adds to the value of the specified constant and sets this as a boundary condition on the specified user node.
+  SUBROUTINE BOUNDARY_CONDITIONS_ADD_NODE(BOUNDARY_CONDITIONS,VARIABLE_TYPE,DERIVATIVE_NUMBER,USER_NODE_NUMBER,COMPONENT_NUMBER, &
+    & CONDITION,VALUE,ERR,ERROR,*)
+    
+    !Argument variables
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<A pointer to the boundary conditions to set the boundary condition for
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The variable type to set the boundary condition at
+    INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBER !<The derivative to set the boundary condition at
+    INTEGER(INTG), INTENT(IN) :: USER_NODE_NUMBER !<The user node number to set the boundary condition at
+    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<The component number to set the boundary condition at
+    INTEGER(INTG), INTENT(IN) :: CONDITION !<The boundary condition type to set \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
+    REAL(DP), INTENT(IN) :: VALUE !<The value of the boundary condition to add
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: local_ny,global_ny
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+ 
+    CALL ENTERS("BOUNDARY_CONDITIONS_SET_NODE",ERR,ERROR,*999)
 
+    IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+      IF(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_FINISHED) THEN
+        CALL FLAG_ERROR("Boundary conditions have been finished.",ERR,ERROR,*999)
+      ELSE
+        EQUATIONS_SET=>BOUNDARY_CONDITIONS%EQUATIONS_SET
+        IF(ASSOCIATED(EQUATIONS_SET)) THEN
+          IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
+            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD           
+            IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+              CALL FIELD_COMPONENT_DOF_GET_USER_NODE(DEPENDENT_FIELD,VARIABLE_TYPE,DERIVATIVE_NUMBER,USER_NODE_NUMBER, &
+                & COMPONENT_NUMBER,local_ny,global_ny,ERR,ERROR,*999)
+              BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(VARIABLE_TYPE)%PTR
+              IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+                SELECT CASE(CONDITION)
+                CASE(BOUNDARY_CONDITION_NOT_FIXED)
+                  BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_ny)=BOUNDARY_CONDITION_NOT_FIXED
+                CASE(BOUNDARY_CONDITION_FIXED)
+                  BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_ny)=BOUNDARY_CONDITION_FIXED
+                  CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(DEPENDENT_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny,VALUE, &
+                    & ERR,ERROR,*999)
+                CASE(BOUNDARY_CONDITION_MIXED)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE DEFAULT
+                  LOCAL_ERROR="The specified boundary condition type of "//TRIM(NUMBER_TO_VSTRING(CONDITION,"*",ERR,ERROR))// &
+                    & " is invalid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+              ELSE
+                LOCAL_ERROR="The boundary conditions for variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+                  & " has not been created."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("The equations set dependent field is not associated",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The equations set dependent has not been finished.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Boundary conditions equations set is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("BOUNDARY_CONDITION_ADD_NODE")
+    RETURN
+999 CALL ERRORS("BOUNDARY_CONDITION_ADD_NODE",ERR,ERROR)
+    CALL EXITS("BOUNDARY_CONDITION_ADD_NODE")
+    RETURN 1
+  END SUBROUTINE BOUNDARY_CONDITIONS_ADD_NODE
+  
+  !
+  !================================================================================================================================
+  !
  
   !>Sets a boundary condition on the specified user node.
   SUBROUTINE BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,VARIABLE_TYPE,DERIVATIVE_NUMBER,USER_NODE_NUMBER,COMPONENT_NUMBER, &
