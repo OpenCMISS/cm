@@ -893,7 +893,7 @@ $(OBJECT_DIR)/coordinate_routines.o	:	$(MAIN_SOURCE_DIR)/coordinate_routines.f90
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 
- $(OBJECT_DIR)/Darcy_equations_routines.o	:	$(MAIN_SOURCE_DIR)/Darcy_equations_routines.f90 \
+$(OBJECT_DIR)/Darcy_equations_routines.o	:	$(MAIN_SOURCE_DIR)/Darcy_equations_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
 	$(OBJECT_DIR)/boundary_condition_routines.o \
