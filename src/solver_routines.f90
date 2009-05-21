@@ -247,21 +247,6 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_SPARSE_MATRICES=1 !<Use sparse solver matrices \see SOLVER_ROUTINES_SparsityTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_FULL_MATRICES=2 !<Use fully populated solver matrices \see SOLVER_ROUTINES_SparsityTypes,SOLVER_ROUTINES
   !>@}
-
-  !> \addtogroup SOLVER_ROUTINES_SelectMatricesTypes SOLVER_ROUTINES::SelectMatricesTypes
-  !> \brief The types of selection available for the solver matrices
-  !> \see SOLVER_ROUTINES
-  !>@{
-  INTEGER(INTG), PARAMETER :: SOLVER_MATRICES_ALL=1 !<Select all the solver matrices and vectors \see SOLVER_ROUTINES_SelectMatricesTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_MATRICES_DYNAMIC_ONLY=2 !<Select only the dynamic solver matrices and vectors \see SOLVER_ROUTINES_SelectMatricesTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_MATRICES_LINEAR_ONLY=3 !<Select only the linear solver matrices and vectors \see SOLVER_ROUTINES_SelectMatricesTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_MATRICES_NONLINEAR_ONLY=4 !<Select only the nonlinear solver matrices and vectors \see SOLVER_ROUTINES_SelectMatricesTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_MATRICES_JACOBIAN_ONLY=5 !<Select only the Jacobian solver matrix \see SOLVER_ROUTINES_SelectMatricesTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_MATRICES_RESIDUAL_ONLY=6 !<Select only the residual solver vector \see SOLVER_ROUTINES_SelectMatricesTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_MATRICES_RHS_ONLY=7 !<Select only the RHS solver vector \see SOLVER_ROUTINES_SelectMatricesTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_MATRICES_RHS_RESIDUAL_ONLY=8 !<Select only the residual and RHS solver vectors \see SOLVER_ROUTINES_SelectMatricesTypes,SOLVER_ROUTINES
-  !>@}
-
   !Module types
 
   !Module variables
@@ -348,9 +333,6 @@ MODULE SOLVER_ROUTINES
   PUBLIC SOLVER_LINEAR_ITERATIVE_ABSOLUTE_TOLERANCE_SET,SOLVER_LINEAR_ITERATIVE_DIVERGENCE_TOLERANCE_SET, &
     & SOLVER_LINEAR_ITERATIVE_MAXIMUM_ITERATIONS_SET,SOLVER_LINEAR_ITERATIVE_PRECONDITIONER_TYPE_SET, &
     & SOLVER_LINEAR_ITERATIVE_RELATIVE_TOLERANCE_SET,SOLVER_LINEAR_ITERATIVE_TYPE_SET
-
-  PUBLIC SOLVER_MATRICES_ALL,SOLVER_MATRICES_LINEAR_ONLY,SOLVER_MATRICES_NONLINEAR_ONLY,SOLVER_MATRICES_JACOBIAN_ONLY, &
-    & SOLVER_MATRICES_RESIDUAL_ONLY,SOLVER_MATRICES_RHS_ONLY,SOLVER_MATRICES_RHS_RESIDUAL_ONLY
 
   PUBLIC SOLVER_MATRICES_DYNAMIC_ASSEMBLE,SOLVER_MATRICES_STATIC_ASSEMBLE
 
@@ -4049,7 +4031,7 @@ CONTAINS
 
     !Argument variableg
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
-    INTEGER(INTG), INTENT(IN) :: SELECTION_TYPE !<The type of matrix selection \see SOLVER_ROUTINES_SelectMatricesTypes,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(IN) :: SELECTION_TYPE !<The type of matrix selection \see SOLVER_MATRICES_ROUTINES_SelectMatricesTypes,SOLVER_MATRICES_ROUTINES
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -4720,7 +4702,7 @@ CONTAINS
               ENDIF
               !If required output the solver matrices          
               IF(SOLVER%OUTPUT_TYPE>=SOLVER_MATRIX_OUTPUT) THEN
-                CALL SOLVER_MATRICES_OUTPUT(GENERAL_OUTPUT_TYPE,SOLVER_MATRICES,ERR,ERROR,*999)
+                CALL SOLVER_MATRICES_OUTPUT(GENERAL_OUTPUT_TYPE,SELECTION_TYPE,SOLVER_MATRICES,ERR,ERROR,*999)
               ENDIF
             ELSE
               CALL FLAG_ERROR("Solver solver matrices is not associated.",ERR,ERROR,*999)
@@ -4754,7 +4736,7 @@ CONTAINS
 
     !Argument variableg
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
-    INTEGER(INTG), INTENT(IN) :: SELECTION_TYPE !<The type of matrix selection \see SOLVER_ROUTINES_SelectMatricesTypes,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(IN) :: SELECTION_TYPE !<The type of matrix selection \see SOLVER_MATRICES_ROUTINES_SelectMatricesTypes,SOLVER_MATRICES_ROUTINES
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -5288,7 +5270,7 @@ CONTAINS
             ENDIF
             !If required output the solver matrices          
             IF(SOLVER%OUTPUT_TYPE>=SOLVER_MATRIX_OUTPUT) THEN
-              CALL SOLVER_MATRICES_OUTPUT(GENERAL_OUTPUT_TYPE,SOLVER_MATRICES,ERR,ERROR,*999)
+              CALL SOLVER_MATRICES_OUTPUT(GENERAL_OUTPUT_TYPE,SELECTION_TYPE,SOLVER_MATRICES,ERR,ERROR,*999)
             ENDIF
           ELSE
             CALL FLAG_ERROR("Solver solver matrices is not associated.",ERR,ERROR,*999)
