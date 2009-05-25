@@ -150,4 +150,19 @@ CALL PROBLEM_SOLVE(PROBLEM,ERR,ERROR,*999)
 CALL CMISS_FINALISE(ERR,ERROR,*999)
 
 \endcode
+
+\section example_how How to add an example
+\subsection example_code Code Level
+- Use svn copy to copy an existing example folder to the same directory. 
+- Rename the name of the folder
+- Rename the fortran file in src folder
+- Rename the Visual Studio configuration files and change the configurations inside.
+- Change the source code for the new example
+
+\subsection example_document Document Level
+- Add the entry into doc/doxygen/additional_doc/examples.dox
+- Add similar entry into the example source file (TODo how to link this with buildbot)
+
+\subsection example_build Build Level
+- Email opencmiss-developers@lists.sourceforge.net to notify that the new examples is added and ready for build. 
 */
