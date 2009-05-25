@@ -1928,8 +1928,13 @@ MODULE TYPES
     TYPE(EQUATIONS_SETS_TYPE), POINTER :: EQUATIONS_SETS !<A pointer to the equation sets defined on the region. 
     TYPE(REGION_TYPE), POINTER :: PARENT_REGION !<A pointer to the parent region for the region. If the region has no parent region then it is the global (world) region and PARENT_REGION is NULL.
     INTEGER(INTG) :: NUMBER_OF_SUB_REGIONS !<The number of sub-regions defined for the region.
-    TYPE(REGION_PTR_TYPE), POINTER :: SUB_REGIONS(:) !<An array of pointers to the sub-regions defined on the region.
+    TYPE(REGION_PTR_TYPE), POINTER :: SUB_REGIONS(:) !<An array of pointers to the sub-regions defined on the region. \todo make this allocatable
   END TYPE REGION_TYPE
+
+  !>Contains information about the regions
+  TYPE REGIONS_TYPE
+    TYPE(REGION_TYPE), POINTER :: WORLD_REGION !<A pointer to the world region
+  END TYPE REGIONS_TYPE
 
   !
   !================================================================================================================================
