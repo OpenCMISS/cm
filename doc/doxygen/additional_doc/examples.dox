@@ -1,0 +1,64 @@
+/** \example examples/AnalyticLaplace/src/AnalyticLaplaceExample.f90
+Example illustrating the use of openCMISS to solve the Laplace problem and check with its Analytic Solution.
+*/
+
+/** \example examples/Channel/src/ChannelExample.f90
+using openCMISS calls.
+*/
+
+/** \example examples/Darcy/src/DarcyExample.f90
+Example program to solve a Darcy equation using openCMISS calls.
+*/
+
+/** \example examples/Diffusion/src/DiffusionExample.f90
+Example program to solve a diffusion equation using openCMISS calls.
+*/
+
+/** \example examples/FiniteElasticity/src/FiniteElasticityExample.f90
+Example program to solve a finite elasticity equation using openCMISS calls.
+*/
+
+/** \example examples/Helmholtz/src/HelmholtzExample.f90
+Example program to solve a Helmholtz equation using openCMISS calls.
+*/
+
+/** \example examples/InputCMHeartMesh/src/InputCMHeartMeshExample.f90
+Example program which imports CMHeart input files.
+*/
+
+/** \example examples/LagrangeSimplexMesh/src/LagrangeSimplexMeshExample.f90
+Example program which sets up a field which uses a mixed Lagrange and Simplex mesh using openCMISS calls.
+*/
+
+/** \example examples/Laplace/src/LaplaceExample.f90
+Example program to solve a Laplace equation using openCMISS calls.
+*/
+
+/** \example examples/LinearElasticity/src/LinearElasticityExample.f90
+Example program to solve a linear elasticity equation using openCMISS calls.
+*/
+
+/** \example examples/Monodomain/src/MonodomainExample.f90
+Example program to solve a Monodomain equation using openCMISS calls.
+*/
+
+/** \example examples/MoreComplexMesh/src/MoreComplexMeshExample.f90
+Example program which sets up a field which uses a more complex mesh using openCMISS calls.
+*/
+
+/** \example examples/NonlinearPoisson/src/NonlinearPoissonExample.f90
+Example program to solve a nonlinear Poisson equation using openCMISS calls.
+*/
+
+/** \example examples/SimplexMesh/src/SimplexMeshExample.f90
+Example program which sets up a field which uses a Simplex using openCMISS calls.
+*/
+
+/** \example examples/StokesFlow/src/StokesFlowExample.f90
+Example program to solve a Stokes equation using openCMISS calls.
+*/
+
+/** \example examples/TwoRegions/src/TwoRegionsExample.f90
+Example program which sets up a field in two regions using openCMISS calls.
+*/
+

@@ -3,7 +3,7 @@
 !> \author Chris Bradley
 !> \brief The top level cmiss module.
 !>
-!> \mainpage openCMISS Documentation
+!> \mainpage OpenCMISS Documentation
 !>
 !> An open source interactive computer program for Continuum Mechanics, Image analysis, Signal processing and System
 !> Identification. Target usage: Bioengineering application of finite element analysis, boundary element and collocation
@@ -23,7 +23,7 @@
 !> License for the specific language governing rights and limitations
 !> under the License.
 !>
-!> The Original Code is openCMISS
+!> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
@@ -44,6 +44,15 @@
 !> and other provisions required by the GPL or the LGPL. If you do not delete
 !> the provisions above, a recipient may use your version of this file under
 !> the terms of any one of the MPL, the GPL or the LGPL.
+!>
+!> \example examples/AnalyticLaplace/src/AnalyticLaplaceExample.f90
+!> \example examples/Diffusion/src/DiffusionExample.f90
+!> \example examples/FiniteElasticity/src/FiniteElasticityExample.f90
+!> \example examples/Helmholtz/src/HelmholtzExample.f90
+!> \example examples/Laplace/src/LaplaceExample.f90
+!> \example examples/Darcy/src/DarcyExample.f90
+!> \example examples/Monodomain/src/MonodomainExample.f90
+!> \example examples/NonlinearPoisson/src/NonlinearPoissonExample.f90
 !>
 
 !> The top level cmiss module.
@@ -111,7 +120,7 @@ CONTAINS
     CALL BASES_FINALISE(ERR,ERROR,*999)
     !Finalise computational enviroment
     CALL COMPUTATIONAL_ENVIRONMENT_FINALISE(ERR,ERROR,*999)
-    !Initialise the base routines
+    !Finalise the base routines
     CALL BASE_ROUTINES_FINALISE(ERR,ERROR,*999)
     
     RETURN
@@ -123,9 +132,10 @@ CONTAINS
   !
 
   !>Initialises CMISS.
-  SUBROUTINE CMISS_INITIALISE(ERR,ERROR,*)
+  SUBROUTINE CMISS_INITIALISE(WORLD_REGION,ERR,ERROR,*)
   
     !Argument variables
+    TYPE(REGION_TYPE), POINTER :: WORLD_REGION !<On exit, a pointer to the world region. Must not be associated on entry.
     INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(INOUT) :: ERROR !<The error string
     !Local Variables
@@ -135,29 +145,33 @@ CONTAINS
     CALL BASE_ROUTINES_INITIALISE(ERR,ERROR,*999)
     !Intialise the computational environment
     CALL COMPUTATIONAL_ENVIRONMENT_INITIALISE(ERR,ERROR,*999)
-    !Intialise the bases
-    CALL BASES_INITIALISE(ERR,ERROR,*999)
-    !Initialise the coordinate systems
-    CALL COORDINATE_SYSTEMS_INITIALISE(ERR,ERROR,*999)
-    !Initialise the regions 
-    CALL REGIONS_INITIALISE(ERR,ERROR,*999)
-    !Initialise the generated_mesh
-    CALL GENERATED_MESHES_INITIALISE(ERR,ERROR,*999)
-    !Initialise the problems
-    CALL PROBLEMS_INITIALISE(ERR,ERROR,*999)
-
-    !Write out the CMISS version
-    IF(COMPUTATIONAL_ENVIRONMENT%MY_COMPUTATIONAL_NODE_NUMBER==0) THEN
-      VERSION_STRING="openCMISS(cm) version "//TRIM(NUMBER_TO_VSTRING(CMISS_MAJOR_VERSION,"*",ERR,ERROR))
-      VERSION_STRING=VERSION_STRING//"."
-      VERSION_STRING=VERSION_STRING//TRIM(NUMBER_TO_VSTRING(CMISS_MINOR_VERSION,"*",ERR,ERROR))
-      VERSION_STRING=VERSION_STRING//"."
-      VERSION_STRING=VERSION_STRING//TRIM(NUMBER_TO_VSTRING(CMISS_REVISION_VERSION,"*",ERR,ERROR))
-      !VERSION_STRING=VERSION_STRING//" ("
-      !VERSION_STRING=VERSION_STRING//TRIM(CMISS_BUILD_VERSION(6:))
-      !VERSION_STRING=VERSION_STRING//" )"
-         
-      WRITE(*,'(A)') CHAR(VERSION_STRING)
+    IF(ASSOCIATED(WORLD_REGION)) THEN
+      CALL FLAG_ERROR("World region is already associated.",ERR,ERROR,*999)
+    ELSE
+      !Intialise the bases
+      CALL BASES_INITIALISE(ERR,ERROR,*999)
+      !Initialise the coordinate systems
+      CALL COORDINATE_SYSTEMS_INITIALISE(ERR,ERROR,*999)
+      !Initialise the regions 
+      CALL REGIONS_INITIALISE(WORLD_REGION,ERR,ERROR,*999)
+      !Initialise the generated_mesh
+      CALL GENERATED_MESHES_INITIALISE(ERR,ERROR,*999)
+      !Initialise the problems
+      CALL PROBLEMS_INITIALISE(ERR,ERROR,*999)
+      
+      !Write out the CMISS version
+      IF(COMPUTATIONAL_ENVIRONMENT%MY_COMPUTATIONAL_NODE_NUMBER==0) THEN
+        VERSION_STRING="OpenCMISS(cm) version "//TRIM(NUMBER_TO_VSTRING(CMISS_MAJOR_VERSION,"*",ERR,ERROR))
+        VERSION_STRING=VERSION_STRING//"."
+        VERSION_STRING=VERSION_STRING//TRIM(NUMBER_TO_VSTRING(CMISS_MINOR_VERSION,"*",ERR,ERROR))
+        VERSION_STRING=VERSION_STRING//"."
+        VERSION_STRING=VERSION_STRING//TRIM(NUMBER_TO_VSTRING(CMISS_REVISION_VERSION,"*",ERR,ERROR))
+        !VERSION_STRING=VERSION_STRING//" ("
+        !VERSION_STRING=VERSION_STRING//TRIM(CMISS_BUILD_VERSION(6:))
+        !VERSION_STRING=VERSION_STRING//" )"
+        
+        WRITE(*,'(A)') CHAR(VERSION_STRING)
+      ENDIF
     ENDIF
     
     RETURN

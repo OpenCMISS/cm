@@ -17,7 +17,7 @@
  * License for the specific language governing rights and limitations
  * under the License.
  *
- * The Original Code is openCMISS
+ * The Original Code is OpenCMISS
  *
  * The Initial Developer of the Original Code is University of Auckland,
  * Auckland, New Zealand and University of Oxford, Oxford, United
@@ -488,16 +488,17 @@ static int FieldExport_File_Nodes( FileSession *const session, const int nodeCou
     const int *const elementDerivatives, int firstScaleIndex )
 {
     int i, j;
+    int derivativeIndex = 0;
 
     FieldExport_FPrintf( session, "     #Nodes= %d\n", nodeCount );
 
     for( i = 0; i < nodeCount; i++ )
     {
-        FieldExport_FPrintf( session, " %5d.  #Values=%d\n", i + 1, elementDerivatives[i] );
+        FieldExport_FPrintf( session, " %5d.  #Values=%d\n", i + 1, derivativeCount[i] );
         FieldExport_FPrintf( session, "      Value indices:  " );
         for( j = 0; j < derivativeCount[i]; j++ )
         {
-            FieldExport_FPrintf( session, " %3d", elementDerivatives[ i + (j * nodeCount ) ] );
+            FieldExport_FPrintf( session, " %3d", elementDerivatives[ derivativeIndex++ ] );
         }
         FieldExport_FPrintf( session, "\n" );
         FieldExport_FPrintf( session, "      Scale factor indices: " );

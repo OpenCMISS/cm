@@ -17,7 +17,7 @@
 !> License for the specific language governing rights and limitations
 !> under the License.
 !>
-!> The Original Code is openCMISS
+!> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
@@ -74,7 +74,7 @@ MODULE DOMAIN_MAPPINGS
   PUBLIC DOMAIN_LOCAL_INTERNAL,DOMAIN_LOCAL_BOUNDARY,DOMAIN_LOCAL_GHOST
   
   PUBLIC DOMAIN_MAPPINGS_MAPPING_FINALISE,DOMAIN_MAPPINGS_MAPPING_INITIALISE,DOMAIN_MAPPINGS_MAPPING_GLOBAL_INITIALISE, &
-    & DOMAIN_MAPPINGS_LOCAL_FROM_GLOBAL_CALCULATE
+    & DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET,DOMAIN_MAPPINGS_LOCAL_FROM_GLOBAL_CALCULATE
 
 CONTAINS
   
@@ -131,6 +131,51 @@ CONTAINS
     CALL EXITS("DOMAIN_MAPPINGS_ADJACENT_DOMAIN_INITIALISE")
     RETURN 1
   END SUBROUTINE DOMAIN_MAPPINGS_ADJACENT_DOMAIN_INITIALISE
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the local number, if it exists on the rank, for the specifed global number
+  SUBROUTINE DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(DOMAIN_MAPPING,GLOBAL_NUMBER,LOCAL_EXISTS,LOCAL_NUMBER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING !<A pointer to the domain mapping to get the local number from
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number to get the local number for
+    LOGICAL, INTENT(OUT) :: LOCAL_EXISTS !<On exit, is .TRUE. if the specifed global number exists on the local rank, .FALSE. if not
+    INTEGER(INTG), INTENT(OUT) :: LOCAL_NUMBER !<On exit, the local number corresponding to the global number if it exists. If it doesn't exist then 0.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET",ERR,ERROR,*999)
+
+    LOCAL_EXISTS=.FALSE.
+    LOCAL_NUMBER=0
+    IF(ASSOCIATED(DOMAIN_MAPPING)) THEN
+      IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=DOMAIN_MAPPING%NUMBER_OF_GLOBAL) THEN
+        IF(DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(GLOBAL_NUMBER)%DOMAIN_NUMBER(1)== &
+          & COMPUTATIONAL_ENVIRONMENT%MY_COMPUTATIONAL_NODE_NUMBER) THEN
+          LOCAL_NUMBER=DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(GLOBAL_NUMBER)%LOCAL_NUMBER(1)
+          LOCAL_EXISTS=.TRUE.
+        ENDIF
+      ELSE
+        LOCAL_ERROR="The specified global number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
+          & " is invalid. The number must be between 1 and "// &
+          & TRIM(NUMBER_TO_VSTRING(DOMAIN_MAPPING%NUMBER_OF_GLOBAL,"*",ERR,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Domain mapping is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET")
+    RETURN
+999 CALL ERRORS("DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET",ERR,ERROR)
+    CALL EXITS("DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET")
+    RETURN 1
+  END SUBROUTINE DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET
   
   !
   !================================================================================================================================

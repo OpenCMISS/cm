@@ -17,7 +17,7 @@
 !> License for the specific language governing rights and limitations
 !> under the License.
 !>
-!> The Original Code is openCMISS
+!> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
@@ -68,6 +68,7 @@ MODULE PROBLEM_CONSTANTS
   !Fluid mechanics class
   INTEGER(INTG), PARAMETER :: PROBLEM_STOKES_FLUID_TYPE=1
   INTEGER(INTG), PARAMETER :: PROBLEM_NAVIER_STOKES_FLUID_TYPE=2
+  INTEGER(INTG), PARAMETER :: PROBLEM_DARCY_EQUATION_TYPE=3
   !Electromagnetics class
   INTEGER(INTG), PARAMETER :: PROBLEM_ELECTROSTATIC_TYPE=1
   INTEGER(INTG), PARAMETER :: PROBLEM_MAGNETOSTATIC_TYPE=2
@@ -90,7 +91,13 @@ MODULE PROBLEM_CONSTANTS
   !Problem subtypes
   INTEGER(INTG), PARAMETER :: PROBLEM_NO_SUBTYPE=0
   !Elasticity class
+  !  Linear elasticity - uses PROBLEM_NO_SUBTYPE=0
+  !  Finite elasticity
   !Fluid mechanics class
+  INTEGER(INTG), PARAMETER :: PROBLEM_STANDARD_STOKES_SUBTYPE=1
+  INTEGER(INTG), PARAMETER :: PROBLEM_GENERALISED_STOKES_SUBTYPE=2
+  !  Darcy equation
+  INTEGER(INTG), PARAMETER :: PROBLEM_STANDARD_DARCY_SUBTYPE=1
   !Electromagnetics class
   !Classical field class
   !  Laplace equation
@@ -126,7 +133,6 @@ MODULE PROBLEM_CONSTANTS
   !>@{
   INTEGER(INTG), PARAMETER :: PROBLEM_SETUP_START_ACTION=1 !<Start setup action. \see PROBLEM_CONSTANTS_SetupActionTypes,CONSTANTS_ROUTINES
   INTEGER(INTG), PARAMETER :: PROBLEM_SETUP_FINISH_ACTION=2 !<Finish setup action. \see PROBLEM_CONSTANTS_SetupActionTypes,CONSTANTS_ROUTINES
-  INTEGER(INTG), PARAMETER :: PROBLEM_SETUP_DO_ACTION=3 !<Do setup action. \see PROBLEM_CONSTANTS_SetupActionTypes,CONSTANTS_ROUTINES
   !>@}
 
   !> \addtogroup PROBLEM_CONSTANTS_ControlLoopTypes PROBLEM_CONSTANTS::ControlLoopTypes
