@@ -325,7 +325,7 @@ static char *FieldExport_GetVariableLabel( const int fieldType, const int variab
         case FIELD_U_VARIABLE_TYPE:
             return "general,  field,  rectangular cartesian";
         case FIELD_DELUDELN_VARIABLE_TYPE:
-            return "norm_dev_variable,  field,  string";
+            return "norm_dev_variable,  field,  rectangular cartesian";
         case FIELD_DELUDELT_VARIABLE_TYPE:
             return "first_time_variable,  field,  first time derivative of variable";
         case FIELD_DEL2UDELT2_VARIABLE_TYPE:

@@ -4528,7 +4528,9 @@ CONTAINS
     comp_idx1=1
     global_var_idx=0
 
+
     ERR = FieldExport_FieldCount( sessionHandle, SUM(GROUP_FIELDS(1:NUM_OF_FIELDS) ) )
+
     IF(ERR/=0) THEN
       CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
     ENDIF
@@ -4542,11 +4544,15 @@ CONTAINS
 
           IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
             & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
+
             ERR = FieldExport_CoordinateVariable( sessionHandle, global_var_idx, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM, &
               & GROUP_VARIABLES(global_var_idx) )
+
           ELSE
+
             ERR = FieldExport_Variable( sessionHandle, global_var_idx, variable_ptr%FIELD%TYPE, variable_ptr%VARIABLE_TYPE, &
               & GROUP_VARIABLES(global_var_idx) )
+
           ENDIF
           IF( ERR /= 0 ) THEN
             CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
@@ -4599,11 +4605,15 @@ CONTAINS
              
              IF( component%FIELD_VARIABLE%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
                & component%FIELD_VARIABLE%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
+
                ERR = FieldExport_CoordinateDerivativeIndices( sessionHandle, component%COMPONENT_NUMBER, &
                  & variable_ptr%FIELD%REGION%COORDINATE_SYSTEM,NUM_OF_NODAL_DEV, C_LOC(GROUP_DERIVATIVES), value_idx )
+
              ELSE
+
                ERR = FieldExport_DerivativeIndices( sessionHandle, component%COMPONENT_NUMBER, variable_ptr%FIELD%TYPE, &
                  & variable_ptr%VARIABLE_TYPE,NUM_OF_NODAL_DEV, C_LOC(GROUP_DERIVATIVES), value_idx )
+	    
              ENDIF
 
 
@@ -5160,7 +5170,7 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
+  !XXX
   !>Write all the nodal information from LOCAL_PROCESS_NODAL_INFO_SET to local exnode files
   SUBROUTINE FIELD_IO_EXPORT_NODES_INTO_LOCAL_FILE(LOCAL_PROCESS_NODAL_INFO_SET, NAME, my_computational_node_number, &
     &computational_node_numbers,ERR, ERROR, *)
@@ -5225,6 +5235,7 @@ CONTAINS
        IF(.NOT.LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%SAME_HEADER) THEN
         !write out the nodal header
 
+          !OK
           CALL FIELD_IO_EXPORT_NODAL_GROUP_HEADER_FORTRAN(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn), &
             & global_number, MAX_NUM_OF_NODAL_DERIVATIVES, my_computational_node_number, sessionHandle, ERR,ERROR,*999)
            !value_idx=value_idx-1 !the len of NODAL_BUFFER
@@ -5259,7 +5270,9 @@ CONTAINS
 
           !write out the user numbering of node if comp_idx ==1
           IF(comp_idx==1) THEN
+
             ERR = FieldExport_NodeNumber( sessionHandle, DOMAIN_NODES%NODES(local_number)%USER_NUMBER )
+
             IF(ERR/=0) THEN
               CALL FLAG_ERROR( "Cannot write group name to nodes file", ERR, ERROR,*999 )
             ENDIF
@@ -5269,22 +5282,32 @@ CONTAINS
           NUM_OF_NODAL_DEV=DOMAIN_NODES%NODES(local_number)%NUMBER_OF_DERIVATIVES
           GROUP_DERIVATIVES(1:NUM_OF_NODAL_DEV)=DOMAIN_NODES%NODES(local_number)%PARTIAL_DERIVATIVE_INDEX(:)
           !sort  the partial derivatives
+
           CALL LIST_SORT(GROUP_DERIVATIVES(1:NUM_OF_NODAL_DEV),ERR,ERROR,*999)
+
           DO dev_idx=1, NUM_OF_NODAL_DEV
              NULLIFY(GEOMETRIC_PARAMETERS)
-             IF(comp_idx==1) THEN
+!             IF(comp_idx==1) THEN
                 CALL FIELD_PARAMETER_SET_DATA_GET(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR% &
                   & FIELD_VARIABLE%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-             ELSE IF (ASSOCIATED(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%DOMAIN, &
-                &TARGET=LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS (comp_idx-1)%PTR%DOMAIN)) THEN
-                CALL FIELD_PARAMETER_SET_DATA_GET(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR% &
-                  & FIELD_VARIABLE%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-             ENDIF
+!             ELSE 
+!IF(ASSOCIATED(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%DOMAIN, &
+!               &TARGET=LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS (comp_idx-1)%PTR%DOMAIN)) THEN
+!                CALL FIELD_PARAMETER_SET_DATA_GET(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR% &
+!                  & FIELD_VARIABLE%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+!             ENDIF
+          IF(comp_idx==LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%NUMBER_OF_COMPONENTS) THEN
+             NODAL_BUFFER(dev_idx)=GEOMETRIC_PARAMETERS(dev_idx)
+          ELSE
              NODAL_BUFFER(dev_idx)=GEOMETRIC_PARAMETERS(LOCAL_PROCESS_NODAL_INFO_SET%NODAL_INFO_SET(nn)%COMPONENTS(comp_idx)%PTR%&
                &PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(GROUP_DERIVATIVES(dev_idx),local_number))
+          END IF
+
+
           ENDDO
-    
+
           ERR = FieldExport_NodeValues( sessionHandle, NUM_OF_NODAL_DEV, C_LOC(NODAL_BUFFER) )
+
           IF(ERR/=0) THEN
             CALL FLAG_ERROR( "Cannot write group name to nodes file", ERR, ERROR,*999 )
           ENDIF

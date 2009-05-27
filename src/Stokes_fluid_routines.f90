@@ -564,7 +564,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) ng,mh,mhs,mi,ms,nh,nhs,ni,ns,MESH_COMPONENT1,MESH_COMPONENT2
-    REAL(DP) :: RWG,SUM,PGMSI(3),PGNSI(3),PGN,PGM,MU_PARAM
+    REAL(DP) :: RWG,SUM,PGMSI(3),PGNSI(3),SIM(3),PGN,PGM,MU_PARAM
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
@@ -575,8 +575,11 @@ CONTAINS
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME
+    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME,QUADRATURE_SCHEME1,QUADRATURE_SCHEME2
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER:: x
+
+    DOUBLE PRECISION:: test
     
     CALL ENTERS("STOKES_FLUID_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
     
@@ -590,7 +593,6 @@ CONTAINS
           !Store all these in equations matrices/somewhere else?????
           DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
           GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
-          
           MATERIALS_FIELD=>EQUATIONS%INTERPOLATION%MATERIALS_FIELD
           
           EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
@@ -605,26 +607,24 @@ CONTAINS
             & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
           DEPENDENT_BASIS=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
             & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-          
           QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
           
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
             & GEOMETRIC_INTERP_PARAMETERS,ERR,ERROR,*999)
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
             & MATERIALS_INTERP_PARAMETERS,ERR,ERROR,*999)
-          
-          !Define MU_PARAM
-          MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(1,NO_PART_DERIV)
 
-          !Loop over gauss points2^DIM... bei 3D also ng=1,8
+          !Loop over gauss points
           DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
             CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
               & GEOMETRIC_INTERP_POINT,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,EQUATIONS%INTERPOLATION% &
               & GEOMETRIC_INTERP_POINT_METRICS,ERR,ERROR,*999)
-            
             CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
               & MATERIALS_INTERP_POINT,ERR,ERROR,*999)
+
+          !Define MU_PARAM
+            MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(1,NO_PART_DERIV)
             
             !Calculate RWG.
 !!TODO: Think about symmetric problems.
@@ -637,6 +637,7 @@ CONTAINS
               MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
               DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
                 & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+              QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
                             
               ! sebk 11/05/09 input to determine number of parameters per component
               
@@ -644,6 +645,7 @@ CONTAINS
                 
                 mhs=mhs+1
                 nhs=0
+
                 IF(EQUATIONS_MATRIX%UPDATE_MATRIX) THEN
                   
                   !Loop over element columns
@@ -655,7 +657,7 @@ CONTAINS
                     DEPENDENT_BASIS2=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT2)%PTR% &
                       & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
                     
-                    DO ns=1,DEPENDENT_BASIS2%NUMBER_OF_ELEMENT_PARAMETERS! also das gleiche nur in die andere richtung
+                    DO ns=1,DEPENDENT_BASIS2%NUMBER_OF_ELEMENT_PARAMETERS
                       nhs=nhs+1
                       
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -665,46 +667,73 @@ CONTAINS
                       IF (nh==mh.AND.nh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
                         
                         ! DEPENDENT_BASIS??????
-                        DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
+                        DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
+!                          WRITE(*,*)'ms',ms,'ns',ns,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
                           PGMSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
                           PGNSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
                         ENDDO !ni
                         
                         SUM=0.0_DP
                         
-                        ! DEPENDENT_BASIS??????
-                        DO mi=1,DEPENDENT_BASIS%NUMBER_OF_XI
-                          DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
-                            SUM=SUM+MU_PARAM*PGMSI(mi)*PGNSI(ni)*EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%GU(mi,ni)
+!                         ! DEPENDENT_BASIS??????
+!                         DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+!                           DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
+!                             SUM=SUM-MU_PARAM*PGMSI(mi)*PGNSI(ni)*EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%GU(mi,ni)
+!                           ENDDO !ni
+!                         ENDDO !mi
+
+                        ! ALTENATIVE WAY
+                        DO x=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                        DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                          DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
+                            SUM=SUM-MU_PARAM*PGMSI(mi)*PGNSI(ni)*EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%&
+                            &DXI_DX(ni,x)*EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(mi,x)
                           ENDDO !ni
                         ENDDO !mi
+                        ENDDO !x 
+
+
+!                         WRITE(*,*)'PGNSI(ni)',PGMSI(1:3)
+!                         WRITE(*,*)'PGMSI(ni)',PGMSI(1:3)
+!                         WRITE(*,*)'SUM',SUM
                                                 
                         ! CHANGED TO MINUS SUM!!!!!
-                        
-                        EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)-SUM*RWG
+                        EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
                         
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! MOMENTUM EQUATION FOR PRESSURE
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                         
                       ELSE IF (nh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS.AND.mh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
-                        
-                        
+           
+                        QUADRATURE_SCHEME2=>DEPENDENT_BASIS2%QUADRATURE%QUADRATURE_SCHEME_MAP&
+                        &(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+
                         SUM=0.0_DP
                         PGN=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
-                        
+
                         ! DEPENDENT_BASIS??????
-                        DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
+                        DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
                           PGMSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
-                          
                           ! NOTE mh INDEX in DXI_DX
-                          SUM=SUM+PGN*PGMSI(ni)*EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(ni,mh)
+                          SIM(ni)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(ni,mh)
                         ENDDO !ni
+
+   ! DEPENDENT_BASIS??????
+                        DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                          SUM=SUM+PGN*PGMSI(ni)*SIM(ni)
+                        ENDDO !ni
+
+!                         WRITE(*,*)'SIM(ni)',SIM(1:3)
+!                         WRITE(*,*)'PGMSI(ni)',PGMSI(1:3)
+!                         WRITE(*,*)'PGN',PGN
+!                         WRITE(*,*)'SUM',SUM
+                     
                         
                         EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
                         
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                        ! MASS EQUATION
+                        ! MASS EQUATION = "TRANSPOSE OF PRESSURE" MATRIX
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                         
                       ELSE IF (mh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS.AND.nh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
@@ -712,18 +741,21 @@ CONTAINS
 !!!
 !!! CAN THIS PART BE OPTIMISED BY USING THE TRANSPOSE???
 !!!
-                        SUM=0.0_DP
-                        PGM=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                        
-                        ! DEPENDENT_BASIS??????
-                        DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
-                          PGNSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
-                          
-                          ! NOTE nh INDEX in DXI_DX
-                          SUM=SUM+PGM*PGNSI(ni)*EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(ni,nh)
-                        ENDDO !ni
-                        
-                        EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
+! !                         SUM=0.0_DP
+! ! 
+! !                         PGM=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+! !                         
+! !                         ! DEPENDENT_BASIS??????
+! !                         DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
+! !                           PGNSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+! !                           
+! !                           ! NOTE nh INDEX in DXI_DX
+! !                           SUM=SUM+PGM*PGNSI(ni)*EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(ni,nh)
+! !                         ENDDO !ni
+! !                         
+! !                         EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
+
+                            EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(nhs,mhs)
                         
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                         ! SET ALL OTHER COMPONENTS TO ZERO
@@ -747,6 +779,33 @@ CONTAINS
               ENDDO !ms
             ENDDO !mh
           ENDDO !ng
+
+
+! ING STIFFNESS MATRIX
+
+	  OPEN(UNIT=79, FILE='./STIFF.mat')
+! 	  DO mh=1,89
+! 	    DO nh=1,89
+! 	      WRITE(79,*)EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mh,nh)
+! 	    END DO
+! 	  END DO
+
+! 	  DO mh=1,81
+! 	    DO nh=82,89
+! 	      test=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mh,nh)-EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(nh,mh)
+! 	      WRITE(79,*)test,mh,nh,EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mh,nh)
+! 	    END DO
+! 	  END DO
+
+
+
+	  CLOSE(79)
+
+
+
+
+
+
           
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! DEFINE SCALING
