@@ -51,7 +51,7 @@
 !> \example examples/Helmholtz/src/HelmholtzExample.f90
 !> \example examples/Laplace/src/LaplaceExample.f90
 !> \example examples/Darcy/src/DarcyExample.f90
-!> \example examples/Monodomain/src/MonodomainExample.f90
+!> \example examples/Bioelectrics/Monodomain/src/MonodomainExample.f90
 !> \example examples/NonlinearPoisson/src/NonlinearPoissonExample.f90
 !>
 
