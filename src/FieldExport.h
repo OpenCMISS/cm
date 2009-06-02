@@ -52,7 +52,7 @@ int fieldexport_meshdimensions( const int handle, const int dimensions );
 
 int fieldexport_scalingfactorcount( const int handle, const int scalingFactorCount );
 
-int fieldexport_lagrangehermitescalefactors( const int handle, const int numberOfXi, const int* const interpolationXi );
+int fieldexport_hermitescalefactors( const int handle, const int numberOfXi, const int* const interpolationXi );
 
 int fieldexport_nodecount( const int handle, const int nodeCount );
 

@@ -223,7 +223,7 @@ static int FieldExport_File_ScalingFactorCount( FileSession *const session, cons
 }
 
 
-static int FieldExport_File_LagrangeHermiteScaleFactors( FileSession *const session, const int labelType, const int numberOfXi, const int* const interpolationXi )
+static int FieldExport_File_ScaleFactors( FileSession *const session, const int labelType, const int numberOfXi, const int* const interpolationXi )
 {
     int scaleFactorCount = 1;
     int i;
@@ -246,6 +246,18 @@ static int FieldExport_File_LagrangeHermiteScaleFactors( FileSession *const sess
         case BASIS_CUBIC_LAGRANGE_INTERPOLATION:
             scaleFactorCount *= 4;
             label = "c.Lagrange";
+            break;
+        case BASIS_LINEAR_SIMPLEX_INTERPOLATION:
+            scaleFactorCount *= 2;
+            label = "l.Simplex";
+            break;
+        case BASIS_QUADRATIC_SIMPLEX_INTERPOLATION:
+            scaleFactorCount *= 3;
+            label = "q.Simplex";
+            break;
+        case BASIS_CUBIC_SIMPLEX_INTERPOLATION:
+            scaleFactorCount *= 4;
+            label = "c.Simplex";
             break;
         case BASIS_CUBIC_HERMITE_INTERPOLATION:
             scaleFactorCount *= 4;
@@ -468,7 +480,7 @@ static int FieldExport_File_CoordinateComponent( FileSession *const session, CMI
         return session->error;
     }
 
-    return FieldExport_File_LagrangeHermiteScaleFactors( session, FIELD_IO_SCALE_FACTORS_PROPERTY_TYPE, numberOfXi, interpolationXi );
+    return FieldExport_File_ScaleFactors( session, FIELD_IO_SCALE_FACTORS_PROPERTY_TYPE, numberOfXi, interpolationXi );
 }
 
 
@@ -480,7 +492,7 @@ static int FieldExport_File_Component( FileSession *const session,
         session->error;
     }
 
-    return FieldExport_File_LagrangeHermiteScaleFactors( session, FIELD_IO_SCALE_FACTORS_PROPERTY_TYPE, numberOfXi, interpolationXi );
+    return FieldExport_File_ScaleFactors( session, FIELD_IO_SCALE_FACTORS_PROPERTY_TYPE, numberOfXi, interpolationXi );
 }
 
 
@@ -809,7 +821,7 @@ int FieldExport_ScalingFactorCount( const int handle, const int scalingFactorCou
 }
 
 
-int FieldExport_LagrangeHermiteScaleFactors( const int handle, const int numberOfXi, const int* const interpolationXi )
+int FieldExport_ScaleFactors( const int handle, const int numberOfXi, const int* const interpolationXi )
 {
     SessionListEntry *session = FieldExport_GetSession( handle );
     
@@ -819,7 +831,7 @@ int FieldExport_LagrangeHermiteScaleFactors( const int handle, const int numberO
     }
     else if( session->type == EXPORT_TYPE_FILE )
     {
-        return FieldExport_File_LagrangeHermiteScaleFactors( &session->fileSession, FIELD_IO_SCALE_FACTORS_NUMBER_TYPE, numberOfXi, interpolationXi );
+        return FieldExport_File_ScaleFactors( &session->fileSession, FIELD_IO_SCALE_FACTORS_NUMBER_TYPE, numberOfXi, interpolationXi );
     }
     else
     {
