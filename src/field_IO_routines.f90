@@ -1286,8 +1286,8 @@ CONTAINS
   !
 
   !>Create decompition
-  SUBROUTINE FIELD_IO_CREATE_DECOMPISTION(DECOMPOSITION, DECOMPOSITION_USER_NUMBER, DECOMPOSITION_METHOD, MESH, NUMBER_OF_DOMAINS, &
-    &ERR, ERROR, *)
+  SUBROUTINE FIELD_IO_CREATE_DECOMPISTION(DECOMPOSITION, DECOMPOSITION_USER_NUMBER, DECOMPOSITION_METHOD, MESH, &
+    & NUMBER_OF_DOMAINS, ERR, ERROR, *)
     !Argument variables
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !< decomposition tye
     INTEGER(INTG), INTENT(IN) :: DECOMPOSITION_USER_NUMBER !<user number for decompistion
@@ -2524,8 +2524,8 @@ CONTAINS
   !
 
   !>Write the header of a group elements using FORTRAN
-  SUBROUTINE FIELD_IO_EXPORT_ELEMENTAL_GROUP_HEADER_FORTRAN( global_number, MAX_NODE_COMP_INDEX,&
-          &NUM_OF_SCALING_FACTOR_SETS, LIST_COMP_SCALE, my_computational_node_number, elementalInfoSet, sessionHandle, ERR,ERROR, *)
+  SUBROUTINE FIELD_IO_EXPORT_ELEMENTAL_GROUP_HEADER_FORTRAN( global_number, MAX_NODE_COMP_INDEX,NUM_OF_SCALING_FACTOR_SETS, &
+    & LIST_COMP_SCALE, my_computational_node_number, elementalInfoSet, sessionHandle, ERR,ERROR, *)
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: global_number !<element number in my elemental IO list
     INTEGER(INTG), INTENT(INOUT) ::  MAX_NODE_COMP_INDEX !<MAX_NODE_INDEX
@@ -2997,9 +2997,9 @@ CONTAINS
   !
 
   !>Sort the Elemental_info_set according to the type of field variable components
-  SUBROUTINE FIELD_IO_ELEMENTAL_INFO_SET_SORT(LOCAL_PROCESS_ELEMENTAL_INFO_SET, my_computational_node_number, ERR,ERROR,*)
+  SUBROUTINE FIELD_IO_ELEMENTAL_INFO_SET_SORT(ELEMENTAL_INFO_SET, my_computational_node_number, ERR,ERROR,*)
     !Argument variables
-    TYPE(FIELD_IO_INFO_SET), INTENT(INOUT) :: LOCAL_PROCESS_ELEMENTAL_INFO_SET !<elemental information in this process
+    TYPE(FIELD_IO_INFO_SET), INTENT(INOUT) :: ELEMENTAL_INFO_SET !<elemental information in this process
     INTEGER(INTG), INTENT(IN):: my_computational_node_number !<local process number
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -3014,10 +3014,10 @@ CONTAINS
     !from now on, global numbering are used
     CALL ENTERS("FIELD_IO_ELEMENTAL_INFO_SET_SORT",ERR,ERROR,*999)
 
-    IF(.NOT.ALLOCATED(LOCAL_PROCESS_ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER)) THEN
+    IF(.NOT.ALLOCATED(ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER)) THEN
        CALL FLAG_ERROR("list of global numbering in the input data is invalid",ERR,ERROR,*999)
     ENDIF
-    IF(.NOT.ALLOCATED(LOCAL_PROCESS_ELEMENTAL_INFO_SET%COMPONENT_INFO_SET)) THEN
+    IF(.NOT.ALLOCATED(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET)) THEN
        CALL FLAG_ERROR("nodal information set in the input data is invalid",ERR,ERROR,*999)
     ENDIF
 
@@ -3031,23 +3031,23 @@ CONTAINS
     !group nodal information set according to its components, i.e. put all the nodes with the same components together
     !and change the global number in the LIST_OF_GLOBAL_NUMBER
     nn1=1
-    DO WHILE(nn1<LOCAL_PROCESS_ELEMENTAL_INFO_SET%NUMBER_OF_ENTRIES)
+    DO WHILE(nn1<ELEMENTAL_INFO_SET%NUMBER_OF_ENTRIES)
        !global number of this node
-       global_number1=LOCAL_PROCESS_ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn1)
-       DO nn2=nn1+1,LOCAL_PROCESS_ELEMENTAL_INFO_SET%NUMBER_OF_ENTRIES
-          global_number2=LOCAL_PROCESS_ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn2)
-          IF(LOCAL_PROCESS_ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%NUMBER_OF_COMPONENTS==&
-           &LOCAL_PROCESS_ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%NUMBER_OF_COMPONENTS) THEN
+       global_number1=ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn1)
+       DO nn2=nn1+1,ELEMENTAL_INFO_SET%NUMBER_OF_ENTRIES
+          global_number2=ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn2)
+          IF(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%NUMBER_OF_COMPONENTS==&
+           &ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%NUMBER_OF_COMPONENTS) THEN
              SWITCH=.TRUE.
              !we will check the component (type of component, partial derivative).
-             DO component_idx=1,LOCAL_PROCESS_ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%NUMBER_OF_COMPONENTS
+             DO component_idx=1,ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%NUMBER_OF_COMPONENTS
                 !not safe, but it is fast
                 !=============================================================================================!
                 !           checking according to local memory adddress                                       !
                 !=============================================================================================!
                 !are they in the same memory address?
-                IF(.NOT.ASSOCIATED(LOCAL_PROCESS_ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR, &
-                   &TARGET=LOCAL_PROCESS_ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR))  THEN
+                IF(.NOT.ASSOCIATED(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR, &
+                   &TARGET=ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR))  THEN
                    SWITCH=.FALSE.
                    EXIT
                 ENDIF !ASSCOCIATED
@@ -3057,14 +3057,14 @@ CONTAINS
                 !!           checking according to the types defined in the openCMISS                          !
                 !!=============================================================================================!
                 !!are they in the same field?
-                !IF(LOCAL_PROCESS_ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR%FIELD%GLOBAL_NUMBER/= &
-                !&LOCAL_PROCESS_ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR%FIELD%GLOBAL_NUMBER) THEN
+                !IF(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR%FIELD%GLOBAL_NUMBER/= &
+                !&ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR%FIELD%GLOBAL_NUMBER) THEN
                 !   SWITCH=.FALSE.
                 !   EXIT
                 !ELSE  !GLOBAL_NUBMER
                 !   !are they the same variable?
-                !   IF(LOCAL_PROCESS_ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR%FIELD_VARIABLE%VARIABLE_NUMBER/= &
-                !   & LOCAL_PROCESS_ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR%FIELD_VARIABLE%VARIABLE_NUMBER) THEN
+                !   IF(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR%FIELD_VARIABLE%VARIABLE_NUMBER/= &
+                !   & ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR%FIELD_VARIABLE%VARIABLE_NUMBER) THEN
                 !       SWITCH=.FALSE.
                 !       EXIT
                 !    ELSE !VARIABLE_NUBMER
@@ -3080,30 +3080,30 @@ CONTAINS
 
              !check whether correspoding two components have the same partial derivatives
              IF(SWITCH) THEN
-                DO component_idx=1,LOCAL_PROCESS_ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%NUMBER_OF_COMPONENTS
+                DO component_idx=1,ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%NUMBER_OF_COMPONENTS
                    !finding the local numbering for the NODAL_INFO_SET(nn1)
                    DOMAIN_MAPPING_ELEMENTS=>&
-                      & LOCAL_PROCESS_ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR%DOMAIN% &
+                      & ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR%DOMAIN% &
                       & MAPPINGS%ELEMENTS
                    !get the domain index for this variable component according to my own computional node number
                    !local number of nn1'th node in the damain assoicated with component(component_idx)
                    local_number1 = FindMyLocalDomainNumber( DOMAIN_MAPPING_ELEMENTS%GLOBAL_TO_LOCAL_MAP( global_number1 ), &
                      & my_computational_node_number )
                    DOMAIN_ELEMENTS1=>&
-                      & LOCAL_PROCESS_ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR%DOMAIN%TOPOLOGY% &
-                      & ELEMENTS
+                      & ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR% &
+                      & DOMAIN%TOPOLOGY%ELEMENTS
 
                    !finding the local numbering for the NODAL_INFO_SET(nn2)
                    DOMAIN_MAPPING_ELEMENTS=>&
-                      & LOCAL_PROCESS_ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR%DOMAIN%MAPPINGS% &
-                      & ELEMENTS
+                      & ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR% &
+                      & DOMAIN%MAPPINGS%ELEMENTS
                    !get the domain index for this variable component according to my own computional node number
                    !local number of nn2'th node in the damain assoicated with component(component_idx)
                    local_number2 = FindMyLocalDomainNumber( DOMAIN_MAPPING_ELEMENTS%GLOBAL_TO_LOCAL_MAP( global_number2 ), &
                      & my_computational_node_number )
                    DOMAIN_ELEMENTS2=>&
-                      & LOCAL_PROCESS_ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR%DOMAIN%TOPOLOGY% &
-                      & ELEMENTS
+                      & ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR% &
+                      & DOMAIN%TOPOLOGY%ELEMENTS
 
                    !checking whether they have the same basis
                    IF(DOMAIN_ELEMENTS1%ELEMENTS(local_number1)%BASIS%GLOBAL_NUMBER/=&
@@ -3117,16 +3117,16 @@ CONTAINS
 
           !find two elements which have the same output, and then they should put together
           IF(SWITCH) THEN
-             tmpInfoSet => LOCAL_PROCESS_ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR
-             LOCAL_PROCESS_ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR => LOCAL_PROCESS_ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR
-             LOCAL_PROCESS_ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR => tmpInfoSet
+             tmpInfoSet => ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR
+             ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR => ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR
+             ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR => tmpInfoSet
 
-             LOCAL_PROCESS_ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%SAME_HEADER=.FALSE.
-             LOCAL_PROCESS_ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR%SAME_HEADER=.TRUE.
+             ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%SAME_HEADER=.FALSE.
+             ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR%SAME_HEADER=.TRUE.
 
              !exchange the global number
-             LOCAL_PROCESS_ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn2)=LOCAL_PROCESS_ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn1+1)
-             LOCAL_PROCESS_ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn1+1)=global_number2
+             ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn2)=ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn1+1)
+             ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn1+1)=global_number2
 
              !increase nn1 to skip the nodes which have the same output
              nn1=nn1+1
@@ -4895,7 +4895,7 @@ CONTAINS
             IF( foundNewNode ) THEN
               !TODO This code re-allocates new memory once per node. Reduce memory-thrashing by adding
               !memory in chunks.
-              CALL GROW_ARRAY( NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER, "Could not allocate temporary buffer in IO", ERR, ERROR, *999 )
+              CALL GROW_ARRAY( NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER, "Could not allocate buffer in IO", ERR, ERROR, *999 )
               NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(NODAL_INFO_SET%NUMBER_OF_ENTRIES+1)= DOMAIN_NODES%NODES(np)%GLOBAL_NUMBER
               NODAL_INFO_SET%NUMBER_OF_ENTRIES=NODAL_INFO_SET%NUMBER_OF_ENTRIES+1
             ENDIF
