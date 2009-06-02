@@ -2,14 +2,6 @@
   * \brief Current status and plans for the use of CellML in openCMISS.
   */
 
-/** \example examples/define-geometry-and-export/src/define-geometry-and-exportExample.f90
-Example illustrating the use of openCMISS to define a geometric mesh and export it for visualisation.
-*/
-
-/** \example examples/simple-field-manipulation-direct-access/src/simple-field-manipulation-direct-accessExample.f90
-Example illustrating the creation of a regular mesh and then defining and manipulating a field over that mesh.
-*/
-
 /** \page opencmiss_cellml openCMISS & CellML
 
 \todo Keep up-to-date..

@@ -43,11 +43,6 @@
 !> This module is a openCMISS(cm) buffer module to openCMISS(cellml).
 MODULE CMISS_CELLML
 
-  ! Uses EXAMPLE_PATH from Doxyfile but putting path from examples folder to ensure uniqueness.
-  !> \example examples/cellml/src/cellmlExample.f90
-  !! A complete example demonstrating and testing the methods defined in the openCMISS(cellml) API.
-  !<
-
   ! module imports
   USE BASE_ROUTINES
   USE ISO_VARYING_STRING
