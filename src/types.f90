@@ -1588,6 +1588,7 @@ MODULE TYPES
     REAL(DP) :: RELATIVE_TOLERANCE !<The relative tolerance between the rhs and residual norm
     REAL(DP) :: ABSOLUTE_TOLERANCE !<The absolute tolerance of the residual norm
     REAL(DP) :: DIVERGENCE_TOLERANCE !<The absolute tolerance of the residual norm
+    INTEGER(INTG) :: GMRES_RESTART !<The GMRES restart iterations size
     TYPE(PETSC_PC_TYPE) :: PC !<The PETSc preconditioner object
     TYPE(PETSC_KSP_TYPE) :: KSP !<The PETSc solver object
   END TYPE LINEAR_ITERATIVE_SOLVER_TYPE
