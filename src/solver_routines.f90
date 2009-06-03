@@ -4912,10 +4912,14 @@ CONTAINS
                               CASE(SOLVER_SOLUTION_INITIALISE_ZERO)
                                 !Zero the solution vector
                                 CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(SOLVER_VECTOR,0.0_DP,ERR,ERROR,*999)
+                                !Tell PETSc that the solution vector is zero
+                                CALL PETSC_KSPSETINITIALGUESSNONZERO(LINEAR_ITERATIVE_SOLVER%KSP,.FALSE.,ERR,ERROR,*999)
                               CASE(SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD)
                                 !Make sure the solver vector contains the current dependent field values
                                 CALL SOLVER_SOLUTION_UPDATE(SOLVER,ERR,ERROR,*999)
-                              CASE(SOLVER_SOLUTION_INITIALISE_NO_CHANGE)
+                                !Tell PETSc that the solution vector is nonzero
+                                CALL PETSC_KSPSETINITIALGUESSNONZERO(LINEAR_ITERATIVE_SOLVER%KSP,.TRUE.,ERR,ERROR,*999)
+                             CASE(SOLVER_SOLUTION_INITIALISE_NO_CHANGE)
                                 !Do nothing
                               CASE DEFAULT
                                 LOCAL_ERROR="The linear iterative solver solution initialise type of "// &
