@@ -1503,13 +1503,72 @@ MODULE TYPES
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the eigenproblem solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
   END TYPE EIGENPROBLEM_SOLVER_TYPE
+
+  !>Contains information for an forward Euler differential equation solver
+  TYPE FORWARD_EULER_DE_SOLVER_TYPE
+    TYPE(EULER_DE_SOLVER_TYPE), POINTER :: EULER_DE_SOLVER
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the forward Euler differential equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  END TYPE FORWARD_EULER_DE_SOLVER_TYPE
+
+  !>Contains information for an backward Euler differential equation solver
+  TYPE BACKWARD_EULER_DE_SOLVER_TYPE
+    TYPE(EULER_DE_SOLVER_TYPE), POINTER :: EULER_DE_SOLVER
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the backward Euler differential equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  END TYPE BACKWARD_EULER_DE_SOLVER_TYPE
+
+  !>Contains information for an improved Euler differential equation solver
+  TYPE IMPROVED_EULER_DE_SOLVER_TYPE
+    TYPE(EULER_DE_SOLVER_TYPE), POINTER :: EULER_DE_SOLVER
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the improved Euler differential equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  END TYPE IMPROVED_EULER_DE_SOLVER_TYPE
   
-  !>Contains information for an integration solver
-  TYPE INTEGRATION_SOLVER_TYPE
+  !>Contains information for an Euler differential equation solver
+  TYPE EULER_DE_SOLVER_TYPE
+    TYPE(DE_SOLVER_TYPE), POINTER :: DE_SOLVER
+    INTEGER(INTG) :: EULER_TYPE !<The type of Euler differential equation solver \see SOLVER_ROUTINES_EulerDESolverTypes,SOLVER_ROUTINES
+    TYPE(FORWARD_EULER_DE_SOLVER_TYPE), POINTER :: FORWARD_EULER_SOLVER !<A pointer to the forward Euler solver information
+    TYPE(BACKWARD_EULER_DE_SOLVER_TYPE), POINTER :: BACKWARD_EULER_SOLVER !<A pointer to the backward Euler solver information
+    TYPE(IMPROVED_EULER_DE_SOLVER_TYPE), POINTER :: IMPROVED_EULER_SOLVER !<A pointer to the improved Euler solver information
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the Euler differential equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  END TYPE EULER_DE_SOLVER_TYPE
+
+  !>Contains information for a Runge-Kutta differential equation solver
+  TYPE RUNGE_KUTTA_DE_SOLVER_TYPE
+    TYPE(DE_SOLVER_TYPE), POINTER :: DE_SOLVER
+     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the Runge-Kutta differential equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+ END TYPE RUNGE_KUTTA_DE_SOLVER_TYPE
+  
+  !>Contains information for an Adams-Moulton differential equation solver
+  TYPE ADAMS_MOULTON_DE_SOLVER_TYPE
+    TYPE(DE_SOLVER_TYPE), POINTER :: DE_SOLVER
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the Adams-Moulton differential equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  END TYPE ADAMS_MOULTON_DE_SOLVER_TYPE
+  
+  !>Contains information for a BDF differential equation solver
+  TYPE BDF_DE_SOLVER_TYPE
+    TYPE(DE_SOLVER_TYPE), POINTER :: DE_SOLVER
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the BDF differential equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  END TYPE BDF_DE_SOLVER_TYPE
+  
+  !>Contains information for a Rush-Larson differential equation solver
+  TYPE RUSH_LARSON_DE_SOLVER_TYPE
+    TYPE(DE_SOLVER_TYPE), POINTER :: DE_SOLVER
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the Rush-Larson differential equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  END TYPE RUSH_LARSON_DE_SOLVER_TYPE
+  
+  !>Contains information for an differential equation solver
+  TYPE DE_SOLVER_TYPE
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
-    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the integration solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
-    INTEGER(INTG) :: INTEGRATION_TYPE !<The integration type for the integration solver \see SOLVER_ROUTINES_IntegratorType,SOLVER_ROUTINES
-  END TYPE INTEGRATION_SOLVER_TYPE
+    INTEGER(INTG) :: DE_SOLVE_TYPE !<The solve type for the differential equation solver \see SOLVER_ROUTINES_DESolveTypes,SOLVER_ROUTINES
+    REAL(DP) :: START_TIME !<The start time to integrate from
+    REAL(DP) :: END_TIME !<The end time to integrate to
+    REAL(DP) :: INITIAL_STEP !<The (initial) time step
+    TYPE(EULER_DE_SOLVER_TYPE), POINTER :: EULER_SOLVER !<A pointer to information for an Euler solver
+    TYPE(RUNGE_KUTTA_DE_SOLVER_TYPE), POINTER :: RUNGE_KUTTA_SOLVER !<A pointer to information for a Runge-Kutta solver
+    TYPE(ADAMS_MOULTON_DE_SOLVER_TYPE), POINTER :: ADAMS_MOULTON_SOLVER !<A pointer to information for an Adams-Moulton solver
+    TYPE(BDF_DE_SOLVER_TYPE), POINTER :: BDF_SOLVER !<A pointer to information for a BDF solver
+    TYPE(RUSH_LARSON_DE_SOLVER_TYPE), POINTER :: RUSH_LARSON_SOLVER !<A pointer to information for a Rush-Larson solver
+  END TYPE DE_SOLVER_TYPE
   
   !>Contains information for a direct linear solver
   TYPE LINEAR_DIRECT_SOLVER_TYPE
@@ -1522,8 +1581,9 @@ MODULE TYPES
   TYPE LINEAR_ITERATIVE_SOLVER_TYPE
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linear solver
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the linear solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
-    INTEGER(INTG) :: ITERATIVE_SOLVER_TYPE !<The type of iterative solver
-    INTEGER(INTG) :: ITERATIVE_PRECONDITIONER_TYPE !<The type of iterative preconditioner
+    INTEGER(INTG) :: ITERATIVE_SOLVER_TYPE !<The type of iterative solver \see SOLVER_ROUTINES_IterativeLinearSolverTypes,SOLVER_ROUTINES
+    INTEGER(INTG) :: ITERATIVE_PRECONDITIONER_TYPE !<The type of iterative preconditioner \see SOLVER_ROUTINES_IterativePreconditionerTypes,SOLVER_ROUTINES
+    INTEGER(INTG) :: SOLUTION_INITIALISE_TYPE !<The type of solution vector initialisation \see SOLVER_ROUTINES_SolutionInitialiseTypes,SOLVER_ROUTINES
     INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ITERATIONS !<The maximum number of iterations
     REAL(DP) :: RELATIVE_TOLERANCE !<The relative tolerance between the rhs and residual norm
     REAL(DP) :: ABSOLUTE_TOLERANCE !<The absolute tolerance of the residual norm
@@ -1567,6 +1627,7 @@ MODULE TYPES
   TYPE NEWTON_SOLVER_TYPE
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer to the nonlinear solver
     INTEGER(INTG) :: NEWTON_SOLVE_TYPE !<The type of Newton solver
+    INTEGER(INTG) :: SOLUTION_INITIALISE_TYPE !<The type of solution vector initialisation \see SOLVER_ROUTINES_SolutionInitialiseTypes,SOLVER_ROUTINES
     INTEGER(INTG) :: TOTAL_NUMBER_OF_FUNCTION_EVALUATIONS !<The number of function evaluations performed by the Newton solver
     INTEGER(INTG) :: TOTAL_NUMBER_OF_JACOBIAN_EVALUATIONS !<The number of Jacobian evaluations performed by the nonlinear solver
     INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ITERATIONS !<The maximum number of iterations
@@ -1600,7 +1661,7 @@ MODULE TYPES
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linear solver information
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer to the nonlinear solver information
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER !<A pointer to the dynamic solver information
-    TYPE(INTEGRATION_SOLVER_TYPE), POINTER :: INTEGRATION_SOLVER !<A pointer to the integration solver information
+    TYPE(DE_SOLVER_TYPE), POINTER :: DE_SOLVER !<A pointer to the differential equation solver information
     TYPE(EIGENPROBLEM_SOLVER_TYPE), POINTER :: EIGENPROBLEM_SOLVER !<A pointer to the eigenproblem solver information
 
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver equations
