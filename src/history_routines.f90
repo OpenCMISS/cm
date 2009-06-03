@@ -1,5 +1,5 @@
 !> \file
-!> $Id: history_routines.f90 248 2008-11-28 11:14:17Z chrispbradley $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module handles all history file routines.
 !>

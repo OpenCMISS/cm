@@ -1,5 +1,5 @@
 !> \file
-!> $Id: boundary_conditions_rountines.f90 204 2008-10-31 05:02:38Z tingy $
+!> $Id$
 !> \author Ting Yu
 !> \brief This module set the boundary conditions for the given equation set
 !>

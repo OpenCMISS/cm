@@ -1,5 +1,5 @@
 !> \file
-!> $Id: Helmholtz_equations_routines.f90 298 2009-01-11 14:36:14Z chrispbradley $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module handles all Helmholtz equations routines.
 !>

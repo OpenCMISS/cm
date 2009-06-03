@@ -1,5 +1,5 @@
 /* \file
- * $Id: FieldExport.c 375 2009-02-27 11:05:03Z chrispbradley $
+ * $Id$
  * \author Caton Little
  * \brief 
  *

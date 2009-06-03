@@ -1,5 +1,5 @@
 !> \file
-!> $Id: bioelectric_routines.f90 288 2009-01-07 15:41:00Z chrispbradley $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module handles all bioelectric routines.
 !>
