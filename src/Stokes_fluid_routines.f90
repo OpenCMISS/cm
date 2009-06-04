@@ -131,7 +131,6 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  ! SEBK 20/04/09
   !>Sets up the standard Stokes fluid.
   SUBROUTINE STOKES_FLUID_EQUATIONS_SET_STANDARD_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*)
 
@@ -181,9 +180,6 @@ CONTAINS
           !Do nothing???
         CASE(EQUATIONS_SET_SETUP_DEPENDENT_TYPE)
           
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !sebk 30/04/09: define 1 dependent variable with 3(4) components for u,v,(w),p
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! DEPENDENT FIELD
           
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
@@ -246,7 +242,7 @@ CONTAINS
                     FIELD_DELUDELN_VARIABLE_TYPE,I,3,ERR,ERROR,*999)
                 END IF
               END DO
-            
+
               SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
                 !Specify fem solution method
               CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
@@ -323,7 +319,7 @@ CONTAINS
             IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD_AUTO_CREATED) THEN
               CALL FIELD_CREATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,ERR,ERROR,*999)
             ENDIF
-            
+        
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
@@ -332,11 +328,8 @@ CONTAINS
           END SELECT
                     
         CASE(EQUATIONS_SET_SETUP_MATERIALS_TYPE)
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !sebk 02/05/09: define 1 dependent variable with 1 (2) components for viscosity (density)
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
           ! MATERIALS FIELD
-          
           !variable X with has Y components, here Y represents viscosity only
           MATERIAL_FIELD_NUMBER_OF_VARIABLES=1!X
           MATERIAL_FIELD_NUMBER_OF_COMPONENTS=1!Y
@@ -408,7 +401,7 @@ CONTAINS
                 !First set the mu values to 0.001
                 DO I=1,MATERIAL_FIELD_NUMBER_OF_COMPONENTS
                   CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                    & I,FIELD_VALUES_SET_TYPE,0.001_DP,ERR,ERROR,*999)
+                    & FIELD_VALUES_SET_TYPE,I,0.22_DP,ERR,ERROR,*999)
                 ENDDO !component_idx
               ENDIF
             ELSE
@@ -547,12 +540,9 @@ CONTAINS
     RETURN 1
   END SUBROUTINE STOKES_FLUID_EQUATIONS_SET_STANDARD_SETUP
 
-  ! END SEBK 20/04/09
   !
   !================================================================================================================================
   !
-
-  ! SEBK 10/05/09
 
   !>Calculates the element stiffness matrices and RHS for a Stokes fluid finite element equations set.
   SUBROUTINE STOKES_FLUID_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
@@ -577,9 +567,8 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME,QUADRATURE_SCHEME1,QUADRATURE_SCHEME2
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    INTEGER:: x
+    INTEGER:: x,i,j,k
 
-    DOUBLE PRECISION:: test
     
     CALL ENTERS("STOKES_FLUID_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
     
@@ -627,9 +616,7 @@ CONTAINS
             MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(1,NO_PART_DERIV)
             
             !Calculate RWG.
-!!TODO: Think about symmetric problems.
-            
-            RWG=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)
+            !!TODO: Think about symmetric problems.
             !Loop over field components
             mhs=0
             
@@ -638,9 +625,8 @@ CONTAINS
               DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
                 & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
               QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+              RWG=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME1%GAUSS_WEIGHTS(ng)
                             
-              ! sebk 11/05/09 input to determine number of parameters per component
-              
               DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
                 
                 mhs=mhs+1
@@ -652,10 +638,12 @@ CONTAINS
                   
                   DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
                     
-                    ! sebk 11/05/9 input to determine number of parameters per component
                     MESH_COMPONENT2=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
                     DEPENDENT_BASIS2=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT2)%PTR% &
                       & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                    QUADRATURE_SCHEME2=>DEPENDENT_BASIS2%QUADRATURE%QUADRATURE_SCHEME_MAP&
+                    &(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+                    RWG=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME2%GAUSS_WEIGHTS(ng)                        
                     
                     DO ns=1,DEPENDENT_BASIS2%NUMBER_OF_ELEMENT_PARAMETERS
                       nhs=nhs+1
@@ -666,23 +654,20 @@ CONTAINS
                       
                       IF (nh==mh.AND.nh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
                         
-                        ! DEPENDENT_BASIS??????
                         DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
-!                          WRITE(*,*)'ms',ms,'ns',ns,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
-                          PGMSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
-                          PGNSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+                          PGMSI(ni)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+                          PGNSI(ni)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
                         ENDDO !ni
                         
                         SUM=0.0_DP
                         
-!                         ! DEPENDENT_BASIS??????
 !                         DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
 !                           DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
 !                             SUM=SUM-MU_PARAM*PGMSI(mi)*PGNSI(ni)*EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%GU(mi,ni)
 !                           ENDDO !ni
 !                         ENDDO !mi
 
-                        ! ALTENATIVE WAY
+                        ! ALTERNATIVE WAY
                         DO x=1,DEPENDENT_BASIS1%NUMBER_OF_XI
                         DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
                           DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
@@ -692,12 +677,7 @@ CONTAINS
                         ENDDO !mi
                         ENDDO !x 
 
-
-!                         WRITE(*,*)'PGNSI(ni)',PGMSI(1:3)
-!                         WRITE(*,*)'PGMSI(ni)',PGMSI(1:3)
-!                         WRITE(*,*)'SUM',SUM
-                                                
-                        ! CHANGED TO MINUS SUM!!!!!
+                        
                         EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
                         
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -706,30 +686,20 @@ CONTAINS
                         
                       ELSE IF (nh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS.AND.mh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
            
-                        QUADRATURE_SCHEME2=>DEPENDENT_BASIS2%QUADRATURE%QUADRATURE_SCHEME_MAP&
-                        &(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-
                         SUM=0.0_DP
-                        PGN=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
 
-                        ! DEPENDENT_BASIS??????
+                        PGN=QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+
                         DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
-                          PGMSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+                          PGMSI(ni)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
                           ! NOTE mh INDEX in DXI_DX
                           SIM(ni)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(ni,mh)
                         ENDDO !ni
 
-   ! DEPENDENT_BASIS??????
                         DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
                           SUM=SUM+PGN*PGMSI(ni)*SIM(ni)
                         ENDDO !ni
 
-!                         WRITE(*,*)'SIM(ni)',SIM(1:3)
-!                         WRITE(*,*)'PGMSI(ni)',PGMSI(1:3)
-!                         WRITE(*,*)'PGN',PGN
-!                         WRITE(*,*)'SUM',SUM
-                     
-                        
                         EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
                         
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -737,10 +707,7 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                         
                       ELSE IF (mh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS.AND.nh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
-!!!FIX UP THIS BIT !!!!!
-!!!
-!!! CAN THIS PART BE OPTIMISED BY USING THE TRANSPOSE???
-!!!
+
 ! !                         SUM=0.0_DP
 ! ! 
 ! !                         PGM=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
@@ -755,6 +722,8 @@ CONTAINS
 ! !                         
 ! !                         EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
 
+                        ! ALTERNATIVE WAY
+                        ! todo: place the transpose outside the gauss-loop
                             EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(nhs,mhs)
                         
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -781,32 +750,7 @@ CONTAINS
           ENDDO !ng
 
 
-! ING STIFFNESS MATRIX
 
-	  OPEN(UNIT=79, FILE='./STIFF.mat')
-! 	  DO mh=1,89
-! 	    DO nh=1,89
-! 	      WRITE(79,*)EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mh,nh)
-! 	    END DO
-! 	  END DO
-
-! 	  DO mh=1,81
-! 	    DO nh=82,89
-! 	      test=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mh,nh)-EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(nh,mh)
-! 	      WRITE(79,*)test,mh,nh,EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mh,nh)
-! 	    END DO
-! 	  END DO
-
-
-
-	  CLOSE(79)
-
-
-
-
-
-
-          
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! DEFINE SCALING
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -823,13 +767,19 @@ CONTAINS
             mhs=0
             DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
               !Loop over element rows
-              DO ms=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+              MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
+              DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
+              & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+              DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
                 mhs=mhs+1
                 nhs=0
                 IF(EQUATIONS_MATRIX%UPDATE_MATRIX) THEN
                   !Loop over element columns
                   DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                    DO ns=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                  MESH_COMPONENT2=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
+                  DEPENDENT_BASIS2=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT2)%PTR% &
+                  & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                    DO ns=1,DEPENDENT_BASIS2%NUMBER_OF_ELEMENT_PARAMETERS
                       nhs=nhs+1
                       EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)* &
                         & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS%SCALE_FACTORS(ms,mh)* &
@@ -857,7 +807,8 @@ CONTAINS
     ELSE
       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
-    
+
+   
     CALL EXITS("STOKES_FLUID_FINITE_ELEMENT_CALCULATE")
     RETURN
 999 CALL ERRORS("STOKES_FLUID_FINITE_ELEMENT_CALCULATE",ERR,ERROR)
@@ -868,8 +819,6 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
-! SEBK 20/04/09
 
   !>Sets up the Stokes fluid type of a fluid mechanics equations set class.
   SUBROUTINE STOKES_FLUID_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*)
@@ -906,13 +855,9 @@ CONTAINS
     RETURN 1
   END SUBROUTINE STOKES_FLUID_EQUATIONS_SET_SETUP
   
-
-! END SEBK
   !
   !================================================================================================================================
   !
-
-! SEBK 20/04/09
 
   !>Sets/changes the equation subtype for a Stokes fluid type of a fluid mechanics equations set class.
   SUBROUTINE STOKES_FLUID_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
@@ -951,7 +896,6 @@ CONTAINS
     RETURN 1
   END SUBROUTINE STOKES_FLUID_EQUATIONS_SET_SUBTYPE_SET
 
-! END SEBK 20/04/09
   !
   !================================================================================================================================
   !
