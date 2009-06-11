@@ -2448,7 +2448,49 @@ CONTAINS
   !================================================================================================================================
   !
   !>Finding basis information
-  SUBROUTINE FIELD_IO_CALCULATE_SCALE_AND_NODE_COUNTS(BASIS, num_scl, num_node, ERR, ERROR, * )
+  SUBROUTINE FIELD_IO_CALCULATE_SIMPLEX_SCALE_AND_NODE_COUNTS(BASIS, num_scl, num_node, ERR, ERROR, * )
+    !Argument variables
+    TYPE(BASIS_TYPE), INTENT(IN) :: BASIS !<The error string
+    INTEGER(INTG), INTENT(INOUT) :: num_scl
+    INTEGER(INTG), INTENT(INOUT) :: num_node
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    
+    !Local variables
+    INTEGER(INTG) :: n
+
+    CALL ENTERS("FIELD_IO_CALCULATE_SIMPLEX_SCALE_AND_NODE_COUNTS",ERR,ERROR,*999)
+
+    IF(BASIS%NUMBER_OF_XI==0) CALL FLAG_ERROR("number of xi in the basis is zero",ERR,ERROR,*999)
+    
+    n = BASIS%NUMBER_OF_XI
+
+    !Simplex-type interpolations must be the same in all xi.
+    SELECT CASE(BASIS%INTERPOLATION_XI(1))
+      CASE(BASIS_LINEAR_SIMPLEX_INTERPOLATION)
+        num_node = n + 1
+      CASE(BASIS_QUADRATIC_SIMPLEX_INTERPOLATION)
+        num_node = ( n + 1 ) * ( n + 2 ) / 2
+      CASE(BASIS_CUBIC_SIMPLEX_INTERPOLATION)
+        num_node = ( n + 1 ) * ( n + 2 ) * ( n + 3 ) / 6
+      CASE DEFAULT
+        CALL FLAG_ERROR( "Invalid interpolation type", ERR, ERROR, *999 )
+    END SELECT
+    
+    num_scl = num_node
+
+    CALL EXITS("FIELD_IO_CALCULATE_SIMPLEX_SCALE_AND_NODE_COUNTS")
+    RETURN
+999 CALL ERRORS("FIELD_IO_CALCULATE_SIMPLEX_SCALE_AND_NODE_COUNTS",ERR,ERROR)
+    CALL EXITS("FIELD_IO_CALCULATE_SIMPLEX_SCALE_AND_NODE_COUNTS")
+    RETURN 1
+  END SUBROUTINE FIELD_IO_CALCULATE_SIMPLEX_SCALE_AND_NODE_COUNTS
+
+  !
+  !================================================================================================================================
+  !
+  !>Finding basis information
+  SUBROUTINE FIELD_IO_CALCULATE_TP_SCALE_AND_NODE_COUNTS(BASIS, num_scl, num_node, ERR, ERROR, * )
     !Argument variables
     TYPE(BASIS_TYPE), INTENT(IN) :: BASIS !<The error string
     INTEGER(INTG), INTENT(INOUT) :: num_scl
@@ -2458,7 +2500,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: ni
 
-    CALL ENTERS("FIELD_IO_CALCULATE_SCALE_AND_NODE_COUNTS",ERR,ERROR,*999)
+    CALL ENTERS("FIELD_IO_CALCULATE_TP_SCALE_AND_NODE_COUNTS",ERR,ERROR,*999)
 
     IF(BASIS%NUMBER_OF_XI==0) CALL FLAG_ERROR("number of xi in the basis is zero",ERR,ERROR,*999)
 
@@ -2466,13 +2508,13 @@ CONTAINS
     num_node=1
     DO ni=1,BASIS%NUMBER_OF_XI
        SELECT CASE(BASIS%INTERPOLATION_XI(ni))
-         CASE(BASIS_LINEAR_LAGRANGE_INTERPOLATION,BASIS_LINEAR_SIMPLEX_INTERPOLATION)
+         CASE(BASIS_LINEAR_LAGRANGE_INTERPOLATION)
              num_scl=num_scl*2
              num_node=num_node*2
-          CASE(BASIS_QUADRATIC_LAGRANGE_INTERPOLATION,BASIS_QUADRATIC_SIMPLEX_INTERPOLATION)
+          CASE(BASIS_QUADRATIC_LAGRANGE_INTERPOLATION)
              num_scl=num_scl*3
              num_node=num_node*3
-          CASE(BASIS_CUBIC_LAGRANGE_INTERPOLATION,BASIS_CUBIC_SIMPLEX_INTERPOLATION)
+          CASE(BASIS_CUBIC_LAGRANGE_INTERPOLATION)
              num_scl=num_scl*4
              num_node=num_node*4
           CASE(BASIS_CUBIC_HERMITE_INTERPOLATION)
@@ -2489,12 +2531,13 @@ CONTAINS
        END SELECT
     ENDDO !ni
 
-    CALL EXITS("FIELD_IO_CALCULATE_SCALE_AND_NODE_COUNTS")
+    CALL EXITS("FIELD_IO_CALCULATE_TP_SCALE_AND_NODE_COUNTS")
     RETURN
-999 CALL ERRORS("FIELD_IO_CALCULATE_SCALE_AND_NODE_COUNTS",ERR,ERROR)
-    CALL EXITS("FIELD_IO_CALCULATE_SCALE_AND_NODE_COUNTS")
+999 CALL ERRORS("FIELD_IO_CALCULATE_TP_SCALE_AND_NODE_COUNTS",ERR,ERROR)
+    CALL EXITS("FIELD_IO_CALCULATE_TP_SCALE_AND_NODE_COUNTS")
     RETURN 1
-  END SUBROUTINE FIELD_IO_CALCULATE_SCALE_AND_NODE_COUNTS
+  END SUBROUTINE FIELD_IO_CALCULATE_TP_SCALE_AND_NODE_COUNTS
+
 
   !
   !================================================================================================================================
@@ -2652,9 +2695,9 @@ CONTAINS
 
       SELECT CASE( BASIS%TYPE )
         CASE( BASIS_LAGRANGE_HERMITE_TP_TYPE )
-          CALL FIELD_IO_CALCULATE_SCALE_AND_NODE_COUNTS(BASIS, num_scl, num_node, ERR, ERROR, *999 )
+          CALL FIELD_IO_CALCULATE_TP_SCALE_AND_NODE_COUNTS(BASIS, num_scl, num_node, ERR, ERROR, *999 )
         CASE( BASIS_SIMPLEX_TYPE )
-          CALL FIELD_IO_CALCULATE_SCALE_AND_NODE_COUNTS(BASIS, num_scl, num_node, ERR, ERROR, *999 )
+          CALL FIELD_IO_CALCULATE_SIMPLEX_SCALE_AND_NODE_COUNTS(BASIS, num_scl, num_node, ERR, ERROR, *999 )
         CASE DEFAULT
           CALL FLAG_ERROR("Basis type "//TRIM(NUMBER_TO_VSTRING(BASIS%TYPE,"*",ERR,ERROR))//" is invalid or not implemented",&
             &ERR,ERROR,*999)
@@ -2678,7 +2721,7 @@ CONTAINS
           !ERR = FieldExport_ScaleFactors( sessionHandle, basis%NUMBER_OF_XI, C_LOC(basis%INTERPOLATION_XI) );
 !!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
 !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
-          INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(BASIS%NUMBER_OF_XI)
+          INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)
           ERR = FieldExport_ScaleFactors( sessionHandle, basis%NUMBER_OF_XI, C_LOC(INTERPOLATION_XI) );
           IF( ERR /= 0 ) THEN
             CALL FLAG_ERROR( "can not get basis type of lagrange_hermite label" ,ERR, ERROR, *999 )
@@ -2733,7 +2776,7 @@ CONTAINS
         !  & elementalInfoSet%COMPONENTS(comp_idx)%PTR%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( basis%INTERPOLATION_XI ) )
 !!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
 !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
-          INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(BASIS%NUMBER_OF_XI)
+          INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)
         ERR = FieldExport_CoordinateComponent( sessionHandle, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM, &
             & elementalInfoSet%COMPONENTS(comp_idx)%PTR%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ) )
       ELSE
@@ -2742,7 +2785,7 @@ CONTAINS
         !  & elementalInfoSet%COMPONENTS(comp_idx)%PTR%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( basis%INTERPOLATION_XI ) )
 !!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
 !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
-        INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(BASIS%NUMBER_OF_XI)
+        INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)
         ERR = FieldExport_Component( sessionHandle, &
           & elementalInfoSet%COMPONENTS(comp_idx)%PTR%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ) )
       ENDIF
@@ -4450,12 +4493,8 @@ CONTAINS
              CALL FIELD_PARAMETER_SET_DATA_GET(NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(comp_idx)%PTR% &
                & FIELD_VARIABLE%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
 
-             IF(comp_idx==NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS) THEN
-               NODAL_BUFFER(dev_idx)=GEOMETRIC_PARAMETERS(dev_idx)
-             ELSE
-               NODAL_BUFFER(dev_idx)=GEOMETRIC_PARAMETERS(NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(comp_idx)%PTR%&
-                 &PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(GROUP_DERIVATIVES(dev_idx),local_number))
-             ENDIF
+             NODAL_BUFFER(dev_idx)=GEOMETRIC_PARAMETERS(NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(comp_idx)%PTR%&
+               &PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(GROUP_DERIVATIVES(dev_idx),local_number))
           ENDDO
     
           ERR = FieldExport_NodeValues( sessionHandle, NUM_OF_NODAL_DEV, C_LOC(NODAL_BUFFER) )

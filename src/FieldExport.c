@@ -1,5 +1,5 @@
 /* \file
- * $Id$
+ * $Id: FieldExport.c 542 2009-06-03 17:16:22Z chrispbradley $
  * \author Caton Little
  * \brief 
  *
@@ -226,8 +226,26 @@ static int FieldExport_File_ScalingFactorCount( FileSession *const session, cons
 static int FieldExport_File_ScaleFactors( FileSession *const session, const int labelType, const int numberOfXi, const int* const interpolationXi )
 {
     int scaleFactorCount = 1;
-    int i;
+    int i, j;
     const char * label;
+    int *linked = malloc( sizeof(int) * numberOfXi );
+    int linkCount = 0;
+
+    for( i = 0; i < numberOfXi; i++ )
+    {
+        switch( interpolationXi[i] )
+        {
+        case BASIS_LINEAR_SIMPLEX_INTERPOLATION:
+        case BASIS_QUADRATIC_SIMPLEX_INTERPOLATION:
+        case BASIS_CUBIC_SIMPLEX_INTERPOLATION:
+            linked[i] = 1;
+            linkCount++;
+            break;
+        default:
+            linked[i] = 0;
+            break;
+        }
+    }
 
     FieldExport_FPrintf( session, " " );
 
@@ -247,18 +265,6 @@ static int FieldExport_File_ScaleFactors( FileSession *const session, const int 
             scaleFactorCount *= 4;
             label = "c.Lagrange";
             break;
-        case BASIS_LINEAR_SIMPLEX_INTERPOLATION:
-            scaleFactorCount *= 2;
-            label = "l.Simplex";
-            break;
-        case BASIS_QUADRATIC_SIMPLEX_INTERPOLATION:
-            scaleFactorCount *= 3;
-            label = "q.Simplex";
-            break;
-        case BASIS_CUBIC_SIMPLEX_INTERPOLATION:
-            scaleFactorCount *= 4;
-            label = "c.Simplex";
-            break;
         case BASIS_CUBIC_HERMITE_INTERPOLATION:
             scaleFactorCount *= 4;
             label = "c.Hermite";
@@ -271,11 +277,43 @@ static int FieldExport_File_ScaleFactors( FileSession *const session, const int 
             scaleFactorCount *= 4;
             label = "q2.Hermite";
             break;
+        case BASIS_LINEAR_SIMPLEX_INTERPOLATION:
+            scaleFactorCount = numberOfXi + 1;
+            label = "l.simplex";
+            break;
+        case BASIS_QUADRATIC_SIMPLEX_INTERPOLATION:
+            scaleFactorCount = ( numberOfXi + 1 ) * ( numberOfXi + 2 ) / 2;
+            label = "q.simplex";
+            break;
+        case BASIS_CUBIC_SIMPLEX_INTERPOLATION:
+            scaleFactorCount = ( numberOfXi + 1 ) * ( numberOfXi + 2 ) * ( numberOfXi + 3 ) / 2;
+            label = "c.simplex";
+            break;
         default:
+            free( linked );
             return FIELD_EXPORT_ERROR_UNKNOWN_INTERPOLATION;
         }
 
         FieldExport_FPrintf( session, "%s", label );
+
+        if( linkCount > 0 )
+        {
+            linkCount--;
+            FieldExport_FPrintf( session, "(", label );
+            for( j = i+1; j < numberOfXi; j++ )
+            {
+                if( linked[j] == 1 )
+                {
+                    FieldExport_FPrintf( session, "%d", j+1 );
+                }
+                if( linkCount > 1 )
+                {
+                    FieldExport_FPrintf( session, ";" );
+                }
+                linkCount--;
+            }
+            FieldExport_FPrintf( session, ")", label );
+        }
 
         if( i < ( numberOfXi - 1 ) )
         {
@@ -283,6 +321,8 @@ static int FieldExport_File_ScaleFactors( FileSession *const session, const int 
         }
     }
     
+    free( linked );
+
     switch( labelType )
     {
     case FIELD_IO_SCALE_FACTORS_NUMBER_TYPE:
