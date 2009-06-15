@@ -456,88 +456,138 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: fibre_idx,i,j,nj_idx,NUMBER_OF_FIBRE_COMPONENTS 
     INTEGER(INTG) :: vector(3) = (/1,2,3/)
-    REAL(DP) :: A(3),ANGLE(3),B(3),C(3),DXDNU1(3,3),DXDNU2(3,3),DXDNU3(3,3),UNITM(3,3), &
-      & R(3,3),R1(3,3),R2(3,3),R3(3,3),RT(3,3)
+    REAL(DP) :: ANGLE(3),DXDNU1(3,3),DXDNU2(3,3),DXDNU3(3,3),DXDNUR(3,3),F(3),G(3),H(3), &
+      & Ra(3,3),Rb(3,3)
 
     CALL ENTERS("FINITE_ELASTICITY_GAUSS_DXDNU",ERR,ERROR,*999)
 
-    !First calculate default dx/dnu
-    DO nj_idx=1,3
-      A(nj_idx)=DXDXI(nj_idx,1) !default material dir_1.
-    ENDDO
-    CALL CROSS_PRODUCT(DXDXI(vector,1),DXDXI(vector,2),C,ERR,ERROR,*999) !default material dir_3.    
-    CALL CROSS_PRODUCT(C,A,B,ERR,ERROR,*999) !default material dir_2.      
-
-    DO nj_idx=1,3
-      DXDNU(nj_idx,1)=A(nj_idx)/L2NORM(A) 
-      DXDNU(nj_idx,2)=B(nj_idx)/L2NORM(B)      
-      DXDNU(nj_idx,3)=C(nj_idx)/L2NORM(C)        
-    ENDDO
-    
-    !The normalised DXDNU contains the transformation(rotaion) from spatial CS -> material CS 
-    DO i=1,3
-      DO j=1,3
-        R(i,j)=DXDNU(i,j) 
-	RT(i,j)=DXDNU(j,i) 
-      ENDDO
-    ENDDO
-    
-    !Now transform(rotate) the default material CS to align with spatial CS.
-    !This does not have to be done. Since both CSs are ortonomral, v1-v2-v3 
-    !end up having coordinates (1,0,0), (0,1,0) and (0,0,1)
-    !Then rotate by angles specified (old CMISS - ipfibr file values)
     DO fibre_idx=1,3,1
       ANGLE(fibre_idx)=0.0_DP
     ENDDO 
     NUMBER_OF_FIBRE_COMPONENTS=INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS    
     DO fibre_idx=1,NUMBER_OF_FIBRE_COMPONENTS    
-      ANGLE(fibre_idx)=INTERPOLATED_POINT%VALUES(fibre_idx,1)
+      ANGLE(fibre_idx)=INTERPOLATED_POINT%VALUES(fibre_idx,1) !fibre, imbrication and sheet. All in radians
     ENDDO
 
-    !Initialise three rotation matrices
+    !First calculate reference material CS
+    DO nj_idx=1,3
+      F(nj_idx)=DXDXI(nj_idx,1) !reference material dirn-1.
+    ENDDO
+    CALL CROSS_PRODUCT(DXDXI(vector,1),DXDXI(vector,2),H,ERR,ERROR,*999) !reference material dirn-3.    
+    CALL CROSS_PRODUCT(H,F,G,ERR,ERROR,*999) !reference material dirn-2.      
+
+    DO nj_idx=1,3
+      DXDNUR(nj_idx,1)=F(nj_idx)/L2NORM(F) 
+      DXDNUR(nj_idx,2)=G(nj_idx)/L2NORM(G)      
+      DXDNUR(nj_idx,3)=H(nj_idx)/L2NORM(H)        
+    ENDDO
+    
+    !FIBRE ANGLE(alpha) - ANGLE(1) 
+    !In order to rotate reference material CS by alpha(fibre angle) in anti-clockwise  
+    !direction about its axis 3, following steps are performed.
+    !(a) first align reference material direction 3 with Z(spatial) axis by rotating the ref matrial CS. 
+    !(b) then rotate the aligned material CS by alpha about Z axis in anti-clockwise direction
+    !(c) apply the inverse of step(a) to the CS in (b)
+    !It can be shown that steps (a),(b) and (c) are equivalent to post-multiplying
+    !rotation in (a) by rotation in (b). i.e. Ra*Rb  
+       
+    !The normalised reference material CS contains the transformation(rotaion) between 
+    !the spatial CS -> reference material CS. i.e. Ra 
     DO i=1,3
       DO j=1,3
-        R1(i,j)=0.0_DP 
-        R2(i,j)=0.0_DP 
-        R3(i,j)=0.0_DP 
-	UNITM(i,j)=0.0_DP
+        Ra(i,j)=DXDNUR(i,j)  
+      ENDDO
+    ENDDO   
+
+    !Initialise rotation matrix Rb
+    DO i=1,3
+      DO j=1,3
+        Rb(i,j)=0.0_DP 
         IF (i==j) THEN
-          R1(i,j)=1.0_DP
-          R2(i,j)=1.0_DP  
-          R3(i,j)=1.0_DP
-	  UNITM(i,j)=1.0_DP
+          Rb(i,j)=1.0_DP  
         ENDIF
       ENDDO
-    ENDDO
+    ENDDO    
+    !Populate rotation matrix Rb about axis 3 (Z)
+    Rb(1,1)=cos(ANGLE(1))
+    Rb(1,2)=-sin(ANGLE(1))
+    Rb(2,1)=sin(ANGLE(1))
+    Rb(2,2)=cos(ANGLE(1))
+    
+    CALL MATRIX_PRODUCT(Ra,Rb,DXDNU3,ERR,ERROR,*999)  
+ 
+    !IMBRICATION ANGLE (beta) - ANGLE(2)     
+    !In order to rotate alpha-rotated material CS by beta(imbrication angle) in anti-clockwise  
+    !direction about its new axis 2, following steps are performed.
+    !(a) first align new material direction 2 with Y(spatial) axis by rotating the new matrial CS. 
+    !(b) then rotate the aligned CS by beta about Y axis in anti-clockwise direction
+    !(c) apply the inverse of step(a) to the CS in (b)
+    !As mentioned above, (a),(b) and (c) are equivalent to post-multiplying
+    !rotation in (a) by rotation in (b). i.e. Ra*Rb  
+        
+    !DXNU3 contains the transformation(rotaion) between 
+    !the spatial CS -> alpha-rotated reference material CS. i.e. Ra 
+    DO i=1,3
+      DO j=1,3
+        Ra(i,j)=DXDNU3(i,j)  
+      ENDDO
+    ENDDO   
+    !Initialise rotation matrix Rb
+    DO i=1,3
+      DO j=1,3
+        Rb(i,j)=0.0_DP 
+        IF (i==j) THEN
+          Rb(i,j)=1.0_DP  
+        ENDIF
+      ENDDO
+    ENDDO    
+    !Populate rotation matrix Rb about axis 2 (Y). Note the sign change
+    Rb(1,1)=cos(ANGLE(2))
+    Rb(1,3)=sin(ANGLE(2))
+    Rb(3,1)=-sin(ANGLE(2))
+    Rb(3,3)=cos(ANGLE(2))
 
-    !Update rotation matrices using the interpolated values from the fibre field
-    R3(1,1)=cos(ANGLE(1))    !angles are in radians
-    R3(1,2)=-sin(ANGLE(1))
-    R3(2,1)=sin(ANGLE(1))
-    R3(2,2)=cos(ANGLE(1))
-    R2(1,1)=cos(ANGLE(2))
-    R2(1,3)=sin(ANGLE(2))
-    R2(3,1)=-sin(ANGLE(2))
-    R2(3,3)=cos(ANGLE(2))
-    R1(2,2)=cos(ANGLE(3))
-    R1(2,3)=-sin(ANGLE(3))
-    R1(3,2)=sin(ANGLE(3))
-    R1(3,3)=cos(ANGLE(3))
+    CALL MATRIX_PRODUCT(Ra,Rb,DXDNU2,ERR,ERROR,*999)  
+
+    !SHEET ANGLE (gama) - ANGLE(3)    
+    !In order to rotate alpha-beta-rotated material CS by gama(sheet angle) in anti-clockwise  
+    !direction about its new axis 1, following steps are performed.
+    !(a) first align new material direction 1 with X(spatial) axis by rotating the new matrial CS. 
+    !(b) then rotate the aligned CS by gama about X axis in anti-clockwise direction
+    !(c) apply the inverse of step(a) to the CS in (b)
+    !Again steps (a),(b) and (c) are equivalent to post-multiplying
+    !rotation in (a) by rotation in (b). i.e. Ra*Rb  
+        
+    !DXNU2 contains the transformation(rotaion) between 
+    !the spatial CS -> alpha-beta-rotated reference material CS. i.e. Ra 
+    DO i=1,3
+      DO j=1,3
+        Ra(i,j)=DXDNU2(i,j)  
+      ENDDO
+    ENDDO   
+    !Initialise rotation matrix Rb
+    DO i=1,3
+      DO j=1,3
+        Rb(i,j)=0.0_DP 
+        IF (i==j) THEN
+          Rb(i,j)=1.0_DP  
+        ENDIF
+      ENDDO
+    ENDDO    
+    !Populate rotation matrix Rb about axis 1 (X). 
+    Rb(2,2)=cos(ANGLE(3))
+    Rb(2,3)=-sin(ANGLE(3))
+    Rb(3,2)=sin(ANGLE(3))
+    Rb(3,3)=cos(ANGLE(3))
+
+    CALL MATRIX_PRODUCT(Ra,Rb,DXDNU1,ERR,ERROR,*999)  
+
+    DO i=1,3
+      DO j=1,3
+        DXDNU(i,j)=DXDNU1(i,j)  
+      ENDDO
+    ENDDO   
     
-    !CALL MATRIX_PRODUCT(R3,DXDNU,DXDNU3,ERR,ERROR,*999)   !rotate about v3 => v1'-v2'-v3
-    CALL MATRIX_PRODUCT(DXDNU,R3,DXDNU3,ERR,ERROR,*999)   !rotate about v3 => v1'-v2'-v3
-            
-    !CALL MATRIX_PRODUCT(R2,DXDNU3,DXDNU2,ERR,ERROR,*999)  !rotate about v2' => v1''-v2'-v3'     
-    CALL MATRIX_PRODUCT(DXDNU3,R2,DXDNU2,ERR,ERROR,*999)  !rotate about v2' => v1''-v2'-v3'     
-      
-    !CALL MATRIX_PRODUCT(R1,DXDNU2,DXDNU1,ERR,ERROR,*999)  !rotate about v1'' => v1''-v2''-v3''
-    CALL MATRIX_PRODUCT(DXDNU2,R1,DXDNU1,ERR,ERROR,*999)  !rotate about v1'' => v1''-v2''-v3''
-    
-    !Inverse-rotate v1''-v2''-v3'' by R
-    !CALL MATRIX_PRODUCT(RT,DXDNU1,DXDNU,ERR,ERROR,*999)  
-    CALL MATRIX_PRODUCT(DXDNU1,UNITM,DXDNU,ERR,ERROR,*999)  !needs to be checked again.
-    
-           
     CALL EXITS("FINITE_ELASTICITY_GAUSS_DXDNU")
     RETURN
 999 CALL ERRORS("FINITE_ELASTICITY_GAUSS_DXDNU",ERR,ERROR)
@@ -627,7 +677,6 @@ CONTAINS
     INTEGER(INTG) :: NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS,derivative_idx,component_idx,xi_idx,parameter_idx 
     REAL(DP) :: DXIDZ(3,3),DZDXI(3,3)   
     REAL(DP) :: Jzxi,DFDXI(3,64,3)!temporary until a proper alternative is found
-    !REAL(DP) :: DFDXI(64,3) 
     
     CALL ENTERS("FINITE_ELASTICITY_GAUSS_DFDZ",ERR,ERROR,*999)
 
