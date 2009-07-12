@@ -2814,7 +2814,7 @@ CONTAINS
         CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
       ENDIF
 
-      IF( .NOT.isNodal ) THEN
+      IF( isNodal == 0 ) THEN
         ERR = FieldExport_ElementGridSize( sessionHandle, basis%NUMBER_OF_XI )
       ELSE
         IF(.NOT.BASIS%DEGENERATE) THEN
