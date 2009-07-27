@@ -477,6 +477,8 @@ CONTAINS
                 & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
+          CASE(EQUATIONS_TIME_STEPPING)
+            CALL FLAG_ERROR("Time stepping equations are not assembled.",ERR,ERROR,*999)
           CASE DEFAULT
             LOCAL_ERROR="The equations time dependence type of "// &
               & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
@@ -2876,7 +2878,9 @@ CONTAINS
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SECOND_ORDER_DYNAMIC)
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-           CASE DEFAULT
+            CASE(EQUATIONS_TIME_STEPPING)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE DEFAULT
               LOCAL_ERROR="The equations set time dependence type of "// &
                 & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -3110,6 +3114,8 @@ CONTAINS
             CASE(EQUATIONS_FIRST_ORDER_DYNAMIC)
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SECOND_ORDER_DYNAMIC)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE(EQUATIONS_TIME_STEPPING)
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The equations set time dependence type of "// &

@@ -200,11 +200,12 @@ MODULE EQUATIONS_SET_CONSTANTS
   !> \brief The equations time dependence type parameters
   !> \see EQUATIONS_SET_CONSTANTS
   !>@{
-  INTEGER(INTG), PARAMETER :: NUMBER_OF_EQUATIONS_TIME_TYPES=4 !<The number of equations time dependence types defined. \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
+  INTEGER(INTG), PARAMETER :: NUMBER_OF_EQUATIONS_TIME_TYPES=5 !<The number of equations time dependence types defined. \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_STATIC=1 !<The equations are static and have no time dependence. \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_QUASISTATIC=2 !<The equations are quasi-static. \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_FIRST_ORDER_DYNAMIC=3 !<The equations are first order dynamic. \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SECOND_ORDER_DYNAMIC=4 !<The equations are a second order dynamic. \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_ROUTINES
+  INTEGER(INTG), PARAMETER :: EQUATIONS_TIME_STEPPING=5 !<The equations are for time stepping. \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_ROUTINES
   !>@}
   
   !> \addtogroup EQUATIONS_SET_CONSTANTS_AnalyticFunctionTypes EQUATIONS_SET_CONSTANTS::AnalyticFunctionTypes

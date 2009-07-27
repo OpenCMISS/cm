@@ -1504,71 +1504,79 @@ MODULE TYPES
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the eigenproblem solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
   END TYPE EIGENPROBLEM_SOLVER_TYPE
 
-  !>Contains information for an forward Euler differential equation solver
-  TYPE FORWARD_EULER_DE_SOLVER_TYPE
-    TYPE(EULER_DE_SOLVER_TYPE), POINTER :: EULER_DE_SOLVER
-    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the forward Euler differential equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
-  END TYPE FORWARD_EULER_DE_SOLVER_TYPE
+  !>Contains information for an forward Euler differential-algebraic equation solver
+  TYPE FORWARD_EULER_DAE_SOLVER_TYPE
+    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_DAE_SOLVER !<A pointer to the differential-algebraic solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the forward Euler differential-algebraic equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  END TYPE FORWARD_EULER_DAE_SOLVER_TYPE
 
-  !>Contains information for an backward Euler differential equation solver
-  TYPE BACKWARD_EULER_DE_SOLVER_TYPE
-    TYPE(EULER_DE_SOLVER_TYPE), POINTER :: EULER_DE_SOLVER
-    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the backward Euler differential equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
-  END TYPE BACKWARD_EULER_DE_SOLVER_TYPE
+  !>Contains information for an backward Euler differential-algebraic equation solver
+  TYPE BACKWARD_EULER_DAE_SOLVER_TYPE
+    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_DAE_SOLVER !<A pointer to the differential-algebraic solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the backward Euler differential-algebraic equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  END TYPE BACKWARD_EULER_DAE_SOLVER_TYPE
 
-  !>Contains information for an improved Euler differential equation solver
-  TYPE IMPROVED_EULER_DE_SOLVER_TYPE
-    TYPE(EULER_DE_SOLVER_TYPE), POINTER :: EULER_DE_SOLVER
-    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the improved Euler differential equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
-  END TYPE IMPROVED_EULER_DE_SOLVER_TYPE
+  !>Contains information for an improved Euler differential-algebraic equation solver
+  TYPE IMPROVED_EULER_DAE_SOLVER_TYPE
+    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_DAE_SOLVER !<A pointer to the differential-algebraic solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the improved Euler differential-algebraic equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  END TYPE IMPROVED_EULER_DAE_SOLVER_TYPE
   
-  !>Contains information for an Euler differential equation solver
-  TYPE EULER_DE_SOLVER_TYPE
-    TYPE(DE_SOLVER_TYPE), POINTER :: DE_SOLVER
-    INTEGER(INTG) :: EULER_TYPE !<The type of Euler differential equation solver \see SOLVER_ROUTINES_EulerDESolverTypes,SOLVER_ROUTINES
-    TYPE(FORWARD_EULER_DE_SOLVER_TYPE), POINTER :: FORWARD_EULER_SOLVER !<A pointer to the forward Euler solver information
-    TYPE(BACKWARD_EULER_DE_SOLVER_TYPE), POINTER :: BACKWARD_EULER_SOLVER !<A pointer to the backward Euler solver information
-    TYPE(IMPROVED_EULER_DE_SOLVER_TYPE), POINTER :: IMPROVED_EULER_SOLVER !<A pointer to the improved Euler solver information
+  !>Contains information for an Euler differential-algebraic equation solver
+  TYPE EULER_DAE_SOLVER_TYPE
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer to the differential-algebraic solver
+    INTEGER(INTG) :: EULER_TYPE !<The type of Euler differential-algebraic equation solver \see SOLVER_ROUTINES_EulerDESolverTypes,SOLVER_ROUTINES
+    TYPE(FORWARD_EULER_DAE_SOLVER_TYPE), POINTER :: FORWARD_EULER_SOLVER !<A pointer to the forward Euler solver information
+    TYPE(BACKWARD_EULER_DAE_SOLVER_TYPE), POINTER :: BACKWARD_EULER_SOLVER !<A pointer to the backward Euler solver information
+    TYPE(IMPROVED_EULER_DAE_SOLVER_TYPE), POINTER :: IMPROVED_EULER_SOLVER !<A pointer to the improved Euler solver information
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the Euler differential equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
-  END TYPE EULER_DE_SOLVER_TYPE
+  END TYPE EULER_DAE_SOLVER_TYPE
 
-  !>Contains information for a Runge-Kutta differential equation solver
-  TYPE RUNGE_KUTTA_DE_SOLVER_TYPE
-    TYPE(DE_SOLVER_TYPE), POINTER :: DE_SOLVER
-     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the Runge-Kutta differential equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
- END TYPE RUNGE_KUTTA_DE_SOLVER_TYPE
+  !>Contains information for a Crank-Nicholson differential-algebraic equation solver
+  TYPE CRANK_NICHOLSON_DAE_SOLVER_TYPE
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer to the differential-algebraic solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the Crank-Nicholson differential-algebraic equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  END TYPE CRANK_NICHOLSON_DAE_SOLVER_TYPE
   
-  !>Contains information for an Adams-Moulton differential equation solver
-  TYPE ADAMS_MOULTON_DE_SOLVER_TYPE
-    TYPE(DE_SOLVER_TYPE), POINTER :: DE_SOLVER
-    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the Adams-Moulton differential equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
-  END TYPE ADAMS_MOULTON_DE_SOLVER_TYPE
+  !>Contains information for a Runge-Kutta differential-algebraic equation solver
+  TYPE RUNGE_KUTTA_DAE_SOLVER_TYPE
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer to the differential-algebraic solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the Runge-Kutta differential-algebraic equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  END TYPE RUNGE_KUTTA_DAE_SOLVER_TYPE
   
-  !>Contains information for a BDF differential equation solver
-  TYPE BDF_DE_SOLVER_TYPE
-    TYPE(DE_SOLVER_TYPE), POINTER :: DE_SOLVER
-    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the BDF differential equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
-  END TYPE BDF_DE_SOLVER_TYPE
+  !>Contains information for an Adams-Moulton differential-algebraic equation solver
+  TYPE ADAMS_MOULTON_DAE_SOLVER_TYPE
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer to the differential-algebraic solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the Adams-Moulton differential-algebraic equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  END TYPE ADAMS_MOULTON_DAE_SOLVER_TYPE
   
-  !>Contains information for a Rush-Larson differential equation solver
-  TYPE RUSH_LARSON_DE_SOLVER_TYPE
-    TYPE(DE_SOLVER_TYPE), POINTER :: DE_SOLVER
-    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the Rush-Larson differential equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
-  END TYPE RUSH_LARSON_DE_SOLVER_TYPE
+  !>Contains information for a BDF differential-algebraic equation solver
+  TYPE BDF_DAE_SOLVER_TYPE
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer to the differential-algebraic solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the BDF differential-algebraic equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  END TYPE BDF_DAE_SOLVER_TYPE
   
-  !>Contains information for an differential equation solver
-  TYPE DE_SOLVER_TYPE
+  !>Contains information for a Rush-Larson differential-algebraic equation solver
+  TYPE RUSH_LARSON_DAE_SOLVER_TYPE
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer to the differential-algebraic solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the Rush-Larson differential-algebraic equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  END TYPE RUSH_LARSON_DAE_SOLVER_TYPE
+  
+  !>Contains information for an differential-algebraic equation solver
+  TYPE DAE_SOLVER_TYPE
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
-    INTEGER(INTG) :: DE_SOLVE_TYPE !<The solve type for the differential equation solver \see SOLVER_ROUTINES_DESolveTypes,SOLVER_ROUTINES
+    INTEGER(INTG) :: DAE_TYPE !<The differential-algebraic equation type \see SOLVER_ROUTINES_DAETypes,SOLVER_ROUTINES
+    INTEGER(INTG) :: DAE_SOLVE_TYPE !<The solve type for the differential-algebraic equation solver \see SOLVER_ROUTINES_DAESolveTypes,SOLVER_ROUTINES
     REAL(DP) :: START_TIME !<The start time to integrate from
     REAL(DP) :: END_TIME !<The end time to integrate to
     REAL(DP) :: INITIAL_STEP !<The (initial) time step
-    TYPE(EULER_DE_SOLVER_TYPE), POINTER :: EULER_SOLVER !<A pointer to information for an Euler solver
-    TYPE(RUNGE_KUTTA_DE_SOLVER_TYPE), POINTER :: RUNGE_KUTTA_SOLVER !<A pointer to information for a Runge-Kutta solver
-    TYPE(ADAMS_MOULTON_DE_SOLVER_TYPE), POINTER :: ADAMS_MOULTON_SOLVER !<A pointer to information for an Adams-Moulton solver
-    TYPE(BDF_DE_SOLVER_TYPE), POINTER :: BDF_SOLVER !<A pointer to information for a BDF solver
-    TYPE(RUSH_LARSON_DE_SOLVER_TYPE), POINTER :: RUSH_LARSON_SOLVER !<A pointer to information for a Rush-Larson solver
-  END TYPE DE_SOLVER_TYPE
+    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_SOLVER !<A pointer to information for an Euler solver
+    TYPE(CRANK_NICHOLSON_DAE_SOLVER_TYPE), POINTER :: CRANK_NICHOLSON_SOLVER !<A pointer to information for a Crank-Nicholson solver
+    TYPE(RUNGE_KUTTA_DAE_SOLVER_TYPE), POINTER :: RUNGE_KUTTA_SOLVER !<A pointer to information for a Runge-Kutta solver
+    TYPE(ADAMS_MOULTON_DAE_SOLVER_TYPE), POINTER :: ADAMS_MOULTON_SOLVER !<A pointer to information for an Adams-Moulton solver
+    TYPE(BDF_DAE_SOLVER_TYPE), POINTER :: BDF_SOLVER !<A pointer to information for a BDF solver
+    TYPE(RUSH_LARSON_DAE_SOLVER_TYPE), POINTER :: RUSH_LARSON_SOLVER !<A pointer to information for a Rush-Larson solver
+  END TYPE DAE_SOLVER_TYPE
   
   !>Contains information for a direct linear solver
   TYPE LINEAR_DIRECT_SOLVER_TYPE
@@ -1662,7 +1670,7 @@ MODULE TYPES
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linear solver information
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer to the nonlinear solver information
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER !<A pointer to the dynamic solver information
-    TYPE(DE_SOLVER_TYPE), POINTER :: DE_SOLVER !<A pointer to the differential equation solver information
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer to the differential-algebraic equation solver information
     TYPE(EIGENPROBLEM_SOLVER_TYPE), POINTER :: EIGENPROBLEM_SOLVER !<A pointer to the eigenproblem solver information
 
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver equations
