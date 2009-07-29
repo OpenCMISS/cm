@@ -1,0 +1,26 @@
+\usepackage{harvard}
+
+\usepackage{vmargin}
+\setpapersize{A4}
+\setmargrb{25mm}{20mm}{20mm}{20mm} % Left, Top, Right Bottom
+\addtolength{\headheight}{8pt}
+
+%\renewcommand{\baselinestretch}{1.24} % 1.5 Line spacing
+
+%\setlength{\parskip}{\baselineskip} % line between paragraphs
+%\setlength{\parindent}{0mm} % paragraph start indent
+
+\usepackage{fancyheadings}      % Header/footer package
+\pagestyle{fancyplain}  % Setup page headers/footers
+\renewcommand{\chaptermark}[1]{\markboth{#1}{#1}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
+\lhead[\fancyplain{}{\bf\thepage}]{\fancyplain{}{\textsc{\rightmark}}}
+\rhead[\fancyplain{}{\textsc{\leftmark}}]{\fancyplain{}{\bf\thepage}}
+%\cfoot{\fancyplain{\today}{\today}}
+\cfoot{\fancyplain{}{}}
+
+% Caption definitions
+
+\usepackage[center,sc,small]{caption2}      % Alter caption styles
+\setcaptionmargin{0.25in}
+

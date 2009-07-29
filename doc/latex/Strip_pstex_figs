@@ -1,0 +1,23 @@
+# Strip_pstex_figs
+# cpb 4/10/96 		Adding directories under figs
+# LKC 12-DEC-1998 	Removing \updefault & \mdefault for transfig.3.2.1
+# cpb 5/10/00           New fig2dev now has \includegraphics instead of \epsfile
+# MPN 22-feb-2006 	Removing \color for fig2dev (transfig) 3.2.4
+#
+
+## prefix filename with 'figs/' (subdirectory)
+s%file=%file=figs/CUR_DIR/%
+
+## prefix includegraphics filename with 'figs/' (subdirectory)
+s%\includegraphics{%\includegraphics{figs/CUR_DIR/%
+
+# remove group definition
+/\\begingroup/,/\\fi\\endgroup/d
+
+#stripping \updefault and \mdefault
+s%{\\mddefault}{\\updefault}%%
+s%{\\bfdefault}{\\updefault}%%
+
+#stripping \color
+s%\\color\[rgb\]{0,0,0}%%
+
