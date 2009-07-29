@@ -5,7 +5,7 @@
 # $Id: ExampleMakefile 27 2007-07-24 16:52:51Z cpb $
 #
 #----------------------------------------------------------------------------------------------------------------------------------
-# ExampleMakefile for compiling openCMISS examples
+# ExampleMakefile for compiling OpenCMISS examples
 #
 # Original by Chris Bradley adapted from the CMISS Makefile by Karl Tomlinson 
 # Changes:

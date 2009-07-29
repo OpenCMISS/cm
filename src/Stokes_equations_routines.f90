@@ -1100,11 +1100,11 @@ CONTAINS
 !
 !================================================================================================================================
 !
-
-
+  
+  
   !>Calculates the element stiffness matrices and RHS for a Stokes fluid finite element equations set.
   SUBROUTINE STOKES_EQUATION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
-    
+
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to perform the finite element calculations on
     INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to calculate
@@ -1139,7 +1139,7 @@ CONTAINS
     DOUBLE PRECISION:: BT_MATRIX(256,256) ! "B" "T"ranspose Matrix - maximum size allocated
     DOUBLE PRECISION:: MT_MATRIX(256,256) ! "M"ass "T"ime Matrix - maximum size allocated
     DOUBLE PRECISION:: CT_MATRIX(256,256) ! "C"onvective "T"erm Matrix - maximum size allocated
-    
+
     CALL ENTERS("STOKES_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
 
     out=0
@@ -1154,269 +1154,269 @@ CONTAINS
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN
 
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
-      CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE,&
-         & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE)
+        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE,&
+          & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! SET POINTERS !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                 DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
-                 GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
-                 MATERIALS_FIELD=>EQUATIONS%INTERPOLATION%MATERIALS_FIELD
-                 EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
-                 GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-                 & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                 DEPENDENT_BASIS=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-                 & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                 QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-                 RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
-                 EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-             SELECT CASE(EQUATIONS_SET%SUBTYPE)
-             CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE)
-                 LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
-                 STIFFNESS_MATRIX=>LINEAR_MATRICES%MATRICES(1)%PTR
-                 LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
-                 FIELD_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
+          DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
+          GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
+          MATERIALS_FIELD=>EQUATIONS%INTERPOLATION%MATERIALS_FIELD
+          EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+          GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+            & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+          DEPENDENT_BASIS=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+            & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+          QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+          RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
+          EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
+          SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE)
+            LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
+            STIFFNESS_MATRIX=>LINEAR_MATRICES%MATRICES(1)%PTR
+            LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
+            FIELD_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
 
-                 STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
-             CASE(EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE)
-                 DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
-                 STIFFNESS_MATRIX=>DYNAMIC_MATRICES%MATRICES(1)%PTR
-                 DAMPING_MATRIX=>DYNAMIC_MATRICES%MATRICES(2)%PTR
-                 DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
-                 FIELD_VARIABLE=>DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
-       
-                 STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
-                 DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
-             CASE DEFAULT
-               LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                 & " is not valid for a Stokes fluid type of a fluid mechanics equations set class."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-             END SELECT
-        CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
-        & GEOMETRIC_INTERP_PARAMETERS,ERR,ERROR,*999)
-        CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
-        & MATERIALS_INTERP_PARAMETERS,ERR,ERROR,*999)
+            STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
+          CASE(EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE)
+            DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
+            STIFFNESS_MATRIX=>DYNAMIC_MATRICES%MATRICES(1)%PTR
+            DAMPING_MATRIX=>DYNAMIC_MATRICES%MATRICES(2)%PTR
+            DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
+            FIELD_VARIABLE=>DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
+
+            STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
+            DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
+          CASE DEFAULT
+            LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+              & " is not valid for a Stokes fluid type of a fluid mechanics equations set class."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+            & GEOMETRIC_INTERP_PARAMETERS,ERR,ERROR,*999)
+          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+            & MATERIALS_INTERP_PARAMETERS,ERR,ERROR,*999)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! LOOP OVER GAUSS POINTS !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
-              CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+          DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
+            CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
               & GEOMETRIC_INTERP_POINT,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,EQUATIONS%INTERPOLATION% &
+            CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,EQUATIONS%INTERPOLATION% &
               & GEOMETRIC_INTERP_POINT_METRICS,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+            CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
               & MATERIALS_INTERP_POINT,ERR,ERROR,*999)
-             !Define MU_PARAM, viscosity=1
-             MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(1,NO_PART_DERIV)
+            !Define MU_PARAM, viscosity=1
+            MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(1,NO_PART_DERIV)
 
 
 
-             !Define RHO_PARAM, density=2
-             RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(2,NO_PART_DERIV)
+            !Define RHO_PARAM, density=2
+            RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(2,NO_PART_DERIV)
 
 
-       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-       !!! CALCULATE PARTIAL MATRICES !!!
-       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!! CALCULATE PARTIAL MATRICES !!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_STOKES_SUBTYPE.OR.  &
+            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_STOKES_SUBTYPE.OR.  &
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE.OR. &
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE) THEN
               !Loop over field components
               mhs=0
               DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
-                  MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
-                  DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
+                MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
+                DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
                   & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                  QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-                  JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME1%GAUSS_WEIGHTS(ng)
+                QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+                JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME1%GAUSS_WEIGHTS(ng)
 
-                  DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
-                      mhs=mhs+1
-                      nhs=0
-                      IF(STIFFNESS_MATRIX%UPDATE_MATRIX.OR.DAMPING_MATRIX%UPDATE_MATRIX) THEN
-                          !Loop over element columns
-                          DO nh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS)
-                               MESH_COMPONENT2=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
-                               DEPENDENT_BASIS2=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT2)%PTR% &
-                               & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                               QUADRATURE_SCHEME2=>DEPENDENT_BASIS2%QUADRATURE%QUADRATURE_SCHEME_MAP&
-                               &(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-                              ! JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME2%&
-                              ! &GAUSS_WEIGHTS(ng)                        
+                DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
+                  mhs=mhs+1
+                  nhs=0
+                  IF(STIFFNESS_MATRIX%UPDATE_MATRIX.OR.DAMPING_MATRIX%UPDATE_MATRIX) THEN
+                    !Loop over element columns
+                    DO nh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS)
+                      MESH_COMPONENT2=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
+                      DEPENDENT_BASIS2=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT2)%PTR% &
+                        & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                      QUADRATURE_SCHEME2=>DEPENDENT_BASIS2%QUADRATURE%QUADRATURE_SCHEME_MAP&
+                        &(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+                      ! JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME2%&
+                      ! &GAUSS_WEIGHTS(ng)                        
 
-                             DO ns=1,DEPENDENT_BASIS2%NUMBER_OF_ELEMENT_PARAMETERS
-                             nhs=nhs+1
+                      DO ns=1,DEPENDENT_BASIS2%NUMBER_OF_ELEMENT_PARAMETERS
+                        nhs=nhs+1
 
-       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-       !!! PRECONDITIONS !!!
-       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-                         DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
-                           DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                             DXI_DX(mi,ni)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(mi,ni)
-                           END DO
-
-                             DPHIMS_DXI(ni)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
-                             DPHINS_DXI(ni)=QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
-                         END DO !ni
-
-                             PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                             PHINS=QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!! PRECONDITIONS !!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-                        
-!                         DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-!                           DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
-!                             SUM=SUM-MU_PARAM*DPHIMSS_DXI(mi)*DPHINSS_DXI(ni)*EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%GU(mi,ni)
-!                           ENDDO !ni
-!                         ENDDO !mi
+                        DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
+                          DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                            DXI_DX(mi,ni)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(mi,ni)
+                          END DO
 
-       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-       !!! A LAPLACE ONLY !!!
-       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                          DPHIMS_DXI(ni)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+                          DPHINS_DXI(ni)=QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+                        END DO !ni
 
-                                 IF(STIFFNESS_MATRIX%UPDATE_MATRIX) THEN
-                                    !LAPLACE TYPE 
-                                    IF(nh==mh) THEN 
-                                    SUM=0.0_DP
-                                        !Calculate SUM 
-                                        DO x=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                                          DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                                            DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
-                                                SUM=SUM+MU_PARAM*DPHINS_DXI(ni)*DXI_DX(ni,x)*DPHIMS_DXI(mi)*DXI_DX(mi,x)
-                                             ENDDO !ni
-                                           ENDDO !mi
-                                        ENDDO !x 
-                                        !Calculate MATRIX  
-                                        AL_MATRIX(mhs,nhs)=AL_MATRIX(mhs,nhs)+SUM*JGW
-                                    END IF
-                                 END IF
-
-       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-       !!! A STANDARD !!!
-       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                        PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                        PHINS=QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
 
 
-                                 IF(STIFFNESS_MATRIX%UPDATE_MATRIX) THEN
-                                  !GRADIENT TRANSPOSE TYPE
-                                  IF(EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE) THEN 
-                                    IF(nh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
-                                    SUM=0.0_DP
-                                        !Calculate SUM 
-                                        DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                                           DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
-                                              !note mh/nh derivative in DXI_DX 
-                                              SUM=SUM+MU_PARAM*DPHINS_DXI(mi)*DXI_DX(mi,mh)*DPHIMS_DXI(ni)*DXI_DX(ni,nh)
-                                           ENDDO !ni
-                                        ENDDO !mi
-                                        !Calculate MATRIX
-                                        AG_MATRIX(mhs,nhs)=AG_MATRIX(mhs,nhs)+SUM*JGW
-                                    END IF
-                                  END IF
-                                 END IF
 
-       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-       !!! B TRANSPOSE !!!
-       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                        !                         DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                        !                           DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
+                        !                             SUM=SUM-MU_PARAM*DPHIMSS_DXI(mi)*DPHINSS_DXI(ni)*EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%GU(mi,ni)
+                        !                           ENDDO !ni
+                        !                         ENDDO !mi
 
-                                 IF(STIFFNESS_MATRIX%UPDATE_MATRIX) THEN
-                                    !LAPLACE TYPE 
-                                    IF(nh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
-                                    SUM=0.0_DP
-                                        !Calculate SUM 
-                                        DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                                            SUM=SUM-PHINS*DPHIMS_DXI(ni)*DXI_DX(ni,mh)
-                                        ENDDO !ni
-                                        !Calculate MATRIX
-                                        BT_MATRIX(mhs,nhs)=BT_MATRIX(mhs,nhs)+SUM*JGW
-                                    END IF
-                                 END IF
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!! A LAPLACE ONLY !!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-       !!! M !!!
-       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                        IF(STIFFNESS_MATRIX%UPDATE_MATRIX) THEN
+                          !LAPLACE TYPE 
+                          IF(nh==mh) THEN 
+                            SUM=0.0_DP
+                            !Calculate SUM 
+                            DO x=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                              DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                                DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
+                                  SUM=SUM+MU_PARAM*DPHINS_DXI(ni)*DXI_DX(ni,x)*DPHIMS_DXI(mi)*DXI_DX(mi,x)
+                                ENDDO !ni
+                              ENDDO !mi
+                            ENDDO !x 
+                            !Calculate MATRIX  
+                            AL_MATRIX(mhs,nhs)=AL_MATRIX(mhs,nhs)+SUM*JGW
+                          END IF
+                        END IF
 
-                             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE) THEN
-                                 IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
-                                   IF(nh==mh) THEN 
-                                   SUM=0.0_DP 
-                                        !Calculate SUM 
-                                        SUM=PHIMS*PHINS*RHO_PARAM
-                                        !Calculate MATRIX
-                                        MT_MATRIX(mhs,nhs)=MT_MATRIX(mhs,nhs)+SUM*JGW
-                                    END IF
-                                 END IF
-                             END IF
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!! A STANDARD !!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-       !!! GO TO ASSEMBLY !!!
-       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
-                             ENDDO !ns    
-                          ENDDO !nh
-                     ENDIF
-                  ENDDO !ms
-               ENDDO !mh
-             END IF
 
-       ENDDO !ng
+                        IF(STIFFNESS_MATRIX%UPDATE_MATRIX) THEN
+                          !GRADIENT TRANSPOSE TYPE
+                          IF(EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE) THEN 
+                            IF(nh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
+                              SUM=0.0_DP
+                              !Calculate SUM 
+                              DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                                DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
+                                  !note mh/nh derivative in DXI_DX 
+                                  SUM=SUM+MU_PARAM*DPHINS_DXI(mi)*DXI_DX(mi,mh)*DPHIMS_DXI(ni)*DXI_DX(ni,nh)
+                                ENDDO !ni
+                              ENDDO !mi
+                              !Calculate MATRIX
+                              AG_MATRIX(mhs,nhs)=AG_MATRIX(mhs,nhs)+SUM*JGW
+                            END IF
+                          END IF
+                        END IF
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!! B TRANSPOSE !!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+                        IF(STIFFNESS_MATRIX%UPDATE_MATRIX) THEN
+                          !LAPLACE TYPE 
+                          IF(nh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
+                            SUM=0.0_DP
+                            !Calculate SUM 
+                            DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                              SUM=SUM-PHINS*DPHIMS_DXI(ni)*DXI_DX(ni,mh)
+                            ENDDO !ni
+                            !Calculate MATRIX
+                            BT_MATRIX(mhs,nhs)=BT_MATRIX(mhs,nhs)+SUM*JGW
+                          END IF
+                        END IF
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!! M !!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+                        IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE) THEN
+                          IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
+                            IF(nh==mh) THEN 
+                              SUM=0.0_DP 
+                              !Calculate SUM 
+                              SUM=PHIMS*PHINS*RHO_PARAM
+                              !Calculate MATRIX
+                              MT_MATRIX(mhs,nhs)=MT_MATRIX(mhs,nhs)+SUM*JGW
+                            END IF
+                          END IF
+                        END IF
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!! GO TO ASSEMBLY !!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+                      ENDDO !ns    
+                    ENDDO !nh
+                  ENDIF
+                ENDDO !ms
+              ENDDO !mh
+            END IF
+
+          ENDDO !ng
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! ASSEMBLE STIFFNESS AND DAMPING MATRIX !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-       mhs_min=mhs
-       mhs_max=nhs
-       nhs_min=mhs
-       nhs_max=nhs
+          mhs_min=mhs
+          mhs_max=nhs
+          nhs_min=mhs
+          nhs_max=nhs
 
- IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_STOKES_SUBTYPE.OR.  &
-    & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE.OR. &
-    & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE) THEN
-       IF(STIFFNESS_MATRIX%UPDATE_MATRIX) THEN
+          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_STOKES_SUBTYPE.OR.  &
+            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE.OR. &
+            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE) THEN
+            IF(STIFFNESS_MATRIX%UPDATE_MATRIX) THEN
 
-          STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,1:nhs_min)=AL_MATRIX(1:mhs_min,1:nhs_min)+AG_MATRIX(1:mhs_min,1:nhs_min)
-          STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,nhs_min+1:nhs_max)=BT_MATRIX(1:mhs_min,nhs_min+1:nhs_max)
-
-
-          DO mhs=mhs_min+1,mhs_max
-             DO nhs=1,nhs_min
-                 !Transpose pressure type entries for mass equation  
-                 STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(nhs,mhs)
-             END DO
-          END DO
-       END IF
- END IF
+              STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,1:nhs_min)=AL_MATRIX(1:mhs_min,1:nhs_min)+AG_MATRIX(1:mhs_min,1:nhs_min)
+              STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,nhs_min+1:nhs_max)=BT_MATRIX(1:mhs_min,nhs_min+1:nhs_max)
 
 
+              DO mhs=mhs_min+1,mhs_max
+                DO nhs=1,nhs_min
+                  !Transpose pressure type entries for mass equation  
+                  STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(nhs,mhs)
+                END DO
+              END DO
+            END IF
+          END IF
 
- IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE) THEN
-       IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
-          DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,1:nhs_min)=MT_MATRIX(1:mhs_min,1:nhs_min)
-       END IF
- END IF
 
 
+          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE) THEN
+            IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
+              DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,1:nhs_min)=MT_MATRIX(1:mhs_min,1:nhs_min)
+            END IF
+          END IF
 
 
 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! NO RIGHT HAND SIDE FOR THIS CASE
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-       IF(RHS_VECTOR%UPDATE_VECTOR) RHS_VECTOR%ELEMENT_VECTOR%VECTOR=0.0_DP
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! DEFINE SCALING
+          ! NO RIGHT HAND SIDE FOR THIS CASE
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          
-          
+
+          IF(RHS_VECTOR%UPDATE_VECTOR) RHS_VECTOR%ELEMENT_VECTOR%VECTOR=0.0_DP
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! DEFINE SCALING
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
 !!!FIX UP THIS BIT !!!!!
 !!!
 !!! TO DO FIX THIS BIT FOR SCALING!
@@ -1430,27 +1430,27 @@ CONTAINS
               !Loop over element rows
               MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
               DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
-              & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
               DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
                 mhs=mhs+1
                 nhs=0
                 IF(STIFFNESS_MATRIX%UPDATE_MATRIX.OR.DAMPING_MATRIX%UPDATE_MATRIX) THEN
                   !Loop over element columns
                   DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                  MESH_COMPONENT2=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
-                  DEPENDENT_BASIS2=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT2)%PTR% &
-                  & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                    MESH_COMPONENT2=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
+                    DEPENDENT_BASIS2=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT2)%PTR% &
+                      & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
                     DO ns=1,DEPENDENT_BASIS2%NUMBER_OF_ELEMENT_PARAMETERS
                       nhs=nhs+1
                       IF(STIFFNESS_MATRIX%UPDATE_MATRIX)THEN 
-                      STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)* &
-                        & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS%SCALE_FACTORS(ms,mh)* &
-                        & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS%SCALE_FACTORS(ns,nh)
+                        STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)* &
+                          & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS%SCALE_FACTORS(ms,mh)* &
+                          & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS%SCALE_FACTORS(ns,nh)
                       END IF
                       IF(DAMPING_MATRIX%UPDATE_MATRIX)THEN 
-                      DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)* &
-                        & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS%SCALE_FACTORS(ms,mh)* &
-                        & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS%SCALE_FACTORS(ns,nh)
+                        DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)* &
+                          & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS%SCALE_FACTORS(ms,mh)* &
+                          & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS%SCALE_FACTORS(ns,nh)
                       END IF
                     ENDDO !ns
                   ENDDO !nh

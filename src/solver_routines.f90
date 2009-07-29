@@ -1277,7 +1277,8 @@ CONTAINS
 
     IF(ASSOCIATED(DAE_SOLVER)) THEN
       IF(ASSOCIATED(DAE_SOLVER%CRANK_NICHOLSON_SOLVER)) THEN
-        CALL FLAG_ERROR("Crank-Nicholson solver is already associated for this differential-algebraic equation solver.",ERR,ERROR,*998)
+        CALL FLAG_ERROR("Crank-Nicholson solver is already associated for this differential-algebraic equation solver.", &
+          & ERR,ERROR,*998)
       ELSE
         !Allocate the Runge-Kutta solver
         ALLOCATE(DAE_SOLVER%CRANK_NICHOLSON_SOLVER,STAT=ERR)
@@ -6501,6 +6502,7 @@ CONTAINS
                                 RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
                                 IF(ASSOCIATED(RHS_VECTOR)) THEN
                                   LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
+                                  NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
                                   IF(ASSOCIATED(LINEAR_MAPPING)) THEN
                                     LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
                                     IF(ASSOCIATED(LINEAR_MATRICES)) THEN                                      
@@ -6570,7 +6572,7 @@ CONTAINS
                                               & ERR,ERROR,*999)
                                           ENDDO !solver_row_idx                          
                                           !Set Dirichlet boundary conditions
-                                          IF(ASSOCIATED(LINEAR_MAPPING)) THEN
+                                          IF(ASSOCIATED(LINEAR_MAPPING).AND..NOT.ASSOCIATED(NONLINEAR_MAPPING)) THEN
                                             !Loop over the dependent variables associated with this equations set row
                                             DO variable_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
                                               variable_type=LINEAR_MAPPING%LINEAR_MATRIX_VARIABLE_TYPES(variable_idx)
