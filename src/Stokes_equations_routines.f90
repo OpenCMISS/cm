@@ -1380,7 +1380,8 @@ CONTAINS
             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE) THEN
             IF(STIFFNESS_MATRIX%UPDATE_MATRIX) THEN
 
-              STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,1:nhs_min)=AL_MATRIX(1:mhs_min,1:nhs_min)+AG_MATRIX(1:mhs_min,1:nhs_min)
+              STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,1:nhs_min)=AL_MATRIX(1:mhs_min,1:nhs_min)+AG_MATRIX(1:mhs_min, &
+                & 1:nhs_min)
               STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,nhs_min+1:nhs_max)=BT_MATRIX(1:mhs_min,nhs_min+1:nhs_max)
 
 
