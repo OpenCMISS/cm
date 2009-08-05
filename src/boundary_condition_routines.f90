@@ -444,7 +444,7 @@ CONTAINS
   !================================================================================================================================
   !
  
-  !>Adds to the value of the specified constant and sets this as a boundary condition on the specified constant.
+  !>Adds to the value of the specified constant and sets this as a boundary condition on the specified constant. \see OPENCMISS::CMISSBoundaryConditionAddConstant
   SUBROUTINE BOUNDARY_CONDITIONS_ADD_CONSTANT(BOUNDARY_CONDITIONS,VARIABLE_TYPE,COMPONENT_NUMBER,CONDITION,VALUE,ERR,ERROR,*)
     
     !Argument variables
@@ -521,7 +521,7 @@ CONTAINS
   !================================================================================================================================
   !
  
-  !>Sets a boundary condition on the specified constant.
+  !>Sets a boundary condition on the specified constant. \see OPENCMISS::CMISSBoundaryConditionsSetConstant
   SUBROUTINE BOUNDARY_CONDITIONS_SET_CONSTANT(BOUNDARY_CONDITIONS,VARIABLE_TYPE,COMPONENT_NUMBER,CONDITION,VALUE,ERR,ERROR,*)
     
     !Argument variables
@@ -882,7 +882,7 @@ CONTAINS
   !================================================================================================================================
   !
  
-  !>Adds to the value of the specified constant and sets this as a boundary condition on the specified user element.
+  !>Adds to the value of the specified constant and sets this as a boundary condition on the specified user element. \see OPENCMISS_CMISSBoundaryConditionsAddElement
   SUBROUTINE BOUNDARY_CONDITIONS_ADD_ELEMENT(BOUNDARY_CONDITIONS,VARIABLE_TYPE,USER_ELEMENT_NUMBER,COMPONENT_NUMBER, &
     & CONDITION,VALUE,ERR,ERROR,*)
     
@@ -961,7 +961,7 @@ CONTAINS
   !================================================================================================================================
   !
  
-  !>Sets a boundary condition on the specified user element.
+  !>Sets a boundary condition on the specified user element. \see OPENCMISS_CMISSBoundaryConditionsSetElement
   SUBROUTINE BOUNDARY_CONDITIONS_SET_ELEMENT(BOUNDARY_CONDITIONS,VARIABLE_TYPE,USER_ELEMENT_NUMBER,COMPONENT_NUMBER, &
     & CONDITION,VALUE,ERR,ERROR,*)
     
@@ -1040,7 +1040,7 @@ CONTAINS
   !================================================================================================================================
   !
  
-  !>Adds to the value of the specified constant and sets this as a boundary condition on the specified user node.
+  !>Adds to the value of the specified constant and sets this as a boundary condition on the specified user node. \see OPENCMISS_CMISSBoundaryConditionsAddNode
   SUBROUTINE BOUNDARY_CONDITIONS_ADD_NODE(BOUNDARY_CONDITIONS,VARIABLE_TYPE,DERIVATIVE_NUMBER,USER_NODE_NUMBER,COMPONENT_NUMBER, &
     & CONDITION,VALUE,ERR,ERROR,*)
     
@@ -1120,7 +1120,7 @@ CONTAINS
   !================================================================================================================================
   !
  
-  !>Sets a boundary condition on the specified user node.
+  !>Sets a boundary condition on the specified user node. \see OPENCMISS_CMISSBoundaryConditionsSetNode
   SUBROUTINE BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,VARIABLE_TYPE,DERIVATIVE_NUMBER,USER_NODE_NUMBER,COMPONENT_NUMBER, &
     & CONDITION,VALUE,ERR,ERROR,*)
     
@@ -1294,7 +1294,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the boundary conditions for an equations set.
+  !>Gets the boundary conditions for an equations set. \see OPENCMISS_CMISSEquationsSetBoundaryConditionsGet
   SUBROUTINE EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
 
     !Argument variables

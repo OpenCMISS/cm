@@ -65,7 +65,7 @@ MODULE COORDINATE_ROUTINES
   !> Coordinate system type parameters
   !>@{ 
   INTEGER(INTG), PARAMETER :: COORDINATE_RECTANGULAR_CARTESIAN_TYPE=1 !<Rectangular Cartesian coordinate system type \see COORDINATE_ROUTINES_CoordinateSystemTypes,COORDINATE_ROUTINES
-  INTEGER(INTG), PARAMETER :: COORDINATE_CYCLINDRICAL_POLAR_TYPE=2 !<Cylindrical polar coordinate system type \see COORDINATE_ROUTINES_CoordinateSystemTypes,COORDINATE_ROUTINES
+  INTEGER(INTG), PARAMETER :: COORDINATE_CYLINDRICAL_POLAR_TYPE=2 !<Cylindrical polar coordinate system type \see COORDINATE_ROUTINES_CoordinateSystemTypes,COORDINATE_ROUTINES
   INTEGER(INTG), PARAMETER :: COORDINATE_SPHERICAL_POLAR_TYPE=3 !<Spherical polar coordinate system type \see COORDINATE_ROUTINES_CoordinateSystemTypes,COORDINATE_ROUTINES
   INTEGER(INTG), PARAMETER :: COORDINATE_PROLATE_SPHEROIDAL_TYPE=4 !<Prolate spheroidal coordinate system type \see COORDINATE_ROUTINES_CoordinateSystemTypes,COORDINATE_ROUTINES
   INTEGER(INTG), PARAMETER :: COORDINATE_OBLATE_SPHEROIDAL_TYPE=5 !<Oblate spheroidal coordinate system type \see COORDINATE_ROUTINES_CoordinateSystemTypes,COORDINATE_ROUTINES
@@ -1079,7 +1079,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the dimension of the coordinate system
+  !>Sets/changes the dimension of the coordinate system. \see OPENCMISS::CMISSCoordinateSystemDimensionSet
   SUBROUTINE COORDINATE_SYSTEM_DIMENSION_SET(COORDINATE_SYSTEM,DIMENSION,ERR,ERROR,*)
 
     !Argument variables
@@ -1145,7 +1145,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the focus of a coordinate system.
+  !>Sets/changes the focus of a coordinate system. \see OPENCMISS::CMISSCoordinateSystemFocusSet
   SUBROUTINE COORDINATE_SYSTEM_FOCUS_SET(COORDINATE_SYSTEM,FOCUS,ERR,ERROR,*)
 
     !Argument variables
@@ -1193,7 +1193,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the radial interpolation type of a coordinate system.
+  !>Sets/changes the radial interpolation type of a coordinate system. \see OPENCMISS::CMISSCoordinateSystemRadialInterpolationTypeSet
   SUBROUTINE COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET(COORDINATE_SYSTEM,RADIAL_INTERPOLATION_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -1265,7 +1265,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of a coordinate system.
+  !>Sets/changes the type of a coordinate system. \see OPENCMISS::CMISSCoordinateSystemTypeSet
   SUBROUTINE COORDINATE_SYSTEM_TYPE_SET(COORDINATE_SYSTEM,TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -1311,7 +1311,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the origin of a coordinate system.
+  !>Sets/changes the origin of a coordinate system. \see OPENCMISS::CMISSCoordinateSystemOriginSet
   SUBROUTINE COORDINATE_SYSTEM_ORIGIN_SET(COORDINATE_SYSTEM,ORIGIN,ERR,ERROR,*)
 
     !Argument variables
@@ -1348,7 +1348,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the orientation of a coordinate system.
+  !>Sets/changes the orientation of a coordinate system. \see OPENCMISS::CMISSCoordinateSystemOrientationSet
   SUBROUTINE COORDINATE_SYSTEM_ORIENTATION_SET(COORDINATE_SYSTEM,ORIENTATION,ERR,ERROR,*)
 
     !Argument variables
@@ -1386,7 +1386,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Starts the creation of and initialises a new coordinate system. 
+  !>Starts the creation of and initialises a new coordinate system. \see OPENCMISS::CMISSCoordinateSystemCreateStart
   !>The default values of the COORDINATE_SYSTEM's attributes are:
   !>- TYPE: 1 (COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
   !>- RADIAL_INTERPOLATION_TYPE: 0 (COORDINATE_NO_RADIAL_INTERPOLATION_TYPE)

@@ -60,7 +60,7 @@ MODULE BASIS_ROUTINES
   !> \addtogroup BASIS_ROUTINES_BasisTypes BASIS_ROUTINES::BasisTypes
   !> \brief Basis definition type parameters
   !> \todo Combine simplex and serendipity elements???
-  !> \see BASIS_ROUTINES
+  !> \see BASIS_ROUTINES,OPENCMISS_BasisTypes
   !>@{ 
   INTEGER(INTG), PARAMETER :: BASIS_LAGRANGE_HERMITE_TP_TYPE=1 !<Lagrange-Hermite tensor product basis type \see BASIS_ROUTINES_BasisTypes,BASIS_ROUTINES
   INTEGER(INTG), PARAMETER :: BASIS_SIMPLEX_TYPE=2 !<Simplex basis type \see BASIS_ROUTINES_BasisTypes,BASIS_ROUTINES
@@ -73,7 +73,7 @@ MODULE BASIS_ROUTINES
 
   !> \addtogroup BASIS_ROUTINES_InterpolationSpecifications BASIS_ROUTINES::InterpolationSpecifications
   !> \brief Interpolation specification parameters
-  !> \see BASIS_ROUTINES
+  !> \see BASIS_ROUTINES,OPENCMISS_InterpolationSpecifications
   !>@{ 
   INTEGER(INTG), PARAMETER :: BASIS_LINEAR_LAGRANGE_INTERPOLATION=1 !<Linear Lagrange interpolation specification \see BASIS_ROUTINES_InterpolationSpecifications,BASIS_ROUTINES
   INTEGER(INTG), PARAMETER :: BASIS_QUADRATIC_LAGRANGE_INTERPOLATION=2 !<Quadratic Lagrange interpolation specification \see BASIS_ROUTINES_InterpolationSpecifications,BASIS_ROUTINES
@@ -123,7 +123,7 @@ MODULE BASIS_ROUTINES
   
   !> \addtogroup BASIS_ROUTINES_QuadratureTypes BASIS_ROUTINES::QuadratureTypes
   !> \brief Quadrature type parameters
-  !> \see BASIS_ROUTINES
+  !> \see BASIS_ROUTINES,OPENCMISS_QuadratureTypes
   !>@{
   INTEGER(INTG), PARAMETER :: BASIS_GAUSS_LEGENDRE_QUADRATURE=1 !<Gauss-Legendre quadrature  \see BASIS_ROUTINES_QuadratureTypes,BASIS_ROUTINES
   INTEGER(INTG), PARAMETER :: BASIS_GAUSS_LAGUERRE_QUADRATURE=2 !<Gauss-Laguerre quadrature  \see BASIS_ROUTINES_QuadratureTypes,BASIS_ROUTINES
@@ -311,7 +311,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finishes the creation of a new basis
+  !>Finishes the creation of a new basis \see BASIS_ROUTINES::BASIS_CREATE_START,OPENCMISS::BasisCreateFinish
   SUBROUTINE BASIS_CREATE_FINISH(BASIS,ERR,ERROR,*)
 
     !Argument variables
@@ -564,7 +564,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Destroys a basis identified by its basis user number \see BASIS_ROUTINES::BASIS_DESTROY_FAMILY
+  !>Destroys a basis identified by its basis user number \see BASIS_ROUTINES::BASIS_DESTROY_FAMILY,OPENCMISS::CMISSBasisDestroy
   RECURSIVE SUBROUTINE BASIS_DESTROY(USER_NUMBER,ERR,ERROR,*)
 
     !Argument variables
@@ -927,7 +927,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the interpolation type in each xi directions where the basis is identified by user number.
+  !>Sets/changes the interpolation type in each xi directions where the basis is identified by user number. \see OPENCMISS::CMISSBasisInterpolationXiSet
   SUBROUTINE BASIS_INTERPOLATION_XI_SET_NUMBER(USER_NUMBER,INTERPOLATION_XI,ERR,ERROR,*)
 
     !Argument variables
@@ -954,7 +954,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the interpolation type in each xi directions for a basis identified by a pointer.
+  !>Sets/changes the interpolation type in each xi directions for a basis identified by a pointer. \see OPENCMISS::CMISSBasisInterpolationXiSet
   SUBROUTINE BASIS_INTERPOLATION_XI_SET_PTR(BASIS,INTERPOLATION_XI,ERR,ERROR,*)
 
     !Argument variables
@@ -1898,17 +1898,17 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the number of local nodes in the specified basis
-  SUBROUTINE BASIS_NUMBER_OF_NODES_GET(BASIS,NUMBER_OF_NODES,ERR,ERROR,*)
+  !>Returns the number of local nodes in the specified basis \see OPENCMISS::CMISSBasisNumberOfLocalNodesGet
+  SUBROUTINE BASIS_NUMBER_OF_LOCAL_NODES_GET(BASIS,NUMBER_OF_LOCAL_NODES,ERR,ERROR,*)
 
     !Argument variables
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis to get the number of nodes
-    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_NODES !<On return, the number of local nodes in the basis
+    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_LOCAL_NODES !<On return, the number of local nodes in the basis
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    CALL ENTERS("BASIS_NUMBER_OF_NODES_GET",ERR,ERROR,*999)
+    CALL ENTERS("BASIS_NUMBER_OF_LOCAL_NODES_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(BASIS)) THEN
       NUMBER_OF_NODES=BASIS%NUMBER_OF_NODES
@@ -1916,18 +1916,18 @@ CONTAINS
       CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("BASIS_NUMBER_OF_NODES_GET")
+    CALL EXITS("BASIS_NUMBER_OF_LOCAL_NODES_GET")
     RETURN
-999 CALL ERRORS("BASIS_NUMBER_OF_NODES_GET",ERR,ERROR)
-    CALL EXITS("BASIS_NUMBER_OF_NODES_GET")
+999 CALL ERRORS("BASIS_NUMBER_OF_LOCAL_NODES_GET",ERR,ERROR)
+    CALL EXITS("BASIS_NUMBER_OF_LOCAL_NODES_GET")
     RETURN 1
-  END SUBROUTINE BASIS_NUMBER_OF_NODES_GET
+  END SUBROUTINE BASIS_NUMBER_OF_LOCAL_NODES_GET
 
   !
   !================================================================================================================================
   !
   
-  !>Gets the number of xi directions for a basis identified by a pointer.
+  !>Gets the number of xi directions for a basis. \see OPENCMISS::CMISSBasisNumberOfXiGet
   SUBROUTINE BASIS_NUMBER_OF_XI_GET(BASIS,NUMBER_OF_XI,ERR,ERROR,*)
 
     !Argument variables
@@ -1987,7 +1987,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the number of xi directions for a basis identified by a pointer.
+  !>Sets/changes the number of xi directions for a basis identified by a pointer. \see OPENCMISS::CMISSBasisNumberOfXiSet
   SUBROUTINE BASIS_NUMBER_OF_XI_SET_PTR(BASIS,NUMBER_OF_XI,ERR,ERROR,*)
 
     !Argument variables
@@ -2517,7 +2517,7 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Get the number of Gauss points in each xi direction on a basis quadrature identified by a pointer.
+  !>Get the number of Gauss points in each xi direction on a basis quadrature identified by a pointer. \see OPENCMISS::CMISSBasisQuadratureNumberOfGaussXiGet
   SUBROUTINE BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_GET(BASIS,QUADRATURE_NUMBER_OF_GAUSS_XI,ERR,ERROR,*)
 
     !Argument variables
@@ -2589,7 +2589,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the number of Gauss points in each xi direction on a basis quadrature identified by a pointer.
+  !>Sets/changes the number of Gauss points in each xi direction on a basis quadrature identified by a pointer. \see OPENCMISS::CMISSBasisQuadratureNumberOfGaussSet
   SUBROUTINE BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_SET_PTR(BASIS,NUMBER_OF_GAUSS_XI,ERR,ERROR,*)
 
     !Argument variables
@@ -2677,7 +2677,7 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Get the order of a quadrature for a basis quadrature identified by a pointer.
+  !>Get the order of a quadrature for a basis quadrature identified by a pointer. \see OPENCMISS::CMISSBasisQuadratureOrderGet
   SUBROUTINE BASIS_QUADRATURE_ORDER_GET(BASIS,QUADRATURE_ORDER,ERR,ERROR,*)
 
     !Argument variables
@@ -2741,7 +2741,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the order of a quadrature for a basis quadrature identified by a pointer.
+  !>Sets/changes the order of a quadrature for a basis quadrature identified by a pointer. \see OPENCMISS::CMISSBasisQuadratureOrderSet
   SUBROUTINE BASIS_QUADRATURE_ORDER_SET_PTR(BASIS,ORDER,ERR,ERROR,*)
 
     !Argument variables
@@ -2789,7 +2789,7 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>get the quadrature type on a basis identified by a pointer.
+  !>get the quadrature type on a basis identified by a pointer. \see OPENCMISS::CMISSBasisQuadratureTypeGet
   SUBROUTINE BASIS_QUADRATURE_TYPE_GET(BASIS,QUADRATURE_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -4287,7 +4287,7 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>get the type for a basis is identified by a a pointer.
+  !>get the type for a basis is identified by a a pointer. \see OPENCMISS::CMISSBasisTypeGet
   SUBROUTINE BASIS_TYPE_GET(BASIS,TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -4347,7 +4347,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type for a basis is identified by a a pointer.
+  !>Sets/changes the type for a basis is identified by a a pointer. \see OPENCMISS::CMISSBasisTypeGet
   SUBROUTINE BASIS_TYPE_SET_PTR(BASIS,TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -4395,7 +4395,7 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Gets the collapsed xi flags for a basis is identified by a a pointer.
+  !>Gets the collapsed xi flags for a basis is identified by a a pointer. \see OPENCMISS::CMISSBasisCollapsedXiGet
   SUBROUTINE BASIS_COLLAPSED_XI_GET(BASIS,COLLAPSED_XI,ERR,ERROR,*)
 
     !Argument variables
@@ -4463,7 +4463,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the collapsed xi flags for a basis is identified by a a pointer.
+  !>Sets/changes the collapsed xi flags for a basis is identified by a a pointer. \see OPENCMISS::CMISSBasisCollapsedXiSet
   SUBROUTINE BASIS_COLLAPSED_XI_SET_PTR(BASIS,COLLAPSED_XI,ERR,ERROR,*)
 
     !Argument variables

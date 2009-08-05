@@ -70,7 +70,7 @@ MODULE CONTROL_LOOP_ROUTINES
 
   !Interfaces
 
-  !>Returns the specified control loop as indexed by the control loop identifier from the control loop root.
+  !>Returns the specified control loop as indexed by the control loop identifier from the control loop root. \see OPENCMISS_CMISSControlLoopGet
   INTERFACE CONTROL_LOOP_GET
     MODULE PROCEDURE CONTROL_LOOP_GET_0
     MODULE PROCEDURE CONTROL_LOOP_GET_1
@@ -169,7 +169,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the current time parameters for a time control loop.
+  !>Gets the current time parameters for a time control loop. \see OPENCMISS_CMISSControlLoopCurrentTimesGet
   SUBROUTINE CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*)
 
     !Argument variables
@@ -488,8 +488,7 @@ CONTAINS
         CONTROL_LOOP%FIXED_LOOP%ITERATION_NUMBER=0
         CONTROL_LOOP%FIXED_LOOP%START_ITERATION=1
         CONTROL_LOOP%FIXED_LOOP%STOP_ITERATION=100
-        CONTROL_LOOP%FIXED_LOOP%ITERATION_INCREMENT=1
-      ENDIF
+        CONTROL_LOOP%FIXED_LOOP%ITERATION_INCREMENT=1      ENDIF
     ELSE
       CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*998)
     ENDIF
@@ -506,7 +505,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets the iteration parameters for a fixed control loop.
+  !>Sets the iteration parameters for a fixed control loop. \see OPENCMISS_CMISSControlLoopIterationsSet
   SUBROUTINE CONTROL_LOOP_ITERATIONS_SET(CONTROL_LOOP,START_ITERATION,STOP_ITERATION,ITERATION_INCREMENT,ERR,ERROR,*)
 
     !Argument variables
@@ -520,7 +519,7 @@ CONTAINS
     TYPE(CONTROL_LOOP_FIXED_TYPE), POINTER :: FIXED_LOOP
     TYPE(VARYING_STRING) :: LOCAL_ERROR
  
-    CALL ENTERS("CONTROL_LOOP_TIMES_SET",ERR,ERROR,*999)
+    CALL ENTERS("CONTROL_LOOP_ITERATIONS_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
@@ -577,7 +576,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets the maximum number of iterations for a while control loop.
+  !>Sets the maximum number of iterations for a while control loop. \see OPENCMISS_CMISSControlLoopMaximumIterationsSet
   SUBROUTINE CONTROL_LOOP_MAXIMUM_ITERATIONS_SET(CONTROL_LOOP,MAXIMUM_ITERATIONS,ERR,ERROR,*)
 
     !Argument variables
@@ -589,7 +588,7 @@ CONTAINS
     TYPE(CONTROL_LOOP_WHILE_TYPE), POINTER :: WHILE_LOOP
     TYPE(VARYING_STRING) :: LOCAL_ERROR
  
-    CALL ENTERS("CONTROL_LOOP_TIMES_SET",ERR,ERROR,*999)
+    CALL ENTERS("CONTROL_MAXIMUM_ITERATIONS_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
@@ -627,8 +626,8 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the number of sub loops for a control loop.
-  SUBROUTINE CONTROL_LOOP_NUMBER_SUB_LOOPS_GET(CONTROL_LOOP,NUMBER_OF_SUB_LOOPS,ERR,ERROR,*)
+  !>Gets the number of sub loops for a control loop. \see OPENCMISS_CMISSCMISSControlLoopNumberOfSubLoopsGet
+  SUBROUTINE CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_GET(CONTROL_LOOP,NUMBER_OF_SUB_LOOPS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to get the number of sub loops for
@@ -637,7 +636,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
  
-    CALL ENTERS("CONTROL_LOOP_NUMBER_SUB_LOOPS_GET",ERR,ERROR,*999)
+    CALL ENTERS("CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
@@ -649,19 +648,19 @@ CONTAINS
       CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_NUMBER_SUB_LOOPS_GET")
+    CALL EXITS("CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_GET")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_NUMBER_SUB_LOOPS_GET",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_NUMBER_SUB_LOOPS_GET")
+999 CALL ERRORS("CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_GET",ERR,ERROR)
+    CALL EXITS("CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_GET")
     RETURN 1
-  END SUBROUTINE CONTROL_LOOP_NUMBER_SUB_LOOPS_GET
+  END SUBROUTINE CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_GET
 
   !
   !================================================================================================================================
   !
   
-  !>Sets/changes the number of sub loops in a control loop.
-  SUBROUTINE CONTROL_LOOP_NUMBER_SUB_LOOPS_SET(CONTROL_LOOP,NUMBER_OF_SUB_LOOPS,ERR,ERROR,*)
+  !>Sets/changes the number of sub loops in a control loop. \see OPENCMISS_CMISSCMISSControlLoopNumberOfSubLoopsSet
+  SUBROUTINE CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_SET(CONTROL_LOOP,NUMBER_OF_SUB_LOOPS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to set the number of sub loops for
@@ -673,7 +672,7 @@ CONTAINS
     TYPE(CONTROL_LOOP_PTR_TYPE), ALLOCATABLE :: OLD_SUB_LOOPS(:)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("CONTROL_LOOP_NUMBER_SUB_LOOPS_SET",ERR,ERROR,*999)
+    CALL ENTERS("CONTROL_LOOP_NUMBER_Of_SUB_LOOPS_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
@@ -1041,7 +1040,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the time parameters for a time control loop.
+  !>Gets the time parameters for a time control loop. \see OPENCMISS_CMISSControlLoopTimesGet
   SUBROUTINE CONTROL_LOOP_TIMES_GET(CONTROL_LOOP,START_TIME,STOP_TIME,TIME_INCREMENT,CURRENT_TIME,ERR,ERROR,*)
 
     !Argument variables
@@ -1090,7 +1089,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets the time parameters for a time control loop.
+  !>Sets the time parameters for a time control loop. \see OPENCMISS_CMISSControlLoopTimesSet
   SUBROUTINE CONTROL_LOOP_TIMES_SET(CONTROL_LOOP,START_TIME,STOP_TIME,TIME_INCREMENT,ERR,ERROR,*)
 
     !Argument variables

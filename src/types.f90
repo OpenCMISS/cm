@@ -909,6 +909,7 @@ MODULE TYPES
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region for this field variable.
     INTEGER(INTG) :: DIMENSION !<The dimension of the field. \see FIELD_ROUTINES_DimensionTypes
     INTEGER(INTG) :: DATA_TYPE !<The data type of the field variable.  \see FIELD_ROUTINES_DataTypes,FIELD_ROUTINES
+    INTEGER(INTG) :: DOF_ORDER_TYPE !<The order of the DOF's in the field variable \see FIELD_ROUTINES_DOFOrderTypes,FIELD_ROUTINES
     INTEGER(INTG) :: MAX_NUMBER_OF_INTERPOLATION_PARAMETERS !<The maximum number of interpolation parameters in an element for a field variable. 
     INTEGER(INTG) :: NUMBER_OF_DOFS !<Number of local degress of freedom for this field variable (excluding ghosted dofs). Old CMISS name NYNR(0,0,nc,nr,nx).
     INTEGER(INTG) :: TOTAL_NUMBER_OF_DOFS !<Number of local degrees of freedom for this field variable (including ghosted dofs). Old CMISS name NYNR(0,0,nc,nr,nx).
@@ -942,6 +943,8 @@ MODULE TYPES
     LOGICAL, ALLOCATABLE :: DIMENSION_LOCKED(:) !<DIMENSION_LOCKED(variable_type_idx). Is .TRUE. if the dimension for the variable_type_idx'th variable type has been locked, .FALSE. if not.
     INTEGER(INTG), ALLOCATABLE :: DATA_TYPES(:) !<DATA_TYPES(variable_type_idx). The cache of the variable data type for the variable_type_idx'th variable type of the field. \see FIELD_ROUTINES_DataTypes
     LOGICAL, ALLOCATABLE :: DATA_TYPES_LOCKED(:) !<DATA_TYPES_LOCKED(variable_type_idx). Is .TRUE. if the data type for the variable_type_idx'th variable type has been locked, .FALSE. if not.
+    INTEGER(INTG), ALLOCATABLE :: DOF_ORDER_TYPES(:) !<DOF_ORDER_TYPES(variable_type_idx). The cache of the variable dof order type for the variable_type_idx'th variable type of the field. \see FIELD_ROUTINES_DataTypes
+    LOGICAL, ALLOCATABLE :: DOF_ORDER_TYPES_LOCKED(:) !<DOF_ORDER_TYPES_LOCKED(variable_type_idx). Is .TRUE. if the dof order type for the variable_type_idx'th variable type has been locked, .FALSE. if not.
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_COMPONENTS(:) !<NUMBER_OF_COMPONENTS(variable_type_idx). The number of components in the field for the variable_type_idx'th field variable type.
     LOGICAL, ALLOCATABLE :: NUMBER_OF_COMPONENTS_LOCKED(:) !<NUMBER_OF_COMPONENTS_LOCKED(variable_type_idx). Is .TRUE. if the number of components has been locked for the variable_type_idx'th variable type, .FALSE. if not.
     TYPE(VARYING_STRING), ALLOCATABLE :: COMPONENT_LABELS(:,:) !<COMPONENT_LABELS(component_idx,variable_type_idx). The cache of the component label for the given component and variable type of the field.

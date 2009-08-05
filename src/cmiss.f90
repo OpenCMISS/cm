@@ -83,7 +83,7 @@ MODULE CMISS
 
   PUBLIC CMISS_MAJOR_VERSION,CMISS_MINOR_VERSION,CMISS_REVISION_VERSION,CMISS_BUILD_VERSION
   
-  PUBLIC CMISS_WRITE_ERROR,CMISS_FINALISE,CMISS_INITIALISE
+  PUBLIC CMISS_HANDLE_ERROR,CMISS_WRITE_ERROR,CMISS_FINALISE,CMISS_INITIALISE
   
 CONTAINS
 
@@ -91,7 +91,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finalises CMISS.
+  !>Finalises CMISS. \see OPENCMISS::CMISSFinalise
   SUBROUTINE CMISS_FINALISE(ERR,ERROR,*)
   
     !Argument variables
@@ -122,7 +122,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Initialises CMISS.
+  !>Initialises CMISS. \see OPENCMISS::CMISSInitialise
   SUBROUTINE CMISS_INITIALISE(WORLD_REGION,ERR,ERROR,*)
   
     !Argument variables
@@ -173,7 +173,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Writes the error string to screen.
+  !>Writes the error string to screen. \todo replace with CMISS_HANDLE_ERROR.
   SUBROUTINE CMISS_WRITE_ERROR(ERR,ERROR)
   
     !Argument variables
@@ -187,6 +187,24 @@ CONTAINS
 999 RETURN
 
   END SUBROUTINE CMISS_WRITE_ERROR
+  
+  !================================================================================================================================
+  !
+
+  !>Handle an error condition
+  SUBROUTINE CMISS_HANDLE_ERROR(ERR,ERROR)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(INOUT) :: ERROR !<The error string
+    !Local Variables
+    
+    CALL WRITE_ERROR(ERR,ERROR,*999)
+
+    RETURN
+999 RETURN
+
+  END SUBROUTINE CMISS_HANDLE_ERROR
   
   !
   !================================================================================================================================
