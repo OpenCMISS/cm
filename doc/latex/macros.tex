@@ -313,6 +313,9 @@
 \newcommand{\dotover}[1]{\ensuremath{ %
     \stackrel{\scriptscriptstyle \bullet}{#1} %
     }} % time derivative
+\newcommand{\ddotover}[1]{\ensuremath{ %
+    \stackrel{\scriptscriptstyle \bullet\bullet}{#1} %
+    }} % double time derivative
 \newcommand{\dprod}{\ensuremath{\displaystyle\prod}} % display product
 \newcommand{\dprodl}[2]{\ensuremath{ %
     \displaystyle\prod_{#1}^{#2} %
@@ -396,18 +399,21 @@
 \newcommand{\orderof}[1]{\ensuremath{\fnof{\mathrm{O}}{#1}}} % order e.g. O(n)
 \newcommand{\pochhammer}[2]{\ensuremath{ %
     \pbrac{#1}_{#2} %
-    }} % Pochhammer polynomial e.g. \pochhammer{a}{n} => (a)_n n.b. (a)_n =
-       % (a,n) where (a,n) is Appell's symbol.
+}} % Pochhammer polynomial e.g. \pochhammer{a}{n} => (a)_n n.b. (a)_n =
+% (a,n) where (a,n) is Appell's symbol.
 \newcommand{\sphericalharmonic}[4]{\ensuremath{%
     \fnof{Y_{{#1}{#2}}^{#3}}{#4} %
-    }} % Spherical harmonic e.g. \sphericalharmonic{a}{b}{c}{d} => Y_ab^c(d)
+}} % Spherical harmonic e.g. \sphericalharmonic{a}{b}{c}{d} => Y_ab^c(d)
 \newcommand{\set}[1]{\ensuremath{
     \bbrac{#1}
-    }} % e.g. \set{1,2,3} => {1,2,3}
+}} % e.g. \set{1,2,3} => {1,2,3}
 \newcommand{\sqbrac}[1]{\brac{[}{#1}{]}} % square [ bracket
+\newcommand{\symover}[2]{\ensuremath{
+    \stackrel{\scriptscriptstyle #1}{#2} %
+}} % over
 \newcommand{\tento}[1]{\ensuremath{ %
     10^{#1} %
-    }} % e.g. \tento{3} ten to the power of 3
+}} % e.g. \tento{3} ten to the power of 3
 % cpb 19/9/96 Changing from \mathbf to \boldsymbol to allow bold greek tensors
 %\newcommand{\tensor}[1]{\ensuremath{\mathbf{#1}}} % tensor
 \newcommand{\tensor}[1]{\ensuremath{\boldsymbol{#1}}} % tensor
