@@ -16,14 +16,14 @@
 #
 # This is the overall name of the document
 
-MY_MAINFILE=Notes
+MY_MAINFILE=OpenCMISSNotes
 
 #
 # These are the names of the tex sources for the document. If there is
 # more than one source quotation (") marks must be used around the
 # individual sources seperated by spaces.
 
-MY_TEX_SRC="Theory/Theory.tex"
+MY_TEX_SRC="TitlePage/TitlePage.tex Introduction/Introduction.tex Theory/Theory.tex References/References.tex Index/Index.tex"
 
 #
 # The names of the eps/figs/(gnu)plot files that go into the document. 

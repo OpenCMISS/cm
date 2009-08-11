@@ -1,3 +1,4 @@
+\clearemptydoublepage
 \chapter{Theory}
 \label{cha:theory}
 
@@ -22,7 +23,7 @@ where $\matr{M}$ is the mass matrix, $\matr{C}$ the damping matrix,
 $\fnof{\vect{g}}{\vect{u}}$ a non-linear vector function and $\vect{f}$ the
 forcing vector.
 
-We now expand the unknown vector $\vect{u}$ in terms of a polynomial of degree
+From \cite{zienkiewicz:2006_1} we now expand the unknown vector $\vect{u}$ in terms of a polynomial of degree
 $p$. With the known values of $\vect{u}_{n}$, $\dot{\vect{u}}_{n}$,
 $\ddot{\vect{u}}_{n}$ up to $\symover{p-1}{\vect{u}}_{n}$ at the beginning of
 the time step $\Delta t$ we can write the polynomial expansion as
@@ -119,4 +120,20 @@ where $\fnof{\matr{J}}{\vect{\alpha}^{p}_{n}}$ is the Jacobian and is given by
   \fnof{\matr{J}}{\vect{\alpha}^{p}_{n}}=\dfrac{\theta_{p-2}{\Delta t}^{p-2}}{\factorial{p-2}}\matr{M}+\dfrac{\theta_{p-1}{\Delta
       t}^{p-1}}{\factorial{p-1}}\matr{C}+\dfrac{\theta_{p}{\Delta t}^{p}}{p!}
   \delby{\fnof{\vect{g}}{\vect{\alpha}^{p}_{n}}}{\vect{\alpha}^{p}_{n}}
+\end{equation}
+
+Once $\vect{\alpha}^{p}_{n}$ has been obtained the values at the next time
+step can be obtained from
+
+\begin{equation}
+  \begin{split}
+    \vect{u}_{n+1} &= \vect{u}_{n}+\Delta t
+    \dot{\vect{u}}_{n}+\cdots+\dfrac{{\Delta t}^{p}}{p!}\vect{\alpha}^{p}_{n}=\hat{\vect{u}}_{n+1}+\dfrac{{\Delta t}^{p}}{p!}\vect{\alpha}^{p}_{n}\\
+    \dot{\vect{u}}_{n+1} &= \dot{\vect{u}}_{n}+\Delta t
+    \ddot{\vect{u}}_{n}+\cdots+\dfrac{{\Delta
+        t}^{p-1}}{\factorial{p-1}}\vect{\alpha}^{p}_{n}=\dot{\hat{\vect{u}}}_{n+1}+\dfrac{{\Delta
+        t}^{p-1}}{\factorial{p-1}}\vect{\alpha}^{p}_{n} \\
+    &\vdots \\
+    \symover{p-1}{\vect{u}}_{n+1} &= \symover{p-1}{\vect{u}}_{n}+\Delta t\vect{\alpha}^{p}_{n}
+  \end{split}
 \end{equation}
