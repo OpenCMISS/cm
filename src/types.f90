@@ -1586,6 +1586,7 @@ MODULE TYPES
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linear solver
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the linear solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
     INTEGER(INTG) :: DIRECT_SOLVER_TYPE !<The type of direct linear solver
+    TYPE(PETSC_KSP_TYPE) :: KSP !<The PETSc solver object
   END TYPE LINEAR_DIRECT_SOLVER_TYPE
 
   !>Contains information for a direct linear solver

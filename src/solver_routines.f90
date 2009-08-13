@@ -102,6 +102,11 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_LU=1 !<LU direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_CHOLESKY=2 !<Cholesky direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_SVD=3 !<SVD direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_MUMPS=4 !<MUMPS direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_PASTIX=5 !<PASTIX direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_PLAPACK=6 !<PLAPACK direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_SPOOLES=7 !<SPOOLES direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_SUPERLU=8 !<SUPERLU direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
   !>@}
   
   !> \addtogroup SOLVER_ROUTINES_IterativeLinearSolverTypes SOLVER_ROUTINES::IterativeLinearSolverTypes
@@ -293,8 +298,9 @@ MODULE SOLVER_ROUTINES
   PUBLIC SOLVER_CMISS_LIBRARY,SOLVER_PETSC_LIBRARY
 
   PUBLIC SOLVER_LINEAR_DIRECT_SOLVE_TYPE,SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE
-  
-  PUBLIC SOLVER_DIRECT_LU,SOLVER_DIRECT_CHOLESKY,SOLVER_DIRECT_SVD
+ 
+  PUBLIC SOLVER_DIRECT_LU,SOLVER_DIRECT_CHOLESKY,SOLVER_DIRECT_SVD,SOLVER_DIRECT_MUMPS,SOLVER_DIRECT_PASTIX,SOLVER_DIRECT_PLAPACK, &
+    & SOLVER_DIRECT_SPOOLES,SOLVER_DIRECT_SUPERLU
 
   PUBLIC SOLVER_ITERATIVE_RICHARDSON,SOLVER_ITERATIVE_CHEBYCHEV,SOLVER_ITERATIVE_CONJUGATE_GRADIENT, &
     & SOLVER_ITERATIVE_BICONJUGATE_GRADIENT,SOLVER_ITERATIVE_GMRES,SOLVER_ITERATIVE_BiCGSTAB,SOLVER_ITERATIVE_CONJGRAD_SQUARED
@@ -3694,7 +3700,7 @@ CONTAINS
                 CASE(SOLVER_CMISS_LIBRARY)
                   DIRECT_SOLVER%SOLVER_LIBRARY=SOLVER_CMISS_LIBRARY
                 CASE(SOLVER_PETSC_LIBRARY)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  DIRECT_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
                 CASE DEFAULT
                   LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
                     & " is invalid."
@@ -4085,6 +4091,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
@@ -4135,7 +4142,81 @@ CONTAINS
               ENDIF
             ENDIF
           CASE(SOLVER_PETSC_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
+              SOLVER_EQUATIONS=>SOLVER%LINKING_SOLVER%SOLVER_EQUATIONS
+              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
+                IF(.NOT.ASSOCIATED(SOLVER_MATRICES)) &
+                  & CALL FLAG_ERROR("Linked solver equation solver matrices is not associated.",ERR,ERROR,*999)
+              ELSE
+                CALL FLAG_ERROR("Linked solver solver equations is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                !Create the solver matrices and vectors
+                NULLIFY(SOLVER_MATRICES)
+                CALL SOLVER_MATRICES_CREATE_START(SOLVER_EQUATIONS,SOLVER_MATRICES,ERR,ERROR,*999)
+                CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_PETSC_LIBRARY,ERR,ERROR,*999)
+                SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
+                CASE(SOLVER_SPARSE_MATRICES)
+                  CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
+                    & ERR,ERROR,*999)
+                CASE(SOLVER_FULL_MATRICES)
+                  CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE/), &
+                    & ERR,ERROR,*999)
+                CASE DEFAULT
+                  LOCAL_ERROR="The specified solver equations sparsity type of "// &
+                    & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))// &
+                    & " is invalid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+                CALL SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
+              ELSE
+                CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+              ENDIF
+              CALL PETSC_KSPCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
+
+              !Set any further KSP options from the command line options
+              CALL PETSC_KSPSETFROMOPTIONS(LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
+              !Set the solver matrix to be the KSP matrix
+              IF(SOLVER_MATRICES%NUMBER_OF_MATRICES==1) THEN
+                SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(1)%PTR%MATRIX
+                IF(ASSOCIATED(SOLVER_MATRIX)) THEN
+                  IF(ASSOCIATED(SOLVER_MATRIX%PETSC)) THEN
+                    CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
+                      & PETSC_DIFFERENT_NONZERO_PATTERN,ERR,ERROR,*999)
+                   !Set the matrix type
+                   SELECT CASE(LINEAR_DIRECT_SOLVER%DIRECT_SOLVER_TYPE)
+                   CASE(SOLVER_DIRECT_MUMPS)
+                     CALL PETSC_MATSETTYPE(SOLVER_MATRIX%PETSC%MATRIX,PETSC_AIJMUMPS,ERR,ERROR,*999)
+                   CASE(SOLVER_DIRECT_PASTIX)
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CASE(SOLVER_DIRECT_PLAPACK)
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CASE(SOLVER_DIRECT_SPOOLES)
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CASE(SOLVER_DIRECT_SUPERLU)
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CASE DEFAULT
+                     LOCAL_ERROR="The direct solver type of "// &
+                       & TRIM(NUMBER_TO_VSTRING(LINEAR_DIRECT_SOLVER%DIRECT_SOLVER_TYPE,"*",ERR,ERROR))//" is invalid."
+                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   END SELECT
+                  ELSE
+                    CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Solver matrices distributed matrix is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                LOCAL_ERROR="The given number of solver matrices of "// &
+                  & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))// &
+                  & " is invalid. There should only be one solver matrix for a linear direct solver."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+
+            ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The solver library type of "// &
               & TRIM(NUMBER_TO_VSTRING(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
@@ -4168,6 +4249,7 @@ CONTAINS
 
     !Argument variables
     TYPE(LINEAR_DIRECT_SOLVER_TYPE), POINTER :: LINEAR_DIRECT_SOLVER !<A pointer to the lienar direct solver to finalise
+    TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -4177,7 +4259,17 @@ CONTAINS
     IF(ASSOCIATED(LINEAR_DIRECT_SOLVER)) THEN
       DEALLOCATE(LINEAR_DIRECT_SOLVER)
     ENDIF
-    
+
+    IF(ASSOCIATED(LINEAR_DIRECT_SOLVER)) THEN
+      LINEAR_SOLVER=>LINEAR_DIRECT_SOLVER%LINEAR_SOLVER
+      IF(ASSOCIATED(LINEAR_SOLVER)) THEN
+        IF(.NOT.LINEAR_SOLVER%LINKED_NEWTON_PETSC_SOLVER) THEN
+          CALL PETSC_KSPFINALISE(LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+      DEALLOCATE(LINEAR_DIRECT_SOLVER)
+    ENDIF
+
     CALL EXITS("SOLVER_LINEAR_DIRECT_FINALISE")
     RETURN
 999 CALL ERRORS("SOLVER_LINEAR_DIRECT_FINALISE",ERR,ERROR)    
@@ -4210,8 +4302,9 @@ CONTAINS
         ALLOCATE(LINEAR_SOLVER%DIRECT_SOLVER,STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate linear solver direct solver.",ERR,ERROR,*999)
         LINEAR_SOLVER%DIRECT_SOLVER%LINEAR_SOLVER=>LINEAR_SOLVER
-        LINEAR_SOLVER%DIRECT_SOLVER%SOLVER_LIBRARY=SOLVER_CMISS_LIBRARY
+        LINEAR_SOLVER%DIRECT_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
         LINEAR_SOLVER%DIRECT_SOLVER%DIRECT_SOLVER_TYPE=SOLVER_DIRECT_LU
+        CALL PETSC_KSPINITIALISE(LINEAR_SOLVER%DIRECT_SOLVER%KSP,ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Linear solver is not associated.",ERR,ERROR,*998)
@@ -4300,7 +4393,17 @@ CONTAINS
                         CASE(SOLVER_CMISS_LIBRARY)
                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                         CASE(SOLVER_PETSC_LIBRARY)
-                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          IF(ASSOCIATED(RHS_VECTOR%PETSC)) THEN
+                            IF(ASSOCIATED(SOLVER_VECTOR%PETSC)) THEN
+                              !Solver the linear system
+                              CALL PETSC_KSPSOLVE(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR,SOLVER_VECTOR%PETSC%VECTOR, &
+                                & ERR,ERROR,*999)
+                            ELSE
+                              CALL FLAG_ERROR("Solver vector PETSc vector is not associated.",ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            CALL FLAG_ERROR("RHS vector petsc PETSc is not associated.",ERR,ERROR,*999)
+                          ENDIF
                         CASE DEFAULT
                           LOCAL_ERROR="The solver library type of "// &
                             & TRIM(NUMBER_TO_VSTRING(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
@@ -4365,7 +4468,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has alredy been finished.",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
           IF(ASSOCIATED(SOLVER%LINEAR_SOLVER)) THEN
@@ -4387,10 +4490,25 @@ CONTAINS
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     END SELECT                   
                   CASE(SOLVER_PETSC_LIBRARY)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    SELECT CASE(DIRECT_SOLVER_TYPE)
+                    CASE(SOLVER_DIRECT_MUMPS)
+                      SOLVER%LINEAR_SOLVER%DIRECT_SOLVER%DIRECT_SOLVER_TYPE=SOLVER_DIRECT_MUMPS
+                    CASE(SOLVER_DIRECT_PASTIX)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CASE(SOLVER_DIRECT_PLAPACK)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CASE(SOLVER_DIRECT_SPOOLES)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CASE(SOLVER_DIRECT_SUPERLU)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CASE DEFAULT
+                      LOCAL_ERROR="The direct solver type of "//TRIM(NUMBER_TO_VSTRING(DIRECT_SOLVER_TYPE,"*",ERR,ERROR))// &
+                        & " is invalid."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    END SELECT
                   CASE DEFAULT
                     LOCAL_ERROR="The solver library type of "// &
-                      & TRIM(NUMBER_TO_VSTRING(SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))// &
+                      & TRIM(NUMBER_TO_VSTRING(SOLVER%LINEAR_SOLVER%DIRECT_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))// &
                       & " is invalid."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
@@ -4738,10 +4856,10 @@ CONTAINS
           CALL FLAG_ERROR("Linear solver solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Linear itreative solver linear solver is not associated.",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Linear iterative solver linear solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Linear itreative solver is not associated.",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Linear iterative solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     CALL EXITS("SOLVER_LINEAR_ITERATIVE_CREATE_FINISH")
@@ -5306,7 +5424,7 @@ CONTAINS
                                 CALL SOLVER_SOLUTION_UPDATE(SOLVER,ERR,ERROR,*999)
                                 !Tell PETSc that the solution vector is nonzero
                                 CALL PETSC_KSPSETINITIALGUESSNONZERO(LINEAR_ITERATIVE_SOLVER%KSP,.TRUE.,ERR,ERROR,*999)
-                             CASE(SOLVER_SOLUTION_INITIALISE_NO_CHANGE)
+                              CASE(SOLVER_SOLUTION_INITIALISE_NO_CHANGE)
                                 !Do nothing
                               CASE DEFAULT
                                 LOCAL_ERROR="The linear iterative solver solution initialise type of "// &
@@ -10342,10 +10460,11 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE SOLVERS_SOLVER_GET
-  
+     
   !
   !================================================================================================================================
   !
+
         
 END MODULE SOLVER_ROUTINES
 
