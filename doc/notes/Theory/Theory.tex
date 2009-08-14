@@ -112,9 +112,7 @@ or
 \begin{equation}
 \fnof{\vect{\psi}}{\vect{\alpha}^{p}_{n}}=\matr{A}\vect{\alpha}^{p}_{n}+
 \fnof{\vect{g}}{\bar{\vect{u}}_{n+1}+ \dfrac{\theta_{p}{\Delta
-      t}^{p}}{p!}\vect{\alpha}^{p}_{n}}+
-\pbrac{\matr{M}\ddot{\bar{\vect{u}}}_{n+1}+\matr{C}\dot{\bar{\vect{u}}}_{n+1}+
-  \matr{K}\bar{\vect{u}}_{n+1}+\bar{\vect{f}}}= \vect{0}
+      t}^{p}}{p!}\vect{\alpha}^{p}_{n}}+\vect{b}= \vect{0}
 \end{equation}
 
 where $\matr{A}$ is the \emph{Amplification matrix} given by
@@ -123,6 +121,13 @@ where $\matr{A}$ is the \emph{Amplification matrix} given by
   \matr{A}=\dfrac{\theta_{p-2}{\Delta t}^{p-2}}{\factorial{p-2}}\matr{M}+
   \dfrac{\theta_{p-1}{\Delta t}^{p-1}}{\factorial{p-1}}\matr{C}+
   \dfrac{\theta_{p}{\Delta t}^{p}}{p!}\matr{K}
+\end{equation}
+
+and $\vect{b}$ is the right hand side vector given by
+
+\begin{equation}
+  \vect{b}=\matr{M}\ddot{\bar{\vect{u}}}_{n+1}+\matr{C}\dot{\bar{\vect{u}}}_{n+1}+
+  \matr{K}\bar{\vect{u}}_{n+1}+\bar{\vect{f}}
 \end{equation}
 
 If $\fnof{\vect{g}}{\vect{u}}\equiv\vect{0}$ then \eqnref{eqn:transient} is linear in
@@ -140,8 +145,7 @@ the linear equation
 or 
 
 \begin{equation}
-  \vect{\alpha}^{p}_{n} =\inverse{\matr{A}}\pbrac{\matr{M}\ddot{\bar{\vect{u}}}_{n+1}+
-    \matr{C}\dot{\bar{\vect{u}}}_{n+1}+\matr{K}\bar{\vect{u}}_{n+1}+\bar{\vect{f}}}
+  \vect{\alpha}^{p}_{n} =\inverse{\matr{A}}\vect{b}
 \end{equation}
 
 If $\fnof{\vect{g}}{\vect{u}}$ is not $\vect{0}$ then \eqnref{eqn:transient} is nonlinear in $\vect{\alpha}^{p}_{n}$. To solve this
