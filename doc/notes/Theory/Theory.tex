@@ -15,12 +15,12 @@
 The general form for transient non-linear equations is
 
 \begin{equation}
-  \matr{M}\ddot{\vect{u}}+\matr{C}\dot{\vect{u}}+\fnof{\vect{g}}{\vect{u}}+\vect{f}=\vect{0}
+  \matr{M}\ddot{\vect{u}}+\matr{C}\dot{\vect{u}}+\matr{K}\vect{u}+\fnof{\vect{g}}{\vect{u}}+\vect{f}=\vect{0}
   \label{eqn:generaltransientnonlinear}
 \end{equation}
 
-where $\matr{M}$ is the mass matrix, $\matr{C}$ the damping matrix,
-$\fnof{\vect{g}}{\vect{u}}$ a non-linear vector function and $\vect{f}$ the
+where $\matr{M}$ is the mass matrix, $\matr{C}$ is the damping matrix,
+$\matr{K}$ is the damping matrix, $\fnof{\vect{g}}{\vect{u}}$ a non-linear vector function and $\vect{f}$ the
 forcing vector.
 
 From \cite{zienkiewicz:2006_1} we now expand the unknown vector $\vect{u}$ in terms of a polynomial of degree
@@ -50,6 +50,8 @@ taking a weighted residual approx
     \dfrac{1}{\factorial{p-2}}\tau^{p-2}\vect{\alpha}^{p}_{n}} \right.\\
   +\matr{C}\pbrac{\dot{\vect{u}}_{n}+\tau\ddot{\vect{u}}_{n}+\cdots+
     \dfrac{1}{\factorial{p-1}}\tau^{p-1}\vect{\alpha}^{p}_{n}} \\
+  +\matr{K}\pbrac{\vect{u}_{n}+\tau\dot{\vect{u}}_{n}+\cdots+
+    \dfrac{1}{p!}\tau^{p}\vect{\alpha}^{p}_{n}} \\
   +\left.\fnof{\vect{g}}{\vect{u}_{n}+\tau\dot{\vect{u}}_{n}+\cdots+
     \dfrac{1}{p!}\tau^{p}\vect{\alpha}^{p}_{n}}+\vect{f}\right] dt = \vect{0}
 \end{multline}
@@ -68,14 +70,16 @@ and
 
 we can write
 
-\begin{equation}
+\begin{multline}
   \matr{M}\pbrac{\ddot{\bar{\vect{u}}}_{n+1}+\dfrac{\theta_{p-2}{\Delta
         t}^{p-2}}{\factorial{p-2}}\vect{\alpha}^{p}_{n}}+
   \matr{C}\pbrac{\dot{\bar{\vect{u}}}_{n+1}+\dfrac{\theta_{p-1}{\Delta
         t}^{p-1}}{\factorial{p-1}}\vect{\alpha}^{p}_{n}}+
+  \matr{K}\pbrac{\bar{\vect{u}}_{n+1}+\dfrac{\theta_{p}{\Delta
+        t}^{p}}{p!}\vect{\alpha}^{p}_{n}}+ \\
   \fnof{\vect{g}}{\bar{\vect{u}}_{n+1}+\dfrac{\theta_{p}{\Delta
         t}^{p}}{p!}\vect{\alpha}^{p}_{n}}+\bar{\vect{f}}=\vect{0}
-\end{equation}
+\end{multline}
 
 where
 
@@ -95,22 +99,61 @@ Rearranging gives
 \begin{multline}
   \fnof{\vect{\psi}}{\vect{\alpha}^{p}_{n}}=\pbrac{\dfrac{\theta_{p-2}{\Delta
         t}^{p-2}}{\factorial{p-2}}\matr{M}+\dfrac{\theta_{p-1}{\Delta
-        t}^{p-1}}{\factorial{p-1}}\matr{C}}\vect{\alpha}^{p}_{n}+\fnof{\vect{g}}{\bar{\vect{u}}_{n+1}+\dfrac{\theta_{p}{\Delta
-        t}^{p}}{p!}\vect{\alpha}^{p}_{n}}+ \\
-  \pbrac{\matr{M}\ddot{\bar{\vect{u}}}_{n+1}+\matr{C}\dot{\bar{\vect{u}}}_{n+1}+
+        t}^{p-1}}{\factorial{p-1}}\matr{C}+\dfrac{\theta_{p}{\Delta
+        t}^{p}}{p!}\matr{K}}\vect{\alpha}^{p}_{n}+ \\
+  \fnof{\vect{g}}{\bar{\vect{u}}_{n+1}+\dfrac{\theta_{p}{\Delta t}^{p}}{p!}\vect{\alpha}^{p}_{n}}+ 
+  \pbrac{\matr{M}\ddot{\bar{\vect{u}}}_{n+1}+\matr{C}\dot{\bar{\vect{u}}}_{n+1}+\matr{K}\bar{\vect{u}}_{n+1}+
     \bar{\vect{f}}}= \vect{0}
+  \label{eqn:transient}
 \end{multline}
 
-This is a non-linear equation in $\vect{\alpha}^{p}_{n}$. To solve this
+or 
+
+\begin{equation}
+\fnof{\vect{\psi}}{\vect{\alpha}^{p}_{n}}=\matr{A}\vect{\alpha}^{p}_{n}+
+\fnof{\vect{g}}{\bar{\vect{u}}_{n+1}+ \dfrac{\theta_{p}{\Delta
+      t}^{p}}{p!}\vect{\alpha}^{p}_{n}}+
+\pbrac{\matr{M}\ddot{\bar{\vect{u}}}_{n+1}+\matr{C}\dot{\bar{\vect{u}}}_{n+1}+
+  \matr{K}\bar{\vect{u}}_{n+1}+\bar{\vect{f}}}= \vect{0}
+\end{equation}
+
+where $\matr{A}$ is the \emph{Amplification matrix} given by
+
+\begin{equation}
+  \matr{A}=\dfrac{\theta_{p-2}{\Delta t}^{p-2}}{\factorial{p-2}}\matr{M}+
+  \dfrac{\theta_{p-1}{\Delta t}^{p-1}}{\factorial{p-1}}\matr{C}+
+  \dfrac{\theta_{p}{\Delta t}^{p}}{p!}\matr{K}
+\end{equation}
+
+If $\fnof{\vect{g}}{\vect{u}}\equiv\vect{0}$ then \eqnref{eqn:transient} is linear in
+$\vect{\alpha}^{p}_{n}$ and $\vect{\alpha}^{p}_{n}$ can be found by solving
+the linear equation
+
+\begin{equation}
+  \vect{\alpha}^{p}_{n} =\inverse{\pbrac{\dfrac{\theta_{p-2}{\Delta t}^{p-2}}{\factorial{p-2}}\matr{M}+
+      \dfrac{\theta_{p-1}{\Delta t}^{p-1}}{\factorial{p-1}}\matr{C}+
+      \dfrac{\theta_{p}{\Delta
+          t}^{p}}{p!}\matr{K}}}\pbrac{\matr{M}\ddot{\bar{\vect{u}}}_{n+1}+
+    \matr{C}\dot{\bar{\vect{u}}}_{n+1}+\matr{K}\bar{\vect{u}}_{n+1}+\bar{\vect{f}}}
+\end{equation}
+
+or 
+
+\begin{equation}
+  \vect{\alpha}^{p}_{n} =\inverse{\matr{A}}\pbrac{\matr{M}\ddot{\bar{\vect{u}}}_{n+1}+
+    \matr{C}\dot{\bar{\vect{u}}}_{n+1}+\matr{K}\bar{\vect{u}}_{n+1}+\bar{\vect{f}}}
+\end{equation}
+
+If $\fnof{\vect{g}}{\vect{u}}$ is not $\vect{0}$ then \eqnref{eqn:transient} is nonlinear in $\vect{\alpha}^{p}_{n}$. To solve this
 equation we use Newton's method. i.e.
 
 \begin{equation}
   \begin{split}
-    \text{1.  } & \fnof{\matr{J}}{\vect{\alpha}^{p^{(i)}}_{n}}.\delta
-    \vect{\alpha}^{p^{(i)}}_{n} = -\fnof{\vect{\psi}}{\vect{\alpha}^{p^{(i)}}_{n}}
-    \\
-    \text{2.  } & \vect{\alpha}^{p^{(i+1)}}_{n}=\vect{\alpha}^{p^{(i)}}_{n}+\delta
-    \vect{\alpha}^{p^{(i)}}_{n}
+    \text{1.  } & \fnof{\matr{J}}{\vect{\alpha}^{p}_{n(i)}}.\delta
+    \vect{\alpha}^{p}_{n(i)} = 
+    -\fnof{\vect{\psi}}{\vect{\alpha}^{p}_{n(i)}} \\
+    \text{2.  } & \vect{\alpha}^{p}_{n(i+1)}=\vect{\alpha}^{p}_{n(i+1)}+\delta
+    \vect{\alpha}^{p}_{n(i)}
   \end{split}
 \end{equation}
 
@@ -118,8 +161,15 @@ where $\fnof{\matr{J}}{\vect{\alpha}^{p}_{n}}$ is the Jacobian and is given by
 
 \begin{equation}
   \fnof{\matr{J}}{\vect{\alpha}^{p}_{n}}=\dfrac{\theta_{p-2}{\Delta t}^{p-2}}{\factorial{p-2}}\matr{M}+\dfrac{\theta_{p-1}{\Delta
-      t}^{p-1}}{\factorial{p-1}}\matr{C}+\dfrac{\theta_{p}{\Delta t}^{p}}{p!}
+      t}^{p-1}}{\factorial{p-1}}\matr{C}+\dfrac{\theta_{p}{\Delta
+      t}^{p}}{p!}\matr{K}+\dfrac{\theta_{p}{\Delta t}^{p}}{p!}
   \delby{\fnof{\vect{g}}{\vect{\alpha}^{p}_{n}}}{\vect{\alpha}^{p}_{n}}
+\end{equation}
+
+or
+
+\begin{equation}
+  \fnof{\matr{J}}{\vect{\alpha}^{p}_{n}}=\matr{A}+\dfrac{\theta_{p}{\Delta t}^{p}}{p!}\delby{\fnof{\vect{g}}{\vect{\alpha}^{p}_{n}}}{\vect{\alpha}^{p}_{n}}
 \end{equation}
 
 Once $\vect{\alpha}^{p}_{n}$ has been obtained the values at the next time
@@ -137,3 +187,38 @@ step can be obtained from
     \symover{p-1}{\vect{u}}_{n+1} &= \symover{p-1}{\vect{u}}_{n}+\Delta t\vect{\alpha}^{p}_{n}
   \end{split}
 \end{equation}
+
+
+\subsubsection{Special SN11 case, p=1}
+
+For this special case, the mean predicited values are given by
+\begin{equation}
+   \bar{\vect{u}}_{n+1} = \vect{u}_{n}
+\end{equation}
+
+The amplification matrix is given by
+\begin{equation}
+  \matr{A}=\matr{C}+\theta_{1}\Delta t \matr{K}
+\end{equation}
+
+The right hand side vector is given by
+\begin{equation}
+  \vect{b}=\matr{K}\bar{\vect{u}}_{n+1}+\bar{\vect{f}}
+\end{equation}
+
+The nonlinear function is given by
+\begin{equation}
+  \fnof{\vect{\psi}}{\vect{\alpha}^{1}_{n}}=\matr{A}\vect{\alpha}^{1}_{n}+\fnof{\vect{g}}{\bar{\vect{u}}_{n+1}+ \theta_{1}\Delta
+    t\vect{\alpha}^{1}_{n}}+\vect{b}=\vect{0}
+\end{equation}
+
+The Jacobian matrix is given by
+\begin{equation}
+  \fnof{\matr{J}}{\vect{\alpha}^{1}_{n}}=\matr{A}+\theta_{1}\Delta t \delby{\fnof{\vect{g}}{\vect{\alpha}^{1}_{n}}}{\vect{\alpha}^{1}_{n}}
+\end{equation}
+
+And the time step update is given by
+\begin{equation}
+    \vect{u}_{n+1} = \vect{u}_{n}+\Delta t\vect{\alpha}^{1}_{n}
+\end{equation}
+
