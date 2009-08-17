@@ -4,15 +4,13 @@
 
 \section{Equation set types}
 
-\subsection{Static-linear Equations}
+\subsection{Static Equations}
 
-\subsection{Static-nonlinear Equations}
+The general form for static equations is
 
-\subsection{Transient-linear Equations}
+\subsection{Transient Equations}
 
-\subsection{Transient-nonlinear Equations}
-
-The general form for transient non-linear equations is
+The general form for transient equations is
 
 \begin{equation}
   \matr{M}\ddot{\vect{u}}+\matr{C}\dot{\vect{u}}+\matr{K}\vect{u}+\fnof{\vect{g}}{\vect{u}}+\vect{f}=\vect{0}
@@ -224,5 +222,83 @@ The Jacobian matrix is given by
 And the time step update is given by
 \begin{equation}
     \vect{u}_{n+1} = \vect{u}_{n}+\Delta t\vect{\alpha}^{1}_{n}
+\end{equation}
+
+\subsubsection{Special SN21 case, p=2}
+
+For this special case, the mean predicited values are given by
+\begin{equation}
+  \begin{split}
+    \bar{\vect{u}}_{n+1} &= \vect{u}_{n}+\theta_{1}\Delta t\dot{\vect{u}}_{n}\\
+    \dot{\bar{\vect{u}}}_{n+1} &= \dot{\vect{u}}_{n}
+  \end{split}
+\end{equation}
+
+The amplification matrix is given by
+\begin{equation}
+  \matr{A}=\theta_{1}\Delta t\matr{C}+\dfrac{\theta_{2}{\Delta t}^{2}}{2}\matr{K}
+\end{equation}
+
+The right hand side vector is given by
+\begin{equation}
+  \vect{b}=\matr{C}\dot{\bar{\vect{u}}}_{n+1}+\matr{K}\bar{\vect{u}}_{n+1}+\bar{\vect{f}}
+\end{equation}
+
+The nonlinear function is given by
+\begin{equation}
+  \fnof{\vect{\psi}}{\vect{\alpha}^{2}_{n}}=\matr{A}\vect{\alpha}^{2}_{n}+\fnof{\vect{g}}{\bar{\vect{u}}_{n+1}+ \dfrac{\theta_{2}{\Delta
+    t}^{2}}{2}\vect{\alpha}^{2}_{n}}+\vect{b}=\vect{0}
+\end{equation}
+
+The Jacobian matrix is given by
+\begin{equation}
+  \fnof{\matr{J}}{\vect{\alpha}^{2}_{n}}=\matr{A}+\dfrac{\theta_{2}{\Delta t}^{2}}{2} \delby{\fnof{\vect{g}}{\vect{\alpha}^{2}_{n}}}{\vect{\alpha}^{2}_{n}}
+\end{equation}
+
+And the time step update is given by
+\begin{equation}
+  \begin{split}
+    \vect{u}_{n+1} &= \vect{u}_{n}+\Delta t\dot{\vect{u}}_{n} +\dfrac{{\Delta t}^{2}}{2}\vect{\alpha}^{2}_{n} \\
+    \dot{\vect{u}}_{n+1} &= \dot{\vect{u}}_{n}+\Delta t\vect{\alpha}^{2}_{n}
+  \end{split}
+\end{equation}
+
+\subsubsection{Special SN22 case, p=2}
+
+For this special case, the mean predicited values are given by
+\begin{equation}
+  \begin{split}
+    \bar{\vect{u}}_{n+1} &= \vect{u}_{n}+\theta_{1}\Delta t\dot{\vect{u}}_{n}\\
+    \dot{\bar{\vect{u}}}_{n+1} &= \dot{\vect{u}}_{n}
+  \end{split}
+\end{equation}
+
+The amplification matrix is given by
+\begin{equation}
+  \matr{A}=\matr{M}+\theta_{1}\Delta t\matr{C}+\dfrac{\theta_{2}{\Delta t}^{2}}{2}\matr{K}
+\end{equation}
+
+The right hand side vector is given by
+\begin{equation}
+  \vect{b}=\matr{C}\dot{\bar{\vect{u}}}_{n+1}+\matr{K}\bar{\vect{u}}_{n+1}+\bar{\vect{f}}
+\end{equation}
+
+The nonlinear function is given by
+\begin{equation}
+  \fnof{\vect{\psi}}{\vect{\alpha}^{2}_{n}}=\matr{A}\vect{\alpha}^{2}_{n}+\fnof{\vect{g}}{\bar{\vect{u}}_{n+1}+ \dfrac{\theta_{2}{\Delta
+    t}^{2}}{2}\vect{\alpha}^{2}_{n}}+\vect{b}=\vect{0}
+\end{equation}
+
+The Jacobian matrix is given by
+\begin{equation}
+  \fnof{\matr{J}}{\vect{\alpha}^{2}_{n}}=\matr{A}+\dfrac{\theta_{2}{\Delta t}^{2}}{2} \delby{\fnof{\vect{g}}{\vect{\alpha}^{2}_{n}}}{\vect{\alpha}^{2}_{n}}
+\end{equation}
+
+And the time step update is given by
+\begin{equation}
+  \begin{split}
+    \vect{u}_{n+1} &= \vect{u}_{n}+\Delta t\dot{\vect{u}}_{n} +\dfrac{{\Delta t}^{2}}{2}\vect{\alpha}^{2}_{n} \\
+    \dot{\vect{u}}_{n+1} &= \dot{\vect{u}}_{n}+\Delta t\vect{\alpha}^{2}_{n} 
+  \end{split}
 \end{equation}
 

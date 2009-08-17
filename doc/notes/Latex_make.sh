@@ -23,7 +23,7 @@ MY_MAINFILE=OpenCMISSNotes
 # more than one source quotation (") marks must be used around the
 # individual sources seperated by spaces.
 
-MY_TEX_SRC="TitlePage/TitlePage.tex Introduction/Introduction.tex Theory/Theory.tex References/References.tex Index/Index.tex"
+MY_TEX_SRC="TitlePage/TitlePage.tex Introduction/Introduction.tex Theory/Theory.tex EquationSets/EquationSets.tex AnalyticSolutions/AnalyticSolutions.tex References/References.tex Index/Index.tex"
 
 #
 # The names of the eps/figs/(gnu)plot files that go into the document. 
