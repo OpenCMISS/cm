@@ -1,5 +1,5 @@
 /* \file
- * $Id: FieldExport.h 375 2009-02-27 11:05:03Z chrispbradley $
+ * $Id$
  * \author Caton Little
  * \brief 
  *
@@ -52,7 +52,7 @@ int fieldexport_meshdimensions( const int handle, const int dimensions );
 
 int fieldexport_scalingfactorcount( const int handle, const int scalingFactorCount );
 
-int fieldexport_lagrangehermitescalefactors( const int handle, const int numberOfXi, const int* const interpolationXi );
+int fieldexport_hermitescalefactors( const int handle, const int numberOfXi, const int* const interpolationXi );
 
 int fieldexport_nodecount( const int handle, const int nodeCount );
 
@@ -65,18 +65,22 @@ int fieldexport_variable( const int handle, const int variableNumber, const int 
 	const int componentCount );
 
 int fieldexport_coordinatecomponent( const int handle, CMISS_CoordinateSystem * coordinateSystem,
-	const int componentNumber, const int numberOfXi, const int * const interpolationXi );
+	const int componentNumber, const int isNodal, const int numberOfXi, const int * const interpolationXi );
 
-int fieldexport_component( const int handle, const int componentNumber, const int numberOfXi, const int * const interpolationXi );
+int fieldexport_component( const int handle, const int componentNumber, const int isNodal, const int numberOfXi, const int * const interpolationXi );
 
-int fieldexport_nodes( const int handle, const int nodeCount, const int *const derivativeCount,
+int fieldexport_elementgridsize( const int handle, const int numberOfXi );
+
+int fieldexport_nodescaleindexes( const int handle, const int nodeCount, const int *const derivativeCount,
 	const int *const elementDerivatives, const int firstScaleIndex );
 
 int fieldexport_elementindex( const int handle, const int dimensionCount, const int index );
 
 int fieldexport_elementnodeindices( const int handle, const int nodeCount, const int* const indices );
 
-int fieldexport_elementnodescales( const int handle, const int scaleCount, const double* const scales );
+int fieldexport_elementnodescales( const int handle, const int isFirstSet, const int scaleCount, const double* const scales );
+
+int fieldexport_elementgridvalues( const int handle, const int isFirstSet, const int dimensionCount, const double value );
 
 int fieldexport_closesession( const int handle );
 

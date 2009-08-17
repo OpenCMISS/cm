@@ -8,7 +8,7 @@ openCMISS has the following top level objects.
 - Computational environments
 - Base system(Diagnostics, I/O etc.)
 .
-\image html openCMISS_topStructure.jpg
+\image html openCMISS_topStructure.JPG
 \page basis Basis Functions
 Basis functions are the key item to specify the field approximation/interpolation and the linking of nodes and elements to form a mesh.
 Currently, it has two types: Lagrange-Hermite tensor product and Simplex.
@@ -58,7 +58,7 @@ Regions are hierarchical in nature in that a region can have one parent region a
 Daughter regions are related in space to parent regions by an origin and an orientation of the regions coordinate system.
 Daughter regions may only have the same or fewer dimensions as the parent region.
 There is a global (world) region (number 0) that has the global (world) coordinate system.
-\image html region_definition.jpg   
+\image html region_definition.JPG   
 Region has the following attributes
 - User number
 - Finished tag
@@ -72,7 +72,7 @@ Region has the following attributes
 - Parent region pointer
 - Daughter regions pointers
 .   
-\image html region_structure.jpg
+\image html region_structure.JPG
 \section nodes Nodes
 There are three places storing nodal information. 
 Nodes associated with region defines the nodes identification and the nodes geometric (initial) position. 
@@ -104,11 +104,11 @@ Mesh has the following attributes:
 - Mesh topology pointers
 - Decomposition pointers
 .
-\image html mesh_structure.jpg
+\image html mesh_structure.JPG
 \subsection mesh_topology Mesh Topology
 Mesh components (Topology) are made up from nodes, elements and basis functions.
 A new mesh component is required for each different form of interpolation e.g., one mesh component is bilinear Lagrange and another is biquadratic Lagrange.
-\image html meshTopology_definition.jpg       
+\image html meshTopology_definition.JPG       
 
 Mesh topology has the following attributes:
 - Mesh component number
@@ -117,7 +117,7 @@ Mesh topology has the following attributes:
 - Element pointers
 - DOFs pointers
 .
-\image html meshTopology_structure.jpg
+\image html meshTopology_structure.JPG
 \subsection decompositions Decompositions
 Mesh decomposition (partitioning) is used to split a computationally expensive mesh into smaller subdomains (parts) for parallel computing. 
         
@@ -134,7 +134,7 @@ Decomposition has the following attributes
 - Decomposition topology pointer
 - Domains pointers(list of domain which has the same size as the number of components in the mesh)
 .
-\image html meshDecomposition_structure.jpg
+\image html meshDecomposition_structure.JPG
 \subsubsection domain Domain
 Each domain stores domain information for relevant mesh component.
 
@@ -148,7 +148,7 @@ The domain object contains the following attributes:
 - Domain mappings(for each mapped object e.g. nodes, elements, etc)
 - Domain topology pointer(elements, nodes, DOFs)
 .
-\image html meshDecompositionDomain_structure.jpg
+\image html meshDecompositionDomain_structure.JPG
 \paragraph domain_mappings Domain Mappings
 Stores information for each mapped object e.g. nodes, elements, etc.
 
@@ -170,7 +170,7 @@ The domain mapping contains the following attributes:
 - Pointer to list of adjacent domains by domain number
 - List of adjacent domains
 .
-\image html meshDecompositionDomainMapping_structure.jpg
+\image html meshDecompositionDomainMapping_structure.JPG
 \section fields Fields
 Fields are the central object for storing information and framing the problem.
 Fields have a number of field variables i.e., u, du/dn, du/dt, d2u/dt2.
@@ -196,7 +196,7 @@ Field can contains the following attributes:
 - Geomatric field parameters
 - Create values cache
 .
-\image html field_structure.jpg
+\image html field_structure.JPG
 \subsection field_variables Field variable
 Field variable stores variables for the field such as dependent variables. 
 For example, in the Laplace's equation(FEM), it stores two variables: u and du/dn.
@@ -215,7 +215,7 @@ Field variable has the following attributes:
 - Number of components
 - Components
 .
-\image fieldVaraible_structure.jpg
+\image fieldVaraible_structure.JPG
 \subsubsection field_variable_component Field Variable Component
 Field Variable Component has the following attributes:
 - Component number
@@ -231,7 +231,7 @@ Field Variable Component has the following attributes:
 \subsection parameter_set Parameter set
 Parameter set stores values for each field variable component.
 
-\image html field_parameter_set_definition.jpg
+\image html field_parameter_set_definition.JPG
 
 Parameter set has the following Attributes:
 - Set index
@@ -272,7 +272,7 @@ Equations Set has the following attributes:
 - Fixed conditions
 - Equations pointer
 .
-\image html fieldEquationssets-structure.jpg
+\image html fieldEquationssets-structure.JPG
 \subsection equations Equations
 Equation holds the matrices and mapping information.
 
@@ -317,7 +317,7 @@ Problem has the following attributes:
 - Number of solutions
 - Solutions pointer
 .
-\image html problem_structure.jpg
+\image html problem_structure.JPG
 \section solutions Solutions
 Solution has the following attributes:
 - Solution number

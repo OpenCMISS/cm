@@ -1,5 +1,5 @@
 !> \file
-!> $Id: equations_routines.f90 360 2009-02-24 13:34:44Z chrispbradley $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module handles all equations routines.
 !>

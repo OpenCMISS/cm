@@ -9,7 +9,7 @@ The opencmiss project tracker is hosted by the Physiome project's Tracker
 - There is an RSS feed link for any search result, so if you do a search for openCMISS (Advanced search, then choose openCMISS from "Classification"), you can use the RSS feed, and CC yourself to tracker items of interest.   
 
 \section doxygen Doxygen
-The programmer documentation is managed by Doxygen. The html version of doxygen is hosted in http://www.physiome.ox.ac.uk/openCMISS/doc/openCMISS/. 
+The programmer documentation is managed by Doxygen. The html version of doxygen is hosted in http://cmiss.bioeng.auckland.ac.nz/OpenCMISS/doc/doxygen/html/. 
 \subsection doxygen_tips Tips
 - Can be downloaded from http://www.stack.nl/~dimitri/doxygen/
 - Suggested Doxygen version is 1.5.6. (Currently there are some problems with 1.5.7 & 1.5.8)

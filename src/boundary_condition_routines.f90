@@ -1,5 +1,5 @@
 !> \file
-!> $Id: boundary_conditions_rountines.f90 204 2008-10-31 05:02:38Z tingy $
+!> $Id$
 !> \author Ting Yu
 !> \brief This module set the boundary conditions for the given equation set
 !>
@@ -118,8 +118,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: computational_node_idx,DOF_START,MPI_IERROR,SEND_COUNT,variable_type_idx
-    INTEGER(INTG), ALLOCATABLE :: DISPLACEMENTS(:),RECEIVE_COUNTS(:)    
+    INTEGER(INTG) :: MPI_IERROR,SEND_COUNT,variable_type_idx
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITION_VARIABLE
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: VARIABLE_DOMAIN_MAPPING
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
@@ -134,11 +133,7 @@ CONTAINS
         IF(ALLOCATED(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP)) THEN
           IF(COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES>1) THEN
             !Transfer all the boundary conditions to all the computational nodes.
-            ALLOCATE(RECEIVE_COUNTS(0:COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES-1),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate recieve counts.",ERR,ERROR,*999)
-            ALLOCATE(DISPLACEMENTS(0:COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES-1),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate displacements.",ERR,ERROR,*999)
-!!TODO \todo Look at this.
+ !!TODO \todo Look at this. ?????
             DO variable_type_idx=1,FIELD_NUMBER_OF_VARIABLE_TYPES
               BOUNDARY_CONDITION_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type_idx)%PTR
               IF(ASSOCIATED(BOUNDARY_CONDITION_VARIABLE)) THEN
@@ -146,18 +141,12 @@ CONTAINS
                 IF(ASSOCIATED(FIELD_VARIABLE)) THEN
                   VARIABLE_DOMAIN_MAPPING=>FIELD_VARIABLE%DOMAIN_MAPPING
                   IF(ASSOCIATED(VARIABLE_DOMAIN_MAPPING)) THEN
-                    SEND_COUNT=0
-                    DOF_START=0
-                    DO computational_node_idx=0,COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES-1
-                      DISPLACEMENTS(computational_node_idx)=DOF_START
-                      RECEIVE_COUNTS(computational_node_idx)=VARIABLE_DOMAIN_MAPPING%NUMBER_OF_DOMAIN_LOCAL(computational_node_idx)
-                      IF(RECEIVE_COUNTS(computational_node_idx)>SEND_COUNT) SEND_COUNT=RECEIVE_COUNTS(computational_node_idx)
-                      DOF_START=DOF_START+VARIABLE_DOMAIN_MAPPING%NUMBER_OF_DOMAIN_LOCAL(computational_node_idx)
-                    ENDDO !computational_node_idx
-                    CALL MPI_ALLGATHERV(MPI_IN_PLACE,SEND_COUNT,MPI_INTEGER,BOUNDARY_CONDITIONS% &
-                      & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type_idx)%PTR%GLOBAL_BOUNDARY_CONDITIONS, &
-                      & RECEIVE_COUNTS,DISPLACEMENTS,MPI_INTEGER,COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
-                    CALL MPI_ERROR_CHECK("MPI_ALLGATHERV",MPI_IERROR,ERR,ERROR,*999)
+                    SEND_COUNT=VARIABLE_DOMAIN_MAPPING%NUMBER_OF_GLOBAL
+!!This operation is a little expensive as we are doing an unnecessary sum across all the ranks in order to combin
+!!the data from each rank into all ranks. We will see how this goes for now.
+                    CALL MPI_ALLREDUCE(MPI_IN_PLACE,BOUNDARY_CONDITION_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS, &
+                      & SEND_COUNT,MPI_INTEGER,MPI_SUM,COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
+                    CALL MPI_ERROR_CHECK("MPI_ALLREDUCE",MPI_IERROR,ERR,ERROR,*999)
                   ELSE
                     LOCAL_ERROR="Field variable domain mapping is not associated for variable type "// &
                       & TRIM(NUMBER_TO_VSTRING(variable_type_idx,"*",ERR,ERROR))//"."
@@ -170,8 +159,6 @@ CONTAINS
                 ENDIF
               ENDIF
             ENDDO ! variable_type_idx
-            IF(ALLOCATED(RECEIVE_COUNTS)) DEALLOCATE(RECEIVE_COUNTS)
-            IF(ALLOCATED(DISPLACEMENTS)) DEALLOCATE(DISPLACEMENTS)
           ENDIF
           !Set the finished flag
           BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_FINISHED=.TRUE.
@@ -204,9 +191,7 @@ CONTAINS
     
     CALL EXITS("BOUNDARY_CONDITIONS_CREATE_FINISH")
     RETURN
-999 IF(ALLOCATED(RECEIVE_COUNTS)) DEALLOCATE(RECEIVE_COUNTS)
-    IF(ALLOCATED(DISPLACEMENTS)) DEALLOCATE(DISPLACEMENTS)
-    CALL ERRORS("BOUNDARY_CONDITIONS_CREATE_FINISH",ERR,ERROR)
+999 CALL ERRORS("BOUNDARY_CONDITIONS_CREATE_FINISH",ERR,ERROR)
     CALL EXITS("BOUNDARY_CONDITIONS_CREATE_FINISH")
     RETURN 1
     
@@ -459,7 +444,7 @@ CONTAINS
   !================================================================================================================================
   !
  
-  !>Adds to the value of the specified constant and sets this as a boundary condition on the specified constant.
+  !>Adds to the value of the specified constant and sets this as a boundary condition on the specified constant. \see OPENCMISS::CMISSBoundaryConditionAddConstant
   SUBROUTINE BOUNDARY_CONDITIONS_ADD_CONSTANT(BOUNDARY_CONDITIONS,VARIABLE_TYPE,COMPONENT_NUMBER,CONDITION,VALUE,ERR,ERROR,*)
     
     !Argument variables
@@ -536,7 +521,7 @@ CONTAINS
   !================================================================================================================================
   !
  
-  !>Sets a boundary condition on the specified constant.
+  !>Sets a boundary condition on the specified constant. \see OPENCMISS::CMISSBoundaryConditionsSetConstant
   SUBROUTINE BOUNDARY_CONDITIONS_SET_CONSTANT(BOUNDARY_CONDITIONS,VARIABLE_TYPE,COMPONENT_NUMBER,CONDITION,VALUE,ERR,ERROR,*)
     
     !Argument variables
@@ -897,7 +882,7 @@ CONTAINS
   !================================================================================================================================
   !
  
-  !>Adds to the value of the specified constant and sets this as a boundary condition on the specified user element.
+  !>Adds to the value of the specified constant and sets this as a boundary condition on the specified user element. \see OPENCMISS_CMISSBoundaryConditionsAddElement
   SUBROUTINE BOUNDARY_CONDITIONS_ADD_ELEMENT(BOUNDARY_CONDITIONS,VARIABLE_TYPE,USER_ELEMENT_NUMBER,COMPONENT_NUMBER, &
     & CONDITION,VALUE,ERR,ERROR,*)
     
@@ -976,7 +961,7 @@ CONTAINS
   !================================================================================================================================
   !
  
-  !>Sets a boundary condition on the specified user element.
+  !>Sets a boundary condition on the specified user element. \see OPENCMISS_CMISSBoundaryConditionsSetElement
   SUBROUTINE BOUNDARY_CONDITIONS_SET_ELEMENT(BOUNDARY_CONDITIONS,VARIABLE_TYPE,USER_ELEMENT_NUMBER,COMPONENT_NUMBER, &
     & CONDITION,VALUE,ERR,ERROR,*)
     
@@ -1055,7 +1040,7 @@ CONTAINS
   !================================================================================================================================
   !
  
-  !>Adds to the value of the specified constant and sets this as a boundary condition on the specified user node.
+  !>Adds to the value of the specified constant and sets this as a boundary condition on the specified user node. \see OPENCMISS_CMISSBoundaryConditionsAddNode
   SUBROUTINE BOUNDARY_CONDITIONS_ADD_NODE(BOUNDARY_CONDITIONS,VARIABLE_TYPE,DERIVATIVE_NUMBER,USER_NODE_NUMBER,COMPONENT_NUMBER, &
     & CONDITION,VALUE,ERR,ERROR,*)
     
@@ -1135,7 +1120,7 @@ CONTAINS
   !================================================================================================================================
   !
  
-  !>Sets a boundary condition on the specified user node.
+  !>Sets a boundary condition on the specified user node. \see OPENCMISS_CMISSBoundaryConditionsSetNode
   SUBROUTINE BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,VARIABLE_TYPE,DERIVATIVE_NUMBER,USER_NODE_NUMBER,COMPONENT_NUMBER, &
     & CONDITION,VALUE,ERR,ERROR,*)
     
@@ -1309,7 +1294,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the boundary conditions for an equations set.
+  !>Gets the boundary conditions for an equations set. \see OPENCMISS_CMISSEquationsSetBoundaryConditionsGet
   SUBROUTINE EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
 
     !Argument variables

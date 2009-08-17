@@ -74,8 +74,9 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_LINEAR_TYPE=1 !<A linear solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NONLINEAR_TYPE=2 !<A nonlinear solver  \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DYNAMIC_TYPE=3 !<A dynamic solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_INTEGRATION_TYPE=4 !<A integration solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_EIGENPROBLEM_TYPE=5 !<A eigenproblem type \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DAE_TYPE=4 !<A differential-algebraic equation solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_EIGENPROBLEM_TYPE=5 !<A eigenproblem solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_OPTIMISER_TYPE=5 !<An optimiser solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_SolverLibraries SOLVER_ROUTINES::SolverLibraries
@@ -101,6 +102,11 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_LU=1 !<LU direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_CHOLESKY=2 !<Cholesky direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_SVD=3 !<SVD direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_MUMPS=4 !<MUMPS direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_PASTIX=5 !<PASTIX direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_PLAPACK=6 !<PLAPACK direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_SPOOLES=7 !<SPOOLES direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_SUPERLU=8 !<SUPERLU direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
   !>@}
   
   !> \addtogroup SOLVER_ROUTINES_IterativeLinearSolverTypes SOLVER_ROUTINES::IterativeLinearSolverTypes
@@ -128,7 +134,6 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_ITERATIVE_INCOMPLETE_LU_PRECONDITIONER=5 !<Incomplete LU preconditioner type \see SOLVER_ROUTINES_IterativePreconditionerTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_ITERATIVE_ADDITIVE_SCHWARZ_PRECONDITIONER=6 !<Additive Schwrz preconditioner type \see SOLVER_ROUTINES_IterativePreconditionerTypes,SOLVER_ROUTINES
   !>@}
-
 
   !> \addtogroup SOLVER_ROUTINES_NonlinearSolverTypes SOLVER_ROUTINES::NonlinearSolverTypes
   !> \brief The types of nonlinear solvers
@@ -218,16 +223,46 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DYNAMIC_USER_DEFINED_SCHEME=21 !<User specified degree and theta dynamic solver \see SOLVER_ROUTINES_DynamicSchemeTypes,SOLVER_ROUTINES
   !>@}
   
-  !> \addtogroup SOLVER_ROUTINES_IntegratorTypes SOLVER_ROUTINES::IntegratorTypes
-  !> \brief The integration types for a integration solver 
+  !> \addtogroup SOLVER_ROUTINES_DAETypes SOLVER_ROUTINES::DAETypes
+  !> \brief The type of differential-algebraic equation
   !> \see SOLVER_ROUTINES
   !>@{
-  INTEGER(INTG), PARAMETER :: SOLVER_INTEGRATION_EULER=1 !<Euler integrator \see SOLVER_ROUTINES_IntegratorType,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_INTEGRATION_IMPROVED_EULER=2 !<Improved Euler integrator \see SOLVER_ROUTINES_IntegratorType,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_INTEGRATION_4TH_RUNGE_KUTTA=3 !<4the order Runge-Kutta integrator \see SOLVER_ROUTINES_IntegratorType,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_INTEGRATION_ADAMS_MOULTON=4 !<Adams-Moulton integrator \see SOLVER_ROUTINES_IntegratorType,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_INTEGRATION_LSODA=5 !<LSODA integrator \see SOLVER_ROUTINES_IntegratorType,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DAE_DIFFERENTIAL_ONLY=0 !<Differential equations only \see SOLVER_ROUTINES_DAETypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DAE_INDEX_1=1 !<Index 1 differential-algebraic equation \see SOLVER_ROUTINES_DAETypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DAE_INDEX_2=2 !<Index 2 differential-algebraic equation \see SOLVER_ROUTINES_DAETypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DAE_INDEX_3=3 !<Index 3 differential-algebraic equation \see SOLVER_ROUTINES_DAETypes,SOLVER_ROUTINES
   !>@}
+
+  !> \addtogroup SOLVER_ROUTINES_DAESolverTypes SOLVER_ROUTINES::DAESolverTypes
+  !> \brief The differential-algebraic equation solver types for a differential-algebraic equation solver 
+  !> \see SOLVER_ROUTINES
+  !>@{
+  INTEGER(INTG), PARAMETER :: SOLVER_DAE_EULER=1 !<Euler differential-algebraic equation solver \see SOLVER_ROUTINES_DAESolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DAE_CRANK_NICHOLSON=2 !<Crank-Nicholson differential-algebraic equation solver \see SOLVER_ROUTINES_DAESolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DAE_RUNGE_KUTTA=3 !<Runge-Kutta differential-algebraic equation solver \see SOLVER_ROUTINES_DAESolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DAE_ADAMS_MOULTON=4 !<Adams-Moulton differential-algebraic equation solver \see SOLVER_ROUTINES_DAESolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DAE_BDF=5 !<General BDF differential-algebraic equation solver \see SOLVER_ROUTINES_DAESolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DAE_RUSH_LARSON=6 !<Rush-Larson differential-algebraic equation solver \see SOLVER_ROUTINES_DAESolverTypes,SOLVER_ROUTINES
+  !>@}
+
+  !> \addtogroup SOLVER_ROUTINES_EulerDAESolverTypes SOLVER_ROUTINES::EulerDAESolverTypes
+  !> \brief The Euler solver types for a differential-algebriac equation solver 
+  !> \see SOLVER_ROUTINES_DAESolverTypes,SOLVER_ROUTINES
+  !>@{
+  INTEGER(INTG), PARAMETER :: SOLVER_DAE_EULER_FORWARD=1 !<Forward Euler differential equation solver \see SOLVER_ROUTINES_EulerDAESolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DAE_EULER_BACKWARD=2 !<Backward Euler differential equation solver \see SOLVER_ROUTINES_EulerDAESolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DAE_EULER_IMPROVED=3 !<Improved Euler differential equation solver \see SOLVER_ROUTINES_EulerDAESolverTypes,SOLVER_ROUTINES
+  !>@}
+
+  !> \addtogroup SOLVER_ROUTINES_SolutionInitialiseTypes SOLVER_ROUTINES::SolutionInitialiseTypes
+  !> \brief The types of solution initialisation
+  !> \see SOLVER_ROUTINES
+  !>@{
+  INTEGER(INTG), PARAMETER :: SOLVER_SOLUTION_INITIALISE_ZERO=0 !<Initialise the solution by zeroing it before a solve \see SOLVER_ROUTINES_SolutionInitialiseTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD=1 !<Initialise the solution by copying in the current dependent field values \see SOLVER_ROUTINES_SolutionInitialiseTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_SOLUTION_INITIALISE_NO_CHANGE=2 !<Do not change the solution before a solve \see SOLVER_ROUTINES_SolutionInitialiseTypes,SOLVER_ROUTINES
+  !>@}
+
   
   !> \addtogroup SOLVER_ROUTINES_OutputTypes SOLVER_ROUTINES::OutputTypes
   !> \brief The types of output
@@ -258,13 +293,14 @@ MODULE SOLVER_ROUTINES
     MODULE PROCEDURE SOLVER_DYNAMIC_THETA_SET_DP
   END INTERFACE !SOLVER_DYNAMIC_THETA_SET  
 
-  PUBLIC SOLVER_LINEAR_TYPE,SOLVER_NONLINEAR_TYPE,SOLVER_DYNAMIC_TYPE
+  PUBLIC SOLVER_LINEAR_TYPE,SOLVER_NONLINEAR_TYPE,SOLVER_DYNAMIC_TYPE,SOLVER_DAE_TYPE,SOLVER_EIGENPROBLEM_TYPE,SOLVER_OPTIMISER_TYPE
 
   PUBLIC SOLVER_CMISS_LIBRARY,SOLVER_PETSC_LIBRARY
 
   PUBLIC SOLVER_LINEAR_DIRECT_SOLVE_TYPE,SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE
-  
-  PUBLIC SOLVER_DIRECT_LU,SOLVER_DIRECT_CHOLESKY,SOLVER_DIRECT_SVD
+ 
+  PUBLIC SOLVER_DIRECT_LU,SOLVER_DIRECT_CHOLESKY,SOLVER_DIRECT_SVD,SOLVER_DIRECT_MUMPS,SOLVER_DIRECT_PASTIX,SOLVER_DIRECT_PLAPACK, &
+    & SOLVER_DIRECT_SPOOLES,SOLVER_DIRECT_SUPERLU
 
   PUBLIC SOLVER_ITERATIVE_RICHARDSON,SOLVER_ITERATIVE_CHEBYCHEV,SOLVER_ITERATIVE_CONJUGATE_GRADIENT, &
     & SOLVER_ITERATIVE_BICONJUGATE_GRADIENT,SOLVER_ITERATIVE_GMRES,SOLVER_ITERATIVE_BiCGSTAB,SOLVER_ITERATIVE_CONJGRAD_SQUARED
@@ -299,8 +335,14 @@ MODULE SOLVER_ROUTINES
     & SOLVER_DYNAMIC_HILBERT_HUGHES_TAYLOR1_SCHEME,SOLVER_DYNAMIC_HILBERT_HUGHES_TAYLOR2_SCHEME, &
     & SOLVER_DYNAMIC_USER_DEFINED_SCHEME
 
-  PUBLIC SOLVER_INTEGRATION_EULER,SOLVER_INTEGRATION_IMPROVED_EULER,SOLVER_INTEGRATION_4TH_RUNGE_KUTTA, &
-    & SOLVER_INTEGRATION_ADAMS_MOULTON,SOLVER_INTEGRATION_LSODA
+  PUBLIC SOLVER_DAE_DIFFERENTIAL_ONLY,SOLVER_DAE_INDEX_1,SOLVER_DAE_INDEX_2,SOLVER_DAE_INDEX_3
+
+  PUBLIC SOLVER_DAE_EULER,SOLVER_DAE_CRANK_NICHOLSON,SOLVER_DAE_RUNGE_KUTTA,SOLVER_DAE_ADAMS_MOULTON,SOLVER_DAE_BDF, &
+    & SOLVER_DAE_RUSH_LARSON
+
+  PUBLIC SOLVER_DAE_EULER_FORWARD,SOLVER_DAE_EULER_BACKWARD,SOLVER_DAE_EULER_IMPROVED
+
+  PUBLIC SOLVER_SOLUTION_INITIALISE_ZERO,SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD,SOLVER_SOLUTION_INITIALISE_NO_CHANGE
   
   PUBLIC SOLVER_NO_OUTPUT,SOLVER_PROGRESS_OUTPUT,SOLVER_TIMING_OUTPUT,SOLVER_SOLVER_OUTPUT,SOLVER_MATRIX_OUTPUT
   
@@ -313,7 +355,7 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVER_LIBRARY_TYPE_GET,SOLVER_LIBRARY_TYPE_SET,SOLVER_OUTPUT_TYPE_SET,SOLVER_SOLVE
 
-  PUBLIC SOLVER_DYNAMIC_DEGREE_SET,SOLVER_DYNAMIC_LINEAR_SOLVER_GET,SOLVER_DYNAMIC_MONITOR,SOLVER_DYNAMIC_ORDER_SET, &
+  PUBLIC SOLVER_DYNAMIC_DEGREE_SET,SOLVER_DYNAMIC_LINEAR_SOLVER_GET,SOLVER_TIME_STEPPING_MONITOR,SOLVER_DYNAMIC_ORDER_SET, &
     & SOLVER_DYNAMIC_SCHEME_SET,SOLVER_DYNAMIC_THETA_SET,SOLVER_DYNAMIC_TIMES_SET
 
   PUBLIC SOLVER_EQUATIONS_CREATE_FINISH,SOLVER_EQUATIONS_CREATE_START,SOLVER_EQUATIONS_DESTROY, &
@@ -331,12 +373,13 @@ MODULE SOLVER_ROUTINES
   PUBLIC SOLVER_NEWTON_LINESEARCH_ALPHA_SET,SOLVER_NEWTON_LINESEARCH_TYPE_SET
 
   PUBLIC SOLVER_LINEAR_ITERATIVE_ABSOLUTE_TOLERANCE_SET,SOLVER_LINEAR_ITERATIVE_DIVERGENCE_TOLERANCE_SET, &
-    & SOLVER_LINEAR_ITERATIVE_MAXIMUM_ITERATIONS_SET,SOLVER_LINEAR_ITERATIVE_PRECONDITIONER_TYPE_SET, &
-    & SOLVER_LINEAR_ITERATIVE_RELATIVE_TOLERANCE_SET,SOLVER_LINEAR_ITERATIVE_TYPE_SET
+    & SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET,SOLVER_LINEAR_ITERATIVE_MAXIMUM_ITERATIONS_SET, &
+    & SOLVER_LINEAR_ITERATIVE_PRECONDITIONER_TYPE_SET,SOLVER_LINEAR_ITERATIVE_RELATIVE_TOLERANCE_SET, &
+    & SOLVER_LINEAR_ITERATIVE_SOLUTION_INIT_TYPE_SET,SOLVER_LINEAR_ITERATIVE_TYPE_SET
 
   PUBLIC SOLVER_MATRICES_DYNAMIC_ASSEMBLE,SOLVER_MATRICES_STATIC_ASSEMBLE
 
-  PUBLIC SOLVER_NEWTON_JACOBIAN_CALCULATION_TYPE_SET,SOLVER_NEWTON_LINEAR_SOLVER_GET
+  PUBLIC SOLVER_NEWTON_JACOBIAN_CALCULATION_TYPE_SET,SOLVER_NEWTON_LINEAR_SOLVER_GET,SOLVER_NEWTON_SOLUTION_INIT_TYPE_SET
 
   PUBLIC SOLVER_NONLINEAR_MONITOR
   
@@ -383,6 +426,1331 @@ CONTAINS
    
   END SUBROUTINE SOLVER_CREATE_FINISH
         
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise an Adams-Moulton differential-algebraic equation solver and deallocate all memory.
+  SUBROUTINE SOLVER_DAE_ADAMS_MOULTON_FINALISE(ADAMS_MOULTON_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(ADAMS_MOULTON_DAE_SOLVER_TYPE), POINTER :: ADAMS_MOULTON_SOLVER !<A pointer the Adams-Moulton differential-algebraic equation solver to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+     
+    CALL ENTERS("SOLVER_DAE_ADAMS_MOULTON_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(ADAMS_MOULTON_SOLVER)) THEN
+      DEALLOCATE(ADAMS_MOULTON_SOLVER)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_ADAMS_MOULTON_FINALISE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_ADAMS_MOULTON_FINALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_ADAMS_MOULTON_FINALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_ADAMS_MOULTON_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise an Adams-Moulton solver for a differential-algebraic equation solver
+  SUBROUTINE SOLVER_DAE_ADAMS_MOULTON_INITIALISE(DAE_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer the differential-algebraic equation solver to initialise an Adams-Moulton solver for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+    
+    CALL ENTERS("SOLVER_DAE_ADAMS_MOULTON_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(DAE_SOLVER)) THEN
+      IF(ASSOCIATED(DAE_SOLVER%ADAMS_MOULTON_SOLVER)) THEN
+        CALL FLAG_ERROR("Adams-Moulton solver is already associated for this differential-algebraic equation solver.", &
+          & ERR,ERROR,*998)
+      ELSE
+        !Allocate the Adams-Moulton solver
+        ALLOCATE(DAE_SOLVER%ADAMS_MOULTON_SOLVER,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Adams-Moulton solver.",ERR,ERROR,*999)
+        !Initialise
+        DAE_SOLVER%ADAMS_MOULTON_SOLVER%DAE_SOLVER=>DAE_SOLVER
+        DAE_SOLVER%ADAMS_MOULTON_SOLVER%SOLVER_LIBRARY=0
+        !Defaults
+      ENDIF      
+    ELSE
+      CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_ADAMS_MOULTON_INITIALISE")
+    RETURN
+999 CALL SOLVER_DAE_ADAMS_MOULTON_FINALISE(DAE_SOLVER%ADAMS_MOULTON_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("SOLVER_DAE_ADAMS_MOULTON_INITIALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_ADAMS_MOULTON_INITIALISE")
+    RETURN 1
+    
+  END SUBROUTINE SOLVER_DAE_ADAMS_MOULTON_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Solve using an Adams-Moulton differential-algebraic equation solver.
+  SUBROUTINE SOLVER_DAE_ADAMS_MOULTON_SOLVE(ADAMS_MOULTON_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(ADAMS_MOULTON_DAE_SOLVER_TYPE), POINTER :: ADAMS_MOULTON_SOLVER !<A pointer the Adams-Moulton differential-algebraic equation solver to solve
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_DAE_ADAMS_MOULTON_SOLVE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(ADAMS_MOULTON_SOLVER)) THEN
+      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("Adams-Moulton differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_ADAMS_MOULTON_SOLVE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_ADAMS_MOULTON_SOLVE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_ADAMS_MOULTON_SOLVE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_ADAMS_MOULTON_SOLVE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the process of creating a differential-algebraic equation solver 
+  SUBROUTINE SOLVER_DAE_CREATE_FINISH(DAE_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer to the differential-algebraic equation solver to finish the creation of.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_DAE_CREATE_FINISH",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DAE_SOLVER)) THEN
+      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("SOLVER_DAE_CREATE_FINISH")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_CREATE_FINISH",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_CREATE_FINISH")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_CREATE_FINISH
+        
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise a backward Euler differential-algebraic equation and deallocate all memory.
+  SUBROUTINE SOLVER_DAE_EULER_BACKWARD_FINALISE(BACKWARD_EULER_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(BACKWARD_EULER_DAE_SOLVER_TYPE), POINTER :: BACKWARD_EULER_SOLVER !<A pointer the backward Euler differential-algebraic equation solver to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+     
+    CALL ENTERS("SOLVER_DAE_EULER_BACKWARD_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(BACKWARD_EULER_SOLVER)) THEN
+      DEALLOCATE(BACKWARD_EULER_SOLVER)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_EULER_BACKWARD_FINALISE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_EULER_BACKWARD_FINALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_EULER_BACKWARD_FINALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_EULER_BACKWARD_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise a backward Euler solver for a differential-algebraic equation solver
+  SUBROUTINE SOLVER_DAE_EULER_BACKWARD_INITIALISE(EULER_DAE_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_DAE_SOLVER !<A pointer the Euler differential-algebraic equation solver to initialise a backward Euler solver for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+    
+    CALL ENTERS("SOLVER_DAE_EULER_BACKWARD_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(EULER_DAE_SOLVER)) THEN
+      IF(ASSOCIATED(EULER_DAE_SOLVER%BACKWARD_EULER_SOLVER)) THEN
+        CALL FLAG_ERROR("Backward Euler solver is already associated for this Euler differential-algebraic equation solver.", &
+          & ERR,ERROR,*998)
+      ELSE
+        !Allocate the backward Euler solver
+        ALLOCATE(EULER_DAE_SOLVER%BACKWARD_EULER_SOLVER,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate backward Euler solver.",ERR,ERROR,*999)
+        !Initialise
+        EULER_DAE_SOLVER%BACKWARD_EULER_SOLVER%EULER_DAE_SOLVER=>EULER_DAE_SOLVER
+        EULER_DAE_SOLVER%BACKWARD_EULER_SOLVER%SOLVER_LIBRARY=0
+        !Defaults
+      ENDIF      
+    ELSE
+      CALL FLAG_ERROR("Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_EULER_BACKWARD_INITIALISE")
+    RETURN
+999 CALL SOLVER_DAE_EULER_BACKWARD_FINALISE(EULER_DAE_SOLVER%BACKWARD_EULER_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("SOLVER_DAE_EULER_BACKWARD_INITIALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_EULER_BACKWARD_INITIALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_EULER_BACKWARD_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Solve using a backward Euler differential-algebraic equation solver.
+  SUBROUTINE SOLVER_DAE_EULER_BACKWARD_SOLVE(BACKWARD_EULER_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(BACKWARD_EULER_DAE_SOLVER_TYPE), POINTER :: BACKWARD_EULER_SOLVER !<A pointer the backward Euler differential-algebraic equation solver to solve
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_DAE_EULER_BACKWARD_SOLVE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(BACKWARD_EULER_SOLVER)) THEN
+      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("Backward Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_EULER_BACKWARD_SOLVE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_EULER_BACKWARD_SOLVE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_EULER_BACKWARD_SOLVE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_EULER_BACKWARD_SOLVE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise an Euler differential-algebraic equation solver and deallocate all memory.
+  SUBROUTINE SOLVER_DAE_EULER_FINALISE(EULER_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_SOLVER !<A pointer the Euler differential-algebraic equation solver to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+     
+    CALL ENTERS("SOLVER_DAE_EULER_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EULER_SOLVER)) THEN
+      CALL SOLVER_DAE_EULER_FORWARD_FINALISE(EULER_SOLVER%FORWARD_EULER_SOLVER,ERR,ERROR,*999)
+      CALL SOLVER_DAE_EULER_BACKWARD_FINALISE(EULER_SOLVER%BACKWARD_EULER_SOLVER,ERR,ERROR,*999)
+      CALL SOLVER_DAE_EULER_IMPROVED_FINALISE(EULER_SOLVER%IMPROVED_EULER_SOLVER,ERR,ERROR,*999)      
+      DEALLOCATE(EULER_SOLVER)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_EULER_FINALISE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_EULER_FINALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_EULER_FINALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_EULER_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise a forward Euler differential-algebraic equation and deallocate all memory.
+  SUBROUTINE SOLVER_DAE_EULER_FORWARD_FINALISE(FORWARD_EULER_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FORWARD_EULER_DAE_SOLVER_TYPE), POINTER :: FORWARD_EULER_SOLVER !<A pointer the forward Euler differential-algebraic equation solver to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+     
+    CALL ENTERS("SOLVER_DAE_EULER_FORWARD_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FORWARD_EULER_SOLVER)) THEN
+      DEALLOCATE(FORWARD_EULER_SOLVER)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_EULER_FORWARD_FINALISE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_EULER_FORWARD_FINALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_EULER_FORWARD_FINALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_EULER_FORWARD_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise a forward Euler solver for a differential-algebraic equation solver
+  SUBROUTINE SOLVER_DAE_EULER_FORWARD_INITIALISE(EULER_DAE_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_DAE_SOLVER !<A pointer the Euler differential-algebraic equation solver to initialise a forward Euler solver for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+    
+    CALL ENTERS("SOLVER_DAE_EULER_FORWARD_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(EULER_DAE_SOLVER)) THEN
+      IF(ASSOCIATED(EULER_DAE_SOLVER%FORWARD_EULER_SOLVER)) THEN
+        CALL FLAG_ERROR("Forward Euler solver is already associated for this Euler differential-algebraic equation solver.", &
+          & ERR,ERROR,*998)
+      ELSE
+        !Allocate the forward Euler solver
+        ALLOCATE(EULER_DAE_SOLVER%FORWARD_EULER_SOLVER,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate forward Euler solver.",ERR,ERROR,*999)
+        !Initialise
+        EULER_DAE_SOLVER%FORWARD_EULER_SOLVER%EULER_DAE_SOLVER=>EULER_DAE_SOLVER
+        EULER_DAE_SOLVER%FORWARD_EULER_SOLVER%SOLVER_LIBRARY=SOLVER_CMISS_LIBRARY
+        !Defaults
+      ENDIF      
+    ELSE
+      CALL FLAG_ERROR("Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_EULER_FORWARD_INITIALISE")
+    RETURN
+999 CALL SOLVER_DAE_EULER_FORWARD_FINALISE(EULER_DAE_SOLVER%FORWARD_EULER_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("SOLVER_DAE_EULER_FORWARD_INITIALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_EULER_FORWARD_INITIALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_EULER_FORWARD_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Solve using a forward Euler differential-algebraic equation solver.
+  SUBROUTINE SOLVER_DAE_EULER_FORWARD_SOLVE(FORWARD_EULER_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FORWARD_EULER_DAE_SOLVER_TYPE), POINTER :: FORWARD_EULER_SOLVER !<A pointer the forward Euler differential-algebraic equation solver to solve
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER
+    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_SOLVER
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
+    
+    CALL ENTERS("SOLVER_DAE_EULER_FORWARD_SOLVE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FORWARD_EULER_SOLVER)) THEN
+      EULER_SOLVER=>FORWARD_EULER_SOLVER%EULER_DAE_SOLVER
+      IF(ASSOCIATED(EULER_SOLVER)) THEN
+        DAE_SOLVER=>EULER_SOLVER%DAE_SOLVER
+        IF(ASSOCIATED(DAE_SOLVER)) THEN
+          SOLVER=>DAE_SOLVER%SOLVER
+          IF(ASSOCIATED(SOLVER)) THEN
+            SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+            IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+              SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+              IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+              ELSE
+                CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+          ENDIF
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Forward Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_EULER_FORWARD_SOLVE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_EULER_FORWARD_SOLVE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_EULER_FORWARD_SOLVE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_EULER_FORWARD_SOLVE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise an improved Euler differential-algebaic equation and deallocate all memory.
+  SUBROUTINE SOLVER_DAE_EULER_IMPROVED_FINALISE(IMPROVED_EULER_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(IMPROVED_EULER_DAE_SOLVER_TYPE), POINTER :: IMPROVED_EULER_SOLVER !<A pointer the improved Euler differential-algebraic equation solver to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+     
+    CALL ENTERS("SOLVER_DAE_EULER_IMPROVED_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(IMPROVED_EULER_SOLVER)) THEN
+      DEALLOCATE(IMPROVED_EULER_SOLVER)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_EULER_IMPROVED_FINALISE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_EULER_IMPROVED_FINALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_EULER_IMPROVED_FINALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_EULER_IMPROVED_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise an improved Euler solver for a differential-algebraic equation solver
+  SUBROUTINE SOLVER_DAE_EULER_IMPROVED_INITIALISE(EULER_DAE_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_DAE_SOLVER !<A pointer the Euler differential-algebraic equation solver to initialise an improved Euler solver for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+    
+    CALL ENTERS("SOLVER_DAE_EULER_IMPROVED_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(EULER_DAE_SOLVER)) THEN
+      IF(ASSOCIATED(EULER_DAE_SOLVER%IMPROVED_EULER_SOLVER)) THEN
+        CALL FLAG_ERROR("Improved Euler solver is already associated for this Euler differential-algebraic equation solver.", &
+          & ERR,ERROR,*998)
+      ELSE
+        !Allocate the improved Euler solver
+        ALLOCATE(EULER_DAE_SOLVER%IMPROVED_EULER_SOLVER,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate improved Euler solver.",ERR,ERROR,*999)
+        !Initialise
+        EULER_DAE_SOLVER%IMPROVED_EULER_SOLVER%EULER_DAE_SOLVER=>EULER_DAE_SOLVER
+        EULER_DAE_SOLVER%IMPROVED_EULER_SOLVER%SOLVER_LIBRARY=0
+        !Defaults
+      ENDIF      
+    ELSE
+      CALL FLAG_ERROR("Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_EULER_IMPROVED_INITIALISE")
+    RETURN
+999 CALL SOLVER_DAE_EULER_IMPROVED_FINALISE(EULER_DAE_SOLVER%IMPROVED_EULER_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("SOLVER_DAE_EULER_IMPROVED_INITIALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_EULER_IMPROVED_INITIALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_EULER_IMPROVED_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Solve using an improved Euler differential-algebraic equation solver.
+  SUBROUTINE SOLVER_DAE_EULER_IMPROVED_SOLVE(IMPROVED_EULER_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(IMPROVED_EULER_DAE_SOLVER_TYPE), POINTER :: IMPROVED_EULER_SOLVER !<A pointer the improved Euler differential-algebraic equation solver to solve
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_DAE_EULER_IMPROVED_SOLVE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(IMPROVED_EULER_SOLVER)) THEN
+      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("Improved Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_EULER_IMPROVED_SOLVE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_EULER_IMPROVED_SOLVE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_EULER_IMPROVED_SOLVE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_EULER_IMPROVED_SOLVE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise an Euler solver for a differential-algebraic equation solver
+  SUBROUTINE SOLVER_DAE_EULER_INITIALISE(DAE_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer the differential-algebraic equation solver to initialise an Euler solver for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+    
+    CALL ENTERS("SOLVER_DAE_EULER_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(DAE_SOLVER)) THEN
+      IF(ASSOCIATED(DAE_SOLVER%EULER_SOLVER)) THEN
+        CALL FLAG_ERROR("Euler solver is already associated for this differential-algebraic equation solver.",ERR,ERROR,*998)
+      ELSE
+        !Allocate the Euler solver
+        ALLOCATE(DAE_SOLVER%EULER_SOLVER,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Euler solver.",ERR,ERROR,*999)
+        !Initialise
+        DAE_SOLVER%EULER_SOLVER%DAE_SOLVER=>DAE_SOLVER
+        NULLIFY(DAE_SOLVER%EULER_SOLVER%FORWARD_EULER_SOLVER)
+        NULLIFY(DAE_SOLVER%EULER_SOLVER%BACKWARD_EULER_SOLVER)
+        NULLIFY(DAE_SOLVER%EULER_SOLVER%IMPROVED_EULER_SOLVER)
+        !Default to a forward Euler solver
+        CALL SOLVER_DAE_EULER_FORWARD_INITIALISE(DAE_SOLVER%EULER_SOLVER,ERR,ERROR,*999)
+        DAE_SOLVER%EULER_SOLVER%EULER_TYPE=SOLVER_DAE_EULER_FORWARD
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_EULER_INITIALISE")
+    RETURN
+999 CALL SOLVER_DAE_EULER_FINALISE(DAE_SOLVER%EULER_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("SOLVER_DAE_EULER_INITIALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_EULER_INITIALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_EULER_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Solve using an Euler differential-algebraic equation solver.
+  SUBROUTINE SOLVER_DAE_EULER_SOLVE(EULER_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_SOLVER !<A pointer the Euler differential-algebraic equation solver to solve
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_DAE_EULER_SOLVE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EULER_SOLVER)) THEN
+      SELECT CASE(EULER_SOLVER%EULER_TYPE)
+      CASE(SOLVER_DAE_EULER_FORWARD)
+        CALL SOLVER_DAE_EULER_FORWARD_SOLVE(EULER_SOLVER%FORWARD_EULER_SOLVER,ERR,ERROR,*999)
+      CASE(SOLVER_DAE_EULER_BACKWARD)
+        CALL SOLVER_DAE_EULER_BACKWARD_SOLVE(EULER_SOLVER%BACKWARD_EULER_SOLVER,ERR,ERROR,*999)
+      CASE(SOLVER_DAE_EULER_IMPROVED)
+        CALL SOLVER_DAE_EULER_IMPROVED_SOLVE(EULER_SOLVER%IMPROVED_EULER_SOLVER,ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="The Euler differential-algebraic equation solver type of "// &
+          & TRIM(NUMBER_TO_VSTRING(EULER_SOLVER%EULER_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_EULER_SOLVE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_EULER_SOLVE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_EULER_SOLVE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_EULER_SOLVE
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the solve type for an Euler differential-algebraic equation solver.
+  SUBROUTINE SOLVER_DAE_EULER_TYPE_SET(SOLVER,DAE_EULER_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the Euler differential equation solver to set type for 
+    INTEGER(INTG), INTENT(IN) :: DAE_EULER_TYPE !<The type of Euler solver for the Euler differential-algebraic equation to set \see SOLVER_ROUTINES_EulerDAESolverTypes,SOLVER_ROUTINES.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER
+    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_DAE_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+     
+    CALL ENTERS("SOLVER_DAE_EULER_TYPE_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVER_FINISHED) THEN
+        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+      ELSE
+        IF(SOLVER%SOLVE_TYPE==SOLVER_DAE_TYPE) THEN
+          DAE_SOLVER=>SOLVER%DAE_SOLVER
+          IF(ASSOCIATED(DAE_SOLVER)) THEN
+            IF(DAE_SOLVER%DAE_SOLVE_TYPE==SOLVER_DAE_EULER) THEN
+              EULER_DAE_SOLVER=>DAE_SOLVER%EULER_SOLVER
+              IF(ASSOCIATED(EULER_DAE_SOLVER)) THEN
+                IF(DAE_EULER_TYPE/=EULER_DAE_SOLVER%EULER_TYPE) THEN
+                  !Intialise the new Euler differential-algebraic equation solver type
+                  SELECT CASE(DAE_EULER_TYPE)
+                  CASE(SOLVER_DAE_EULER_FORWARD)
+                    CALL SOLVER_DAE_EULER_FORWARD_INITIALISE(EULER_DAE_SOLVER,ERR,ERROR,*999)
+                  CASE(SOLVER_DAE_EULER_BACKWARD)
+                    CALL SOLVER_DAE_EULER_BACKWARD_INITIALISE(EULER_DAE_SOLVER,ERR,ERROR,*999)
+                  CASE(SOLVER_DAE_EULER_IMPROVED)
+                    CALL SOLVER_DAE_EULER_IMPROVED_INITIALISE(EULER_DAE_SOLVER,ERR,ERROR,*999)
+                  CASE DEFAULT
+                    LOCAL_ERROR="The specified Euler differential-algebraic equation solver type of "// &
+                      & TRIM(NUMBER_TO_VSTRING(DAE_EULER_TYPE,"*",ERR,ERROR))//" is invalid."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
+                  !Finalise the old Euler differential-algebraic equation solver type
+                  SELECT CASE(EULER_DAE_SOLVER%EULER_TYPE)
+                  CASE(SOLVER_DAE_EULER_FORWARD)
+                    CALL SOLVER_DAE_EULER_FORWARD_FINALISE(EULER_DAE_SOLVER%FORWARD_EULER_SOLVER,ERR,ERROR,*999)
+                  CASE(SOLVER_DAE_EULER_BACKWARD)
+                    CALL SOLVER_DAE_EULER_BACKWARD_FINALISE(EULER_DAE_SOLVER%BACKWARD_EULER_SOLVER,ERR,ERROR,*999)
+                  CASE(SOLVER_DAE_EULER_IMPROVED)
+                    CALL SOLVER_DAE_EULER_IMPROVED_FINALISE(EULER_DAE_SOLVER%IMPROVED_EULER_SOLVER,ERR,ERROR,*999)
+                  CASE DEFAULT
+                    LOCAL_ERROR="The Euler differential-algebraic equation solver type of "// &
+                      & TRIM(NUMBER_TO_VSTRING(EULER_DAE_SOLVER%EULER_TYPE,"*",ERR,ERROR))//" is invalid."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
+                  EULER_DAE_SOLVER%EULER_TYPE=DAE_EULER_TYPE
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("The differential-algebraic equation solver Euler solver is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("The solver differential-algebraic equation solver is not an Euler differential-algebraic "// &
+                & "equation solver.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The solver differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The solver is not a differential-algebraic equation solver.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_EULER_TYPE_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_EULER_TYPE_SET",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_EULER_TYPE_SET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_EULER_TYPE_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise a differential-algebraic equation solver and deallocate all memory
+  SUBROUTINE SOLVER_DAE_FINALISE(DAE_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer the differential-algebraic equation solver to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_DAE_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DAE_SOLVER)) THEN
+      CALL SOLVER_DAE_EULER_FINALISE(DAE_SOLVER%EULER_SOLVER,ERR,ERROR,*999)
+      CALL SOLVER_DAE_CRANK_NICHOLSON_FINALISE(DAE_SOLVER%CRANK_NICHOLSON_SOLVER,ERR,ERROR,*999)
+      CALL SOLVER_DAE_RUNGE_KUTTA_FINALISE(DAE_SOLVER%RUNGE_KUTTA_SOLVER,ERR,ERROR,*999)
+      CALL SOLVER_DAE_ADAMS_MOULTON_FINALISE(DAE_SOLVER%ADAMS_MOULTON_SOLVER,ERR,ERROR,*999)
+      CALL SOLVER_DAE_BDF_FINALISE(DAE_SOLVER%BDF_SOLVER,ERR,ERROR,*999)
+      CALL SOLVER_DAE_RUSH_LARSON_FINALISE(DAE_SOLVER%RUSH_LARSON_SOLVER,ERR,ERROR,*999)
+      DEALLOCATE(DAE_SOLVER)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_FINALISE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_FINALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_FINALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise a differential-algebraic equation solver for a solver
+  SUBROUTINE SOLVER_DAE_INITIALISE(SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to initialise the differential-algebraic equation solver for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+
+    CALL ENTERS("SOLVER_DAE_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(ASSOCIATED(SOLVER%DAE_SOLVER)) THEN
+        CALL FLAG_ERROR("Differential-algebraic equation solver is already associated for this solver.",ERR,ERROR,*998)
+      ELSE
+        !Allocate the differential-algebraic equation solver
+        ALLOCATE(SOLVER%DAE_SOLVER,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver differential-algebraic equation solver.",ERR,ERROR,*999)
+        !Initialise
+        SOLVER%DAE_SOLVER%SOLVER=>SOLVER
+        SOLVER%DAE_SOLVER%DAE_TYPE=0
+        SOLVER%DAE_SOLVER%DAE_SOLVE_TYPE=0
+        SOLVER%DAE_SOLVER%START_TIME=0.0_DP
+        SOLVER%DAE_SOLVER%END_TIME=0.1_DP
+        SOLVER%DAE_SOLVER%INITIAL_STEP=0.1_DP
+        NULLIFY(SOLVER%DAE_SOLVER%EULER_SOLVER)
+        NULLIFY(SOLVER%DAE_SOLVER%CRANK_NICHOLSON_SOLVER)
+        NULLIFY(SOLVER%DAE_SOLVER%RUNGE_KUTTA_SOLVER)
+        NULLIFY(SOLVER%DAE_SOLVER%ADAMS_MOULTON_SOLVER)
+        NULLIFY(SOLVER%DAE_SOLVER%BDF_SOLVER)
+        NULLIFY(SOLVER%DAE_SOLVER%RUSH_LARSON_SOLVER)
+        !Default to an Euler differential equation solver
+        CALL SOLVER_DAE_EULER_INITIALISE(SOLVER%DAE_SOLVER,ERR,ERROR,*999)
+        SOLVER%DAE_SOLVER%DAE_SOLVE_TYPE=SOLVER_DAE_EULER
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+    ENDIF
+        
+    CALL EXITS("SOLVER_DAE_INITIALISE")
+    RETURN
+999 CALL SOLVER_DAE_FINALISE(SOLVER%DAE_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("SOLVER_DAE_INITIALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_INITIALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise a BDF differential-algebraic equation solver and deallocate all memory.
+  SUBROUTINE SOLVER_DAE_BDF_FINALISE(BDF_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(BDF_DAE_SOLVER_TYPE), POINTER :: BDF_SOLVER !<A pointer the BDF differential-algebraic equation solver to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+     
+    CALL ENTERS("SOLVER_DAE_BDF_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(BDF_SOLVER)) THEN
+      DEALLOCATE(BDF_SOLVER)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_BDF_FINALISE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_BDF_FINALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_BDF_FINALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_BDF_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise a BDF solver for a differential-algebraic equation solver
+  SUBROUTINE SOLVER_DAE_BDF_INITIALISE(DAE_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer the differential-algebraic equation solver to initialise a BDF solver for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+    
+    CALL ENTERS("SOLVER_DAE_BDF_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(DAE_SOLVER)) THEN
+      IF(ASSOCIATED(DAE_SOLVER%BDF_SOLVER)) THEN
+        CALL FLAG_ERROR("BDF solver is already associated for this differential-algebraic equation solver.",ERR,ERROR,*998)
+      ELSE
+        !Allocate the BDF solver
+        ALLOCATE(DAE_SOLVER%BDF_SOLVER,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate BDF solver.",ERR,ERROR,*999)
+        !Initialise
+        DAE_SOLVER%BDF_SOLVER%DAE_SOLVER=>DAE_SOLVER
+        DAE_SOLVER%BDF_SOLVER%SOLVER_LIBRARY=0
+        !Defaults
+      ENDIF      
+    ELSE
+      CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_BDF_INITIALISE")
+    RETURN
+999 CALL SOLVER_DAE_BDF_FINALISE(DAE_SOLVER%BDF_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("SOLVER_DAE_BDF_INITIALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_BDF_INITIALISE")
+    RETURN 1
+    
+  END SUBROUTINE SOLVER_DAE_BDF_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Solve using a BDF differential-algebraic equation solver.
+  SUBROUTINE SOLVER_DAE_BDF_SOLVE(BDF_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(BDF_DAE_SOLVER_TYPE), POINTER :: BDF_SOLVER !<A pointer the BDF differential-algebraic equation solver to solve
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_DAE_BDF_SOLVE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(BDF_SOLVER)) THEN
+      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("BDF differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_BDF_SOLVE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_BDF_SOLVE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_BDF_SOLVE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_BDF_SOLVE
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise a Crank-Nicholson differential-algebraic equation solver and deallocate all memory.
+  SUBROUTINE SOLVER_DAE_CRANK_NICHOLSON_FINALISE(CRANK_NICHOLSON_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CRANK_NICHOLSON_DAE_SOLVER_TYPE), POINTER :: CRANK_NICHOLSON_SOLVER !<A pointer the Crank-Nicholson differential-algebraic equation solver to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+     
+    CALL ENTERS("SOLVER_DAE_CRANK_NICHOLSON_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CRANK_NICHOLSON_SOLVER)) THEN
+      DEALLOCATE(CRANK_NICHOLSON_SOLVER)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_CRANK_NICHOLSON_FINALISE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_CRANK_NICHOLSON_FINALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_RUNTE_KUTTA_FINALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_CRANK_NICHOLSON_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise a Crank-Nicholson solver for a differential-algebraic equation solver
+  SUBROUTINE SOLVER_DAE_CRANK_NICHOLSON_INITIALISE(DAE_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer the differential-algebraic equation solver to initialise a Crank-Nicholson solver for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+    
+    CALL ENTERS("SOLVER_DAE_CRANK_NICHOLSON_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(DAE_SOLVER)) THEN
+      IF(ASSOCIATED(DAE_SOLVER%CRANK_NICHOLSON_SOLVER)) THEN
+        CALL FLAG_ERROR("Crank-Nicholson solver is already associated for this differential-algebraic equation solver.", &
+          & ERR,ERROR,*998)
+      ELSE
+        !Allocate the Runge-Kutta solver
+        ALLOCATE(DAE_SOLVER%CRANK_NICHOLSON_SOLVER,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Crank-Nicholson solver.",ERR,ERROR,*999)
+        !Initialise
+        DAE_SOLVER%CRANK_NICHOLSON_SOLVER%DAE_SOLVER=>DAE_SOLVER
+        DAE_SOLVER%CRANK_NICHOLSON_SOLVER%SOLVER_LIBRARY=0
+        !Defaults
+      ENDIF      
+    ELSE
+      CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_CRANK_NICHOLSON_INITIALISE")
+    RETURN
+999 CALL SOLVER_DAE_CRANK_NICHOLSON_FINALISE(DAE_SOLVER%CRANK_NICHOLSON_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("SOLVER_DAE_CRANK_NICHOLSON_INITIALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_CRANK_NICHOLSON_INITIALISE")
+    RETURN 1
+    
+  END SUBROUTINE SOLVER_DAE_CRANK_NICHOLSON_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Solve using a Crank-Nicholson differential-algebraic equation solver.
+  SUBROUTINE SOLVER_DAE_CRANK_NICHOLSON_SOLVE(CRANK_NICHOLSON_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CRANK_NICHOLSON_DAE_SOLVER_TYPE), POINTER :: CRANK_NICHOLSON_SOLVER !<A pointer the Crank-Nicholson differential-algebraic equation solver to solve
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_DAE_CRANK_NICHOLSON_SOLVE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CRANK_NICHOLSON_SOLVER)) THEN
+      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("Crank-Nicholson differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_CRANK_NICHOLSON_SOLVE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_CRANK_NICHOLSON_SOLVE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_CRANK_NICHOLSON_SOLVE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_CRANK_NICHOLSON_SOLVE
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise a Runge-Kutta differential-algebraic equation solver and deallocate all memory.
+  SUBROUTINE SOLVER_DAE_RUNGE_KUTTA_FINALISE(RUNGE_KUTTA_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(RUNGE_KUTTA_DAE_SOLVER_TYPE), POINTER :: RUNGE_KUTTA_SOLVER !<A pointer the Runge-Kutta differential-algebraic equation solver to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+     
+    CALL ENTERS("SOLVER_DAE_RUNGE_KUTTA_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(RUNGE_KUTTA_SOLVER)) THEN
+      DEALLOCATE(RUNGE_KUTTA_SOLVER)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_RUNGE_KUTTA_FINALISE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_RUNGE_KUTTA_FINALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_RUNTE_KUTTA_FINALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_RUNGE_KUTTA_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise a Runge-Kutta solver for a differential-algebraic equation solver
+  SUBROUTINE SOLVER_DAE_RUNGE_KUTTA_INITIALISE(DAE_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer the differential-algebraic equation solver to initialise a Runge-Kutta solver for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+    
+    CALL ENTERS("SOLVER_DAE_RUNGE_KUTTA_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(DAE_SOLVER)) THEN
+      IF(ASSOCIATED(DAE_SOLVER%RUNGE_KUTTA_SOLVER)) THEN
+        CALL FLAG_ERROR("Runge-Kutta solver is already associated for this differential-algebraic equation solver.",ERR,ERROR,*998)
+      ELSE
+        !Allocate the Runge-Kutta solver
+        ALLOCATE(DAE_SOLVER%RUNGE_KUTTA_SOLVER,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Runge-Kutta solver.",ERR,ERROR,*999)
+        !Initialise
+        DAE_SOLVER%RUNGE_KUTTA_SOLVER%DAE_SOLVER=>DAE_SOLVER
+        DAE_SOLVER%RUNGE_KUTTA_SOLVER%SOLVER_LIBRARY=0
+        !Defaults
+      ENDIF      
+    ELSE
+      CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_RUNGE_KUTTA_INITIALISE")
+    RETURN
+999 CALL SOLVER_DAE_RUNGE_KUTTA_FINALISE(DAE_SOLVER%RUNGE_KUTTA_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("SOLVER_DAE_RUNGE_KUTTA_INITIALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_RUNGE_KUTTA_INITIALISE")
+    RETURN 1
+    
+  END SUBROUTINE SOLVER_DAE_RUNGE_KUTTA_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Solve using a Runge-Kutta differential-algebraic equation solver.
+  SUBROUTINE SOLVER_DAE_RUNGE_KUTTA_SOLVE(RUNGE_KUTTA_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(RUNGE_KUTTA_DAE_SOLVER_TYPE), POINTER :: RUNGE_KUTTA_SOLVER !<A pointer the Runge-Kutta differential-algebraic equation solver to solve
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_DAE_RUNGE_KUTTA_SOLVE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(RUNGE_KUTTA_SOLVER)) THEN
+      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("Runge-Kutta differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_RUNGE_KUTTA_SOLVE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_RUNGE_KUTTA_SOLVE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_RUNGE_KUTTA_SOLVE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_RUNGE_KUTTA_SOLVE
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise a Rush-Larson differential-algebraic equation solver and deallocate all memory.
+  SUBROUTINE SOLVER_DAE_RUSH_LARSON_FINALISE(RUSH_LARSON_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(RUSH_LARSON_DAE_SOLVER_TYPE), POINTER :: RUSH_LARSON_SOLVER !<A pointer the Rush-Larson differential-algebraic equation solver to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+     
+    CALL ENTERS("SOLVER_DAE_RUSH_LARSON_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(RUSH_LARSON_SOLVER)) THEN
+      DEALLOCATE(RUSH_LARSON_SOLVER)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_RUSH_LARSON_FINALISE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_RUSH_LARSON_FINALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_RUSH_LARSON_FINALISE")
+    RETURN 1
+    
+  END SUBROUTINE SOLVER_DAE_RUSH_LARSON_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise an Rush-Larson solver for a differential-algebraic equation solver
+  SUBROUTINE SOLVER_DAE_RUSH_LARSON_INITIALISE(DAE_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer the differential-algebraic equation solver to initialise a Rush-Larson solver for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+    
+    CALL ENTERS("SOLVER_DAE_RUSH_LARSON_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(DAE_SOLVER)) THEN
+      IF(ASSOCIATED(DAE_SOLVER%RUSH_LARSON_SOLVER)) THEN
+        CALL FLAG_ERROR("Rush-Larson solver is already associated for this differential-algebraic equation solver.",ERR,ERROR,*998)
+      ELSE
+        !Allocate the Rush-Larson solver
+        ALLOCATE(DAE_SOLVER%RUSH_LARSON_SOLVER,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Rush-Larson solver.",ERR,ERROR,*999)
+        !Initialise
+        DAE_SOLVER%RUSH_LARSON_SOLVER%DAE_SOLVER=>DAE_SOLVER
+        DAE_SOLVER%RUSH_LARSON_SOLVER%SOLVER_LIBRARY=0
+        !Defaults
+      ENDIF      
+    ELSE
+      CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_RUSH_LARSON_INITIALISE")
+    RETURN
+999 CALL SOLVER_DAE_RUSH_LARSON_FINALISE(DAE_SOLVER%RUSH_LARSON_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("SOLVER_DAE_RUSH_LARSON_INITIALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_RUSH_LARSON_INITIALISE")
+    RETURN 1
+    
+  END SUBROUTINE SOLVER_DAE_RUSH_LARSON_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Solve using a Rush-Larson differential-algebraic equation solver.
+  SUBROUTINE SOLVER_DAE_RUSH_LARSON_SOLVE(RUSH_LARSON_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(RUSH_LARSON_DAE_SOLVER_TYPE), POINTER :: RUSH_LARSON_SOLVER !<A pointer the Rush-Larson differential-algebraic equation solver to solve
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_DAE_RUSH_LARSON_SOLVE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(RUSH_LARSON_SOLVER)) THEN
+      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("Rush-Larson differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_RUSH_LARSON_SOLVE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_RUSH_LARSON_SOLVE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_RUSH_LARSON_SOLVE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_RUSH_LARSON_SOLVE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Solve a differential-algebraic equation solver
+  SUBROUTINE SOLVER_DAE_SOLVE(DAE_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer the differential-algebraic equation solver to solve
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_DAE_SOLVE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DAE_SOLVER)) THEN
+      SELECT CASE(DAE_SOLVER%DAE_SOLVE_TYPE)
+      CASE(SOLVER_DAE_EULER)
+        CALL SOLVER_DAE_EULER_SOLVE(DAE_SOLVER%EULER_SOLVER,ERR,ERROR,*999)
+      CASE(SOLVER_DAE_CRANK_NICHOLSON)
+        CALL SOLVER_DAE_CRANK_NICHOLSON_SOLVE(DAE_SOLVER%CRANK_NICHOLSON_SOLVER,ERR,ERROR,*999)
+      CASE(SOLVER_DAE_RUNGE_KUTTA)
+        CALL SOLVER_DAE_RUNGE_KUTTA_SOLVE(DAE_SOLVER%RUNGE_KUTTA_SOLVER,ERR,ERROR,*999)
+      CASE(SOLVER_DAE_ADAMS_MOULTON)
+        CALL SOLVER_DAE_ADAMS_MOULTON_SOLVE(DAE_SOLVER%ADAMS_MOULTON_SOLVER,ERR,ERROR,*999)        
+      CASE(SOLVER_DAE_BDF)
+        CALL SOLVER_DAE_BDF_SOLVE(DAE_SOLVER%BDF_SOLVER,ERR,ERROR,*999)
+      CASE(SOLVER_DAE_RUSH_LARSON)
+        CALL SOLVER_DAE_RUSH_LARSON_SOLVE(DAE_SOLVER%RUSH_LARSON_SOLVER,ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="The differential-algebraic equation solver solve type of "// &
+          & TRIM(NUMBER_TO_VSTRING(DAE_SOLVER%DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_SOLVE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_SOLVE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_SOLVE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_SOLVE
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the solve type for an differential-algebraic equation solver.
+  SUBROUTINE SOLVER_DAE_SOLVER_TYPE_SET(SOLVER,DAE_SOLVE_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the differential-algebraic equation solver type for 
+    INTEGER(INTG), INTENT(IN) :: DAE_SOLVE_TYPE !<The type of solver for the differential-algebraic equation to set \see SOLVER_ROUTINES_DAESolverTypes,SOLVER_ROUTINES.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+     
+    CALL ENTERS("SOLVER_DAE_SOLVER_TYPE_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVER_FINISHED) THEN
+        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+      ELSE
+        IF(SOLVER%SOLVE_TYPE==SOLVER_DAE_TYPE) THEN
+          DAE_SOLVER=>SOLVER%DAE_SOLVER
+          IF(ASSOCIATED(DAE_SOLVER)) THEN
+            IF(DAE_SOLVE_TYPE/=DAE_SOLVER%DAE_SOLVE_TYPE) THEN
+              !Intialise the new differential-algebraic equation solver type
+              SELECT CASE(DAE_SOLVE_TYPE)
+              CASE(SOLVER_DAE_EULER)
+                CALL SOLVER_DAE_EULER_INITIALISE(DAE_SOLVER,ERR,ERROR,*999)
+              CASE(SOLVER_DAE_CRANK_NICHOLSON)
+                CALL SOLVER_DAE_CRANK_NICHOLSON_INITIALISE(DAE_SOLVER,ERR,ERROR,*999)
+              CASE(SOLVER_DAE_RUNGE_KUTTA)
+                CALL SOLVER_DAE_RUNGE_KUTTA_INITIALISE(DAE_SOLVER,ERR,ERROR,*999)
+              CASE(SOLVER_DAE_ADAMS_MOULTON)
+                CALL SOLVER_DAE_ADAMS_MOULTON_INITIALISE(DAE_SOLVER,ERR,ERROR,*999)
+              CASE(SOLVER_DAE_BDF)
+                CALL SOLVER_DAE_BDF_INITIALISE(DAE_SOLVER,ERR,ERROR,*999)
+              CASE(SOLVER_DAE_RUSH_LARSON)
+                CALL SOLVER_DAE_RUSH_LARSON_INITIALISE(DAE_SOLVER,ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The specified differential-algebraic equation solver type of "// &
+                  & TRIM(NUMBER_TO_VSTRING(DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+              !Finalise the old differential-algebraic equation solver type
+              SELECT CASE(DAE_SOLVER%DAE_SOLVE_TYPE)
+              CASE(SOLVER_DAE_EULER)
+                CALL SOLVER_DAE_EULER_FINALISE(DAE_SOLVER%EULER_SOLVER,ERR,ERROR,*999)
+              CASE(SOLVER_DAE_CRANK_NICHOLSON)
+                CALL SOLVER_DAE_CRANK_NICHOLSON_FINALISE(DAE_SOLVER%CRANK_NICHOLSON_SOLVER,ERR,ERROR,*999)
+              CASE(SOLVER_DAE_RUNGE_KUTTA)
+                CALL SOLVER_DAE_RUNGE_KUTTA_FINALISE(DAE_SOLVER%RUNGE_KUTTA_SOLVER,ERR,ERROR,*999)
+              CASE(SOLVER_DAE_ADAMS_MOULTON)
+                CALL SOLVER_DAE_ADAMS_MOULTON_FINALISE(DAE_SOLVER%ADAMS_MOULTON_SOLVER,ERR,ERROR,*999)
+              CASE(SOLVER_DAE_BDF)
+                CALL SOLVER_DAE_BDF_FINALISE(DAE_SOLVER%BDF_SOLVER,ERR,ERROR,*999)
+              CASE(SOLVER_DAE_RUSH_LARSON)
+                CALL SOLVER_DAE_RUSH_LARSON_FINALISE(DAE_SOLVER%RUSH_LARSON_SOLVER,ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The differential-algebraic equation solve type of "// &
+                  & TRIM(NUMBER_TO_VSTRING(DAE_SOLVER%DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+              DAE_SOLVER%DAE_SOLVE_TYPE=DAE_SOLVE_TYPE
+            ENDIF
+         ELSE
+            CALL FLAG_ERROR("The solver differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The solver is not a differential-algebraic equation solver.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_SOLVER_TYPE_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_SOLVER_TYPE_SET",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_SOLVER_TYPE_SET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_SOLVER_TYPE_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Set/change the times for a differential-algebraic equation solver
+  SUBROUTINE SOLVER_DAE_TIMES_SET(SOLVER,START_TIME,END_TIME,INITIAL_STEP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the differential-algebraic equation solver to set the times for
+    REAL(DP), INTENT(IN) :: START_TIME !<The start time for the differential equation solver
+    REAL(DP), INTENT(IN) :: END_TIME !<The end time for the differential equation solver
+    REAL(DP), INTENT(IN) :: INITIAL_STEP !<The (initial) time step for the differential equation solver    
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_DAE_TIMES_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVE_TYPE==SOLVER_DAE_TYPE) THEN
+        DAE_SOLVER=>SOLVER%DAE_SOLVER
+        IF(ASSOCIATED(DAE_SOLVER)) THEN
+          IF(END_TIME>START_TIME) THEN
+            IF(ABS(INITIAL_STEP)<=ZERO_TOLERANCE) THEN
+              LOCAL_ERROR="The specified initial step of "//TRIM(NUMBER_TO_VSTRING(INITIAL_STEP,"*",ERR,ERROR))// &
+                & " is invalid. The initial step must not be zero."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ELSE
+              DAE_SOLVER%START_TIME=START_TIME
+              DAE_SOLVER%END_TIME=END_TIME
+              DAE_SOLVER%INITIAL_STEP=INITIAL_STEP
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The specified end time of "//TRIM(NUMBER_TO_VSTRING(END_TIME,"*",ERR,ERROR))// &
+              & " is not > than the specified start time of "//TRIM(NUMBER_TO_VSTRING(START_TIME,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The solver is not a differential-algebraic equation solver.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_TIMES_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_TIMES_SET",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_TIMES_SET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_TIMES_SET
+
   !
   !================================================================================================================================
   !
@@ -874,39 +2242,39 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Monitors the dynamic solve.
-  SUBROUTINE SOLVER_DYNAMIC_MONITOR(DYNAMIC_SOLVER,STEPS,TIME,ERR,ERROR,*)
+  !>Monitors the differential-algebraic equations solve.
+  SUBROUTINE SOLVER_TIME_STEPPING_MONITOR(DAE_SOLVER,STEPS,TIME,ERR,ERROR,*)
 
    !Argument variables
-    TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER !<A pointer to the dynamic solver to monitor
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer to the differential-algebraic equations solver to monitor
     INTEGER(INTG), INTENT(IN) :: STEPS !<The number of iterations
     REAL(DP), INTENT(IN) :: TIME !<The current time
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    CALL ENTERS("SOLVER_DYNAMIC_MONITOR",ERR,ERROR,*999)
+    CALL ENTERS("SOLVER_TIME_STEPPING_MONITOR",ERR,ERROR,*999)
 
-    IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
+    IF(ASSOCIATED(DAE_SOLVER)) THEN
         
       CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
       CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
-      CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Dynamic solve monitor: ",ERR,ERROR,*999)
+      CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Differential-algebraic equations solve monitor: ",ERR,ERROR,*999)
       CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
       CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of steps = ",STEPS,ERR,ERROR,*999)
       CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Current time    = ",TIME,ERR,ERROR,*999)
       CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)      
         
     ELSE
-      CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Differential-algebraic equations solver is not associated.",ERR,ERROR,*999)
     ENDIF
      
-    CALL EXITS("SOLVER_DYNAMIC_MONITOR")
+    CALL EXITS("SOLVER_TIME_STEPPING_MONITOR")
     RETURN
-999 CALL ERRORS("SOLVER_DYNAMIC_MONITOR",ERR,ERROR)
-    CALL EXITS("SOLVER_DYNAMIC_MONITOR")
+999 CALL ERRORS("SOLVER_TIME_STEPPING_MONITOR",ERR,ERROR)
+    CALL EXITS("SOLVER_TIME_STEPPING_MONITOR")
     RETURN 1
-  END SUBROUTINE SOLVER_DYNAMIC_MONITOR
+  END SUBROUTINE SOLVER_TIME_STEPPING_MONITOR
 
   !
   !================================================================================================================================
@@ -1502,8 +2870,8 @@ CONTAINS
               CALL SOLVER_NONLINEAR_CREATE_FINISH(SOLVER%NONLINEAR_SOLVER,ERR,ERROR,*999)
             CASE(SOLVER_DYNAMIC_TYPE)
               CALL SOLVER_DYNAMIC_CREATE_FINISH(SOLVER%DYNAMIC_SOLVER,ERR,ERROR,*999)
-            CASE(SOLVER_INTEGRATION_TYPE)
-              CALL SOLVER_INTEGRATION_CREATE_FINISH(SOLVER%INTEGRATION_SOLVER,ERR,ERROR,*999)
+            CASE(SOLVER_DAE_TYPE)
+              CALL SOLVER_DAE_CREATE_FINISH(SOLVER%DAE_SOLVER,ERR,ERROR,*999)
             CASE(SOLVER_EIGENPROBLEM_TYPE)
               CALL SOLVER_EIGENPROBLEM_CREATE_FINISH(SOLVER%EIGENPROBLEM_SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
@@ -1566,7 +2934,7 @@ CONTAINS
               CALL SOLVER_MAPPING_SOLVER_MATRICES_NUMBER_SET(SOLVER_MAPPING,1,ERR,ERROR,*999)
             CASE(SOLVER_DYNAMIC_TYPE)
               CALL SOLVER_MAPPING_SOLVER_MATRICES_NUMBER_SET(SOLVER_MAPPING,1,ERR,ERROR,*999)
-            CASE(SOLVER_INTEGRATION_TYPE)
+            CASE(SOLVER_DAE_TYPE)
               CALL SOLVER_MAPPING_SOLVER_MATRICES_NUMBER_SET(SOLVER_MAPPING,0,ERR,ERROR,*999)
             CASE(SOLVER_EIGENPROBLEM_TYPE)
               CALL SOLVER_MAPPING_SOLVER_MATRICES_NUMBER_SET(SOLVER_MAPPING,2,ERR,ERROR,*999)
@@ -1914,6 +3282,8 @@ CONTAINS
               SOLVER_EQUATIONS%TIME_DEPENDENCE=SOLVER_EQUATIONS_FIRST_ORDER_DYNAMIC
             CASE(SOLVER_EQUATIONS_SECOND_ORDER_DYNAMIC)
               SOLVER_EQUATIONS%TIME_DEPENDENCE=SOLVER_EQUATIONS_SECOND_ORDER_DYNAMIC
+            CASE(SOLVER_EQUATIONS_TIME_STEPPING)
+              SOLVER_EQUATIONS%TIME_DEPENDENCE=SOLVER_EQUATIONS_TIME_STEPPING
             CASE DEFAULT
               LOCAL_ERROR="The specified solver equations time dependence type of "// &
                 & TRIM(NUMBER_TO_VSTRING(TIME_DEPENDENCE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -1955,7 +3325,7 @@ CONTAINS
       CALL SOLVER_LINEAR_FINALISE(SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
       CALL SOLVER_NONLINEAR_FINALISE(SOLVER%NONLINEAR_SOLVER,ERR,ERROR,*999)
       CALL SOLVER_DYNAMIC_FINALISE(SOLVER%DYNAMIC_SOLVER,ERR,ERROR,*999)        
-      CALL SOLVER_INTEGRATION_FINALISE(SOLVER%INTEGRATION_SOLVER,ERR,ERROR,*999)        
+      CALL SOLVER_DAE_FINALISE(SOLVER%DAE_SOLVER,ERR,ERROR,*999)        
       CALL SOLVER_EIGENPROBLEM_FINALISE(SOLVER%EIGENPROBLEM_SOLVER,ERR,ERROR,*999)
       IF(.NOT.ASSOCIATED(SOLVER%LINKING_SOLVER)) &
         & CALL SOLVER_EQUATIONS_FINALISE(SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
@@ -2047,7 +3417,7 @@ CONTAINS
       NULLIFY(SOLVER%LINEAR_SOLVER)
       NULLIFY(SOLVER%NONLINEAR_SOLVER)
       NULLIFY(SOLVER%DYNAMIC_SOLVER)
-      NULLIFY(SOLVER%INTEGRATION_SOLVER)
+      NULLIFY(SOLVER%DAE_SOLVER)
       NULLIFY(SOLVER%EIGENPROBLEM_SOLVER)
       NULLIFY(SOLVER%SOLVER_EQUATIONS)
     ELSE
@@ -2066,130 +3436,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finishes the process of creating a integration solver 
-  SUBROUTINE SOLVER_INTEGRATION_CREATE_FINISH(INTEGRATION_SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(INTEGRATION_SOLVER_TYPE), POINTER :: INTEGRATION_SOLVER !<A pointer to the integration solver to finish the creation of.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-    CALL ENTERS("SOLVER_INTEGRATION_CREATE_FINISH",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(INTEGRATION_SOLVER)) THEN
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-    ELSE
-      CALL FLAG_ERROR("Integration solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-        
-    CALL EXITS("SOLVER_INTEGRATION_CREATE_FINISH")
-    RETURN
-999 CALL ERRORS("SOLVER_INTEGRATION_CREATE_FINISH",ERR,ERROR)    
-    CALL EXITS("SOLVER_INTEGRATION_CREATE_FINISH")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_INTEGRATION_CREATE_FINISH
-        
-  !
-  !================================================================================================================================
-  !
-
-  !>Finalise a integration solver and deallocate all memory
-  SUBROUTINE SOLVER_INTEGRATION_FINALISE(INTEGRATION_SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(INTEGRATION_SOLVER_TYPE), POINTER :: INTEGRATION_SOLVER !<A pointer the intergration solver to finalise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-    CALL ENTERS("SOLVER_INTEGRATION_FINALISE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(INTEGRATION_SOLVER)) THEN        
-      DEALLOCATE(INTEGRATION_SOLVER)
-    ENDIF
-         
-    CALL EXITS("SOLVER_INTEGRATION_FINALISE")
-    RETURN
-999 CALL ERRORS("SOLVER_INTEGRATION_FINALISE",ERR,ERROR)    
-    CALL EXITS("SOLVER_INTEGRATION_FINALISE")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_INTEGRATION_FINALISE
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Initialise a integration solver for a solver
-  SUBROUTINE SOLVER_INTEGRATION_INITIALISE(SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to initialise the integration solver for
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR
-    TYPE(VARYING_STRING) :: DUMMY_ERROR
-
-    CALL ENTERS("SOLVER_INTEGRATION_INITIALISE",ERR,ERROR,*998)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(ASSOCIATED(SOLVER%INTEGRATION_SOLVER)) THEN
-        CALL FLAG_ERROR("Integration solver is already associated for this solver.",ERR,ERROR,*998)
-      ELSE
-        ALLOCATE(SOLVER%INTEGRATION_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver integration solver.",ERR,ERROR,*999)
-        SOLVER%INTEGRATION_SOLVER%SOLVER=>SOLVER
-        SOLVER%INTEGRATION_SOLVER%SOLVER_LIBRARY=SOLVER_CMISS_LIBRARY
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
-    ENDIF
-        
-    CALL EXITS("SOLVER_INTEGRATION_INITIALISE")
-    RETURN
-999 CALL SOLVER_INTEGRATION_FINALISE(SOLVER%INTEGRATION_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
-998 CALL ERRORS("SOLVER_INTEGRATION_INITIALISE",ERR,ERROR)    
-    CALL EXITS("SOLVER_INTEGRATION_INITIALISE")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_INTEGRATION_INITIALISE
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Solve a integration solver
-  SUBROUTINE SOLVER_INTEGRATION_SOLVE(INTEGRATION_SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(INTEGRATION_SOLVER_TYPE), POINTER :: INTEGRATION_SOLVER !<A pointer the integration solver to solve
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-    CALL ENTERS("SOLVER_INTEGRATION_SOLVE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(INTEGRATION_SOLVER)) THEN        
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-    ELSE
-      CALL FLAG_ERROR("Integration solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-         
-    CALL EXITS("SOLVER_INTEGRATION_SOLVE")
-    RETURN
-999 CALL ERRORS("SOLVER_INTEGRATION_SOLVE",ERR,ERROR)    
-    CALL EXITS("SOLVER_INTEGRATION_SOLVE")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_INTEGRATION_SOLVE
-
-  !
-  !================================================================================================================================
-  !
-
   !>Gets the type of library to use for the solver
   SUBROUTINE SOLVER_LIBRARY_TYPE_GET(SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
 
@@ -2199,9 +3445,16 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    TYPE(ADAMS_MOULTON_DAE_SOLVER_TYPE), POINTER :: ADAMS_MOULTON_DAE_SOLVER
+    TYPE(BACKWARD_EULER_DAE_SOLVER_TYPE), POINTER :: BACKWARD_EULER_DAE_SOLVER
+    TYPE(BDF_DAE_SOLVER_TYPE), POINTER :: BDF_DAE_SOLVER
+    TYPE(CRANK_NICHOLSON_DAE_SOLVER_TYPE), POINTER :: CRANK_NICHOLSON_DAE_SOLVER
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
     TYPE(EIGENPROBLEM_SOLVER_TYPE), POINTER :: EIGENPROBLEM_SOLVER
-    TYPE(INTEGRATION_SOLVER_TYPE), POINTER :: INTEGRATION_SOLVER
+    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_DAE_SOLVER
+    TYPE(FORWARD_EULER_DAE_SOLVER_TYPE), POINTER :: FORWARD_EULER_DAE_SOLVER
+    TYPE(IMPROVED_EULER_DAE_SOLVER_TYPE), POINTER :: IMPROVED_EULER_DAE_SOLVER
     TYPE(LINEAR_DIRECT_SOLVER_TYPE), POINTER :: DIRECT_SOLVER
     TYPE(LINEAR_ITERATIVE_SOLVER_TYPE), POINTER :: ITERATIVE_SOLVER
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER
@@ -2209,6 +3462,8 @@ CONTAINS
     TYPE(NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER
     TYPE(NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
+    TYPE(RUNGE_KUTTA_DAE_SOLVER_TYPE), POINTER :: RUNGE_KUTTA_DAE_SOLVER
+    TYPE(RUSH_LARSON_DAE_SOLVER_TYPE), POINTER :: RUSH_LARSON_DAE_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("SOLVER_LIBRARY_TYPE_GET",ERR,ERROR,*999)
@@ -2290,12 +3545,85 @@ CONTAINS
         ELSE
           CALL FLAG_ERROR("Solver dynamic solver is not associated.",ERR,ERROR,*999)
         ENDIF
-      CASE(SOLVER_INTEGRATION_TYPE)
-        INTEGRATION_SOLVER=>SOLVER%INTEGRATION_SOLVER
-        IF(ASSOCIATED(INTEGRATION_SOLVER)) THEN
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(SOLVER_DAE_TYPE)
+        DAE_SOLVER=>SOLVER%DAE_SOLVER
+        IF(ASSOCIATED(DAE_SOLVER)) THEN
+          SELECT CASE(DAE_SOLVER%DAE_SOLVE_TYPE)
+          CASE(SOLVER_DAE_EULER)
+            EULER_DAE_SOLVER=>DAE_SOLVER%EULER_SOLVER
+            IF(ASSOCIATED(EULER_DAE_SOLVER)) THEN
+              SELECT CASE(EULER_DAE_SOLVER%EULER_TYPE)
+              CASE(SOLVER_DAE_EULER_FORWARD)
+                FORWARD_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%FORWARD_EULER_SOLVER
+                IF(ASSOCIATED(FORWARD_EULER_DAE_SOLVER)) THEN
+                  SOLVER_LIBRARY_TYPE=FORWARD_EULER_DAE_SOLVER%SOLVER_LIBRARY
+                ELSE
+                  CALL FLAG_ERROR("The forward Euler differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+                ENDIF
+              CASE(SOLVER_DAE_EULER_BACKWARD)
+                BACKWARD_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%BACKWARD_EULER_SOLVER
+                IF(ASSOCIATED(BACKWARD_EULER_DAE_SOLVER)) THEN
+                  SOLVER_LIBRARY_TYPE=BACKWARD_EULER_DAE_SOLVER%SOLVER_LIBRARY
+                ELSE
+                  CALL FLAG_ERROR("The backward Euler differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+                ENDIF
+              CASE(SOLVER_DAE_EULER_IMPROVED)
+                IMPROVED_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%IMPROVED_EULER_SOLVER
+                IF(ASSOCIATED(IMPROVED_EULER_DAE_SOLVER)) THEN
+                  SOLVER_LIBRARY_TYPE=IMPROVED_EULER_DAE_SOLVER%SOLVER_LIBRARY
+                ELSE
+                  CALL FLAG_ERROR("The improved Euler differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+                ENDIF
+              CASE DEFAULT
+                LOCAL_ERROR="The Euler differential-algebraic equations solver type of "// &
+                  & TRIM(NUMBER_TO_VSTRING(EULER_DAE_SOLVER%EULER_TYPE,"*",ERR,ERROR))//" is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+            ELSE
+              CALL FLAG_ERROR("Euler differential-algebraic solver is not associated.",ERR,ERROR,*999)
+            ENDIF
+          CASE(SOLVER_DAE_CRANK_NICHOLSON)
+            CRANK_NICHOLSON_DAE_SOLVER=>DAE_SOLVER%CRANK_NICHOLSON_SOLVER
+            IF(ASSOCIATED(CRANK_NICHOLSON_DAE_SOLVER)) THEN
+              SOLVER_LIBRARY_TYPE=CRANK_NICHOLSON_DAE_SOLVER%SOLVER_LIBRARY
+            ELSE
+              CALL FLAG_ERROR("The Crank-Nicholson differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+            ENDIF
+          CASE(SOLVER_DAE_RUNGE_KUTTA)
+            RUNGE_KUTTA_DAE_SOLVER=>DAE_SOLVER%RUNGE_KUTTA_SOLVER
+            IF(ASSOCIATED(RUNGE_KUTTA_DAE_SOLVER)) THEN
+              SOLVER_LIBRARY_TYPE=RUNGE_KUTTA_DAE_SOLVER%SOLVER_LIBRARY
+            ELSE
+              CALL FLAG_ERROR("The Runge-Kutta differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+            ENDIF
+          CASE(SOLVER_DAE_ADAMS_MOULTON)
+            ADAMS_MOULTON_DAE_SOLVER=>DAE_SOLVER%ADAMS_MOULTON_SOLVER
+            IF(ASSOCIATED(ADAMS_MOULTON_DAE_SOLVER)) THEN
+              SOLVER_LIBRARY_TYPE=ADAMS_MOULTON_DAE_SOLVER%SOLVER_LIBRARY
+            ELSE
+              CALL FLAG_ERROR("The Adams-Moulton differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+            ENDIF
+          CASE(SOLVER_DAE_BDF)
+            BDF_DAE_SOLVER=>DAE_SOLVER%BDF_SOLVER
+            IF(ASSOCIATED(BDF_DAE_SOLVER)) THEN
+              SOLVER_LIBRARY_TYPE=BDF_DAE_SOLVER%SOLVER_LIBRARY
+            ELSE
+              CALL FLAG_ERROR("The BDF differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+            ENDIF
+          CASE(SOLVER_DAE_RUSH_LARSON)
+            RUSH_LARSON_DAE_SOLVER=>DAE_SOLVER%RUSH_LARSON_SOLVER
+            IF(ASSOCIATED(RUSH_LARSON_DAE_SOLVER)) THEN
+              SOLVER_LIBRARY_TYPE=RUSH_LARSON_DAE_SOLVER%SOLVER_LIBRARY
+            ELSE
+              CALL FLAG_ERROR("The Rush-Larson differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+            ENDIF
+          CASE DEFAULT
+            LOCAL_ERROR="The differential-algebraic equations solver type of "// &
+              & TRIM(NUMBER_TO_VSTRING(DAE_SOLVER%DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
         ELSE
-          CALL FLAG_ERROR("Solver integration solver is not associated.",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Solver differential-algebraic solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_EIGENPROBLEM_TYPE)
         EIGENPROBLEM_SOLVER=>SOLVER%EIGENPROBLEM_SOLVER
@@ -2333,9 +3661,16 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    TYPE(ADAMS_MOULTON_DAE_SOLVER_TYPE), POINTER :: ADAMS_MOULTON_DAE_SOLVER
+    TYPE(BACKWARD_EULER_DAE_SOLVER_TYPE), POINTER :: BACKWARD_EULER_DAE_SOLVER
+    TYPE(BDF_DAE_SOLVER_TYPE), POINTER :: BDF_DAE_SOLVER
+    TYPE(CRANK_NICHOLSON_DAE_SOLVER_TYPE), POINTER :: CRANK_NICHOLSON_DAE_SOLVER
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
     TYPE(EIGENPROBLEM_SOLVER_TYPE), POINTER :: EIGENPROBLEM_SOLVER
-    TYPE(INTEGRATION_SOLVER_TYPE), POINTER :: INTEGRATION_SOLVER
+    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_DAE_SOLVER
+    TYPE(FORWARD_EULER_DAE_SOLVER_TYPE), POINTER :: FORWARD_EULER_DAE_SOLVER
+    TYPE(IMPROVED_EULER_DAE_SOLVER_TYPE), POINTER :: IMPROVED_EULER_DAE_SOLVER
     TYPE(LINEAR_DIRECT_SOLVER_TYPE), POINTER :: DIRECT_SOLVER
     TYPE(LINEAR_ITERATIVE_SOLVER_TYPE), POINTER :: ITERATIVE_SOLVER
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER
@@ -2343,6 +3678,8 @@ CONTAINS
     TYPE(NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER
     TYPE(NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
+    TYPE(RUNGE_KUTTA_DAE_SOLVER_TYPE), POINTER :: RUNGE_KUTTA_DAE_SOLVER
+    TYPE(RUSH_LARSON_DAE_SOLVER_TYPE), POINTER :: RUSH_LARSON_DAE_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("SOLVER_LIBRARY_TYPE_SET",ERR,ERROR,*999)
@@ -2363,7 +3700,7 @@ CONTAINS
                 CASE(SOLVER_CMISS_LIBRARY)
                   DIRECT_SOLVER%SOLVER_LIBRARY=SOLVER_CMISS_LIBRARY
                 CASE(SOLVER_PETSC_LIBRARY)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  DIRECT_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
                 CASE DEFAULT
                   LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
                     & " is invalid."
@@ -2471,20 +3808,157 @@ CONTAINS
           ELSE
             CALL FLAG_ERROR("Solver dynamic solver is not associated.",ERR,ERROR,*999)
           ENDIF
-        CASE(SOLVER_INTEGRATION_TYPE)
-          INTEGRATION_SOLVER=>SOLVER%INTEGRATION_SOLVER
-          IF(ASSOCIATED(INTEGRATION_SOLVER)) THEN
-            SELECT CASE(SOLVER_LIBRARY_TYPE)
-            CASE(SOLVER_CMISS_LIBRARY)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-            CASE(SOLVER_PETSC_LIBRARY)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(SOLVER_DAE_TYPE)
+          DAE_SOLVER=>SOLVER%DAE_SOLVER
+          IF(ASSOCIATED(DAE_SOLVER)) THEN
+            SELECT CASE(DAE_SOLVER%DAE_SOLVE_TYPE)
+            CASE(SOLVER_DAE_EULER)
+              EULER_DAE_SOLVER=>DAE_SOLVER%EULER_SOLVER
+              IF(ASSOCIATED(EULER_DAE_SOLVER)) THEN
+                SELECT CASE(EULER_DAE_SOLVER%EULER_TYPE)
+                CASE(SOLVER_DAE_EULER_FORWARD)
+                  FORWARD_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%FORWARD_EULER_SOLVER
+                  IF(ASSOCIATED(FORWARD_EULER_DAE_SOLVER)) THEN
+                    SELECT CASE(SOLVER_LIBRARY_TYPE)
+                    CASE(SOLVER_CMISS_LIBRARY)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CASE(SOLVER_PETSC_LIBRARY)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CASE DEFAULT
+                      LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+                        & " is invalid."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    END SELECT
+                  ELSE
+                    CALL FLAG_ERROR("The forward Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                CASE(SOLVER_DAE_EULER_BACKWARD)
+                  BACKWARD_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%BACKWARD_EULER_SOLVER
+                  IF(ASSOCIATED(BACKWARD_EULER_DAE_SOLVER)) THEN
+                    SELECT CASE(SOLVER_LIBRARY_TYPE)
+                    CASE(SOLVER_CMISS_LIBRARY)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CASE(SOLVER_PETSC_LIBRARY)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CASE DEFAULT
+                      LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+                        & " is invalid."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    END SELECT
+                  ELSE
+                    CALL FLAG_ERROR("The backward Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                CASE(SOLVER_DAE_EULER_IMPROVED)
+                  IMPROVED_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%IMPROVED_EULER_SOLVER
+                  IF(ASSOCIATED(IMPROVED_EULER_DAE_SOLVER)) THEN
+                    SELECT CASE(SOLVER_LIBRARY_TYPE)
+                    CASE(SOLVER_CMISS_LIBRARY)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CASE(SOLVER_PETSC_LIBRARY)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CASE DEFAULT
+                      LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+                        & " is invalid."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    END SELECT
+                  ELSE
+                    CALL FLAG_ERROR("The improved Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                CASE DEFAULT
+                  LOCAL_ERROR="The Euler differential-algebraic equations solver type of "// &
+                    & TRIM(NUMBER_TO_VSTRING(EULER_DAE_SOLVER%EULER_TYPE,"*",ERR,ERROR))//" is invalid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+              ELSE
+                CALL FLAG_ERROR("The Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+              ENDIF
+            CASE(SOLVER_DAE_CRANK_NICHOLSON)
+              CRANK_NICHOLSON_DAE_SOLVER=>DAE_SOLVER%CRANK_NICHOLSON_SOLVER
+              IF(ASSOCIATED(CRANK_NICHOLSON_DAE_SOLVER)) THEN
+                SELECT CASE(SOLVER_LIBRARY_TYPE)
+                CASE(SOLVER_CMISS_LIBRARY)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE(SOLVER_PETSC_LIBRARY)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE DEFAULT
+                  LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+                    & " is invalid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+              ELSE
+                CALL FLAG_ERROR("The Crank-Nicholson differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+              ENDIF
+            CASE(SOLVER_DAE_RUNGE_KUTTA)
+              RUNGE_KUTTA_DAE_SOLVER=>DAE_SOLVER%RUNGE_KUTTA_SOLVER
+              IF(ASSOCIATED(RUNGE_KUTTA_DAE_SOLVER)) THEN
+                SELECT CASE(SOLVER_LIBRARY_TYPE)
+                CASE(SOLVER_CMISS_LIBRARY)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE(SOLVER_PETSC_LIBRARY)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE DEFAULT
+                  LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+                    & " is invalid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+              ELSE
+                CALL FLAG_ERROR("The Runge-Kutta differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+              ENDIF
+            CASE(SOLVER_DAE_ADAMS_MOULTON)
+              ADAMS_MOULTON_DAE_SOLVER=>DAE_SOLVER%ADAMS_MOULTON_SOLVER
+              IF(ASSOCIATED(ADAMS_MOULTON_DAE_SOLVER)) THEN
+                SELECT CASE(SOLVER_LIBRARY_TYPE)
+                CASE(SOLVER_CMISS_LIBRARY)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE(SOLVER_PETSC_LIBRARY)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE DEFAULT
+                  LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+                    & " is invalid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+              ELSE
+                CALL FLAG_ERROR("The Adams-Moulton differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+              ENDIF
+            CASE(SOLVER_DAE_BDF)
+              BDF_DAE_SOLVER=>DAE_SOLVER%BDF_SOLVER
+              IF(ASSOCIATED(BDF_DAE_SOLVER)) THEN
+                SELECT CASE(SOLVER_LIBRARY_TYPE)
+                CASE(SOLVER_CMISS_LIBRARY)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE(SOLVER_PETSC_LIBRARY)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE DEFAULT
+                  LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+                    & " is invalid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+              ELSE
+                CALL FLAG_ERROR("The BDF differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+              ENDIF
+            CASE(SOLVER_DAE_RUSH_LARSON)
+              RUSH_LARSON_DAE_SOLVER=>DAE_SOLVER%RUSH_LARSON_SOLVER
+              IF(ASSOCIATED(RUSH_LARSON_DAE_SOLVER)) THEN
+                SELECT CASE(SOLVER_LIBRARY_TYPE)
+                CASE(SOLVER_CMISS_LIBRARY)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE(SOLVER_PETSC_LIBRARY)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE DEFAULT
+                  LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+                    & " is invalid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+              ELSE
+                CALL FLAG_ERROR("The Rush-Larson differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+              ENDIF
             CASE DEFAULT
-              LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid."
+              LOCAL_ERROR="The differential-algebraic equations solver type of "// &
+                & TRIM(NUMBER_TO_VSTRING(DAE_SOLVER%DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE
-            CALL FLAG_ERROR("Solver integration solver is not associated.",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Solver differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
           ENDIF
         CASE(SOLVER_EIGENPROBLEM_TYPE)
           EIGENPROBLEM_SOLVER=>SOLVER%EIGENPROBLEM_SOLVER
@@ -2617,6 +4091,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
@@ -2667,7 +4142,81 @@ CONTAINS
               ENDIF
             ENDIF
           CASE(SOLVER_PETSC_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
+              SOLVER_EQUATIONS=>SOLVER%LINKING_SOLVER%SOLVER_EQUATIONS
+              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
+                IF(.NOT.ASSOCIATED(SOLVER_MATRICES)) &
+                  & CALL FLAG_ERROR("Linked solver equation solver matrices is not associated.",ERR,ERROR,*999)
+              ELSE
+                CALL FLAG_ERROR("Linked solver solver equations is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                !Create the solver matrices and vectors
+                NULLIFY(SOLVER_MATRICES)
+                CALL SOLVER_MATRICES_CREATE_START(SOLVER_EQUATIONS,SOLVER_MATRICES,ERR,ERROR,*999)
+                CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_PETSC_LIBRARY,ERR,ERROR,*999)
+                SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
+                CASE(SOLVER_SPARSE_MATRICES)
+                  CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
+                    & ERR,ERROR,*999)
+                CASE(SOLVER_FULL_MATRICES)
+                  CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE/), &
+                    & ERR,ERROR,*999)
+                CASE DEFAULT
+                  LOCAL_ERROR="The specified solver equations sparsity type of "// &
+                    & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))// &
+                    & " is invalid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+                CALL SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
+              ELSE
+                CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+              ENDIF
+              CALL PETSC_KSPCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
+
+              !Set any further KSP options from the command line options
+              CALL PETSC_KSPSETFROMOPTIONS(LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
+              !Set the solver matrix to be the KSP matrix
+              IF(SOLVER_MATRICES%NUMBER_OF_MATRICES==1) THEN
+                SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(1)%PTR%MATRIX
+                IF(ASSOCIATED(SOLVER_MATRIX)) THEN
+                  IF(ASSOCIATED(SOLVER_MATRIX%PETSC)) THEN
+                    CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
+                      & PETSC_DIFFERENT_NONZERO_PATTERN,ERR,ERROR,*999)
+                   !Set the matrix type
+                   SELECT CASE(LINEAR_DIRECT_SOLVER%DIRECT_SOLVER_TYPE)
+                   CASE(SOLVER_DIRECT_MUMPS)
+                     CALL PETSC_MATSETTYPE(SOLVER_MATRIX%PETSC%MATRIX,PETSC_AIJMUMPS,ERR,ERROR,*999)
+                   CASE(SOLVER_DIRECT_PASTIX)
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CASE(SOLVER_DIRECT_PLAPACK)
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CASE(SOLVER_DIRECT_SPOOLES)
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CASE(SOLVER_DIRECT_SUPERLU)
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CASE DEFAULT
+                     LOCAL_ERROR="The direct solver type of "// &
+                       & TRIM(NUMBER_TO_VSTRING(LINEAR_DIRECT_SOLVER%DIRECT_SOLVER_TYPE,"*",ERR,ERROR))//" is invalid."
+                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   END SELECT
+                  ELSE
+                    CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Solver matrices distributed matrix is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                LOCAL_ERROR="The given number of solver matrices of "// &
+                  & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))// &
+                  & " is invalid. There should only be one solver matrix for a linear direct solver."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+
+            ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The solver library type of "// &
               & TRIM(NUMBER_TO_VSTRING(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
@@ -2700,6 +4249,7 @@ CONTAINS
 
     !Argument variables
     TYPE(LINEAR_DIRECT_SOLVER_TYPE), POINTER :: LINEAR_DIRECT_SOLVER !<A pointer to the lienar direct solver to finalise
+    TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -2709,7 +4259,17 @@ CONTAINS
     IF(ASSOCIATED(LINEAR_DIRECT_SOLVER)) THEN
       DEALLOCATE(LINEAR_DIRECT_SOLVER)
     ENDIF
-    
+
+    IF(ASSOCIATED(LINEAR_DIRECT_SOLVER)) THEN
+      LINEAR_SOLVER=>LINEAR_DIRECT_SOLVER%LINEAR_SOLVER
+      IF(ASSOCIATED(LINEAR_SOLVER)) THEN
+        IF(.NOT.LINEAR_SOLVER%LINKED_NEWTON_PETSC_SOLVER) THEN
+          CALL PETSC_KSPFINALISE(LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+      DEALLOCATE(LINEAR_DIRECT_SOLVER)
+    ENDIF
+
     CALL EXITS("SOLVER_LINEAR_DIRECT_FINALISE")
     RETURN
 999 CALL ERRORS("SOLVER_LINEAR_DIRECT_FINALISE",ERR,ERROR)    
@@ -2742,8 +4302,9 @@ CONTAINS
         ALLOCATE(LINEAR_SOLVER%DIRECT_SOLVER,STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate linear solver direct solver.",ERR,ERROR,*999)
         LINEAR_SOLVER%DIRECT_SOLVER%LINEAR_SOLVER=>LINEAR_SOLVER
-        LINEAR_SOLVER%DIRECT_SOLVER%SOLVER_LIBRARY=SOLVER_CMISS_LIBRARY
+        LINEAR_SOLVER%DIRECT_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
         LINEAR_SOLVER%DIRECT_SOLVER%DIRECT_SOLVER_TYPE=SOLVER_DIRECT_LU
+        CALL PETSC_KSPINITIALISE(LINEAR_SOLVER%DIRECT_SOLVER%KSP,ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Linear solver is not associated.",ERR,ERROR,*998)
@@ -2832,7 +4393,17 @@ CONTAINS
                         CASE(SOLVER_CMISS_LIBRARY)
                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                         CASE(SOLVER_PETSC_LIBRARY)
-                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          IF(ASSOCIATED(RHS_VECTOR%PETSC)) THEN
+                            IF(ASSOCIATED(SOLVER_VECTOR%PETSC)) THEN
+                              !Solver the linear system
+                              CALL PETSC_KSPSOLVE(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR,SOLVER_VECTOR%PETSC%VECTOR, &
+                                & ERR,ERROR,*999)
+                            ELSE
+                              CALL FLAG_ERROR("Solver vector PETSc vector is not associated.",ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            CALL FLAG_ERROR("RHS vector petsc PETSc is not associated.",ERR,ERROR,*999)
+                          ENDIF
                         CASE DEFAULT
                           LOCAL_ERROR="The solver library type of "// &
                             & TRIM(NUMBER_TO_VSTRING(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
@@ -2897,7 +4468,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has alredy been finished.",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
           IF(ASSOCIATED(SOLVER%LINEAR_SOLVER)) THEN
@@ -2919,10 +4490,25 @@ CONTAINS
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     END SELECT                   
                   CASE(SOLVER_PETSC_LIBRARY)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    SELECT CASE(DIRECT_SOLVER_TYPE)
+                    CASE(SOLVER_DIRECT_MUMPS)
+                      SOLVER%LINEAR_SOLVER%DIRECT_SOLVER%DIRECT_SOLVER_TYPE=SOLVER_DIRECT_MUMPS
+                    CASE(SOLVER_DIRECT_PASTIX)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CASE(SOLVER_DIRECT_PLAPACK)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CASE(SOLVER_DIRECT_SPOOLES)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CASE(SOLVER_DIRECT_SUPERLU)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CASE DEFAULT
+                      LOCAL_ERROR="The direct solver type of "//TRIM(NUMBER_TO_VSTRING(DIRECT_SOLVER_TYPE,"*",ERR,ERROR))// &
+                        & " is invalid."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    END SELECT
                   CASE DEFAULT
                     LOCAL_ERROR="The solver library type of "// &
-                      & TRIM(NUMBER_TO_VSTRING(SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))// &
+                      & TRIM(NUMBER_TO_VSTRING(SOLVER%LINEAR_SOLVER%DIRECT_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))// &
                       & " is invalid."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
@@ -3203,6 +4789,7 @@ CONTAINS
               CALL PETSC_KSPSETTYPE(LINEAR_ITERATIVE_SOLVER%KSP,PETSC_KSPBICG,ERR,ERROR,*999)
             CASE(SOLVER_ITERATIVE_GMRES)
               CALL PETSC_KSPSETTYPE(LINEAR_ITERATIVE_SOLVER%KSP,PETSC_KSPGMRES,ERR,ERROR,*999)
+              CALL PETSC_KSPGMRESSETRESTART(LINEAR_ITERATIVE_SOLVER%KSP,LINEAR_ITERATIVE_SOLVER%GMRES_RESTART,ERR,ERROR,*999)
             CASE(SOLVER_ITERATIVE_BiCGSTAB)
               CALL PETSC_KSPSETTYPE(LINEAR_ITERATIVE_SOLVER%KSP,PETSC_KSPBCGS,ERR,ERROR,*999)
             CASE(SOLVER_ITERATIVE_CONJGRAD_SQUARED)
@@ -3269,10 +4856,10 @@ CONTAINS
           CALL FLAG_ERROR("Linear solver solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Linear itreative solver linear solver is not associated.",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Linear iterative solver linear solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Linear itreative solver is not associated.",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Linear iterative solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     CALL EXITS("SOLVER_LINEAR_ITERATIVE_CREATE_FINISH")
@@ -3380,6 +4967,71 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets/changes the GMRES restart value for a GMRES iterative linear solver
+  SUBROUTINE SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET(SOLVER,GMRES_RESTART,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the GMRES restart value
+    INTEGER(INTG), INTENT(IN) :: GMRES_RESTART !<The GMRES restart value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER
+    TYPE(LINEAR_ITERATIVE_SOLVER_TYPE), POINTER :: ITERATIVE_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVER_FINISHED) THEN
+        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+      ELSE
+        IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
+          LINEAR_SOLVER=>SOLVER%LINEAR_SOLVER
+          IF(ASSOCIATED(LINEAR_SOLVER)) THEN
+            IF(LINEAR_SOLVER%LINEAR_SOLVE_TYPE==SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE) THEN
+              ITERATIVE_SOLVER=>LINEAR_SOLVER%ITERATIVE_SOLVER
+              IF(ASSOCIATED(ITERATIVE_SOLVER)) THEN
+                IF(ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE==SOLVER_ITERATIVE_GMRES) THEN
+                  IF(GMRES_RESTART>0) THEN
+                    ITERATIVE_SOLVER%GMRES_RESTART=GMRES_RESTART
+                  ELSE
+                    LOCAL_ERROR="The specified GMRES restart value of "//TRIM(NUMBER_TO_VSTRING(GMRES_RESTART,"*",ERR,ERROR))// &
+                      & " is invalid. The GMRES restart value must be > 0."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("The linear iterative solver is not a GMRES linear iterative solver.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("The solver linear solver iterative solver is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("The solver is not a linear iterative solver.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The solver linear solver is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The solver is not a linear solver.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET",ERR,ERROR)    
+    CALL EXITS("SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET
+        
+  !
+  !================================================================================================================================
+  !
+
   !>Initialise an iterative linear solver for a linear solver
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_INITIALISE(LINEAR_SOLVER,ERR,ERROR,*)
 
@@ -3404,10 +5056,12 @@ CONTAINS
         LINEAR_SOLVER%ITERATIVE_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
         LINEAR_SOLVER%ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE=SOLVER_ITERATIVE_GMRES
         LINEAR_SOLVER%ITERATIVE_SOLVER%ITERATIVE_PRECONDITIONER_TYPE=SOLVER_ITERATIVE_JACOBI_PRECONDITIONER
+        LINEAR_SOLVER%ITERATIVE_SOLVER%SOLUTION_INITIALISE_TYPE=SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD
         LINEAR_SOLVER%ITERATIVE_SOLVER%MAXIMUM_NUMBER_OF_ITERATIONS=100000
         LINEAR_SOLVER%ITERATIVE_SOLVER%RELATIVE_TOLERANCE=1.0E-05_DP
         LINEAR_SOLVER%ITERATIVE_SOLVER%ABSOLUTE_TOLERANCE=1.0E-10_DP
         LINEAR_SOLVER%ITERATIVE_SOLVER%DIVERGENCE_TOLERANCE=1.0E5_DP
+        LINEAR_SOLVER%ITERATIVE_SOLVER%GMRES_RESTART=30
         CALL PETSC_PCINITIALISE(LINEAR_SOLVER%ITERATIVE_SOLVER%PC,ERR,ERROR,*999)
         CALL PETSC_KSPINITIALISE(LINEAR_SOLVER%ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
       ENDIF
@@ -3628,6 +5282,65 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets/changes the solution initialise type for an iterative linear solver
+  SUBROUTINE SOLVER_LINEAR_ITERATIVE_SOLUTION_INIT_TYPE_SET(SOLVER,SOLUTION_INITIALISE_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set 
+    INTEGER(INTG), INTENT(IN) :: SOLUTION_INITIALISE_TYPE !<The solution initialise type to set \see SOLVER_ROUTINES_SolutionInitialiseTypes,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("SOLVER_LINEAR_ITERATIVE_SOLUTION_INIT_TYPE_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVER_FINISHED) THEN
+        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+      ELSE
+        IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
+          IF(ASSOCIATED(SOLVER%LINEAR_SOLVER)) THEN
+            IF(SOLVER%LINEAR_SOLVER%LINEAR_SOLVE_TYPE==SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE) THEN
+              IF(ASSOCIATED(SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER)) THEN
+                SELECT CASE(SOLUTION_INITIALISE_TYPE)
+                CASE(SOLVER_SOLUTION_INITIALISE_ZERO)
+                CASE(SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD)
+                CASE(SOLVER_SOLUTION_INITIALISE_NO_CHANGE)
+                CASE DEFAULT
+                  LOCAL_ERROR="The specified solution initialise type of "// &
+                    & TRIM(NUMBER_TO_VSTRING(SOLUTION_INITIALISE_TYPE,"*",ERR,ERROR))//" is invalid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+              ELSE
+                CALL FLAG_ERROR("The solver linear solver iterative solver is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("The solver is not a linear iterative solver.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The solver linear solver is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The solver is not a linear solver.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_LINEAR_ITERATIVE_SOLUTION_INIT_TYPE_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_LINEAR_ITERATIVE_SOLUTION_INIT_TYPE_SET",ERR,ERROR)    
+    CALL EXITS("SOLVER_LINEAR_ITERATIVE_SOLUTION_INIT_TYPE_SET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_LINEAR_ITERATIVE_SOLUTION_INIT_TYPE_SET
+        
+  !
+  !================================================================================================================================
+  !
+
   !>Solves a linear iterative linear solver
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_SOLVE(LINEAR_ITERATIVE_SOLVER,ERR,ERROR,*)
 
@@ -3700,6 +5413,25 @@ CONTAINS
                         CASE(SOLVER_PETSC_LIBRARY)
                           IF(ASSOCIATED(RHS_VECTOR%PETSC)) THEN
                             IF(ASSOCIATED(SOLVER_VECTOR%PETSC)) THEN
+                              SELECT CASE(LINEAR_ITERATIVE_SOLVER%SOLUTION_INITIALISE_TYPE)
+                              CASE(SOLVER_SOLUTION_INITIALISE_ZERO)
+                                !Zero the solution vector
+                                CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(SOLVER_VECTOR,0.0_DP,ERR,ERROR,*999)
+                                !Tell PETSc that the solution vector is zero
+                                CALL PETSC_KSPSETINITIALGUESSNONZERO(LINEAR_ITERATIVE_SOLVER%KSP,.FALSE.,ERR,ERROR,*999)
+                              CASE(SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD)
+                                !Make sure the solver vector contains the current dependent field values
+                                CALL SOLVER_SOLUTION_UPDATE(SOLVER,ERR,ERROR,*999)
+                                !Tell PETSc that the solution vector is nonzero
+                                CALL PETSC_KSPSETINITIALGUESSNONZERO(LINEAR_ITERATIVE_SOLVER%KSP,.TRUE.,ERR,ERROR,*999)
+                              CASE(SOLVER_SOLUTION_INITIALISE_NO_CHANGE)
+                                !Do nothing
+                              CASE DEFAULT
+                                LOCAL_ERROR="The linear iterative solver solution initialise type of "// &
+                                  & TRIM(NUMBER_TO_VSTRING(LINEAR_ITERATIVE_SOLVER%SOLUTION_INITIALISE_TYPE,"*",ERR,ERROR))// &
+                                  & " is invalid."
+                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              END SELECT
                               !Solver the linear system
                               CALL PETSC_KSPSOLVE(LINEAR_ITERATIVE_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR,SOLVER_VECTOR%PETSC%VECTOR, &
                                 & ERR,ERROR,*999)
@@ -4918,6 +6650,7 @@ CONTAINS
                                 RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
                                 IF(ASSOCIATED(RHS_VECTOR)) THEN
                                   LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
+                                  NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
                                   IF(ASSOCIATED(LINEAR_MAPPING)) THEN
                                     LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
                                     IF(ASSOCIATED(LINEAR_MATRICES)) THEN                                      
@@ -4987,7 +6720,7 @@ CONTAINS
                                               & ERR,ERROR,*999)
                                           ENDDO !solver_row_idx                          
                                           !Set Dirichlet boundary conditions
-                                          IF(ASSOCIATED(LINEAR_MAPPING)) THEN
+                                          IF(ASSOCIATED(LINEAR_MAPPING).AND..NOT.ASSOCIATED(NONLINEAR_MAPPING)) THEN
                                             !Loop over the dependent variables associated with this equations set row
                                             DO variable_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
                                               variable_type=LINEAR_MAPPING%LINEAR_MATRIX_VARIABLE_TYPES(variable_idx)
@@ -5451,6 +7184,7 @@ CONTAINS
           ALLOCATE(NONLINEAR_SOLVER%NEWTON_SOLVER,STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nonlinear solver Newton solver.",ERR,ERROR,*999)
           NONLINEAR_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER=>NONLINEAR_SOLVER
+          NONLINEAR_SOLVER%NEWTON_SOLVER%SOLUTION_INITIALISE_TYPE=SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD
           NONLINEAR_SOLVER%NEWTON_SOLVER%TOTAL_NUMBER_OF_FUNCTION_EVALUATIONS=0
           NONLINEAR_SOLVER%NEWTON_SOLVER%TOTAL_NUMBER_OF_JACOBIAN_EVALUATIONS=0
           NONLINEAR_SOLVER%NEWTON_SOLVER%MAXIMUM_NUMBER_OF_ITERATIONS=50
@@ -6160,8 +7894,21 @@ CONTAINS
                       CASE(SOLVER_CMISS_LIBRARY)
                         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                       CASE(SOLVER_PETSC_LIBRARY)
-                        !Make sure the solver vector contains the current dependent field values
-                        CALL SOLVER_SOLUTION_UPDATE(SOLVER,ERR,ERROR,*999)
+                        SELECT CASE(NEWTON_SOLVER%SOLUTION_INITIALISE_TYPE)
+                        CASE(SOLVER_SOLUTION_INITIALISE_ZERO)
+                          !Zero the solution vector
+                          CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(SOLVER_VECTOR,0.0_DP,ERR,ERROR,*999)
+                        CASE(SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD)
+                          !Make sure the solver vector contains the current dependent field values
+                          CALL SOLVER_SOLUTION_UPDATE(SOLVER,ERR,ERROR,*999)
+                        CASE(SOLVER_SOLUTION_INITIALISE_NO_CHANGE)
+                          !Do nothing
+                        CASE DEFAULT
+                          LOCAL_ERROR="The Newton solver solution initialise type of "// &
+                            & TRIM(NUMBER_TO_VSTRING(NEWTON_SOLVER%SOLUTION_INITIALISE_TYPE,"*",ERR,ERROR))// &
+                            & " is invalid."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        END SELECT
                         !Solve the nonlinear equations
                         CALL PETSC_SNESSOLVE(LINESEARCH_SOLVER%SNES,RHS_VECTOR%PETSC%VECTOR,SOLVER_VECTOR%PETSC%VECTOR, &
                           & ERR,ERROR,*999)
@@ -6589,6 +8336,72 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE SOLVER_NEWTON_RELATIVE_TOLERANCE_SET
+        
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the solution initialisation for a nonlinear Newton solver
+  SUBROUTINE SOLVER_NEWTON_SOLUTION_INIT_TYPE_SET(SOLVER,SOLUTION_INITIALISE_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the solution tolerance for
+    INTEGER(INTG), INTENT(IN) :: SOLUTION_INITIALISE_TYPE !<The solution initialise type to set \see SOLVER_ROUTINES_SolutionInitialiseTypes,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER
+    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("SOLVER_NEWTON_SOLUTION_INIT_TYPE_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVER_FINISHED) THEN
+        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+      ELSE
+        IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
+          NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
+          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
+            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_NEWTON) THEN
+              NEWTON_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER
+              IF(ASSOCIATED(NEWTON_SOLVER)) THEN
+                SELECT CASE(SOLUTION_INITIALISE_TYPE)
+                CASE(SOLVER_SOLUTION_INITIALISE_ZERO)
+                  NEWTON_SOLVER%SOLUTION_INITIALISE_TYPE=SOLVER_SOLUTION_INITIALISE_ZERO
+                CASE(SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD)
+                  NEWTON_SOLVER%SOLUTION_INITIALISE_TYPE=SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD
+                CASE(SOLVER_SOLUTION_INITIALISE_NO_CHANGE)
+                  NEWTON_SOLVER%SOLUTION_INITIALISE_TYPE=SOLVER_SOLUTION_INITIALISE_NO_CHANGE
+                CASE DEFAULT
+                  LOCAL_ERROR="The specified solution initialise type  of "// &
+                    & TRIM(NUMBER_TO_VSTRING(SOLUTION_INITIALISE_TYPE,"*",ERR,ERROR))//" is invalid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+              ELSE
+                CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
+            ENDIF            
+          ELSE
+            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_NEWTON_SOLUTION_INIT_TYPE_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_NEWTON_SOLUTION_INIT_TYPE_SET",ERR,ERROR)    
+    CALL EXITS("SOLVER_NEWTON_SOLUTION_INIT_TYPE_SET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_NEWTON_SOLUTION_INIT_TYPE_SET
         
   !
   !================================================================================================================================
@@ -7467,8 +9280,8 @@ CONTAINS
               CASE(SOLVER_NONLINEAR_SQP)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
-                LOCAL_ERROR="The nonlinear solver type of "//TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))// &
-                  & " is invalid."
+                LOCAL_ERROR="The specified nonlinear solver type of "// &
+                  & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
               !Finalise the old solver type
@@ -7642,6 +9455,8 @@ CONTAINS
                     ELSE
                       CALL FLAG_ERROR("Domain mapping is not associated.",ERR,ERROR,*999)
                     ENDIF
+                    CALL DISTRIBUTED_VECTOR_UPDATE_START(SOLVER_VECTOR,ERR,ERROR,*999)
+                    CALL DISTRIBUTED_VECTOR_UPDATE_FINISH(SOLVER_VECTOR,ERR,ERROR,*999)
                   ELSE
                     CALL FLAG_ERROR("Solver vector is not associated.",ERR,ERROR,*999)
                   ENDIF
@@ -7739,17 +9554,17 @@ CONTAINS
         !Solve the system depending on the solver type
         SELECT CASE(SOLVER%SOLVE_TYPE)
         CASE(SOLVER_LINEAR_TYPE)
-          !Solve linear system
+          !Solve linear equations
           CALL SOLVER_LINEAR_SOLVE(SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
         CASE(SOLVER_NONLINEAR_TYPE)
           !Solve nonlinear equations
           CALL SOLVER_NONLINEAR_SOLVE(SOLVER%NONLINEAR_SOLVER,ERR,ERROR,*999)
         CASE(SOLVER_DYNAMIC_TYPE)
-          !Solve dynamic system
+          !Solve dynamic equations
           CALL SOLVER_DYNAMIC_SOLVE(SOLVER%DYNAMIC_SOLVER,ERR,ERROR,*999)
-        CASE(SOLVER_INTEGRATION_TYPE)
-          !Solve ODE integration
-          CALL SOLVER_INTEGRATION_SOLVE(SOLVER%INTEGRATION_SOLVER,ERR,ERROR,*999)
+        CASE(SOLVER_DAE_TYPE)
+          !Solve differential-algebraic equations
+          CALL SOLVER_DAE_SOLVE(SOLVER%DAE_SOLVER,ERR,ERROR,*999)
         CASE(SOLVER_EIGENPROBLEM_TYPE)
           !Solve eigenproblem
           CALL SOLVER_EIGENPROBLEM_SOLVE(SOLVER%EIGENPROBLEM_SOLVER,ERR,ERROR,*999)
@@ -7819,8 +9634,8 @@ CONTAINS
               CALL SOLVER_NONLINEAR_INITIALISE(SOLVER,ERR,ERROR,*999)
             CASE(SOLVER_DYNAMIC_TYPE)
               CALL SOLVER_DYNAMIC_INITIALISE(SOLVER,ERR,ERROR,*999)
-            CASE(SOLVER_INTEGRATION_TYPE)
-              CALL SOLVER_INTEGRATION_INITIALISE(SOLVER,ERR,ERROR,*999)
+            CASE(SOLVER_DAE_TYPE)
+              CALL SOLVER_DAE_INITIALISE(SOLVER,ERR,ERROR,*999)
             CASE(SOLVER_EIGENPROBLEM_TYPE)
               CALL SOLVER_EIGENPROBLEM_INITIALISE(SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
@@ -7835,8 +9650,8 @@ CONTAINS
               CALL SOLVER_NONLINEAR_FINALISE(SOLVER%NONLINEAR_SOLVER,ERR,ERROR,*999)
             CASE(SOLVER_DYNAMIC_TYPE)
               CALL SOLVER_DYNAMIC_FINALISE(SOLVER%DYNAMIC_SOLVER,ERR,ERROR,*999)
-            CASE(SOLVER_INTEGRATION_TYPE)
-              CALL SOLVER_INTEGRATION_FINALISE(SOLVER%INTEGRATION_SOLVER,ERR,ERROR,*999)
+            CASE(SOLVER_DAE_TYPE)
+              CALL SOLVER_DAE_FINALISE(SOLVER%DAE_SOLVER,ERR,ERROR,*999)
             CASE(SOLVER_EIGENPROBLEM_TYPE)
               CALL SOLVER_EIGENPROBLEM_FINALISE(SOLVER%EIGENPROBLEM_SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
@@ -7861,8 +9676,8 @@ CONTAINS
       CALL SOLVER_NONLINEAR_FINALISE(SOLVER%NONLINEAR_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
     CASE(SOLVER_DYNAMIC_TYPE)
       CALL SOLVER_DYNAMIC_FINALISE(SOLVER%DYNAMIC_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
-    CASE(SOLVER_INTEGRATION_TYPE)
-      CALL SOLVER_INTEGRATION_FINALISE(SOLVER%INTEGRATION_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
+    CASE(SOLVER_DAE_TYPE)
+      CALL SOLVER_DAE_FINALISE(SOLVER%DAE_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
     CASE(SOLVER_EIGENPROBLEM_TYPE)
       CALL SOLVER_EIGENPROBLEM_FINALISE(SOLVER%EIGENPROBLEM_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
     END SELECT
@@ -8645,10 +10460,11 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE SOLVERS_SOLVER_GET
-  
+     
   !
   !================================================================================================================================
   !
+
         
 END MODULE SOLVER_ROUTINES
 
@@ -8657,7 +10473,7 @@ END MODULE SOLVER_ROUTINES
 !
 
 !>Called from the PETSc TS solvers to monitor the dynamic solver
-SUBROUTINE SOLVER_DYNAMIC_MONITOR_PETSC(TS,STEPS,TIME,X,CTX,ERR)
+SUBROUTINE SOLVER_TIME_STEPPING_MONITOR_PETSC(TS,STEPS,TIME,X,CTX,ERR)
 
   USE BASE_ROUTINES
   USE CMISS_PETSC_TYPES
@@ -8677,18 +10493,18 @@ SUBROUTINE SOLVER_DYNAMIC_MONITOR_PETSC(TS,STEPS,TIME,X,CTX,ERR)
   TYPE(SOLVER_TYPE), POINTER :: CTX !<The passed through context
   INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
   !Local Variables
-  TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
+  TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER
   TYPE(VARYING_STRING) :: ERROR,LOCAL_ERROR
 
   IF(ASSOCIATED(CTX)) THEN
-    IF(CTX%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
-      DYNAMIC_SOLVER=>CTX%DYNAMIC_SOLVER
+    IF(CTX%SOLVE_TYPE==SOLVER_DAE_TYPE) THEN
+      DAE_SOLVER=>CTX%DAE_SOLVER
 
-      CALL SOLVER_DYNAMIC_MONITOR(DYNAMIC_SOLVER,STEPS,TIME,ERR,ERROR,*999)
+      CALL SOLVER_TIME_STEPPING_MONITOR(DAE_SOLVER,STEPS,TIME,ERR,ERROR,*999)
 
     ELSE
       LOCAL_ERROR="Invalid solve type. The solve type of "//TRIM(NUMBER_TO_VSTRING(CTX%SOLVE_TYPE,"*",ERR,ERROR))// &
-        & " does not correspond to a dynamic solver."
+        & " does not correspond to a differntial-algebraic equations solver."
       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
     ENDIF      
   ELSE
@@ -8697,9 +10513,9 @@ SUBROUTINE SOLVER_DYNAMIC_MONITOR_PETSC(TS,STEPS,TIME,X,CTX,ERR)
   
   RETURN
 999 CALL WRITE_ERROR(ERR,ERROR,*998)
-998 CALL FLAG_WARNING("Error monitoring dynamic solve.",ERR,ERROR,*997)
+998 CALL FLAG_WARNING("Error monitoring differential-algebraic equations solve.",ERR,ERROR,*997)
 997 RETURN    
-END SUBROUTINE SOLVER_DYNAMIC_MONITOR_PETSC
+END SUBROUTINE SOLVER_TIME_STEPPING_MONITOR_PETSC
 
 !
 !================================================================================================================================

@@ -1,0 +1,144 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% List of symbols package
+%
+% by Chris Bradley.
+%
+% It is only implemented for books at the moment.
+%
+% Generates a list of symbols in the file filename.sym. The list of symbols 
+% is generated with a \listofsymbols command. Symbols are defined with the
+%
+% \symbol{symbol format}{meaning} or
+%
+% \symbolat{symbol format}{meaning} 
+% 
+% commands. The commands only differ in that the \symbolat command will
+% add `\symbolatstring page#'' on the end of the symbols meaning. Where
+% the \symbolatstring is defaults to be ``Defined at page'', and page# is
+% the page at which the symbol was defined.
+%
+% Another command \symbolskip will leave a gap in the middle of the list of 
+% symbols. The size of the gap is controlled by the \losskip length.
+%
+% Defineable parameters: (changed with \renewcommand)
+%
+% \symboltocformt - the format of the toc entry
+% \listofsymbolsname the name of the list of symbols
+% \symbolatstring - the string for the \symbolat command.
+%
+% All basic list parameters are also available. The names are the same as the
+% list parameters names with a los on the front e.g. \lositemsep for \itemsep.
+% They are changed with \setlength
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{lofsymbols}[1996/10/06]
+
+%
+% Define changeable parameters
+%
+
+\def\symboltocformat{\hbox to\@tempdima {\hfil}}
+\def\listofsymbolsname{List of Symbols}
+\def\symbolatstring{Defined at page}
+
+\newlength{\lostopsep}
+\newlength{\lospartopsep}
+\newlength{\losparskip}
+\newlength{\lositemindent}
+\newlength{\loslabelwidth}
+\newlength{\loslabelsep}
+\newlength{\losleftmargin}
+\newlength{\losrightmargin}
+\newlength{\losparsep}
+\newlength{\lositemsep}
+\newlength{\loslistparindent}
+
+\newlength{\losskip}
+
+%
+% Set default lengths
+%
+
+\setlength{\lostopsep}{0pt}
+\setlength{\lospartopsep}{0pt}
+\setlength{\losparskip}{1cm}
+\setlength{\lositemindent}{0pt}
+\setlength{\loslabelwidth}{2.5cm}
+\setlength{\loslabelsep}{0.5cm}
+\setlength{\losleftmargin}{3cm}
+\setlength{\losrightmargin}{0pt}
+\setlength{\losparsep}{\parsep}
+\setlength{\lositemsep}{5pt}
+\setlength{\loslistparindent}{\parindent}
+
+\setlength{\losskip}{1cm}
+
+%
+% Main code
+%
+
+
+\def\symbolitem#1#2{\item[#1] #2}
+\def\symbolitemat#1#2#3{\item[#1] #2. \symbolatstring\ #3}
+\def\symbolitemskip{\vspace{\losskip}}
+
+\def\symbol#1#2{ %
+  \protected@write\@auxout %
+  {\let\label\@gobble \let\index\@gobble \let\glossary\@gobble} %
+  {\string\@writefile{sym} %
+    {\protect\symbolitem{#1}{#2}}} %
+  }
+
+\def\symbolat#1#2{ %
+  \protected@write\@auxout %
+  {\let\label\@gobble \let\index\@gobble \let\glossary\@gobble} %
+  {\string\@writefile{sym} %
+    {\protect\symbolitemat{#1}{#2}{\thepage}}} %
+  }
+
+\def\symbolskip{ %
+  \protected@write\@auxout %
+  {\let\label\@gobble \let\index\@gobble \let\glossary\@gobble} %
+  {\string\@writefile{sym} %
+    {\protect\symbolitemskip}} %
+  }
+
+\def\listofsymbols{ %
+  \chapter*{\listofsymbolsname}%
+  \addcontentsline{toc}{chapter}{\symboltocformat\listofsymbolsname} %
+  \markboth{\listofsymbolsname}{\listofsymbolsname} %
+  \@startsym %
+  }
+
+\newcommand{\symbollabel}[1]{#1}
+
+\def\@startsym{ %
+  \begingroup %
+  \makeatletter %
+  \list{}{ %
+    \renewcommand{\makelabel}{\symbollabel} %
+    \setlength{\topsep}{\lostopsep} %
+    \setlength{\partopsep}{\lospartopsep} %
+    \setlength{\parskip}{\losparskip} %
+    \setlength{\itemindent}{\lositemindent} %
+    \setlength{\labelwidth}{\loslabelwidth} %
+    \setlength{\labelsep}{\loslabelsep} %
+    \setlength{\leftmargin}{\losleftmargin} %
+    \setlength{\rightmargin}{\losrightmargin} %
+    \setlength{\parsep}{\losparsep} %
+    \setlength{\itemsep}{\lositemsep} %
+    \setlength{\parindent}{\loslistparindent} %
+    }
+  \@input{\jobname.sym} \if@filesw
+  \expandafter\newwrite\csname tf@sym\endcsname 
+  \immediate\openout %
+  \csname tf@sym\endcsname \jobname.sym\relax %
+  \fi %
+  \endlist %
+  \global\@nobreakfalse %
+  \endgroup %
+  }
+

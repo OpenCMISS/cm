@@ -125,6 +125,9 @@ MODULE CMISS_PETSC
   MatColoringType, PARAMETER :: PETSC_MATCOLORING_SL = MATCOLORING_SL
   MatColoringType, PARAMETER :: PETSC_MATCOLORING_LF = MATCOLORING_LF
   MatColoringType, PARAMETER :: PETSC_MATCOLORING_ID = MATCOLORING_ID
+
+  !Mat types
+  MatType, PARAMETER :: PETSC_AIJMUMPS = MATAIJMUMPS
   
   !PC types
   PCType, PARAMETER ::  PETSC_PCNONE = PCNONE
@@ -282,10 +285,22 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE KSPGetResidualNorm
     
+    SUBROUTINE KSPGMRESSetRestart(ksp,restart,ierr)
+      KSP ksp
+      PetscInt restart
+      PetscInt ierr
+    END SUBROUTINE KSPGMRESSetRestart
+    
     SUBROUTINE KSPSetFromOptions(ksp,ierr)
       KSP ksp
       PetscInt ierr
     END SUBROUTINE KSPSetFromOptions
+    
+    SUBROUTINE KSPSetInitialGuessNonzero(ksp,flg,ierr)
+      KSP ksp
+      PetscTruth flg
+      PetscInt ierr
+    END SUBROUTINE KSPSetInitialGuessNonzero
     
     SUBROUTINE KSPSetOperators(ksp,Amat,Pmat,flag,ierr)
       KSP ksp
@@ -384,6 +399,12 @@ MODULE CMISS_PETSC
       Mat A
       PetscInt ierr
     END SUBROUTINE MatCreateSeqDense
+
+    SUBROUTINE MatSetType(A,matrixtype,ierr)
+      Mat A
+      MatType matrixtype
+      PetscInt ierr
+    END SUBROUTINE MatSetType
 
     SUBROUTINE MatDestroy(A,ierr)
       Mat A
@@ -983,6 +1004,8 @@ MODULE CMISS_PETSC
     & PETSC_KSPLGMRES,PETSC_KSPTCQMR,PETSC_KSPBCGS,PETSC_KSPBCGSL,PETSC_KSPCGS,PETSC_KSPTFQMR,PETSC_KSPCR,PETSC_KSPLSQR, &
     & PETSC_KSPPREONLY,PETSC_KSPQCG,PETSC_KSPBICG,PETSC_KSPMINRES,PETSC_KSPSYMMLQ,PETSC_KSPLCD
   
+  PUBLIC PETSC_AIJMUMPS
+
   PUBLIC PETSC_PCNONE,PETSC_PCJACOBI,PETSC_PCSOR,PETSC_PCLU,PETSC_PCSHELL,PETSC_PCBJACOBI,PETSC_PCMG,PETSC_PCEISENSTAT, &
     & PETSC_PCILU,PETSC_PCICC,PETSC_PCASM,PETSC_PCKSP,PETSC_PCCOMPOSITE,PETSC_PCREDUNDANT,PETSC_PCSPAI,PETSC_PCMILU, &
     & PETSC_PCNN,PETSC_PCCHOLESKY,PETSC_PCSAMG,PETSC_PCPBJACOBI,PETSC_PCMAT,PETSC_PCHYPRE,PETSC_PCFIELDSPLIT,PETSC_PCML
@@ -1003,8 +1026,9 @@ MODULE CMISS_PETSC
     & PETSC_KSP_DIVERGED_NAN,PETSC_KSP_DIVERGED_INDEFINITE_MAT,PETSC_KSP_CONVERGED_ITERATING
   
   PUBLIC PETSC_KSPCREATE,PETSC_KSPDESTROY,PETSC_KSPGETCONVERGEDREASON,PETSC_KSPGETITERATIONNUMBER,PETSC_KSPGETPC, &
-    & PETSC_KSPGETRESIDUALNORM,PETSC_KSPFINALISE,PETSC_KSPINITIALISE,PETSC_KSPSETFROMOPTIONS,PETSC_KSPSETOPERATORS, &
-    & PETSC_KSPSETTYPE,PETSC_KSPSETUP,PETSC_KSPSETTOLERANCES,PETSC_KSPSOLVE
+    & PETSC_KSPGETRESIDUALNORM,PETSC_KSPGMRESSETRESTART,PETSC_KSPFINALISE,PETSC_KSPINITIALISE,PETSC_KSPSETFROMOPTIONS, &
+    & PETSC_KSPSETINITIALGUESSNONZERO,PETSC_KSPSETOPERATORS,PETSC_KSPSETTYPE,PETSC_KSPSETUP,PETSC_KSPSETTOLERANCES, &
+    & PETSC_KSPSOLVE
 
   PUBLIC MAT_COLUMN_ORIENTED,MAT_COLUMNS_SORTED,MAT_ROWS_SORTED,MAT_FINAL_ASSEMBLY,MAT_FLUSH_ASSEMBLY, &
     & MAT_NO_NEW_NONZERO_LOCATIONS
@@ -1017,7 +1041,7 @@ MODULE CMISS_PETSC
     & PETSC_MATFDCOLORINGSETFROMOPTIONS,PETSC_MATFDCOLORINGSETFUNCTIONSNES,PETSC_MATGETARRAY,PETSC_MATGETCOLORING, &
     & PETSC_MATGETOWNERSHIPRANGE,PETSC_MATGETVALUES,PETSC_MATRESTOREARRAY,PETSC_MATSETLOCALTOGLOBALMAPPING,PETSC_MATSETOPTION, &
     & PETSC_MATSETSIZES,PETSC_MATSETVALUE,PETSC_MATSETVALUES,PETSC_MATSETVALUELOCAL,PETSC_MATSETVALUESLOCAL,PETSC_MATVIEW, &
-    & PETSC_MATZEROENTRIES
+    & PETSC_MATZEROENTRIES,PETSC_MATSETTYPE
   
   PUBLIC PETSC_PCINITIALISE,PETSC_PCFINALISE,PETSC_PCSETTYPE
 
@@ -1332,7 +1356,8 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE PETSC_ISCOLORINGDESTROY
-    
+  
+  !  
   !================================================================================================================================
   !
 
@@ -1731,6 +1756,37 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc KSPGMRESSetRestart routine
+  SUBROUTINE PETSC_KSPGMRESSETRESTART(KSP_,RESTART,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to set the GMRES restart for
+    INTEGER(INTG), INTENT(OUT) :: RESTART !<The restart value to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_KSPGMRESSETRESTART",ERR,ERROR,*999)
+
+    CALL KSPGMRESSetRestart(KSP_%KSP_,RESTART,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in KSPGMRESSetRestart.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_KSPGMRESSETRESTART")
+    RETURN
+999 CALL ERRORS("PETSC_KSPGMRESSETRESTART",ERR,ERROR)
+    CALL EXITS("PETSC_KSPGMRESSETRESTART")
+    RETURN 1
+  END SUBROUTINE PETSC_KSPGMRESSETRESTART
+    
+  !
+  !================================================================================================================================
+  !
+
   !Initialise the PETSc KSP structure
   SUBROUTINE PETSC_KSPINITIALISE(KSP_,ERR,ERROR,*)
 
@@ -1785,13 +1841,48 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc KSPSetInitialGuessNonzero routine
+  SUBROUTINE PETSC_KSPSETINITIALGUESSNONZERO(KSP_,FLAG,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to set the initial guess non zero for
+    LOGICAL, INTENT(IN) :: FLAG
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_KSPSETINITIALGUESSNONZERO",ERR,ERROR,*999)
+
+    IF(FLAG) THEN
+      CALL KSPSetInitialGuessNonzero(KSP_%KSP_,PETSC_TRUE,ERR)
+    ELSE
+      CALL KSPSetInitialGuessNonzero(KSP_%KSP_,PETSC_FALSE,ERR)
+    ENDIF
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in KSPSetInitialGuessNonzero",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_KSPSETINITIALGUESSNONZERO")
+    RETURN
+999 CALL ERRORS("PETSC_KSPSETINITIALGUESSNONZERO",ERR,ERROR)
+    CALL EXITS("PETSC_KSPSETINITIALGUESSNONZERO")
+    RETURN 1
+  END SUBROUTINE PETSC_KSPSETINITIALGUESSNONZERO
+    
+  !
+  !================================================================================================================================
+  !
+
   !>Buffer routine to the PETSc KSPSetOperators routine
   SUBROUTINE PETSC_KSPSETOPERATORS(KSP_,AMAT,PMAT,FLAG,ERR,ERROR,*)
 
     !Argument Variables
     TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to set the operators for
     TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: AMAT !<The matrix associated with the linear system
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: PMAT !<The matrix to be used in constructing the precoditioner
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: PMAT !<The matrix to be used in constructing the preconditioner
     INTEGER(INTG), INTENT(IN) :: FLAG !<Preconditioner matrix structure flag
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -2210,10 +2301,41 @@ CONTAINS
     CALL EXITS("PETSC_MATCREATESEQDENSE")
     RETURN 1
   END SUBROUTINE PETSC_MATCREATESEQDENSE
-    
+
   !
   !================================================================================================================================
   !
+  
+  !>Buffer routine to the PETSc MatSetType routine.
+  SUBROUTINE PETSC_MATSETTYPE(A,MATRIXTYPE,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix
+    MatType, INTENT(IN) :: MATRIXTYPE !<The matrix type 
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATSETTYPE",ERR,ERROR,*999)
+
+    CALL MatSetType(A%MAT,MATRIXTYPE,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatSetType",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_MATSETTYPE")
+    RETURN
+999 CALL ERRORS("PETSC_MATSETTYPE",ERR,ERROR)
+    CALL EXITS("PETSC_MATSETTYPE")
+    RETURN 1
+  END SUBROUTINE PETSC_MATSETTYPE
+
+  !
+  !================================================================================================================================
+  !    
 
   !>Buffer routine to the PETSc MatDestroy routine.
   SUBROUTINE PETSC_MATDESTROY(A,ERR,ERROR,*)

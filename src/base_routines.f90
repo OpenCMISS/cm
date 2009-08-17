@@ -90,7 +90,7 @@ MODULE BASE_ROUTINES
 
   !> \addtogroup BASE_ROUTINES_DiagnosticTypes BASE_ROUTINES::DiagnosticTypes
   !> \brief Diganostic type parameters
-  !> \see BASE_ROUTINES
+  !> \see BASE_ROUTINES,OPENCMISS_DiagnosticTypes
   !>@{  
   INTEGER(INTG), PARAMETER :: ALL_DIAG_TYPE=1 !<Type for setting diagnostic output in all routines \see BASE_ROUTINES_DiagnosticTypes,BASE_ROUTINES
   INTEGER(INTG), PARAMETER :: IN_DIAG_TYPE=2 !<Type for setting diagnostic output in one routine \see BASE_ROUTINES_DiagnosticTypes,BASE_ROUTINES
@@ -99,7 +99,7 @@ MODULE BASE_ROUTINES
 
   !> \addtogroup BASE_ROUTINES_TimingTypes BASE_ROUTINES::TimingTypes
   !> \brief Timing type parameters
-  !> \see BASE_ROUTINES
+  !> \see BASE_ROUTINES,OPENCMISS_TimingTypes
   !>@{  
   INTEGER(INTG), PARAMETER :: ALL_TIMING_TYPE=1 !<Type for setting timing output in all routines \see BASE_ROUTINES_TimingTypes,BASE_ROUTINES
   INTEGER(INTG), PARAMETER :: IN_TIMING_TYPE=2 !<Type for setting timing output in one routine \see BASE_ROUTINES_TimingTypes,BASE_ROUTINES
@@ -659,7 +659,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets diagnositics off \see BASE_ROUTINES::DIAGNOSTICS_SET_ON
+  !>Sets diagnositics off. \see BASE_ROUTINES::DIAGNOSTICS_SET_ON,OPENCMISS::CMISSDiagnosticsSetOn
   SUBROUTINE DIAGNOSTICS_SET_OFF(ERR,ERROR,*)
 
     !Argument variables
@@ -714,7 +714,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets diagnositics on \see BASE_ROUTINES::DIAGNOSTICS_SET_OFF
+  !>Sets diagnositics on. \see BASE_ROUTINES::DIAGNOSTICS_SET_OFF,OPENCMISS::CMISSDiagnosticsSetOff
   SUBROUTINE DIAGNOSTICS_SET_ON(DIAG_TYPE,LEVEL_LIST,DIAG_FILENAME,ROUTINE_LIST,ERR,ERROR,*)
 
     !Argument variables
@@ -849,7 +849,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets writes file echo output off.
+  !>Sets writes file echo output off. \see BASE_ROUTINES::OUTPUT_SET_ON,OPENCMISS::CMISSOutputSetOff
   SUBROUTINE OUTPUT_SET_OFF(ERR,ERROR,*)
 
     !Argument variables
@@ -877,7 +877,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets writes file echo output on.
+  !>Sets writes file echo output on. \see BASE_ROUTINES::OUTPUT_SET_OFF,OPENCMISS::CMISSOutputSetOn
   SUBROUTINE OUTPUT_SET_ON(ECHO_FILENAME,ERR,ERROR,*)
 
     !Argument variables
@@ -909,7 +909,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets timing off.
+  !>Sets timing off. \see BASE_ROUTINES:TIMING_SET_ON,OPENCMISS::CMISSTimingSetOff
   SUBROUTINE TIMING_SET_OFF(ERR,ERROR,*)
 
    !Argument variables
@@ -955,7 +955,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets timing on.
+  !>Sets timing on. \see BASE_ROUTINES:TIMING_SET_OFF,OPENCMISS::CMISSTimingSetOn
   SUBROUTINE TIMING_SET_ON(TIMING_TYPE,TIMING_SUMMARY_FLAG,TIMING_FILENAME,ROUTINE_LIST,ERR,ERROR,*)
 
     !Argument variables
@@ -1078,7 +1078,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Outputs the timing summary.
+  !>Outputs the timing summary. \see OPENCMISS::CMISSTimingSummaryOutput
   SUBROUTINE TIMING_SUMMARY_OUTPUT(ERR,ERROR,*)    
 
     !Argument variables

@@ -1,0 +1,72 @@
+\pagestyle{empty}
+\thispagestyle{empty}
+
+\setlength{\parindent}{0mm}
+
+\newcommand{\startodd}{ %
+  \setlength{\paperwidth}{210mm}
+  \setlength{\paperheight}{297mm}
+  \setlength{\hoffset}{-1in}
+  \setlength{\voffset}{-1in}
+  \setlength{\oddsidemargin}{30mm}
+  \setlength{\evensidemargin}{15mm}
+  \setlength{\textwidth}{165mm}
+  \setlength{\textheight}{267mm}
+  \setlength{\topmargin}{15mm}
+  \setlength{\headheight}{0mm}
+  \setlength{\headsep}{0mm}
+  \setlength{\footskip}{0mm}
+  } % odd starting page number
+\newcommand{\starteven}{ %
+  \setlength{\paperwidth}{210mm}
+  \setlength{\paperheight}{297mm}
+  \setlength{\hoffset}{-1in}
+  \setlength{\voffset}{-1in}
+  \setlength{\oddsidemargin}{15mm}
+  \setlength{\evensidemargin}{30mm}
+  \setlength{\textwidth}{165mm}
+  \setlength{\textheight}{267mm}
+  \setlength{\topmargin}{15mm}
+  \setlength{\headheight}{0mm}
+  \setlength{\headsep}{0mm}
+  \setlength{\footskip}{0mm}
+  } % Even starting page number
+
+\renewcommand{\maketitle}{ %
+  \newlength{\titleskipvalue}
+  \settoheight{\titleskipvalue}{\mbox{\bf \@title}}
+  \newlength{\titleskip}
+  \setlength{\titleskip}{\the\titleskipvalue}
+  \addtolength{\titleskip}{\baselineskip}
+  \settoheight{\titleskipvalue}{\mbox{\bf \@author}}
+  \addtolength{\titleskip}{\the\titleskipvalue}
+  \addtolength{\titleskip}{\baselineskip}
+  \vspace*{\titleskip}
+  } %
+
+\renewcommand{\section}{\@startsection
+  {section}%
+  {1}%
+  {0pt}%
+  {12pt}%
+  {2pt}%
+  {\normalsize\bfseries}*}
+
+\renewcommand{\refname}{REFERENCES}
+\renewcommand{\@biblabel}[1]{#1.}
+\renewenvironment{thebibliography}[1]
+     {\section{\refname
+        \@mkboth{\MakeUppercase\refname}{\MakeUppercase\refname}}%
+      \list{\@biblabel{\@arabic\c@enumiv}}%
+           {\settowidth\labelwidth{\@biblabel{#1}}%
+            \leftmargin\labelwidth
+            \advance\leftmargin\labelsep
+            \@openbib@code
+            \usecounter{enumiv}%
+            \let\p@enumiv\@empty
+            \renewcommand\theenumiv{\@arabic\c@enumiv}}%
+      \sloppy\clubpenalty4000\widowpenalty4000%
+      \sfcode`\.\@m}
+     {\def\@noitemerr
+       {\@latex@warning{Empty `thebibliography' environment}}%
+      \endlist}
