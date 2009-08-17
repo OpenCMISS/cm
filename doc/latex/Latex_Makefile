@@ -58,8 +58,8 @@ DVIPS           =       dvips
 DVIPS_OPTS      =        -Z -n 500 -t a4 -K0 -N0
 
 # latex2html98.1 uses undef as a list operator which is not perl5.6
-LATEX2HTML      =       perl5 -S latex2html
-LATEX2HTML_OPTS =       -address ' ' -no_navigation -info ' ' -split 0
+LATEX2HTML      =       perl -S latex2html
+LATEX2HTML_OPTS =       -address ' ' -no_navigation -info ' ' -split 0 -tmp /tmp
 FIXL2HTML	=	${OPENCMISS_ROOT}/cm/doc/html_utils/fixl2html.sh
 MAKEINDEX	=	makeindex
 PRINT           =       lpr
