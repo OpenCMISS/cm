@@ -60,6 +60,16 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE:: NodeMUValue
   DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE:: NodeRHOValue  
 
+  DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE:: NodeUValue_analytic
+  DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE:: NodeVValue_analytic 
+  DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE:: NodeWValue_analytic 
+  DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE:: NodePValue_analytic 
+
+  DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE:: NodeUValue_error
+  DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE:: NodeVValue_error
+  DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE:: NodeWValue_error
+  DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE:: NodePValue_error
+
   INTEGER, DIMENSION(:), ALLOCATABLE::SimplexOutputHelp
 
 
@@ -68,6 +78,8 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT
 
   DOUBLE PRECISION:: ScaleFactorsPerElementNodes(10,10)
+
+  DOUBLE PRECISION:: MaxNodeUValue_error, MaxNodeVValue_error, MaxNodeWValue_error, MaxNodePValue_error
 
   INTEGER:: TRI_BASIS, TET_BASIS, QUAD_BASIS, HEX_BASIS
   CHARACTER*2 NMs(99),KNOT
@@ -133,22 +145,99 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
                INTEGER:: E_M,E_P,E_V,E_T,EN_M,EN_P,EN_V,EN_T,N_M,N_P,N_V,N_T
        END TYPE EXPORT_CONTAINER
 
+
+       TYPE DARCY_PARAMETERS
+               INTEGER:: TESTCASE
+               INTEGER:: BC_NUMBER_OF_WALL_NODES, NUMBER_OF_BCS
+               DOUBLE PRECISION:: PERM, VIS, PERM_OVER_VIS
+               DOUBLE PRECISION:: X1, X2, Y1, Y2, Z1, Z2
+               DOUBLE PRECISION:: LENGTH, GEOM_TOL
+               DOUBLE PRECISION:: max_node_spacing
+               LOGICAL :: STAB, DEBUG, ANALYTIC
+       END TYPE DARCY_PARAMETERS
+
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
   TYPE (ARRAY_PROBLEM_BASE) BASE_INFO
   TYPE (ARRAY_MESH) MESH_INFO(3)
+  TYPE (DARCY_PARAMETERS) DARCY
   INTEGER FLD, DIMEN, OPENCMISS_INTERPOLATION(3),a,b
   INTEGER NumberOfNodesPerElement(3), ArrayOfNodesDefined(3), NumberOfElementsDefined(3), TotalNumberOfNodes
   DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE::OPENCMISS_NODE_COORD
   INTEGER, DIMENSION(:,:), ALLOCATABLE::OPENCMISS_ELEM_M,OPENCMISS_ELEM_V,OPENCMISS_ELEM_P
   CHARACTER*60 IN_CHAR
   CHARACTER*90 NIMZ
-  CHARACTER*30 NAMz
+!   CHARACTER*30 NAMz
+  CHARACTER*90 NAMz
   INTEGER:: ALLOC_ERROR
 
 
   CONTAINS
+
+! --------------------------------------------------------------------------------------------------------------------
+! 
+! chrm, 19.08.2009
+! 
+  SUBROUTINE READ_DARCY_PARAMS
+
+  IMPLICIT NONE
+
+  CHARACTER*90 DARCY_PARAM_FILE
+
+  DARCY_PARAM_FILE='./input/Darcy_parameters.inp'
+
+  WRITE(*,*)'Reading Darcy parameters.'
+
+  OPEN(UNIT=37,FILE=DARCY_PARAM_FILE,STATUS='old',action='read') ! Read base file for initial parameters
+
+
+      DO WHILE (0 < 1)
+        READ(37,*,END=50) IN_CHAR
+        IF (INDEX(IN_CHAR,'TESTCASE:') == 1)      READ(37,*) DARCY%TESTCASE
+
+        IF (INDEX(IN_CHAR,'STAB:') == 1)          READ(37,*) DARCY%STAB
+        IF (INDEX(IN_CHAR,'ANALYTIC:') == 1)      READ(37,*) DARCY%ANALYTIC
+        IF (INDEX(IN_CHAR,'DEBUG:') == 1)         READ(37,*) DARCY%DEBUG
+
+        IF (INDEX(IN_CHAR,'LENGTH:') == 1)        READ(37,*) DARCY%LENGTH
+
+        IF (INDEX(IN_CHAR,'GEOM_TOL:') == 1)      READ(37,*) DARCY%GEOM_TOL
+        IF (INDEX(IN_CHAR,'X1:') == 1)            READ(37,*) DARCY%X1
+        IF (INDEX(IN_CHAR,'X2:') == 1)            READ(37,*) DARCY%X2
+        IF (INDEX(IN_CHAR,'Y1:') == 1)            READ(37,*) DARCY%Y1
+        IF (INDEX(IN_CHAR,'Y2:') == 1)            READ(37,*) DARCY%Y2
+        IF (INDEX(IN_CHAR,'Z1:') == 1)            READ(37,*) DARCY%Z1
+        IF (INDEX(IN_CHAR,'Z2:') == 1)            READ(37,*) DARCY%Z2
+
+        IF (INDEX(IN_CHAR,'PERM:') == 1)          READ(37,*) DARCY%PERM
+        IF (INDEX(IN_CHAR,'VIS:') == 1)           READ(37,*) DARCY%VIS
+
+        IF (INDEX(IN_CHAR,'BC_NUMBER_OF_WALL_NODES:') == 1) READ(37,*) DARCY%BC_NUMBER_OF_WALL_NODES
+        IF (INDEX(IN_CHAR,'NUMBER_OF_BCS:') == 1) READ(37,*) DARCY%NUMBER_OF_BCS
+      END DO
+
+50 CLOSE(37)
+
+  IF( DARCY%DEBUG ) THEN
+    write(*,*)'Read Darcy parameters from the following file = ',DARCY_PARAM_FILE
+    write(*,*)'Press ENTER to continue.'
+    read(*,*)
+  END IF
+
+  IF( ABS(DARCY%VIS) > 1.0E-14 ) THEN
+    DARCY%PERM_OVER_VIS = DARCY%PERM / DARCY%VIS
+  ELSE
+    WRITE(*,*)'Darcy_parameters: VIS cannot be machine zero.'
+    STOP
+  END IF
+
+  DARCY%max_node_spacing = 2.0
+
+  END SUBROUTINE READ_DARCY_PARAMS
+! 
+! --------------------------------------------------------------------------------------------------------------------
 
 
   !HERE THE TYPES DEFINED ABOVE ARE FILLED WITH THE DATA PROVIDED  
@@ -244,6 +333,15 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
    ALLOCATE(ElementNodesScales(NumberOfElements,NodesPerElement(1)))
    ALLOCATE(ElementNodes(NumberOfElements,NodesPerElement(1)))
 
+   ALLOCATE(NodeUValue_analytic(NodesPerMeshComponent(1)))
+   ALLOCATE(NodeVValue_analytic(NodesPerMeshComponent(1)))
+   ALLOCATE(NodeWValue_analytic(NodesPerMeshComponent(1)))
+   ALLOCATE(NodePValue_analytic(NodesPerMeshComponent(1)))
+
+   ALLOCATE(NodeUValue_error(NodesPerMeshComponent(1)))
+   ALLOCATE(NodeVValue_error(NodesPerMeshComponent(1)))
+   ALLOCATE(NodeWValue_error(NodesPerMeshComponent(1)))
+   ALLOCATE(NodePValue_error(NodesPerMeshComponent(1)))
 
 ! THIS NEEDS TO BE ADJUSTED NOW!!!!!!
 
@@ -360,8 +458,19 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
    &parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(2)
 
 
-  lagrange_simplex=REGION%equations_sets%equations_sets(1)%ptr%equations%&
-   &interpolation%geometric_interp_parameters%bases(1)%ptr%type
+
+
+   IF( NumberOfDimensions==3 )THEN
+     !For 3D, the following call works ...
+     lagrange_simplex=REGION%equations_sets%equations_sets(1)%ptr%equations%&
+     &interpolation%geometric_interp_parameters%bases(1)%ptr%type
+   ELSE
+     ! ... but the above call does not work for 2D.
+     !Thus, for 2D, we hard-wire it to 'quad':
+     lagrange_simplex=1
+   END IF
+
+
                    
 
   NumberOfFieldComponent(1)=NumberOfDimensions
@@ -412,6 +521,78 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
 
   INTEGER:: I,J,K,L,M,N
 
+
+
+  DOUBLE PRECISION:: COORD_X, COORD_Y, COORD_Z, ARG_X, ARG_Y, ARG_Z
+  DOUBLE PRECISION:: FACT
+
+  IF( DARCY%TESTCASE == 1 ) THEN
+    FACT = DARCY%PERM_OVER_VIS
+  ELSE
+    FACT = 2.0_DP * PI * DARCY%PERM_OVER_VIS / DARCY%LENGTH
+!     FACT = 1.0_DP
+  END IF
+
+
+  IF( DARCY%ANALYTIC ) THEN
+    IF( NumberOfDimensions==2 ) THEN
+      DO I = 1,NodesPerMeshComponent(1)
+        COORD_X = NodeXValue(I)
+        COORD_Y = NodeYValue(I)
+        ARG_X = 2.0_DP * PI * COORD_X / DARCY%LENGTH
+        ARG_Y = 2.0_DP * PI * COORD_Y / DARCY%LENGTH
+
+        IF( DARCY%TESTCASE == 1 ) THEN
+          NodeUValue_analytic(I) = - FACT * ( 2.0_DP * COORD_X + 2.0_DP * COORD_Y )
+          NodeVValue_analytic(I) = - FACT * ( 2.0_DP * COORD_X - 2.0_DP * COORD_Y )
+          NodePValue_analytic(I) = COORD_X * COORD_X + 2.0_DP * COORD_X * COORD_Y - COORD_Y * COORD_Y
+        ELSE
+          NodeUValue_analytic(I) = - FACT * COS( ARG_X ) * SIN( ARG_Y ) 
+          NodeVValue_analytic(I) = - FACT * SIN( ARG_X ) * COS( ARG_Y ) 
+          NodePValue_analytic(I) =          SIN( ARG_X ) * SIN( ARG_Y )
+        END IF
+
+        NodeUValue_error(I) = NodeUValue(I) - NodeUValue_analytic(I)
+        NodeVValue_error(I) = NodeVValue(I) - NodeVValue_analytic(I)
+        NodePValue_error(I) = NodePValue(I) - NodePValue_analytic(I)
+      END DO
+    ELSE IF( NumberOfDimensions==3 ) THEN
+      DO I = 1,NodesPerMeshComponent(1)
+
+        COORD_X = NodeXValue(I)
+        COORD_Y = NodeYValue(I)
+        COORD_Z = NodeZValue(I)
+
+        ARG_X = 2.0_DP * PI * COORD_X / DARCY%LENGTH
+        ARG_Y = 2.0_DP * PI * COORD_Y / DARCY%LENGTH
+        ARG_Z = 2.0_DP * PI * COORD_Z / DARCY%LENGTH
+
+        IF( DARCY%TESTCASE == 1 ) THEN
+          NodeUValue_analytic(I) = - FACT * ( 2.0_DP * COORD_X + 2.0_DP * COORD_Y + COORD_Z )
+          NodeVValue_analytic(I) = - FACT * ( 2.0_DP * COORD_X - 2.0_DP * COORD_Y + COORD_Z )
+          NodeWValue_analytic(I) = - FACT * ( 3.0_DP + COORD_X + COORD_Y )
+          NodePValue_analytic(I) = COORD_X * COORD_X + 2.0_DP * COORD_X * COORD_Y - COORD_Y * COORD_Y + &
+            & 3.0_DP * COORD_Z + COORD_Z * COORD_X  + COORD_Z * COORD_Y 
+        ELSE
+          NodeUValue_analytic(I) = - FACT * COS( ARG_X ) * SIN( ARG_Y )  * SIN( ARG_Z ) 
+          NodeVValue_analytic(I) = - FACT * SIN( ARG_X ) * COS( ARG_Y )  * SIN( ARG_Z )  
+          NodeWValue_analytic(I) = - FACT * SIN( ARG_X ) * SIN( ARG_Y )  * COS( ARG_Z )  
+          NodePValue_analytic(I) =          SIN( ARG_X ) * SIN( ARG_Y )  * SIN( ARG_Z )  
+        END IF
+
+        NodeUValue_error(I) = NodeUValue(I) - NodeUValue_analytic(I)
+        NodeVValue_error(I) = NodeVValue(I) - NodeVValue_analytic(I)
+        NodeWValue_error(I) = NodeWValue(I) - NodeWValue_analytic(I)
+        NodePValue_error(I) = NodePValue(I) - NodePValue_analytic(I)
+
+      END DO
+
+    END IF
+
+  END IF
+
+
+
        FILENAME="./output/"//NAME//".exnode"
 
        OPEN(UNIT=14, FILE=CHAR(FILENAME),STATUS='unknown')
@@ -422,7 +603,11 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
 ! WRITING HEADER INFORMATION
 
        WRITE(14,*) 'Group name: OpenCMISS'
-       WRITE(14,*) '#Fields=',TRIM(NMs(NumberOfFields))
+       IF( DARCY%ANALYTIC ) THEN
+         WRITE(14,*) '#Fields=',TRIM(NMs(NumberOfFields + 2))
+       ELSE
+         WRITE(14,*) '#Fields=',TRIM(NMs(NumberOfFields))
+       END IF
        ValueIndex=1
        WRITE(14,*) ' 1) coordinates,  coordinate, rectangular cartesian, #Components=',TRIM(NMs(NumberOfDimensions))
        DO I=1,NumberOfDimensions
@@ -446,12 +631,24 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
          ValueIndex=ValueIndex+1
        END DO
 
+       IF( DARCY%ANALYTIC ) THEN
+         WRITE(14,*) ' 4) exact,  field,  rectangular cartesian, #Components=',TRIM(NMs(NumberOfVariableComponents))
+         DO I=1,NumberOfVariableComponents
+           WRITE(14,*)  '   ',TRIM(NMs(I)),'.  Value index= ',TRIM(NMs(ValueIndex)),',     #Derivatives= 0' 
+           ValueIndex=ValueIndex+1
+         END DO
+
+         WRITE(14,*) ' 5) error,  field,  rectangular cartesian, #Components=',TRIM(NMs(NumberOfVariableComponents))
+         DO I=1,NumberOfVariableComponents
+           WRITE(14,*)  '   ',TRIM(NMs(I)),'.  Value index= ',TRIM(NMs(ValueIndex)),',     #Derivatives= 0' 
+           ValueIndex=ValueIndex+1
+         END DO
+       END IF
+
 ! NOW WRITE NODE INFORMATION
 ! ! ! 
             DO I = 1,NodesPerMeshComponent(1)
                WRITE(14,*) ' Node: ',I
-
-
 
                   WRITE(14,'("    ", es25.16 )')NodeXValue(I)
                   WRITE(14,'("    ", es25.16 )')NodeYValue(I)
@@ -467,6 +664,21 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
                   WRITE(14,'("    ", es25.16 )')NodeMUValue(I)
                   WRITE(14,'("    ", es25.16 )')NodeRHOValue(I)
 
+                  IF( DARCY%ANALYTIC ) THEN
+                    WRITE(14,'("    ", es25.16 )')NodeUValue_analytic(I)
+                    WRITE(14,'("    ", es25.16 )')NodeVValue_analytic(I)
+                    IF(NumberOfDimensions==3) THEN
+                      WRITE(14,'("    ", es25.16 )')NodeWValue_analytic(I)
+                    END IF
+                    WRITE(14,'("    ", es25.16 )')NodePValue_analytic(I)
+
+                    WRITE(14,'("    ", es25.16 )')NodeUValue_error(I)
+                    WRITE(14,'("    ", es25.16 )')NodeVValue_error(I)
+                    IF(NumberOfDimensions==3) THEN
+                      WRITE(14,'("    ", es25.16 )')NodeWValue_error(I)
+                    END IF
+                    WRITE(14,'("    ", es25.16 )')NodePValue_error(I)
+                  END IF
             END DO
 
 
@@ -474,6 +686,80 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
        CLOSE(14)
 
   WRITE(*,*)'Writing Nodes...'
+
+  ! ----------------------------------------------------------
+  ! Write file to monitor convergence of discretization error
+  IF( DARCY%ANALYTIC ) THEN
+    OPEN(UNIT=23, FILE='./output/conv.node',STATUS='unknown')
+
+    MaxNodeUValue_error = 0.0
+    MaxNodeVValue_error = 0.0
+    MaxNodeWValue_error = 0.0
+    MaxNodePValue_error = 0.0
+
+    IF( NumberOfDimensions==2 ) THEN
+      DO I = 1,NodesPerMeshComponent(1)
+        IF( abs(mod( ((NodeXValue(I)-DARCY%X1) / DARCY%max_node_spacing), 1.0)) < DARCY%GEOM_TOL ) THEN
+          IF( abs(mod( ((NodeYValue(I)-DARCY%Y1) / DARCY%max_node_spacing), 1.0)) < DARCY%GEOM_TOL ) THEN
+
+              WRITE(23,'("    ", es25.16 )')NodeXValue(I)
+              WRITE(23,'("    ", es25.16 )')NodeYValue(I)
+
+              WRITE(23,'("    ", es25.16 )')NodeUValue_error(I)
+              WRITE(23,'("    ", es25.16 )')NodeVValue_error(I)
+              WRITE(23,'("    ", es25.16 )')NodePValue_error(I)
+
+              WRITE(23,*) ' '
+
+              IF( abs(NodeUValue_error(I)) > MaxNodeUValue_error ) MaxNodeUValue_error = abs(NodeUValue_error(I))
+              IF( abs(NodeVValue_error(I)) > MaxNodeVValue_error ) MaxNodeVValue_error = abs(NodeVValue_error(I))
+              IF( abs(NodePValue_error(I)) > MaxNodePValue_error ) MaxNodePValue_error = abs(NodePValue_error(I))
+
+          END IF
+        END IF
+      END DO
+      WRITE(23,'("    MaxNodeUValue_error = ", es25.16 )')MaxNodeUValue_error
+      WRITE(23,'("    MaxNodeVValue_error = ", es25.16 )')MaxNodeVValue_error
+      WRITE(23,'("    MaxNodePValue_error = ", es25.16 )')MaxNodePValue_error
+      WRITE(23,*) ' '
+    ELSE IF( NumberOfDimensions==3 ) THEN
+      DO I = 1,NodesPerMeshComponent(1)
+        IF( abs(mod( ((NodeXValue(I)-DARCY%X1) / DARCY%max_node_spacing), 1.0)) < DARCY%GEOM_TOL ) THEN
+          IF( abs(mod( ((NodeYValue(I)-DARCY%Y1) / DARCY%max_node_spacing), 1.0)) < DARCY%GEOM_TOL ) THEN
+            IF( abs(mod( ((NodeZValue(I)-DARCY%Z1) / DARCY%max_node_spacing), 1.0)) < DARCY%GEOM_TOL ) THEN
+
+              WRITE(23,'("    ", es25.16 )')NodeXValue(I)
+              WRITE(23,'("    ", es25.16 )')NodeYValue(I)
+              WRITE(23,'("    ", es25.16 )')NodeZValue(I)
+
+              WRITE(23,'("    ", es25.16 )')NodeUValue_error(I)
+              WRITE(23,'("    ", es25.16 )')NodeVValue_error(I)
+              WRITE(23,'("    ", es25.16 )')NodeWValue_error(I)
+              WRITE(23,'("    ", es25.16 )')NodePValue_error(I)
+
+              WRITE(23,*) ' '
+
+              IF( abs(NodeUValue_error(I)) > MaxNodeUValue_error ) MaxNodeUValue_error = abs(NodeUValue_error(I))
+              IF( abs(NodeVValue_error(I)) > MaxNodeVValue_error ) MaxNodeVValue_error = abs(NodeVValue_error(I))
+              IF( abs(NodeWValue_error(I)) > MaxNodeWValue_error ) MaxNodeWValue_error = abs(NodeWValue_error(I))
+              IF( abs(NodePValue_error(I)) > MaxNodePValue_error ) MaxNodePValue_error = abs(NodePValue_error(I))
+
+            END IF
+          END IF
+        END IF
+      END DO
+      WRITE(23,'("    MaxNodeUValue_error = ", es25.16 )')MaxNodeUValue_error
+      WRITE(23,'("    MaxNodeVValue_error = ", es25.16 )')MaxNodeVValue_error
+      IF( NumberOfDimensions==3 ) THEN
+        WRITE(23,'("    MaxNodeWValue_error = ", es25.16 )')MaxNodeWValue_error
+      END IF
+      WRITE(23,'("    MaxNodePValue_error = ", es25.16 )')MaxNodePValue_error
+      WRITE(23,*) ' '
+    END IF
+
+    CLOSE(23)
+  END IF
+  ! ----------------------------------------------------------
 
   END SUBROUTINE WRITE_NODES_CMGUI
 

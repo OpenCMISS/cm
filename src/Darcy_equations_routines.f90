@@ -43,23 +43,6 @@
 !>This module handles all Darcy equations routines.
 
 
-!================================================================================================================================
-! 
-
-MODULE DARCY_PARAMETERS
-
-  IMPLICIT NONE
-
-  INTEGER:: TESTCASE
-  DOUBLE PRECISION:: PERM_OVER_VIS, LENGTH
-  LOGICAL :: STAB, DEBUG, ANALYTIC
-
-END MODULE DARCY_PARAMETERS
-
-!
-!================================================================================================================================
-!
-
 MODULE DARCY_EQUATIONS_ROUTINES
 
   USE BASE_ROUTINES
@@ -67,7 +50,6 @@ MODULE DARCY_EQUATIONS_ROUTINES
   USE BOUNDARY_CONDITIONS_ROUTINES
   USE CONSTANTS
   USE CONTROL_LOOP_ROUTINES
-  USE DARCY_PARAMETERS
   USE DISTRIBUTED_MATRIX_VECTOR
   USE DOMAIN_MAPPINGS
   USE EQUATIONS_ROUTINES
@@ -75,6 +57,7 @@ MODULE DARCY_EQUATIONS_ROUTINES
   USE EQUATIONS_MATRICES_ROUTINES
   USE EQUATIONS_SET_CONSTANTS
   USE FIELD_ROUTINES
+  USE FLUID_MECHANICS_IO_ROUTINES, ONLY: DARCY
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
   USE KINDS
@@ -354,7 +337,7 @@ CONTAINS
           !   m a t e r i a l   f i e l d
           !---------------------------------
           MATERIAL_FIELD_NUMBER_OF_VARIABLES = 1
-          MATERIAL_FIELD_NUMBER_OF_COMPONENTS = 1
+          MATERIAL_FIELD_NUMBER_OF_COMPONENTS = 2
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
             EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
@@ -414,7 +397,7 @@ CONTAINS
                 CALL FIELD_CREATE_FINISH(EQUATIONS_MATERIALS%MATERIALS_FIELD,ERR,ERROR,*999)
                 DO i=1,MATERIAL_FIELD_NUMBER_OF_COMPONENTS
                   CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE, i, PERM_OVER_VIS, ERR, ERROR, *999)
+                    & FIELD_VALUES_SET_TYPE, i, DARCY%PERM_OVER_VIS, ERR, ERROR, *999)
                 ENDDO
               ENDIF
             ELSE
@@ -589,7 +572,7 @@ CONTAINS
 
     CALL ENTERS("DARCY_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
 
-    IF( DEBUG ) OPEN(UNIT=79, FILE='./output/OPENCMISS.mat', STATUS='unknown')    ! FEM matrix output
+    IF( DARCY%DEBUG ) OPEN(UNIT=79, FILE='./output/OPENCMISS.mat', STATUS='unknown')    ! FEM matrix output
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
@@ -682,7 +665,7 @@ CONTAINS
 
                         SUM = SUM + 1.0_DP / PERM_OVER_VIS_PARAM * PGM * PGN
 
-                        IF( STAB ) THEN
+                        IF( DARCY%STAB ) THEN
                           SUM = SUM - 0.5_DP * 1.0_DP / PERM_OVER_VIS_PARAM * PGM * PGN
                         END IF
 
@@ -711,7 +694,7 @@ CONTAINS
                             & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(mi,mh)
                         ENDDO !mi
 
-                        IF( STAB ) THEN
+                        IF( DARCY%STAB ) THEN
                           DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
                             SUM = SUM - 0.5_DP * PGM * PGNSI(ni) * &
                               & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(ni,mh)
@@ -743,7 +726,7 @@ CONTAINS
                             & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(ni,nh)
                         ENDDO !ni
 
-                        IF( STAB ) THEN
+                        IF( DARCY%STAB ) THEN
                           DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
                             SUM = SUM + 0.5_DP * PGMSI(mi) * PGN * &
                               & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(mi,nh)
@@ -767,14 +750,14 @@ CONTAINS
                           PGNSI(ni)=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
                         ENDDO !ni
 
-                        IF( STAB ) THEN
+                        IF( DARCY%STAB ) THEN
                           DO idxdim =1,DEPENDENT_BASIS_1%NUMBER_OF_XI !number space dimension equiv. number of xi
                             DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
                               DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
                                 SUM = SUM + 0.5_DP * PERM_OVER_VIS_PARAM * PGMSI(mi) * PGNSI(ni) * &
                                   & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(mi,idxdim) * &
                                   & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(ni,idxdim)
-                                IF( DEBUG ) THEN
+                                IF( DARCY%DEBUG ) THEN
                                   IF( ELEMENT_NUMBER==1 .AND. ng==1 .AND. ms==1 .AND. ns==1 ) THEN
                                     write(79,*)'ng = ',ng
                                     write(79,*)'idxdim, mi, ni = ',idxdim, mi, ni
@@ -829,22 +812,22 @@ CONTAINS
                       COORD_Z = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT%VALUES(3,1)
                     END IF
 
-                    ARG_X = 2.0_DP * PI * COORD_X / LENGTH
-                    ARG_Y = 2.0_DP * PI * COORD_Y / LENGTH
+                    ARG_X = 2.0_DP * PI * COORD_X / DARCY%LENGTH
+                    ARG_Y = 2.0_DP * PI * COORD_Y / DARCY%LENGTH
                     IF( DEPENDENT_BASIS_1%NUMBER_OF_XI==3 ) THEN
-                      ARG_Z = 2.0_DP * PI * COORD_Z / LENGTH
+                      ARG_Z = 2.0_DP * PI * COORD_Z / DARCY%LENGTH
                     END IF
 
-                    IF( TESTCASE == 1 ) THEN
+                    IF( DARCY%TESTCASE == 1 ) THEN
                       SOURCE =  0.0_DP
                     ELSE
                       IF( DEPENDENT_BASIS_1%NUMBER_OF_XI==2 ) THEN
-                        SOURCE =  2.0_DP * PERM_OVER_VIS_PARAM * ( 2.0_DP * PI / LENGTH ) * ( 2.0_DP * PI / LENGTH ) * &
-                          & SIN( ARG_X ) * SIN( ARG_Y ) 
+                        SOURCE =  2.0_DP * PERM_OVER_VIS_PARAM * ( 2.0_DP * PI / DARCY%LENGTH ) * & 
+                          & ( 2.0_DP * PI / DARCY%LENGTH ) * SIN( ARG_X ) * SIN( ARG_Y ) 
                       ELSE IF( DEPENDENT_BASIS_1%NUMBER_OF_XI==3 ) THEN
-                        SOURCE =  3.0_DP * PERM_OVER_VIS_PARAM * ( 2.0_DP * PI / LENGTH ) * ( 2.0_DP * PI / LENGTH ) * &
-                          & SIN( ARG_X ) * SIN( ARG_Y ) * SIN( ARG_Z ) 
-                        IF( DEBUG ) THEN
+                        SOURCE =  3.0_DP * PERM_OVER_VIS_PARAM * ( 2.0_DP * PI / DARCY%LENGTH ) * &
+                          & ( 2.0_DP * PI / DARCY%LENGTH ) * SIN( ARG_X ) * SIN( ARG_Y ) * SIN( ARG_Z ) 
+                        IF( DARCY%DEBUG ) THEN
                           IF( ELEMENT_NUMBER==1 .AND. ng==1 ) THEN
                             write(79,*)'SOURCE = ',SOURCE
                           END IF
@@ -869,7 +852,7 @@ CONTAINS
               ENDDO !ms
             ENDDO !mh
 
-            IF( DEBUG ) THEN
+            IF( DARCY%DEBUG ) THEN
               IF( ELEMENT_NUMBER==1 .AND. ng==1 ) THEN
                 write(79,*)'ELEMENT_NUMBER = ',ELEMENT_NUMBER
                 write(79,*)'ng = ',ng
@@ -882,7 +865,7 @@ CONTAINS
 !-----------------------------------------------------------------------------------------------------------------------------------
 ! CHECK STIFFNESS MATRIX WITH CMHEART
 
-          IF( DEBUG ) THEN
+          IF( DARCY%DEBUG ) THEN
             IF( ELEMENT_NUMBER == 1 ) THEN
               NDOFS = 0
               DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
@@ -947,7 +930,7 @@ CONTAINS
       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    IF( DEBUG ) CLOSE(79)  !close file for FEM matrix output
+    IF( DARCY%DEBUG ) CLOSE(79)  !close file for FEM matrix output
 
   CALL EXITS("DARCY_EQUATION_FINITE_ELEMENT_CALCULATE")
     RETURN
