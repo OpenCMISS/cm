@@ -50,6 +50,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+//#include <hdf5.h>
+#ifdef H5_VERS_MAJOR
+#define USE_HDF5
+#endif
+
 #include "FieldExportConstants.h"
 
 /**********************************************************
@@ -142,6 +147,9 @@ CMISS_CoordinateSystem;
 typedef struct
 {
     FILE *file;
+#ifdef USE_HDF5
+    hid_t hd5Handle;
+#endif
 
     int error;
 }
@@ -166,6 +174,21 @@ SessionListEntry;
 static SessionListEntry sessions;
 
 static int nextHandle = 0;
+
+#ifdef USE_HDF5
+static void eep()
+{
+    int *i = NULL;
+    int j;
+
+    FILE *f = fopen( "D:\\err.txt", "w" );
+    H5Eprint1(f);
+    fclose(f);
+
+    j = *i;
+}
+#endif
+
 
 static int FieldExport_FPrintf( FileSession *const session, const char *format, ... )
 {
@@ -688,14 +711,37 @@ static int FieldExport_File_ElementGridValues( FileSession *session, const int i
 static int FieldExport_File_OpenSession( const char *const name, int * const handle )
 {
     SessionListEntry *session = calloc( 1, sizeof( SessionListEntry ) );
+    char hd5Name[256];
+
+    strcpy( hd5Name, name );
+    strcat( hd5Name, ".h5" );
 
     session->type = EXPORT_TYPE_FILE;
     session->handle = nextHandle++;
     session->fileSession.file = fopen( name, "w" );
+
+#ifdef USE_HDF5
+    session->fileSession.hd5Handle = H5Fcreate( hd5Name, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+#endif
+
     session->fileSession.error = FIELD_EXPORT_NO_ERROR;
 
-    if( session->fileSession.file == NULL )
+    if( ( session->fileSession.file == NULL )
+#ifdef USE_HDF5
+        || ( session->fileSession.hd5Handle < 0 )
+#endif
+        )
     {
+        if( session->fileSession.file != NULL )
+        {
+            fclose( session->fileSession.file );
+        }
+#ifdef USE_HDF5
+        if( session->fileSession.hd5Handle >= 0 )
+        {
+            H5Fclose( session->fileSession.hd5Handle );
+        }
+#endif
         free( session );
         return FIELD_EXPORT_ERROR_FILE_IO;
     }
@@ -712,27 +758,112 @@ static int FieldExport_File_OpenSession( const char *const name, int * const han
 static int FieldExport_File_CloseSession( SessionListEntry *session )
 {
     fclose( session->fileSession.file );
+
+#ifdef USE_HDF5
+    H5Fclose( session->fileSession.hd5Handle );
+#endif
+
     session->type = EXPORT_TYPE_CLOSED;
 
     return FIELD_EXPORT_NO_ERROR;
 }
 
 
-static int FieldExport_File_NodeNumber( FileSession *session, const int nodeNumber )
+#ifdef USE_HDF5
+static int FieldExport_File_HD5_NodeValues( FileSession *session, const int nodeNumber, const int valueCount, const double *const values )
 {
-    return FieldExport_FPrintf( session, " Node:            %d\n", nodeNumber );
+    hid_t dataset_id, dataspace_id, attribute_id, attribute_dataspace_id;
+    hsize_t dims[1];
+    int attributes[1];
+    herr_t status;
+    char setName[256];
+
+    dims[0] = valueCount; 
+    if( ( dataspace_id = H5Screate_simple( 1, dims, NULL ) ) < 0 )
+    {
+        return dataspace_id;
+    }
+
+    sprintf( setName, "/node%d", nodeNumber );
+    if( ( dataset_id = H5Dcreate( session->hd5Handle, setName, H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) ) < 0 )
+    {
+        return dataset_id;
+    }
+
+    dims[0] = 1; 
+    if( ( attribute_dataspace_id = H5Screate_simple( 1, dims, NULL ) ) < 0 )
+    {
+        return dataspace_id;
+    }
+    if( ( attribute_id = H5Acreate( dataset_id, "Node", H5T_STD_I32BE, attribute_dataspace_id, H5P_DEFAULT, H5P_DEFAULT ) ) < 0 )
+    {
+        return attribute_id;
+    }
+
+    attributes[0] = nodeNumber;
+    if( ( status = H5Awrite( attribute_id, H5T_NATIVE_INT, attributes ) ) < 0 )
+    {
+        return status;
+    }
+
+    if( ( status = H5Aclose( attribute_id ) ) < 0 )
+    {
+        return status;
+    }
+
+    if( ( status = H5Dwrite( dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, values ) ) < 0 )
+    {
+        return status;
+    }
+
+    if( ( status = H5Dclose( dataset_id ) ) < 0 )
+    {
+        return status;
+    }
+
+    if( ( status = H5Sclose( attribute_dataspace_id ) ) < 0 )
+    {
+        return status;
+    }
+
+    if( ( status = H5Sclose( dataspace_id ) ) < 0 )
+    {
+        return status;
+    }
+
+    return 0;
 }
+#endif
 
-
-static int FieldExport_File_NodeValues( FileSession *session, const int valueCount, const double *const values )
+static int FieldExport_File_NodeValues( FileSession *session, const int nodeNumber, const int valueCount, const double *const values )
 {
     int i;
+#ifdef USE_HDF5
+    herr_t status;
+#endif
+    static lastNodeNumber = -1; //A little bit of a hack, but then so is the whole file format.
+
+    if( nodeNumber != lastNodeNumber )
+    {
+        lastNodeNumber = nodeNumber;
+        FieldExport_FPrintf( session, " Node:            %d\n", nodeNumber );
+    }
 
     for( i = 0; i < valueCount; i++ )
     {
         FieldExport_FPrintf( session, "  %.16E", values[i] );
     }
     FieldExport_FPrintf( session, "\n" );
+
+#ifdef USE_HDF5
+    status = FieldExport_File_HD5_NodeValues( session, nodeNumber, valueCount, values );
+
+    if( status < 0 )
+    {
+        eep();
+        session->error = FIELD_EXPORT_ERROR_HDF5_ERROR;
+    }
+#endif
 
     return session->error;
 }
@@ -861,7 +992,7 @@ static int FieldExport_File_CoordinateDerivativeIndices( FileSession *session, c
 */
 int FieldExport_OpenSession( const int type, const char *const name, int * const handle )
 {
-    if( type == EXPORT_TYPE_FILE )
+   if( type == EXPORT_TYPE_FILE )
     {
         return FieldExport_File_OpenSession( name, handle );
     }
@@ -1201,7 +1332,7 @@ int FieldExport_CloseSession( const int handle )
 }
 
 
-int FieldExport_NodeNumber( const int handle, const int nodeNumber )
+int FieldExport_NodeValues( const int handle, const int nodeNumber, const int valueCount, const double* const values )
 {
     SessionListEntry *session = FieldExport_GetSession( handle );
     
@@ -1211,28 +1342,7 @@ int FieldExport_NodeNumber( const int handle, const int nodeNumber )
     }
     else if( session->type == EXPORT_TYPE_FILE )
     {
-        return FieldExport_File_NodeNumber( &session->fileSession, nodeNumber );
-    }
-    else
-    {
-        return FIELD_EXPORT_ERROR_UNKNOWN_TYPE;
-    }
-
-    return FIELD_EXPORT_NO_ERROR;
-}
-
-
-int FieldExport_NodeValues( const int handle, const int valueCount, const double* const values )
-{
-    SessionListEntry *session = FieldExport_GetSession( handle );
-    
-    if( session == NULL )
-    {
-        return FIELD_EXPORT_ERROR_BAD_HANDLE;
-    }
-    else if( session->type == EXPORT_TYPE_FILE )
-    {
-        return FieldExport_File_NodeValues( &session->fileSession, valueCount, values );
+        return FieldExport_File_NodeValues( &session->fileSession, nodeNumber, valueCount, values );
     }
     else
     {
