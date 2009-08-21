@@ -565,6 +565,7 @@ CONTAINS
 
     REAL(DP):: SOURCE
     REAL(DP):: COORD_X, COORD_Y, COORD_Z, ARG_X, ARG_Y, ARG_Z
+    REAL(DP):: MIDPOINT_X, MIDPOINT_Y
     REAL(DP):: PERM_OVER_VIS_PARAM
 
     REAL(DP), ALLOCATABLE, DIMENSION(:,:):: test
@@ -610,6 +611,20 @@ CONTAINS
               & GEOMETRIC_INTERP_POINT_METRICS,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
               & MATERIALS_INTERP_POINT,ERR,ERROR,*999)
+
+!             !material contrast for the zoned fivespot problem
+!             !Mind, though, that the non-physical enforcement of tangential-velocity continuity
+!             !creates overshoots and undershoots about zone interfaces - in agreement with the observations
+!             !in: Hughes, Masud and Wan, Computer Methods in Applied Mechanics and Engineering (2006)
+!             MIDPOINT_X = ( DARCY%X1 + DARCY%X2 ) / 2.0_DP
+!             MIDPOINT_Y = ( DARCY%Y1 + DARCY%Y2 ) / 2.0_DP
+!             COORD_X = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT%VALUES(1,1)
+!             COORD_Y = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT%VALUES(2,1)
+!             IF( (COORD_X<=MIDPOINT_X .AND. COORD_Y<=MIDPOINT_Y) .OR. (COORD_X>=MIDPOINT_X .AND. COORD_Y>=MIDPOINT_Y) ) THEN
+!               PERM_OVER_VIS_PARAM = EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(1,NO_PART_DERIV)
+!             ELSE
+!               PERM_OVER_VIS_PARAM = 0.01_DP * EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(1,NO_PART_DERIV)
+!             END IF
 
             PERM_OVER_VIS_PARAM = EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(1,NO_PART_DERIV)
 
