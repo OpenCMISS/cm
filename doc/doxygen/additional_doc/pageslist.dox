@@ -8,6 +8,11 @@
 - \subpage library_commands  
 - \subpage code_style 
 - \subpage tools
+.
 Development notes:
 - \subpage opencmiss_cellml
+.
+Theory:
+- <A HREF="http://cmiss.bioeng.auckland.ac.nz/OpenCMISS/doc/notes/OpenCMISSNotes">HTML version</A>
+- <A HREF="http://cmiss.bioeng.auckland.ac.nz/OpenCMISS/doc/notes/OpenCMISSNotes.pdf">PDF version</A>
 */
