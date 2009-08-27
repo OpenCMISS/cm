@@ -2308,7 +2308,16 @@ CONTAINS
                           CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
                         ENDIF
                      CASE(SOLVER_EQUATIONS_NONLINEAR)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+! SEBK 20/08/09 NOT SURE ABOUT SOLVER MAPPING HERE
+!|
+                        IF(ASSOCIATED(EQUATIONS_MAPPING%DYNAMIC_MAPPING)) THEN
+                          SOLVER_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+1)= &
+                            & EQUATIONS_MAPPING%DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
+                        ELSE
+                          CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
+                        ENDIF
+!|
+! SEBK 20/08/09 NOT SURE ABOUT SOLVER MAPPING HERE
                       CASE DEFAULT
                         LOCAL_ERROR="The solver equaitons linearity type of "// &
                           & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."

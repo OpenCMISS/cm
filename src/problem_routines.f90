@@ -119,11 +119,10 @@ CONTAINS
   !
 
   !>Solves a problem.
-  RECURSIVE SUBROUTINE PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP,PROBLEM,ERR,ERROR,*)
+  RECURSIVE SUBROUTINE PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to solve.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -169,7 +168,7 @@ CONTAINS
               !If there are sub loops the recursively solve those control loops
               DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
                 CONTROL_LOOP2=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
-                CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,PROBLEM,ERR,ERROR,*999)
+                CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,*999)
               ENDDO !loop_idx
             ENDIF
           ELSE
@@ -203,7 +202,7 @@ CONTAINS
                 !If there are sub loops the recursively solve those control loops
                 DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
                   CONTROL_LOOP2=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
-                  CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,PROBLEM,ERR,ERROR,*999)
+                  CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,*999)
                 ENDDO !loop_idx
               ENDIF
             ENDDO !iteration_idx
@@ -240,7 +239,7 @@ CONTAINS
                 !If there are sub loops the recursively solve those control loops
                 DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
                   CONTROL_LOOP2=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
-                  CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,PROBLEM,ERR,ERROR,*999)
+                  CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,*999)
                 ENDDO !loop_idx
               ENDIF
               TIME_LOOP%CURRENT_TIME=TIME_LOOP%CURRENT_TIME+TIME_LOOP%TIME_INCREMENT
@@ -277,7 +276,7 @@ CONTAINS
                 !If there are sub loops the recursively solve those control loops
                 DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
                   CONTROL_LOOP2=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
-                  CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,PROBLEM,ERR,ERROR,*999)
+                  CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,*999)
                 ENDDO !loop_idx
               ENDIF
             ENDDO !while loop
@@ -1017,15 +1016,23 @@ CONTAINS
           SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
           IF(ASSOCIATED(SOLVER_MAPPING)) THEN
             !Copy the current solution vector to the dependent field
-            CALL SOLVER_VARIABLES_STATIC_UPDATE(SOLVER,ERR,ERROR,*999)
+            CALL SOLVER_VARIABLES_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
             !Make sure the equations sets are up to date
             DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
               EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
               !Assemble the equations 
               CALL EQUATIONS_SET_JACOBIAN_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
             ENDDO !equations_set_idx
-            !Assemble the solver matrices
-            CALL SOLVER_MATRICES_STATIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_JACOBIAN_ONLY,ERR,ERROR,*999)          
+!sebk 19/08/09
+            IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
+              !Assemble the solver matrices
+              CALL SOLVER_MATRICES_STATIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_JACOBIAN_ONLY,ERR,ERROR,*999)          
+!sebk 19/08/09
+            ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+              CALL SOLVER_MATRICES_DYNAMIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_JACOBIAN_ONLY,ERR,ERROR,*999)          
+            ELSE
+              CALL FLAG_ERROR("Solver equations solver type is not associated.",ERR,ERROR,*999)
+            END IF
           ELSE
             CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
           ENDIF
@@ -1048,7 +1055,7 @@ CONTAINS
   
   !
   !================================================================================================================================
-  !
+  ! jjj
 
   !>Evaluates the residual for a nonlinear problem solver.
   SUBROUTINE PROBLEM_SOLVER_RESIDUAL_EVALUATE(SOLVER,ERR,ERROR,*)
@@ -1071,18 +1078,39 @@ CONTAINS
         IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
           SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
           IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-            !Copy the current solution vector to the dependent field
-            CALL SOLVER_VARIABLES_STATIC_UPDATE(SOLVER,ERR,ERROR,*999)
-            !Make sure the equations sets are up to date
-            DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
-              EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-              !Assemble the equations for linear problems
-              CALL EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
-            ENDDO !equations_set_idx
-            !Assemble the solver matrices
+
+            IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
+              !Copy the current solution vector to the dependent field
+              CALL SOLVER_VARIABLES_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
+              !Make sure the equations sets are up to date
+              DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+                !Assemble the equations for linear problems
+                CALL EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
+              ENDDO !equations_set_idx
+              !Assemble the solver matrices
 !!TODO: need to work out wether to assemble rhs and residual or residual only
-             CALL SOLVER_MATRICES_STATIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_RHS_RESIDUAL_ONLY,ERR,ERROR,*999)
-!             CALL SOLVER_MATRICES_STATIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_RESIDUAL_ONLY,ERR,ERROR,*999)
+               CALL SOLVER_MATRICES_STATIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_RHS_RESIDUAL_ONLY,ERR,ERROR,*999)
+!               CALL SOLVER_MATRICES_STATIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_RESIDUAL_ONLY,ERR,ERROR,*999)
+            ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+! sebk 18/08/2009
+!|
+              !Update the field values from the dynamic factor * current solver values AND add in mean predicted displacements/
+              CALL SOLVER_VARIABLES_DYNAMIC_RESIDUAL_UPDATE(SOLVER,ERR,ERROR,*999)
+              !Calculate the residual for each element (M, C, K and g)
+              DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+                !Assemble the equations for dynamic problems
+                CALL EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
+              ENDDO !equations_set_idx
+              !Assemble the final solver residual.
+              CALL SOLVER_MATRICES_DYNAMIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_RHS_RESIDUAL_ONLY,ERR,ERROR,*999)
+!|
+! sebk 18/08/2009
+
+            ELSE
+               CALL FLAG_ERROR("Solver equations solver type is not associated.",ERR,ERROR,*999)
+            END IF
           ELSE
             CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
           ENDIF
@@ -1195,7 +1223,7 @@ CONTAINS
       IF(PROBLEM%PROBLEM_FINISHED) THEN
         CONTROL_LOOP=>PROBLEM%CONTROL_LOOP
         IF(ASSOCIATED(CONTROL_LOOP)) THEN
-          CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP,PROBLEM,ERR,ERROR,*999)
+          CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP,ERR,ERROR,*999)
         ELSE
           CALL FLAG_ERROR("Problem control loop is not associated.",ERR,ERROR,*999)
         ENDIF
@@ -1231,28 +1259,43 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: equations_set_idx
 
+
     CALL ENTERS("PROBLEM_SOLVER_EQUATIONS_PRE_SOLVE",ERR,ERROR,*999)
 
-    IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-      SELECT CASE(CONTROL_LOOP%PROBLEM%CLASS)
-      CASE(PROBLEM_ELASTICITY_CLASS)
-!        do nothing???
-      CASE(PROBLEM_FLUID_MECHANICS_CLASS)
-!        do nothing???
-      CASE(PROBLEM_ELECTROMAGNETICS_CLASS)
-!        do nothing???
-      CASE(PROBLEM_CLASSICAL_FIELD_CLASS)
-!        do nothing???
-      CASE(PROBLEM_MODAL_CLASS)
-!        do nothing???
-      CASE DEFAULT
-        LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%CLASS,"*",ERR,ERROR))//" is not valid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
+    IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+      SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+      IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+        !Make sure the equations sets are up to date
+        DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+          EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+          !Assemble the equations 
+          IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+            SELECT CASE(CONTROL_LOOP%PROBLEM%CLASS)
+              CASE(PROBLEM_ELASTICITY_CLASS)
+!               do nothing???
+              CASE(PROBLEM_FLUID_MECHANICS_CLASS)
+            !   do nothing???
+              CASE(PROBLEM_ELECTROMAGNETICS_CLASS)
+            !   do nothing???
+              CASE(PROBLEM_CLASSICAL_FIELD_CLASS)
+            !   do nothing???
+              CASE(PROBLEM_MODAL_CLASS)
+           !    do nothing???
+              CASE DEFAULT
+                LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%CLASS,"*",ERR,ERROR))//" &
+                & is not valid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+          ELSE
+            CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ENDDO !equations_set_idx
+      ELSE
+        CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+      ENDIF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
     ENDIF
-       
     CALL EXITS("PROBLEM_SOLVER_EQUATIONS_PRE_SOLVE")
     RETURN
 999 CALL ERRORS("PROBLEM_SOLVER_EQUATIONS_PRE_SOLVE",ERR,ERROR)
@@ -1280,41 +1323,40 @@ CONTAINS
     
     CALL ENTERS("PROBLEM_SOLVER_EQUATIONS_POST_SOLVE",ERR,ERROR,*999)
 
-        IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-          SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-          IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-            !Make sure the equations sets are up to date
-            DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
-              EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-              !Assemble the equations 
-                IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-                  SELECT CASE(CONTROL_LOOP%PROBLEM%CLASS)
-                  CASE(PROBLEM_ELASTICITY_CLASS)
-!                    do nothing???
-                  CASE(PROBLEM_FLUID_MECHANICS_CLASS)
-                      CALL FLUID_MECHANICS_POST_SOLVE_SET(CONTROL_LOOP,EQUATIONS_SET,ERR,ERROR,*999)
-                  CASE(PROBLEM_ELECTROMAGNETICS_CLASS)
-            !        do nothing???
-                  CASE(PROBLEM_CLASSICAL_FIELD_CLASS)
-            !        do nothing???
-                  CASE(PROBLEM_MODAL_CLASS)
-           !        do nothing???
-                  CASE DEFAULT
-                      LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%CLASS,"*",ERR,ERROR))//"&
-                      & is not valid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  END SELECT
-                ELSE
-                  CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-                ENDIF
-            ENDDO !equations_set_idx
+    IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+      SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+      IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+        !Make sure the equations sets are up to date
+        DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+          EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+          !Assemble the equations 
+          IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+            SELECT CASE(CONTROL_LOOP%PROBLEM%CLASS)
+              CASE(PROBLEM_ELASTICITY_CLASS)
+!               do nothing???
+              CASE(PROBLEM_FLUID_MECHANICS_CLASS)
+                CALL FLUID_MECHANICS_POST_SOLVE_SET(CONTROL_LOOP,EQUATIONS_SET,ERR,ERROR,*999)
+              CASE(PROBLEM_ELECTROMAGNETICS_CLASS)
+            !   do nothing???
+              CASE(PROBLEM_CLASSICAL_FIELD_CLASS)
+            !   do nothing???
+              CASE(PROBLEM_MODAL_CLASS)
+           !    do nothing???
+              CASE DEFAULT
+                LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%CLASS,"*",ERR,ERROR))//" &
+                & is not valid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
           ELSE
-            CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
           ENDIF
-        ELSE
-          CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
-        ENDIF
-     
+        ENDDO !equations_set_idx
+      ELSE
+        CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+    ENDIF
     CALL EXITS("PROBLEM_SOLVER_EQUATIONS_POST_SOLVE")
     RETURN
 999 CALL ERRORS("PROBLEM_SOLVER_EQUATIONS_POST_SOLVE",ERR,ERROR)

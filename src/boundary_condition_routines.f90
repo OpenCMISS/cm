@@ -403,7 +403,24 @@ CONTAINS
                       CALL FLAG_ERROR("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
                     ENDIF
                   CASE(EQUATIONS_NONLINEAR)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+! SEBK
+!|
+                    DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
+                    IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
+                      CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,DYNAMIC_MAPPING% &
+                        & DYNAMIC_VARIABLE,ERR,ERROR,*999)
+                    ELSE
+                      CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                    RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
+                    IF(ASSOCIATED(RHS_MAPPING)) THEN
+                      CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,RHS_MAPPING% &
+                        & RHS_VARIABLE,ERR,ERROR,*999)
+                    ELSE
+                      CALL FLAG_ERROR("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
+                    ENDIF
+!|
+! SEBK
                   CASE DEFAULT
                     LOCAL_ERROR="The equations linearity type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))// &
                       & " is invalid."
