@@ -61,8 +61,8 @@ ifeq ($(SYSNAME),Linux)
   ifeq ($(filter-out i%86,$(MACHNAME)),)
     INSTRUCTION := i686
   endif
-  ifneq ($(filter $(INSTRUCTION),i686 ia64 x86_64),)# i686, ia64, x86_64 
-    LIB_ARCH_DIR = $(INSTRUCTION)-$(OPERATING_SYSTEM)# no ABI required
+  ifeq ($(filter-out ppc%,$(MACHNAME)),)
+    INSTRUCTION := ppc
   endif
   ifneq ($(filter $(INSTRUCTION),i686 ia64 x86_64),)# i686, ia64, x86_64 
     LIB_ARCH_DIR = $(INSTRUCTION)-$(OPERATING_SYSTEM)# no ABI required
@@ -73,6 +73,9 @@ ifeq ($(SYSNAME),Linux)
       ABI=32
     endif
     ifneq (,$(filter $(MACHNAME),ia64 x86_64))# ia64 or x86_64
+      ABI=64
+    endif
+    ifneq (,$(filter $(MACHNAME),ppc64))# power-pc
       ABI=64
     endif
   endif
