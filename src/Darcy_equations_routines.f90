@@ -568,6 +568,9 @@ CONTAINS
     REAL(DP):: MIDPOINT_X, MIDPOINT_Y
     REAL(DP):: PERM_OVER_VIS_PARAM
 
+    REAL(DP):: BETA_PARAM, P_SINK_PARAM
+
+
     REAL(DP), ALLOCATABLE, DIMENSION(:,:):: test
 
 
@@ -627,6 +630,10 @@ CONTAINS
 !             END IF
 
             PERM_OVER_VIS_PARAM = EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(1,NO_PART_DERIV)
+
+            !Two parameters used only for TESTCASE==3: VenousCompartment problem
+            BETA_PARAM   = - DARCY%PERM_OVER_VIS * (2.0_DP * PI / DARCY%LENGTH) * (2.0_DP * PI / DARCY%LENGTH)
+            P_SINK_PARAM = DARCY%P_SINK
 
             CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
               & GEOMETRIC_INTERP_POINT,ERR,ERROR,*999)
@@ -790,6 +797,15 @@ CONTAINS
                           ENDDO !idxdim
                         END IF
 
+                        IF( DARCY%TESTCASE == 3 ) THEN
+                          !This forms part of the pressure-dependent source term,
+                          !thus it enters the LHS
+                          PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                          PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+
+                          SUM = SUM + BETA_PARAM * PGM * PGN
+                        END IF
+
                         EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
                           & SUM * RWG
 
@@ -827,15 +843,14 @@ CONTAINS
                       COORD_Z = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT%VALUES(3,1)
                     END IF
 
-                    ARG_X = 2.0_DP * PI * COORD_X / DARCY%LENGTH
-                    ARG_Y = 2.0_DP * PI * COORD_Y / DARCY%LENGTH
-                    IF( DEPENDENT_BASIS_1%NUMBER_OF_XI==3 ) THEN
-                      ARG_Z = 2.0_DP * PI * COORD_Z / DARCY%LENGTH
-                    END IF
-
                     IF( DARCY%TESTCASE == 1 ) THEN
                       SOURCE =  0.0_DP
-                    ELSE
+                    ELSE IF( DARCY%TESTCASE == 2 ) THEN
+                      ARG_X = 2.0_DP * PI * COORD_X / DARCY%LENGTH
+                      ARG_Y = 2.0_DP * PI * COORD_Y / DARCY%LENGTH
+                      IF( DEPENDENT_BASIS_1%NUMBER_OF_XI==3 ) THEN
+                        ARG_Z = 2.0_DP * PI * COORD_Z / DARCY%LENGTH
+                      END IF
                       IF( DEPENDENT_BASIS_1%NUMBER_OF_XI==2 ) THEN
                         SOURCE =  2.0_DP * PERM_OVER_VIS_PARAM * ( 2.0_DP * PI / DARCY%LENGTH ) * & 
                           & ( 2.0_DP * PI / DARCY%LENGTH ) * SIN( ARG_X ) * SIN( ARG_Y ) 
@@ -850,6 +865,10 @@ CONTAINS
                       ELSE
                         SOURCE =  0.0_DP
                       END IF
+                    ELSE IF( DARCY%TESTCASE == 3 ) THEN
+                      SOURCE = BETA_PARAM * P_SINK_PARAM
+                    ELSE
+                      SOURCE =  0.0_DP
                     END IF
 
                     SUM = SUM + PGM * SOURCE

@@ -123,7 +123,7 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
     !chrm, 20.08.09: For passing data of Darcy problems
     INTEGER:: TESTCASE
     INTEGER:: BC_NUMBER_OF_WALL_NODES, NUMBER_OF_BCS
-    REAL(DP):: PERM, VIS, PERM_OVER_VIS
+    REAL(DP):: PERM, VIS, PERM_OVER_VIS, P_SINK
     REAL(DP):: X1, X2, Y1, Y2, Z1, Z2
     REAL(DP):: LENGTH, GEOM_TOL
     REAL(DP):: max_node_spacing
@@ -1518,6 +1518,7 @@ CONTAINS
 
       IF (INDEX(IN_CHAR,'PERM:') == 1)          READ(37,*) DARCY%PERM
       IF (INDEX(IN_CHAR,'VIS:') == 1)           READ(37,*) DARCY%VIS
+      IF (INDEX(IN_CHAR,'P_SINK:') == 1)        READ(37,*) DARCY%P_SINK
 
       IF (INDEX(IN_CHAR,'BC_NUMBER_OF_WALL_NODES:') == 1) READ(37,*) DARCY%BC_NUMBER_OF_WALL_NODES
       IF (INDEX(IN_CHAR,'NUMBER_OF_BCS:') == 1) READ(37,*) DARCY%NUMBER_OF_BCS
@@ -1538,7 +1539,7 @@ CONTAINS
       STOP
     END IF
 
-    DARCY%max_node_spacing = 2.0
+    DARCY%max_node_spacing = 0.05_DP
 
   END SUBROUTINE FLUID_MECHANICS_IO_READ_DARCY_PARAMS
 
@@ -1555,9 +1556,11 @@ CONTAINS
 
     IF( DARCY%TESTCASE == 1 ) THEN
       FACT = DARCY%PERM_OVER_VIS
-    ELSE
+    ELSE IF( DARCY%TESTCASE == 2 ) THEN
       FACT = 2.0_DP * PI * DARCY%PERM_OVER_VIS / DARCY%LENGTH
 !       FACT = 1.0_DP
+    ELSE IF( DARCY%TESTCASE == 3 ) THEN
+      FACT = - DARCY%PERM_OVER_VIS * 2.0_DP * PI / DARCY%LENGTH
     END IF
 
     IF( NumberOfDimensions==2 ) THEN
@@ -1565,17 +1568,22 @@ CONTAINS
         COORD_X = NodeXValue(I)
         COORD_Y = NodeYValue(I)
 
-        ARG_X = 2.0_DP * PI * COORD_X / DARCY%LENGTH
-        ARG_Y = 2.0_DP * PI * COORD_Y / DARCY%LENGTH
-
         IF( DARCY%TESTCASE == 1 ) THEN
           NodeUValue_analytic(I) = - FACT * ( 2.0_DP * COORD_X + 2.0_DP * COORD_Y )
           NodeVValue_analytic(I) = - FACT * ( 2.0_DP * COORD_X - 2.0_DP * COORD_Y )
           NodePValue_analytic(I) = COORD_X * COORD_X + 2.0_DP * COORD_X * COORD_Y - COORD_Y * COORD_Y
-        ELSE
+        ELSE IF( DARCY%TESTCASE == 2 ) THEN
+          ARG_X = 2.0_DP * PI * COORD_X / DARCY%LENGTH
+          ARG_Y = 2.0_DP * PI * COORD_Y / DARCY%LENGTH
           NodeUValue_analytic(I) = - FACT * COS( ARG_X ) * SIN( ARG_Y ) 
           NodeVValue_analytic(I) = - FACT * SIN( ARG_X ) * COS( ARG_Y ) 
           NodePValue_analytic(I) =          SIN( ARG_X ) * SIN( ARG_Y )
+        ELSE IF( DARCY%TESTCASE == 3 ) THEN
+          ARG_X = 2.0_DP * PI * COORD_X / DARCY%LENGTH
+          ARG_Y = 2.0_DP * PI * COORD_Y / DARCY%LENGTH
+          NodeUValue_analytic(I) = FACT  * ( 9.0_DP * COS( ARG_X ) )
+          NodeVValue_analytic(I) = FACT  * ( 1.0_DP * SIN( ARG_Y ) )
+          NodePValue_analytic(I) =           9.0_DP * SIN( ARG_X ) - 1.0_DP * COS( ARG_Y ) + DARCY%P_SINK
         END IF
       END DO
     ELSE IF( NumberOfDimensions==3 ) THEN
@@ -1584,21 +1592,29 @@ CONTAINS
         COORD_Y = NodeYValue(I)
         COORD_Z = NodeZValue(I)
 
-        ARG_X = 2.0_DP * PI * COORD_X / DARCY%LENGTH
-        ARG_Y = 2.0_DP * PI * COORD_Y / DARCY%LENGTH
-        ARG_Z = 2.0_DP * PI * COORD_Z / DARCY%LENGTH
-
         IF( DARCY%TESTCASE == 1 ) THEN
           NodeUValue_analytic(I) = - FACT * ( 2.0_DP * COORD_X + 2.0_DP * COORD_Y + COORD_Z )
           NodeVValue_analytic(I) = - FACT * ( 2.0_DP * COORD_X - 2.0_DP * COORD_Y + COORD_Z )
           NodeWValue_analytic(I) = - FACT * ( 3.0_DP + COORD_X + COORD_Y )
           NodePValue_analytic(I) = COORD_X * COORD_X + 2.0_DP * COORD_X * COORD_Y - COORD_Y * COORD_Y + &
             & 3.0_DP * COORD_Z + COORD_Z * COORD_X  + COORD_Z * COORD_Y 
-        ELSE
+        ELSE IF( DARCY%TESTCASE == 2 ) THEN
+          ARG_X = 2.0_DP * PI * COORD_X / DARCY%LENGTH
+          ARG_Y = 2.0_DP * PI * COORD_Y / DARCY%LENGTH
+          ARG_Z = 2.0_DP * PI * COORD_Z / DARCY%LENGTH
           NodeUValue_analytic(I) = - FACT * COS( ARG_X ) * SIN( ARG_Y )  * SIN( ARG_Z ) 
           NodeVValue_analytic(I) = - FACT * SIN( ARG_X ) * COS( ARG_Y )  * SIN( ARG_Z )  
           NodeWValue_analytic(I) = - FACT * SIN( ARG_X ) * SIN( ARG_Y )  * COS( ARG_Z )  
           NodePValue_analytic(I) =          SIN( ARG_X ) * SIN( ARG_Y )  * SIN( ARG_Z )  
+        ELSE IF( DARCY%TESTCASE == 3 ) THEN
+          ARG_X = 2.0_DP * PI * COORD_X / DARCY%LENGTH
+          ARG_Y = 2.0_DP * PI * COORD_Y / DARCY%LENGTH
+          ARG_Z = 2.0_DP * PI * COORD_Z / DARCY%LENGTH
+          NodeUValue_analytic(I) = FACT  * ( 9.0_DP * COS( ARG_X ) )
+          NodeVValue_analytic(I) = FACT  * ( 1.0_DP * SIN( ARG_Y ) )
+          NodeWValue_analytic(I) = FACT  * (-3.0_DP * SIN( ARG_Z ) )
+          NodePValue_analytic(I) =           9.0_DP * SIN( ARG_X ) - 1.0_DP * COS( ARG_Y ) &
+            &                              + 3.0_DP * COS( ARG_Z ) + DARCY%P_SINK
         END IF
       END DO
     END IF
