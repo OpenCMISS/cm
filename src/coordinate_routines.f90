@@ -18,7 +18,7 @@
 !> under the License.
 !>
 !> The Original Code is OpenCMISS
-!>
+!>MAT
 !> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
 !> Kingdom. Portions created by the University of Auckland and University
@@ -3558,19 +3558,19 @@ CONTAINS
   !
 
   !>Calculates transformation between spatial CS and rotated refernce orthogonal material CS
-  SUBROUTINE COORDINATE_MATERIAL_COORDINATE_SYSTEM_CALCULATE(GEOMETRIC_INTERPOLATED_POINT,FIBRE_INTERPOLATED_POINT,DXDNU,ERR,ERROR,*)
+  SUBROUTINE COORDINATE_MATERIAL_COORDINATE_SYSTEM_CALCULATE(GEOMETRIC_INTERPOLATED_POINT,FIBRE_INTERPOLATED_POINT,DXDNU, &
+    & ERR,ERROR,*)
 
     !Argument variables
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: GEOMETRIC_INTERPOLATED_POINT,FIBRE_INTERPOLATED_POINT
-    REAL(DP) :: DXDNU(3,3)  
+    REAL(DP),INTENT(OUT) :: DXDNU(3,3)
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: derivative_idx,fibre_idx,geometric_idx,idx1,idx2,xi_idx
     INTEGER(INTG) :: NUMBER_OF_GEOMETRIC_COMPONENTS,NUMBER_OF_FIBRE_COMPONENTS,NUMBER_OF_XI_COORDS 
     INTEGER(INTG) :: vector(3) = (/1,2,3/)
-    REAL(DP) :: ANGLE(3),DXDNU1(3,3),DXDNU2(3,3),DXDNU3(3,3),DXDNUR(3,3),DXDXI(3,3),F(3),G(3),H(3), &
-      & Ra(3,3),Rb(3,3)
+    REAL(DP) :: ANGLE(3),DXDNU1(3,3),DXDNU2(3,3),DXDNU3(3,3),DXDNUR(3,3),DXDXI(3,3),F(3),G(3),H(3),Ra(3,3),Rb(3,3)
     
     CALL ENTERS("COORDINATE_MATERIAL_COORDINATE_SYSTEM_CALCULATE",ERR,ERROR,*999)
     
@@ -3579,7 +3579,7 @@ CONTAINS
       ANGLE(idx1)=0.0_DP
       DO idx2=1,3
         DXDNU(idx1,idx2)=0.0_DP
-	DXDXI(idx1,idx2)=0.0_DP  
+        DXDXI(idx1,idx2)=0.0_DP
       ENDDO	
     ENDDO
 
