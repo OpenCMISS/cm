@@ -227,6 +227,12 @@ MODULE EQUATIONS_SET_CONSTANTS
   !>@{  
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_1=1 !<u=ln(4/(x+y+1^2))
   !>@}
+  !> \addtogroup EQUATIONS_SET_CONSTANTS_LinearElasticityAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:LinearElasticityAnalyticFunctionTypes
+  !> \brief The analytic function types for a Linear Elasticity equation
+  !>@{
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_TWO_DIM_PLANE_STRESS_1=1 !<!Not Implemented 
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_THREE_DIM_1=2 !<!Not Implemented
+  !>@}
   !>@}
 
   
