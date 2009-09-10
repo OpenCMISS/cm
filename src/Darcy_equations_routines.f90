@@ -567,11 +567,14 @@ CONTAINS
     REAL(DP):: COORD_X, COORD_Y, COORD_Z, ARG_X, ARG_Y, ARG_Z
     REAL(DP):: MIDPOINT_X, MIDPOINT_Y
     REAL(DP):: PERM_OVER_VIS_PARAM
+    REAL(DP):: k_xx, k_yy, k_zz
 
     REAL(DP):: BETA_PARAM, P_SINK_PARAM
 
 
     REAL(DP), ALLOCATABLE, DIMENSION(:,:):: test
+
+    REAL(DP), ALLOCATABLE, DIMENSION(:,:):: PERM_TENSOR_OVER_VIS, VIS_OVER_PERM_TENSOR
 
 
     CALL ENTERS("DARCY_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
@@ -605,6 +608,11 @@ CONTAINS
             & MATERIALS_INTERP_PARAMETERS,ERR,ERROR,*999)
 
 
+          ALLOCATE( PERM_TENSOR_OVER_VIS( GEOMETRIC_BASIS%NUMBER_OF_XI, GEOMETRIC_BASIS%NUMBER_OF_XI ) )
+
+          ALLOCATE( VIS_OVER_PERM_TENSOR( GEOMETRIC_BASIS%NUMBER_OF_XI, GEOMETRIC_BASIS%NUMBER_OF_XI ) )
+
+
           !Loop over gauss points
           DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
 
@@ -630,6 +638,43 @@ CONTAINS
 !             END IF
 
             PERM_OVER_VIS_PARAM = EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(1,NO_PART_DERIV)
+
+            k_xx = EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(1,NO_PART_DERIV)
+            k_yy = EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(2,NO_PART_DERIV)
+!             k_zz = EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(3,NO_PART_DERIV)
+            k_zz = k_yy
+
+            PERM_TENSOR_OVER_VIS(:,:) = 0.0_DP
+            IF( DARCY%TESTCASE == 4 ) THEN
+              IF( GEOMETRIC_BASIS%NUMBER_OF_XI == 2 ) THEN
+                PERM_TENSOR_OVER_VIS(1,1) = k_xx
+                PERM_TENSOR_OVER_VIS(2,2) = k_yy
+              ELSE IF( GEOMETRIC_BASIS%NUMBER_OF_XI == 3 ) THEN
+                PERM_TENSOR_OVER_VIS(1,1) = k_xx
+                PERM_TENSOR_OVER_VIS(2,2) = k_yy
+                PERM_TENSOR_OVER_VIS(3,3) = k_zz
+              END IF
+            ELSE
+              IF( GEOMETRIC_BASIS%NUMBER_OF_XI == 2 ) THEN
+                PERM_TENSOR_OVER_VIS(1,1) = PERM_OVER_VIS_PARAM
+                PERM_TENSOR_OVER_VIS(2,2) = PERM_OVER_VIS_PARAM
+              ELSE IF( GEOMETRIC_BASIS%NUMBER_OF_XI == 3 ) THEN
+                PERM_TENSOR_OVER_VIS(1,1) = PERM_OVER_VIS_PARAM
+                PERM_TENSOR_OVER_VIS(2,2) = PERM_OVER_VIS_PARAM
+                PERM_TENSOR_OVER_VIS(3,3) = PERM_OVER_VIS_PARAM
+              END IF
+            END IF
+
+            !MIND: Currently the inverse is coded only for the special case of a diagonal PERM_TENSOR_OVER_VIS matrix
+            VIS_OVER_PERM_TENSOR(:,:) = 0.0_DP
+            IF( GEOMETRIC_BASIS%NUMBER_OF_XI == 2 ) THEN
+              VIS_OVER_PERM_TENSOR(1,1) = 1.0_DP / PERM_TENSOR_OVER_VIS(1,1)
+              VIS_OVER_PERM_TENSOR(2,2) = 1.0_DP / PERM_TENSOR_OVER_VIS(2,2)
+            ELSE IF( GEOMETRIC_BASIS%NUMBER_OF_XI == 3 ) THEN
+              VIS_OVER_PERM_TENSOR(1,1) = 1.0_DP / PERM_TENSOR_OVER_VIS(1,1)
+              VIS_OVER_PERM_TENSOR(2,2) = 1.0_DP / PERM_TENSOR_OVER_VIS(2,2)
+              VIS_OVER_PERM_TENSOR(3,3) = 1.0_DP / PERM_TENSOR_OVER_VIS(3,3)
+            END IF
 
             !Two parameters used only for TESTCASE==3: VenousCompartment problem
             BETA_PARAM   = - DARCY%PERM_OVER_VIS * (2.0_DP * PI / DARCY%LENGTH) * (2.0_DP * PI / DARCY%LENGTH)
@@ -685,10 +730,13 @@ CONTAINS
                         PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                         PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
 
-                        SUM = SUM + 1.0_DP / PERM_OVER_VIS_PARAM * PGM * PGN
+                        SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * PGM * PGN
+                        !MIND: double check the matrix index order: (mh, nh) or (nh, mh)
+                        !within this conditional: mh==nh anyway
 
                         IF( DARCY%STAB ) THEN
-                          SUM = SUM - 0.5_DP * 1.0_DP / PERM_OVER_VIS_PARAM * PGM * PGN
+                          SUM = SUM - 0.5_DP * VIS_OVER_PERM_TENSOR( mh, nh ) * PGM * PGN
+                          !MIND: double check the matrix index order: (mh, nh) or (nh, mh)
                         END IF
 
                         EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
@@ -776,7 +824,7 @@ CONTAINS
                           DO idxdim =1,DEPENDENT_BASIS_1%NUMBER_OF_XI !number space dimension equiv. number of xi
                             DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
                               DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                                SUM = SUM + 0.5_DP * PERM_OVER_VIS_PARAM * PGMSI(mi) * PGNSI(ni) * &
+                                SUM = SUM + 0.5_DP * PERM_TENSOR_OVER_VIS( idxdim, idxdim ) * PGMSI(mi) * PGNSI(ni) * &
                                   & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(mi,idxdim) * &
                                   & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(ni,idxdim)
                                 IF( DARCY%DEBUG ) THEN
