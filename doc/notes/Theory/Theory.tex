@@ -146,7 +146,7 @@ or
   \vect{\alpha}^{p}_{n} =-\inverse{\matr{A}}\vect{b}
 \end{equation}
 
-If $\fnof{\vect{g}}{\vect{u}}$ is not $\vect{0}$ then \eqnref{eqn:transient} is nonlinear in $\vect{\alpha}^{p}_{n}$. To solve this
+If $\fnof{\vect{g}}{\vect{u}}$ is not $\equiv\vect{0}$ then \eqnref{eqn:transient} is nonlinear in $\vect{\alpha}^{p}_{n}$. To solve this
 equation we use Newton's method. i.e.
 
 \begin{equation}
@@ -190,6 +190,32 @@ step can be obtained from
   \end{split}
 \end{equation}
 
+For algorithms in which the degree of the polynomial, $p$, is higher than the
+order we require the algorithm to be initialised so that the initial velocity
+or acceleration can be computed. The initial velocity or acceleration values
+can be obtained by substituting the initial displacement or initial
+displacement and velocity values into \eqnref{eqn:generaltransientnonlinear},
+rearranging and solving. For example consider an the case of a second degree
+polynomial and a first order system. Substituing the initial displacement
+$\vect{u}_{0}$ into \eqnref{eqn:generaltransientnonlinear} gives
+
+\begin{equation}
+  \matr{C}\dot{\vect{u}}_{0}+\matr{K}\vect{u}_{0}+\fnof{\vect{g}}{\vect{u}_{0}}+\bar{\vect{f}}_{0}=\vect{0}
+\end{equation}
+
+and therefore an approximation to the initial velocity can be found from
+
+\begin{equation}
+  \dot{\vect{u}}_{0}=-\inverse{\matr{C}}\pbrac{\matr{K}\vect{u}_{0}+\fnof{\vect{g}}{\vect{u}_{0}}+\bar{\vect{f}}_{0}}
+\end{equation}
+
+Similarily for a third degree polynomial and a second order system the initial
+acceleration can be found from
+
+\begin{equation}
+  \ddot{\vect{u}}_{0}=-\inverse{\matr{M}}\pbrac{\matr{C}\dot{\vect{u}}_{0}+\matr{K}\vect{u}_{0}+
+    \fnof{\vect{g}}{\vect{u}_{0}}+\bar{\vect{f}}_{0}}
+\end{equation}
 
 \subsubsection{Special SN11 case, p=1}
 
@@ -232,6 +258,10 @@ For this special case, the mean predicited values are given by
     \bar{\vect{u}}_{n+1} &= \vect{u}_{n}+\theta_{1}\Delta t\dot{\vect{u}}_{n}\\
     \dot{\bar{\vect{u}}}_{n+1} &= \dot{\vect{u}}_{n}
   \end{split}
+\end{equation}
+where
+\begin{equation}
+  \dot{\vect{u}}_{0}=-\inverse{\matr{C}}\pbrac{\matr{K}\vect{u}_{0}+\bar{\vect{f}}_{0}}
 \end{equation}
 
 The amplification matrix is given by
