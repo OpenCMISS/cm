@@ -110,6 +110,17 @@ CONTAINS
           SELECT CASE(SOLUTION_METHOD)
             CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
               EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
+
+            CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The specified solution method of "//TRIM(NUMBER_TO_VSTRING(SOLUTION_METHOD,"*",ERR,ERROR))// &
                 & " is invalid."
@@ -245,13 +256,13 @@ CONTAINS
                     CASE DEFAULT
                       LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE, &
                         & "*",ERR,ERROR))// " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP% &
-                        & SETUP_TYPE,"*",ERR,ERROR))// " is invalid for a Navier-Stokes fluid."
+                        & SETUP_TYPE,"*",ERR,ERROR))// " is not implemented for a Navier-Stokes fluid."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 CASE DEFAULT
                   LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                     & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                    & " is invalid for a Stokes equation."
+                    & " is invalid for a Navier-Stokes equation."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
 
@@ -355,6 +366,17 @@ CONTAINS
                             CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE, &
                               & ERR,ERROR,*999)
                             !Other solutions not defined yet
+
+                          CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                           CASE DEFAULT
                             LOCAL_ERROR="The solution method of " &
                               & //TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// " is invalid."
@@ -389,6 +411,17 @@ CONTAINS
                               & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                             CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
                               & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+
+                          CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                           CASE DEFAULT
                             LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD, &
                               & "*",ERR,ERROR))//" is invalid."
@@ -583,6 +616,10 @@ CONTAINS
                           CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
                           CALL EQUATIONS_MAPPING_LINEAR_MATRICES_VARIABLE_TYPES_SET(EQUATIONS_MAPPING,(/FIELD_U_VARIABLE_TYPE/), &
                             & ERR,ERROR,*999)
+!sebk 16/10/2009
+!                          CALL EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_U_VARIABLE_TYPE,ERR,ERROR,*999)
+!sebk 16/10/2009
+
                           CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELUDELN_VARIABLE_TYPE, & 
                             & ERR,ERROR,*999)
                           CALL EQUATIONS_MAPPING_CREATE_FINISH(EQUATIONS_MAPPING,ERR,ERROR,*999)
@@ -611,6 +648,17 @@ CONTAINS
                           END SELECT
 
                           CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
+
+                        CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                         CASE DEFAULT
                           LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD, &
                             & "*",ERR,ERROR))//" is invalid."
@@ -647,6 +695,9 @@ CONTAINS
                           CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
                           CALL EQUATIONS_MAPPING_DYNAMIC_MATRICES_SET(EQUATIONS_MAPPING,.TRUE.,.TRUE.,ERR,ERROR,*999)
                           CALL EQUATIONS_MAPPING_DYNAMIC_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_U_VARIABLE_TYPE,ERR,ERROR,*999)
+!sebk 16/10/2009
+                          CALL EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_U_VARIABLE_TYPE,ERR,ERROR,*999)
+!sebk 16/10/2009
                           CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELUDELN_VARIABLE_TYPE, & 
                             & ERR,ERROR,*999)
                           CALL EQUATIONS_MAPPING_CREATE_FINISH(EQUATIONS_MAPPING,ERR,ERROR,*999)
@@ -681,6 +732,17 @@ CONTAINS
                             END SELECT
                           ENDIF
                           CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
+
+                        CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                         CASE DEFAULT
                           LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD, &
                             & "*",ERR,ERROR))//" is invalid."

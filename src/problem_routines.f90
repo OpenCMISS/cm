@@ -941,7 +941,7 @@ CONTAINS
   SUBROUTINE PROBLEM_SOLVER_JACOBIAN_EVALUATE(SOLVER,ERR,ERROR,*)
 
    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver to evaluate the Jacobian for
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER, LINKING_SOLVER !<A pointer to the solver to evaluate the Jacobian for
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -958,37 +958,46 @@ CONTAINS
         IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
           SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
           IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-! sebk 18/08/2009
+! sebk 15/09/2009
 !|
             IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
-              !Copy the current solution vector to the dependent field
-              CALL SOLVER_VARIABLES_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
-              !Calculate the Jacobian
-              DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
-                EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                !Assemble the equations for linear problems
-                CALL EQUATIONS_SET_JACOBIAN_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
-              ENDDO !equations_set_idx
-              !Assemble the static nonlinear solver matrices
+              !Check if the nonlinear solver is linked to a dynamic solver 
+              LINKING_SOLVER=>SOLVER%LINKING_SOLVER
+              IF(ASSOCIATED(LINKING_SOLVER)) THEN
+                IF(LINKING_SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+                  !Update the field values from the dynamic factor * current solver values AND add in mean predicted displacements/
+                  CALL SOLVER_VARIABLES_DYNAMIC_NONLINEAR_UPDATE(SOLVER,ERR,ERROR,*999)
+                  !Calculate the Jacobian
+                  DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                    EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+                    !Assemble the equations for dynamic problems
+                    CALL EQUATIONS_SET_JACOBIAN_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
+                  ENDDO !equations_set_idx
+                  !Assemble the dynamic nonlinear solver matrices
+                  CALL SOLVER_MATRICES_DYNAMIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_JACOBIAN_ONLY,ERR,ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("Solver equations linking solver mapping is not dynamic.",ERR,ERROR,*999)
+                END IF
+              ELSE
+              !Otherwise perform as steady nonlinear
+                !Copy the current solution vector to the dependent field
+                CALL SOLVER_VARIABLES_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
+                !Calculate the Jacobian
+                DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                  EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+                  !Assemble the equations for linear problems
+                  CALL EQUATIONS_SET_JACOBIAN_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
+                ENDDO !equations_set_idx
+                !Assemble the static nonlinear solver matrices
 !!TODO: need to work out wether to assemble rhs and residual or residual only
-              CALL SOLVER_MATRICES_STATIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_JACOBIAN_ONLY,ERR,ERROR,*999)          
+                CALL SOLVER_MATRICES_STATIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_JACOBIAN_ONLY,ERR,ERROR,*999)          
 !               CALL SOLVER_MATRICES_STATIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_RESIDUAL_ONLY,ERR,ERROR,*999)
-            ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
-              !Update the field values from the dynamic factor * current solver values AND add in mean predicted displacements/
-              CALL SOLVER_VARIABLES_DYNAMIC_NONLINEAR_UPDATE(SOLVER,ERR,ERROR,*999)
-              !Calculate the Jacobian
-              DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
-                EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                !Assemble the equations for dynamic problems
-                CALL EQUATIONS_SET_JACOBIAN_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
-              ENDDO !equations_set_idx
-              !Assemble the dynamic nonlinear solver matrices
-              CALL SOLVER_MATRICES_DYNAMIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_JACOBIAN_ONLY,ERR,ERROR,*999)
+              END IF       
+            ELSE
+              CALL FLAG_ERROR("Solver equations solver type is not associated.",ERR,ERROR,*999)      
+            END IF
 !|
 ! sebk 18/08/2009
-            ELSE
-               CALL FLAG_ERROR("Solver equations solver type is not associated.",ERR,ERROR,*999)
-            END IF
           ELSE
             CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
           ENDIF
@@ -1017,7 +1026,7 @@ CONTAINS
   SUBROUTINE PROBLEM_SOLVER_RESIDUAL_EVALUATE(SOLVER,ERR,ERROR,*)
 
    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver to evaluate the residual for
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER, LINKING_SOLVER !<A pointer to the solver to evaluate the residual for
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1035,35 +1044,43 @@ CONTAINS
           SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
           IF(ASSOCIATED(SOLVER_MAPPING)) THEN
 
+! sebk 15/09/2009
+!|
             IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
-              !Copy the current solution vector to the dependent field
-              CALL SOLVER_VARIABLES_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
-              !Make sure the equations sets are up to date
-              DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
-                EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                !Assemble the equations for linear problems
-                CALL EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
-              ENDDO !equations_set_idx
-              !Assemble the solver matrices
+              !Check if the nonlinear solver is linked to a dynamic solver 
+              LINKING_SOLVER=>SOLVER%LINKING_SOLVER
+              IF(ASSOCIATED(LINKING_SOLVER)) THEN
+                IF(LINKING_SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+                  !Update the field values from the dynamic factor * current solver values AND add in mean predicted displacements/
+                  CALL SOLVER_VARIABLES_DYNAMIC_NONLINEAR_UPDATE(SOLVER,ERR,ERROR,*999)
+                  !Calculate the residual for each element (M, C, K and g)
+                  DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                    EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+                    !Assemble the equations for dynamic problems
+                    CALL EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
+                  ENDDO !equations_set_idx
+                  !Assemble the final solver residual.
+                  CALL SOLVER_MATRICES_DYNAMIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_RHS_RESIDUAL_ONLY,ERR,ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("Solver equations linking solver mapping is not dynamic.",ERR,ERROR,*999)
+                END IF
+              ELSE
+              ! Perform as normal nonlinear solver
+!|
+! sebk 15/09/2009
+                !Copy the current solution vector to the dependent field
+                CALL SOLVER_VARIABLES_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
+                !Make sure the equations sets are up to date
+                DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                  EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+                  !Assemble the equations for linear problems
+                  CALL EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
+                ENDDO !equations_set_idx
+                !Assemble the solver matrices
 !!TODO: need to work out wether to assemble rhs and residual or residual only
-               CALL SOLVER_MATRICES_STATIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_RHS_RESIDUAL_ONLY,ERR,ERROR,*999)
+                 CALL SOLVER_MATRICES_STATIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_RHS_RESIDUAL_ONLY,ERR,ERROR,*999)
 !               CALL SOLVER_MATRICES_STATIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_RESIDUAL_ONLY,ERR,ERROR,*999)
-            ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
-! sebk 18/08/2009
-!|
-              !Update the field values from the dynamic factor * current solver values AND add in mean predicted displacements/
-              CALL SOLVER_VARIABLES_DYNAMIC_NONLINEAR_UPDATE(SOLVER,ERR,ERROR,*999)
-              !Calculate the residual for each element (M, C, K and g)
-              DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
-                EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                !Assemble the equations for dynamic problems
-                CALL EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
-              ENDDO !equations_set_idx
-              !Assemble the final solver residual.
-              CALL SOLVER_MATRICES_DYNAMIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_RHS_RESIDUAL_ONLY,ERR,ERROR,*999)
-!|
-! sebk 18/08/2009
-
+              END IF
             ELSE
                CALL FLAG_ERROR("Solver equations solver type is not associated.",ERR,ERROR,*999)
             END IF

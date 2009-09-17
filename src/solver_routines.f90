@@ -68,8 +68,8 @@ MODULE SOLVER_ROUTINES
   !Module parameters
 
   !> \addtogroup SOLVER_ROUTINES_SolverTypes SOLVER_ROUTINES::SolverTypes
-  !> \brief The types of a solver.
-  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::SolverTypes
+  !> \brief The types of a problem solver
+  !> \see SOLVER_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_LINEAR_TYPE=1 !<A linear solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NONLINEAR_TYPE=2 !<A nonlinear solver  \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
@@ -80,24 +80,24 @@ MODULE SOLVER_ROUTINES
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_SolverLibraries SOLVER_ROUTINES::SolverLibraries
-  !> \brief The types of solver libraries.
-  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::SolverLibraries
+  !> \brief The types of solver libraries
+  !> \see SOLVER_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_CMISS_LIBRARY=LIBRARY_CMISS_TYPE !<CMISS (internal) solver library \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_PETSC_LIBRARY=LIBRARY_PETSC_TYPE !<PETSc solver library \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_LinearSolverTypes SOLVER_ROUTINES::LinearSolverTypes
-  !> \brief The types of linear solvers.
-  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::LinearSolverTypes
+  !> \brief The types of linear solvers
+  !> \see SOLVER_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_LINEAR_DIRECT_SOLVE_TYPE=1 !<Direct linear solver type \see SOLVER_ROUTINES_LinearSolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE=2 !<Iterative linear solver type \see SOLVER_ROUTINES_LinearSolverTypes,SOLVER_ROUTINES
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_DirectLinearSolverTypes SOLVER_ROUTINES::DirectLinearSolverTypes
-  !> \brief The types of direct linear solvers. \todo Move libraries to a more appropriate place.
-  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::DirectLinearSolverTypes
+  !> \brief The types of direct linear solvers
+  !> \see SOLVER_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_LU=1 !<LU direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_CHOLESKY=2 !<Cholesky direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
@@ -110,8 +110,8 @@ MODULE SOLVER_ROUTINES
   !>@}
   
   !> \addtogroup SOLVER_ROUTINES_IterativeLinearSolverTypes SOLVER_ROUTINES::IterativeLinearSolverTypes
-  !> \brief The types of iterative linear solvers.
-  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::IterativeLinearSolverTypes
+  !> \brief The types of iterative linear solvers
+  !> \see SOLVER_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_ITERATIVE_RICHARDSON=1 !<Richardson iterative solver type \see SOLVER_ROUTINES_IterativeLinearSolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_ITERATIVE_CHEBYCHEV=2 !<Chebychev iterative solver type \see SOLVER_ROUTINES_IterativeLinearSolverTypes,SOLVER_ROUTINES
@@ -123,8 +123,8 @@ MODULE SOLVER_ROUTINES
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_IterativePreconditionerTypes SOLVER_ROUTINES::IterativePreconditionerTypes
-  !> \brief The types of iterative preconditioners.
-  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::IterativePreconditionerTypes
+  !> \brief The types of iterative preconditioners
+  !> \see SOLVER_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_ITERATIVE_NO_PRECONDITIONER=0 !<No preconditioner type \see SOLVER_ROUTINES_IterativePreconditionerTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_ITERATIVE_JACOBI_PRECONDITIONER=1 !<Jacobi preconditioner type \see SOLVER_ROUTINES_IterativePreconditionerTypes,SOLVER_ROUTINES
@@ -136,8 +136,8 @@ MODULE SOLVER_ROUTINES
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_NonlinearSolverTypes SOLVER_ROUTINES::NonlinearSolverTypes
-  !> \brief The types of nonlinear solvers.
-  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::NonlinearSolverTypes
+  !> \brief The types of nonlinear solvers
+  !> \see SOLVER_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_NONLINEAR_NEWTON=1 !<Newton nonlinear solver type \see SOLVER_ROUTINES_NonlinearSolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NONLINEAR_BFGS_INVERSE=2 !<BFGS inverse nonlinear solver type \see SOLVER_ROUTINES_NonlinearSolverTypes,SOLVER_ROUTINES
@@ -145,16 +145,16 @@ MODULE SOLVER_ROUTINES
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_NewtonSolverTypes SOLVER_ROUTINES::NewtonSolverTypes
-  !> \brief The types of nonlinear Newton solvers. 
-  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::NewtonSolverTypes
+  !> \brief The types of nonlinear Newton solvers
+  !> \see SOLVER_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_LINESEARCH=1 !<Newton line search nonlinear solver type \see SOLVER_ROUTINES_NewtonSolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_TRUSTREGION=2 !<Newton trust region nonlinear solver type \see SOLVER_ROUTINES_NewtonSolverTypes,SOLVER_ROUTINES
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_NewtonLineSearchTypes SOLVER_ROUTINES::NewtonLineSearchTypes
-  !> \brief The types line search techniques for Newton line search nonlinear solvers.
-  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::NewtonLineSearchTypes
+  !> \brief The types line search techniques for Newton line search nonlinear solvers
+  !> \see SOLVER_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_LINESEARCH_NONORMS=1 !<No norms line search for Newton line search nonlinear solves \see SOLVER_ROUTINES_NewtonLineSearchTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_LINESEARCH_NONE=2 !<No line search for Newton line search nonlinear solves \see SOLVER_ROUTINES_NewtonLineSearchTypes,SOLVER_ROUTINES
@@ -164,16 +164,16 @@ MODULE SOLVER_ROUTINES
   
   !> \addtogroup SOLVER_ROUTINES_JacobianCalculationTypes SOLVER_ROUTINES::JacobianCalculationTypes
   !> \brief The Jacobian calculation types for a nonlinear solver 
-  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::JacobianCalculationTypes
+  !> \see SOLVER_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_JACOBIAN_NOT_CALCULATED=1 !<The Jacobian values will not be calculated for the nonlinear equations set \see SOLVER_ROUTINES_JacobianCalculationTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_JACOBIAN_ANALTYIC_CALCULATED=2 !<The Jacobian values will be calculated analytically for the nonlinear equations set \see SOLVER_ROUTINES_JacobianCalculationTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_JACOBIAN_FD_CALCULATED=3 !<The Jacobian values will be calcualted using finite differences for the nonlinear equations set \see SOLVER_ROUTINES_JacobianCalculationTypes,SOLVER_ROUTINES
   !>@}  
 
-  !> \addtogroup SOLVER_ROUTINES_DynamicOrderTypes SOLVER_ROUTINES::DynamicOrderTypes
+   !> \addtogroup SOLVER_ROUTINES_DynamicOrderTypes SOLVER_ROUTINES::DynamicOrderTypes
   !> \brief The order types for a dynamic solver 
-  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::DynamicOrderTypes
+  !> \see SOLVER_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_DYNAMIC_FIRST_ORDER=1 !<Dynamic solver has first order terms \see SOLVER_ROUTINES_DynamicOrderTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DYNAMIC_SECOND_ORDER=2 !<Dynamic solver has second order terms \see SOLVER_ROUTINES_DynamicOrderTypes,SOLVER_ROUTINES
@@ -181,7 +181,7 @@ MODULE SOLVER_ROUTINES
 
   !> \addtogroup SOLVER_ROUTINES_DynamicLinearityTypes SOLVER_ROUTINES::DynamicLinearityTypes
   !> \brief The time linearity types for a dynamic solver 
-  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::DynamicLinearityTypes
+  !> \see SOLVER_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_DYNAMIC_LINEAR=1 !<Dynamic solver has linear terms \see SOLVER_ROUTINES_DynamicLinearityTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DYNAMIC_NONLINEAR=2 !<Dynamic solver has nonlinear terms \see SOLVER_ROUTINES_DynamicLinearityTypes,SOLVER_ROUTINES
@@ -189,7 +189,7 @@ MODULE SOLVER_ROUTINES
 
   !> \addtogroup SOLVER_ROUTINES_DynamicDegreeTypes SOLVER_ROUTINES::DynamicDegreeTypes
   !> \brief The time interpolation polynomial degree types for a dynamic solver 
-  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::DynamicDegreeTypes
+  !> \see SOLVER_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_DYNAMIC_FIRST_DEGREE=1 !<Dynamic solver uses a first degree polynomial for time interpolation \see SOLVER_ROUTINES_DynamicDegreeTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DYNAMIC_SECOND_DEGREE=2 !<Dynamic solver uses a second degree polynomial for time interpolation \see SOLVER_ROUTINES_DynamicDegreeTypes,SOLVER_ROUTINES
@@ -198,7 +198,7 @@ MODULE SOLVER_ROUTINES
   
   !> \addtogroup SOLVER_ROUTINES_DynamicSchemeTypes SOLVER_ROUTINES::DynamicSchemeTypes
   !> \brief The types of dynamic solver scheme
-  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::DynamicSchemeTypes
+  !> \see SOLVER_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_DYNAMIC_EULER_SCHEME=1 !<Euler (explicit) dynamic solver \see SOLVER_ROUTINES_DynamicSchemeTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DYNAMIC_BACKWARD_EULER_SCHEME=2 !<Backward Euler (implicit) dynamic solver \see SOLVER_ROUTINES_DynamicSchemeTypes,SOLVER_ROUTINES
@@ -225,7 +225,7 @@ MODULE SOLVER_ROUTINES
   
   !> \addtogroup SOLVER_ROUTINES_DAETypes SOLVER_ROUTINES::DAETypes
   !> \brief The type of differential-algebraic equation
-  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::DAETypes
+  !> \see SOLVER_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_DAE_DIFFERENTIAL_ONLY=0 !<Differential equations only \see SOLVER_ROUTINES_DAETypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DAE_INDEX_1=1 !<Index 1 differential-algebraic equation \see SOLVER_ROUTINES_DAETypes,SOLVER_ROUTINES
@@ -235,7 +235,7 @@ MODULE SOLVER_ROUTINES
 
   !> \addtogroup SOLVER_ROUTINES_DAESolverTypes SOLVER_ROUTINES::DAESolverTypes
   !> \brief The differential-algebraic equation solver types for a differential-algebraic equation solver 
-  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::DAESolverTypes
+  !> \see SOLVER_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_DAE_EULER=1 !<Euler differential-algebraic equation solver \see SOLVER_ROUTINES_DAESolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DAE_CRANK_NICHOLSON=2 !<Crank-Nicholson differential-algebraic equation solver \see SOLVER_ROUTINES_DAESolverTypes,SOLVER_ROUTINES
@@ -247,7 +247,7 @@ MODULE SOLVER_ROUTINES
 
   !> \addtogroup SOLVER_ROUTINES_EulerDAESolverTypes SOLVER_ROUTINES::EulerDAESolverTypes
   !> \brief The Euler solver types for a differential-algebriac equation solver 
-  !> \see SOLVER_ROUTINES_DAESolverTypes,SOLVER_ROUTINES,OPENCMISS::Solver::EulerDAESolverTypes
+  !> \see SOLVER_ROUTINES_DAESolverTypes,SOLVER_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_DAE_EULER_FORWARD=1 !<Forward Euler differential equation solver \see SOLVER_ROUTINES_EulerDAESolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DAE_EULER_BACKWARD=2 !<Backward Euler differential equation solver \see SOLVER_ROUTINES_EulerDAESolverTypes,SOLVER_ROUTINES
@@ -255,8 +255,8 @@ MODULE SOLVER_ROUTINES
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_SolutionInitialiseTypes SOLVER_ROUTINES::SolutionInitialiseTypes
-  !> \brief The types of solution initialisation. 
-  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::SolutionInitialiseTypes
+  !> \brief The types of solution initialisation
+  !> \see SOLVER_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_SOLUTION_INITIALISE_ZERO=0 !<Initialise the solution by zeroing it before a solve \see SOLVER_ROUTINES_SolutionInitialiseTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD=1 !<Initialise the solution by copying in the current dependent field values \see SOLVER_ROUTINES_SolutionInitialiseTypes,SOLVER_ROUTINES
@@ -266,7 +266,7 @@ MODULE SOLVER_ROUTINES
   
   !> \addtogroup SOLVER_ROUTINES_OutputTypes SOLVER_ROUTINES::OutputTypes
   !> \brief The types of output
-  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::OutputTypes
+  !> \see SOLVER_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_NO_OUTPUT=0 !<No output from the solver routines \see SOLVER_ROUTINES_OutputTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_PROGRESS_OUTPUT=1 !<Progress output from solver routines \see SOLVER_ROUTINES_OutputTypes,SOLVER_ROUTINES
@@ -277,7 +277,7 @@ MODULE SOLVER_ROUTINES
 
   !> \addtogroup SOLVER_ROUTINES_SparsityTypes SOLVER_ROUTINES::SparsityTypes
   !> \brief The types of sparse solver matrices
-  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::SparsityTypes
+  !> \see SOLVER_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_SPARSE_MATRICES=1 !<Use sparse solver matrices \see SOLVER_ROUTINES_SparsityTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_FULL_MATRICES=2 !<Use fully populated solver matrices \see SOLVER_ROUTINES_SparsityTypes,SOLVER_ROUTINES
@@ -395,7 +395,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finishes the process of creating a solver. 
+  !>Finishes the process of creating a solver 
   SUBROUTINE SOLVER_CREATE_FINISH(SOLVER,ERR,ERROR,*)
 
     !Argument variables
@@ -1004,64 +1004,8 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Returns the solve type for an Euler differential-algebraic equation solver. \see OPENCMISS::CMISSSolverDAEEulerSolverTypeGet
-  SUBROUTINE SOLVER_DAE_EULER_SOLVER_TYPE_GET(SOLVER,DAE_EULER_TYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the Euler differential equation solver to get type for 
-    INTEGER(INTG), INTENT(OUT) :: DAE_EULER_TYPE !<On return, the type of Euler solver for the Euler differential-algebraic equation. \see SOLVER_ROUTINES_EulerDAESolverTypes,SOLVER_ROUTINES.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER
-    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_DAE_SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-     
-    CALL ENTERS("SOLVER_DAE_EULER_SOLVER_TYPE_GET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        IF(SOLVER%SOLVE_TYPE==SOLVER_DAE_TYPE) THEN
-          DAE_SOLVER=>SOLVER%DAE_SOLVER
-          IF(ASSOCIATED(DAE_SOLVER)) THEN
-            IF(DAE_SOLVER%DAE_SOLVE_TYPE==SOLVER_DAE_EULER) THEN
-              EULER_DAE_SOLVER=>DAE_SOLVER%EULER_SOLVER
-              IF(ASSOCIATED(EULER_DAE_SOLVER)) THEN
-                DAE_EULER_TYPE=EULER_DAE_SOLVER%EULER_TYPE
-              ELSE
-                CALL FLAG_ERROR("The differential-algebraic equation solver Euler solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The solver differential-algebraic equation solver is not an Euler differential-algebraic "// &
-                & "equation solver.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("The solver differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The solver is not a differential-algebraic equation solver.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-         
-    CALL EXITS("SOLVER_DAE_EULER_SOLVER_TYPE_GET")
-    RETURN
-999 CALL ERRORS("SOLVER_DAE_EULER_SOLVER_TYPE_GET",ERR,ERROR)    
-    CALL EXITS("SOLVER_DAE_EULER_SOLVER_TYPE_GET")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_DAE_EULER_SOLVER_TYPE_GET
-
-  !
-  !================================================================================================================================
-  !
-  
-  !>Sets/changes the solve type for an Euler differential-algebraic equation solver. \see OPENCMISS::CMISSSolverDAEEulerSolverTypeSet
-  SUBROUTINE SOLVER_DAE_EULER_SOLVER_TYPE_SET(SOLVER,DAE_EULER_TYPE,ERR,ERROR,*)
+  !>Sets/changes the solve type for an Euler differential-algebraic equation solver.
+  SUBROUTINE SOLVER_DAE_EULER_TYPE_SET(SOLVER,DAE_EULER_TYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the Euler differential equation solver to set type for 
@@ -1073,7 +1017,7 @@ CONTAINS
     TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_DAE_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
      
-    CALL ENTERS("SOLVER_DAE_EULER_SOLVER_TYPE_SET",ERR,ERROR,*999)
+    CALL ENTERS("SOLVER_DAE_EULER_TYPE_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
@@ -1132,13 +1076,13 @@ CONTAINS
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
          
-    CALL EXITS("SOLVER_DAE_EULER_SOLVER_TYPE_SET")
+    CALL EXITS("SOLVER_DAE_EULER_TYPE_SET")
     RETURN
-999 CALL ERRORS("SOLVER_DAE_EULER_SOLVER_TYPE_SET",ERR,ERROR)    
-    CALL EXITS("SOLVER_DAE_EULER_SOLVER_TYPE_SET")
+999 CALL ERRORS("SOLVER_DAE_EULER_TYPE_SET",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_EULER_TYPE_SET")
     RETURN 1
    
-  END SUBROUTINE SOLVER_DAE_EULER_SOLVER_TYPE_SET
+  END SUBROUTINE SOLVER_DAE_EULER_TYPE_SET
 
   !
   !================================================================================================================================
@@ -1671,52 +1615,7 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Returns the solve type for an differential-algebraic equation solver. \see OPENCMISS::CMISSSolverDAESolverTypeGet
-  SUBROUTINE SOLVER_DAE_SOLVER_TYPE_GET(SOLVER,DAE_SOLVE_TYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to get the differential-algebraic equation solver type for. 
-    INTEGER(INTG), INTENT(OUT) :: DAE_SOLVE_TYPE !<On return, the type of solver for the differential-algebraic equation. \see SOLVER_ROUTINES_DAESolverTypes,SOLVER_ROUTINES.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-     
-    CALL ENTERS("SOLVER_DAE_SOLVER_TYPE_GET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        IF(SOLVER%SOLVE_TYPE==SOLVER_DAE_TYPE) THEN
-          DAE_SOLVER=>SOLVER%DAE_SOLVER
-          IF(ASSOCIATED(DAE_SOLVER)) THEN
-            DAE_SOLVE_TYPE=DAE_SOLVER%DAE_SOLVE_TYPE
-         ELSE
-            CALL FLAG_ERROR("The solver differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The solver is not a differential-algebraic equation solver.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-         
-    CALL EXITS("SOLVER_DAE_SOLVER_TYPE_GET")
-    RETURN
-999 CALL ERRORS("SOLVER_DAE_SOLVER_TYPE_GET",ERR,ERROR)    
-    CALL EXITS("SOLVER_DAE_SOLVER_TYPE_GET")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_DAE_SOLVER_TYPE_GET
-
-  !
-  !================================================================================================================================
-  !
-  
-  !>Sets/changes the solve type for an differential-algebraic equation solver. \see OPENCMISS::CMISSSolverDAESolverTypeSet
+  !>Sets/changes the solve type for an differential-algebraic equation solver.
   SUBROUTINE SOLVER_DAE_SOLVER_TYPE_SET(SOLVER,DAE_SOLVE_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -1801,7 +1700,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Set/change the times for a differential-algebraic equation solver \todo get method \see OPENCMISS::CMISSSolverDAETimesSet
+  !>Set/change the times for a differential-algebraic equation solver
   SUBROUTINE SOLVER_DAE_TIMES_SET(SOLVER,START_TIME,END_TIME,INITIAL_STEP,ERR,ERROR,*)
 
     !Argument variables
@@ -2168,51 +2067,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the degree of the polynomial used to interpolate time for a dynamic solver. \see OPENCMISS::CMISSSolverDynamicDegreeGet
-  SUBROUTINE SOLVER_DYNAMIC_DEGREE_GET(SOLVER,DEGREE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the dynamic solver to get the degree value for
-    INTEGER(INTG), INTENT(OUT) :: DEGREE !<On return, the degree of the polynomial used for time interpolation in a dynamic solver \see SOLVER_ROUTINES_DynamicDegreeTypes,SOLVER_ROUTINES
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("SOLVER_DYNAMIC_DEGREE_GET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
-          DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
-          IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
-            DEGREE=DYNAMIC_SOLVER%DEGREE
-          ELSE
-            CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("The solver has not been finished.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_DYNAMIC_DEGREE_GET")
-    RETURN
-999 CALL ERRORS("SOLVER_DYNAMIC_DEGREE_GET",ERR,ERROR)
-    CALL EXITS("SOLVER_DYNAMIC_DEGREE_GET")
-    RETURN 1
-  END SUBROUTINE SOLVER_DYNAMIC_DEGREE_GET
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the degree of the polynomial used to interpolate time for a dynamic solver. \see OPENCMISS::CMISSSolverDynamicDegreeSet
+  !>Sets/changes the degree of the polynomial used to interpolate time for a dynamic solver.
   SUBROUTINE SOLVER_DYNAMIC_DEGREE_SET(SOLVER,DEGREE,ERR,ERROR,*)
 
     !Argument variables
@@ -2306,13 +2161,8 @@ CONTAINS
 
     IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
       IF(ALLOCATED(DYNAMIC_SOLVER%THETA)) DEALLOCATE(DYNAMIC_SOLVER%THETA)
-      IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_LINEAR) THEN
-        !Finalise linear solver
-        CALL SOLVER_FINALISE(DYNAMIC_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
-      ELSE IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
-        !Finalise nonlinear solver
-        CALL SOLVER_FINALISE(DYNAMIC_SOLVER%NONLINEAR_SOLVER,ERR,ERROR,*999)
-      ENDIF
+      CALL SOLVER_FINALISE(DYNAMIC_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
+      CALL SOLVER_FINALISE(DYNAMIC_SOLVER%NONLINEAR_SOLVER,ERR,ERROR,*999)
       DEALLOCATE(DYNAMIC_SOLVER)
     ENDIF
         
@@ -2363,15 +2213,20 @@ CONTAINS
         DYNAMIC_SOLVER%CURRENT_TIME=0.0_DP
         DYNAMIC_SOLVER%TIME_INCREMENT=0.01_DP
 
+        !Allocate memory for dynamic linear and dynamic nonlinear solvers
         ALLOCATE(DYNAMIC_SOLVER%LINEAR_SOLVER,STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver linear solver.",ERR,ERROR,*999)
         NULLIFY(DYNAMIC_SOLVER%LINEAR_SOLVER%SOLVERS)
+        ALLOCATE(DYNAMIC_SOLVER%NONLINEAR_SOLVER,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver nonlinear solver.",ERR,ERROR,*999)
+        NULLIFY(DYNAMIC_SOLVER%NONLINEAR_SOLVER%SOLVERS)
+
+        !Set default values
         CALL SOLVER_INITIALISE_PTR(DYNAMIC_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
         SOLVER%LINKED_SOLVER=>DYNAMIC_SOLVER%LINEAR_SOLVER
         DYNAMIC_SOLVER%LINEAR_SOLVER%LINKING_SOLVER=>SOLVER
         DYNAMIC_SOLVER%LINEAR_SOLVER%SOLVE_TYPE=SOLVER_LINEAR_TYPE
         CALL SOLVER_LINEAR_INITIALISE(DYNAMIC_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
-
       ENDIF
     ELSE
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
@@ -2389,46 +2244,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the linearity type for the dynamic solver. \see OPENCMISS::CMISSSolverDynamicLinearityTypeGet
-  SUBROUTINE SOLVER_DYNAMIC_LINEARITY_TYPE_GET(SOLVER,LINEARITY_TYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to get the dynamic linearity type for
-    INTEGER(INTG), INTENT(OUT) :: LINEARITY_TYPE !<On return, the type of linearity. \see SOLVER_ROUTINES_EquationLinearityTypes,SOLVER_ROUTINES
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER !<A pointer the dynamic solver to finalise
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-  
-    CALL ENTERS("SOLVER_DYNAMIC_LINEARITY_TYPE_GET",ERR,ERROR,*999)
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
-        IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
-          LINEARITY_TYPE=DYNAMIC_SOLVER%LINEARITY
-        ELSE
-          CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    END IF
-    CALL EXITS("SOLVER_DYNAMIC_LINEARITY_TYPE_GET")
-    RETURN
-999 CALL ERRORS("SOLVER_DYNAMIC_LINEARITY_TYPE_GET",ERR,ERROR)    
-    CALL EXITS("SOLVER_DYNAMIC_LINEARITY_TYPE_GET")
-    RETURN 1
-   
-  END SUBROUTINE SOLVER_DYNAMIC_LINEARITY_TYPE_GET
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the linearity type for the dynamic solver. 
+  !>Sets/changes the linearity type for the dynamic solver
   SUBROUTINE SOLVER_DYNAMIC_LINEARITY_TYPE_SET(SOLVER,LINEARITY_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -2447,44 +2263,37 @@ CONTAINS
       ELSE
         DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
         IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
-          IF(DYNAMIC_SOLVER%LINEARITY==LINEARITY_TYPE) THEN
-            !do nothing
-          ELSE 
-            SELECT CASE(LINEARITY_TYPE)
-              CASE(SOLVER_DYNAMIC_LINEAR)
-                !deallocate old linked nonlinear solver
-                NULLIFY(DYNAMIC_SOLVER%NONLINEAR_SOLVER%SOLVERS)
-                DEALLOCATE(DYNAMIC_SOLVER%NONLINEAR_SOLVER) 
+
+          NULLIFY(DYNAMIC_SOLVER%LINEAR_SOLVER%SOLVERS)
+          NULLIFY(DYNAMIC_SOLVER%NONLINEAR_SOLVER%SOLVERS)
+
+          SELECT CASE(LINEARITY_TYPE)
+            CASE(SOLVER_DYNAMIC_LINEAR)
                 DYNAMIC_SOLVER%LINEARITY=SOLVER_DYNAMIC_LINEAR
-                !allocate new linked linear solver
-                ALLOCATE(DYNAMIC_SOLVER%LINEAR_SOLVER,STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver linear solver.",ERR,ERROR,*999)
-                NULLIFY(DYNAMIC_SOLVER%LINEAR_SOLVER%SOLVERS)
+!                 !allocate new linked linear solver
+!                 ALLOCATE(DYNAMIC_SOLVER%LINEAR_SOLVER,STAT=ERR)
+!                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver linear solver.",ERR,ERROR,*999)
                 CALL SOLVER_INITIALISE_PTR(DYNAMIC_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
                 SOLVER%LINKED_SOLVER=>DYNAMIC_SOLVER%LINEAR_SOLVER
                 DYNAMIC_SOLVER%LINEAR_SOLVER%LINKING_SOLVER=>SOLVER
                 DYNAMIC_SOLVER%LINEAR_SOLVER%SOLVE_TYPE=SOLVER_LINEAR_TYPE
                 CALL SOLVER_LINEAR_INITIALISE(DYNAMIC_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
-              CASE(SOLVER_DYNAMIC_NONLINEAR)
-                !deallocate old linked linear solver
-                NULLIFY(DYNAMIC_SOLVER%LINEAR_SOLVER%SOLVERS)
-                DEALLOCATE(DYNAMIC_SOLVER%LINEAR_SOLVER) 
+            CASE(SOLVER_DYNAMIC_NONLINEAR)
                 DYNAMIC_SOLVER%LINEARITY=SOLVER_DYNAMIC_NONLINEAR
-                !allocate new linked nonlinear solver
-                ALLOCATE(DYNAMIC_SOLVER%NONLINEAR_SOLVER,STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver nonlinear solver.",ERR,ERROR,*999)
-                NULLIFY(DYNAMIC_SOLVER%NONLINEAR_SOLVER%SOLVERS)
+!                 !allocate new linked nonlinear solver
+!                 ALLOCATE(DYNAMIC_SOLVER%NONLINEAR_SOLVER,STAT=ERR)
+!                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver nonlinear solver.",ERR,ERROR,*999)
                 CALL SOLVER_INITIALISE_PTR(DYNAMIC_SOLVER%NONLINEAR_SOLVER,ERR,ERROR,*999)
                 SOLVER%LINKED_SOLVER=>DYNAMIC_SOLVER%NONLINEAR_SOLVER
                 DYNAMIC_SOLVER%NONLINEAR_SOLVER%LINKING_SOLVER=>SOLVER
                 DYNAMIC_SOLVER%NONLINEAR_SOLVER%SOLVE_TYPE=SOLVER_NONLINEAR_TYPE
                 CALL SOLVER_NONLINEAR_INITIALISE(DYNAMIC_SOLVER%NONLINEAR_SOLVER,ERR,ERROR,*999)
-              CASE DEFAULT
+            CASE DEFAULT
                 LOCAL_ERROR="The specified solver equations linearity type of "// &
                   & TRIM(NUMBER_TO_VSTRING(LINEARITY_TYPE,"*",ERR,ERROR))//" is invalid."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT
-          ENDIF
+          END SELECT
+!           ENDIF
         ELSE
           CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
         ENDIF
@@ -2504,9 +2313,9 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the nonlinear solver associated with a nonlinear dynamic solver. \todo should this merge with dynamic linear solver get? \see OPENCMISS::CMISSSolverDynamicNonlinearSolverGet
+  !>Returns the nonlinear solver associated with a dynamic solver
   SUBROUTINE SOLVER_DYNAMIC_NONLINEAR_SOLVER_GET(SOLVER,NONLINEAR_SOLVER,ERR,ERROR,*)
- 
+
     !Argument variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the dynamic solver to get the linear solver for
     TYPE(SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<On exit, a pointer the linear solver linked to the dynamic solver. Must not be associated on entry
@@ -2551,7 +2360,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the linear solver associated with a linear dynamic solver. \todo should this merge with dynamic nonlinear solver get? \see OPENCMISS::CMISSSolverLinearSolverGet
+  !>Returns the linear solver associated with a dynamic solver
   SUBROUTINE SOLVER_DYNAMIC_LINEAR_SOLVER_GET(SOLVER,LINEAR_SOLVER,ERR,ERROR,*)
 
     !Argument variables
@@ -2598,11 +2407,10 @@ CONTAINS
   ! 
 
   !>Copies the current to previous time-step and calculates mean predicted values.
-  SUBROUTINE SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE(SOLVER,SELECTION_TYPE,ERR,ERROR,*)
+  SUBROUTINE SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE(SOLVER,ERR,ERROR,*)
 
     !Argument variableg
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
-    INTEGER(INTG), INTENT(IN) :: SELECTION_TYPE !<The type of matrix selection \see SOLVER_MATRICES_ROUTINES_SelectMatricesTypes,SOLVER_MATRICES_ROUTINES
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -2712,80 +2520,72 @@ CONTAINS
             ENDIF
             SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
             IF(ASSOCIATED(SOLVER_MATRICES)) THEN
-
-              IF(SELECTION_TYPE==SOLVER_MATRICES_ALL.OR. &
-                & SELECTION_TYPE==SOLVER_MATRICES_LINEAR_ONLY.OR. &
-                & SELECTION_TYPE==SOLVER_MATRICES_NONLINEAR_ONLY.OR. &
-                & SELECTION_TYPE==SOLVER_MATRICES_RHS_RESIDUAL_ONLY.OR. &
-                & SELECTION_TYPE==SOLVER_MATRICES_RESIDUAL_ONLY.OR. &
-                & SELECTION_TYPE==SOLVER_MATRICES_RHS_ONLY) THEN
-                IF(DYNAMIC_SOLVER%SOLVER_INITIALISED.OR.(.NOT.DYNAMIC_SOLVER%SOLVER_INITIALISED.AND. &
-                  & ((DYNAMIC_SOLVER%ORDER==SOLVER_DYNAMIC_FIRST_ORDER.AND.DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_FIRST_DEGREE).OR. &
-                  & (DYNAMIC_SOLVER%ORDER==SOLVER_DYNAMIC_SECOND_ORDER.AND.DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_SECOND_DEGREE)))) &
-                  & THEN
-                      !Loop over the equations sets
-                      DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
-                        EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                        IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                          DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-                          EQUATIONS=>EQUATIONS_SET%EQUATIONS
-                          IF(ASSOCIATED(EQUATIONS)) THEN
-                            EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
-                            IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
-                              EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-                              IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-                                DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
-                                IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
-                                  DYNAMIC_VARIABLE_TYPE=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
-                                  IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
-                                    !Calculate the mean predicted values for this dependent field
-                                    SELECT CASE(DYNAMIC_SOLVER%DEGREE)
-                                    CASE(SOLVER_DYNAMIC_FIRST_DEGREE)
-                                      CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                        & FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
-                                    CASE(SOLVER_DYNAMIC_SECOND_DEGREE)
-                                      CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                        & (/FIRST_MEAN_PREDICTION_FACTOR,SECOND_MEAN_PREDICTION_FACTOR/), &
-                                        & (/FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_PREVIOUS_VELOCITY_SET_TYPE/), &
-                                        & FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
-                                      CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                        & FIELD_PREVIOUS_VELOCITY_SET_TYPE,FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE,ERR,ERROR,*999)
-                                    CASE(SOLVER_DYNAMIC_THIRD_DEGREE)
-                                      CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                        & (/FIRST_MEAN_PREDICTION_FACTOR,SECOND_MEAN_PREDICTION_FACTOR, &
-                                        & THIRD_MEAN_PREDICTION_FACTOR/),(/FIELD_PREVIOUS_VALUES_SET_TYPE, &
-                                        & FIELD_PREVIOUS_VELOCITY_SET_TYPE,FIELD_PREVIOUS_ACCELERATION_SET_TYPE/), &
-                                        & FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
-                                      CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                        & (/FIRST_MEAN_PREDICTION_FACTOR,SECOND_MEAN_PREDICTION_FACTOR/), &
-                                        & (/FIELD_PREVIOUS_VELOCITY_SET_TYPE,FIELD_PREVIOUS_ACCELERATION_SET_TYPE/), &
-                                        & FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE,ERR,ERROR,*999)
-                                      CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                        & FIELD_PREVIOUS_ACCELERATION_SET_TYPE,FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE, &
-                                        & ERR,ERROR,*999)
-                                    CASE DEFAULT
-                                      LOCAL_ERROR="The dynamic solver degree of "// &
-                                        & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)                        
-                                    END SELECT
-                                  ENDIF
-                                 ELSE
-                                  CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Equations equations matrices is not associated.",ERR,ERROR,*999)
+              IF(DYNAMIC_SOLVER%SOLVER_INITIALISED.OR.(.NOT.DYNAMIC_SOLVER%SOLVER_INITIALISED.AND. &
+                & ((DYNAMIC_SOLVER%ORDER==SOLVER_DYNAMIC_FIRST_ORDER.AND.DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_FIRST_DEGREE).OR. &
+                & (DYNAMIC_SOLVER%ORDER==SOLVER_DYNAMIC_SECOND_ORDER.AND.DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_SECOND_DEGREE)))) &
+                & THEN
+                !Loop over the equations sets
+                DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                  EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+                  IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                    DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                    EQUATIONS=>EQUATIONS_SET%EQUATIONS
+                    IF(ASSOCIATED(EQUATIONS)) THEN
+                      EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+                      IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+                        EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
+                        IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
+                          DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
+                          IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
+                            DYNAMIC_VARIABLE_TYPE=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
+                            IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
+                              !Calculate the mean predicted values for this dependent field
+                              SELECT CASE(DYNAMIC_SOLVER%DEGREE)
+                                CASE(SOLVER_DYNAMIC_FIRST_DEGREE)
+                                  CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                    & FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
+                                CASE(SOLVER_DYNAMIC_SECOND_DEGREE)
+                                  CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                    & (/FIRST_MEAN_PREDICTION_FACTOR,SECOND_MEAN_PREDICTION_FACTOR/), &
+                                    & (/FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_PREVIOUS_VELOCITY_SET_TYPE/), &
+                                    & FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
+                                  CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                    & FIELD_PREVIOUS_VELOCITY_SET_TYPE,FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE,ERR,ERROR,*999)
+                                CASE(SOLVER_DYNAMIC_THIRD_DEGREE)
+                                  CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                    & (/FIRST_MEAN_PREDICTION_FACTOR,SECOND_MEAN_PREDICTION_FACTOR, &
+                                    & THIRD_MEAN_PREDICTION_FACTOR/),(/FIELD_PREVIOUS_VALUES_SET_TYPE, &
+                                    & FIELD_PREVIOUS_VELOCITY_SET_TYPE,FIELD_PREVIOUS_ACCELERATION_SET_TYPE/), &
+                                    & FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
+                                  CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                    & (/FIRST_MEAN_PREDICTION_FACTOR,SECOND_MEAN_PREDICTION_FACTOR/), &
+                                    & (/FIELD_PREVIOUS_VELOCITY_SET_TYPE,FIELD_PREVIOUS_ACCELERATION_SET_TYPE/), &
+                                    & FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE,ERR,ERROR,*999)
+                                  CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                    & FIELD_PREVIOUS_ACCELERATION_SET_TYPE,FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE, &
+                                    & ERR,ERROR,*999)
+                                CASE DEFAULT
+                                  LOCAL_ERROR="The dynamic solver degree of "// &
+                                    & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
+                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)                        
+                              END SELECT
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+                            CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                          CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*999)
                         ENDIF
-                      ENDDO !equations_set_idx
-                ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Equations equations matrices is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ENDDO !equations_set_idx
               ENDIF
             ELSE
               CALL FLAG_ERROR("Solver solver matrices is not associated.",ERR,ERROR,*999)
@@ -2852,55 +2652,11 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the order for a dynamic solver. \see OPENCMISS::CMISSSolverDynamicOrderGet
-  SUBROUTINE SOLVER_DYNAMIC_ORDER_GET(SOLVER,ORDER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the dynamic solver to get the theta value for.
-    INTEGER(INTG), INTENT(OUT) :: ORDER !<On return, the order of the dynamic solver. \see SOLVER_ROUTINES_DynamicOrderTypes,SOLVER_ROUTINES
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("SOLVER_DYNAMIC_ORDER_GET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
-          DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
-          IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
-            ORDER=DYNAMIC_SOLVER%ORDER
-          ELSE
-            CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("The solver has not been finished.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_DYNAMIC_ORDER_GET")
-    RETURN
-999 CALL ERRORS("SOLVER_DYNAMIC_ORDER_GET",ERR,ERROR)
-    CALL EXITS("SOLVER_DYNAMIC_ORDER_GET")
-    RETURN 1
-  END SUBROUTINE SOLVER_DYNAMIC_ORDER_GET
-
-  !
-  !================================================================================================================================
-  !
-
   !>Sets/changes the order for a dynamic solver.
   SUBROUTINE SOLVER_DYNAMIC_ORDER_SET(SOLVER,ORDER,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the dynamic solver to set the order value for
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the dynamic solver to set the theta value for
     INTEGER(INTG), INTENT(IN) :: ORDER !<The order of the dynamic solver \see SOLVER_ROUTINES_DynamicOrderTypes,SOLVER_ROUTINES
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -2954,51 +2710,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the scheme for a dynamic solver. \see OPENCMISS::CMISSSolverDynamicSchemeGet
-  SUBROUTINE SOLVER_DYNAMIC_SCHEME_GET(SOLVER,SCHEME,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the dynamic solver to get the scheme for.
-    INTEGER(INTG), INTENT(OUT) :: SCHEME !<Onreturn, the scheme used for a dynamic solver. \see SOLVER_ROUTINES_DynamicSchemeTypes,SOLVER_ROUTINES
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("SOLVER_DYNAMIC_SCHEME_GET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
-          DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
-          IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
-            SCHEME=DYNAMIC_SOLVER%SCHEME
-          ELSE
-            CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("The solver has not been finished.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("SOLVER_DYNAMIC_SCHEME_GET")
-    RETURN
-999 CALL ERRORS("SOLVER_DYNAMIC_SCHEME_GET",ERR,ERROR)
-    CALL EXITS("SOLVER_DYNAMIC_SCHEME_GET")
-    RETURN 1
-  END SUBROUTINE SOLVER_DYNAMIC_SCHEME_GET
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the scheme for a dynamic solver. \see OPENCMISS::CMISSSolverDynamicSchemeSet
+  !>Sets/changes the scheme for a dynamic solver.
   SUBROUTINE SOLVER_DYNAMIC_SCHEME_SET(SOLVER,SCHEME,ERR,ERROR,*)
 
     !Argument variables
@@ -3197,18 +2909,18 @@ CONTAINS
               IF((DYNAMIC_SOLVER%ORDER==SOLVER_DYNAMIC_FIRST_ORDER.AND.DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_FIRST_DEGREE).OR. &
                 & (DYNAMIC_SOLVER%ORDER==SOLVER_DYNAMIC_SECOND_ORDER.AND.DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_SECOND_DEGREE)) THEN
                 !Assemble the solver equations
-                CALL SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE(SOLVER,SOLVER_MATRICES_LINEAR_ONLY,ERR,ERROR,*999)
+                CALL SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE(SOLVER,ERR,ERROR,*999)
                 CALL SOLVER_MATRICES_DYNAMIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_LINEAR_ONLY,ERR,ERROR,*999)              
                 !Solve the linear system
                 CALL SOLVER_SOLVE(LINEAR_SOLVER,ERR,ERROR,*999)
-                !Update depenent field with solution
+                !Update dependent field with solution
                 CALL SOLVER_VARIABLES_DYNAMIC_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
               ENDIF
               !Set initialised flag
               DYNAMIC_SOLVER%SOLVER_INITIALISED=.TRUE.
             ENDIF
             !Assemble the solver equations
-            CALL SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE(SOLVER,SOLVER_MATRICES_LINEAR_ONLY,ERR,ERROR,*999)
+            CALL SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE(SOLVER,ERR,ERROR,*999)
             CALL SOLVER_MATRICES_DYNAMIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_LINEAR_ONLY,ERR,ERROR,*999)
             !Solve the linear system
             CALL SOLVER_SOLVE(LINEAR_SOLVER,ERR,ERROR,*999)
@@ -3221,18 +2933,13 @@ CONTAINS
           IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
             !If we need to initialise the solver
             IF(.NOT.DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
-              IF((DYNAMIC_SOLVER%ORDER==SOLVER_DYNAMIC_FIRST_ORDER.AND.DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_FIRST_DEGREE).OR. &
-                & (DYNAMIC_SOLVER%ORDER==SOLVER_DYNAMIC_SECOND_ORDER.AND.DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_SECOND_DEGREE)) THEN
-                !Assemble the solver equations
-                CALL SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE(SOLVER,SOLVER_MATRICES_NONLINEAR_ONLY,ERR,ERROR,*999)
-                !Solve the nonlinear system
-                CALL SOLVER_SOLVE(NONLINEAR_SOLVER,ERR,ERROR,*999)
-              ENDIF
-              !Set initialised flag
+              IF(DYNAMIC_SOLVER%DEGREE/=DYNAMIC_SOLVER%ORDER) THEN
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              END IF
               DYNAMIC_SOLVER%SOLVER_INITIALISED=.TRUE.
             ENDIF
             !Assemble the solver equations
-            CALL SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE(SOLVER,SOLVER_MATRICES_NONLINEAR_ONLY,ERR,ERROR,*999)
+            CALL SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE(SOLVER,ERR,ERROR,*999)
             !Solve the nonlinear system
             CALL SOLVER_SOLVE(NONLINEAR_SOLVER,ERR,ERROR,*999)
           ELSE
@@ -3270,7 +2977,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes a single theta value for a dynamic solver. \todo get method \see OPENCMISS::CMISSSolverDynamicThetaSet
+  !>Sets/changes a single theta value for a dynamic solver.
   SUBROUTINE SOLVER_DYNAMIC_THETA_SET_DP1(SOLVER,THETA,ERR,ERROR,*)
 
     !Argument variables
@@ -3295,7 +3002,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the theta value for a dynamic solver. \todo get method \see OPENCMISS::CMISSSolverDynamicThetaSet
+  !>Sets/changes the theta value for a dynamic solver.
   SUBROUTINE SOLVER_DYNAMIC_THETA_SET_DP(SOLVER,THETA,ERR,ERROR,*)
 
     !Argument variables
@@ -3355,7 +3062,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the dynamic times for a dynamic solver. \todo get method \see OPENCMISS::CMISSSolverDynamicTimesSet
+  !>Sets/changes the dynamic times for a dynamic solver.
   SUBROUTINE SOLVER_DYNAMIC_TIMES_SET(SOLVER,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*)
 
    !Argument variables
@@ -3684,7 +3391,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Adds equations sets to solver equations \see OPENCMISS::CMISSSolverEquationsEquationsSetAdd
+  !>Adds equations sets to solver equations
   SUBROUTINE SOLVER_EQUATIONS_EQUATIONS_SET_ADD(SOLVER_EQUATIONS,EQUATIONS_SET,EQUATIONS_SET_INDEX,ERR,ERROR,*)
 
     !Argument variables
@@ -3886,7 +3593,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the sparsity type for solver equations. \todo get method \see OPENCMISS::CMISSSolverEquationsSparsityTypeSet
+  !>Sets/changes the sparsity type for solver equations
   SUBROUTINE SOLVER_EQUATIONS_SPARSITY_TYPE_SET(SOLVER_EQUATIONS,SPARSITY_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -4122,12 +3829,12 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE SOLVER_INITIALISE_PTR
- 
+
   !
   !================================================================================================================================
   !
 
-  !>Gets the type of library to use for the solver. \see OPENCMISS::CMISSSolverLibraryTypeGet
+  !>Gets the type of library to use for the solver
   SUBROUTINE SOLVER_LIBRARY_TYPE_GET(SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -4343,7 +4050,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of library type to use for the solver. \see OPENCMISS::CMISSSolverLibraryTypeSet
+  !>Sets/changes the type of library type to use for the solver
   SUBROUTINE SOLVER_LIBRARY_TYPE_SET(SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -4949,6 +4656,10 @@ CONTAINS
     CALL ENTERS("SOLVER_LINEAR_DIRECT_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(LINEAR_DIRECT_SOLVER)) THEN
+      DEALLOCATE(LINEAR_DIRECT_SOLVER)
+    ENDIF
+
+    IF(ASSOCIATED(LINEAR_DIRECT_SOLVER)) THEN
       LINEAR_SOLVER=>LINEAR_DIRECT_SOLVER%LINEAR_SOLVER
       IF(ASSOCIATED(LINEAR_SOLVER)) THEN
         IF(.NOT.LINEAR_SOLVER%LINKED_NEWTON_PETSC_SOLVER) THEN
@@ -5141,7 +4852,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of direct linear solver. \todo get method \see OPENCMISS::CMISSSolverLinearDirectTypeSet
+  !>Sets/changes the type of direct linear solver
   SUBROUTINE SOLVER_LINEAR_DIRECT_TYPE_SET(SOLVER,DIRECT_SOLVER_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -5304,7 +5015,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the maximum absolute tolerance for an iterative linear solver. \todo get method \see OPENCMISS::CMISSSolverLinearIterativeAbsoluteToleranceSet
+  !>Sets/changes the maximum absolute tolerance for an iterative linear solver
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_ABSOLUTE_TOLERANCE_SET(SOLVER,ABSOLUTE_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
@@ -5562,7 +5273,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the maximum divergence tolerance for an iterative linear solver. \todo get method \see OPENCMISS::CMISSSolverLinearIterativeDivergenceToleranceSet
+  !>Sets/changes the maximum divergence tolerance for an iterative linear solver
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_DIVERGENCE_TOLERANCE_SET(SOLVER,DIVERGENCE_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
@@ -5655,7 +5366,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the GMRES restart value for a GMRES iterative linear solver. \todo get method \see OPENCMISS::CMISSSolverLinearIterativeGMRESRestartSet
+  !>Sets/changes the GMRES restart value for a GMRES iterative linear solver
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET(SOLVER,GMRES_RESTART,ERR,ERROR,*)
 
     !Argument variables
@@ -5770,7 +5481,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the maximum number of iterations for an iterative linear solver. \todo get method \see OPENCMISS::CMISSSolverLinearIterativeMaximumIterationsSet
+  !>Sets/changes the maximum number of iterations for an iterative linear solver
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_MAXIMUM_ITERATIONS_SET(SOLVER,MAXIMUM_ITERATIONS,ERR,ERROR,*)
 
     !Argument variables
@@ -5827,7 +5538,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of preconditioner for an iterative linear solver. \todo get method \see OPENCMISS::CMISSSolverLinearIterativePreconditionerTypeSet
+  !>Sets/changes the type of preconditioner for an iterative linear solver
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_PRECONDITIONER_TYPE_SET(SOLVER,ITERATIVE_PRECONDITIONER_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -5913,7 +5624,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the relative tolerance for an iterative linear solver. \todo get method \see OPENCMISS::CMISSSolverLinearIterativeRelativeToleranceSet
+  !>Sets/changes the relative tolerance for an iterative linear solver
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_RELATIVE_TOLERANCE_SET(SOLVER,RELATIVE_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
@@ -5970,7 +5681,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the solution initialise type for an iterative linear solver. \todo get method \see OPENCMISS::CMISSSolverLinearIterativSolutionInitTypeSet
+  !>Sets/changes the solution initialise type for an iterative linear solver
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_SOLUTION_INIT_TYPE_SET(SOLVER,SOLUTION_INITIALISE_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -6238,7 +5949,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of iterative linear solver. \todo get method \see OPENCMISS::CMISSSolverLinearIterativeTypeSet
+  !>Sets/changes the type of iterative linear solver
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_TYPE_SET(SOLVER,ITERATIVE_SOLVER_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -6373,7 +6084,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of linear solver. \todo get method \see OPENCMISS::CMISSSolverLinearTypeSet
+  !>Sets/changes the type of linear solver
   SUBROUTINE SOLVER_LINEAR_TYPE_SET(SOLVER,LINEAR_SOLVE_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -6460,71 +6171,78 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: DYNAMIC_VARIABLE_TYPE,equations_matrix_idx,equations_row_number,equations_set_idx,LINEAR_VARIABLE_TYPE, &
-      & rhs_boundary_condition,rhs_global_dof,rhs_variable_dof,rhs_variable_type,solver_row_idx,solver_row_number
+      & rhs_boundary_condition,rhs_global_dof,rhs_variable_dof,rhs_variable_type,solver_row_idx,solver_row_number, &
+      & solver_matrix_idx, residual_variable_type
     REAL(SP) :: SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),USER_ELAPSED,USER_TIME1(1),USER_TIME2(1)
-    REAL(DP) :: DAMPING_MATRIX_COEFFICIENT,DELTA_T,DYNAMIC_VALUE,FIRST_UPDATE_FACTOR, &
+    REAL(DP) :: DAMPING_MATRIX_COEFFICIENT,DELTA_T,DYNAMIC_VALUE,FIRST_UPDATE_FACTOR,RESIDUAL_VALUE, &
       & LINEAR_VALUE,LINEAR_VALUE_SUM,MASS_MATRIX_COEFFICIENT,RHS_VALUE,row_coupling_coefficient, &
-      & SECOND_UPDATE_FACTOR,SOURCE_VALUE,STIFFNESS_MATRIX_COEFFICIENT,VALUE
+      & SECOND_UPDATE_FACTOR,SOURCE_VALUE,STIFFNESS_MATRIX_COEFFICIENT,VALUE,JACOBIAN_MATRIX_COEFFICIENT
     REAL(DP), POINTER :: RHS_PARAMETERS(:)
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: RHS_BOUNDARY_CONDITIONS
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: PREVIOUS_SOLVER_DISTRIBUTED_MATRIX,SOLVER_DISTRIBUTED_MATRIX
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: DEPENDENT_VECTOR,DYNAMIC_TEMP_VECTOR,EQUATIONS_RHS_VECTOR,DISTRIBUTED_SOURCE_VECTOR, &
       & LINEAR_TEMP_VECTOR,PREDICTED_MEAN_ACCELERATION_VECTOR,PREDICTED_MEAN_DISPLACEMENT_VECTOR,PREDICTED_MEAN_VELOCITY_VECTOR, &
-      & SOLVER_RHS_VECTOR
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RHS_DOMAIN_MAPPING
+      & SOLVER_RHS_VECTOR, SOLVER_RESIDUAL_VECTOR,RESIDUAL_VECTOR
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RESIDUAL_DOMAIN_MAPPING,RHS_DOMAIN_MAPPING,VARIABLE_DOMAIN_MAPPING
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
     TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING
     TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
+    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
     TYPE(EQUATIONS_MAPPING_RHS_TYPE), POINTER :: RHS_MAPPING
     TYPE(EQUATIONS_MAPPING_SOURCE_TYPE), POINTER :: SOURCE_MAPPING
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
     TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: DYNAMIC_MATRICES
     TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
     TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: RHS_VECTOR
     TYPE(EQUATIONS_MATRICES_SOURCE_TYPE), POINTER :: SOURCE_VECTOR
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: DAMPING_MATRIX,LINEAR_MATRIX,MASS_MATRIX,STIFFNESS_MATRIX
+    TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN_MATRIX
+    TYPE(JACOBIAN_TO_SOLVER_MAP_TYPE), POINTER :: JACOBIAN_TO_SOLVER_MAP
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DYNAMIC_VARIABLE,LINEAR_VARIABLE,RHS_VARIABLE
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DYNAMIC_VARIABLE,LINEAR_VARIABLE,RHS_VARIABLE,DEPENDENT_VARIABLE,RESIDUAL_VARIABLE
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
     TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+
    
     CALL ENTERS("SOLVER_MATRICES_DYNAMIC_ASSEMBLE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
-      DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
+      !Determine which dynamic solver needs to be used
+      IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+        DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
+      ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN 
+        DYNAMIC_SOLVER=>SOLVER%LINKING_SOLVER%DYNAMIC_SOLVER
+      ELSE
+        CALL FLAG_ERROR("Dynamic solver solve type is not associated.",ERR,ERROR,*999)
+      END IF
       IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
         IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
           DELTA_T=DYNAMIC_SOLVER%TIME_INCREMENT
           SELECT CASE(DYNAMIC_SOLVER%DEGREE)
           CASE(SOLVER_DYNAMIC_FIRST_DEGREE)
-! OUTSOURCED: SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE
-!            FIRST_MEAN_PREDICTION_FACTOR=1.0_DP
             STIFFNESS_MATRIX_COEFFICIENT=-1.0_DP*DYNAMIC_SOLVER%THETA(1)*DELTA_T
             DAMPING_MATRIX_COEFFICIENT=-1.0_DP            
             MASS_MATRIX_COEFFICIENT=0.0_DP
+            JACOBIAN_MATRIX_COEFFICIENT=STIFFNESS_MATRIX_COEFFICIENT
           CASE(SOLVER_DYNAMIC_SECOND_DEGREE)
-! OUTSOURCED: SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE
-!             FIRST_MEAN_PREDICTION_FACTOR=1.0_DP
-!             SECOND_MEAN_PREDICTION_FACTOR=DYNAMIC_SOLVER%THETA(1)*DELTA_T
             STIFFNESS_MATRIX_COEFFICIENT=-1.0_DP*(DYNAMIC_SOLVER%THETA(2)*DELTA_T*DELTA_T)/2.0_DP
             DAMPING_MATRIX_COEFFICIENT=-1.0_DP*DYNAMIC_SOLVER%THETA(1)*DELTA_T
             MASS_MATRIX_COEFFICIENT=-1.0_DP
+            JACOBIAN_MATRIX_COEFFICIENT=STIFFNESS_MATRIX_COEFFICIENT
             FIRST_UPDATE_FACTOR=DELTA_T
           CASE(SOLVER_DYNAMIC_THIRD_DEGREE)
-! OUTSOURCED: SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE
-!             FIRST_MEAN_PREDICTION_FACTOR=1.0_DP
-!             SECOND_MEAN_PREDICTION_FACTOR=DYNAMIC_SOLVER%THETA(1)*DELTA_T
-!             THIRD_MEAN_PREDICTION_FACTOR=DYNAMIC_SOLVER%THETA(2)*DELTA_T*DELTA_T
             STIFFNESS_MATRIX_COEFFICIENT=-1.0_DP*(DYNAMIC_SOLVER%THETA(3)*DELTA_T*DELTA_T*DELTA_T)/6.0_DP
             DAMPING_MATRIX_COEFFICIENT=-1.0_DP*(DYNAMIC_SOLVER%THETA(2)*DELTA_T*DELTA_T)/2.0_DP
             MASS_MATRIX_COEFFICIENT=-1.0_DP*DYNAMIC_SOLVER%THETA(1)*DELTA_T
+            JACOBIAN_MATRIX_COEFFICIENT=STIFFNESS_MATRIX_COEFFICIENT
             FIRST_UPDATE_FACTOR=DELTA_T
             SECOND_UPDATE_FACTOR=DELTA_T*DELTA_T/2.0_DP
           CASE DEFAULT
@@ -6556,7 +6274,13 @@ CONTAINS
                     CALL CPU_TIMER(USER_CPU,USER_TIME1,ERR,ERROR,*999)
                     CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME1,ERR,ERROR,*999)
                   ENDIF
-                  IF(SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES==1) THEN
+
+!               DO solver_matrix_idx=1,SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES
+!                 SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(solver_matrix_idx)%PTR
+!                 END DO
+
+                  solver_matrix_idx=1
+                  IF(SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES==solver_matrix_idx) THEN
                     SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(1)%PTR
                     IF(ASSOCIATED(SOLVER_MATRIX)) THEN
                       IF(SOLVER_MATRIX%UPDATE_MATRIX) THEN              
@@ -6592,7 +6316,7 @@ CONTAINS
                                             CALL SOLVER_MATRIX_EQUATIONS_MATRIX_ADD(SOLVER_MATRIX,equations_set_idx, &
                                               & DAMPING_MATRIX_COEFFICIENT,DAMPING_MATRIX,ERR,ERROR,*999)
                                           ELSE
-                                            CALL FLAG_ERROR("Dynamic stiffness matrix is not associated.",ERR,ERROR,*999)
+                                            CALL FLAG_ERROR("Dynamic damping matrix is not associated.",ERR,ERROR,*999)
                                           ENDIF
                                         ENDIF
                                         IF(DYNAMIC_MAPPING%MASS_MATRIX_NUMBER/=0) THEN
@@ -6601,7 +6325,7 @@ CONTAINS
                                             CALL SOLVER_MATRIX_EQUATIONS_MATRIX_ADD(SOLVER_MATRIX,equations_set_idx, &
                                               & MASS_MATRIX_COEFFICIENT,MASS_MATRIX,ERR,ERROR,*999)
                                           ELSE
-                                            CALL FLAG_ERROR("Dynamic stiffness matrix is not associated.",ERR,ERROR,*999)
+                                            CALL FLAG_ERROR("Dynamic mass matrix is not associated.",ERR,ERROR,*999)
                                           ENDIF
                                         ENDIF
                                       ELSE
@@ -6625,7 +6349,7 @@ CONTAINS
                                               CALL SOLVER_MATRIX_EQUATIONS_MATRIX_ADD(SOLVER_MATRIX,equations_set_idx, &
                                                 & -1.0_DP,DAMPING_MATRIX,ERR,ERROR,*999)
                                             ELSE
-                                              CALL FLAG_ERROR("Dynamic stiffness matrix is not associated.",ERR,ERROR,*999)
+                                              CALL FLAG_ERROR("Dynamic damping matrix is not associated.",ERR,ERROR,*999)
                                             ENDIF
                                           ELSE
                                             CALL FLAG_ERROR("Can not perform initial solve with no damping matrix.",ERR,ERROR,*999)
@@ -6650,45 +6374,27 @@ CONTAINS
                               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
 
-! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
-! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
-! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
+! sebk 17/10/2009
 ! |
-! |
-! |
-! ADD IN JACOBIAN MATRIX HERE
-! |
-! |
-
-
                             IF(SELECTION_TYPE==SOLVER_MATRICES_ALL.OR. &
                               & SELECTION_TYPE==SOLVER_MATRICES_NONLINEAR_ONLY.OR. &
                               & SELECTION_TYPE==SOLVER_MATRICES_JACOBIAN_ONLY) THEN
                               !Now set the values from the equations Jacobian
-!                               JACOBIAN_TO_SOLVER_MAP=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-!                                 & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP
-!                               IF(ASSOCIATED(JACOBIAN_TO_SOLVER_MAP)) THEN
-!                                 JACOBIAN_MATRIX=>JACOBIAN_TO_SOLVER_MAP%JACOBIAN_MATRIX
-!                                 IF(ASSOCIATED(JACOBIAN_MATRIX)) THEN
-!                                   CALL SOLVER_MATRIX_JACOBIAN_MATRIX_ADD(SOLVER_MATRIX,equations_set_idx,1.0_DP,JACOBIAN_MATRIX, &
-!                                     & ERR,ERROR,*999)
-!                                 ELSE
-!                                   CALL FLAG_ERROR("Jacobian matrix is not associated.",ERR,ERROR,*999)
-!                                 ENDIF
-!                               ENDIF
+                              JACOBIAN_TO_SOLVER_MAP=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP
+                              IF(ASSOCIATED(JACOBIAN_TO_SOLVER_MAP)) THEN
+                                JACOBIAN_MATRIX=>JACOBIAN_TO_SOLVER_MAP%JACOBIAN_MATRIX
+                                IF(ASSOCIATED(JACOBIAN_MATRIX)) THEN
+                                  CALL SOLVER_MATRIX_JACOBIAN_MATRIX_ADD(SOLVER_MATRIX,equations_set_idx, & 
+                                    & JACOBIAN_MATRIX_COEFFICIENT,JACOBIAN_MATRIX,ERR,ERROR,*999)
+                                ELSE
+                                  CALL FLAG_ERROR("Jacobian matrix is not associated.",ERR,ERROR,*999)
+                                ENDIF
+                              ENDIF
                             ENDIF
-
-
 ! |
-! |
-! |
-! |
-! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
-! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
-! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
-
+! sebk 17/10/2009
                           ENDDO !equations_set_idx
-
 
                           !Update the solver matrix values
                           CALL DISTRIBUTED_MATRIX_UPDATE_START(SOLVER_DISTRIBUTED_MATRIX,ERR,ERROR,*999)
@@ -6726,27 +6432,21 @@ CONTAINS
               ENDIF
 
 
-! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
-! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
-! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
+! sebk 17/10/2009
 ! |
 ! |
 ! RIGHT HAND SIDE SHOULDN'T CHANGE
 ! |
-
-
-              NULLIFY(SOLVER_RHS_VECTOR)
               IF(SELECTION_TYPE==SOLVER_MATRICES_ALL.OR. &
-!sebk
                 & SELECTION_TYPE==SOLVER_MATRICES_LINEAR_ONLY.OR. &
                 & SELECTION_TYPE==SOLVER_MATRICES_NONLINEAR_ONLY.OR. &
                 & SELECTION_TYPE==SOLVER_MATRICES_RHS_RESIDUAL_ONLY.OR. &
-!sebk
                 & SELECTION_TYPE==SOLVER_MATRICES_RHS_ONLY) THEN
                 IF(DYNAMIC_SOLVER%SOLVER_INITIALISED.OR.(.NOT.DYNAMIC_SOLVER%SOLVER_INITIALISED.AND. &
                   & ((DYNAMIC_SOLVER%ORDER==SOLVER_DYNAMIC_FIRST_ORDER.AND.DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_FIRST_DEGREE).OR. &
                   & (DYNAMIC_SOLVER%ORDER==SOLVER_DYNAMIC_SECOND_ORDER.AND.DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_SECOND_DEGREE)))) &
                   & THEN
+                  NULLIFY(SOLVER_RHS_VECTOR)
                   !Assemble rhs vector
                   IF(SOLVER%OUTPUT_TYPE>=SOLVER_TIMING_OUTPUT) THEN
                     CALL CPU_TIMER(USER_CPU,USER_TIME1,ERR,ERROR,*999)
@@ -7026,7 +6726,258 @@ CONTAINS
                     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
                   ENDIF
                 ENDIF
+              END IF
+!sebk
+! |
+! |
+! ADD IN RESIDUAL CALCULATION
+! |
+! |
+              IF(SELECTION_TYPE==SOLVER_MATRICES_ALL.OR. &
+                & SELECTION_TYPE==SOLVER_MATRICES_RESIDUAL_ONLY.OR. &
+                & SELECTION_TYPE==SOLVER_MATRICES_NONLINEAR_ONLY.OR. &
+                & SELECTION_TYPE==SOLVER_MATRICES_RHS_RESIDUAL_ONLY) THEN
+                IF(DYNAMIC_SOLVER%SOLVER_INITIALISED.OR.(.NOT.DYNAMIC_SOLVER%SOLVER_INITIALISED.AND. &
+                  & ((DYNAMIC_SOLVER%ORDER==SOLVER_DYNAMIC_FIRST_ORDER.AND.DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_FIRST_DEGREE).OR. &
+                  & (DYNAMIC_SOLVER%ORDER==SOLVER_DYNAMIC_SECOND_ORDER.AND.DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_SECOND_DEGREE)))) &
+                  & THEN
+                  NULLIFY(SOLVER_RESIDUAL_VECTOR)
+                  !Assemble residual vector
+                  IF(SOLVER%OUTPUT_TYPE>=SOLVER_TIMING_OUTPUT) THEN
+                    CALL CPU_TIMER(USER_CPU,USER_TIME1,ERR,ERROR,*999)
+                    CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME1,ERR,ERROR,*999)
+                  ENDIF
+                  IF(SOLVER_MATRICES%UPDATE_RESIDUAL) THEN            
+                    SOLVER_RESIDUAL_VECTOR=>SOLVER_MATRICES%RESIDUAL
+                    IF(ASSOCIATED(SOLVER_RESIDUAL_VECTOR)) THEN
+                      !Initialise the residual to zero         
+                      CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(SOLVER_RESIDUAL_VECTOR,0.0_DP,ERR,ERROR,*999)       
+                      !Loop over the equations sets
+                      DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                        EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+                        IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                          DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                          IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+                            EQUATIONS=>EQUATIONS_SET%EQUATIONS
+                            IF(ASSOCIATED(EQUATIONS)) THEN
+                              EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+                              IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+                                EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
+
+! 1. HOW CAN I ACCESS THE PREVIOUS SOLVER_MATRIX FROM ABOVE ?
+!
+! 2. HOW CAN I ACCESS THE NONLINEAR VECTOR DEFINED IN NAVIER_STOKES ?
+!
+! 3. HOW CAN I ACCESS THE RIGHT HAND SIDE FROM JUST ABOVE?
+
+
+
+
+
+
+!                                 IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
+!                                   DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
+!                                   IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
+!                                     EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+!                                     IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+!                                       DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
+!                                       IF(ASSOCIATED(DYNAMIC_MATRICES)) THEN
+!                                         IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
+!                                           IF(DYNAMIC_MAPPING%STIFFNESS_MATRIX_NUMBER/=0) THEN
+!                                             STIFFNESS_MATRIX=>DYNAMIC_MATRICES%MATRICES(DYNAMIC_MAPPING% & 
+!                                               & STIFFNESS_MATRIX_NUMBER)%PTR
+! 
+! 
+!                                             IF(ASSOCIATED(STIFFNESS_MATRIX)) THEN
+!                                               CALL SOLVER_MATRIX_EQUATIONS_MATRIX_ADD(SOLVER_MATRIX,equations_set_idx, &
+!                                                 & STIFFNESS_MATRIX_COEFFICIENT,STIFFNESS_MATRIX,ERR,ERROR,*999)
+!                                             ELSE
+!                                               CALL FLAG_ERROR("Dynamic stiffness matrix is not associated.",ERR,ERROR,*999)
+!                                             ENDIF
+!                                           ENDIF
+
+
+
+! ! ! 
+! ! ! 
+! ! ! 
+! ! ! 
+! ! ! !                                   !Calculate the contributions from any linear matrices 
+! ! !                                   LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
+! ! !                                   IF(ASSOCIATED(LINEAR_MAPPING)) THEN
+! ! !                                     LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
+! ! !                                     IF(ASSOCIATED(LINEAR_MATRICES)) THEN
+! ! !                                       DO equations_matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
+! ! !                                        LINEAR_MATRIX=>LINEAR_MATRICES%MATRICES(equations_matrix_idx)%PTR
+! ! !                                         IF(ASSOCIATED(LINEAR_MATRIX)) THEN
+! ! !                                           LINEAR_VARIABLE_TYPE=LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(equations_matrix_idx)% &
+! ! !                                             & VARIABLE_TYPE
+! ! !                                           LINEAR_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(equations_matrix_idx)% &
+! ! !                                             & VARIABLE
+! ! !                                           IF(ASSOCIATED(LINEAR_VARIABLE)) THEN
+! ! !                                             LINEAR_TEMP_VECTOR=>LINEAR_MATRIX%TEMP_VECTOR
+! ! !                                             !Initialise the linear temporary vector to zero
+! ! !                                             CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(LINEAR_TEMP_VECTOR,0.0_DP,ERR,ERROR,*999)
+! ! !                                             NULLIFY(DEPENDENT_VECTOR)
+! ! ! 
+! ! ! ! ! !                                             CALL FIELD_PARAMETER_SET_VECTOR_GET(DEPENDENT_FIELD,LINEAR_VARIABLE_TYPE, &
+! ! ! ! ! !                                               & FIELD_VALUES_SET_TYPE,DEPENDENT_VECTOR,ERR,ERROR,*999)
+! ! ! ! ! !                                             CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE, &
+! ! ! ! ! !                                               & LINEAR_MATRIX%MATRIX,DEPENDENT_VECTOR,LINEAR_TEMP_VECTOR,ERR,ERROR,*999)
+! ! ! 
+! ! ! xxx
+! ! !                                     IF(ASSOCIATED(DYNAMIC_MATRICES)) THEN
+! ! !                                       IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
+! ! !                                         IF(DYNAMIC_MAPPING%STIFFNESS_MATRIX_NUMBER/=0) THEN
+! ! !                                           STIFFNESS_MATRIX=>DYNAMIC_MATRICES%MATRICES(DYNAMIC_MAPPING%STIFFNESS_MATRIX_NUMBER)%PTR
+! ! !                                           IF(ASSOCIATED(STIFFNESS_MATRIX)) THEN
+! ! !                                             CALL SOLVER_MATRIX_EQUATIONS_MATRIX_ADD(SOLVER_MATRIX,equations_set_idx, &
+! ! !                                               & STIFFNESS_MATRIX_COEFFICIENT,STIFFNESS_MATRIX,ERR,ERROR,*999)
+! ! !                                           ELSE
+! ! !                                             CALL FLAG_ERROR("Dynamic stiffness matrix is not associated.",ERR,ERROR,*999)
+! ! !                                           ENDIF
+! ! !                                         ENDIF
+! ! !                                         IF(DYNAMIC_MAPPING%DAMPING_MATRIX_NUMBER/=0) THEN
+! ! !                                           DAMPING_MATRIX=>DYNAMIC_MATRICES%MATRICES(DYNAMIC_MAPPING%DAMPING_MATRIX_NUMBER)%PTR
+! ! !                                           IF(ASSOCIATED(DAMPING_MATRIX)) THEN
+! ! !                                             CALL SOLVER_MATRIX_EQUATIONS_MATRIX_ADD(SOLVER_MATRIX,equations_set_idx, &
+! ! !                                               & DAMPING_MATRIX_COEFFICIENT,DAMPING_MATRIX,ERR,ERROR,*999)
+! ! !                                           ELSE
+! ! !                                             CALL FLAG_ERROR("Dynamic damping matrix is not associated.",ERR,ERROR,*999)
+! ! !                                           ENDIF
+! ! !                                         ENDIF
+! ! !                                         IF(DYNAMIC_MAPPING%MASS_MATRIX_NUMBER/=0) THEN
+! ! !                                           MASS_MATRIX=>DYNAMIC_MATRICES%MATRICES(DYNAMIC_MAPPING%MASS_MATRIX_NUMBER)%PTR
+! ! !                                           IF(ASSOCIATED(MASS_MATRIX)) THEN
+! ! !                                             CALL SOLVER_MATRIX_EQUATIONS_MATRIX_ADD(SOLVER_MATRIX,equations_set_idx, &
+! ! !                                               & MASS_MATRIX_COEFFICIENT,MASS_MATRIX,ERR,ERROR,*999)
+! ! !                                           ELSE
+! ! !                                             CALL FLAG_ERROR("Dynamic mass matrix is not associated.",ERR,ERROR,*999)
+! ! !                                           ENDIF
+! ! !                                         ENDIF
+! ! ! 
+! ! ! xxx
+! ! ! 
+! ! ! 
+
+
+! ! ! 
+! ! !                                           ELSE
+! ! !                                             CALL FLAG_ERROR("Linear variable is not associated.",ERR,ERROR,*999)
+! ! !                                           ENDIF
+! ! !                                         ELSE
+! ! !                                           LOCAL_ERROR="Linear matrix is not associated for linear matrix number "// &
+! ! !                                             & TRIM(NUMBER_TO_VSTRING(equations_matrix_idx,"*",ERR,ERROR))//"."
+! ! !                                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                                         ENDIF
+! ! !                                       ENDDO !equations_matrix_idx
+! ! !                                     ELSE
+! ! !                                       CALL FLAG_ERROR("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
+! ! !                                     ENDIF
+! ! !                                   ENDIF
+! ! ! 
+! ! ! 
+! ! ! ! CHECK: DO I NEED THIS?
+! ! ! 
+! ! ! 
+! ! !                                   !Calculate the solver residual
+! ! !                                   NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
+! ! !                                   IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
+! ! !                                     NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
+! ! !                                     IF(ASSOCIATED(NONLINEAR_MATRICES)) THEN
+! ! !                                       residual_variable_type=NONLINEAR_MAPPING%RESIDUAL_VARIABLE_TYPE
+! ! !                                       RESIDUAL_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLE
+! ! !                                       RESIDUAL_DOMAIN_MAPPING=>RESIDUAL_VARIABLE%DOMAIN_MAPPING
+! ! !                                       RESIDUAL_VECTOR=>NONLINEAR_MATRICES%RESIDUAL
+! ! !                                       !Loop over the rows in the equations set
+! ! !                                       DO equations_row_number=1,EQUATIONS_MAPPING%NUMBER_OF_ROWS
+! ! !                                         IF(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+! ! !                                           & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
+! ! !                                           & NUMBER_OF_SOLVER_ROWS>0) THEN
+! ! !                                           !Get the equations residual contribution
+! ! !                                           CALL DISTRIBUTED_VECTOR_VALUES_GET(RESIDUAL_VECTOR,equations_row_number, &
+! ! !                                             & RESIDUAL_VALUE,ERR,ERROR,*999)
+! ! !                                           !Get the linear matrices contribution to the RHS values if there are any
+! ! !                                           IF(ASSOCIATED(LINEAR_MAPPING)) THEN
+! ! !                                             LINEAR_VALUE_SUM=0.0_DP
+! ! !                                             DO equations_matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
+! ! !                                               LINEAR_MATRIX=>LINEAR_MATRICES%MATRICES(equations_matrix_idx)%PTR
+! ! !                                               LINEAR_TEMP_VECTOR=>LINEAR_MATRIX%TEMP_VECTOR
+! ! !                                               CALL DISTRIBUTED_VECTOR_VALUES_GET(LINEAR_TEMP_VECTOR,equations_row_number, &
+! ! !                                                 & LINEAR_VALUE,ERR,ERROR,*999)
+! ! !                                               LINEAR_VALUE_SUM=LINEAR_VALUE_SUM+LINEAR_VALUE
+! ! !                                             ENDDO !equations_matrix_idx
+! ! !                                             RESIDUAL_VALUE=RESIDUAL_VALUE+LINEAR_VALUE_SUM
+! ! !                                           ENDIF
+! ! !                                           !Loop over the solver rows associated with this equations set residual row
+! ! !                                           DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+! ! !                                             & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
+! ! !                                             solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+! ! !                                               & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
+! ! !                                               & solver_row_idx)
+! ! !                                             row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+! ! !                                               & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
+! ! !                                               & COUPLING_COEFFICIENTS(solver_row_idx)
+! ! !                                             VALUE=RESIDUAL_VALUE*row_coupling_coefficient
+! ! !                                             !Add in nonlinear residual values                                    
+! ! !                                             CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RESIDUAL_VECTOR,solver_row_number,VALUE, &
+! ! !                                               & ERR,ERROR,*999)
+! ! !                                           ENDDO !solver_row_idx
+! ! !                                         ENDIF
+! ! !                                       ENDDO !equations_row_number
+! ! !                                     ELSE
+! ! !                                       CALL FLAG_ERROR("Equations matrices nonlinear matrices is not associated.",ERR,ERROR,*999)
+! ! !                                     ENDIF
+! ! !                                   ELSE
+! ! !                                     CALL FLAG_ERROR("Equations mapping nonlinear mapping is not associated.",ERR,ERROR,*999)
+! ! !                                   ENDIF
+! ! !                                 ELSE
+! ! !                                   CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*999)
+! ! !                                 ENDIF
+                              ELSE
+                                CALL FLAG_ERROR("Equations equations matrices is not associated.",ERR,ERROR,*999)
+                              ENDIF
+                            ELSE
+                              CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ENDDO !equations_set_idx
+                      !Start the update the solver residual vector values
+                      CALL DISTRIBUTED_VECTOR_UPDATE_START(SOLVER_RESIDUAL_VECTOR,ERR,ERROR,*999)
+                    ELSE
+                      CALL FLAG_ERROR("The solver residual vector is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ENDIF
+                ENDIF
               ENDIF
+
+!| 17/10/2009
+! sebk
+
+              IF(ASSOCIATED(SOLVER_RESIDUAL_VECTOR)) THEN
+                CALL DISTRIBUTED_VECTOR_UPDATE_FINISH(SOLVER_RESIDUAL_VECTOR,ERR,ERROR,*999)
+              ENDIF
+
+              IF(SOLVER%OUTPUT_TYPE>=SOLVER_TIMING_OUTPUT) THEN
+                CALL CPU_TIMER(USER_CPU,USER_TIME2,ERR,ERROR,*999)
+                CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME2,ERR,ERROR,*999)
+                USER_ELAPSED=USER_TIME2(1)-USER_TIME1(1)
+                SYSTEM_ELAPSED=SYSTEM_TIME2(1)-SYSTEM_TIME1(1)
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for solver residual assembly = ",USER_ELAPSED, &
+                  & ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total System time for solver residual assembly = ",SYSTEM_ELAPSED, &
+                  & ERR,ERROR,*999)
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              ENDIF
+
+! CHECK: DO I NEED TO CHANGE THIS?
+
               IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
                 !Set the first part of the next time step. Note that we do not have to add in the previous time value as it is
                 !already there from when we copied the values to the previous time step.
@@ -7096,45 +7047,6 @@ CONTAINS
               IF(SOLVER%OUTPUT_TYPE>=SOLVER_MATRIX_OUTPUT) THEN
                 CALL SOLVER_MATRICES_OUTPUT(GENERAL_OUTPUT_TYPE,SELECTION_TYPE,SOLVER_MATRICES,ERR,ERROR,*999)
               ENDIF
-! |
-! |
-! |
-! |
-! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
-! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
-! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
-
-! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
-! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
-! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
-! |
-! |
-! ADD IN RESIDUAL CALCULATION
-! |
-! |
-!               NULLIFY(SOLVER_RESIDUAL_VECTOR)
-!               IF(SELECTION_TYPE==SOLVER_MATRICES_ALL.OR. &
-! !sebk
-!                 & SELECTION_TYPE==SOLVER_MATRICES_NONLINEAR_ONLY.OR. &
-!                 & SELECTION_TYPE==SOLVER_MATRICES_RHS_RESIDUAL_ONLY.OR. &
-! !sebk
-!                 & SELECTION_TYPE==SOLVER_MATRICES_RESIDUAL_ONLY) THEN
-!                 IF(DYNAMIC_SOLVER%SOLVER_INITIALISED.OR.(.NOT.DYNAMIC_SOLVER%SOLVER_INITIALISED.AND. &
-!                   & ((DYNAMIC_SOLVER%ORDER==SOLVER_DYNAMIC_FIRST_ORDER.AND.DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_FIRST_DEGREE).OR. &
-!                   & (DYNAMIC_SOLVER%ORDER==SOLVER_DYNAMIC_SECOND_ORDER.AND.DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_SECOND_DEGREE)))) &
-!                   & THEN
-!                   !Assemble residual vector
-! 
-!                 ENDIF
-!               ENDIF
-! |
-! |
-! |
-! |
-! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
-! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
-! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
-
             ELSE
               CALL FLAG_ERROR("Solver solver matrices is not associated.",ERR,ERROR,*999)
             ENDIF
@@ -7157,6 +7069,14 @@ CONTAINS
     CALL EXITS("SOLVER_MATRICES_DYNAMIC_ASSEMBLE")
     RETURN 1
   END SUBROUTINE SOLVER_MATRICES_DYNAMIC_ASSEMBLE
+
+! |
+! |
+! |
+! |
+! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
+! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
+! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
 
   !
   !================================================================================================================================
@@ -7729,7 +7649,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the maximum absolute tolerance for a nonlinear Newton solver. \todo get method \see OPENCMISS::CMISSSolverNewtonAbsoluteToleranceSet
+  !>Sets/changes the maximum absolute tolerance for a nonlinear Newton solver
   SUBROUTINE SOLVER_NEWTON_ABSOLUTE_TOLERANCE_SET(SOLVER,ABSOLUTE_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
@@ -7927,7 +7847,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of Jacobian calculation type for a Newton solver. \todo get method \see OPENCMISS::CMISSSolverNewtonJacobianCalculationTypeSet
+  !>Sets/changes the type of Jacobian calculation type for a Newton solver
   SUBROUTINE SOLVER_NEWTON_JACOBIAN_CALCULATION_TYPE_SET(SOLVER,JACOBIAN_CALCULATION_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -7995,7 +7915,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the linear solver associated with a Newton solver. \see OPENCMISS::CMISSSolverNewtonLinearSolverGet
+  !>Returns the linear solver associated with a Newton solver
   SUBROUTINE SOLVER_NEWTON_LINEAR_SOLVER_GET(SOLVER,LINEAR_SOLVER,ERR,ERROR,*)
 
     !Argument variables
@@ -8052,7 +7972,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the line search alpha for a Newton linesearch solver. \todo get method \see OPENCMISS::CMISSSolverNewtonLineSearchAlphaSet
+  !>Sets/changes the line search alpha for a Newton linesearch solver
   SUBROUTINE SOLVER_NEWTON_LINESEARCH_ALPHA_SET(SOLVER,LINESEARCH_ALPHA,ERR,ERROR,*)
     
     !Argument variables
@@ -8481,7 +8401,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the line search maximum step for a nonlinear Newton linesearch solver. \todo get method \see OPENCMISS::CMISSSolverNewtonLineSearchMaxStepSet
+  !>Sets/changes the line search maximum step for a nonlinear Newton linesearch solver
   SUBROUTINE SOLVER_NEWTON_LINESEARCH_MAXSTEP_SET(SOLVER,LINESEARCH_MAXSTEP,ERR,ERROR,*)
 
     !Argument variables
@@ -8706,7 +8626,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the line search step tolerance for a nonlinear Newton linesearch solver. \todo get method \see OPENCMISS::CMISSSolverNewtonLineSearchStepTolSet
+  !>Sets/changes the line search step tolerance for a nonlinear Newton linesearch solver
   SUBROUTINE SOLVER_NEWTON_LINESEARCH_STEPTOL_SET(SOLVER,LINESEARCH_STEPTOL,ERR,ERROR,*)
 
     !Argument variables
@@ -8778,7 +8698,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the line search type for a nonlinear Newton linesearch solver. \todo get method \see OPENCMISS::CMISSSolverNewtonLineSearchTypeSet
+  !>Sets/changes the line search type for a nonlinear Newton linesearch solver
   SUBROUTINE SOLVER_NEWTON_LINESEARCH_TYPE_SET(SOLVER,LINESEARCH_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -8856,7 +8776,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the maximum number of function evaluations for a nonlinear Newton solver. \todo get method \see OPENCMISS::CMISSSolverNewtonMaximumFunctionEvaluationsSet
+  !>Sets/changes the maximum number of function evaluations for a nonlinear Newton solver
   SUBROUTINE SOLVER_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET(SOLVER,MAXIMUM_FUNCTION_EVALUATIONS,ERR,ERROR,*)
 
     !Argument variables
@@ -8918,7 +8838,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the maximum number of iterations for a nonlinear Newton solver. \todo get method \see OPENCMISS::CMISSSolverNewtonMaximumIterationsSet
+  !>Sets/changes the maximum number of iterations for a nonlinear Newton solver
   SUBROUTINE SOLVER_NEWTON_MAXIMUM_ITERATIONS_SET(SOLVER,MAXIMUM_ITERATIONS,ERR,ERROR,*)
 
     !Argument variables
@@ -8979,7 +8899,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the relative tolerance for a nonlinear Newton solver. \todo get method \see OPENCMISS::CMISSSolverNewtonRelativeToleranceSet
+  !>Sets/changes the relative tolerance for a nonlinear Newton solver
   SUBROUTINE SOLVER_NEWTON_RELATIVE_TOLERANCE_SET(SOLVER,RELATIVE_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
@@ -9040,7 +8960,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the solution initialisation for a nonlinear Newton solver. \todo get method \see OPENCMISS::CMISSSolverNewtonSolutionInitTypeSet 
+  !>Sets/changes the solution initialisation for a nonlinear Newton solver
   SUBROUTINE SOLVER_NEWTON_SOLUTION_INIT_TYPE_SET(SOLVER,SOLUTION_INITIALISE_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -9106,7 +9026,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the solution tolerance for a nonlinear Newton solver. \todo get method \see OPENCMISS::CMISSSolverNewtonSolutionToleranceSet 
+  !>Sets/changes the solution tolerance for a nonlinear Newton solver
   SUBROUTINE SOLVER_NEWTON_SOLUTION_TOLERANCE_SET(SOLVER,SOLUTION_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
@@ -9383,7 +9303,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the trust region delta0 for a nonlinear Newton trust region solver solver. \todo get method \see OPENCMISS::CMISSSolverNewtonTrustRegionDelta0Set 
+  !>Sets/changes the trust region delta0 for a nonlinear Newton trust region solver solver
   SUBROUTINE SOLVER_NEWTON_TRUSTREGION_DELTA0_SET(SOLVER,TRUSTREGION_DELTA0,ERR,ERROR,*)
 
     !Argument variables
@@ -9594,7 +9514,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the trust region tolerance for a nonlinear Newton trust region solver. \todo get method \see OPENCMISS::CMISSSolverNewtonTrustRegionToleranceSet 
+  !>Sets/changes the trust region tolerance for a nonlinear Newton trust region solver
   SUBROUTINE SOLVER_NEWTON_TRUSTREGION_TOLERANCE_SET(SOLVER,TRUSTREGION_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
@@ -9666,7 +9586,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of nonlinear Newton solver. \todo get method \see OPENCMISS::CMISSSolverNewtonTypeSet 
+  !>Sets/changes the type of nonlinear Newton solver
   SUBROUTINE SOLVER_NEWTON_TYPE_SET(SOLVER,NEWTON_SOLVE_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -9947,7 +9867,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of nonlinear solver. \todo get method \see OPENCMISS::CMISSSolverNonlinearTypeSet 
+  !>Sets/changes the type of nonlinear solver
   SUBROUTINE SOLVER_NONLINEAR_TYPE_SET(SOLVER,NONLINEAR_SOLVE_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -10029,7 +9949,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the output type for a solver. \todo get method \see OPENCMISS::CMISSSolverOutputTypeSet 
+  !>Sets/changes the output type for a solver
   SUBROUTINE SOLVER_OUTPUT_TYPE_SET(SOLVER,OUTPUT_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -10191,7 +10111,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns a pointer to the solver equations for a solver. \see OPENCMISS::CMISSSolverSolverEquationsGet
+  !>Returns a pointer to the solver equations for a solver.
   SUBROUTINE SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SOLVER_EQUATIONS,ERR,ERROR,*)
 
     !Argument variables
@@ -10231,7 +10151,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Solve the problem. 
+  !>Solve the problem
   SUBROUTINE SOLVER_SOLVE(SOLVER,ERR,ERROR,*)
 
     !Argument variables
@@ -10303,7 +10223,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type for a solver. \todo get method \see OPENCMISS::CMISSSolverTypeSet
+  !>Sets/changes the type for a solver
   SUBROUTINE SOLVER_TYPE_SET(SOLVER,SOLVE_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -10732,7 +10652,7 @@ CONTAINS
 
 
     NULLIFY(SOLVER_DATA)
-    NULLIFY(PREDICTED_MEAN_DISPLACEMENT_VECTOR)
+
     
     CALL ENTERS("SOLVER_VARIABLES_DYNAMIC_NONLINEAR_UPDATE",ERR,ERROR,*998)
 
@@ -10783,60 +10703,67 @@ CONTAINS
 ! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
 ! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
 !|
+                        DEPENDENT_VARIABLE=>SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)% &
+                          & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE(equations_set_idx)%PTR
                         EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
                         IF(ASSOCIATED(EQUATIONS_SET)) THEN
                           DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                           EQUATIONS=>EQUATIONS_SET%EQUATIONS
-                          IF(ASSOCIATED(EQUATIONS)) THEN
-                            EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
-                            IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
-                              EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-                              IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-                                DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
-                                IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
-                                  DYNAMIC_VARIABLE_TYPE=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
-                                  !Get the mean predicted displacement data       
-                                  CALL FIELD_PARAMETER_SET_VECTOR_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                    & FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,PREDICTED_MEAN_DISPLACEMENT_VECTOR, &
-                                    & ERR,ERROR,*999)
-                                  CALL DISTRIBUTED_VECTOR_DATA_GET(PREDICTED_MEAN_DISPLACEMENT_VECTOR,MEAN_DATA,ERR,ERROR,*999)   
+                          IF(ASSOCIATED(DEPENDENT_VARIABLE)) THEN
+                            VARIABLE_TYPE=DEPENDENT_VARIABLE%VARIABLE_TYPE
+                            IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+                              IF(ASSOCIATED(EQUATIONS)) THEN
+                                EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
+                                IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
+                                  DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
+                                  IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
+                                    DYNAMIC_VARIABLE_TYPE=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
+                                    !Get the mean predicted displacement data       
+                                    NULLIFY(PREDICTED_MEAN_DISPLACEMENT_VECTOR)
+                                    CALL FIELD_PARAMETER_SET_VECTOR_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                      & FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,PREDICTED_MEAN_DISPLACEMENT_VECTOR, &
+                                      & ERR,ERROR,*999)
+                                    NULLIFY(MEAN_DATA)
+                                    CALL DISTRIBUTED_VECTOR_DATA_GET(PREDICTED_MEAN_DISPLACEMENT_VECTOR,MEAN_DATA,ERR,ERROR,*999)   
+!CHECK: Do I still need "variable_coefficient" and "additive_constant"
+   !
+   !
+ !!!!!
+  !!!
+   !
+                                   !Get the dependent field variable dof the solver dof is mapped to
+                                   variable_dof=SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)% &
+                                     & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE_DOF(equations_set_idx)
+                                   variable_coefficient=SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)% &
+                                     & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE_COEFFICIENT(equations_set_idx)
+                                   additive_constant=SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)% &
+                                     & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%ADDITIVE_CONSTANT(equations_set_idx)
+                                    VALUE=((SOLVER_DATA(solver_dof_idx)*variable_coefficient+additive_constant)* & 
+                                     & DYNAMIC_ALPHA_FACTOR)+MEAN_DATA(variable_dof)
+                                   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                                     & variable_dof,VALUE,ERR,ERROR,*999)
+                                  ELSE
+                                    CALL FLAG_ERROR("Dynamic mapping is not associated.",ERR,ERROR,*999)
+                                  ENDIF
+                                ELSE
+                                  CALL FLAG_ERROR("Equations mapping is not associated.",ERR,ERROR,*999)
                                 ENDIF
+                              ELSE
+                                CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
                               ENDIF
+                            ELSE
+                              CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
                             ENDIF
+                          ELSE
+                            CALL FLAG_ERROR("Dependent variable is not associated.",ERR,ERROR,*999)
                           ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
                         ENDIF
 !|
 ! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
 ! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
 ! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
-                        DEPENDENT_VARIABLE=>SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)% &
-                          & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE(equations_set_idx)%PTR
-                        IF(ASSOCIATED(DEPENDENT_VARIABLE)) THEN
-                          VARIABLE_TYPE=DEPENDENT_VARIABLE%VARIABLE_TYPE
-                          DEPENDENT_FIELD=>DEPENDENT_VARIABLE%FIELD
-                          IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
-!OLD
-!CHECK: Do I STILL NEED THAT?
-!                            !Get the dependent field variable dof the solver dof is mapped to
-!                            variable_dof=SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)% &
-!                              & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE_DOF(equations_set_idx)
-!                            variable_coefficient=SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)% &
-!                              & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE_COEFFICIENT(equations_set_idx)
-!                            additive_constant=SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)% &
-!                              & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%ADDITIVE_CONSTANT(equations_set_idx)
-!                            !Set the dependent field variable dof
-!                               VALUE=SOLVER_DATA(solver_dof_idx)*variable_coefficient+additive_constant
-!NEW
-                              VALUE=(SOLVER_DATA(solver_dof_idx)*DYNAMIC_ALPHA_FACTOR)+MEAN_DATA(solver_dof_idx)
-!END NEW
-                            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                              & variable_dof,VALUE,ERR,ERROR,*999)
-                          ELSE
-                            CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
-                          ENDIF
-                        ELSE
-                          CALL FLAG_ERROR("Dependent variable is not associated.",ERR,ERROR,*999)
-                        ENDIF
                       ENDDO !equations_set_idx
                     ENDDO !solver_dof_idx
                     !Restore the solver dof data
@@ -11249,7 +11176,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the number of solvers. \todo get method
+  !>Sets/changes the number of solvers.
   SUBROUTINE SOLVERS_NUMBER_SET(SOLVERS,NUMBER_OF_SOLVERS,ERR,ERROR,*)
 
     !Argument variables
@@ -11319,7 +11246,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns a pointer to the specified solver in the list of solvers. 
+  !>Returns a pointer to the specified solver in the list of solvers.
   SUBROUTINE SOLVERS_SOLVER_GET(SOLVERS,SOLVER_INDEX,SOLVER,ERR,ERROR,*)
 
     !Argument variables

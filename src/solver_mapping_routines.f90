@@ -68,7 +68,7 @@ MODULE SOLVER_MAPPING_ROUTINES
   !> \brief Equations matrix types
   !> \see EQUATIONS_SET_CONSTANTS
   !>@{
-  INTEGER(INTG), PARAMETER :: SOLVER_MAPPING_EQUATIONS_DYNAMIC_MATRIX=1 !<The equations matrix in the solver mapping is a dynamic equaitons matrix \see SOLVER_MAPPING_EquationsMatrixTypes,SOLVER_MAPPING
+  INTEGER(INTG), PARAMETER :: SOLVER_MAPPING_EQUATIONS_DYNAMIC_MATRIX=1 !<The equations matrix in the solver mapping is a dynamic equations matrix \see SOLVER_MAPPING_EquationsMatrixTypes,SOLVER_MAPPING
   INTEGER(INTG), PARAMETER :: SOLVER_MAPPING_EQUATIONS_LINEAR_MATRIX=2 !<The equations matrix in the solver mapping is a linear equations matrix \see SOLVER_MAPPING_EquationsMatrixTypes,SOLVER_MAPPING
  !>@}
  
@@ -2294,7 +2294,7 @@ CONTAINS
                           CALL FLAG_ERROR("Equations mapping nonlinear mapping is not associated.",ERR,ERROR,*999)
                         ENDIF
                       CASE DEFAULT
-                        LOCAL_ERROR="The solver equaitons linearity type of "// &
+                        LOCAL_ERROR="The solver equations linearity type of "// &
                           & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
@@ -2308,23 +2308,26 @@ CONTAINS
                           CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
                         ENDIF
                      CASE(SOLVER_EQUATIONS_NONLINEAR)
-! SEBK 20/08/09 NOT SURE ABOUT SOLVER MAPPING HERE
+! SEBK 16/09/09 NOT SURE ABOUT SOLVER MAPPING HERE
 !|
                         IF(ASSOCIATED(EQUATIONS_MAPPING%DYNAMIC_MAPPING)) THEN
                           SOLVER_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+1)= &
                             & EQUATIONS_MAPPING%DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
+! new.... need to double check
+                          SOLVER_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+1)= &
+                            & EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLE_TYPE
                         ELSE
                           CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
                         ENDIF
 !|
-! SEBK 20/08/09 NOT SURE ABOUT SOLVER MAPPING HERE
+! SEBK 16/09/09 NOT SURE ABOUT SOLVER MAPPING HERE
                       CASE DEFAULT
-                        LOCAL_ERROR="The solver equaitons linearity type of "// &
+                        LOCAL_ERROR="The solver equations linearity type of "// &
                           & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     CASE DEFAULT
-                      LOCAL_ERROR="The solver equaitons time dependence type of "// &
+                      LOCAL_ERROR="The solver equations time dependence type of "// &
                         & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     END SELECT

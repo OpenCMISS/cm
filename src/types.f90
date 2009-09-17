@@ -1499,11 +1499,7 @@ MODULE TYPES
     REAL(DP) :: CURRENT_TIME !<The current time value for the dynamic solver.
     REAL(DP) :: TIME_INCREMENT !<The time increment for the dynamic solver to solver for.
     TYPE(SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linked linear solver
-! SEBK 
-!|
     TYPE(SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer to the linked linear solver
-!|
-! SEBK
   END TYPE DYNAMIC_SOLVER_TYPE
   
   !>Contains information for an eigenproblem solver

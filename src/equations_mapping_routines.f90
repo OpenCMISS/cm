@@ -943,6 +943,11 @@ CONTAINS
                   IF(CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE==0.AND.CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES==0) &
                     & CALL FLAG_ERROR("Invalid equations mapping. The RHS variable type must be set if there are no "// &
                     & "linear matrices.",ERR,ERROR,*999)
+                  IF(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE==0) CALL FLAG_ERROR("Invalid equations mapping. "// &
+                    & "The residual variable type must be set for nonlinear dynamic equations.", ERR,ERROR,*999)
+                  IF(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE/=CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE) &
+                    & CALL FLAG_ERROR("Invalid equations mapping. "// "The residual variable type must correspond to the &
+                    & dynamic variable type for nonlinear dynamic equations.", ERR,ERROR,*999)
 !|
 ! SEBK 19/08/2009 not sure about mapping here
                 CASE DEFAULT
@@ -1187,10 +1192,16 @@ CONTAINS
                       EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_DAMPING_MATRIX_NUMBER=2
                       EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_MASS_MATRIX_NUMBER=3
                     ENDIF
-                    EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES=DEPENDENT_FIELD%NUMBER_OF_VARIABLES-3
+                    EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES=0
                     IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR)) THEN
                       EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE=DEPENDENT_FIELD% &
                         & VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
+!!!sebk 15/10/2009
+!
+                      EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE=EQUATIONS_MAPPING%CREATE_VALUES_CACHE% &
+                        & DYNAMIC_VARIABLE_TYPE
+!
+!!!sebk 15/10/2009
                     ELSE
                       CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                     ENDIF
@@ -1890,12 +1901,27 @@ CONTAINS
                   DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                   IF(ASSOCIATED(DEPENDENT_FIELD)) THEN                 
                     !Check the dynamic variable type is not being by other equations matrices or vectors
-                    IF(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE==DYNAMIC_VARIABLE_TYPE) THEN
-                      LOCAL_ERROR="The specified dynamic variable type of "// &
-                        & TRIM(NUMBER_TO_VSTRING(DYNAMIC_VARIABLE_TYPE,"*",ERR,ERROR))// &
-                        & " is the same as the variable type for the residual vector."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    ENDIF
+! sebk 16/09/2009
+!
+                    IF(EQUATIONS%LINEARITY==EQUATIONS_LINEAR) THEN
+                      IF(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE==DYNAMIC_VARIABLE_TYPE) THEN
+                        LOCAL_ERROR="The specified dynamic variable type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(DYNAMIC_VARIABLE_TYPE,"*",ERR,ERROR))// &
+                          & " is the same as the variable type for the residual vector."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                    ELSE IF(EQUATIONS%LINEARITY==EQUATIONS_NONLINEAR) THEN 
+                      IF(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE/=DYNAMIC_VARIABLE_TYPE) THEN
+                        LOCAL_ERROR="The specified dynamic variable type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(DYNAMIC_VARIABLE_TYPE,"*",ERR,ERROR))// &
+                          & " is not the same as the variable type for the residual vector."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("The equations set linearity is not set.",ERR,ERROR,*999)
+                    END IF  
+!
+! sebk 16/09/2009
                     IF(CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE==DYNAMIC_VARIABLE_TYPE) THEN
                       LOCAL_ERROR="The specified dynamic variable type of "// &
                         & TRIM(NUMBER_TO_VSTRING(DYNAMIC_VARIABLE_TYPE,"*",ERR,ERROR))// &
@@ -2775,13 +2801,25 @@ CONTAINS
                 IF(EQUATIONS%LINEARITY==EQUATIONS_NONLINEAR) THEN
                   DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                   IF(ASSOCIATED(DEPENDENT_FIELD)) THEN                 
-                    !Check the residual variable type is not being by other equations matrices or vectors
-                    IF(CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE==RESIDUAL_VARIABLE_TYPE) THEN
-                      LOCAL_ERROR="The specified residual variable type of "// &
-                        & TRIM(NUMBER_TO_VSTRING(RESIDUAL_VARIABLE_TYPE,"*",ERR,ERROR))// &
-                        & " is the same as the variable type for the dynamic matrices."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    ENDIF
+                  !Check the residual variable type is not being used by other equations matrices or vectors
+                    IF(EQUATIONS%TIME_DEPENDENCE==EQUATIONS_STATIC) THEN
+                      IF(CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE==RESIDUAL_VARIABLE_TYPE) THEN
+                        LOCAL_ERROR="The specified residual variable type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(RESIDUAL_VARIABLE_TYPE,"*",ERR,ERROR))// &
+                          & " is the same as the variable type for the dynamic matrices."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                    ELSE IF(EQUATIONS%TIME_DEPENDENCE==EQUATIONS_FIRST_ORDER_DYNAMIC.OR. & 
+                      & EQUATIONS%TIME_DEPENDENCE==EQUATIONS_SECOND_ORDER_DYNAMIC) THEN
+                      IF(CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE/=RESIDUAL_VARIABLE_TYPE) THEN
+                        LOCAL_ERROR="The specified residual variable type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(RESIDUAL_VARIABLE_TYPE,"*",ERR,ERROR))// &
+                          & " is not the same as the variable type for the dynamic matrices."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("The equations set time dependence is not set.",ERR,ERROR,*999)
+                    END IF
                     IF(CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE==RESIDUAL_VARIABLE_TYPE) THEN
                       LOCAL_ERROR="The specified residual variable type of "// &
                         & TRIM(NUMBER_TO_VSTRING(RESIDUAL_VARIABLE_TYPE,"*",ERR,ERROR))// &
