@@ -64,7 +64,7 @@ MODULE GENERATED_MESH_ROUTINES
 
   !> \addtogroup GENERATED_MESH_ROUTINES_GeneratedMeshTypes GENERATED_MESH_ROUTINES::GeneratedMeshTypes 
   !> \brief Generated mesh types.
-  !> \see GENERATED_MESH_ROUTINES
+  !> \see GENERATED_MESH_ROUTINES,OPENCMISS_GeneratedMeshTypes
   !>@{
   INTEGER(INTG), PARAMETER :: GENERATED_MESH_REGULAR_MESH_TYPE=1 !<A regular generated mesh. \see GENERATED_MESH_ROUTINES_GeneratedMeshTypes,GENERATED_MESH_ROUTINES
   INTEGER(INTG), PARAMETER :: GENERATED_MESH_POLAR_MESH_TYPE=2 !<A polar generated mesh. \see GENERATED_MESH_ROUTINES_GeneratedMeshTypes,GENERATED_MESH_ROUTINES
@@ -95,7 +95,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the basis of a generated mesh.
+  !>Gets the basis of a generated mesh. \see OPENCMISS::CMISSGeneratedMeshBasisGet
   SUBROUTINE GENERATED_MESH_BASIS_GET(GENERATED_MESH,BASIS,ERR,ERROR,*)
     !Argument variables
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh to get the basis of
@@ -143,7 +143,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the basis of a generated mesh.
+  !>Sets/changes the basis of a generated mesh. \see OPENCMISS::CMISSGeneratedMeshBasisSet
   SUBROUTINE GENERATED_MESH_BASIS_SET(GENERATED_MESH,BASIS,ERR,ERROR,*)
 
      !Argument variables
@@ -189,7 +189,7 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Finishes the creation of a generated mesh.
+  !>Finishes the creation of a generated mesh. \see OPENCMISS::CMISSGeneratedMeshCreateFinish
   SUBROUTINE GENERATED_MESH_CREATE_FINISH(GENERATED_MESH,MESH_USER_NUMBER,MESH,ERR,ERROR,*)
 
     !Argument variables
@@ -242,7 +242,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Starts the creation of a generated mesh.
+  !>Starts the creation of a generated mesh. \see OPENCMISS::CMISSGeneratedMeshCreateFinish
   SUBROUTINE GENERATED_MESH_CREATE_START(USER_NUMBER,REGION,GENERATED_MESH,ERR,ERROR,*)
 
     !Argument variables
@@ -357,7 +357,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Destroys a generated mesh.
+  !>Destroys a generated mesh. \see OPENCMISS::CMISSGeneratedMeshCreateDestroy
   SUBROUTINE GENERATED_MESH_DESTROY(GENERATED_MESH,ERR,ERROR,*)
 
     !Argument variables
@@ -413,7 +413,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the extent of a generated mesh.
+  !>Gets the extent of a generated mesh. \see OPENCMISS::CMISSGeneratedMeshExtentGet
   SUBROUTINE GENERATED_MESH_EXTENT_GET(GENERATED_MESH,MAX_EXTENT,ERR,ERROR,*)
 
     !Argument variables
@@ -455,7 +455,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the extent of a generated mesh.
+  !>Sets/changes the extent of a generated mesh. \see OPENCMISS::CMISSGeneratedMeshExtentSet
   SUBROUTINE GENERATED_MESH_EXTENT_SET(GENERATED_MESH,MAX_EXTENT,ERR,ERROR,*)
 
     !Argument variables
@@ -563,7 +563,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the extent of a generated mesh.
+  !>Gets the number of elements in a generated mesh.  \see OPENCMISS::CMISSGeneratedMeshNumberOfElementsGet
   SUBROUTINE GENERATED_MESH_NUMBER_OF_ELEMENTS_GET(GENERATED_MESH,NUMBER_OF_ELEMENTS,ERR,ERROR,*)
 
     !Argument variables
@@ -605,7 +605,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the extent of a generated mesh.
+  !>Sets/changes the number of elements in a generated mesh. \see OPENCMISS::CMISSGeneratedMeshNumberOfElementsSet
   SUBROUTINE GENERATED_MESH_NUMBER_OF_ELEMENTS_SET(GENERATED_MESH,NUMBER_OF_ELEMENTS_XI,ERR,ERROR,*)
 
     !Argument variables
@@ -648,7 +648,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Get the origin of a generated mesh.
+  !>Get the origin of a generated mesh. \see OPENCMISS::CMISSGeneratedMeshOriginGet
   SUBROUTINE GENERATED_MESH_ORIGIN_GET(GENERATED_MESH,ORIGIN,ERR,ERROR,*)
 
     !Argument variables
@@ -690,7 +690,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the origin of a generated mesh.
+  !>Sets/changes the origin of a generated mesh. \see OPENCMISS::CMISSGeneratedMeshOriginSet
   SUBROUTINE GENERATED_MESH_ORIGIN_SET(GENERATED_MESH,ORIGIN,ERR,ERROR,*)
 
     !Argument variables
@@ -984,7 +984,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the type of a generated mesh.
+  !>Gets the type of a generated mesh. \see OPENCMISS::CMISSGeneratedMeshTypeGet
   SUBROUTINE GENERATED_MESH_TYPE_GET(GENERATED_MESH,TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -1013,7 +1013,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of a generated mesh.
+  !>Sets/changes the type of a generated mesh. \see OPENCMISS::CMISSGeneratedMeshTypeSet
   SUBROUTINE GENERATED_MESH_TYPE_SET(GENERATED_MESH,GENERATED_TYPE,ERR,ERROR,*)
 
      !Argument variables
@@ -1152,12 +1152,12 @@ CONTAINS
   !================================================================================================================================
   ! 
   
-  !>Updates the geometric field parameters from the initial nodal positions of the mesh. Any derivative values for the nodes are calculated from an average straight line approximation.
+  !>Updates the geometric field parameters from the initial nodal positions of the mesh. Any derivative values for the nodes are calculated from an average straight line approximation. \see OPENCMISS::CMISSGeneratedMeshGeometricParametersCalculate
   SUBROUTINE GENERATED_MESH_GEOMETRIC_PARAMETERS_CALCULATE(FIELD,GENERATED_MESH,ERR,ERROR,*)
 
     !Argument variables
     TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to update the geometric parameters for
-    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<The mesh which is generated by the generated mesh
+    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<The mesh which is generated by the generated mesh \todo is this necessary???
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables

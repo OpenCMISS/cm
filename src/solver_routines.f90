@@ -68,8 +68,8 @@ MODULE SOLVER_ROUTINES
   !Module parameters
 
   !> \addtogroup SOLVER_ROUTINES_SolverTypes SOLVER_ROUTINES::SolverTypes
-  !> \brief The types of a problem solver
-  !> \see SOLVER_ROUTINES
+  !> \brief The types of a solver.
+  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::SolverTypes
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_LINEAR_TYPE=1 !<A linear solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NONLINEAR_TYPE=2 !<A nonlinear solver  \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
@@ -80,24 +80,24 @@ MODULE SOLVER_ROUTINES
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_SolverLibraries SOLVER_ROUTINES::SolverLibraries
-  !> \brief The types of solver libraries
-  !> \see SOLVER_ROUTINES
+  !> \brief The types of solver libraries.
+  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::SolverLibraries
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_CMISS_LIBRARY=LIBRARY_CMISS_TYPE !<CMISS (internal) solver library \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_PETSC_LIBRARY=LIBRARY_PETSC_TYPE !<PETSc solver library \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_LinearSolverTypes SOLVER_ROUTINES::LinearSolverTypes
-  !> \brief The types of linear solvers
-  !> \see SOLVER_ROUTINES
+  !> \brief The types of linear solvers.
+  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::LinearSolverTypes
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_LINEAR_DIRECT_SOLVE_TYPE=1 !<Direct linear solver type \see SOLVER_ROUTINES_LinearSolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE=2 !<Iterative linear solver type \see SOLVER_ROUTINES_LinearSolverTypes,SOLVER_ROUTINES
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_DirectLinearSolverTypes SOLVER_ROUTINES::DirectLinearSolverTypes
-  !> \brief The types of direct linear solvers
-  !> \see SOLVER_ROUTINES
+  !> \brief The types of direct linear solvers. \todo Move libraries to a more appropriate place.
+  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::DirectLinearSolverTypes
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_LU=1 !<LU direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_CHOLESKY=2 !<Cholesky direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
@@ -110,8 +110,8 @@ MODULE SOLVER_ROUTINES
   !>@}
   
   !> \addtogroup SOLVER_ROUTINES_IterativeLinearSolverTypes SOLVER_ROUTINES::IterativeLinearSolverTypes
-  !> \brief The types of iterative linear solvers
-  !> \see SOLVER_ROUTINES
+  !> \brief The types of iterative linear solvers.
+  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::IterativeLinearSolverTypes
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_ITERATIVE_RICHARDSON=1 !<Richardson iterative solver type \see SOLVER_ROUTINES_IterativeLinearSolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_ITERATIVE_CHEBYCHEV=2 !<Chebychev iterative solver type \see SOLVER_ROUTINES_IterativeLinearSolverTypes,SOLVER_ROUTINES
@@ -123,8 +123,8 @@ MODULE SOLVER_ROUTINES
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_IterativePreconditionerTypes SOLVER_ROUTINES::IterativePreconditionerTypes
-  !> \brief The types of iterative preconditioners
-  !> \see SOLVER_ROUTINES
+  !> \brief The types of iterative preconditioners.
+  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::IterativePreconditionerTypes
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_ITERATIVE_NO_PRECONDITIONER=0 !<No preconditioner type \see SOLVER_ROUTINES_IterativePreconditionerTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_ITERATIVE_JACOBI_PRECONDITIONER=1 !<Jacobi preconditioner type \see SOLVER_ROUTINES_IterativePreconditionerTypes,SOLVER_ROUTINES
@@ -136,8 +136,8 @@ MODULE SOLVER_ROUTINES
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_NonlinearSolverTypes SOLVER_ROUTINES::NonlinearSolverTypes
-  !> \brief The types of nonlinear solvers
-  !> \see SOLVER_ROUTINES
+  !> \brief The types of nonlinear solvers.
+  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::NonlinearSolverTypes
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_NONLINEAR_NEWTON=1 !<Newton nonlinear solver type \see SOLVER_ROUTINES_NonlinearSolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NONLINEAR_BFGS_INVERSE=2 !<BFGS inverse nonlinear solver type \see SOLVER_ROUTINES_NonlinearSolverTypes,SOLVER_ROUTINES
@@ -145,16 +145,16 @@ MODULE SOLVER_ROUTINES
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_NewtonSolverTypes SOLVER_ROUTINES::NewtonSolverTypes
-  !> \brief The types of nonlinear Newton solvers
-  !> \see SOLVER_ROUTINES
+  !> \brief The types of nonlinear Newton solvers. 
+  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::NewtonSolverTypes
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_LINESEARCH=1 !<Newton line search nonlinear solver type \see SOLVER_ROUTINES_NewtonSolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_TRUSTREGION=2 !<Newton trust region nonlinear solver type \see SOLVER_ROUTINES_NewtonSolverTypes,SOLVER_ROUTINES
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_NewtonLineSearchTypes SOLVER_ROUTINES::NewtonLineSearchTypes
-  !> \brief The types line search techniques for Newton line search nonlinear solvers
-  !> \see SOLVER_ROUTINES
+  !> \brief The types line search techniques for Newton line search nonlinear solvers.
+  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::NewtonLineSearchTypes
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_LINESEARCH_NONORMS=1 !<No norms line search for Newton line search nonlinear solves \see SOLVER_ROUTINES_NewtonLineSearchTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_LINESEARCH_NONE=2 !<No line search for Newton line search nonlinear solves \see SOLVER_ROUTINES_NewtonLineSearchTypes,SOLVER_ROUTINES
@@ -164,16 +164,16 @@ MODULE SOLVER_ROUTINES
   
   !> \addtogroup SOLVER_ROUTINES_JacobianCalculationTypes SOLVER_ROUTINES::JacobianCalculationTypes
   !> \brief The Jacobian calculation types for a nonlinear solver 
-  !> \see SOLVER_ROUTINES
+  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::JacobianCalculationTypes
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_JACOBIAN_NOT_CALCULATED=1 !<The Jacobian values will not be calculated for the nonlinear equations set \see SOLVER_ROUTINES_JacobianCalculationTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_JACOBIAN_ANALTYIC_CALCULATED=2 !<The Jacobian values will be calculated analytically for the nonlinear equations set \see SOLVER_ROUTINES_JacobianCalculationTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_JACOBIAN_FD_CALCULATED=3 !<The Jacobian values will be calcualted using finite differences for the nonlinear equations set \see SOLVER_ROUTINES_JacobianCalculationTypes,SOLVER_ROUTINES
   !>@}  
 
-   !> \addtogroup SOLVER_ROUTINES_DynamicOrderTypes SOLVER_ROUTINES::DynamicOrderTypes
+  !> \addtogroup SOLVER_ROUTINES_DynamicOrderTypes SOLVER_ROUTINES::DynamicOrderTypes
   !> \brief The order types for a dynamic solver 
-  !> \see SOLVER_ROUTINES
+  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::DynamicOrderTypes
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_DYNAMIC_FIRST_ORDER=1 !<Dynamic solver has first order terms \see SOLVER_ROUTINES_DynamicOrderTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DYNAMIC_SECOND_ORDER=2 !<Dynamic solver has second order terms \see SOLVER_ROUTINES_DynamicOrderTypes,SOLVER_ROUTINES
@@ -181,7 +181,7 @@ MODULE SOLVER_ROUTINES
 
   !> \addtogroup SOLVER_ROUTINES_DynamicLinearityTypes SOLVER_ROUTINES::DynamicLinearityTypes
   !> \brief The time linearity types for a dynamic solver 
-  !> \see SOLVER_ROUTINES
+  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::DynamicLinearityTypes
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_DYNAMIC_LINEAR=1 !<Dynamic solver has linear terms \see SOLVER_ROUTINES_DynamicLinearityTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DYNAMIC_NONLINEAR=2 !<Dynamic solver has nonlinear terms \see SOLVER_ROUTINES_DynamicLinearityTypes,SOLVER_ROUTINES
@@ -189,7 +189,7 @@ MODULE SOLVER_ROUTINES
 
   !> \addtogroup SOLVER_ROUTINES_DynamicDegreeTypes SOLVER_ROUTINES::DynamicDegreeTypes
   !> \brief The time interpolation polynomial degree types for a dynamic solver 
-  !> \see SOLVER_ROUTINES
+  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::DynamicDegreeTypes
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_DYNAMIC_FIRST_DEGREE=1 !<Dynamic solver uses a first degree polynomial for time interpolation \see SOLVER_ROUTINES_DynamicDegreeTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DYNAMIC_SECOND_DEGREE=2 !<Dynamic solver uses a second degree polynomial for time interpolation \see SOLVER_ROUTINES_DynamicDegreeTypes,SOLVER_ROUTINES
@@ -198,7 +198,7 @@ MODULE SOLVER_ROUTINES
   
   !> \addtogroup SOLVER_ROUTINES_DynamicSchemeTypes SOLVER_ROUTINES::DynamicSchemeTypes
   !> \brief The types of dynamic solver scheme
-  !> \see SOLVER_ROUTINES
+  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::DynamicSchemeTypes
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_DYNAMIC_EULER_SCHEME=1 !<Euler (explicit) dynamic solver \see SOLVER_ROUTINES_DynamicSchemeTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DYNAMIC_BACKWARD_EULER_SCHEME=2 !<Backward Euler (implicit) dynamic solver \see SOLVER_ROUTINES_DynamicSchemeTypes,SOLVER_ROUTINES
@@ -225,7 +225,7 @@ MODULE SOLVER_ROUTINES
   
   !> \addtogroup SOLVER_ROUTINES_DAETypes SOLVER_ROUTINES::DAETypes
   !> \brief The type of differential-algebraic equation
-  !> \see SOLVER_ROUTINES
+  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::DAETypes
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_DAE_DIFFERENTIAL_ONLY=0 !<Differential equations only \see SOLVER_ROUTINES_DAETypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DAE_INDEX_1=1 !<Index 1 differential-algebraic equation \see SOLVER_ROUTINES_DAETypes,SOLVER_ROUTINES
@@ -235,7 +235,7 @@ MODULE SOLVER_ROUTINES
 
   !> \addtogroup SOLVER_ROUTINES_DAESolverTypes SOLVER_ROUTINES::DAESolverTypes
   !> \brief The differential-algebraic equation solver types for a differential-algebraic equation solver 
-  !> \see SOLVER_ROUTINES
+  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::DAESolverTypes
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_DAE_EULER=1 !<Euler differential-algebraic equation solver \see SOLVER_ROUTINES_DAESolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DAE_CRANK_NICHOLSON=2 !<Crank-Nicholson differential-algebraic equation solver \see SOLVER_ROUTINES_DAESolverTypes,SOLVER_ROUTINES
@@ -247,7 +247,7 @@ MODULE SOLVER_ROUTINES
 
   !> \addtogroup SOLVER_ROUTINES_EulerDAESolverTypes SOLVER_ROUTINES::EulerDAESolverTypes
   !> \brief The Euler solver types for a differential-algebriac equation solver 
-  !> \see SOLVER_ROUTINES_DAESolverTypes,SOLVER_ROUTINES
+  !> \see SOLVER_ROUTINES_DAESolverTypes,SOLVER_ROUTINES,OPENCMISS::Solver::EulerDAESolverTypes
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_DAE_EULER_FORWARD=1 !<Forward Euler differential equation solver \see SOLVER_ROUTINES_EulerDAESolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DAE_EULER_BACKWARD=2 !<Backward Euler differential equation solver \see SOLVER_ROUTINES_EulerDAESolverTypes,SOLVER_ROUTINES
@@ -255,8 +255,8 @@ MODULE SOLVER_ROUTINES
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_SolutionInitialiseTypes SOLVER_ROUTINES::SolutionInitialiseTypes
-  !> \brief The types of solution initialisation
-  !> \see SOLVER_ROUTINES
+  !> \brief The types of solution initialisation. 
+  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::SolutionInitialiseTypes
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_SOLUTION_INITIALISE_ZERO=0 !<Initialise the solution by zeroing it before a solve \see SOLVER_ROUTINES_SolutionInitialiseTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD=1 !<Initialise the solution by copying in the current dependent field values \see SOLVER_ROUTINES_SolutionInitialiseTypes,SOLVER_ROUTINES
@@ -266,7 +266,7 @@ MODULE SOLVER_ROUTINES
   
   !> \addtogroup SOLVER_ROUTINES_OutputTypes SOLVER_ROUTINES::OutputTypes
   !> \brief The types of output
-  !> \see SOLVER_ROUTINES
+  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::OutputTypes
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_NO_OUTPUT=0 !<No output from the solver routines \see SOLVER_ROUTINES_OutputTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_PROGRESS_OUTPUT=1 !<Progress output from solver routines \see SOLVER_ROUTINES_OutputTypes,SOLVER_ROUTINES
@@ -277,7 +277,7 @@ MODULE SOLVER_ROUTINES
 
   !> \addtogroup SOLVER_ROUTINES_SparsityTypes SOLVER_ROUTINES::SparsityTypes
   !> \brief The types of sparse solver matrices
-  !> \see SOLVER_ROUTINES
+  !> \see SOLVER_ROUTINES,OPENCMISS::Solver::SparsityTypes
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_SPARSE_MATRICES=1 !<Use sparse solver matrices \see SOLVER_ROUTINES_SparsityTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_FULL_MATRICES=2 !<Use fully populated solver matrices \see SOLVER_ROUTINES_SparsityTypes,SOLVER_ROUTINES
@@ -395,7 +395,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finishes the process of creating a solver 
+  !>Finishes the process of creating a solver. 
   SUBROUTINE SOLVER_CREATE_FINISH(SOLVER,ERR,ERROR,*)
 
     !Argument variables
@@ -1004,8 +1004,64 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Sets/changes the solve type for an Euler differential-algebraic equation solver.
-  SUBROUTINE SOLVER_DAE_EULER_TYPE_SET(SOLVER,DAE_EULER_TYPE,ERR,ERROR,*)
+  !>Returns the solve type for an Euler differential-algebraic equation solver. \see OPENCMISS::CMISSSolverDAEEulerSolverTypeGet
+  SUBROUTINE SOLVER_DAE_EULER_SOLVER_TYPE_GET(SOLVER,DAE_EULER_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the Euler differential equation solver to get type for 
+    INTEGER(INTG), INTENT(OUT) :: DAE_EULER_TYPE !<On return, the type of Euler solver for the Euler differential-algebraic equation. \see SOLVER_ROUTINES_EulerDAESolverTypes,SOLVER_ROUTINES.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER
+    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_DAE_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+     
+    CALL ENTERS("SOLVER_DAE_EULER_SOLVER_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVER_FINISHED) THEN
+        IF(SOLVER%SOLVE_TYPE==SOLVER_DAE_TYPE) THEN
+          DAE_SOLVER=>SOLVER%DAE_SOLVER
+          IF(ASSOCIATED(DAE_SOLVER)) THEN
+            IF(DAE_SOLVER%DAE_SOLVE_TYPE==SOLVER_DAE_EULER) THEN
+              EULER_DAE_SOLVER=>DAE_SOLVER%EULER_SOLVER
+              IF(ASSOCIATED(EULER_DAE_SOLVER)) THEN
+                DAE_EULER_TYPE=EULER_DAE_SOLVER%EULER_TYPE
+              ELSE
+                CALL FLAG_ERROR("The differential-algebraic equation solver Euler solver is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("The solver differential-algebraic equation solver is not an Euler differential-algebraic "// &
+                & "equation solver.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The solver differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The solver is not a differential-algebraic equation solver.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_EULER_SOLVER_TYPE_GET")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_EULER_SOLVER_TYPE_GET",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_EULER_SOLVER_TYPE_GET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_EULER_SOLVER_TYPE_GET
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the solve type for an Euler differential-algebraic equation solver. \see OPENCMISS::CMISSSolverDAEEulerSolverTypeSet
+  SUBROUTINE SOLVER_DAE_EULER_SOLVER_TYPE_SET(SOLVER,DAE_EULER_TYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the Euler differential equation solver to set type for 
@@ -1017,7 +1073,7 @@ CONTAINS
     TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_DAE_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
      
-    CALL ENTERS("SOLVER_DAE_EULER_TYPE_SET",ERR,ERROR,*999)
+    CALL ENTERS("SOLVER_DAE_EULER_SOLVER_TYPE_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
@@ -1076,13 +1132,13 @@ CONTAINS
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
          
-    CALL EXITS("SOLVER_DAE_EULER_TYPE_SET")
+    CALL EXITS("SOLVER_DAE_EULER_SOLVER_TYPE_SET")
     RETURN
-999 CALL ERRORS("SOLVER_DAE_EULER_TYPE_SET",ERR,ERROR)    
-    CALL EXITS("SOLVER_DAE_EULER_TYPE_SET")
+999 CALL ERRORS("SOLVER_DAE_EULER_SOLVER_TYPE_SET",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_EULER_SOLVER_TYPE_SET")
     RETURN 1
    
-  END SUBROUTINE SOLVER_DAE_EULER_TYPE_SET
+  END SUBROUTINE SOLVER_DAE_EULER_SOLVER_TYPE_SET
 
   !
   !================================================================================================================================
@@ -1615,7 +1671,52 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Sets/changes the solve type for an differential-algebraic equation solver.
+  !>Returns the solve type for an differential-algebraic equation solver. \see OPENCMISS::CMISSSolverDAESolverTypeGet
+  SUBROUTINE SOLVER_DAE_SOLVER_TYPE_GET(SOLVER,DAE_SOLVE_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to get the differential-algebraic equation solver type for. 
+    INTEGER(INTG), INTENT(OUT) :: DAE_SOLVE_TYPE !<On return, the type of solver for the differential-algebraic equation. \see SOLVER_ROUTINES_DAESolverTypes,SOLVER_ROUTINES.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+     
+    CALL ENTERS("SOLVER_DAE_SOLVER_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVER_FINISHED) THEN
+        IF(SOLVER%SOLVE_TYPE==SOLVER_DAE_TYPE) THEN
+          DAE_SOLVER=>SOLVER%DAE_SOLVER
+          IF(ASSOCIATED(DAE_SOLVER)) THEN
+            DAE_SOLVE_TYPE=DAE_SOLVER%DAE_SOLVE_TYPE
+         ELSE
+            CALL FLAG_ERROR("The solver differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The solver is not a differential-algebraic equation solver.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_SOLVER_TYPE_GET")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_SOLVER_TYPE_GET",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_SOLVER_TYPE_GET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_SOLVER_TYPE_GET
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the solve type for an differential-algebraic equation solver. \see OPENCMISS::CMISSSolverDAESolverTypeSet
   SUBROUTINE SOLVER_DAE_SOLVER_TYPE_SET(SOLVER,DAE_SOLVE_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -1700,7 +1801,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Set/change the times for a differential-algebraic equation solver
+  !>Set/change the times for a differential-algebraic equation solver \todo get method \see OPENCMISS::CMISSSolverDAETimesSet
   SUBROUTINE SOLVER_DAE_TIMES_SET(SOLVER,START_TIME,END_TIME,INITIAL_STEP,ERR,ERROR,*)
 
     !Argument variables
@@ -2067,7 +2168,51 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the degree of the polynomial used to interpolate time for a dynamic solver.
+  !>Returns the degree of the polynomial used to interpolate time for a dynamic solver. \see OPENCMISS::CMISSSolverDynamicDegreeGet
+  SUBROUTINE SOLVER_DYNAMIC_DEGREE_GET(SOLVER,DEGREE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the dynamic solver to get the degree value for
+    INTEGER(INTG), INTENT(OUT) :: DEGREE !<On return, the degree of the polynomial used for time interpolation in a dynamic solver \see SOLVER_ROUTINES_DynamicDegreeTypes,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("SOLVER_DYNAMIC_DEGREE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVER_FINISHED) THEN
+        IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+          DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
+          IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
+            DEGREE=DYNAMIC_SOLVER%DEGREE
+          ELSE
+            CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The solver has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_DYNAMIC_DEGREE_GET")
+    RETURN
+999 CALL ERRORS("SOLVER_DYNAMIC_DEGREE_GET",ERR,ERROR)
+    CALL EXITS("SOLVER_DYNAMIC_DEGREE_GET")
+    RETURN 1
+  END SUBROUTINE SOLVER_DYNAMIC_DEGREE_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the degree of the polynomial used to interpolate time for a dynamic solver. \see OPENCMISS::CMISSSolverDynamicDegreeSet
   SUBROUTINE SOLVER_DYNAMIC_DEGREE_SET(SOLVER,DEGREE,ERR,ERROR,*)
 
     !Argument variables
@@ -2244,7 +2389,46 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the linearity type for the dynamic solver
+  !>Returns the linearity type for the dynamic solver. \see OPENCMISS::CMISSSolverDynamicLinearityTypeGet
+  SUBROUTINE SOLVER_DYNAMIC_LINEARITY_TYPE_GET(SOLVER,LINEARITY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to get the dynamic linearity type for
+    INTEGER(INTG), INTENT(OUT) :: LINEARITY_TYPE !<On return, the type of linearity. \see SOLVER_ROUTINES_EquationLinearityTypes,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER !<A pointer the dynamic solver to finalise
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+  
+    CALL ENTERS("SOLVER_DYNAMIC_LINEARITY_TYPE_GET",ERR,ERROR,*999)
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVER_FINISHED) THEN
+        DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
+        IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
+          LINEARITY_TYPE=DYNAMIC_SOLVER%LINEARITY
+        ELSE
+          CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    END IF
+    CALL EXITS("SOLVER_DYNAMIC_LINEARITY_TYPE_GET")
+    RETURN
+999 CALL ERRORS("SOLVER_DYNAMIC_LINEARITY_TYPE_GET",ERR,ERROR)    
+    CALL EXITS("SOLVER_DYNAMIC_LINEARITY_TYPE_GET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DYNAMIC_LINEARITY_TYPE_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the linearity type for the dynamic solver. 
   SUBROUTINE SOLVER_DYNAMIC_LINEARITY_TYPE_SET(SOLVER,LINEARITY_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -2320,9 +2504,9 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the nonlinear solver associated with a dynamic solver
+  !>Returns the nonlinear solver associated with a nonlinear dynamic solver. \todo should this merge with dynamic linear solver get? \see OPENCMISS::CMISSSolverDynamicNonlinearSolverGet
   SUBROUTINE SOLVER_DYNAMIC_NONLINEAR_SOLVER_GET(SOLVER,NONLINEAR_SOLVER,ERR,ERROR,*)
-
+ 
     !Argument variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the dynamic solver to get the linear solver for
     TYPE(SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<On exit, a pointer the linear solver linked to the dynamic solver. Must not be associated on entry
@@ -2367,7 +2551,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the linear solver associated with a dynamic solver
+  !>Returns the linear solver associated with a linear dynamic solver. \todo should this merge with dynamic nonlinear solver get? \see OPENCMISS::CMISSSolverLinearSolverGet
   SUBROUTINE SOLVER_DYNAMIC_LINEAR_SOLVER_GET(SOLVER,LINEAR_SOLVER,ERR,ERROR,*)
 
     !Argument variables
@@ -2668,11 +2852,55 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns the order for a dynamic solver. \see OPENCMISS::CMISSSolverDynamicOrderGet
+  SUBROUTINE SOLVER_DYNAMIC_ORDER_GET(SOLVER,ORDER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the dynamic solver to get the theta value for.
+    INTEGER(INTG), INTENT(OUT) :: ORDER !<On return, the order of the dynamic solver. \see SOLVER_ROUTINES_DynamicOrderTypes,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("SOLVER_DYNAMIC_ORDER_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVER_FINISHED) THEN
+        IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+          DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
+          IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
+            ORDER=DYNAMIC_SOLVER%ORDER
+          ELSE
+            CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The solver has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_DYNAMIC_ORDER_GET")
+    RETURN
+999 CALL ERRORS("SOLVER_DYNAMIC_ORDER_GET",ERR,ERROR)
+    CALL EXITS("SOLVER_DYNAMIC_ORDER_GET")
+    RETURN 1
+  END SUBROUTINE SOLVER_DYNAMIC_ORDER_GET
+
+  !
+  !================================================================================================================================
+  !
+
   !>Sets/changes the order for a dynamic solver.
   SUBROUTINE SOLVER_DYNAMIC_ORDER_SET(SOLVER,ORDER,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the dynamic solver to set the theta value for
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the dynamic solver to set the order value for
     INTEGER(INTG), INTENT(IN) :: ORDER !<The order of the dynamic solver \see SOLVER_ROUTINES_DynamicOrderTypes,SOLVER_ROUTINES
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -2726,7 +2954,51 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the scheme for a dynamic solver.
+  !>Returns the scheme for a dynamic solver. \see OPENCMISS::CMISSSolverDynamicSchemeGet
+  SUBROUTINE SOLVER_DYNAMIC_SCHEME_GET(SOLVER,SCHEME,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the dynamic solver to get the scheme for.
+    INTEGER(INTG), INTENT(OUT) :: SCHEME !<Onreturn, the scheme used for a dynamic solver. \see SOLVER_ROUTINES_DynamicSchemeTypes,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("SOLVER_DYNAMIC_SCHEME_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVER_FINISHED) THEN
+        IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+          DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
+          IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
+            SCHEME=DYNAMIC_SOLVER%SCHEME
+          ELSE
+            CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The solver has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_DYNAMIC_SCHEME_GET")
+    RETURN
+999 CALL ERRORS("SOLVER_DYNAMIC_SCHEME_GET",ERR,ERROR)
+    CALL EXITS("SOLVER_DYNAMIC_SCHEME_GET")
+    RETURN 1
+  END SUBROUTINE SOLVER_DYNAMIC_SCHEME_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the scheme for a dynamic solver. \see OPENCMISS::CMISSSolverDynamicSchemeSet
   SUBROUTINE SOLVER_DYNAMIC_SCHEME_SET(SOLVER,SCHEME,ERR,ERROR,*)
 
     !Argument variables
@@ -2998,7 +3270,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes a single theta value for a dynamic solver.
+  !>Sets/changes a single theta value for a dynamic solver. \todo get method \see OPENCMISS::CMISSSolverDynamicThetaSet
   SUBROUTINE SOLVER_DYNAMIC_THETA_SET_DP1(SOLVER,THETA,ERR,ERROR,*)
 
     !Argument variables
@@ -3023,7 +3295,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the theta value for a dynamic solver.
+  !>Sets/changes the theta value for a dynamic solver. \todo get method \see OPENCMISS::CMISSSolverDynamicThetaSet
   SUBROUTINE SOLVER_DYNAMIC_THETA_SET_DP(SOLVER,THETA,ERR,ERROR,*)
 
     !Argument variables
@@ -3083,7 +3355,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the dynamic times for a dynamic solver.
+  !>Sets/changes the dynamic times for a dynamic solver. \todo get method \see OPENCMISS::CMISSSolverDynamicTimesSet
   SUBROUTINE SOLVER_DYNAMIC_TIMES_SET(SOLVER,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*)
 
    !Argument variables
@@ -3412,7 +3684,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Adds equations sets to solver equations
+  !>Adds equations sets to solver equations \see OPENCMISS::CMISSSolverEquationsEquationsSetAdd
   SUBROUTINE SOLVER_EQUATIONS_EQUATIONS_SET_ADD(SOLVER_EQUATIONS,EQUATIONS_SET,EQUATIONS_SET_INDEX,ERR,ERROR,*)
 
     !Argument variables
@@ -3614,7 +3886,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the sparsity type for solver equations
+  !>Sets/changes the sparsity type for solver equations. \todo get method \see OPENCMISS::CMISSSolverEquationsSparsityTypeSet
   SUBROUTINE SOLVER_EQUATIONS_SPARSITY_TYPE_SET(SOLVER_EQUATIONS,SPARSITY_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -3850,12 +4122,12 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE SOLVER_INITIALISE_PTR
-
+ 
   !
   !================================================================================================================================
   !
 
-  !>Gets the type of library to use for the solver
+  !>Gets the type of library to use for the solver. \see OPENCMISS::CMISSSolverLibraryTypeGet
   SUBROUTINE SOLVER_LIBRARY_TYPE_GET(SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -4071,7 +4343,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of library type to use for the solver
+  !>Sets/changes the type of library type to use for the solver. \see OPENCMISS::CMISSSolverLibraryTypeSet
   SUBROUTINE SOLVER_LIBRARY_TYPE_SET(SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -4873,7 +5145,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of direct linear solver
+  !>Sets/changes the type of direct linear solver. \todo get method \see OPENCMISS::CMISSSolverLinearDirectTypeSet
   SUBROUTINE SOLVER_LINEAR_DIRECT_TYPE_SET(SOLVER,DIRECT_SOLVER_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -5036,7 +5308,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the maximum absolute tolerance for an iterative linear solver
+  !>Sets/changes the maximum absolute tolerance for an iterative linear solver. \todo get method \see OPENCMISS::CMISSSolverLinearIterativeAbsoluteToleranceSet
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_ABSOLUTE_TOLERANCE_SET(SOLVER,ABSOLUTE_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
@@ -5294,7 +5566,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the maximum divergence tolerance for an iterative linear solver
+  !>Sets/changes the maximum divergence tolerance for an iterative linear solver. \todo get method \see OPENCMISS::CMISSSolverLinearIterativeDivergenceToleranceSet
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_DIVERGENCE_TOLERANCE_SET(SOLVER,DIVERGENCE_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
@@ -5387,7 +5659,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the GMRES restart value for a GMRES iterative linear solver
+  !>Sets/changes the GMRES restart value for a GMRES iterative linear solver. \todo get method \see OPENCMISS::CMISSSolverLinearIterativeGMRESRestartSet
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET(SOLVER,GMRES_RESTART,ERR,ERROR,*)
 
     !Argument variables
@@ -5502,7 +5774,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the maximum number of iterations for an iterative linear solver
+  !>Sets/changes the maximum number of iterations for an iterative linear solver. \todo get method \see OPENCMISS::CMISSSolverLinearIterativeMaximumIterationsSet
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_MAXIMUM_ITERATIONS_SET(SOLVER,MAXIMUM_ITERATIONS,ERR,ERROR,*)
 
     !Argument variables
@@ -5559,7 +5831,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of preconditioner for an iterative linear solver
+  !>Sets/changes the type of preconditioner for an iterative linear solver. \todo get method \see OPENCMISS::CMISSSolverLinearIterativePreconditionerTypeSet
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_PRECONDITIONER_TYPE_SET(SOLVER,ITERATIVE_PRECONDITIONER_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -5645,7 +5917,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the relative tolerance for an iterative linear solver
+  !>Sets/changes the relative tolerance for an iterative linear solver. \todo get method \see OPENCMISS::CMISSSolverLinearIterativeRelativeToleranceSet
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_RELATIVE_TOLERANCE_SET(SOLVER,RELATIVE_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
@@ -5702,7 +5974,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the solution initialise type for an iterative linear solver
+  !>Sets/changes the solution initialise type for an iterative linear solver. \todo get method \see OPENCMISS::CMISSSolverLinearIterativSolutionInitTypeSet
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_SOLUTION_INIT_TYPE_SET(SOLVER,SOLUTION_INITIALISE_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -5970,7 +6242,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of iterative linear solver
+  !>Sets/changes the type of iterative linear solver. \todo get method \see OPENCMISS::CMISSSolverLinearIterativeTypeSet
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_TYPE_SET(SOLVER,ITERATIVE_SOLVER_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -6105,7 +6377,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of linear solver
+  !>Sets/changes the type of linear solver. \todo get method \see OPENCMISS::CMISSSolverLinearTypeSet
   SUBROUTINE SOLVER_LINEAR_TYPE_SET(SOLVER,LINEAR_SOLVE_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -7461,7 +7733,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the maximum absolute tolerance for a nonlinear Newton solver
+  !>Sets/changes the maximum absolute tolerance for a nonlinear Newton solver. \todo get method \see OPENCMISS::CMISSSolverNewtonAbsoluteToleranceSet
   SUBROUTINE SOLVER_NEWTON_ABSOLUTE_TOLERANCE_SET(SOLVER,ABSOLUTE_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
@@ -7659,7 +7931,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of Jacobian calculation type for a Newton solver
+  !>Sets/changes the type of Jacobian calculation type for a Newton solver. \todo get method \see OPENCMISS::CMISSSolverNewtonJacobianCalculationTypeSet
   SUBROUTINE SOLVER_NEWTON_JACOBIAN_CALCULATION_TYPE_SET(SOLVER,JACOBIAN_CALCULATION_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -7727,7 +7999,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the linear solver associated with a Newton solver
+  !>Returns the linear solver associated with a Newton solver. \see OPENCMISS::CMISSSolverNewtonLinearSolverGet
   SUBROUTINE SOLVER_NEWTON_LINEAR_SOLVER_GET(SOLVER,LINEAR_SOLVER,ERR,ERROR,*)
 
     !Argument variables
@@ -7784,7 +8056,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the line search alpha for a Newton linesearch solver
+  !>Sets/changes the line search alpha for a Newton linesearch solver. \todo get method \see OPENCMISS::CMISSSolverNewtonLineSearchAlphaSet
   SUBROUTINE SOLVER_NEWTON_LINESEARCH_ALPHA_SET(SOLVER,LINESEARCH_ALPHA,ERR,ERROR,*)
     
     !Argument variables
@@ -8213,7 +8485,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the line search maximum step for a nonlinear Newton linesearch solver
+  !>Sets/changes the line search maximum step for a nonlinear Newton linesearch solver. \todo get method \see OPENCMISS::CMISSSolverNewtonLineSearchMaxStepSet
   SUBROUTINE SOLVER_NEWTON_LINESEARCH_MAXSTEP_SET(SOLVER,LINESEARCH_MAXSTEP,ERR,ERROR,*)
 
     !Argument variables
@@ -8438,7 +8710,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the line search step tolerance for a nonlinear Newton linesearch solver
+  !>Sets/changes the line search step tolerance for a nonlinear Newton linesearch solver. \todo get method \see OPENCMISS::CMISSSolverNewtonLineSearchStepTolSet
   SUBROUTINE SOLVER_NEWTON_LINESEARCH_STEPTOL_SET(SOLVER,LINESEARCH_STEPTOL,ERR,ERROR,*)
 
     !Argument variables
@@ -8510,7 +8782,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the line search type for a nonlinear Newton linesearch solver
+  !>Sets/changes the line search type for a nonlinear Newton linesearch solver. \todo get method \see OPENCMISS::CMISSSolverNewtonLineSearchTypeSet
   SUBROUTINE SOLVER_NEWTON_LINESEARCH_TYPE_SET(SOLVER,LINESEARCH_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -8588,7 +8860,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the maximum number of function evaluations for a nonlinear Newton solver
+  !>Sets/changes the maximum number of function evaluations for a nonlinear Newton solver. \todo get method \see OPENCMISS::CMISSSolverNewtonMaximumFunctionEvaluationsSet
   SUBROUTINE SOLVER_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET(SOLVER,MAXIMUM_FUNCTION_EVALUATIONS,ERR,ERROR,*)
 
     !Argument variables
@@ -8650,7 +8922,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the maximum number of iterations for a nonlinear Newton solver
+  !>Sets/changes the maximum number of iterations for a nonlinear Newton solver. \todo get method \see OPENCMISS::CMISSSolverNewtonMaximumIterationsSet
   SUBROUTINE SOLVER_NEWTON_MAXIMUM_ITERATIONS_SET(SOLVER,MAXIMUM_ITERATIONS,ERR,ERROR,*)
 
     !Argument variables
@@ -8711,7 +8983,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the relative tolerance for a nonlinear Newton solver
+  !>Sets/changes the relative tolerance for a nonlinear Newton solver. \todo get method \see OPENCMISS::CMISSSolverNewtonRelativeToleranceSet
   SUBROUTINE SOLVER_NEWTON_RELATIVE_TOLERANCE_SET(SOLVER,RELATIVE_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
@@ -8772,7 +9044,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the solution initialisation for a nonlinear Newton solver
+  !>Sets/changes the solution initialisation for a nonlinear Newton solver. \todo get method \see OPENCMISS::CMISSSolverNewtonSolutionInitTypeSet 
   SUBROUTINE SOLVER_NEWTON_SOLUTION_INIT_TYPE_SET(SOLVER,SOLUTION_INITIALISE_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -8838,7 +9110,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the solution tolerance for a nonlinear Newton solver
+  !>Sets/changes the solution tolerance for a nonlinear Newton solver. \todo get method \see OPENCMISS::CMISSSolverNewtonSolutionToleranceSet 
   SUBROUTINE SOLVER_NEWTON_SOLUTION_TOLERANCE_SET(SOLVER,SOLUTION_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
@@ -9115,7 +9387,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the trust region delta0 for a nonlinear Newton trust region solver solver
+  !>Sets/changes the trust region delta0 for a nonlinear Newton trust region solver solver. \todo get method \see OPENCMISS::CMISSSolverNewtonTrustRegionDelta0Set 
   SUBROUTINE SOLVER_NEWTON_TRUSTREGION_DELTA0_SET(SOLVER,TRUSTREGION_DELTA0,ERR,ERROR,*)
 
     !Argument variables
@@ -9326,7 +9598,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the trust region tolerance for a nonlinear Newton trust region solver
+  !>Sets/changes the trust region tolerance for a nonlinear Newton trust region solver. \todo get method \see OPENCMISS::CMISSSolverNewtonTrustRegionToleranceSet 
   SUBROUTINE SOLVER_NEWTON_TRUSTREGION_TOLERANCE_SET(SOLVER,TRUSTREGION_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
@@ -9398,7 +9670,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of nonlinear Newton solver
+  !>Sets/changes the type of nonlinear Newton solver. \todo get method \see OPENCMISS::CMISSSolverNewtonTypeSet 
   SUBROUTINE SOLVER_NEWTON_TYPE_SET(SOLVER,NEWTON_SOLVE_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -9679,7 +9951,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of nonlinear solver
+  !>Sets/changes the type of nonlinear solver. \todo get method \see OPENCMISS::CMISSSolverNonlinearTypeSet 
   SUBROUTINE SOLVER_NONLINEAR_TYPE_SET(SOLVER,NONLINEAR_SOLVE_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -9761,7 +10033,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the output type for a solver
+  !>Sets/changes the output type for a solver. \todo get method \see OPENCMISS::CMISSSolverOutputTypeSet 
   SUBROUTINE SOLVER_OUTPUT_TYPE_SET(SOLVER,OUTPUT_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -9923,7 +10195,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns a pointer to the solver equations for a solver.
+  !>Returns a pointer to the solver equations for a solver. \see OPENCMISS::CMISSSolverSolverEquationsGet
   SUBROUTINE SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SOLVER_EQUATIONS,ERR,ERROR,*)
 
     !Argument variables
@@ -9963,7 +10235,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Solve the problem
+  !>Solve the problem. 
   SUBROUTINE SOLVER_SOLVE(SOLVER,ERR,ERROR,*)
 
     !Argument variables
@@ -10035,7 +10307,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type for a solver
+  !>Sets/changes the type for a solver. \todo get method \see OPENCMISS::CMISSSolverTypeSet
   SUBROUTINE SOLVER_TYPE_SET(SOLVER,SOLVE_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -10981,7 +11253,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the number of solvers.
+  !>Sets/changes the number of solvers. \todo get method
   SUBROUTINE SOLVERS_NUMBER_SET(SOLVERS,NUMBER_OF_SOLVERS,ERR,ERROR,*)
 
     !Argument variables
@@ -11051,7 +11323,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns a pointer to the specified solver in the list of solvers.
+  !>Returns a pointer to the specified solver in the list of solvers. 
   SUBROUTINE SOLVERS_SOLVER_GET(SOLVERS,SOLVER_INDEX,SOLVER,ERR,ERROR,*)
 
     !Argument variables

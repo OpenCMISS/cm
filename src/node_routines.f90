@@ -153,7 +153,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finishes the process of creating nodes in the region.
+  !>Finishes the process of creating nodes in the region. \see OPENCMISS::CMISSNodesCreateFinish
   SUBROUTINE NODES_CREATE_FINISH(NODES,ERR,ERROR,*)
 
     !Argument variables
@@ -202,7 +202,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Starts the process of creating nodes in the region.
+  !>Starts the process of creating nodes in the region.  \see OPENCMISS::CMISSNodesCreateStart
   SUBROUTINE NODES_CREATE_START(REGION,NUMBER_OF_NODES,NODES,ERR,ERROR,*)
 
     !Argument variables
@@ -260,7 +260,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Destroys nodes
+  !>Destroys nodes. \see OPENCMISS::CMISSNodesDestroy
   SUBROUTINE NODES_DESTROY(NODES,ERR,ERROR,*)
 
     !Argument variables
@@ -365,7 +365,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the character label for a node identified by a given global number.
+  !>Gets the character label for a node identified by a given global number. \see OPENCMISS::CMISSNodesLabelGet
   SUBROUTINE NODES_LABEL_GET_C(NODES,GLOBAL_NUMBER,LABEL,ERR,ERROR,*)
 
     !Argument variables
@@ -415,7 +415,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the varying string label for a node identified by a given global number.
+  !>Gets the varying string label for a node identified by a given global number. \see OPENCMISS::CMISSNodesLabelGet
   SUBROUTINE NODES_LABEL_GET_VS(NODES,GLOBAL_NUMBER,LABEL,ERR,ERROR,*)
 
     !Argument variables
@@ -458,7 +458,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Changes/sets the character label for a node identified by a given global number.
+  !>Changes/sets the character label for a node identified by a given global number. \see OPENCMISS::CMISSNodesLabelSet
   SUBROUTINE NODES_LABEL_SET_C(NODES,GLOBAL_NUMBER,LABEL,ERR,ERROR,*)
 
     !Argument variables
@@ -501,7 +501,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Changes/sets the varying string label for a node identified by a given global number.
+  !>Changes/sets the varying string label for a node identified by a given global number. \see OPENCMISS::CMISSNodesLabelSet
   SUBROUTINE NODES_LABEL_SET_VS(NODES,GLOBAL_NUMBER,LABEL,ERR,ERROR,*)
 
     !Argument variables
@@ -544,7 +544,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the user number for a node identified by a given global number.
+  !>Gets the user number for a node identified by a given global number. \see OPENCMISS::CMISSNodesUserNumberGet
   SUBROUTINE NODES_USER_NUMBER_GET(NODES,GLOBAL_NUMBER,USER_NUMBER,ERR,ERROR,*)
 
     !Argument variables
@@ -587,7 +587,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Changes/sets the user number for a node identified by a given global number.
+  !>Changes/sets the user number for a node identified by a given global number. \see OPENCMISS::CMISSNodesUserNumberSet
   SUBROUTINE NODES_USER_NUMBER_SET(NODES,GLOBAL_NUMBER,USER_NUMBER,ERR,ERROR,*)
 
     !Argument variables

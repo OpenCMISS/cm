@@ -60,7 +60,7 @@ MODULE EQUATIONS_ROUTINES
 
   !> \addtogroup EQUATIONS_ROUTINES_OutputTypes EQUATIONS_ROUTINES::OutputTypes
   !> \brief The equations output types
-  !> \see EQUATIONS_ROUTINES
+  !> \see EQUATIONS_ROUTINES,OPENCMISS_EquationsConstants
   !>@{
   INTEGER(INTG), PARAMETER :: EQUATIONS_NO_OUTPUT=0 !<No output. \see EQUATIONS_ROUTINES_OutputTypes,EQUATIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: EQUATIONS_TIMING_OUTPUT=1 !<Timing information output. \see EQUATIONS_ROUTINES_OutputTypes,EQUATIONS_ROUTINES
@@ -70,7 +70,7 @@ MODULE EQUATIONS_ROUTINES
 
   !> \addtogroup EQUATIONS_ROUTINES_SparsityTypes EQUATIONS_ROUTINES::SparsityTypes
   !> \brief Equations matrices sparsity types
-  !> \see EQUATIONS_ROUTINES
+  !> \see EQUATIONS_ROUTINES,OPENCMISS_EquationsSparsityTypes
   !>@{
   INTEGER(INTG), PARAMETER :: EQUATIONS_SPARSE_MATRICES=1 !<Use sparse matrices for the equations. \see EQUATIONS_ROUTINES_SparsityTypes,EQUATIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: EQUATIONS_FULL_MATRICES=2 !<Use fully populated matrices for the equations. \see EQUATIONS_ROUTINES_SparsityTypes,EQUATIONS_ROUTINES
@@ -78,10 +78,10 @@ MODULE EQUATIONS_ROUTINES
  
   !> \addtogroup EQUATIONS_ROUTINES_LumpingTypes EQUATIONS_ROUTINES::LumpingTypes
   !> \brief Equations matrices lumping types
-  !> \see EQUATIONS_ROUTINES
+  !> \see EQUATIONS_ROUTINES,OPENCMISS_EquationsLumpingTypes
   !>@{
-  INTEGER(INTG), PARAMETER :: EQUATIONS_UNLUMPED_MATRICES=1 !<The equations matrices are not lumped. \see EQUATIONS_ROUTINES_SparsityTypes,EQUATIONS_ROUTINES
-  INTEGER(INTG), PARAMETER :: EQUATIONS_LUMPED_MATRICES=2 !<The equations matrices are "mass" lumped. \see EQUATIONS_ROUTINES_SparsityTypes,EQUATIONS_ROUTINES
+  INTEGER(INTG), PARAMETER :: EQUATIONS_UNLUMPED_MATRICES=1 !<The equations matrices are not lumped. \see EQUATIONS_ROUTINES_LumpingTypes,EQUATIONS_ROUTINES
+  INTEGER(INTG), PARAMETER :: EQUATIONS_LUMPED_MATRICES=2 !<The equations matrices are "mass" lumped. \see EQUATIONS_ROUTINES_LumpingTypes,EQUATIONS_ROUTINES
  !>@}
  
   !Module types

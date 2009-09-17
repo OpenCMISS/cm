@@ -81,11 +81,6 @@ MODULE PROBLEM_ROUTINES
     MODULE PROCEDURE PROBLEM_CONTROL_LOOP_GET_1
   END INTERFACE !PROBLEM_CONTROL_LOOP_GET
 
-  INTERFACE PROBLEM_DESTROY
-    MODULE PROCEDURE PROBLEM_DESTROY_NUMBER
-    MODULE PROCEDURE PROBLEM_DESTROY_PTR
-  END INTERFACE !PROBLEM_DESTROY
-  
   INTERFACE PROBLEM_SOLVER_EQUATIONS_GET
     MODULE PROCEDURE PROBLEM_SOLVER_EQUATIONS_GET_0
     MODULE PROCEDURE PROBLEM_SOLVER_EQUATIONS_GET_1
@@ -118,7 +113,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Solves a problem.
+  !>Solves a problem control loop.
   RECURSIVE SUBROUTINE PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP,ERR,ERROR,*)
 
     !Argument variables
@@ -306,7 +301,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finishes the process of creating a problem.
+  !>Finishes the process of creating a problem. \see OPENCMISS::CMISSProblemCreateFinish
   SUBROUTINE PROBLEM_CREATE_FINISH(PROBLEM,ERR,ERROR,*)
 
     !Argument variables
@@ -363,7 +358,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Starts the process of creating a problem defined by USER_NUMBER.
+  !>Starts the process of creating a problem defined by USER_NUMBER. \see OPENCMISS::CMISSProblemCreateStart
   !>The default values of the PROBLEM attributes are:
   !>- CLASS: 4 (PROBLEM_CLASSICAL_FIELD_CLASS)
   !>- TYPE: 1 (PROBLEM_LAPLACE_EQUATION_TYPE)
@@ -443,63 +438,11 @@ CONTAINS
   !================================================================================================================================
   !
 
-
-  !>Destroys a problem identified by a user number.
-  SUBROUTINE PROBLEM_DESTROY_NUMBER(USER_NUMBER,ERR,ERROR,*)
-
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the problem to destroy
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: problem_position
-    LOGICAL :: FOUND
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("PROBLEM_DESTROY_NUMBER",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(PROBLEMS%PROBLEMS)) THEN
-      
-      !Find the problem identified by the user number
-      FOUND=.FALSE.
-      problem_position=0
-      DO WHILE(problem_position<PROBLEMS%NUMBER_OF_PROBLEMS.AND..NOT.FOUND)
-        problem_position=problem_position+1
-        IF(PROBLEMS%PROBLEMS(problem_position)%PTR%USER_NUMBER==USER_NUMBER) FOUND=.TRUE.
-      ENDDO
-      
-      IF(FOUND) THEN
-        
-        PROBLEM=>PROBLEMS%PROBLEMS(problem_position)%PTR
-        
-        !Destroy all the problem components
-        CALL PROBLEM_DESTROY(PROBLEM,ERR,ERROR,*999)
-        
-      ELSE
-        LOCAL_ERROR="Problem number "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))//" has not been created."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Problem problems is not associated.",ERR,ERROR,*999)
-    ENDIF    
-
-    CALL EXITS("PROBLEM_DESTROY_NUMBER")
-    RETURN
-999 CALL ERRORS("PROBLEM_DESTROY_NUMBER",ERR,ERROR)
-    CALL EXITS("PROBLEM_DESTROY_NUMBER")
-    RETURN 1   
-  END SUBROUTINE PROBLEM_DESTROY_NUMBER
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Destroys a problem identified by a pointer.
-  SUBROUTINE PROBLEM_DESTROY_PTR(PROBLEM,ERR,ERROR,*)
+  !>Destroys a problem. \see OPENCMISS::CMISSProblemDestroy
+  SUBROUTINE PROBLEM_DESTROY(PROBLEM,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to destroy
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to destroy 
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -508,7 +451,7 @@ CONTAINS
 
     NULLIFY(NEW_PROBLEMS)
 
-    CALL ENTERS("PROBLEM_DESTROY_PTR",ERR,ERROR,*999)
+    CALL ENTERS("PROBLEM_DESTROY",ERR,ERROR,*999)
 
     IF(ASSOCIATED(PROBLEM)) THEN
       IF(ASSOCIATED(PROBLEMS%PROBLEMS)) THEN
@@ -545,13 +488,13 @@ CONTAINS
       CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*998)
     ENDIF    
 
-    CALL EXITS("PROBLEM_DESTROY_PTR")
+    CALL EXITS("PROBLEM_DESTROY")
     RETURN
 999 IF(ASSOCIATED(NEW_PROBLEMS)) DEALLOCATE(NEW_PROBLEMS)
-998 CALL ERRORS("PROBLEM_DESTROY_PTR",ERR,ERROR)
-    CALL EXITS("PROBLEM_DESTROY_PTR")
+998 CALL ERRORS("PROBLEM_DESTROY",ERR,ERROR)
+    CALL EXITS("PROBLEM_DESTROY")
     RETURN 1   
-  END SUBROUTINE PROBLEM_DESTROY_PTR
+  END SUBROUTINE PROBLEM_DESTROY
   
   !
   !================================================================================================================================
@@ -669,7 +612,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finish the creation of the control for the problem.
+  !>Finish the creation of the control for the problem. \see OPENCMISS::CMISSProblemControlLoopCreateFinish
   SUBROUTINE PROBLEM_CONTROL_LOOP_CREATE_FINISH(PROBLEM,ERR,ERROR,*)
 
     !Argument variables
@@ -715,7 +658,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Start the creation of a control loop for a problem.
+  !>Start the creation of a control loop for a problem. \see OPENCMISS::CMISSProblemControlLoopCreateStart
   !>The default values of the PROBLEM CONTROL LOOP attributes are:
   !>- LOOP_TYPE: PROBLEM_CONTROL_SIMPLE_TYPE
   !>- CONTROL_LOOP_LEVEL: 1
@@ -759,7 +702,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Destroy the control loop for a problem.
+  !>Destroy the control loop for a problem. \see OPENCMISS::CMISSProblemControlLoopDestroy
   SUBROUTINE PROBLEM_CONTROL_LOOP_DESTROY(PROBLEM,ERR,ERROR,*)
 
     !Argument variables
@@ -791,7 +734,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns a pointer to the control loop for a problem.
+  !>Returns a pointer to the control loop for a problem. \see OPENCMISS::CMISSProblemControlLoopGet
   SUBROUTINE PROBLEM_CONTROL_LOOP_GET_0(PROBLEM,CONTROL_LOOP_IDENTIFIER,CONTROL_LOOP,ERR,ERROR,*)
 
     !Argument variables
@@ -817,7 +760,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns a pointer to the control_loop for a problem.
+  !>Returns a pointer to the control_loop for a problem. \see OPENCMISS::CMISSProblemControlLoopGet
   SUBROUTINE PROBLEM_CONTROL_LOOP_GET_1(PROBLEM,CONTROL_LOOP_IDENTIFIER,CONTROL_LOOP,ERR,ERROR,*)
 
     !Argument variables
@@ -902,7 +845,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns a pointer to a solver equations defined with a solver
+  !>Returns a pointer to a solver equations defined with a solver. \see OPENCMISS::CMISSProblemSolverEquationsGet
   SUBROUTINE PROBLEM_SOLVER_EQUATIONS_GET_0(PROBLEM,CONTROL_LOOP_IDENTIFIER,SOLVER_INDEX,SOLVER_EQUATIONS,ERR,ERROR,*)
 
     !Argument variables
@@ -929,7 +872,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns a pointer to a solver equations defined with a solver
+  !>Returns a pointer to a solver equations defined with a solver. \see OPENCMISS::CMISSProblemSolverEquationsGet
   SUBROUTINE PROBLEM_SOLVER_EQUATIONS_GET_1(PROBLEM,CONTROL_LOOP_IDENTIFIER,SOLVER_INDEX,SOLVER_EQUATIONS,ERR,ERROR,*)
 
     !Argument variables
@@ -1148,7 +1091,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finish the creation of solvers for a problem.
+  !>Finish the creation of solvers for a problem. \see OPENCMISS::CMISSProblemSolversCreateFinish
   SUBROUTINE PROBLEM_SOLVERS_CREATE_FINISH(PROBLEM,ERR,ERROR,*)
 
     !Argument variables
@@ -1184,7 +1127,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Start the creation of a solvers for the problem
+  !>Start the creation of a solvers for the problem. \see OPENCMISS::CMISSProblemSolversCreateStart
   SUBROUTINE PROBLEM_SOLVERS_CREATE_START(PROBLEM,ERR,ERROR,*)
 
     !Argument variables
@@ -1220,7 +1163,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Solves a problem.
+  !>Solves a problem. \see OPENCMISS::CMISSProblemSolve
   SUBROUTINE PROBLEM_SOLVE(PROBLEM,ERR,ERROR,*)
 
     !Argument variables
@@ -1831,7 +1774,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Destroy the solvers for a problem.
+  !>Destroy the solvers for a problem. \see OPENCMISS::CMISSProblemSolversDestroy
   SUBROUTINE PROBLEM_SOLVERS_DESTROY(PROBLEM,ERR,ERROR,*)
 
     !Argument variables
@@ -1863,7 +1806,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finish the creation of the solver equations for the problem.
+  !>Finish the creation of the solver equations for the problem. \see OPENCMISS::CMISSProblemSolverEquationsCreateFinish
   SUBROUTINE PROBLEM_SOLVER_EQUATIONS_CREATE_FINISH(PROBLEM,ERR,ERROR,*)
 
     !Argument variables
@@ -1899,7 +1842,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Start the creation of solver equations for a problem.
+  !>Start the creation of solver equations for a problem. \see OPENCMISS::CMISSProblemSolverEquationsCreateStart
   !>The default values of the SOLVER attributes are:
   !>- SOLVE_TYPE: 1 (SOLVER_LINEAR_TYPE)
   !>- OUTPUT_TYPE: 0 (SOLVER_NO_OUTPUT)
@@ -1939,7 +1882,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Destroy the solver equations for a problem.
+  !>Destroy the solver equations for a problem. \see OPENCMISS::CMISSProblemSolverEquationsDestroy
   SUBROUTINE PROBLEM_SOLVER_EQUATIONS_DESTROY(PROBLEM,ERR,ERROR,*)
 
     !Argument variables
@@ -1973,7 +1916,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns a pointer to the solver for a problem control loop.
+  !>Returns a pointer to the solver for a problem control loop. \see OPENCMISS::CMISSProblemSolverGet
   SUBROUTINE PROBLEM_SOLVER_GET_0(PROBLEM,CONTROL_LOOP_IDENTIFIER,SOLVER_INDEX,SOLVER,ERR,ERROR,*)
 
     !Argument variables
@@ -2000,7 +1943,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns a pointer to the solver for a problem control loop.
+  !>Returns a pointer to the solver for a problem control loop. \see OPENCMISS::CMISSProblemSolverGet
   SUBROUTINE PROBLEM_SOLVER_GET_1(PROBLEM,CONTROL_LOOP_IDENTIFIER,SOLVER_INDEX,SOLVER,ERR,ERROR,*)
 
     !Argument variables
@@ -2059,7 +2002,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the problem specification i.e., problem class, type and subtype for a problem identified by a pointer.
+  !>Gets the problem specification i.e., problem class, type and subtype for a problem identified by a pointer. \see OPENCMISS::CMISSProblemSpecificationGet
   SUBROUTINE PROBLEM_SPECIFICATION_GET(PROBLEM,PROBLEM_CLASS,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -2114,7 +2057,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the problem specification i.e., problem class, type and subtype for a problem identified by a pointer.
+  !>Sets/changes the problem specification i.e., problem class, type and subtype for a problem identified by a pointer. \see OPENCMISS::CMISSProblemSpecificationSet
   SUBROUTINE PROBLEM_SPECIFICATION_SET(PROBLEM,PROBLEM_CLASS,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -2221,13 +2164,11 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) ::USER_NUMBER
 
     CALL ENTERS("PROBLEMS_FINALISE",ERR,ERROR,*999)
 
     DO WHILE(PROBLEMS%NUMBER_OF_PROBLEMS>0)
-      USER_NUMBER=PROBLEMS%PROBLEMS(1)%PTR%USER_NUMBER
-      CALL PROBLEM_DESTROY(USER_NUMBER,ERR,ERROR,*999)
+      CALL PROBLEM_DESTROY(PROBLEMS%PROBLEMS(1)%PTR,ERR,ERROR,*999)
     ENDDO !problem_idx
     
     CALL EXITS("PROBLEMS_FINALISE")

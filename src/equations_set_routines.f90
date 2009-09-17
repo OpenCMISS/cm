@@ -113,7 +113,7 @@ CONTAINS
   !================================================================================================================================
   !
       
-  !>Finish the creation of a analytic solution for equations set.
+  !>Finish the creation of a analytic solution for equations set. \see OPENCMISS::CMISSEquationsSetAnalyticCreateFinish
   SUBROUTINE EQUATIONS_SET_ANALYTIC_CREATE_FINISH(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -165,7 +165,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Start the creation of a analytic solution for a equations set.
+  !>Start the creation of a analytic solution for a equations set. \see OPENCMISS::CMISSEquationsSetAnalyticCreateStart
   SUBROUTINE EQUATIONS_SET_ANALYTIC_CREATE_START(EQUATIONS_SET,ANALYTIC_FUNCTION_TYPE,ANALYTIC_FIELD_USER_NUMBER,ANALYTIC_FIELD, &
     & ERR,ERROR,*)
 
@@ -279,7 +279,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Destroy the analytic solution for an equations set.
+  !>Destroy the analytic solution for an equations set. \see OPENCMISS::CMISSEquationsSetAnalyticDestroy
   SUBROUTINE EQUATIONS_SET_ANALYTIC_DESTROY(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -1238,7 +1238,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Set boundary conditions for an equation set according to the analytic equations.
+  !>Set boundary conditions for an equation set according to the analytic equations. \see OPENCMISS::CMISSEquationsSetBoundaryConditionsAnalytic
   SUBROUTINE EQUATIONS_SET_BOUNDARY_CONDITIONS_ANALYTIC(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -1274,7 +1274,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finish the creation of boundary conditions for an equation set.
+  !>Finish the creation of boundary conditions for an equation set. \see OPENCMISS::CMISSEquationsSetBoundaryConditionsCreateFinish
   SUBROUTINE EQUATIONS_SET_BOUNDARY_CONDITIONS_CREATE_FINISH(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -1310,7 +1310,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Start the creation of boundary conditions for an equations set.
+  !>Start the creation of boundary conditions for an equations set. \see OPENCMISS::CMISSEquationsSetBoundaryConditionsCreateStart
   SUBROUTINE EQUATIONS_SET_BOUNDARY_CONDITIONS_CREATE_START(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
 
     !Argument variables
@@ -1370,7 +1370,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Destroy the BOUNDARY conditions for an equations set and deallocate all memory.
+  !>Destroy the BOUNDARY conditions for an equations set and deallocate all memory. \see OPENCMISS::CMISSEquationsSetBoundaryConditionsDestroy
   SUBROUTINE EQUATIONS_SET_BOUNDARY_CONDITIONS_DESTROY(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -1402,7 +1402,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finishes the process of creating an equation set on a region.
+  !>Finishes the process of creating an equation set on a region. \see OPENCMISS::CMISSEquationsSetCreateStart
   SUBROUTINE EQUATIONS_SET_CREATE_FINISH(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -1447,7 +1447,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Starts the process of creating an equations set defined by USER_NUMBER in the region identified by REGION.    
+  !>Starts the process of creating an equations set defined by USER_NUMBER in the region identified by REGION. \see OPENCMISS::CMISSEquationsSetCreateStart
   !>Default values set for the EQUATIONS_SET's attributes are:
   !>- CLASS: 4 (EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
   !>- TYPE: 1 (EQUATIONS_SET_LAPLACE_EQUATION_TYPE)
@@ -1576,7 +1576,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Destroys an equations set identified by a user number on the give region and deallocates all memory.
+  !>Destroys an equations set identified by a user number on the give region and deallocates all memory. \see OPENCMISS::CMISSEquationsSetDestroy
   SUBROUTINE EQUATIONS_SET_DESTROY(USER_NUMBER,REGION,ERR,ERROR,*)
 
     !Argument variables
@@ -2186,7 +2186,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finish the creation of materials for an equations set.
+  !>Finish the creation of materials for an equations set. \see OPENCMISS::CMISSEquationsSetMaterialsCreateFinish
   SUBROUTINE EQUATIONS_SET_MATERIALS_CREATE_FINISH(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -2240,7 +2240,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Start the creation of materials for a problem.
+  !>Start the creation of materials for a problem. \see OPENCMISS::CMISSEquationsSetMaterialsCreateStart
   SUBROUTINE EQUATIONS_SET_MATERIALS_CREATE_START(EQUATIONS_SET,MATERIALS_FIELD_USER_NUMBER,MATERIALS_FIELD,ERR,ERROR,*)
 
     !Argument variables
@@ -2351,7 +2351,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Destroy the materials for an equations set.
+  !>Destroy the materials for an equations set. \see OPENCMISS::CMISSEquationsSetMaterialsDestroy
   SUBROUTINE EQUATIONS_SET_MATERIALS_DESTROY(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -2450,7 +2450,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finish the creation of a dependent variables for an equations set.
+  !>Finish the creation of a dependent variables for an equations set. \see OPENCMISS::CMISSEquationsSetDependentCreateFinish
   SUBROUTINE EQUATIONS_SET_DEPENDENT_CREATE_FINISH(EQUATIONS_SET,ERR,ERROR,*)
     
     !Argument variables
@@ -2500,7 +2500,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Start the creation of dependent variables for an equations set.
+  !>Start the creation of dependent variables for an equations set. \see OPENCMISS::CMISSEquationsSetDependentCreateStart
   SUBROUTINE EQUATIONS_SET_DEPENDENT_CREATE_START(EQUATIONS_SET,DEPENDENT_FIELD_USER_NUMBER,DEPENDENT_FIELD,ERR,ERROR,*)
 
     !Argument variables
@@ -2609,7 +2609,7 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Destroy the dependent variables for an equations sety.
+  !>Destroy the dependent variables for an equations set. \see OPENCMISS::CMISSEquationsSetDependentDestroy
   SUBROUTINE EQUATIONS_SET_DEPENDENT_DESTROY(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -2741,7 +2741,7 @@ CONTAINS
   !================================================================================================================================
   !
 
- !>Finish the creation of equations for the equations set.
+ !>Finish the creation of equations for the equations set. \see OPENCMISS::CMISSEquationsSetEquationsCreateFinish
   SUBROUTINE EQUATIONS_SET_EQUATIONS_CREATE_FINISH(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -2777,7 +2777,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Start the creation of equations for the equation set.
+  !>Start the creation of equations for the equation set. \see CMISSEquationsSetEquationsCreateStart
   !>Default values set for the EQUATIONS's attributes are:
   !>- OUTPUT_TYPE: 0 (EQUATIONS_SET_NO_OUTPUT)
   !>- SPARSITY_TYPE: 1 (EQUATIONS_SET_SPARSE_MATRICES)
@@ -3692,7 +3692,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the soltuion method for an equations set.
+  !>Sets/changes the solution method for an equations set. \see OPENCMISS::CMISSEquationsSetSolutionMethodSet
   SUBROUTINE EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
 
     !Argument variables
@@ -3742,7 +3742,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finish the creation of a source for an equation set.
+  !>Finish the creation of a source for an equation set. \see OPENCMISS::CMISSEquationsSetSourceCreateFinish
   SUBROUTINE EQUATIONS_SET_SOURCE_CREATE_FINISH(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -3796,7 +3796,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Start the creation of a source for an equations set.
+  !>Start the creation of a source for an equations set. \see OPENCMISS::CMISSEquationsSetSourceCreateStart
   SUBROUTINE EQUATIONS_SET_SOURCE_CREATE_START(EQUATIONS_SET,SOURCE_FIELD_USER_NUMBER,SOURCE_FIELD,ERR,ERROR,*)
 
     !Argument variables
@@ -3907,7 +3907,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Destroy the source for an equations set.
+  !>Destroy the source for an equations set. \see OPENCMISS::CMISSEquationsSetSourceDestroy
   SUBROUTINE EQUATIONS_SET_SOURCE_DESTROY(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -4005,7 +4005,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the equations set specification i.e., equations set class, type and subtype for an equations set.
+  !>Sets/changes the equations set specification i.e., equations set class, type and subtype for an equations set. \see OPENCMISS::CMISSEquationsSetSpecificationSet
   SUBROUTINE EQUATIONS_SET_SPECIFICATION_SET(EQUATIONS_SET,EQUATIONS_SET_CLASS,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE, &
     & ERR,ERROR,*)
 

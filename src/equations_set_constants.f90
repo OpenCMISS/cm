@@ -187,9 +187,10 @@ MODULE EQUATIONS_SET_CONSTANTS
   !>@}
 
   !Module parameters
+
   !> \addtogroup EQUATIONS_SET_CONSTANTS_LinearityTypes EQUATIONS_SET_CONSTANTS::LinearityTypes
   !> \brief The equations linearity types
-  !> \see EQUATIONS_SET_CONSTANTS
+  !> \see EQUATIONS_SET_CONSTANTS,OPENCMISS_EquationsLinearityTypes
   !>@{
   INTEGER(INTG), PARAMETER :: NUMBER_OF_EQUATIONS_LINEARITY_TYPES=3 !<The number of equations linearity types defined. \see EQUATIONS_SET_CONSTANTS_LinearityTypes,EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_LINEAR=1 !<The equations are linear. \see EQUATIONS_SET_CONSTANTS_LinearityTypes,EQUATIONS_SET_CONSTANTS
@@ -200,7 +201,7 @@ MODULE EQUATIONS_SET_CONSTANTS
  
   !> \addtogroup EQUATIONS_SET_CONSTANTS_TimeDepedenceTypes EQUATIONS_SET_CONSTANTS::TimeDepedenceTypes
   !> \brief The equations time dependence type parameters
-  !> \see EQUATIONS_SET_CONSTANTS
+  !> \see EQUATIONS_SET_CONSTANTS,OPENCMISS_EquationsTimeDependenceTypes
   !>@{
   INTEGER(INTG), PARAMETER :: NUMBER_OF_EQUATIONS_TIME_TYPES=5 !<The number of equations time dependence types defined. \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_STATIC=1 !<The equations are static and have no time dependence. \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS

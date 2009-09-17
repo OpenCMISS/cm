@@ -78,7 +78,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the coordinate system of region.
+  !>Returns the coordinate system of region. \see OPENCMISS::CMISSRegionCoordinateSystemGet
   SUBROUTINE REGION_COORDINATE_SYSTEM_GET(REGION,COORDINATE_SYSTEM,ERR,ERROR,*)
 
     !Argument variables
@@ -115,7 +115,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets the coordinate system of region.
+  !>Sets the coordinate system of region.  \see OPENCMISS::CMISSRegionCoordinateSystemSet
   SUBROUTINE REGION_COORDINATE_SYSTEM_SET(REGION,COORDINATE_SYSTEM,ERR,ERROR,*)
 
     !Argument variables
@@ -156,7 +156,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finishes the creation of a region.
+  !>Finishes the creation of a region. \see OPENCMISS::CMISSRegionCreateFinish
   SUBROUTINE REGION_CREATE_FINISH(REGION,ERR,ERROR,*)
 
     !Argument variables
@@ -200,7 +200,7 @@ CONTAINS
   !
   
   !>Starts the creation a new region number USER_NUMBER as a sub region to the given PARENT_REGION, initialises all
-  !>variables and inherits the PARENT_REGIONS coordinate system.
+  !>variables and inherits the PARENT_REGIONS coordinate system. \see OPENCMISS::CMISSRegionCreateFinish
   !>Default values set for the REGION's attributes are:
   !>- COORDINATE_SYSTEM: parent coordinate system. See \ref COORDINATE_SYSTEM_TYPE
   !>- NODES: null
@@ -289,7 +289,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Destroys a region given by USER_NUMBER and all sub-regions under it. \todo create destroy by pointer method.
+  !>Destroys a region given by USER_NUMBER and all sub-regions under it. \todo create destroy by pointer method. \see OPENCMISS::CMISSRegionDestroy
   RECURSIVE SUBROUTINE REGION_DESTROY(USER_NUMBER,ERR,ERROR,*)
 
     !Argument variables
@@ -435,7 +435,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the lable of a region 
+  !>Returns the label of a region . \see OPENCMISS::CMISSRegionLabelGet
   FUNCTION REGION_LABEL_GET(REGION,ERR,ERROR)
 
     !Argument variables
@@ -466,7 +466,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets the label of a region.\todo need a varying string method
+  !>Sets the label of a region.\todo need a varying string method \see OPENCMISS::CMISSRegionLabelSet
   SUBROUTINE REGION_LABEL_SET(REGION,LABEL,ERR,ERROR,*)
 
     !Argument variables

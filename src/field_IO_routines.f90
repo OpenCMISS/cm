@@ -374,7 +374,7 @@ MODULE FIELD_IO_ROUTINES
     MODULE PROCEDURE CHECKED_DEALLOCATE_BASIS
   END INTERFACE !CHECKED_DEALLOCATE
 
-  PUBLIC :: FIELD_IO_FILEDS_IMPORT, FIELD_IO_NODES_EXPORT, FIELD_IO_ELEMENTS_EXPORT
+  PUBLIC :: FIELD_IO_FIELDS_IMPORT, FIELD_IO_NODES_EXPORT, FIELD_IO_ELEMENTS_EXPORT
 
 
 CONTAINS
@@ -1381,7 +1381,7 @@ CONTAINS
   !
 
   !>Import fields from files into different computational nodes
-  SUBROUTINE FIELD_IO_FILEDS_IMPORT(NAME, METHOD, REGION, MESH, MESH_USER_NUMBER, DECOMPOSITION, DECOMPOSITION_USER_NUMBER, &
+  SUBROUTINE FIELD_IO_FIELDS_IMPORT(NAME, METHOD, REGION, MESH, MESH_USER_NUMBER, DECOMPOSITION, DECOMPOSITION_USER_NUMBER, &
     &DECOMPOSITION_METHOD, FIELD_VALUES_SET_TYPE, FIELD_SCALING_TYPE, ERR, ERROR, *)
     !Argument variables
     TYPE(VARYING_STRING), INTENT(IN) :: NAME !<name of input
@@ -1406,7 +1406,8 @@ CONTAINS
     !INTEGER(INTG), ALLOCATABLE :: USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(:)
     INTEGER(INTG), ALLOCATABLE :: MESH_COMPONENTS_OF_FIELD_COMPONENTS(:)
     INTEGER(INTG), ALLOCATABLE :: COMPONENTS_IN_FIELDS(:)
-    CALL ENTERS("FIELD_IO_FILEDS_IMPORT",ERR,ERROR,*999)
+
+    CALL ENTERS("FIELD_IO_FIELDS_IMPORT",ERR,ERROR,*999)
 
     !Get the number of computational nodes
     computational_node_numbers=COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)
@@ -1442,11 +1443,11 @@ CONTAINS
     CALL CHECKED_DEALLOCATE( COMPONENTS_IN_FIELDS )
     !IF(ALLOCATED(LIST_FIELD_TYPE)) DEALLOCATE(LIST_FIELD_TYPE)
 
-    CALL EXITS("FIELD_IO_FILEDS_IMPORT")
+    CALL EXITS("FIELD_IO_FIELDS_IMPORT")
     RETURN
-999 CALL ERRORS("FIELD_IO_FILEDS_IMPORT",ERR,ERROR)
-    CALL EXITS("FIELD_IO_FILEDS_IMPORT")
-  END SUBROUTINE FIELD_IO_FILEDS_IMPORT
+999 CALL ERRORS("FIELD_IO_FIELDS_IMPORT",ERR,ERROR)
+    CALL EXITS("FIELD_IO_FIELDS_IMPORT")
+  END SUBROUTINE FIELD_IO_FIELDS_IMPORT
 
   !
   !================================================================================================================================
@@ -5251,7 +5252,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Export nodal information \see{FIELD_IO::FIELD_IO_NODES_EXPORT}.
+  !>Export nodal information \see{FIELD_IO::FIELD_IO_NODES_EXPORT}. \see OPENCMISS::CMISSFieldIOElementsExportObj.
   SUBROUTINE FIELD_IO_NODES_EXPORT(FIELDS, FILE_NAME, METHOD, ERR,ERROR,*)
     !Argument variables
     TYPE(FIELDS_TYPE), POINTER :: FIELDS !<the field object
@@ -5296,7 +5297,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Export elemental information into multiple files \see{FIELD_IO::FIELD_IO_ELEMENTS_EXPORT}.
+  !>Export elemental information into multiple files \see{FIELD_IO::FIELD_IO_ELEMENTS_EXPORT} \see OPENCMISS::CMISSFieldIONodesExportObj.
   SUBROUTINE FIELD_IO_ELEMENTS_EXPORT(FIELDS, FILE_NAME, METHOD,ERR,ERROR,*)
   !checking the input data for IO and initialize the nodal information set
   !the following items will be checked: the region (the same?), all the pointer(valid?)

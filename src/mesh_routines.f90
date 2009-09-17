@@ -81,18 +81,6 @@ MODULE MESH_ROUTINES
 
   !Interfaces
 
-  !>Sets/changes the number of mesh components for a mesh.
-  INTERFACE MESH_NUMBER_OF_COMPONENTS_SET
-    MODULE PROCEDURE MESH_NUMBER_OF_COMPONENTS_SET_NUMBER
-    MODULE PROCEDURE MESH_NUMBER_OF_COMPONENTS_SET_PTR
-  END INTERFACE !MESH_NUMBER_OF_COMPONENTS_SET
-
-  !>Sets/changes the number of elements for a mesh.
-  INTERFACE MESH_NUMBER_OF_ELEMENTS_SET
-    MODULE PROCEDURE MESH_NUMBER_OF_ELEMENTS_SET_NUMBER
-    MODULE PROCEDURE MESH_NUMBER_OF_ELEMENTS_SET_PTR
-  END INTERFACE !MESH_NUMBER_OF_ELEMENTS_SET
-  
   PUBLIC DECOMPOSITION_ALL_TYPE,DECOMPOSITION_CALCULATED_TYPE,DECOMPOSITION_USER_DEFINED_TYPE
 
   PUBLIC MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS,MESH_TOPOLOGY_NODE_CHECK_EXISTS
@@ -111,7 +99,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finishes the creation of a domain decomposition on a given mesh.
+  !>Finishes the creation of a domain decomposition on a given mesh. \see OPENCMISS::CMISSDecompositionCreateFinish
   SUBROUTINE DECOMPOSITION_CREATE_FINISH(MESH,DECOMPOSITION,ERR,ERROR,*)
 
     !Argument variables
@@ -181,7 +169,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Starts the creation of a domain decomposition for a given mesh.
+  !>Starts the creation of a domain decomposition for a given mesh. \see OPENCMISS::CMISSDecompositionCreateStart
   SUBROUTINE DECOMPOSITION_CREATE_START(USER_NUMBER,MESH,DECOMPOSITION,ERR,ERROR,*)
 
     !Argument variables
@@ -272,7 +260,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Destroys a domain decomposition identified by a user number and deallocates all memory.
+  !>Destroys a domain decomposition identified by a user number and deallocates all memory. \see OPENCMISS::CMISSDecompositionDestroy
   SUBROUTINE DECOMPOSITION_DESTROY(USER_NUMBER,MESH,ERR,ERROR,*)
 
     !Argument variables
@@ -360,7 +348,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Calculates the element domains for a decomposition of a mesh.
+  !>Calculates the element domains for a decomposition of a mesh. \see OPENCMISS::CMISSDecompositionElementDomainCalculate
   SUBROUTINE DECOMPOSITION_ELEMENT_DOMAIN_CALCULATE(DECOMPOSITION,ERR,ERROR,*)
 
     !Argument variables
@@ -579,9 +567,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-!!MERGE: move to user number, should be able to specify lists of elements.
-  
-  !>Gets the domain for a given element in a decomposition of a mesh.
+  !>Gets the domain for a given element in a decomposition of a mesh. \todo move to user number, should be able to specify lists of elements. \see OPENCMISS::CMISSDecompositionElementDomainGet 
   SUBROUTINE DECOMPOSITION_ELEMENT_DOMAIN_GET(DECOMPOSITION,GLOBAL_ELEMENT_NUMBER,DOMAIN_NUMBER,ERR,ERROR,*)
 
     !Argument variables
@@ -637,7 +623,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets the domain for a given element in a decomposition of a mesh.
+  !>Sets the domain for a given element in a decomposition of a mesh. \todo move to user number, should be able to specify lists of elements. \see OPENCMISS::CMISSDecompositionElementDomainSet 
   SUBROUTINE DECOMPOSITION_ELEMENT_DOMAIN_SET(DECOMPOSITION,GLOBAL_ELEMENT_NUMBER,DOMAIN_NUMBER,ERR,ERROR,*)
 
     !Argument variables
@@ -704,7 +690,7 @@ CONTAINS
 
   !!MERGE: ditto
   
-  !>Gets the mesh component number which will be used for the decomposition of a mesh.
+  !>Gets the mesh component number which will be used for the decomposition of a mesh. \see OPENCMISS::CMISSDecompositionMeshComponentGet
   SUBROUTINE DECOMPOSITION_MESH_COMPONENT_NUMBER_GET(DECOMPOSITION,MESH_COMPONENT_NUMBER,ERR,ERROR,*)
 
     !Argument variables
@@ -742,7 +728,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the mesh component number which will be used for the decomposition of a mesh.
+  !>Sets/changes the mesh component number which will be used for the decomposition of a mesh. \see OPENCMISS::CMISSDecompositionMeshComponentSet
   SUBROUTINE DECOMPOSITION_MESH_COMPONENT_NUMBER_SET(DECOMPOSITION,MESH_COMPONENT_NUMBER,ERR,ERROR,*)
 
     !Argument variables
@@ -789,7 +775,7 @@ CONTAINS
 
   !!MERGE: ditto
   
-  !>Gets the number of domains for a decomposition.
+  !>Gets the number of domains for a decomposition. \see OPENCMISS::CMISSDecompositionNumberOfDomainsGet
   SUBROUTINE DECOMPOSITION_NUMBER_OF_DOMAINS_GET(DECOMPOSITION,NUMBER_OF_DOMAINS,ERR,ERROR,*)
 
     !Argument variables
@@ -823,7 +809,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the number of domains for a decomposition.
+  !>Sets/changes the number of domains for a decomposition. \see OPENCMISS::CMISSDecompositionNumberOfDomainsSet
   SUBROUTINE DECOMPOSITION_NUMBER_OF_DOMAINS_SET(DECOMPOSITION,NUMBER_OF_DOMAINS,ERR,ERROR,*)
 
     !Argument variables
@@ -2046,7 +2032,7 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Gets the decomposition type for a decomposition.
+  !>Gets the decomposition type for a decomposition. \see OPENCMISS::CMISSDecompositionTypeGet
   SUBROUTINE DECOMPOSITION_TYPE_GET(DECOMPOSITION,TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -2079,7 +2065,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the decomposition type for a decomposition.
+  !>Sets/changes the decomposition type for a decomposition.  \see OPENCMISS::CMISSDecompositionTypeSet
   SUBROUTINE DECOMPOSITION_TYPE_SET(DECOMPOSITION,TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -4170,7 +4156,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finishes the process of creating a mesh.
+  !>Finishes the process of creating a mesh. \see OPENCMISS::CMISSMeshCreateFinish
   SUBROUTINE MESH_CREATE_FINISH(MESH,ERR,ERROR,*)
 
     !Argument variables
@@ -4235,7 +4221,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Starts the process of creating a mesh defined by a user number with the specified NUMBER_OF_DIMENSIONS in the region identified by REGION.
+  !>Starts the process of creating a mesh defined by a user number with the specified NUMBER_OF_DIMENSIONS in the region identified by REGION. \see OPENCMISS::CMISSMeshCreateStart
   !>Default values set for the MESH's attributes are:
   !>- NUMBER_OF_COMPONENTS: 1
   SUBROUTINE MESH_CREATE_START(USER_NUMBER,REGION,NUMBER_OF_DIMENSIONS,MESH,ERR,ERROR,*)
@@ -4333,7 +4319,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Destroys the mesh identified by a user number on the given region and deallocates all memory.
+  !>Destroys the mesh identified by a user number on the given region and deallocates all memory. \see OPENCMISS::CMISSMeshDestroy
   SUBROUTINE MESH_DESTROY(USER_NUMBER,REGION,ERR,ERROR,*)
 
     !Argument variables
@@ -4489,7 +4475,7 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Gets the number of mesh components for a mesh identified by a pointer.
+  !>Gets the number of mesh components for a mesh identified by a pointer. \see OPENCMISS::CMISSMeshNumberOfComponentsGet
   SUBROUTINE MESH_NUMBER_OF_COMPONENTS_GET(MESH,NUMBER_OF_COMPONENTS,ERR,ERROR,*)
 
     !Argument variables
@@ -4522,46 +4508,8 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Changes/sets the number of mesh components for a mesh identified by a given user number on a region.
-  SUBROUTINE MESH_NUMBER_OF_COMPONENTS_SET_NUMBER(USER_NUMBER,REGION,NUMBER_OF_COMPONENTS,ERR,ERROR,*)
-
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the mesh to set the number of components for
-    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the mesh
-    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_COMPONENTS !<The number of components to set for the mesh
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(MESH_TYPE), POINTER :: MESH
-
-    CALL ENTERS("MESH_NUMBER_OF_COMPONENTS_SET_NUMBER",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(REGION)) THEN
-
-!!TODO: Take in region number here and user FIND_REGION_NUMBER. This would require FIND_REGION_NUMBER to be moved from
-!!REGION_ROUTINES otherwise there will be a circular module reference.
-
-      CALL MESH_USER_NUMBER_FIND(USER_NUMBER,REGION,MESH,ERR,ERROR,*999)
-      CALL MESH_NUMBER_OF_COMPONENTS_SET_PTR(MESH,NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
-      
-    ELSE
-      CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("MESH_NUMBER_OF_COMPONENTS_SET_NUMBER")
-    RETURN
-999 CALL ERRORS("MESH_NUMBER_OF_COMPONENTS_SET_NUMBER",ERR,ERROR)    
-    CALL EXITS("MESH_NUMBER_OF_COMPONENTS_SET_NUMBER")
-    RETURN 1
-   
-  END SUBROUTINE MESH_NUMBER_OF_COMPONENTS_SET_NUMBER
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Changes/sets the number of mesh components for a mesh identified by a pointer.
-  SUBROUTINE MESH_NUMBER_OF_COMPONENTS_SET_PTR(MESH,NUMBER_OF_COMPONENTS,ERR,ERROR,*)
+  !>Changes/sets the number of mesh components for a mesh. \see OPENCMISS::CMISSMeshNumberOfComponentsSet
+  SUBROUTINE MESH_NUMBER_OF_COMPONENTS_SET(MESH,NUMBER_OF_COMPONENTS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to set the number of components for
@@ -4575,7 +4523,7 @@ CONTAINS
 
     NULLIFY(NEW_TOPOLOGY)
     
-    CALL ENTERS("MESH_NUMBER_OF_COMPONENTS_SET_PTR",ERR,ERROR,*999)
+    CALL ENTERS("MESH_NUMBER_OF_COMPONENTS_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(MESH)) THEN
       IF(NUMBER_OF_COMPONENTS>0) THEN
@@ -4622,20 +4570,20 @@ CONTAINS
       CALL FLAG_ERROR("Mesh is not associated",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("MESH_NUMBER_OF_COMPONENTS_SET_PTR")
+    CALL EXITS("MESH_NUMBER_OF_COMPONENTS_SET")
     RETURN
 !!TODO: tidy up memory deallocation on error
-999 CALL ERRORS("MESH_NUMBER_OF_COMPONENTS_SET_PTR",ERR,ERROR)    
-    CALL EXITS("MESH_NUMBER_OF_COMPONENTS_SET_PTR")
+999 CALL ERRORS("MESH_NUMBER_OF_COMPONENTS_SET",ERR,ERROR)    
+    CALL EXITS("MESH_NUMBER_OF_COMPONENTS_SET")
     RETURN 1
    
-  END SUBROUTINE MESH_NUMBER_OF_COMPONENTS_SET_PTR
+  END SUBROUTINE MESH_NUMBER_OF_COMPONENTS_SET
 
   !
   !================================================================================================================================
   !
   
-  !>Gets the number of elements for a mesh identified by a pointer.
+  !>Gets the number of elements for a mesh identified by a pointer. \see OPENCMISS::CMISSMeshNumberOfElementsGet
   SUBROUTINE MESH_NUMBER_OF_ELEMENTS_GET(MESH,NUMBER_OF_ELEMENTS,ERR,ERROR,*)
 
     !Argument variables
@@ -4668,46 +4616,8 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Changes/sets the number of elements for a mesh identified by a given user number on a region.
-  SUBROUTINE MESH_NUMBER_OF_ELEMENTS_SET_NUMBER(USER_NUMBER,REGION,NUMBER_OF_ELEMENTS,ERR,ERROR,*)
-
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the mesh to set the number of elements for
-    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the mesh
-    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_ELEMENTS !<The number of elements to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(MESH_TYPE), POINTER :: MESH
-
-    CALL ENTERS("MESH_NUMBER_OF_ELEMENTS_SET_NUMBER",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(REGION)) THEN
-      
-!!TODO: Take in region number here and user FIND_REGION_NUMBER. This would require FIND_REGION_NUMBER to be moved from
-!!REGION_ROUTINES otherwise there will be a circular module reference.
-
-      CALL MESH_USER_NUMBER_FIND(USER_NUMBER,REGION,MESH,ERR,ERROR,*999)
-      CALL MESH_NUMBER_OF_ELEMENTS_SET_PTR(MESH,NUMBER_OF_ELEMENTS,ERR,ERROR,*999)
-      
-    ELSE
-      CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("MESH_NUMBER_OF_ELEMENTS_SET_NUMBER")
-    RETURN
-999 CALL ERRORS("MESH_NUMBER_OF_ELEMENTS_SET_NUMBER",ERR,ERROR)    
-    CALL EXITS("MESH_NUMBER_OF_ELEMENTS_SET_NUMBER")
-    RETURN 1
-   
-  END SUBROUTINE MESH_NUMBER_OF_ELEMENTS_SET_NUMBER
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Changes/sets the number of elements for a mesh identified by a pointer.
-  SUBROUTINE MESH_NUMBER_OF_ELEMENTS_SET_PTR(MESH,NUMBER_OF_ELEMENTS,ERR,ERROR,*)
+  !>Changes/sets the number of elements for a mesh. \see OPENCMISS::CMISSMeshNumberOfElementsSet
+  SUBROUTINE MESH_NUMBER_OF_ELEMENTS_SET(MESH,NUMBER_OF_ELEMENTS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to set the number of elements for
@@ -4718,12 +4628,12 @@ CONTAINS
     INTEGER(INTG) :: component_idx
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("MESH_NUMBER_OF_ELEMENTS_SET_PTR",ERR,ERROR,*999)
+    CALL ENTERS("MESH_NUMBER_OF_ELEMENTS_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(MESH)) THEN
       IF(NUMBER_OF_ELEMENTS>0) THEN
         IF(MESH%MESH_FINISHED) THEN
-          CALL FLAG_ERROR("Mesh has been finished",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Mesh has been finished.",ERR,ERROR,*999)
         ELSE
           IF(NUMBER_OF_ELEMENTS/=MESH%NUMBER_OF_ELEMENTS) THEN
             IF(ASSOCIATED(MESH%TOPOLOGY)) THEN
@@ -4732,35 +4642,35 @@ CONTAINS
                   IF(ASSOCIATED(MESH%TOPOLOGY(component_idx)%PTR%ELEMENTS)) THEN
                     IF(MESH%TOPOLOGY(component_idx)%PTR%ELEMENTS%NUMBER_OF_ELEMENTS>0) THEN
 !!TODO: Reallocate the elements and copy information. 
-                      CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                     ENDIF
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Mesh topology component pointer is not associated",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Mesh topology component pointer is not associated.",ERR,ERROR,*999)
                 ENDIF
               ENDDO !component_idx
             ELSE
-              CALL FLAG_ERROR("Mesh topology is not associated",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Mesh topology is not associated.",ERR,ERROR,*999)
             ENDIF
             MESH%NUMBER_OF_ELEMENTS=NUMBER_OF_ELEMENTS
           ENDIF
         ENDIF
       ELSE
         LOCAL_ERROR="The specified number of elements ("//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_ELEMENTS,"*",ERR,ERROR))// &
-          & ") is illegal. You must have >0 elements"
+          & ") is invalid. You must have > 0 elements."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF      
     ELSE
-      CALL FLAG_ERROR("Mesh is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Mesh is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("MESH_NUMBER_OF_ELEMENTS_SET_PTR")
+    CALL EXITS("MESH_NUMBER_OF_ELEMENTS_SET")
     RETURN
-999 CALL ERRORS("MESH_NUMBER_OF_ELEMENTS_SET_PTR",ERR,ERROR)    
-    CALL EXITS("MESH_NUMBER_OF_ELEMENTS_SET_PTR")
+999 CALL ERRORS("MESH_NUMBER_OF_ELEMENTS_SET",ERR,ERROR)    
+    CALL EXITS("MESH_NUMBER_OF_ELEMENTS_SET")
     RETURN 1
    
-  END SUBROUTINE MESH_NUMBER_OF_ELEMENTS_SET_PTR
+  END SUBROUTINE MESH_NUMBER_OF_ELEMENTS_SET
 
   !
   !================================================================================================================================
@@ -4977,62 +4887,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Changes/sets the basis for a global element identified by a given global number. \todo use user number. \todo get method?
-  SUBROUTINE MESH_TOPOLOGY_ELEMENTS_BASIS_SET(GLOBAL_NUMBER,ELEMENTS,BASIS,ERR,ERROR,*)
-
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number of the element to set the basis for
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS !<A pointer to the elements to set the basis for \todo before element number?
-    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis to set. \todo allow number version as well.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("MESH_TOPOLOGY_ELEMENTS_BASIS_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(ELEMENTS)) THEN
-      IF(ELEMENTS%ELEMENTS_FINISHED) THEN
-        CALL FLAG_ERROR("Elements have been finished",ERR,ERROR,*999)
-      ELSE
-        IF(GLOBAL_NUMBER>0.AND.GLOBAL_NUMBER<=ELEMENTS%NUMBER_OF_ELEMENTS) THEN
-          IF(ASSOCIATED(BASIS)) THEN
-            IF(ALLOCATED(ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%USER_ELEMENT_NODES))  &
-              & DEALLOCATE(ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%USER_ELEMENT_NODES)
-            ALLOCATE(ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%USER_ELEMENT_NODES(BASIS%NUMBER_OF_NODES),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate user element nodes",ERR,ERROR,*999)
-            ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%USER_ELEMENT_NODES=1
-            IF(ALLOCATED(ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%GLOBAL_ELEMENT_NODES))  &
-              & DEALLOCATE(ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%GLOBAL_ELEMENT_NODES)
-            ALLOCATE(ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%GLOBAL_ELEMENT_NODES(BASIS%NUMBER_OF_NODES),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global element nodes",ERR,ERROR,*999)
-            ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%GLOBAL_ELEMENT_NODES=1
-          ELSE
-            CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          LOCAL_ERROR="Global element number "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
-            & " is invalid. The limits are 1 to "//TRIM(NUMBER_TO_VSTRING(ELEMENTS%NUMBER_OF_ELEMENTS,"*",ERR,ERROR))
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        ENDIF
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Elements is not associated",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("MESH_TOPOLOGY_ELEMENTS_BASIS_SET")
-    RETURN
-999 CALL ERRORS("MESH_TOPOLOGY_ELEMENTS_BASIS_SET",ERR,ERROR)    
-    CALL EXITS("MESH_TOPOLOGY_ELEMENTS_BASIS_SET")
-    RETURN 1
-   
-  END SUBROUTINE MESH_TOPOLOGY_ELEMENTS_BASIS_SET
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Finishes the process of creating elements for a specified mesh component in a mesh topology.
+  !>Finishes the process of creating elements for a specified mesh component in a mesh topology. \see OPENCMISS::CMISSMeshElementsCreateFinish
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_CREATE_FINISH(MESH,MESH_COMPONENT_NUMBER,ERR,ERROR,*)
 
     !Argument variables
@@ -5118,7 +4973,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Starts the process of creating elements in the mesh component identified by MESH and component_idx. The elements will be created with a default basis of BASIS. ELEMENTS is the returned pointer to the MESH_ELEMENTS data structure.
+  !>Starts the process of creating elements in the mesh component identified by MESH and component_idx. The elements will be created with a default basis of BASIS. ELEMENTS is the returned pointer to the MESH_ELEMENTS data structure. \see OPENCMISS::CMISSMeshElementsCreateStart
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_CREATE_START(MESH,MESH_COMPONENT_NUMBER,BASIS,ELEMENTS,ERR,ERROR,*)
 
     !Argument variables
@@ -5301,7 +5156,7 @@ CONTAINS
 
 !!MERGE: Take user number
   
-  !>Gets the basis for a mesh element identified by a given global number. \todo should take user number
+  !>Gets the basis for a mesh element identified by a given global number. \todo should take user number \see OPENCMISS::CMISSMeshElementsBasisGet
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_GET(GLOBAL_NUMBER,ELEMENTS,BASIS,ERR,ERROR,*)
 
     !Argument variables
@@ -5423,7 +5278,7 @@ CONTAINS
 
 !!MERGE: user number. Dont use a pointer or allocate.
   
-  !>Gets the element nodes for a mesh element identified by a given global number. \todo specify by user number not global number
+  !>Gets the element nodes for a mesh element identified by a given global number. \todo specify by user number not global number \see OPENCMISS::CMISSMeshElementsNodesGet
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_GET(GLOBAL_NUMBER,ELEMENTS,USER_ELEMENT_NODES,ERR,ERROR,*)
 
     !Argument variables
@@ -5472,7 +5327,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Changes/sets the element nodes for a mesh element identified by a given global number. \todo specify by user number not global number
+  !>Changes/sets the element nodes for a mesh element identified by a given global number. \todo specify by user number not global number \see OPENCMISS::CMISSMeshElementsNodesSet
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET(GLOBAL_NUMBER,ELEMENTS,USER_ELEMENT_NODES,ERR,ERROR,*)
 
     !Argument variables
@@ -5857,7 +5712,7 @@ CONTAINS
 
 !!MERGE: ditto.
   
-  !>Gets the user number for a global element identified by a given global number. \todo Check that the user number doesn't already exist.
+  !>Gets the user number for a global element identified by a given global number. \todo Check that the user number doesn't already exist. \see OPENCMISS::CMISSMeshElementsUserNumberGet
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_NUMBER_GET(GLOBAL_NUMBER,USER_NUMBER,ELEMENTS,ERR,ERROR,*)
 
     !Argument variables
@@ -5899,7 +5754,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Changes/sets the user number for a global element identified by a given global number. 
+  !>Changes/sets the user number for a global element identified by a given global number. \see OPENCMISS::CMISSMeshElementsUserNumberSet
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_USER_NUMBER_SET(GLOBAL_NUMBER,USER_NUMBER,ELEMENTS,ERR,ERROR,*)
 
     !Argument variables

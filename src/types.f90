@@ -93,7 +93,7 @@ MODULE TYPES
   ! Quadrature types
   !
 
-  !>Contains information for a particular quadrature scheme. \todo Also evaluate the product of the basis functions at gauss points for speed???
+  !>Contains information for a particular quadrature scheme. \see OPENCMISS::CMISSQuadratureSchemeType \todo Also evaluate the product of the basis functions at gauss points for speed???
   TYPE QUADRATURE_SCHEME_TYPE
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the quadrature scheme in the list of quadrature schemes for a particular quadrature.
     TYPE(QUADRATURE_TYPE), POINTER :: QUADRATURE !<The pointer back to the quadrature for a particular quadrature scheme
@@ -108,7 +108,7 @@ MODULE TYPES
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: PTR !<A pointer to the quadrature scheme
   END TYPE QUADRATURE_SCHEME_PTR_TYPE
 
-  !>Contains information on the quadrature to be used for integrating a basis.
+  !>Contains information on the quadrature to be used for integrating a basis. \see OPENCMISS::CMISSQuadratureType
   TYPE QUADRATURE_TYPE
     INTEGER(INTG) :: TYPE !<The type of the quadrature \see BASIS_ROUTINES_QuadratureTypes
     TYPE(BASIS_TYPE), POINTER :: BASIS !<The pointer back to the basis
@@ -217,7 +217,7 @@ MODULE TYPES
     TYPE(VARYING_STRING) :: LABEL !<A string label for the node
   END TYPE NODE_TYPE
 
-  !>Contains information on the nodes defined on a region.
+  !>Contains information on the nodes defined on a region. \see OPENCMISS::CMISSNodesType
   TYPE NODES_TYPE
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the nodes.
     LOGICAL :: NODES_FINISHED !<Is .TRUE. if the nodes have finished being created, .FALSE. if not.
@@ -296,7 +296,7 @@ MODULE TYPES
     TYPE(MESH_TOPOLOGY_TYPE), POINTER :: PTR !<The pointer to the mesh topology.
   END TYPE MESH_TOPOLOGY_PTR_TYPE
 
-  !>Contains information on a mesh defined on a region.
+  !>Contains information on a mesh defined on a region. \see OPENCMISS::CMISSMeshType
   TYPE MESH_TYPE
     INTEGER(INTG) :: USER_NUMBER !<The user number of the mesh. The user number must be unique.
     INTEGER(INTG) :: GLOBAL_NUMBER !<The corresponding global number for the mesh.
@@ -345,7 +345,7 @@ MODULE TYPES
     TYPE(BASIS_TYPE), POINTER :: BASIS !<The pointer to the basis used in the regular mesh.
   END TYPE GENERATED_MESH_REGULAR_TYPE
 
-  !>Contains information on a generated mesh
+  !>Contains information on a generated mesh. \see OPENCMISS::CMISSGeneratedMeshType
   TYPE GENERATED_MESH_TYPE
     INTEGER(INTG) :: USER_NUMBER
     INTEGER(INTG) :: GLOBAL_NUMBER
@@ -742,7 +742,7 @@ MODULE TYPES
     TYPE(DECOMPOSITION_LINES_TYPE), POINTER :: LINES !<The pointer to the topology information for the lines of this decomposition.
   END TYPE DECOMPOSITION_TOPOLOGY_TYPE
 
-  !>Contains information on the domain decomposition.
+  !>Contains information on the mesh decomposition. \see OPENCMISS::CMISSDecompositionType
   TYPE DECOMPOSITION_TYPE
     INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the domain decomposition. The user number must be unique.
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the domain decomposition in the list of domain decompositions for a particular mesh.
@@ -955,7 +955,7 @@ MODULE TYPES
     LOGICAL, ALLOCATABLE :: MESH_COMPONENT_NUMBER_LOCKED(:,:) !<MESH_COMPONENT_NUMBER_LOCKED(component_idx,variable_type_idx). Is .TRUE. if the mesh component number of the component_idx'th component of the variable_type_idx'th varible type has been locked, .FALSE. if not.
   END TYPE FIELD_CREATE_VALUES_CACHE_TYPE
 
-  !>Contains information for a field defined on a region.
+  !>Contains information for a field defined on a region. \see OPENCMISS::CMISSFieldType
   TYPE FIELD_TYPE
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the field in the list of fields for a region.
     INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the field. The user number must be unique.
@@ -1285,7 +1285,7 @@ MODULE TYPES
     TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: FIBRE_INTERP_POINT_METRICS !<A pointer to the fibre interpolated point metrics information 
   END TYPE EQUATIONS_INTERPOLATION_TYPE
 
-  !>Contains information about the equations in an equations set.
+  !>Contains information about the equations in an equations set. \see OPENCMISS::CMISSEquationsType
   TYPE EQUATIONS_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations_set
     LOGICAL :: EQUATIONS_FINISHED !<Is .TRUE. if the equations have finished being created, .FALSE. if not.
@@ -1320,7 +1320,7 @@ MODULE TYPES
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: PTR !<A pointer to the boundary conditions variable
   END TYPE BOUNDARY_CONDITIONS_VARIABLE_PTR_TYPE
   
-  !>Contains information on the boundary conditions for the equations set.
+  !>Contains information on the boundary conditions for the equations set. \see OPENCMISS::CMISSBoundaryConditionsType
   TYPE BOUNDARY_CONDITIONS_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
     LOGICAL :: BOUNDARY_CONDITIONS_FINISHED !<Is .TRUE. if the boundary conditions for the equations set has finished being created, .FALSE. if not.
@@ -1383,7 +1383,7 @@ MODULE TYPES
     TYPE(FIELD_TYPE), POINTER :: ANALYTIC_FIELD !<A pointer to the analytic field for the equations set if one is defined. If no source is defined the pointer is NULL.
   END TYPE EQUATIONS_SET_ANALYTIC_TYPE
 
-  !>Contains information on an equations set.
+  !>Contains information on an equations set. \see OPENCMISS::CMISSEquationsSetType
   TYPE EQUATIONS_SET_TYPE
     INTEGER(INTG) :: USER_NUMBER !<The user identifying number of the equations set
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global index of the equations set in the region.
@@ -1464,7 +1464,7 @@ MODULE TYPES
   ! Solver equations types
   !
 
-  !>Contains information about the solver equations for a solver
+  !>Contains information about the solver equations for a solver. \see OPENCMISS::CMISSSolverEquationsType
   TYPE SOLVER_EQUATIONS_TYPE
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
     LOGICAL :: SOLVER_EQUATIONS_FINISHED !<Is .TRUE. if the solver equations have finished being created, .FALSE. if not.
@@ -1666,7 +1666,7 @@ MODULE TYPES
     TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER !<A pointer to the Newton solver information
   END TYPE NONLINEAR_SOLVER_TYPE
   
-  !>Contains information on the type of solver to be used
+  !>Contains information on the type of solver to be used. \see OPENCMISS::CMISSSolverType
   TYPE SOLVER_TYPE
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS !<A pointer to the control loop solvers
     TYPE(SOLVER_TYPE), POINTER :: LINKING_SOLVER !<A pointer to any solver that is linking to this solver
@@ -1880,6 +1880,7 @@ MODULE TYPES
   ! History types
   !
 
+  !>Contains information about a history file for a control loop. \see OPENCMISS::CMISSHistoryType
   TYPE HISTORY_TYPE
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop for the history file
     LOGICAL :: HISTORY_FINISHED !<Is .TRUE. if the history file has finished being created, .FALSE. if not.
@@ -1929,12 +1930,12 @@ MODULE TYPES
     LOGICAL :: CONTINUE_LOOP
   END TYPE CONTROL_LOOP_WHILE_TYPE
 
-  !>A buffer type to allow for an array of pointers to a CONTROL_TYPE \see TYPES:CONTROL_TYPE
+  !>A buffer type to allow for an array of pointers to a CONTROL_LOOP_TYPE \see TYPES::CONTROL_LOOP_TYPE
   TYPE CONTROL_LOOP_PTR_TYPE
     TYPE(CONTROL_LOOP_TYPE), POINTER :: PTR !<The pointer to the control loop
   END TYPE CONTROL_LOOP_PTR_TYPE
 
-  !>Contains information on a control loop
+  !>Contains information on a control loop. \see OPENCMISS::CMISSControlLoopType
   TYPE CONTROL_LOOP_TYPE
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer back to the problem for the control loop
     TYPE(CONTROL_LOOP_TYPE), POINTER :: PARENT_LOOP !<A pointer back to the parent control loop if this is a sub loop
@@ -1962,7 +1963,7 @@ MODULE TYPES
     INTEGER(INTG) :: ACTION_TYPE !<The action type \see PROBLEM_CONSTANTS_SetupActionTypes,CONSTANTS_ROUTINES
   END TYPE PROBLEM_SETUP_TYPE
   
-  !>Contains information for a problem.
+  !>Contains information for a problem. \see OPENCMISS::CMISSProblemType
   TYPE PROBLEM_TYPE
     INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the problem. The user number must be unique.
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the problem in the list of problems.
@@ -1997,7 +1998,7 @@ MODULE TYPES
     TYPE(REGION_TYPE), POINTER :: PTR !<The pointer to the region.
   END TYPE REGION_PTR_TYPE
      
-  !>Contains information for a region.
+  !>Contains information for a region. \see OPENCMISS::CMISSRegionType
   TYPE REGION_TYPE 
     INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the region. The user number must be unique.
     LOGICAL :: REGION_FINISHED !<Is .TRUE. if the region has finished being created, .FALSE. if not.
