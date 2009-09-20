@@ -96,9 +96,10 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: component_idx,deriv_idx,dim_idx,local_ny,node_idx,NUMBER_OF_DIMENSIONS,variable_idx,variable_type
+    INTEGER(INTG) :: component_idx,deriv_idx,dim_idx,local_ny,node_idx,NUMBER_OF_DIMENSIONS,variable_idx,variable_type,BC_counter
     REAL(DP) :: VALUE,X(3)
     REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
+    LOGICAL :: SET_BC
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
@@ -108,6 +109,7 @@ CONTAINS
     
     CALL ENTERS("LINEAR_ELASTICITY_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR,*999)
     
+    !!TODO: Use Geometric/Material Field values to prescribe values in analytic solution, currently hardcodded geometry & material properties
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
         DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
@@ -119,9 +121,8 @@ CONTAINS
             CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
             CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS, &
               & ERR,ERROR,*999)
-            !!TODO::Removed BOUNDARY_CONDITIONS_CREATE_START call from inside LINEAR_ELASTICITY_EQUATION_ANALYTIC_CALCULATE so BC's can be set from main program. Put back after element face BC implemented
-            !NULLIFY(BOUNDARY_CONDITIONS)
-            !CALL BOUNDARY_CONDITIONS_CREATE_START(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+
+            BC_counter = 0
             DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
               variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
               FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
@@ -150,13 +151,13 @@ CONTAINS
                               CASE(EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_TWO_DIM_PLANE_STRESS_1)
                                 SELECT CASE(component_idx)
                                 CASE(1) !u component
-                                !u=
+                                !u=Sigmax*x/E
                                   SELECT CASE(variable_type)
 
                                   CASE(FIELD_U_VARIABLE_TYPE)
                                     SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                     CASE(NO_GLOBAL_DERIV)
-                                      VALUE=1.0_DP
+                                      VALUE=X(1)/10E3_DP
                                     CASE(GLOBAL_DERIV_S1)
                                       VALUE=1.0_DP
                                     CASE(GLOBAL_DERIV_S2)
@@ -172,7 +173,12 @@ CONTAINS
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                     CASE(NO_GLOBAL_DERIV)
-                                      VALUE=1.0_DP
+                                      IF (X(1)==0.0_DP) THEN
+                                        VALUE=-50.0_DP
+                                        BC_counter = BC_counter + 1
+                                      ELSEIF (X(1)==20.0_DP) THEN
+                                        VALUE=0.0_DP
+                                      ENDIF
                                     CASE(GLOBAL_DERIV_S1)
                                       VALUE=1.0_DP
                                     CASE(GLOBAL_DERIV_S2)
@@ -191,12 +197,12 @@ CONTAINS
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE(2) !v component
-                                !v=
+                                !v=Sigmay*y/E
                                   SELECT CASE(variable_type)
                                   CASE(FIELD_U_VARIABLE_TYPE)
                                     SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                     CASE(NO_GLOBAL_DERIV)
-                                      VALUE=0.0_DP
+                                      VALUE=-(0.3_DP*X(2))/10E3_DP
                                     CASE(GLOBAL_DERIV_S1)
                                       VALUE=0.0_DP
                                     CASE(GLOBAL_DERIV_S2)
@@ -304,14 +310,6 @@ CONTAINS
                                 & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
-                              !!TODO::Removed BOUNDARY_CONDITIONS_CREATE_START call from inside LINEAR_ELASTICITY_EQUATION_ANALYTIC_CALCULATE so BC's can be set from main program. Put back after element face BC implemented
-                              !IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
-                              !  IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
-                              !    !If we are a boundary node then set the analytic value on the boundary
-                              !    CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-                              !      & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-                              !  ENDIF
-                              !ENDIF
                             ENDDO !deriv_idx
                           ENDDO !node_idx
                         ELSE
@@ -335,8 +333,109 @@ CONTAINS
                 CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
               ENDIF
             ENDDO !variable_idx
-            !!TODO::Removed BOUNDARY_CONDITIONS_CREATE_START call from inside LINEAR_ELASTICITY_EQUATION_ANALYTIC_CALCULATE so BC's can be set from main program. Put back after element face BC implemented
-            !CALL BOUNDARY_CONDITIONS_CREATE_FINISH(BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+
+            !
+            ! BOUNDARY CONDITIONS
+            !
+            NULLIFY(BOUNDARY_CONDITIONS)
+            CALL BOUNDARY_CONDITIONS_CREATE_START(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+            DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
+              variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
+              FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+              IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                  IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
+                    DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+                    IF(ASSOCIATED(DOMAIN)) THEN
+                      IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+                        DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                        IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                          !Loop over the local nodes excluding the ghosts.
+                          DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                            IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
+                              !!TODO \todo We should interpolate the geometric field here and the node position.
+                              DO dim_idx=1,NUMBER_OF_DIMENSIONS
+                                local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
+                                X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
+                              ENDDO !dim_idx
+                              !Loop over the derivatives
+                              DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+
+                                IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN !If we are a boundary node
+                                  SET_BC = .FALSE.
+                                  SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
+                                  !
+                                  ! TWO DIMENSIONAL LINEAR ELASTICITY
+                                  !
+                                  CASE(EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_TWO_DIM_PLANE_STRESS_1)
+                                    SELECT CASE(component_idx)
+                                    CASE(1) !u component
+                                      SELECT CASE(variable_type)
+                                      CASE(FIELD_U_VARIABLE_TYPE)
+                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                        CASE(NO_GLOBAL_DERIV)
+                                          IF (X(1)==0.0_DP) THEN
+                                            SET_BC = .TRUE.
+                                            VALUE=0.0_DP
+                                          ENDIF
+                                        END SELECT
+                                      CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                       SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                        CASE(NO_GLOBAL_DERIV)
+                                          IF (X(1)==20.0_DP) THEN
+                                            SET_BC = .TRUE.
+                                            VALUE=100.0_DP/BC_counter
+                                          ENDIF
+                                        END SELECT
+                                      END SELECT
+                                    CASE(2) !v component
+                                    !v=Sigmay*y/E
+                                      SELECT CASE(variable_type)
+                                      CASE(FIELD_U_VARIABLE_TYPE)
+                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                        CASE(NO_GLOBAL_DERIV)
+                                          IF (X(2)==0.0_DP) THEN
+                                            SET_BC = .TRUE.
+                                            VALUE=0.0_DP
+                                          ENDIF
+                                        END SELECT
+                                      CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                       SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                        CASE(NO_GLOBAL_DERIV)
+                                          !Do Nothing
+                                        END SELECT
+                                      END SELECT
+                                    END SELECT
+                                  END SELECT
+                                  IF (SET_BC == .TRUE.) THEN
+                                    local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                      & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                    CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+                                        & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                  ENDIF
+                                ENDIF
+
+                              ENDDO !deriv_idx
+                            ENDIF
+                          ENDDO !node_idx
+                        ELSE
+                          CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                  ENDIF
+                ENDDO !component_idx
+              ELSE
+                CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ENDDO !variable_idx
+            CALL BOUNDARY_CONDITIONS_CREATE_FINISH(BOUNDARY_CONDITIONS,ERR,ERROR,*999)
             CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
               & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
           ELSE
