@@ -407,7 +407,7 @@ CONTAINS
                                       END SELECT
                                     END SELECT
                                   END SELECT
-                                  IF (SET_BC == .TRUE.) THEN
+                                  IF (SET_BC) THEN
                                     local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
                                       & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
                                     CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
