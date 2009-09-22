@@ -163,7 +163,7 @@ CONTAINS
 ! SEBK 19/08/2009 not sure about mapping here
 !|
                   !Dynamic nonlinear equations set
-                  DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE)%PTR
+                  DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE)%PTR
 !|
 ! SEBK 19/08/2009 not sure about mapping here
                 CASE DEFAULT

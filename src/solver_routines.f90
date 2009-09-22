@@ -355,8 +355,9 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVER_LIBRARY_TYPE_GET,SOLVER_LIBRARY_TYPE_SET,SOLVER_OUTPUT_TYPE_SET,SOLVER_SOLVE
 
-  PUBLIC SOLVER_DYNAMIC_DEGREE_SET,SOLVER_DYNAMIC_LINEAR_SOLVER_GET,SOLVER_TIME_STEPPING_MONITOR,SOLVER_DYNAMIC_ORDER_SET, &
-    & SOLVER_DYNAMIC_SCHEME_SET,SOLVER_DYNAMIC_THETA_SET,SOLVER_DYNAMIC_TIMES_SET
+  PUBLIC SOLVER_DYNAMIC_DEGREE_SET,SOLVER_DYNAMIC_LINEAR_SOLVER_GET,SOLVER_DYNAMIC_NONLINEAR_SOLVER_GET, & 
+    & SOLVER_TIME_STEPPING_MONITOR,SOLVER_DYNAMIC_ORDER_SET,SOLVER_DYNAMIC_SCHEME_SET,SOLVER_DYNAMIC_THETA_SET, & 
+    & SOLVER_DYNAMIC_TIMES_SET
 
   PUBLIC SOLVER_EQUATIONS_CREATE_FINISH,SOLVER_EQUATIONS_CREATE_START,SOLVER_EQUATIONS_DESTROY, &
     & SOLVER_EQUATIONS_EQUATIONS_SET_ADD,SOLVER_EQUATIONS_LINEARITY_TYPE_SET,SOLVER_EQUATIONS_SPARSITY_TYPE_SET, &
@@ -6787,13 +6788,6 @@ CONTAINS
                                         IF(DYNAMIC_MAPPING%STIFFNESS_MATRIX_NUMBER/=0) THEN
                                           STIFFNESS_MATRIX=>DYNAMIC_MATRICES%MATRICES(DYNAMIC_MAPPING%STIFFNESS_MATRIX_NUMBER)%PTR
                                           IF(ASSOCIATED(STIFFNESS_MATRIX)) THEN
-
-! AUCH HIER NACH DEM MINUS ZEICHEN NOCH CHECKEN
-! AUCH HIER NACH DEM MINUS ZEICHEN NOCH CHECKEN
-! AUCH HIER NACH DEM MINUS ZEICHEN NOCH CHECKEN
-! AUCH HIER NACH DEM MINUS ZEICHEN NOCH CHECKEN
-! AUCH HIER NACH DEM MINUS ZEICHEN NOCH CHECKEN
-
                                             CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE, & 
                                               & STIFFNESS_MATRIX_COEFFICIENT,STIFFNESS_MATRIX%MATRIX,INCREMENTAL_VECTOR, & 
                                               & DYNAMIC_TEMP_VECTOR,ERR,ERROR,*999)
@@ -6808,13 +6802,6 @@ CONTAINS
                                           & DYNAMIC_SOLVER%DEGREE>=SOLVER_DYNAMIC_FIRST_DEGREE) THEN
                                           DAMPING_MATRIX=>DYNAMIC_MATRICES%MATRICES(DYNAMIC_MAPPING%DAMPING_MATRIX_NUMBER)%PTR
                                           IF(ASSOCIATED(DAMPING_MATRIX)) THEN
-
-! AUCH HIER NACH DEM MINUS ZEICHEN NOCH CHECKEN
-! AUCH HIER NACH DEM MINUS ZEICHEN NOCH CHECKEN
-! AUCH HIER NACH DEM MINUS ZEICHEN NOCH CHECKEN
-! AUCH HIER NACH DEM MINUS ZEICHEN NOCH CHECKEN
-! AUCH HIER NACH DEM MINUS ZEICHEN NOCH CHECKEN
-
                                             CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE, &
                                               & DAMPING_MATRIX_COEFFICIENT,DAMPING_MATRIX%MATRIX,INCREMENTAL_VECTOR, & 
                                               & DYNAMIC_TEMP_VECTOR,ERR,ERROR,*999)
@@ -6826,13 +6813,6 @@ CONTAINS
                                           & DYNAMIC_SOLVER%DEGREE>=SOLVER_DYNAMIC_SECOND_DEGREE) THEN
                                           MASS_MATRIX=>DYNAMIC_MATRICES%MATRICES(DYNAMIC_MAPPING%MASS_MATRIX_NUMBER)%PTR
                                           IF(ASSOCIATED(MASS_MATRIX)) THEN
-
-! AUCH HIER NACH DEM MINUS ZEICHEN NOCH CHECKEN
-! AUCH HIER NACH DEM MINUS ZEICHEN NOCH CHECKEN
-! AUCH HIER NACH DEM MINUS ZEICHEN NOCH CHECKEN
-! AUCH HIER NACH DEM MINUS ZEICHEN NOCH CHECKEN
-! AUCH HIER NACH DEM MINUS ZEICHEN NOCH CHECKEN
-
                                             CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE, &
                                               & MASS_MATRIX_COEFFICIENT,MASS_MATRIX%MATRIX,INCREMENTAL_VECTOR, & 
                                               & DYNAMIC_TEMP_VECTOR,ERR,ERROR,*999)
@@ -10736,14 +10716,14 @@ CONTAINS
                                   DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
                                   IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
                                     DYNAMIC_VARIABLE_TYPE=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
-!                                     !Get the mean predicted displacement data       
-!                                     NULLIFY(PREDICTED_MEAN_DISPLACEMENT_VECTOR)
-!                                     CALL FIELD_PARAMETER_SET_VECTOR_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-!                                       & FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,PREDICTED_MEAN_DISPLACEMENT_VECTOR, &
-!                                       & ERR,ERROR,*999)
-!                                     NULLIFY(MEAN_DATA)
-!                                     CALL DISTRIBUTED_VECTOR_DATA_GET(PREDICTED_MEAN_DISPLACEMENT_VECTOR,MEAN_DATA,ERR,ERROR,*999)   
-! !CHECK: Do I still need "variable_coefficient" and "additive_constant"
+
+                                    !Get the mean predicted displacement data       
+                                    NULLIFY(PREDICTED_MEAN_DISPLACEMENT_VECTOR)
+                                    CALL FIELD_PARAMETER_SET_VECTOR_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                      & FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,PREDICTED_MEAN_DISPLACEMENT_VECTOR, &
+                                      & ERR,ERROR,*999)
+                                    NULLIFY(MEAN_DATA)
+                                    CALL DISTRIBUTED_VECTOR_DATA_GET(PREDICTED_MEAN_DISPLACEMENT_VECTOR,MEAN_DATA,ERR,ERROR,*999)   
 
                                    !Get the dependent field variable dof the solver dof is mapped to
                                    variable_dof=SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)% &
@@ -10753,19 +10733,20 @@ CONTAINS
                                    additive_constant=SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)% &
                                      & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%ADDITIVE_CONSTANT(equations_set_idx)
 
+                                   VALUE=0.0_DP 
                                    !Calculate solver data only
                                    VALUE=SOLVER_DATA(solver_dof_idx)*variable_coefficient+additive_constant
-                                   !Set solver data to FIELD_INCREMENTAL_VALUES_SET_TYPE
+                                   !Set solver data to FIELD_INCREMENTAL_VALUES_SET_TYPE in order to store solver data before modification
                                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,VARIABLE_TYPE, &
                                      & FIELD_INCREMENTAL_VALUES_SET_TYPE,variable_dof,VALUE,ERR,ERROR,*999)
-                                   !Add alpha and mean values to FIELD_INCREMENTAL_VALUES_SET_TYPE for FIELD_VALUES_SET_TYPE
-! ! !                                    CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-! ! !                                                & DYNAMIC_ALPHA_FACTOR,FIELD_INCREMENTAL_VALUES_SET_TYPE, & 
-! ! !                                                & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-! ! ! 
-! ! !                                    CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-! ! !                                                & 1.0_DP,FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE, & 
-! ! !                                                & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+
+                                   !Calculate modified input values for residual and Jacobian calculation
+                                   VALUE=(VALUE*DYNAMIC_ALPHA_FACTOR)+MEAN_DATA(variable_dof)
+                                   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,VARIABLE_TYPE, &
+                                     & FIELD_VALUES_SET_TYPE,variable_dof,VALUE,ERR,ERROR,*999)
+
+
+
                                   ELSE
                                     CALL FLAG_ERROR("Dynamic mapping is not associated.",ERR,ERROR,*999)
                                   ENDIF
@@ -10787,12 +10768,12 @@ CONTAINS
                       ENDDO !equations_set_idx
                     ENDDO !solver_dof_idx
 
-                    CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-                      & DYNAMIC_ALPHA_FACTOR,FIELD_INCREMENTAL_VALUES_SET_TYPE, & 
-                      & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                    CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-                      & 1.0_DP,FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE, & 
-                      & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+!                     CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+!                       & DYNAMIC_ALPHA_FACTOR,FIELD_INCREMENTAL_VALUES_SET_TYPE, & 
+!                       & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+!                     CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+!                       & 1.0_DP,FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE, & 
+!                       & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
 
 !|
 ! UNDER CONSTRUCTION --- UNDER CONSTRUCTION --- UNDER CONSTRUCTION
