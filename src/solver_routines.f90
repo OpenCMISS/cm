@@ -6234,6 +6234,11 @@ CONTAINS
     CALL ENTERS("SOLVER_MATRICES_DYNAMIC_ASSEMBLE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
+      NULLIFY(DYNAMIC_SOLVER)
+      NULLIFY(SOLVER_EQUATIONS)
+      NULLIFY(SOLVER_MAPPING)
+      NULLIFY(SOLVER_MATRICES)
+      
       !Determine which dynamic solver needs to be used
       IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
         DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
@@ -6297,6 +6302,16 @@ CONTAINS
 !                 END DO
 
                   solver_matrix_idx=1
+                  NULLIFY(SOLVER_MATRIX)
+                  NULLIFY(SOLVER_DISTRIBUTED_MATRIX)
+                  NULLIFY(EQUATIONS)
+                  NULLIFY(EQUATIONS_MATRICES)
+                  NULLIFY(DYNAMIC_MATRICES)
+                  NULLIFY(EQUATIONS_MAPPING)
+                  NULLIFY(DYNAMIC_MAPPING)
+                  NULLIFY(STIFFNESS_MATRIX)
+                  NULLIFY(DAMPING_MATRIX)
+                  NULLIFY(MASS_MATRIX)
                   IF(SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES==solver_matrix_idx) THEN
                     SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(1)%PTR
                     IF(ASSOCIATED(SOLVER_MATRIX)) THEN
@@ -6394,6 +6409,8 @@ CONTAINS
                             IF(SELECTION_TYPE==SOLVER_MATRICES_ALL.OR. &
                               & SELECTION_TYPE==SOLVER_MATRICES_NONLINEAR_ONLY.OR. &
                               & SELECTION_TYPE==SOLVER_MATRICES_JACOBIAN_ONLY) THEN
+                              NULLIFY(JACOBIAN_TO_SOLVER_MAP)
+                              NULLIFY(JACOBIAN_MATRIX)
                               !Now set the values from the equations Jacobian
                               JACOBIAN_TO_SOLVER_MAP=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                                 & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP
