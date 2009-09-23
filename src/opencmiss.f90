@@ -24879,7 +24879,7 @@ CONTAINS
     
   END SUBROUTINE CMISSSolverDynamicNonlinearSolverGetObj
   
-   !  
+  !  
   !================================================================================================================================
   !
   
@@ -24969,7 +24969,6 @@ CONTAINS
     
   END SUBROUTINE CMISSSolverDynamicLinearSolverGetNumber1
 
-  !  
   !================================================================================================================================
   !  
  
@@ -24992,11 +24991,599 @@ CONTAINS
     CALL EXITS("CMISSSolverDynamicLinearSolverGetObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
-    
+
   END SUBROUTINE CMISSSolverDynamicLinearSolverGetObj
   
   !  
   !================================================================================================================================
+  !
+  
+  !>Sets/changes the scheme for a dynamic solver identified by an user number.
+  SUBROUTINE CMISSSolverDynamicSchemeSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,Scheme,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the scheme for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the solver to set the scheme for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the scheme for.
+    INTEGER(INTG), INTENT(IN) :: Scheme !<The dynamic scheme to set. \see OPENCMISS_DynamicSchemeTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverDynamicSchemeSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_DYNAMIC_SCHEME_SET(SOLVER,Scheme,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverDynamicSchemeSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverDynamicSchemeSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverDynamicSchemeSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverDynamicSchemeSetNumber0
+
   !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the scheme for a dynamic solver identified by an user number.
+  SUBROUTINE CMISSSolverDynamicSchemeSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,Scheme,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the scheme for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the scheme for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the scheme for.
+    INTEGER(INTG), INTENT(IN) :: Scheme !<The dynamic scheme to set. \see OPENCMISS_DynamicSchemeTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverDynamicSchemeSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_DYNAMIC_SCHME_SET(SOLVER,Scheme,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverDynamicSchemeSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverDynamicSchemeSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverDynamicSchemeSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverDynamicSchemeSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the scheme for a dynamic solver identified by an object.
+  SUBROUTINE CMISSSolverDynamicSchemeSetObj(Solver,Scheme,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to set the scheme for.
+    TYPE(CMISSSolverType), INTENT(IN) :: Scheme !<The dynamic scheme to set. \see OPENCMISS_DynamicSchemeTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverDynamicSchemeSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_DYNAMIC_SCHEME_SET(Solver%SOLVER,Scheme,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverDynamicSchemeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverDynamicSchemeSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverDynamicSchemeSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverDynamicSchemeSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the theta value for a dynamic solver identified by an user number.
+  SUBROUTINE CMISSSolverDynamicThetaSetNumber00(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,Theta,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the theta for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the solver to set the theta for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the theta for.
+    REAL(DP), INTENT(IN) :: Theta !<The dynamic theta to set. 
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverDynamicThetaSetNumber00",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,Theta,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverDynamicThetaSetNumber00")
+    RETURN
+999 CALL ERRORS("CMISSSolverDynamicThetaSetNumber00",Err,ERROR)
+    CALL EXITS("CMISSSolverDynamicThetaSetNumber00")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverDynamicThetaSetNumber00
+
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the theta value for a dynamic solver identified by an user number.
+  SUBROUTINE CMISSSolverDynamicThetaSetNumber01(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,Thetas,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the theta for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the solver to set the theta for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the theta for.
+    REAL(DP), INTENT(IN) :: Thetas(:) !<Thetas(i). The i'th dynamic theta to set. 
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverDynamicThetaSetNumber01",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,Thetas,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverDynamicThetaSetNumber01")
+    RETURN
+999 CALL ERRORS("CMISSSolverDynamicThetaSetNumber01",Err,ERROR)
+    CALL EXITS("CMISSSolverDynamicThetaSetNumber01")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverDynamicThetaSetNumber01
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the theta for a dynamic solver identified by an user number.
+  SUBROUTINE CMISSSolverDynamicThetaSetNumber10(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,Theta,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the theta for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the theta for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the theta for.
+    REAL(DP), INTENT(IN) :: Theta !<The dynamic theta to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverDynamicThetaSetNumber10",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,Theta,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverDynamicThetaSetNumber10")
+    RETURN
+999 CALL ERRORS("CMISSSolverDynamicThetaSetNumber10",Err,ERROR)
+    CALL EXITS("CMISSSolverDynamicThetaSetNumber10")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverDynamicThetaSetNumber10
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the theta for a dynamic solver identified by an user number.
+  SUBROUTINE CMISSSolverDynamicThetaSetNumber11(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,Thetas,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the theta for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the theta for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the theta for.
+    REAL(DP), INTENT(IN) :: Thetas(:) !<Thetas(i). The i'th dynamic theta to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverDynamicThetaSetNumber11",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,Thetas,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverDynamicThetaSetNumber11")
+    RETURN
+999 CALL ERRORS("CMISSSolverDynamicThetaSetNumber11",Err,ERROR)
+    CALL EXITS("CMISSSolverDynamicThetaSetNumber11")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverDynamicThetaSetNumber11
+
+  !
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the theta for a dynamic solver identified by an object.
+  SUBROUTINE CMISSSolverDynamicThetaSetObj0(Solver,Theta,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to set the theta for.
+    REAL(DP), INTENT(IN) :: Theta !<The dynamic theta to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverDynamicThetaSetObj0",Err,ERROR,*999)
+ 
+    CALL SOLVER_DYNAMIC_THETA_SET(Solver%SOLVER,Theta,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverDynamicThetaSetObj0")
+    RETURN
+999 CALL ERRORS("CMISSSolverDynamicThetaSetObj0",Err,ERROR)
+    CALL EXITS("CMISSSolverDynamicThetaSetObj0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverDynamicThetaSetObj0
+    
+   !
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the theta for a dynamic solver identified by an object.
+  SUBROUTINE CMISSSolverDynamicThetaSetObj1(Solver,Thetas,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to set the theta for.
+    REAL(DP), INTENT(IN) :: Thetas(:) !<Thetas(i). The i'th dynamic theta to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverDynamicThetaSetObj1",Err,ERROR,*999)
+ 
+    CALL SOLVER_DYNAMIC_THETA_SET(Solver%SOLVER,Thetas,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverDynamicThetaSetObj1")
+    RETURN
+999 CALL ERRORS("CMISSSolverDynamicThetaSetObj1",Err,ERROR)
+    CALL EXITS("CMISSSolverDynamicThetaSetObj1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverDynamicThetaSetObj1
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the times for a dynamic solver identified by an user number.
+  SUBROUTINE CMISSSolverDynamicTimesSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,CurrentTime,TimeIncrement,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the times for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the solver to set the times for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the times for.
+    REAL(DP), INTENT(IN) :: CurrentTime !<The current time to set.
+    REAL(DP), INTENT(IN) :: TimeIncrement !<The time increment to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverDynamicTimesSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_DYNAMIC_TIMES_SET(SOLVER,CurrentTime,TimeIncrement,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverDynamicTimesSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverDynamicTimesSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverDynamicTimesSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverDynamicTimesSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the times for a dynamic solver identified by an user number.
+  SUBROUTINE CMISSSolverDynamicTimesSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,CurrentTime,TimeIncrement,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the times for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the times for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the times for.
+    REAL(DP), INTENT(IN) :: CurrentTime !<The current time to set.
+    REAL(DP), INTENT(IN) :: TimeIncrement !<The time increment to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverDynamicTimeSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_DYNAMIC_TIMES_SET(SOLVER,CurrentTime,TimeIncrement,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverDynamicTimesSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverDynamicTimesSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverDynamicTimesSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverDynamicTimesSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the times for a dynamic solver identified by an object.
+  SUBROUTINE CMISSSolverDynamicTimesSetObj(Solver,Scheme,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to set the times for.
+    REAL(DP), INTENT(IN) :: CurrentTime !<The current time to set.
+    REAL(DP), INTENT(IN) :: TimeIncrement !<The time increment to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverDynamicTimesSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_DYNAMIC_SCHEME_SET(Solver%SOLVER,Scheme,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverDynamicTimesSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverDynamicTimesSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverDynamicTimesSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverDynamicTimesSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Adds equations sets to solver equations identified by an user number.
+  SUBROUTINE CMISSSolverEquationsEquationsSetAddNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex, &
+    & RegionUserNumber,EquationsSetUserNumber,EquationsSetIndex,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem with the solver to add the equations set for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the solver to add the equations set for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to add the equations set for.
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region with the equations set to add.
+    INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to add.
+    INTEGER(INTG), INTENT(OUT) :: EquationsSetIndex !<On return, the index of the added equations set in the solver equations.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverEquationsEquationsSetAddNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    NULLIFY(SOLVER_EQUATIONS)
+    NULLIFY(REGION)
+    NULLIFY(EQUATIONS_SET)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SOLVER_EQUATIONS,Err,ERROR,*999)
+      CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+      IF(ASSOCIATED(REGION)) THEN
+        CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
+        IF(ASSOCIATED(EQUATIONS_SET)) THEN
+          CALL SOLVER_EQUATIONS_EQUATIONS_SET_ADD(SOLVER_EQUATIONS,EQUATIONS_SET,EquationsSetIndex,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
+            & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverEquationsEquationsSetAddNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverEquationsEquationsSetAddNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverEquationsEquationsSetAddNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverEquationsEquationsSetAddNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Adds equations sets to solver equations identified by an user number.
+  SUBROUTINE CMISSSolverEquationsEquationsSetAddNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+    & RegionUserNumber,EquationsSetUserNumber,EquationsSetIndex,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to add the equations set for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to add the equations set for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to add the equations set for.
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region with the equations set to add.
+    INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to add.
+    INTEGER(INTG), INTENT(OUT) :: EquationsSetIndex !<On return, the index of the added equations set in the solver equations.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverEquationsEquationsSetAddNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    NULLIFY(SOLVER_EQUATIONS)
+    NULLIFY(REGION)
+    NULLIFY(EQUATIONS_SET)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SOLVER_EQUATIONS,Err,ERROR,*999)
+      CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+      IF(ASSOCIATED(REGION)) THEN
+        CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
+        IF(ASSOCIATED(EQUATIONS_SET)) THEN
+          CALL SOLVER_EQUATIONS_EQUATIONS_SET_ADD(SOLVER_EQUATIONS,EQUATIONS_SET,EquationsSetIndex,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
+            & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverEquationsEquationsSetAddNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverEquationsEquationsSetAddNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverEquationsEquationsSetAddNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverEquationsEquationsSetAddNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the scheme for a dynamic solver identified by an object.
+  SUBROUTINE CMISSSolverDynamicSchemeSetObj(Solver,Scheme,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to set the scheme for.
+    TYPE(CMISSSolverType), INTENT(IN) :: Scheme !<The dynamic scheme to set. \see OPENCMISS_DynamicSchemeTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverDynamicSchemeSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_DYNAMIC_SCHEME_SET(Solver%SOLVER,Scheme,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverDynamicSchemeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverDynamicSchemeSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverDynamicSchemeSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverDynamicSchemeSetObj
+    
+  !  
+  !================================================================================================================================
+  !
 
 END MODULE OPENCMISS

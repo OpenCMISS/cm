@@ -2379,7 +2379,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the linear solver associated with a dynamic solver
+  !>Returns the linear solver associated with a dynamic solver \see OPENCMISS::CMISSSolverDynamicLinearSolverGet
   SUBROUTINE SOLVER_DYNAMIC_LINEAR_SOLVER_GET(SOLVER,LINEAR_SOLVER,ERR,ERROR,*)
 
     !Argument variables
@@ -2729,7 +2729,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the scheme for a dynamic solver.
+  !>Sets/changes the scheme for a dynamic solver. \see OPENCMISS::CMISSSolverDynamicSchemeSet
   SUBROUTINE SOLVER_DYNAMIC_SCHEME_SET(SOLVER,SCHEME,ERR,ERROR,*)
 
     !Argument variables
@@ -2996,7 +2996,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes a single theta value for a dynamic solver.
+  !>Sets/changes a single theta value for a dynamic solver. \see OPENCMISS::CMISSSolverDynamicThetaSet
   SUBROUTINE SOLVER_DYNAMIC_THETA_SET_DP1(SOLVER,THETA,ERR,ERROR,*)
 
     !Argument variables
@@ -3021,7 +3021,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the theta value for a dynamic solver.
+  !>Sets/changes the theta value for a dynamic solver. \see OPENCMISS::CMISSSolverDynamicThetaSet
   SUBROUTINE SOLVER_DYNAMIC_THETA_SET_DP(SOLVER,THETA,ERR,ERROR,*)
 
     !Argument variables
@@ -3081,7 +3081,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the dynamic times for a dynamic solver.
+  !>Sets/changes the dynamic times for a dynamic solver. \see OPENCMISS::CMISSSolverDynamicTimesSet
   SUBROUTINE SOLVER_DYNAMIC_TIMES_SET(SOLVER,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*)
 
    !Argument variables
@@ -3410,7 +3410,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Adds equations sets to solver equations
+  !>Adds equations sets to solver equations. \see OPENCMISS::CMISSSolverEquationsEquationsSetAdd
   SUBROUTINE SOLVER_EQUATIONS_EQUATIONS_SET_ADD(SOLVER_EQUATIONS,EQUATIONS_SET,EQUATIONS_SET_INDEX,ERR,ERROR,*)
 
     !Argument variables
