@@ -6283,6 +6283,17 @@ CONTAINS
             IF(ASSOCIATED(SOLVER_MATRICES)) THEN
               !Assemble the solver matrices
               NULLIFY(PREVIOUS_SOLVER_DISTRIBUTED_MATRIX)
+              NULLIFY(SOLVER_MATRIX)
+              NULLIFY(SOLVER_DISTRIBUTED_MATRIX)
+              NULLIFY(EQUATIONS)
+              NULLIFY(EQUATIONS_MATRICES)
+              NULLIFY(DYNAMIC_MATRICES)
+              NULLIFY(EQUATIONS_MAPPING)
+              NULLIFY(DYNAMIC_MAPPING)
+              NULLIFY(STIFFNESS_MATRIX)
+              NULLIFY(DAMPING_MATRIX)
+              NULLIFY(MASS_MATRIX)
+
               IF(SELECTION_TYPE==SOLVER_MATRICES_ALL.OR. &
                 & SELECTION_TYPE==SOLVER_MATRICES_LINEAR_ONLY.OR. &
                 & SELECTION_TYPE==SOLVER_MATRICES_NONLINEAR_ONLY.OR. &
@@ -6302,16 +6313,6 @@ CONTAINS
 !                 END DO
 
                   solver_matrix_idx=1
-                  NULLIFY(SOLVER_MATRIX)
-                  NULLIFY(SOLVER_DISTRIBUTED_MATRIX)
-                  NULLIFY(EQUATIONS)
-                  NULLIFY(EQUATIONS_MATRICES)
-                  NULLIFY(DYNAMIC_MATRICES)
-                  NULLIFY(EQUATIONS_MAPPING)
-                  NULLIFY(DYNAMIC_MAPPING)
-                  NULLIFY(STIFFNESS_MATRIX)
-                  NULLIFY(DAMPING_MATRIX)
-                  NULLIFY(MASS_MATRIX)
                   IF(SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES==solver_matrix_idx) THEN
                     SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(1)%PTR
                     IF(ASSOCIATED(SOLVER_MATRIX)) THEN
@@ -6406,11 +6407,11 @@ CONTAINS
                               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
 
+                            NULLIFY(JACOBIAN_TO_SOLVER_MAP)
+                            NULLIFY(JACOBIAN_MATRIX)
                             IF(SELECTION_TYPE==SOLVER_MATRICES_ALL.OR. &
                               & SELECTION_TYPE==SOLVER_MATRICES_NONLINEAR_ONLY.OR. &
                               & SELECTION_TYPE==SOLVER_MATRICES_JACOBIAN_ONLY) THEN
-                              NULLIFY(JACOBIAN_TO_SOLVER_MAP)
-                              NULLIFY(JACOBIAN_MATRIX)
                               !Now set the values from the equations Jacobian
                               JACOBIAN_TO_SOLVER_MAP=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                                 & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP
@@ -6461,6 +6462,7 @@ CONTAINS
                 ENDIF
               ENDIF
 
+              NULLIFY(SOLVER_RHS_VECTOR)
               IF(SELECTION_TYPE==SOLVER_MATRICES_ALL.OR. &
                 & SELECTION_TYPE==SOLVER_MATRICES_LINEAR_ONLY.OR. &
                 & SELECTION_TYPE==SOLVER_MATRICES_NONLINEAR_ONLY.OR. &
@@ -6470,7 +6472,6 @@ CONTAINS
                   & ((DYNAMIC_SOLVER%ORDER==SOLVER_DYNAMIC_FIRST_ORDER.AND.DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_FIRST_DEGREE).OR. &
                   & (DYNAMIC_SOLVER%ORDER==SOLVER_DYNAMIC_SECOND_ORDER.AND.DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_SECOND_DEGREE)))) &
                   & THEN
-                  NULLIFY(SOLVER_RHS_VECTOR)
                   !Assemble rhs vector
                   IF(SOLVER%OUTPUT_TYPE>=SOLVER_TIMING_OUTPUT) THEN
                     CALL CPU_TIMER(USER_CPU,USER_TIME1,ERR,ERROR,*999)
@@ -6510,7 +6511,7 @@ CONTAINS
                                           CALL FIELD_PARAMETER_SET_VECTOR_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                             & FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,PREDICTED_MEAN_DISPLACEMENT_VECTOR, &
                                             & ERR,ERROR,*999)
-                                          CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE,1.0_DP, &
+                                          CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE,-1.0_DP, &
                                             & STIFFNESS_MATRIX%MATRIX,PREDICTED_MEAN_DISPLACEMENT_VECTOR, & 
                                             & DYNAMIC_TEMP_VECTOR,ERR,ERROR,*999)
                                         ELSE
@@ -6525,7 +6526,7 @@ CONTAINS
                                           CALL FIELD_PARAMETER_SET_VECTOR_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                             & FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE,PREDICTED_MEAN_VELOCITY_VECTOR, &
                                             & ERR,ERROR,*999)
-                                          CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE,1.0_DP, &
+                                          CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE,-1.0_DP, &
                                             & DAMPING_MATRIX%MATRIX,PREDICTED_MEAN_VELOCITY_VECTOR,DYNAMIC_TEMP_VECTOR, &
                                             & ERR,ERROR,*999)
                                         ELSE
@@ -6668,7 +6669,7 @@ CONTAINS
                                               row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                                                 & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
                                                 & COUPLING_COEFFICIENTS(solver_row_idx)
-                                              VALUE=-RHS_VALUE*row_coupling_coefficient
+                                              VALUE=RHS_VALUE*row_coupling_coefficient
                                               CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
                                                 & ERR,ERROR,*999)
                                             ENDDO !solver_row_idx
@@ -6755,6 +6756,7 @@ CONTAINS
 ! |
 ! |
 
+              NULLIFY(SOLVER_RESIDUAL_VECTOR)
               IF(SELECTION_TYPE==SOLVER_MATRICES_ALL.OR. &
                 & SELECTION_TYPE==SOLVER_MATRICES_NONLINEAR_ONLY.OR. &
                 & SELECTION_TYPE==SOLVER_MATRICES_RESIDUAL_ONLY.OR. &
@@ -6768,7 +6770,6 @@ CONTAINS
                     CALL CPU_TIMER(USER_CPU,USER_TIME1,ERR,ERROR,*999)
                     CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME1,ERR,ERROR,*999)
                   ENDIF
-                  NULLIFY(SOLVER_RESIDUAL_VECTOR)
                   IF(SOLVER_MATRICES%UPDATE_RESIDUAL) THEN            
                     SOLVER_RESIDUAL_VECTOR=>SOLVER_MATRICES%RESIDUAL
                     IF(ASSOCIATED(SOLVER_RESIDUAL_VECTOR)) THEN
@@ -6979,13 +6980,6 @@ CONTAINS
                   ENDIF
                 ENDIF
               ENDIF
-!| 17/10/2009
-! sebk
-
-!               IF(ASSOCIATED(SOLVER_RESIDUAL_VECTOR)) THEN
-!                 CALL DISTRIBUTED_VECTOR_UPDATE_FINISH(SOLVER_RESIDUAL_VECTOR,ERR,ERROR,*999)
-!               ENDIF
-
 
 ! CHECK: DO I NEED TO CHANGE THIS? No, ...
 

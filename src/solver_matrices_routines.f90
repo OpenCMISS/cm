@@ -940,6 +940,7 @@ CONTAINS
               SOLVER_MAPPING=>SOLVER_MATRICES%SOLVER_MAPPING
               IF(ASSOCIATED(SOLVER_MAPPING)) THEN
                 NONLINEAR_MATRICES=>JACOBIAN_MATRIX%NONLINEAR_MATRICES
+
                 IF(ASSOCIATED(NONLINEAR_MATRICES)) THEN
                   EQUATIONS_MATRICES=>NONLINEAR_MATRICES%EQUATIONS_MATRICES
                   IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
@@ -955,6 +956,7 @@ CONTAINS
                               CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_GET(JACOBIAN_DISTRIBUTED_MATRIX,JACOBIAN_STORAGE_TYPE, &
                                 & ERR,ERROR,*999)
                               CALL DISTRIBUTED_MATRIX_DATA_GET(JACOBIAN_DISTRIBUTED_MATRIX,JACOBIAN_MATRIX_DATA,ERR,ERROR,*999)
+
                               SELECT CASE(JACOBIAN_STORAGE_TYPE)
                               CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)                                    
                                 !Loop over the rows of the Jacobian matrix
@@ -971,6 +973,10 @@ CONTAINS
                                     !Loop over the columns of the Jacobian matrix
                                     DO jacobian_column_number=1,JACOBIAN_MATRIX%NUMBER_OF_COLUMNS
                                       !Loop over the solution columns this Jacobian column is mapped to
+
+
+!NUMBER OF SOLVER_COLS DOES NOT SEEM TO BE DEFINED CORRECTLY...
+
                                       DO solver_column_idx=1,JACOBIAN_TO_SOLVER_MAP%JACOBIAN_COL_SOLVER_COLS_MAP( &
                                         & jacobian_column_number)%NUMBER_OF_SOLVER_COLS
                                         solver_column_number=JACOBIAN_TO_SOLVER_MAP%JACOBIAN_COL_SOLVER_COLS_MAP( &
