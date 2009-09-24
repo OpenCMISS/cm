@@ -1158,6 +1158,32 @@ CONTAINS
                                 & COUPLING_COEFFICIENTS(1)=DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(MATRIX_NUMBER)% &
                                 & MATRIX_COEFFICIENT                              
                             ENDDO !equations_matrix_idx
+                            IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
+                              jacobian_column=NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP%DOF_TO_COLUMNS_MAP(myrank_local_dof)
+                              !Allocate the Jacobian to solver map column items.
+                              !No coupling yet so the mapping is 1-1
+                              ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP% &
+                                & JACOBIAN_COL_SOLVER_COLS_MAP(jacobian_column)%SOLVER_COLS(1),STAT=ERR)
+                              IF(ERR/=0) CALL  &
+                                & FLAG_ERROR("Could not allocate Jacobian column to solver columns map solver colums.", &
+                                & ERR,ERROR,*999)
+                              ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP% &
+                                & JACOBIAN_COL_SOLVER_COLS_MAP(jacobian_column)%COUPLING_COEFFICIENTS(1),STAT=ERR)
+                              IF(ERR/=0) CALL &
+                                & FLAG_ERROR("Could not allocate Jacobain column to solver columns map coupling coefficients.",&
+                                & ERR,ERROR,*999)
+                              SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
+                                & solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP%JACOBIAN_COL_SOLVER_COLS_MAP(jacobian_column)% &
+                                & NUMBER_OF_SOLVER_COLS=1
+                              SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
+                                & solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP%JACOBIAN_COL_SOLVER_COLS_MAP(jacobian_column)% &
+                                & SOLVER_COLS(1)=NUMBER_OF_GLOBAL_SOLVER_COLS
+                              SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
+                                & solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP%JACOBIAN_COL_SOLVER_COLS_MAP(jacobian_column)% &
+                                & COUPLING_COEFFICIENTS(1)=NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%JACOBIAN_COEFFICIENT
+                            ENDIF
                           ELSE
                             IF(ASSOCIATED(LINEAR_MAPPING)) THEN
                               DO equations_matrix_idx=1,NUMBER_OF_LINEAR_EQUATIONS_MATRICES
@@ -1246,6 +1272,13 @@ CONTAINS
                                 & solver_matrix_idx)%DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS(DYNAMIC_EQUATIONS_MATRIX_OFFSET+ &
                                 & equations_matrix_idx)%PTR%EQUATIONS_COL_SOLVER_COLS_MAP(equations_column)%NUMBER_OF_SOLVER_COLS=0
                             ENDDO !equations_matrix_idx
+                            IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
+                              jacobian_column=NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP%DOF_TO_COLUMNS_MAP(myrank_local_dof)
+                              !No coupling yet so the mapping is 1-1
+                              SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
+                                & solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP%JACOBIAN_COL_SOLVER_COLS_MAP( &
+                                & jacobian_column)%NUMBER_OF_SOLVER_COLS=0
+                            ENDIF
                           ELSE
                             IF(ASSOCIATED(LINEAR_MAPPING)) THEN
                               !Set up the equations columns -> solver columns mapping
