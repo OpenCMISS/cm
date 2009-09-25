@@ -153,6 +153,12 @@ MODULE OPENCMISS
     TYPE(MESH_TYPE), POINTER :: MESH
   END TYPE CMISSMeshType
   
+  !>Contains information on a mesh elements defined in a mesh
+  TYPE CMISSMeshElementsType
+    PRIVATE
+    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+  END TYPE CMISSMeshElementsType
+  
   !>Contains information on the nodes defined on a region.
   TYPE CMISSNodesType
     PRIVATE
@@ -193,18 +199,17 @@ MODULE OPENCMISS
 
   TYPE(VARYING_STRING) :: ERROR
 
-  !Interfaces
+  !Interface CMISS_Finalise_
+  !  MODULE PROCEDURE CMISSFinalise
+  !END INTERFACE !CMISS_Finalise_
 
-  INTERFACE CMISS_Finalise
-    MODULE PROCEDURE CMISSFinalise
-  END INTERFACE !CMISS_Finalise
-
-  INTERFACE CMISS_Initialise
+  INTERFACE CMISSInitialise
     MODULE PROCEDURE CMISSInitialiseNumber
     MODULE PROCEDURE CMISSInitialiseObj
-  END INTERFACE !CMISS_Initialise
+  END INTERFACE !CMISSInitialise
 
-  PUBLIC CMISS_Finalise,CMISS_Initialise
+  !PUBLIC CMISS_Finalise,CMISS_Initialise
+  PUBLIC CMISSFinalise,CMISSInitialise
 
   PUBLIC CMISSBasisType,CMISSBasisTypeFinalise,CMISSBasisTypeInitialise
 
@@ -229,6 +234,8 @@ MODULE OPENCMISS
   PUBLIC CMISSHistoryType,CMISSHistoryTypeFinalise,CMISSHistoryTypeInitialise
 
   PUBLIC CMISSMeshType,CMISSMeshTypeFinalise,CMISSMeshTypeInitialise
+
+  PUBLIC CMISSMeshElementsType,CMISSMeshElementsTypeFinalise,CMISSMeshElementsTypeInitialise
 
   PUBLIC CMISSNodesType,CMISSNodesTypeFinalise,CMISSNodesTypeInitialise
 
@@ -893,8 +900,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsFullMatrices = EQUATIONS_FULL_MATRICES !<Use fully populated matrices for the equations. \see OPENCMISS_EquationsSparsityTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_EquationsLumpingTypes OPENCMISS::Equations::LumpingTypes
-  !> \brief Equations  lumping types
-  !> \see OPENCMISS_EquationsSparsityTypes,OPENCMISS
+  !> \brief Equations lumping types
+  !> \see OPENCMISS::Equations,OPENCMISS
   !>@{
   INTEGER(INTG), PARAMETER :: CMISSEquationsUnlumpedMatrices = EQUATIONS_UNLUMPED_MATRICES !<The equations matrices are not lumped. \see OPENCMISS_EquationsLumpingTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsLumpedMatrices = EQUATIONS_LUMPED_MATRICES !<The equations matrices are "mass" lumped. \see OPENCMISS_EquationsLumpingTypes,OPENCMISS
@@ -1035,7 +1042,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityType = EQUATIONS_SET_LINEAR_ELASTICITY_TYPE !<Linear elasticity equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityType = EQUATIONS_SET_FINITE_ELASTICITY_TYPE !<Finite elasticity equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesEquationType = EQUATIONS_SET_STOKES_EQUATION_TYPE !<Stokes equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesType = EQUATIONS_SET_NAVIER_STOKES_TYPE !<Navier-Stokes equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesType = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE !<Navier-Stokes equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetDarcyEquationType = EQUATIONS_SET_DARCY_EQUATION_TYPE !<Darcy equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetElectrostaticType = EQUATIONS_SET_ELECTROSTATIC_TYPE !<Electrostatic equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMagnetoStaticType = EQUATIONS_SET_MAGNETOSTATIC_TYPE !<Magnetostatic equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
@@ -1135,7 +1142,7 @@ MODULE OPENCMISS
     & CMISSEquationsSetReactionDiffusionEquationType,CMISSEquationsSetBiharmonicEquationType, &
     & CMISSEquationsSetMonodomainEquationType,CMISSEquationsSetBidomainEquationType,CMISSEquationsSetLinearElasticModalType
 
-  PUBLIC CMISSEquationsSetNoSubtype,CMISSEquationsSetThreeDimensionalLinearElasticitySubtype,CMISSEquationsSetPlaneStressSubtype, &
+  PUBLIC CMISSEquationsSetNoSubtype,CMISSEquationsSetThreeDimensionalSubtype,CMISSEquationsSetPlaneStressSubtype, &
     & CMISSEquationsSetPlaneStrainSubtype,CMISSEquationsSetPlateSubtype,CMISSEquationsSetShellSubtype, &
     & CMISSEquationsSetStaticStokesSubtype,CMISSEquationsSetLaplaceStokesSubtype,CMISSEquationsSetTransientStokesSubtype, &
     & CMISSEquationsSetOptimisedStokesSubtype,CMISSEquationsSetStaticNavierStokesSubtype, &
@@ -1975,7 +1982,7 @@ MODULE OPENCMISS
   !> \brief Generated mesh types.
   !> \see OPENCMISS::GeneratedMesh,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshRegularMeshType = GENERATED_MESH_REGULAR_MESH_TYPE= !<A regular generated mesh. \see OPENCMISS_GeneratedMeshTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshRegularMeshType = GENERATED_MESH_REGULAR_MESH_TYPE !<A regular generated mesh. \see OPENCMISS_GeneratedMeshTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshPolarMeshType = GENERATED_MESH_POLAR_MESH_TYPE !<A polar generated mesh. \see OPENCMISS_GeneratedMeshTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshFractalTreeMeshType = GENERATED_MESH_FRACTAL_TREE_MESH_TYPE !<A fractal tree generated mesh. \see OPENCMISS_GeneratedMeshTypes,OPENCMISS
   !>@}
@@ -2460,7 +2467,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemLinearElasticityType = PROBLEM_LINEAR_ELASTICITY_TYPE !<Linear elasticity problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemFiniteElasticityType = PROBLEM_FINITE_ELASTICITY_TYPE !<Finite elasticity problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemStokesEquationType = PROBLEM_STOKES_EQUATION_TYPE !<Stokes equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
-  INTEGER(INTG), PARAMETER :: CMISSProblemNavierStokesType = PROBLEM_NAVIER_STOKES_TYPE !<Navier-Stokes problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISSProblemNavierStokesType = PROBLEM_NAVIER_STOKES_EQUATION_TYPE !<Navier-Stokes problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemDarcyEquationType = PROBLEM_DARCY_EQUATION_TYPE !<Darcy equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemElectrostaticType = PROBLEM_ELECTROSTATIC_TYPE !<Electrostatic problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemMagnetostaticType = PROBLEM_MAGNETOSTATIC_TYPE !<Magnetostatic problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
@@ -2814,18 +2821,18 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverLinearDirectSolveType = SOLVER_LINEAR_DIRECT_SOLVE_TYPE !<Direct linear solver type. \see OPENCMISS_LinearSolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverLinearIterativeSolveType = SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE !<Iterative linear solver type. \see OPENCMISS_LinearSolverTypes,OPENCMISS
   !>@}
-  !> \addtogroup SOLVER_ROUTINES_DirectLinearSolverTypes OPENCMISS::Solver::DirectLinearSolverTypes
+  !> \addtogroup OPENCMISS_DirectLinearSolverTypes OPENCMISS::Solver::DirectLinearSolverTypes
   !> \brief The types of direct linear solvers. \todo Move libraries to a more appropriate place.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSSolverDirectLU = SOLVER_DIRECT_LU !<LU direct linear solver. \see SOLVER_ROUTINES_DirectLinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDirectCholesky = SOLVER_DIRECT_CHOLESKY !<Cholesky direct linear solver. \see SOLVER_ROUTINES_DirectLinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDirectSVD = SOLVER_DIRECT_SVD !<SVD direct linear solver. \see SOLVER_ROUTINES_DirectLinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDirectMUMPS = SOLVER_DIRECT_MUMPS !<MUMPS direct linear solver. \see SOLVER_ROUTINES_DirectLinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDirectPastix = SOLVER_DIRECT_PASTIX !<PASTIX direct linear solver. \see SOLVER_ROUTINES_DirectLinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDirectPLAPACK = SOLVER_DIRECT_PLAPACK !<PLAPACK direct linear solver. \see SOLVER_ROUTINES_DirectLinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDirectSPOOLES = SOLVER_DIRECT_SPOOLES !<SPOOLES direct linear solver. \see SOLVER_ROUTINES_DirectLinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDirectSuperLU = SOLVER_DIRECT_SUPERLU !<SUPERLU direct linear solver. \see SOLVER_ROUTINES_DirectLinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverDirectLU = SOLVER_DIRECT_LU !<LU direct linear solver. \see OPENCMISS_DirectLinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverDirectCholesky = SOLVER_DIRECT_CHOLESKY !<Cholesky direct linear solver. \see OPENCMISS_DirectLinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverDirectSVD = SOLVER_DIRECT_SVD !<SVD direct linear solver. \see OPENCMISS_DirectLinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverDirectMUMPS = SOLVER_DIRECT_MUMPS !<MUMPS direct linear solver. \see OPENCMISS_DirectLinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverDirectPastix = SOLVER_DIRECT_PASTIX !<PASTIX direct linear solver. \see OPENCMISS_DirectLinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverDirectPLAPACK = SOLVER_DIRECT_PLAPACK !<PLAPACK direct linear solver. \see OPENCMISS_DirectLinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverDirectSPOOLES = SOLVER_DIRECT_SPOOLES !<SPOOLES direct linear solver. \see OPENCMISS_DirectLinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverDirectSuperLU = SOLVER_DIRECT_SUPERLU !<SUPERLU direct linear solver. \see OPENCMISS_DirectLinearSolverTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_IterativeLinearSolverTypes OPENCMISS::Solver::IterativeLinearSolverTypes
   !> \brief The types of iterative linear solvers.
@@ -2857,7 +2864,7 @@ MODULE OPENCMISS
   !>@{
   INTEGER(INTG), PARAMETER :: CMISSSolverNonlinearNewton = SOLVER_NONLINEAR_NEWTON !<Newton nonlinear solver type. \see OPENCMISS_NonlinearSolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverNonlinearBFGSInverse = SOLVER_NONLINEAR_BFGS_INVERSE !<BFGS inverse nonlinear solver type. \see OPENCMISS_NonlinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverNonlinearSQP = SOLVER_NONLINEAR !<Sequential Quadratic Program nonlinear solver type. \see OPENCMISS_NonlinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverNonlinearSQP = SOLVER_NONLINEAR_SQP !<Sequential Quadratic Program nonlinear solver type. \see OPENCMISS_NonlinearSolverTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_NewtonSolverTypes OPENCMISS::Solver::NewtonSolverTypes
   !> \brief The types of nonlinear Newton solvers.
@@ -2967,22 +2974,22 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverSolutionInitialiseCurrentField = SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD !<Initialise the solution by copying in the current dependent field values. \see OPENCMISS_SolutionInitialiseTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverSolutionInitialiseNoChange = SOLVER_SOLUTION_INITIALISE_NO_CHANGE !<Do not change the solution before a solve. \see OPENCMISS_SolutionInitialiseTypes,OPENCMISS
   !>@}
-  !> \addtogroup OPENCMISS_OutputTypes OPENCMISS::Solver::OutputTypes
+  !> \addtogroup OPENCMISS_SolverOutputTypes OPENCMISS::Solver::OutputTypes
   !> \brief The types of output.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSSolverNoOutput = SOLVER_NO_OUTPUT !<No output from the solver routines. \see 
-  INTEGER(INTG), PARAMETER :: CMISSSolverProgressOutput = SOLVER_PROGRESS_OUTPUT !<Progress output from solver routines. \see 
-  INTEGER(INTG), PARAMETER :: CMISSSolverTimingOutput = SOLVER_TIMING_OUTPUT !<Timing output from the solver routines plus below. \see 
-  INTEGER(INTG), PARAMETER :: CMISSSolverSolverOutput = SOLVER_SOLVER_OUTPUT !<Solver specific output from the solver routines plus below. \see 
-  INTEGER(INTG), PARAMETER :: CMISSSolverSolverMatrixOutput = SOLVER_MATRIX_OUTPUT !<Solver matrices output from the solver routines plus below. \see 
+  INTEGER(INTG), PARAMETER :: CMISSSolverNoOutput = SOLVER_NO_OUTPUT !<No output from the solver routines. \see OPENCMISS_SolverOutputTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverProgressOutput = SOLVER_PROGRESS_OUTPUT !<Progress output from solver routines. \see OPENCMISS_SolverOutputTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverTimingOutput = SOLVER_TIMING_OUTPUT !<Timing output from the solver routines plus below. \see OPENCMISS_SolverOutputTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverSolverOutput = SOLVER_SOLVER_OUTPUT !<Solver specific output from the solver routines plus below. \see OPENCMISS_SolverOutputTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverSolverMatrixOutput = SOLVER_MATRIX_OUTPUT !<Solver matrices output from the solver routines plus below. \see OPENCMISS_SolverOutputTypes,OPENCMISS
   !>@}
-  !> \addtogroup OPENCMISS_SparsityTypes OPENCMISS::Solver::SparsityTypes
-  !> \brief The types of sparse solver matrices.
+  !> \addtogroup OPENCMISS_SolverEquationsSparsityTypes OPENCMISS::SolverEquations::SparsityTypes
+  !> \brief The types of sparse solver equations matrices.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSSolverSparseMatrices = SOLVER_SPARSE_MATRICES !<Use sparse solver matrices. \see OPENCMISS_SparsityTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverFullMatrices = SOLVER_FULL_MATRICES !<Use fully populated solver matrices. \see OPENCMISS_SparsityTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverEquationsSparseMatrices = SOLVER_SPARSE_MATRICES !<Use sparse solver matrices. \see OPENCMISS_SolverEquationsSparsityTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverEquationsFullMatrices = SOLVER_FULL_MATRICES !<Use fully populated solver matrices. \see OPENCMISS_SolverEquationsSparsityTypes,OPENCMISS
   !>@}
   !>@}
   
@@ -3048,13 +3055,6 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolverDynamicLinearityTypeGetObj
   END INTERFACE !CMISSSolverDynamicLinearityTypeGet
   
-  !>Sets/changes the linearity type for the dynamic solver.
-  INTERFACE CMISSSolverDynamicLinearityTypeSet
-    MODULE PROCEDURE CMISSSolverDynamicLinearityTypeSetNumber0
-    MODULE PROCEDURE CMISSSolverDynamicLinearityTypeSetNumber1
-    MODULE PROCEDURE CMISSSolverDynamicLinearityTypeSetObj
-  END INTERFACE !CMISSSolverDynamicLinearityTypeSet
-  
   !>Returns the linear solver associated with a linear dynamic solver.
   INTERFACE CMISSSolverDynamicLinearSolverGet
     MODULE PROCEDURE CMISSSolverDynamicLinearSolverGetNumber0
@@ -3068,20 +3068,6 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolverDynamicNonlinearSolverGetNumber1
     MODULE PROCEDURE CMISSSolverDynamicNonlinearSolverGetObj
   END INTERFACE !CMISSSolverDynamicNonlinearSolverGet
-  
-  !>Returns the order for a dynamic solver.
-  INTERFACE CMISSSolverDynamicOrderGet
-    MODULE PROCEDURE CMISSSolverDynamicOrderGetNumber0
-    MODULE PROCEDURE CMISSSolverDynamicOrderGetNumber1
-    MODULE PROCEDURE CMISSSolverDynamicOrderGetObj
-  END INTERFACE !CMISSSolverDynamicOrderGet
-  
-  !>Returns the scheme for a dynamic solver.
-  INTERFACE CMISSSolverDynamicSchemeGet
-    MODULE PROCEDURE CMISSSolverDynamicSchemeGetNumber0
-    MODULE PROCEDURE CMISSSolverDynamicSchemeGetNumber1
-    MODULE PROCEDURE CMISSSolverDynamicSchemeGetObj
-  END INTERFACE !CMISSSolverDynamicSchemeGet
   
   !>Sets/changes the scheme for a dynamic solver.
   INTERFACE CMISSSolverDynamicSchemeSet
@@ -3162,13 +3148,6 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolverLinearIterativeRelativeToleranceSetNumber1
     MODULE PROCEDURE CMISSSolverLinearIterativeRelativeToleranceSetObj
   END INTERFACE !CMISSSolverLinearIterativeRelativeToleranceSet
-  
-  !>Sets/changes the solution initialise type for an iterative linear solver. \todo is this really public???
-  INTERFACE CMISSSolverLinearIterativeSolutionInitTypeSet
-    MODULE PROCEDURE CMISSSolverLinearIterativeSolutionInitTypeSetNumber0
-    MODULE PROCEDURE CMISSSolverLinearIterativeSolutionInitTypeSetNumber1
-    MODULE PROCEDURE CMISSSolverLinearIterativeSolutionInitTypeSetObj
-  END INTERFACE !CMISSSolverLinearIterativeSolutionInitTypeSet
   
   !>Sets/changes the type of iterative linear solver.
   INTERFACE CMISSSolverLinearIterativeTypeSet
@@ -3254,13 +3233,6 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolverNewtonRelativeToleranceSetObj
   END INTERFACE !CMISSSolverNewtonRelativeToleranceSet
   
-  !>Sets/changes the solution initialise type for a nonlinear Newton solver. \todo is this really public???
-  INTERFACE CMISSSolverNewtonSolutionInitTypeSet
-    MODULE PROCEDURE CMISSSolverNewtonSolutionInitTypeSetNumber0
-    MODULE PROCEDURE CMISSSolverNewtonSolutionInitTypeSetNumber1
-    MODULE PROCEDURE CMISSSolverNewtonSolutionInitTypeSetObj
-  END INTERFACE !CMISSSolverNewtonSolutionInitTypeSet
-  
   !>Sets/changes the solution tolerance for a nonlinear Newton solver.
   INTERFACE CMISSSolverNewtonSolutionToleranceSet
     MODULE PROCEDURE CMISSSolverNewtonSolutionToleranceSetNumber0
@@ -3302,13 +3274,6 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolverSolverEquationsGetNumber1
     MODULE PROCEDURE CMISSSolverSolverEquationsGetObj
   END INTERFACE !CMISSSolverSolverEquationsGet
-  
-  !>Sets/changes the type of a solver.
-  INTERFACE CMISSSolverTypeSet
-    MODULE PROCEDURE CMISSSolverTypeSetNumber0
-    MODULE PROCEDURE CMISSSolverTypeSetNumber1
-    MODULE PROCEDURE CMISSSolverTypeSetObj
-  END INTERFACE !CMISSSolverTypeSet
   
   !>Adds equations sets to solver equations.
   INTERFACE CMISSSolverEquationsEquationsSetAdd
@@ -3378,7 +3343,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSSolverNoOutput,CMISSSolverProgressOutput,CMISSSolverTimingOutput,CMISSSolverSolverOutput,CMISSSolverSolverMatrixOutput
 
-  PUBLIC CMISSSolverSparseMatrices,CMISSSolverFullMatrices
+  PUBLIC CMISSSolverEquationsSparseMatrices,CMISSSolverEquationsFullMatrices
 
   PUBLIC CMISSSolverDAEEulerTypeGet,CMISSSolverDAEEulerTypeSet
 
@@ -3388,13 +3353,11 @@ MODULE OPENCMISS
 
   PUBLIC CMISSSolverDynamicDegreeGet,CMISSSolverDynamicDegreeSet
 
-  PUBLIC CMISSSolverDynamicLinearityTypeGet,CMISSSolverDynamicLinearityTypeSet
+  PUBLIC CMISSSolverDynamicLinearityTypeGet
 
   PUBLIC CMISSSolverDynamicLinearSolverGet,CMISSSolverDynamicNonlinearSolverGet
 
-  PUBLIC CMISSSolverDynamicOrderGet
-
-  PUBLIC CMISSSolverDynamicSchemeGet,CMISSSolverDynamicSchemeSet
+  PUBLIC CMISSSolverDynamicSchemeSet
 
   PUBLIC CMISSSolverDynamicThetaSet
 
@@ -3413,8 +3376,6 @@ MODULE OPENCMISS
   PUBLIC CMISSSolverLinearIterativePreconditionerTypeSet
 
   PUBLIC CMISSSolverLinearIterativeRelativeToleranceSet
-
-  PUBLIC CMISSSolverLinearIterativeSolutionInitTypeSet
 
   PUBLIC CMISSSolverLinearIterativeTypeSet
 
@@ -3438,8 +3399,6 @@ MODULE OPENCMISS
 
   PUBLIC CMISSSolverNewtonRelativeToleranceSet
 
-  PUBLIC CMISSSolverNewtonSolutionInitTypeSet
-
   PUBLIC CMISSSolverNewtonSolutionToleranceSet
 
   PUBLIC CMISSSolverNewtonTrustRegionDelta0Set
@@ -3451,8 +3410,6 @@ MODULE OPENCMISS
   PUBLIC CMISSSolverOutputTypeSet
 
   PUBLIC CMISSSolverSolverEquationsGet
-
-  PUBLIC CMISSSolverTypeSet
 
   PUBLIC CMISSSolverEquationsEquationsSetAdd
 
@@ -3491,18 +3448,18 @@ CONTAINS
   !
 
   !>Finalises CMISS for C.
-  FUNCTION CMISS_Finalise() BIND(C,NAME="CMISS_Finalise")
+  FUNCTION CMISSFinaliseC() BIND(C,NAME="CMISS_Finalise")
   
     !Argument variables
     !Function variable
-    INTEGER(C_INT) :: CMISS_Finalise
+    INTEGER(C_INT) :: CMISSFinaliseC
     !Local variables
 
-    CALL CMISSFinalise(CMISS_Finalise)
+    CALL CMISSFinalise(CMISSFinaliseC)
 
     RETURN
     
-  END FUNCTION CMISS_Finalise
+  END FUNCTION CMISSFinaliseC
 
   !
   !================================================================================================================================
@@ -4163,6 +4120,57 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSMeshTypeInitialise
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalises a CMISSMeshElementsType object.
+  SUBROUTINE CMISSMeshElementsTypeFinalise(CMISSMeshElements,Err)
+  
+    !Argument variables
+    TYPE(CMISSMeshElementsType), INTENT(OUT) :: CMISSMeshElements !<The CMISSMeshElementsType object to finalise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    
+    CALL ENTERS("CMISSMeshElementsTypeFinalise",Err,ERROR,*999)
+    
+    IF(ASSOCIATED(CMISSMeshElements%MESH_ELEMENTS))  &
+      & CALL MESH_ELEMENTS_DESTROY(CMISSMeshElements%MESH_ELEMENTS,Err,ERROR,*999)
+
+    CALL EXITS("CMISSMeshElementsTypeFinalise")
+    RETURN
+999 CALL ERRORS("CMISSMeshElementsTypeFinalise",Err,ERROR)
+    CALL EXITS("CMISSMeshElementsTypeFinalise")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSMeshElementsTypeFinalise
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises a CMISSMeshElementsType object.
+  SUBROUTINE CMISSMeshElementsTypeInitialise(CMISSMeshElements,Err)
+  
+    !Argument variables
+    TYPE(CMISSMeshElementsType), INTENT(OUT) :: CMISSMeshElements !<The CMISSMeshElementsType object to initialise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSMeshElementsTypeInitialise",Err,ERROR,*999)
+    
+    NULLIFY(CMISSMeshElements%MESH_ELEMENTS)
+
+    CALL EXITS("CMISSMeshElementsTypeInitialise")
+    RETURN
+999 CALL ERRORS("CMISSMeshElementsTypeInitialise",Err,ERROR)
+    CALL EXITS("CMISSMeshElementsTypeInitialise")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSMeshElementsTypeInitialise
 
   !
   !================================================================================================================================
@@ -7875,7 +7883,7 @@ CONTAINS
     CALL EXITS("CMISSCoordinateSystemDimensionGetObj")
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystemDimensionGetObj",Err,ERROR)
-    CALL EXIT("CMISSCoordinateSystemDimensionGetObj")
+    CALL EXITS("CMISSCoordinateSystemDimensionGetObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
@@ -7999,7 +8007,7 @@ CONTAINS
     CALL EXITS("CMISSCoordinateSystemFocusGetObj")
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystemFocusGetObj",Err,ERROR)
-    CALL EXIT("CMISSCoordinateSystemFocusGetObj")
+    CALL EXITS("CMISSCoordinateSystemFocusGetObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
@@ -8061,7 +8069,7 @@ CONTAINS
     CALL EXITS("CMISSCoordinateSystemFocusSetObj")
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystemFocusSetObj",Err,ERROR)
-    CALL EXIT("CMISSCoordinateSystemFocusSetObj")
+    CALL EXITS("CMISSCoordinateSystemFocusSetObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
@@ -8123,7 +8131,7 @@ CONTAINS
     CALL EXITS("CMISSCoordinateSystemRadialInterpolationGetObj")
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystemRadialInterpolationGetObj",Err,ERROR)
-    CALL EXIT("CMISSCoordinateSystemRadialInterpolationGetObj")
+    CALL EXITS("CMISSCoordinateSystemRadialInterpolationGetObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
@@ -8185,7 +8193,7 @@ CONTAINS
     CALL EXITS("CMISSCoordinateSystemRadialInterpolationSetObj")
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystemRadialInterpolationSetObj",Err,ERROR)
-    CALL EXIT("CMISSCoordinateSystemRadialInterpolationSetObj")
+    CALL EXITS("CMISSCoordinateSystemRadialInterpolationSetObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
@@ -8247,7 +8255,7 @@ CONTAINS
     CALL EXITS("CMISSCoordinateSystemTypeGetObj")
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystemTypeGetObj",Err,ERROR)
-    CALL EXIT("CMISSCoordinateSystemTypeGetObj")
+    CALL EXITS("CMISSCoordinateSystemTypeGetObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
@@ -8309,7 +8317,7 @@ CONTAINS
     CALL EXITS("CMISSCoordinateSystemTypeSetObj")
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystemTypeSetObj",Err,ERROR)
-    CALL EXIT("CMISSCoordinateSystemTypeSetObj")
+    CALL EXITS("CMISSCoordinateSystemTypeSetObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
@@ -8371,7 +8379,7 @@ CONTAINS
     CALL EXITS("CMISSCoordinateSystemOriginGetObj")
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystemOriginGetObj",Err,ERROR)
-    CALL EXIT("CMISSCoordinateSystemOriginGetObj")
+    CALL EXITS("CMISSCoordinateSystemOriginGetObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
@@ -8433,7 +8441,7 @@ CONTAINS
     CALL EXITS("CMISSCoordinateSystemOriginSetObj")
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystemOriginSetObj",Err,ERROR)
-    CALL EXIT("CMISSCoordinateSystemOriginSetObj")
+    CALL EXITS("CMISSCoordinateSystemOriginSetObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
@@ -8495,7 +8503,7 @@ CONTAINS
     CALL EXITS("CMISSCoordinateSystemOrientationGetObj")
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystemOrientationGetObj",Err,ERROR)
-    CALL EXIT("CMISSCoordinateSystemOrientationGetObj")
+    CALL EXITS("CMISSCoordinateSystemOrientationGetObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
@@ -8557,7 +8565,7 @@ CONTAINS
     CALL EXITS("CMISSCoordinateSystemOrientationSetObj")
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystemOrientationSetObj",Err,ERROR)
-    CALL EXIT("CMISSCoordinateSystemOrientationSetObj")
+    CALL EXITS("CMISSCoordinateSystemOrientationSetObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
@@ -8665,7 +8673,7 @@ CONTAINS
       CALL EQUATIONS_SET_USER_NUMBER_FIND(REGION,EquationsSetUserNumber,Err,EQUATIONS_SET,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
-        CALL EQUATIONS_LINEARITY_TYPE_GET(EQUATIONS,LinearityErr,ERROR,*999)
+        CALL EQUATIONS_LINEARITY_TYPE_GET(EQUATIONS,Linearity,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -15692,7 +15700,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the constant value from the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to get the constant value from. \see OPENCMISS_FieldParameterSetTypes
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the constant value from the field parameter set.
-    INTEGER(INTG), INTENT(OUT) :: Value !<On return, the value from the field parameter set.
+    LOGICAL, INTENT(OUT) :: Value !<On return, the value from the field parameter set.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -21090,112 +21098,6 @@ CONTAINS
   !================================================================================================================================
   !  
  
-  !>Sets/changes the basis for an element in a mesh identified by an object. \todo should the global element number be a user number?
-  SUBROUTINE CMISSMeshElementsBasisSetObj(MeshElements,GlobalElementNumber,Basis,Err)
-  
-    !Argument variables
-    TYPE(CMISSMeshElementsType), INTENT(IN) :: MeshElements !<The mesh elements to set the basis for.
-    INTEGER(INTG), INTENT(IN) :: GlobalElementNumber !<The global element number to set the basis for.
-    TYPE(CMISSBasisType), INTENT(IN) :: Basis !<The basis for the element to set.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-  
-    CALL ENTERS("CMISSMeshElementsBasisSetObj",Err,ERROR,*999)
- 
-    CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_SET(GlobalElementNumber,MeshElements%MESH_ELEMENTS,Basis%BASIS,Err,ERROR,*999)
-
-    CALL EXITS("CMISSMeshElementsBasisSetObj")
-    RETURN
-999 CALL ERRORS("CMISSMeshElementsBasisSetObj",Err,ERROR)
-    CALL EXITS("CMISSMeshElementsBasisSetObj")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSMeshElementsBasisSetObj
-  
-  !  
-  !================================================================================================================================
-  !  
- 
-  !>Returns the element nodes for an element in a mesh identified by an user number. \todo should the global element number be a user number?
-  SUBROUTINE CMISSMeshElementsNodesGetNumber(RegionUserNumber,MeshUserNumber,MeshComponentNumber,GlobalElementNumber, &
-    & ElementUserNodes,Err)
-  
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to get the element nodes for.
-    INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<The user number of the mesh to get the element nodes for.
-    INTEGER(INTG), INTENT(IN) :: MeshComponentNumber !<The mesh component number to get the element nodes for.
-    INTEGER(INTG), INTENT(IN) :: GlobalElementNumber !<The global element number to get the element nodes for.
-    INTEGER(INTG), INTENT(OUT) :: ElementUserNodes(:) !<ElementUserNodes(i). On return, the user node number number of the i'th element node.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-    TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("CMISSMeshElementsNodesGetNumber",Err,ERROR,*999)
- 
-    NULLIFY(REGION)
-    NULLIFY(MESH)
-    NULLIFY(MESH_ELEMENTS)
-    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL MESH_USER_NUMBER_FIND(MeshUserNumber,REGION,MESH,Err,ERROR,*999)
-      IF(ASSOCIATED(MESH)) THEN
-        CALL MESH_TOPOLOGY_ELEMENTS_GET(MESH,MeshComponentNumber,MESH_ELEMENTS,Err,ERROR,*999)
-        CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_GET(GlobalElementNumber,MESH_ELEMENTS,ElementUserNodes,Err,ERROR,*999)
-      ELSE
-        LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
-          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-      ENDIF
-    ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
-        & " does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("CMISSMeshElementsNodesGetNumber")
-    RETURN
-999 CALL ERRORS("CMISSMeshElementsNodesGetNumber",Err,ERROR)
-    CALL EXITS("CMISSMeshElementsNodesGetNumber")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSMeshElementsNodesGetNumber
-
-  !  
-  !================================================================================================================================
-  !  
- 
-  !>Returns the element nodes for an element in a mesh identified by an object. \todo should the global element number be a user number?
-  SUBROUTINE CMISSMeshElementsNodesGetObj(MeshElements,GlobalElementNumber,ElementUserNodes,Err)
-  
-    !Argument variables
-    TYPE(CMISSMeshElementsType), INTENT(IN) :: MeshElements !<The mesh elements to get the element nodes for.
-    INTEGER(INTG), INTENT(IN) :: GlobalElementNumber !<The global element number to get the element nodes for.
-    INTEGER(INTG), INTENT(OUT) :: ElementUserNodes(:) !<ElementUserNodes(i). On return, the user node number number of the i'th element node.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-  
-    CALL ENTERS("CMISSMeshElementsNodesGetObj",Err,ERROR,*999)
- 
-    CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_GET(GlobalElementNumber,MeshElements%MESH_ELEMENTS,ElementUserNodes,Err,ERROR,*999)
-
-    CALL EXITS("CMISSMeshElementsNodesGetObj")
-    RETURN
-999 CALL ERRORS("CMISSMeshElementsNodesGetObj",Err,ERROR)
-    CALL EXITS("CMISSMeshElementsNodesGetObj")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSMeshElementsNodesGetObj
-  
-  !  
-  !================================================================================================================================
-  !  
- 
   !>Sets/changes the element nodes for an element in a mesh identified by an user number. \todo should the global element number be a user number?
   SUBROUTINE CMISSMeshElementsNodesSetNumber(RegionUserNumber,MeshUserNumber,MeshComponentNumber,GlobalElementNumber, &
     & ElementUserNodes,Err)
@@ -22576,7 +22478,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the solver for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier to get the solver for.
     INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the solver for.
-    TYPE(CMISSolverType), INTENT(INOUT) :: Solver !<On return, the specified solver.
+    TYPE(CMISSSolverType), INTENT(INOUT) :: Solver !<On return, the specified solver.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -22613,7 +22515,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the solver for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to get the solver for.
     INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the solver for.
-    TYPE(CMISSolverType), INTENT(INOUT) :: Solver !<On return, the specified solver.
+    TYPE(CMISSSolverType), INTENT(INOUT) :: Solver !<On return, the specified solver.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
      TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -22650,7 +22552,7 @@ CONTAINS
     TYPE(CMISSProblemType), INTENT(IN) :: Problem !<The problem to get the solver for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier to get the solver for.
     INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the solver for.
-    TYPE(CMISSolverType), INTENT(INOUT) :: Solver !<On return, the specified solver.
+    TYPE(CMISSSolverType), INTENT(INOUT) :: Solver !<On return, the specified solver.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
@@ -22678,7 +22580,7 @@ CONTAINS
     TYPE(CMISSControlLoopType), INTENT(IN) :: Problem !<The problem to get the solver for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to get the solver for.
     INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the solver for.
-    TYPE(CMISSolverType), INTENT(INOUT) :: Solver !<On return, the specified solver.
+    TYPE(CMISSSolverType), INTENT(INOUT) :: Solver !<On return, the specified solver.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
@@ -22886,7 +22788,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the solver equations for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier to get the solver equations for.
     INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the solver equations for.
-    TYPE(CMISSolverEquationsType), INTENT(INOUT) :: SolverEquations !<On return, the specified solver equations.
+    TYPE(CMISSSolverEquationsType), INTENT(INOUT) :: SolverEquations !<On return, the specified solver equations.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -22923,7 +22825,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the solver equations for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to get the solver equations for.
     INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the solver equations for.
-    TYPE(CMISSolverEquationsType), INTENT(INOUT) :: SolverEquations !<On return, the specified solver equations.
+    TYPE(CMISSSolverEquationsType), INTENT(INOUT) :: SolverEquations !<On return, the specified solver equations.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
      TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -22960,7 +22862,7 @@ CONTAINS
     TYPE(CMISSProblemType), INTENT(IN) :: Problem !<The problem to get the solver equations for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier to get the solver equations for.
     INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the solver equations for.
-    TYPE(CMISSolverEquationsType), INTENT(INOUT) :: SolverEquations !<On return, the specified solver equations.
+    TYPE(CMISSSolverEquationsType), INTENT(INOUT) :: SolverEquations !<On return, the specified solver equations.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
@@ -22989,7 +22891,7 @@ CONTAINS
     TYPE(CMISSControlLoopType), INTENT(IN) :: Problem !<The problem to get the solver equations for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to get the solver equations for.
     INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the solver equations for.
-    TYPE(CMISSolverEquationsType), INTENT(INOUT) :: SolverEquations !<On return, the specified solver equations.
+    TYPE(CMISSSolverEquationsType), INTENT(INOUT) :: SolverEquations !<On return, the specified solver equations.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
@@ -23416,7 +23318,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(CoordinateSystemUserNumber,COORDINATE_SYSTEM,Err,ERROR,*999)
       IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
-        REGION_COORDINATE_SYSTEM_SET(REGION,COORDINATE_SYSTEM,Err,ERROR,*999)
+        CALL REGION_COORDINATE_SYSTEM_SET(REGION,COORDINATE_SYSTEM,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A coordinate system with an user number of "// &
           & TRIM(NUMBER_TO_VSTRING(CoordinateSystemUserNumber,"*",Err,ERROR))//"."
@@ -24762,7 +24664,7 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSSolverDynamicLinearityTypeGetObj
-  
+    
   !  
   !================================================================================================================================
   !
@@ -24884,8 +24786,7 @@ CONTAINS
   !
   
   !>Returns the linear solver associated with a linear dynamic solver identified by an user number.
-  SUBROUTINE CMISSSolverDynamicLinearSolverGetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex, &
-    & LinearSolverIndex,Err)
+  SUBROUTINE CMISSSolverDynamicLinearSolverGetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,LinearSolverIndex,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to get the dynamic linear solver for.
@@ -24929,8 +24830,7 @@ CONTAINS
   !  
 
   !>Returns the linear solver associated with a linear dynamic solver identified by an user number.
-  SUBROUTINE CMISSSolverDynamicLinearSolverGetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
-    & LinearSolverIndex,Err)
+  SUBROUTINE CMISSSolverDynamicLinearSolverGetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,LinearSolverIndex,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to get the dynamic linear solver for.
@@ -25405,7 +25305,7 @@ CONTAINS
   !  
  
   !>Sets/changes the times for a dynamic solver identified by an object.
-  SUBROUTINE CMISSSolverDynamicTimesSetObj(Solver,Scheme,Err)
+  SUBROUTINE CMISSSolverDynamicTimesSetObj(Solver,CurrentTime,TimeIncrement,Err)
   
     !Argument variables
     TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to set the times for.
@@ -25426,6 +25326,3028 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSSolverDynamicTimesSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Returns the type of library for a solver identified by an user number.
+  SUBROUTINE CMISSSolverLibraryTypeGetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,LibraryType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to get the library type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the solver to get the library type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the library type for.
+    INTEGER(INTG), INTENT(OUT) :: LibraryType !<On return, the library type for the solver. \see OPENCMISS_SolverLibraries
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLibraryTypeGetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LIBRARY_TYPE_GET(SOLVER,LibraryType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLibraryTypeGetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverLibraryTypeGetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverLibraryTypeGetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLibraryTypeGetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Returns the library type for a solver identified by an user number.
+  SUBROUTINE CMISSSolverLibraryTypeGetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,LibraryType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to get the library type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to get the library type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the library type for.
+    INTEGER(INTG), INTENT(OUT) :: LibraryType !<On return, the library type for the solver. \see OPENCMISS_SolverLibraries
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLibraryTypeGetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LIBRARY_TYPE_GET(SOLVER,LibraryType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLibraryTypeGetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverLibraryTypeGetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverLibraryTypeGetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLibraryTypeGetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the library type for a solver identified by an object.
+  SUBROUTINE CMISSSolverLibraryTypeGetObj(Solver,LibraryType,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to get the library type for.
+    INTEGER(INTG), INTENT(OUT) :: LibraryType !<On return, the library type for the solver. \see OPENCMISS_SolverLibraries
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverLibraryTypeGetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_LIBRARY_TYPE_GET(Solver%SOLVER,LibraryType,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverLibraryTypeGetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverLibraryTypeGetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverLibraryTypeGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverLibraryTypeGetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the type of library for a solver identified by an user number.
+  SUBROUTINE CMISSSolverLibraryTypeSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,LibraryType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the library type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the solver to set the library type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the library type for.
+    INTEGER(INTG), INTENT(IN) :: LibraryType !<The library type for the solver to set. \see OPENCMISS_SolverLibraries
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLibraryTypeSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LIBRARY_TYPE_SET(SOLVER,LibraryType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLibraryTypeSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverLibraryTypeSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverLibraryTypeSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLibraryTypeSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the library type for a solver identified by an user number.
+  SUBROUTINE CMISSSolverLibraryTypeSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,LibraryType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the library type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the library type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the library type for.
+    INTEGER(INTG), INTENT(IN) :: LibraryType !<The library type for the solver to set. \see OPENCMISS_SolverLibraries
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLibraryTypeSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LIBRARY_TYPE_SET(SOLVER,LibraryType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLibraryTypeSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverLibraryTypeSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverLibraryTypeSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLibraryTypeSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the library type for a solver identified by an object.
+  SUBROUTINE CMISSSolverLibraryTypeSetObj(Solver,LibraryType,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to set the library type for.
+    INTEGER(INTG), INTENT(IN) :: LibraryType !<The library type for the solver to set. \see OPENCMISS_SolverLibraries
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverLibraryTypeSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_LIBRARY_TYPE_SET(Solver%SOLVER,LibraryType,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverLibraryTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverLibraryTypeSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverLibraryTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverLibraryTypeSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the type of direct linear solver for a solver identified by an user number.
+  SUBROUTINE CMISSSolverLinearDirectTypeSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,DirectSolverType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the direct linear solver to set the direct type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the direct linear solver to set the direct type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the direct type for.
+    INTEGER(INTG), INTENT(IN) :: DirectSolverType !<The type of the direct linear solver to set. \see OPENCMISS_DirectLinearSolverTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLinearDirectTypeSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LINEAR_DIRECT_TYPE_SET(SOLVER,DirectSolverType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLinearDirectTypeSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearDirectTypeSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearDirectTypeSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLinearDirectTypeSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the type of direct linear solver for a solver identified by an user number.
+  SUBROUTINE CMISSSolverLinearDirectTypeSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,DirectSolverType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the direct linear solver to set the direct type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the direct type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the direct type for.
+    INTEGER(INTG), INTENT(IN) :: DirectSolverType !<The type of the direct linear solver to set. \see OPENCMISS_DirectLinearSolverTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLinearDirectTypeSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LINEAR_DIRECT_TYPE_SET(SOLVER,DirectSolverType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLinearDirectTypeSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearDirectTypeSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearDirectTypeSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLinearDirectTypeSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the type of direct linear solver for a solver identified by an object.
+  SUBROUTINE CMISSSolverLinearDirectSetObj(Solver,DirectSolverType,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to set the library type for.
+    INTEGER(INTG), INTENT(IN) :: DirectSolverType !<The type of the direct linear solver to set. \see OPENCMISS_DirectLinearSolverTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverLinearDirectSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_LINEAR_DIRECT_TYPE_SET(Solver%SOLVER,DirectSolverType,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverLinearDirectSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearDirectSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearDirectSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverLinearDirectSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the maximum absolute tolerance for an iterative linear solver identified by an user number.
+  SUBROUTINE CMISSSolverLinearIterativeAbsoluteToleranceSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex, &
+    & AbsoluteTolerance,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the iterative linear solver to set the absolute tolerance for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the iterative linear solver to set the absolute tolerance for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the absolute tolerance for.
+    REAL(DP), INTENT(IN) :: AbsoluteTolerance !<The absolute tolerance for the iterative linear solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLinearIterativeAbsoluteToleranceSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LINEAR_ITERATIVE_ABSOLUTE_TOLERANCE_SET(SOLVER,AbsoluteTolerance,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLinearIterativeAbsoluteToleranceSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearIterativeAbsoluteToleranceSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearIterativeAbsoluteToleranceSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLinearIterativeAbsoluteToleranceSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the maximum absolute tolerance for an iterative linear solver identified by an user number.
+  SUBROUTINE CMISSSolverLinearIterativeAbsoluteToleranceSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+    & AbsoluteTolerance,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the iterative linear solver to set the absolute tolerance for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the absolute tolerance for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the absolute tolerance for.
+    REAL(DP), INTENT(IN) :: AbsoluteTolerance !<The absolute tolerance for the iterative linear solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLinearIterativeAbsoluteToleranceSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LINEAR_ITERATIVE_ABSOLUTE_TOLERANCE_SET(SOLVER,AbsoluteTolerance,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLinearIterativeAbsoluteToleranceSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearIterativeAbsoluteToleranceSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearIterativeAbsoluteToleranceSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLinearIterativeAbsoluteToleranceSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the maximum absolute tolerance for an iterative linear solver identified by an object.
+  SUBROUTINE CMISSSolverLinearIterativeAbsoluteToleranceSetObj(Solver,AbsoluteTolerance,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The iterative linear solver to set the absolute tolerance for.
+    REAL(DP), INTENT(IN) :: AbsoluteTolerance !<The absolute tolerance for the iterative linear solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverLinearIterativeAbsoluteToleranceSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_LINEAR_ITERATIVE_ABSOLUTE_TOLERANCE_SET(Solver%SOLVER,AbsoluteTolerance,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverLinearIterativeAbsoluteToleranceSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearIterativeAbsoluteToleranceSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearIterativeAbsoluteToleranceSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverLinearIterativeAbsoluteToleranceSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the maximum divergence tolerance for an iterative linear solver identified by an user number.
+  SUBROUTINE CMISSSolverLinearIterativeDivergenceToleranceSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex, &
+    & DivergenceTolerance,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the iterative linear solver to set the divergence tolerance for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the iterative linear solver to set the divergence tolerance for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the divergence tolerance for.
+    REAL(DP), INTENT(IN) :: DivergenceTolerance !<The divergence tolerance for the iterative linear solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLinearIterativeDivergenceToleranceSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LINEAR_ITERATIVE_DIVERGENCE_TOLERANCE_SET(SOLVER,DivergenceTolerance,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLinearIterativeDivergenceToleranceSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearIterativeDivergenceToleranceSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearIterativeDivergenceToleranceSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLinearIterativeDivergenceToleranceSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the maximum divergence tolerance for an iterative linear solver identified by an user number.
+  SUBROUTINE CMISSSolverLinearIterativeDivergenceToleranceSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+    & DivergenceTolerance,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the iterative linear solver to set the divergence tolerance for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the divergence tolerance for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the divergence tolerance for.
+    REAL(DP), INTENT(IN) :: DivergenceTolerance !<The divergence tolerance for the iterative linear solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLinearIterativeDivergenceToleranceSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LINEAR_ITERATIVE_DIVERGENCE_TOLERANCE_SET(SOLVER,DivergenceTolerance,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLinearIterativeDivergenceToleranceSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearIterativeDivergenceToleranceSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearIterativeDivergenceToleranceSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLinearIterativeDivergenceToleranceSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the maximum divergence tolerance for an iterative linear solver identified by an object.
+  SUBROUTINE CMISSSolverLinearIterativeDivergenceToleranceSetObj(Solver,DivergenceTolerance,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The iterative linear solver to set the divergence tolerance for.
+    REAL(DP), INTENT(IN) :: DivergenceTolerance !<The divergence tolerance for the iterative linear solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverLinearIterativeDivergenceToleranceSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_LINEAR_ITERATIVE_DIVERGENCE_TOLERANCE_SET(Solver%SOLVER,DivergenceTolerance,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverLinearIterativeDivergenceToleranceSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearIterativeDivergenceToleranceSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearIterativeDivergenceToleranceSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverLinearIterativeDivergenceToleranceSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the GMRES restart value for a GMRES iterative linear solver identified by an user number.
+  SUBROUTINE CMISSSolverLinearIterativeGMRESRestartSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex, &
+    & GMRESRestart,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the GMRES iterative linear solver to set the restart value for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the GMRES iterative linear solver to set the restart value for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the GMRES restart value for.
+    INTEGER(INTG), INTENT(IN) :: GMRESRestart !<The GMRES restart value to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLinearIterativeGMRESRestartSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET(SOLVER,GMRESRestart,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLinearIterativeGMRESRestartSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearIterativeGMRESRestartSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearIterativeGMRESRestartSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLinearIterativeGMRESRestartSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the GMRES restart value for a GMRES iterative linear solver identified by an user number.
+  SUBROUTINE CMISSSolverLinearIterativeGMRESRestartSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+    & GMRESRestart,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the GMRES iterative linear solver to set the restart value for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the restart value for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the restart value for.
+    INTEGER(INTG), INTENT(IN) :: GMRESRestart !<The GMRES restart value to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLinearIterativeGMRESRestartSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET(SOLVER,GMRESRestart,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLinearIterativeGMRESRestartSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearIterativeGMRESRestartSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearIterativeGMRESRestartSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLinearIterativeGMRESRestartSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the GMRES restart value for a GMRES iterative linear solver identified by an object.
+  SUBROUTINE CMISSSolverLinearIterativeGMRESRestartSetObj(Solver,GMRESRestart,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The GMRES iterative linear solver to set the restart value for.
+    INTEGER(INTG), INTENT(IN) :: GMRESRestart !<The GMRES restart value to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverLinearIterativeGMRESRestartSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET(Solver%SOLVER,GMRESRestart,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverLinearIterativeGMRESRestartSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearIterativeGMRESRestartSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearIterativeGMRESRestartSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverLinearIterativeGMRESRestartSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the maximum number of iterations for an iterative linear solver identified by an user number.
+  SUBROUTINE CMISSSolverLinearIterativeMaximumIterationsSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex, &
+    & MaximumIterations,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the iterative linear solver to set the maximum iterations for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the iterative linear solver to set the maximum iterations for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the maximum iterations for.
+    INTEGER(INTG), INTENT(IN) :: MaximumIterations !<The maximum iterations to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLinearIterativeMaximumIterationsSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LINEAR_ITERATIVE_MAXIMUM_ITERATIONS_SET(SOLVER,MaximumIterations,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLinearIterativeMaximumIterationsSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearIterativeMaximumIterationsSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearIterativeMaximumIterationsSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLinearIterativeMaximumIterationsSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the maximum number of iterations for an iterative linear solver identified by an user number.
+  SUBROUTINE CMISSSolverLinearIterativeMaximumIterationsSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+    & MaximumIterations,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the iterative linear solver to set the maximum iterations for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the maximum iterations for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the maximum iterations for.
+    INTEGER(INTG), INTENT(IN) :: MaximumIterations !<The maximum iterations to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLinearIterativeMaximumIterationsSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LINEAR_ITERATIVE_MAXIMUM_ITERATIONS_SET(SOLVER,MaximumIterations,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLinearIterativeMaximumIterationsSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearIterativeMaximumIterationsSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearIterativeMaximumIterationsSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLinearIterativeMaximumIterationsSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the maximum number of iterations for an iterative linear solver identified by an object.
+  SUBROUTINE CMISSSolverLinearIterativeMaximumIterationsSetObj(Solver,MaximumIterations,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The iterative linear solver to set the maximum iterations for.
+    INTEGER(INTG), INTENT(IN) :: MaximumIterations !<The maximum iterations to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverLinearIterativeMaximumIterationsSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_LINEAR_ITERATIVE_MAXIMUM_ITERATIONS_SET(Solver%SOLVER,MaximumIterations,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverLinearIterativeMaximumIterationsSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearIterativeMaximumIterationsSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearIterativeMaximumIterationsSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverLinearIterativeMaximumIterationsSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the preconditioner type for an iterative linear solver identified by an user number.
+  SUBROUTINE CMISSSolverLinearIterativePreconditionerTypeSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex, &
+    & PreconditionerType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the iterative linear solver to set the preconditioner type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the iterative linear solver to set the preconditioner type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the preconditioner type for.
+    INTEGER(INTG), INTENT(IN) :: PreconditionerType !<The preconditioner type to set. \see OPENCMISS_IterativePreconditionerTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLinearIterativePreconditionerTypeSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LINEAR_ITERATIVE_PRECONDITIONER_TYPE_SET(SOLVER,PreconditionerType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLinearIterativePreconditionerTypeSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearIterativePreconditionerTypeSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearIterativePreconditionerTypeSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLinearIterativePreconditionerTypeSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the preconditioner type for an iterative linear solver identified by an user number.
+  SUBROUTINE CMISSSolverLinearIterativePreconditionerTypeSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+    & PreconditionerType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the iterative linear solver to set the preconditioner type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the preconditioner type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the preconditioner type for.
+    INTEGER(INTG), INTENT(IN) :: PreconditionerType !<The preconditioner type to set. \see OPENCMISS_IterativePreconditionerTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLinearIterativePreconditionerTypeSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LINEAR_ITERATIVE_PRECONDITIONER_TYPE_SET(SOLVER,PreconditionerType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLinearIterativePreconditionerTypeSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearIterativePreconditionerTypeSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearIterativePreconditionerTypeSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLinearIterativePreconditionerTypeSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the preconditioner type for an iterative linear solver identified by an object.
+  SUBROUTINE CMISSSolverLinearIterativePreconditionerTypeSetObj(Solver,PreconditionerType,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The iterative linear solver to set the preconditioner type for.
+    INTEGER(INTG), INTENT(IN) :: PreconditionerType !<The preconditioner type to set. \see OPENCMISS_IterativePreconditionerTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverLinearIterativePreconditionerTypeSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_LINEAR_ITERATIVE_PRECONDITIONER_TYPE_SET(Solver%SOLVER,PreconditionerType,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverLinearIterativePreconditionerTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearIterativePreconditionerTypeSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearIterativePreconditionerTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverLinearIterativePreconditionerTypeSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the maximum relative tolerance for an iterative linear solver identified by an user number.
+  SUBROUTINE CMISSSolverLinearIterativeRelativeToleranceSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex, &
+    & RelativeTolerance,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the iterative linear solver to set the relative tolerance for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the iterative linear solver to set the relative tolerance for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the relative tolerance for.
+    REAL(DP), INTENT(IN) :: RelativeTolerance !<The relative tolerance for the iterative linear solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLinearIterativeRelativeToleranceSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LINEAR_ITERATIVE_RELATIVE_TOLERANCE_SET(SOLVER,RelativeTolerance,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLinearIterativeRelativeToleranceSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearIterativeRelativeToleranceSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearIterativeRelativeToleranceSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLinearIterativeRelativeToleranceSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the maximum relative tolerance for an iterative linear solver identified by an user number.
+  SUBROUTINE CMISSSolverLinearIterativeRelativeToleranceSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+    & RelativeTolerance,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the iterative linear solver to set the relative tolerance for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the relative tolerance for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the relative tolerance for.
+    REAL(DP), INTENT(IN) :: RelativeTolerance !<The relative tolerance for the iterative linear solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLinearIterativeRelativeToleranceSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LINEAR_ITERATIVE_RELATIVE_TOLERANCE_SET(SOLVER,RelativeTolerance,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLinearIterativeRelativeToleranceSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearIterativeRelativeToleranceSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearIterativeRelativeToleranceSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLinearIterativeRelativeToleranceSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the maximum relative tolerance for an iterative linear solver identified by an object.
+  SUBROUTINE CMISSSolverLinearIterativeRelativeToleranceSetObj(Solver,RelativeTolerance,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The iterative linear solver to set the relative tolerance for.
+    REAL(DP), INTENT(IN) :: RelativeTolerance !<The relative tolerance for the iterative linear solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverLinearIterativeRelativeToleranceSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_LINEAR_ITERATIVE_RELATIVE_TOLERANCE_SET(Solver%SOLVER,RelativeTolerance,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverLinearIterativeRelativeToleranceSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearIterativeRelativeToleranceSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearIterativeRelativeToleranceSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverLinearIterativeRelativeToleranceSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the type for an iterative linear solver identified by an user number.
+  SUBROUTINE CMISSSolverLinearIterativeTypeSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,IterativeSolverType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the iterative linear solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the iterative linear solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the type for.
+    INTEGER(INTG), INTENT(IN) :: IterativeSolverType !<The iterative solver type to set. \see OPENCMISS_IterativeLinearSolverTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLinearIterativeTypeSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LINEAR_ITERATIVE_TYPE_SET(SOLVER,IterativeSolverType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLinearIterativeTypeSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearIterativeTypeSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearIterativeTypeSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLinearIterativeTypeSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the type for an iterative linear solver identified by an user number.
+  SUBROUTINE CMISSSolverLinearIterativeTypeSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,IterativeSolverType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the iterative linear solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the type for.
+    INTEGER(INTG), INTENT(IN) :: IterativeSolverType !<The iterative solver type to set. \see OPENCMISS_IterativeLinearSolverTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLinearIterativeTypeSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LINEAR_ITERATIVE_TYPE_SET(SOLVER,IterativeSolverType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLinearIterativeTypeSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearIterativeTypeSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearIterativeTypeSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLinearIterativeTypeSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the type for an iterative linear solver identified by an object.
+  SUBROUTINE CMISSSolverLinearIterativeTypeSetObj(Solver,IterativeSolverType,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The iterative linear solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: IterativeSolverType !<The iterative solver type to set. \see OPENCMISS_IterativeLinearSolverTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverLinearIterativeTypeSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_LINEAR_ITERATIVE_TYPE_SET(Solver%SOLVER,IterativeSolverType,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverLinearIterativeTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearIterativeTypeSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearIterativeTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverLinearIterativeTypeSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the type for a linear solver identified by an user number.
+  SUBROUTINE CMISSSolverLinearTypeSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,LinearSolverType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the linear solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the linear solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the type for.
+    INTEGER(INTG), INTENT(IN) :: LinearSolverType !<The linear solver type to set. \see OPENCMISS_LinearSolverTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLinearTypeSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LINEAR_TYPE_SET(SOLVER,LinearSolverType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLinearTypeSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearTypeSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearTypeSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLinearTypeSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the type for a linear solver identified by an user number.
+  SUBROUTINE CMISSSolverLinearTypeSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,LinearSolverType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the linear solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the type for.
+    INTEGER(INTG), INTENT(IN) :: LinearSolverType !<The linear solver type to set. \see OPENCMISS_LinearSolverTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLinearTypeSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LINEAR_TYPE_SET(SOLVER,LinearSolverType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLinearTypeSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearTypeSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearTypeSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLinearTypeSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the type for a linear solver identified by an object.
+  SUBROUTINE CMISSSolverLinearTypeSetObj(Solver,LinearSolverType,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The linear solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: LinearSolverType !<The linear solver type to set. \see OPENCMISS_LinearSolverTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverLinearTypeSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_LINEAR_TYPE_SET(Solver%SOLVER,LinearSolverType,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverLinearTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverLinearTypeSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverLinearTypeSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the absolute tolerance for an Newton solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonAbsoluteToleranceSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,AbsoluteTolerance,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton solver to set the absolute tolerance for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the Newton solver to set the absolute tolerance for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the absolute tolerance for.
+    REAL(DP), INTENT(IN) :: AbsoluteTolerance !<The absolute tolerance for the Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonAbsoluteToleranceSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_ABSOLUTE_TOLERANCE_SET(SOLVER,AbsoluteTolerance,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonAbsoluteToleranceSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonAbsoluteToleranceSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonAbsoluteToleranceSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonAbsoluteToleranceSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the absolute tolerance for a Newton solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonAbsoluteToleranceSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,AbsoluteTolerance, &
+    & Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton solver to set the absolute tolerance for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the absolute tolerance for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the absolute tolerance for.
+    REAL(DP), INTENT(IN) :: AbsoluteTolerance !<The absolute tolerance for the Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonAbsoluteToleranceSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_ABSOLUTE_TOLERANCE_SET(SOLVER,AbsoluteTolerance,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonAbsoluteToleranceSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonAbsoluteToleranceSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonAbsoluteToleranceSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonAbsoluteToleranceSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the absolute tolerance for a Newton solver identified by an object.
+  SUBROUTINE CMISSSolverNewtonAbsoluteToleranceSetObj(Solver,AbsoluteTolerance,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The Newton solver to set the absolute tolerance for.
+    REAL(DP), INTENT(IN) :: AbsoluteTolerance !<The absolute tolerance for the Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverNewtonAbsoluteToleranceSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_NEWTON_ABSOLUTE_TOLERANCE_SET(Solver%SOLVER,AbsoluteTolerance,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverNewtonAbsoluteToleranceSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonAbsoluteToleranceSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonAbsoluteToleranceSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverNewtonAbsoluteToleranceSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the Jacobian calculation type for an Newton solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonJacobianCalculationTypeSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex, &
+    & JacobianCalculationType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton solver to set the Jacobian calculation type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the Newton solver to set the Jacobian calculation type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the Jacobian calculation type for.
+    INTEGER(INTG), INTENT(IN) :: JacobianCalculationType !<The Jacobian calculation type for the Newton solver to set. \see OPENCMISS_JacobianCalculationTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonJacobianCalculationTypeSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_JACOBIAN_CALCULATION_TYPE_SET(SOLVER,JacobianCalculationType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonJacobianCalculationTypeSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonJacobianCalculationTypeSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonJacobianCalculationTypeSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonJacobianCalculationTypeSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the Jacobian calculation type for a Newton solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonJacobianCalculationTypeSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+    & JacobianCalculationType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton solver to set the Jacobian calculation type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the Jacobian calculation type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the Jacobian calculation type for.
+    INTEGER(INTG), INTENT(IN) :: JacobianCalculationType !<The Jacobian calculation type for the Newton solver to set. \see OPENCMISS_JacobianCalculationTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonJacobianCalculationTypeSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_JACOBIAN_CALCULATION_TYPE_SET(SOLVER,JacobianCalculationType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonJacobianCalculationTypeSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonJacobianCalculationTypeSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonJacobianCalculationTypeSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonJacobianCalculationTypeSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the Jacobian calculation type for a Newton solver identified by an object.
+  SUBROUTINE CMISSSolverNewtonJacobianCalculationTypeSetObj(Solver,JacobianCalculationType,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The Newton solver to set the Jacobian calculation type for.
+    INTEGER(INTG), INTENT(IN) :: JacobianCalculationType !<The Jacobian calculation type for the Newton solver to set. \see OPENCMISS_JacobianCalculationTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverNewtonJacobianCalculationTypeSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_NEWTON_JACOBIAN_CALCULATION_TYPE_SET(Solver%SOLVER,JacobianCalculationType,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverNewtonJacobianCalculationTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonJacobianCalculationTypeSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonJacobianCalculationTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverNewtonJacobianCalculationTypeSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Returns the linear solver associated with a Newton solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonLinearSolverGetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,LinearSolverIndex,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to get the Newton linear solver for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the solver to get the Newton linear solver for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the Newton linear solver for.
+    INTEGER(INTG), INTENT(OUT) :: LinearSolverIndex !<On return, the solver index of the linear solver.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER,LINEAR_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonLinearSolverGetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    NULLIFY(LINEAR_SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_LINEAR_SOLVER_GET(SOLVER,LINEAR_SOLVER,Err,ERROR,*999)
+      !todo: get the solver index from linear solver
+      CALL FLAG_ERROR("Not implemented.",Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonLinearSolverGetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonLinearSolverGetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonLinearSolverGetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonLinearSolverGetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Returns the linear solver associated with a Newton solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonLinearSolverGetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,LinearSolverIndex,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to get the Newton linear solver for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to get the Newton linear solver for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the Newton linear solver for.
+    INTEGER(INTG), INTENT(OUT) :: LinearSolverIndex !<On return, the Newton linear solver index. 
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER,LINEAR_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonLinearSolverGetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    NULLIFY(LINEAR_SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_LINEAR_SOLVER_GET(SOLVER,LINEAR_SOLVER,Err,ERROR,*999)
+      !todo: get the solver index from linear solver
+      CALL FLAG_ERROR("Not implemented.",Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonLinearSolverGetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonLinearSolverGetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonLinearSolverGetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonLinearSolverGetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the linear solver associated with a Newton solver identified by an object.
+  SUBROUTINE CMISSSolverNewtonLinearSolverGetObj(Solver,LinearSolver,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to get the Newton linear solver for.
+    TYPE(CMISSSolverType), INTENT(INOUT) :: LinearSolver !<On return, the Newton linear solver. 
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverNewtonLinearSolverGetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_NEWTON_LINEAR_SOLVER_GET(Solver%SOLVER,LinearSolver%SOLVER,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverNewtonLinearSolverGetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonLinearSolverGetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonLinearSolverGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverNewtonLinearSolverGetObj
+  
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the line search alpha for an Newton linesearch solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonLineSearchAlphaSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,Alpha,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton line search solver to set the alpha for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the Newton line search solver to set the alpha for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the line search alpha for.
+    REAL(DP), INTENT(IN) :: Alpha !<The alpha for the Newton line search solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonLineSearchAlphaSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_LINESEARCH_ALPHA_SET(SOLVER,Alpha,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonLineSearchAlphaSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonLineSearchAlphaSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonLineSearchAlphaSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonLineSearchAlphaSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the line search alpha for a Newton line search solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonLineSearchAlphaSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,Alpha,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton line search solver to set the alpha for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the alpha for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the alpha for.
+    REAL(DP), INTENT(IN) :: Alpha !<The alpha for the Newton line search solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonLineSearchAlphaSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_LINESEARCH_ALPHA_SET(SOLVER,Alpha,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonLineSearchAlphaSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonLineSearchAlphaSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonLineSearchAlphaSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonLineSearchAlphaSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the line search alpha for a Newton line search solver identified by an object.
+  SUBROUTINE CMISSSolverNewtonLineSearchAlphaSetObj(Solver,Alpha,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The Newton line search solver to set the alpha for.
+    REAL(DP), INTENT(IN) :: Alpha !<The alpha for the Newton line search solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverNewtonLineSearchAlphaSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_NEWTON_LINESEARCH_ALPHA_SET(Solver%SOLVER,Alpha,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverNewtonLineSearchAlphaSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonLineSearchAlphaSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonLineSearchAlphaSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverNewtonLineSearchAlphaSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the line search maximum step for an Newton linesearch solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonLineSearchMaxStepSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,MaxStep,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton line search solver to set the maximum step for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the Newton line search solver to set the maximum step for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the line search maximum step for.
+    REAL(DP), INTENT(IN) :: MaxStep !<The maximum step for the Newton line search solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonLineSearchMaxStepSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_LINESEARCH_MAXSTEP_SET(SOLVER,MaxStep,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonLineSearchMaxStepSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonLineSearchMaxStepSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonLineSearchMaxStepSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonLineSearchMaxStepSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the line search maximum step for a Newton line search solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonLineSearchMaxStepSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,MaxStep,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton line search solver to set the maximum step for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the maximum step for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the maximum step for.
+    REAL(DP), INTENT(IN) :: MaxStep !<The maximum step for the Newton line search solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonLineSearchMaxStepSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_LINESEARCH_MAXSTEP_SET(SOLVER,MaxStep,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonLineSearchMaxStepSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonLineSearchMaxStepSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonLineSearchMaxStepSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonLineSearchMaxStepSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the line search maximum step for a Newton line search solver identified by an object.
+  SUBROUTINE CMISSSolverNewtonLineSearchMaxStepSetObj(Solver,MaxStep,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The Newton line search solver to set the maximum step for.
+    REAL(DP), INTENT(IN) :: MaxStep !<The maximum step for the Newton line search solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverNewtonLineSearchMaxStepSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_NEWTON_LINESEARCH_MAXSTEP_SET(Solver%SOLVER,MaxStep,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverNewtonLineSearchMaxStepSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonLineSearchMaxStepSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonLineSearchMaxStepSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverNewtonLineSearchMaxStepSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the line search step tolerance for an Newton linesearch solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonLineSearchStepTolSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,StepTol,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton line search solver to set the step tolerance for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the Newton line search solver to set the step tolerance for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the line search step tolerance for.
+    REAL(DP), INTENT(IN) :: StepTol !<The step tolerance for the Newton line search solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonLineSearchStepTolSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_LINESEARCH_STEPTOL_SET(SOLVER,StepTol,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonLineSearchStepTolSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonLineSearchStepTolSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonLineSearchStepTolSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonLineSearchStepTolSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the line search step tolerance for a Newton line search solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonLineSearchStepTolSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,StepTol,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton line search solver to set the step tolerance for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the step tolerance for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the step tolerance for.
+    REAL(DP), INTENT(IN) :: StepTol !<The step tolerance for the Newton line search solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonLineSearchStepTolSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_LINESEARCH_STEPTOL_SET(SOLVER,StepTol,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonLineSearchStepTolSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonLineSearchStepTolSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonLineSearchStepTolSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonLineSearchStepTolSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the line search step tolerance for a Newton line search solver identified by an object.
+  SUBROUTINE CMISSSolverNewtonLineSearchStepTolSetObj(Solver,StepTol,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The Newton line search solver to set the step tolerance for.
+    REAL(DP), INTENT(IN) :: StepTol !<The step tolerance for the Newton line search solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverNewtonLineSearchStepTolSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_NEWTON_LINESEARCH_STEPTOL_SET(Solver%SOLVER,StepTol,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverNewtonLineSearchStepTolSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonLineSearchStepTolSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonLineSearchStepTolSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverNewtonLineSearchStepTolSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the line search type for an Newton linesearch solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonLineSearchTypeSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,LineSearchType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton line search solver to set the line search type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the Newton line search solver to set the line search type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the line search type for.
+    INTEGER(INTG), INTENT(IN) :: LineSearchType !<The type of line search for the Newton line search solver to set. \see OPENCMISS_NewtonLineSearchTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonLineSearchTypeSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_LINESEARCH_TYPE_SET(SOLVER,LineSearchType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonLineSearchTypeSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonLineSearchTypeSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonLineSearchTypeSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonLineSearchTypeSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the type of line search for a Newton line search solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonLineSearchTypeSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,LineSearchType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton line search solver to set the line search type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the line search type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the line search type for.
+    INTEGER(INTG), INTENT(IN) :: LineSearchType !<The type of line search for the Newton line search solver to set. \see OPENCMISS_NewtonLineSearchTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonLineSearchTypeSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_LINESEARCH_TYPE_SET(SOLVER,LineSearchType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonLineSearchTypeSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonLineSearchTypeSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonLineSearchTypeSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonLineSearchTypeSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the type of line search for a Newton line search solver identified by an object.
+  SUBROUTINE CMISSSolverNewtonLineSearchTypeSetObj(Solver,LineSearchType,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The Newton line search solver to set the line search type for.
+    INTEGER(INTG), INTENT(IN) :: LineSearchType !<The type of line search for the Newton line search solver to set. \see OPENCMISS_NewtonLineSearchTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverNewtonLineSearchTypeSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_NEWTON_LINESEARCH_TYPE_SET(Solver%SOLVER,LineSearchType,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverNewtonLineSearchTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonLineSearchTypeSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonLineSearchTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverNewtonLineSearchTypeSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the maximum number of function evaluations for an Newton solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonMaximumFunctionEvaluationsSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex, &
+    & MaximumFunctionEvaluations,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton solver to set the maximum function evaluations for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the Newton solver to set the maximum function evaluations for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the maximum function evaluations for.
+    INTEGER(INTG), INTENT(IN) :: MaximumFunctionEvaluations !<The maximum number of function evaluations for the Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonMaximumFunctionEvaluationsSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET(SOLVER,MaximumFunctionEvaluations,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonMaximumFunctionEvaluationsSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonMaximumFunctionEvaluationsSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonMaximumFunctionEvaluationsSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonMaximumFunctionEvaluationsSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the maximum number of function evaluations for a Newton solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonMaximumFunctionEvaluationsSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+    & MaximumFunctionEvaluations,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton solver to set the maximum function evaluations for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the maximum function evaluations for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the maximum function evaluations for.
+    INTEGER(INTG), INTENT(IN) :: MaximumFunctionEvaluations !<The maximum number of function evaluations for the Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonMaximumFunctionEvaluationsSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET(SOLVER,MaximumFunctionEvaluations,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonMaximumFunctionEvaluationsSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonMaximumFunctionEvaluationsSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonMaximumFunctionEvaluationsSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonMaximumFunctionEvaluationsSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the maximum number of function evaluations for a Newton solver identified by an object.
+  SUBROUTINE CMISSSolverNewtonMaximumFunctionEvaluationsSetObj(Solver,MaximumFunctionEvaluations,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The Newton solver to set the maximum number of function evaluations for.
+    INTEGER(INTG), INTENT(IN) :: MaximumFunctionEvaluations !<The maximum number of function evaluations for the Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverNewtonMaximumFunctionEvaluationsSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET(Solver%SOLVER,MaximumFunctionEvaluations,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverNewtonMaximumFunctionEvaluationsSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonMaximumFunctionEvaluationsSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonMaximumFunctionEvaluationsSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverNewtonMaximumFunctionEvaluationsSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the maximum number of iterations for an Newton solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonMaximumIterationsSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,MaximumIterations,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton solver to set the maximum iterations for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the Newton solver to set the maximum iterations for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the maximum iterations for.
+    INTEGER(INTG), INTENT(IN) :: MaximumIterations !<The maximum number of iterations for the Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonMaximumIterationsSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_MAXIMUM_ITERATIONS_SET(SOLVER,MaximumIterations,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonMaximumIterationsSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonMaximumIterationsSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonMaximumIterationsSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonMaximumIterationsSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the maximum number of iterations for a Newton solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonMaximumIterationsSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,MaximumIterations, &
+    & Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton solver to set the maximum iterations for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the maximum iterations for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the maximum iterations for.
+    INTEGER(INTG), INTENT(IN) :: MaximumIterations !<The maximum number of iterations for the Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonMaximumIterationsSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_MAXIMUM_ITERATIONS_SET(SOLVER,MaximumIterations,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonMaximumIterationsSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonMaximumIterationsSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonMaximumIterationsSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonMaximumIterationsSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the maximum number of iterations for a Newton solver identified by an object.
+  SUBROUTINE CMISSSolverNewtonMaximumIterationsSetObj(Solver,MaximumIterations,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The Newton solver to set the maximum number of iterations for.
+    INTEGER(INTG), INTENT(IN) :: MaximumIterations !<The maximum number of iterations for the Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverNewtonMaximumIterationsSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_NEWTON_MAXIMUM_ITERATIONS_SET(Solver%SOLVER,MaximumIterations,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverNewtonMaximumIterationsSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonMaximumIterationsSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonMaximumIterationsSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverNewtonMaximumIterationsSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the relative tolerance for an Newton solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonRelativeToleranceSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,RelativeTolerance,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton solver to set the relative tolerance for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the Newton solver to set the relative tolerance for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the relative tolerance for.
+    REAL(DP), INTENT(IN) :: RelativeTolerance !<The relative tolerance for the Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonRelativeToleranceSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_RELATIVE_TOLERANCE_SET(SOLVER,RelativeTolerance,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonRelativeToleranceSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonRelativeToleranceSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonRelativeToleranceSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonRelativeToleranceSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the relative tolerance for a Newton solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonRelativeToleranceSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,RelativeTolerance, &
+    & Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton solver to set the relative tolerance for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the relative tolerance for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the relative tolerance for.
+    REAL(DP), INTENT(IN) :: RelativeTolerance !<The relative tolerance for the Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonRelativeToleranceSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_RELATIVE_TOLERANCE_SET(SOLVER,RelativeTolerance,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonRelativeToleranceSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonRelativeToleranceSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonRelativeToleranceSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonRelativeToleranceSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the relative tolerance for a Newton solver identified by an object.
+  SUBROUTINE CMISSSolverNewtonRelativeToleranceSetObj(Solver,RelativeTolerance,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The Newton solver to set the relative tolerance for.
+    REAL(DP), INTENT(IN) :: RelativeTolerance !The relative tolerance for the Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverNewtonRelativeToleranceSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_NEWTON_RELATIVE_TOLERANCE_SET(Solver%SOLVER,RelativeTolerance,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverNewtonRelativeToleranceSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonRelativeToleranceSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonRelativeToleranceSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverNewtonRelativeToleranceSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the solution tolerance for an Newton solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonSolutionToleranceSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,SolutionTolerance,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton solver to set the solution tolerance for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the Newton solver to set the solution tolerance for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the solution tolerance for.
+    REAL(DP), INTENT(IN) :: SolutionTolerance !<The solution tolerance for the Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonSolutionToleranceSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_SOLUTION_TOLERANCE_SET(SOLVER,SolutionTolerance,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonSolutionToleranceSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonSolutionToleranceSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonSolutionToleranceSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonSolutionToleranceSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the solution tolerance for a Newton solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonSolutionToleranceSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,SolutionTolerance, &
+    & Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton solver to set the solution tolerance for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the solution tolerance for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the solution tolerance for.
+    REAL(DP), INTENT(IN) :: SolutionTolerance !<The absolulte tolerance for the Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonSolutionToleranceSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_SOLUTION_TOLERANCE_SET(SOLVER,SolutionTolerance,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonSolutionToleranceSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonSolutionToleranceSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonSolutionToleranceSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonSolutionToleranceSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the solution tolerance for a Newton solver identified by an object.
+  SUBROUTINE CMISSSolverNewtonSolutionToleranceSetObj(Solver,SolutionTolerance,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The Newton solver to set the solution tolerance for.
+    REAL(DP), INTENT(IN) :: SolutionTolerance !<The solution tolerance for the Newton solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverNewtonSolutionToleranceSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_NEWTON_SOLUTION_TOLERANCE_SET(Solver%SOLVER,SolutionTolerance,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverNewtonSolutionToleranceSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonSolutionToleranceSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonSolutionToleranceSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverNewtonSolutionToleranceSetObj
+      
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the delta0 for a Newton trust region solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonTrustRegionDelta0SetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,Delta0,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton trust region solver to set the delta0 for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the Newton trust region solver to set the delta0 for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the delta0 for.
+    REAL(DP), INTENT(IN) :: Delta0 !<The delta0 for the Newton trust region solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonTrustRegionDelta0SetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_TRUSTREGION_DELTA0_SET(SOLVER,Delta0,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonTrustRegionDelta0SetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonTrustRegionDelta0SetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonTrustRegionDelta0SetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonTrustRegionDelta0SetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the delta0 for a Newton trust region solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonTrustRegionDelta0SetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,Delta0,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton trust region solver to set the delta0 for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the delta0 for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the delta0 for.
+    REAL(DP), INTENT(IN) :: Delta0 !<The delta0 for the Newton trust region solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonTrustRegionDelta0SetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_TRUSTREGION_DELTA0_SET(SOLVER,Delta0,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonTrustRegionDelta0SetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonTrustRegionDelta0SetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonTrustRegionDelta0SetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonTrustRegionDelta0SetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the delta0 for a Newton trust region solver identified by an object.
+  SUBROUTINE CMISSSolverNewtonTrustRegionDelta0SetObj(Solver,Delta0,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The Newton trust region solver to set the delta0 for.
+    REAL(DP), INTENT(IN) :: Delta0 !<The delta0 for the Newton trust region solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverNewtonTrustRegionDelta0SetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_NEWTON_TRUSTREGION_DELTA0_SET(Solver%SOLVER,Delta0,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverNewtonTrustRegionDelta0SetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonTrustRegionDelta0SetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonTrustRegionDelta0SetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverNewtonTrustRegionDelta0SetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the tolerance for a Newton trust region solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonTrustRegionToleranceSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,Tolerance,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton trust region solver to set the tolerance for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the Newton trust region solver to set the tolerance for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the tolerance for.
+    REAL(DP), INTENT(IN) :: Tolerance !<The tolerance for the Newton trust region solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonTrustRegionToleranceSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_TRUSTREGION_TOLERANCE_SET(SOLVER,Tolerance,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonTrustRegionToleranceSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonTrustRegionToleranceSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonTrustRegionToleranceSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonTrustRegionToleranceSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the tolerance for a Newton trust region solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonTrustRegionToleranceSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,Tolerance,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton trust region solver to set the tolerance for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the tolerance for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the tolerance for.
+    REAL(DP), INTENT(IN) :: Tolerance !The tolerance for the Newton trust region solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonTrustRegionToleranceSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_TRUSTREGION_TOLERANCE_SET(SOLVER,Tolerance,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonTrustRegionToleranceSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonTrustRegionToleranceSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonTrustRegionToleranceSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonTrustRegionToleranceSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the tolerance for a Newton trust region solver identified by an object.
+  SUBROUTINE CMISSSolverNewtonTrustRegionToleranceSetObj(Solver,Tolerance,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The Newton trust region solver to set the tolerance for.
+    REAL(DP), INTENT(IN) :: Tolerance !The tolerance for the Newton trust region solver to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverNewtonTrustRegionToleranceSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_NEWTON_TRUSTREGION_TOLERANCE_SET(Solver%SOLVER,Tolerance,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverNewtonTrustRegionToleranceSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonTrustRegionToleranceSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonTrustRegionToleranceSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverNewtonTrustRegionToleranceSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the type of a Newton solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonTypeSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,NewtonSolveType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the Newton solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the type for.
+    INTEGER(INTG), INTENT(IN) :: NewtonSolveType !<The type of the Newton solver to set. \see OPENCMISS_NewtonSolverTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonTypeSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_TYPE_SET(SOLVER,NewtonSolveType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonTypeSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonTypeSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonTypeSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonTypeSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the type of a Newton solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonTypeSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,NewtonSolveType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the type for.
+    INTEGER(INTG), INTENT(IN) :: NewtonSolveType !The type of the Newton solver to set. \see OPENCMISS_NewtonSolverTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonTypeSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_TYPE_SET(SOLVER,NewtonSolveType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonTypeSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonTypeSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonTypeSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonTypeSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the type of a Newton solver identified by an object.
+  SUBROUTINE CMISSSolverNewtonTypeSetObj(Solver,NewtonSolveType,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The Newton solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: NewtonSolveType !The type of the Newton solver to set. \see OPENCMISS_NewtonSolverTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverNewtonTypeSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_NEWTON_TYPE_SET(Solver%SOLVER,NewtonSolveType,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverNewtonTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonTypeSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverNewtonTypeSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the type of a nonlinear solver identified by an user number.
+  SUBROUTINE CMISSSolverNonlinearTypeSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,NonlinearSolveType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the nonlinear solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the nonlinear solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the type for.
+    INTEGER(INTG), INTENT(IN) :: NonlinearSolveType !<The type of the nonlinear solver to set. \see OPENCMISS_NonlinearSolverTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNonlinearTypeSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NONLINEAR_TYPE_SET(SOLVER,NonlinearSolveType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNonlinearTypeSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverNonlinearTypeSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverNonlinearTypeSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNonlinearTypeSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the type of a nonlinear solver identified by an user number.
+  SUBROUTINE CMISSSolverNonlinearTypeSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,NonlinearSolveType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the nonlinear solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the type for.
+    INTEGER(INTG), INTENT(IN) :: NonlinearSolveType !<The type of the nonlinear solver to set. \see OPENCMISS_NonlinearSolverTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNonlinearTypeSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NONLINEAR_TYPE_SET(SOLVER,NonlinearSolveType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNonlinearTypeSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverNonlinearTypeSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverNonlinearTypeSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNonlinearTypeSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the type of a nonlinear solver identified by an object.
+  SUBROUTINE CMISSSolverNonlinearTypeSetObj(Solver,NonlinearSolveType,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The nonlinear solver to set the type for.
+    INTEGER(INTG), INTENT(IN) :: NonlinearSolveType !<The type of the nonlinear solver to set. \see OPENCMISS_NonlinearSolverTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverNonlinearTypeSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_NONLINEAR_TYPE_SET(Solver%SOLVER,NonlinearSolveType,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverNonlinearTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverNonlinearTypeSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverNonlinearTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverNonlinearTypeSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the output type for a solver identified by an user number.
+  SUBROUTINE CMISSSolverOutputTypeSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,OutputType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the output type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the solver to set the output type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the output type for.
+    INTEGER(INTG), INTENT(IN) :: OutputType !<The type of solver output to set. \see OPENCMISS_SolverOutputTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverOutputTypeSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_OUTPUT_TYPE_SET(SOLVER,OutputType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverOutputTypeSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverOutputTypeSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverOutputTypeSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverOutputTypeSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the type of output for a solver identified by an user number.
+  SUBROUTINE CMISSSolverOutputTypeSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,OutputType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the output type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the output type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the output type for.
+    INTEGER(INTG), INTENT(IN) :: OutputType !<The type of solver output to set. \see OPENCMISS_SolverOutputTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverOutputTypeSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_OUTPUT_TYPE_SET(SOLVER,OutputType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverOutputTypeSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverOutputTypeSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverOutputTypeSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverOutputTypeSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the output type for a solver identified by an object.
+  SUBROUTINE CMISSSolverOutputTypeSetObj(Solver,OutputType,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to set the output type for.
+    INTEGER(INTG), INTENT(IN) :: OutputType !<The type of solver output to set. \see OPENCMISS_SolverOutputTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverOutputTypeSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_OUTPUT_TYPE_SET(Solver%SOLVER,OutputType,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverOutputTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverOutputTypeSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverOutputTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverOutputTypeSetObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Returns the solver equations for a solver identified by an user number.
+  SUBROUTINE CMISSSolverSolverEquationsGetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,SolverEquations,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to get the solver equations for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the solver to get the solver equations for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the solver equations for.
+    TYPE(CMISSSolverEquationsType), INTENT(INOUT) :: SolverEquations !<On return, the solver equations for the solver.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverSolverEquationsGetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SolverEquations%SOLVER_EQUATIONS,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverSolverEquationsGetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverSolverEquationsGetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverSolverEquationsGetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverSolverEquationsGetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Returns the solver equations for a solver identified by an user number.
+  SUBROUTINE CMISSSolverSolverEquationsGetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,SolverEquations,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to get the solver equations for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to get the solver equations for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the solver equations for.
+    TYPE(CMISSSolverEquationsType), INTENT(INOUT) :: SolverEquations !<On return, the solver equations for the solver.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverSolverEquationsGetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SolverEquations%SOLVER_EQUATIONS,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverSolverEquationsGetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverSolverEquationsGetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverSolverEquationsGetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverSolverEquationsGetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the solver equations for a solver identified by an object.
+  SUBROUTINE CMISSSolverSolverEquationsGetObj(Solver,SolverEquations,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to get the solver equations for.
+    TYPE(CMISSSolverEquationsType), INTENT(INOUT) :: SolverEquations !<On return, the solver equations for the solver.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverSolverEquationsGetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_SOLVER_EQUATIONS_GET(Solver%SOLVER,SolverEquations%SOLVER_EQUATIONS,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverSolverEquationsGetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverSolverEquationsGetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverSolverEquationsGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverSolverEquationsGetObj
     
   !  
   !================================================================================================================================
@@ -25560,27 +28482,141 @@ CONTAINS
   !================================================================================================================================
   !  
  
-  !>Sets/changes the scheme for a dynamic solver identified by an object.
-  SUBROUTINE CMISSSolverDynamicSchemeSetObj(Solver,Scheme,Err)
+  !>Adds equations sets to solver equations identified by an object.
+  SUBROUTINE CMISSSolverEquationsEquationsSetAddObj(Solver,EquationsSet,EquationsSetIndex,Err)
   
     !Argument variables
-    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to set the scheme for.
-    TYPE(CMISSSolverType), INTENT(IN) :: Scheme !<The dynamic scheme to set. \see OPENCMISS_DynamicSchemeTypes
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to add the equations set for.
+    TYPE(CMISSEquationsSetType), INTENT(IN) :: EquationsSet !<The equations set to add.
+    INTEGER(INTG), INTENT(OUT) :: EquationsSetIndex !<On return, the index of the added equations set in the solver equations.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
-    CALL ENTERS("CMISSSolverDynamicSchemeSetObj",Err,ERROR,*999)
+    CALL ENTERS("CMISSSolverEquationsEquationsSetAddObj",Err,ERROR,*999)
  
-    CALL SOLVER_DYNAMIC_SCHEME_SET(Solver%SOLVER,Scheme,Err,ERROR,*999)
+    CALL SOLVER_EQUATIONS_EQUATIONS_SET_ADD(Solver%SOLVER,EquationsSet%EQUATIONS_SET,EquationsSetIndex,Err,ERROR,*999)
 
-    CALL EXITS("CMISSSolverDynamicSchemeSetObj")
+    CALL EXITS("CMISSSolverEquationsEquationsSetAddObj")
     RETURN
-999 CALL ERRORS("CMISSSolverDynamicSchemeSetObj",Err,ERROR)
-    CALL EXITS("CMISSSolverDynamicSchemeSetObj")
+999 CALL ERRORS("CMISSSolverEquationsEquationsSetAddObj",Err,ERROR)
+    CALL EXITS("CMISSSolverEquationsEquationsSetAddObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
 
-  END SUBROUTINE CMISSSolverDynamicSchemeSetObj
+  END SUBROUTINE CMISSSolverEquationsEquationsSetAddObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the sparsity type for solver equations identified by an user number.
+  SUBROUTINE CMISSSolverEquationsSparsityTypeSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,SparsityType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the sparsity type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the solver to set the sparsity type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the sparsity type for.
+    INTEGER(INTG), INTENT(IN) :: SparsityType !<The sparsity type to set. \see OPENCMISS_SolverEquationsSparsityTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverEquationsSparsityTypeSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    NULLIFY(SOLVER_EQUATIONS)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SOLVER_EQUATIONS,Err,ERROR,*999)
+      CALL SOLVER_EQUATIONS_SPARSITY_TYPE_SET(SOLVER_EQUATIONS,SparsityType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverEquationsSparsityTypeSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverEquationsSparsityTypeSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverEquationsSparsityTypeSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverEquationsSparsityTypeSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the sparsity type for solver equations identified by an user number.
+  SUBROUTINE CMISSSolverEquationsSparsityTypeSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,SparsityType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the sparsity type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the sparsity type for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the sparsity type for.
+    INTEGER(INTG), INTENT(IN) :: SparsityType !<The sparsity type to set. \see OPENCMISS_SolverEquationsSparsityTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverEquationsSparsityTypeSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    NULLIFY(SOLVER_EQUATIONS)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SOLVER_EQUATIONS,Err,ERROR,*999)
+      CALL SOLVER_EQUATIONS_SPARSITY_TYPE_SET(SOLVER_EQUATIONS,SparsityType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverEquationsSparsityTypeSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverEquationsSparsityTypeSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverEquationsSparsityTypeSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverEquationsSparsityTypeSetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the sparsity type for solver equations identified by an object.
+  SUBROUTINE CMISSSolverEquationsSparsityTypeSetObj(SolverEquations,SparsityType,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverEquationsType), INTENT(IN) :: SolverEquations !<The solver equations to set the sparsity type for.
+    INTEGER(INTG), INTENT(IN) :: SparsityType !<The sparsity type to set. \see OPENCMISS_SolverEquationsSparsityTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverEquationsSparsityTypeSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_EQUATIONS_SPARSITY_TYPE_SET(SolverEquations%SOLVER_EQUATIONS,SparsityType,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverEquationsSparsityTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverEquationsSparsityTypeSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverEquationsSparsityTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverEquationsSparsityTypeSetObj
     
   !  
   !================================================================================================================================

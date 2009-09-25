@@ -68,7 +68,7 @@ MODULE SOLVER_ROUTINES
   !Module parameters
 
   !> \addtogroup SOLVER_ROUTINES_SolverTypes SOLVER_ROUTINES::SolverTypes
-  !> \brief The types of a problem solver
+  !> \brief The types of solver
   !> \see SOLVER_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_LINEAR_TYPE=1 !<A linear solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
@@ -309,7 +309,7 @@ MODULE SOLVER_ROUTINES
     & SOLVER_ITERATIVE_SOR_PRECONDITIONER,SOLVER_ITERATIVE_INCOMPLETE_CHOLESKY_PRECONDITIONER, &
     & SOLVER_ITERATIVE_INCOMPLETE_LU_PRECONDITIONER,SOLVER_ITERATIVE_ADDITIVE_SCHWARZ_PRECONDITIONER
 
-  PUBLIC SOLVER_NONLINEAR_NEWTON
+  PUBLIC SOLVER_NONLINEAR_NEWTON,SOLVER_NONLINEAR_BFGS_INVERSE,SOLVER_NONLINEAR_SQP
 
   PUBLIC SOLVER_NEWTON_LINESEARCH,SOLVER_NEWTON_TRUSTREGION
 
@@ -2197,7 +2197,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Initialise a dynamic solver for a problem solver
+  !>Initialise a dynamic solver for a solver.
   SUBROUTINE SOLVER_DYNAMIC_INITIALISE(SOLVER,ERR,ERROR,*)
 
     !Argument variables
@@ -3159,7 +3159,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finalise a eigenproblem solver for a problem solver
+  !>Finalise a eigenproblem solver for a solver.
   SUBROUTINE SOLVER_EIGENPROBLEM_FINALISE(EIGENPROBLEM_SOLVER,ERR,ERROR,*)
 
     !Argument variables
@@ -3186,7 +3186,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Initialise a eigenproblem solver for a problem solver
+  !>Initialise a eigenproblem solver for a solver.
   SUBROUTINE SOLVER_EIGENPROBLEM_INITIALISE(SOLVER,ERR,ERROR,*)
 
     !Argument variables
@@ -3612,7 +3612,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the sparsity type for solver equations
+  !>Sets/changes the sparsity type for solver equations. \see OPENCMISS::CMISSSolverEquationsSpartsityTypeSet
   SUBROUTINE SOLVER_EQUATIONS_SPARSITY_TYPE_SET(SOLVER_EQUATIONS,SPARSITY_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -3727,7 +3727,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finalises a problem solver and deallocates all memory.
+  !>Finalises a solver and deallocates all memory.
   SUBROUTINE SOLVER_FINALISE(SOLVER,ERR,ERROR,*)
 
     !Argument variables
@@ -3853,7 +3853,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the type of library to use for the solver
+  !>Gets the type of library to use for the solver \see OPENCMISS::CMISSSolverLibraryTypeGet
   SUBROUTINE SOLVER_LIBRARY_TYPE_GET(SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -4069,7 +4069,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of library type to use for the solver
+  !>Sets/changes the type of library type to use for the solver. \see OPENCMISS::CMISSSolverLibraryTypeSet
   SUBROUTINE SOLVER_LIBRARY_TYPE_SET(SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -4871,11 +4871,11 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of direct linear solver
+  !>Sets/changes the type of direct linear solver. \see OPENCMISS::CMISSSolverLinearDirectTypeSet
   SUBROUTINE SOLVER_LINEAR_DIRECT_TYPE_SET(SOLVER,DIRECT_SOLVER_TYPE,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the problem solver to set the direct linear solver type
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the direct linear solver type for.
     INTEGER(INTG), INTENT(IN) :: DIRECT_SOLVER_TYPE !<The type of direct linear solver to set \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -4960,7 +4960,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finalise a linear solver for a problem solver
+  !>Finalise a linear solver for a solver.
   SUBROUTINE SOLVER_LINEAR_FINALISE(LINEAR_SOLVER,ERR,ERROR,*)
 
     !Argument variables
@@ -4989,7 +4989,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Initialise a linear solver for a problem solver
+  !>Initialise a linear solver for a solver.
   SUBROUTINE SOLVER_LINEAR_INITIALISE(SOLVER,ERR,ERROR,*)
 
     !Argument variables
@@ -5034,7 +5034,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the maximum absolute tolerance for an iterative linear solver
+  !>Sets/changes the maximum absolute tolerance for an iterative linear solver. \see OPENCMISS::CMISSSolverLinearIterativeAbsoluteToleranceSet
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_ABSOLUTE_TOLERANCE_SET(SOLVER,ABSOLUTE_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
@@ -5292,11 +5292,11 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the maximum divergence tolerance for an iterative linear solver
+  !>Sets/changes the maximum divergence tolerance for an iterative linear solver. \see OPENCMISS::CMISSSolverLinearIterativeDivergenceToleranceSet
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_DIVERGENCE_TOLERANCE_SET(SOLVER,DIVERGENCE_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the problem solver to set 
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set 
     REAL(DP), INTENT(IN) :: DIVERGENCE_TOLERANCE !<The divergence tolerance to set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -5385,7 +5385,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the GMRES restart value for a GMRES iterative linear solver
+  !>Sets/changes the GMRES restart value for a GMRES iterative linear solver. \see OPENCMISS::CMISSSolverLinearIterativeGMRESRestartSet
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET(SOLVER,GMRES_RESTART,ERR,ERROR,*)
 
     !Argument variables
@@ -5500,11 +5500,11 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the maximum number of iterations for an iterative linear solver
+  !>Sets/changes the maximum number of iterations for an iterative linear solver. \see OPENCMISS::CMISSSolverLinearIterativeMaximumIterationsSet
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_MAXIMUM_ITERATIONS_SET(SOLVER,MAXIMUM_ITERATIONS,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the problem solver to set the maximum number of iterations
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the maximum number of iterations
     INTEGER(INTG), INTENT(IN) :: MAXIMUM_ITERATIONS !<The maximum number of iterations
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -5557,11 +5557,11 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of preconditioner for an iterative linear solver
+  !>Sets/changes the type of preconditioner for an iterative linear solver. \see OPENCMISS::CMISSSolverLinearIterativePreconditionerTypeSet
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_PRECONDITIONER_TYPE_SET(SOLVER,ITERATIVE_PRECONDITIONER_TYPE,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the problem solver to set the iterative linear solver type
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the iterative linear solver type
     INTEGER(INTG), INTENT(IN) :: ITERATIVE_PRECONDITIONER_TYPE !<The type of iterative preconditioner to set \see SOLVER_ROUTINES_IterativeLinearSolverTypes,SOLVER_ROUTINES
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -5643,7 +5643,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the relative tolerance for an iterative linear solver
+  !>Sets/changes the relative tolerance for an iterative linear solver. \see OPENCMISS::CMISSSolverLinearIterativeRelativeToleranceSet
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_RELATIVE_TOLERANCE_SET(SOLVER,RELATIVE_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
@@ -5968,7 +5968,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of iterative linear solver
+  !>Sets/changes the type of iterative linear solver. \see OPENCMISS::CMISSSolverLinearIterativeTypeSet
   SUBROUTINE SOLVER_LINEAR_ITERATIVE_TYPE_SET(SOLVER,ITERATIVE_SOLVER_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -6103,7 +6103,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of linear solver
+  !>Sets/changes the type of linear solver. \see OPENCMISS::CMISSSolverLinearTypeSet
   SUBROUTINE SOLVER_LINEAR_TYPE_SET(SOLVER,LINEAR_SOLVE_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -7654,7 +7654,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the maximum absolute tolerance for a nonlinear Newton solver
+  !>Sets/changes the maximum absolute tolerance for a nonlinear Newton solver. \todo should this be SOLVER_NONLINEAR_NEWTON_ABSOLUTE_TOLERANCE_SET??? \see OPENCMISS::CMISSSolverNewtonAbsoluteToleranceSet
   SUBROUTINE SOLVER_NEWTON_ABSOLUTE_TOLERANCE_SET(SOLVER,ABSOLUTE_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
@@ -7852,7 +7852,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of Jacobian calculation type for a Newton solver
+  !>Sets/changes the type of Jacobian calculation type for a Newton solver. \todo should this be SOLVER_NONLINEAR_NEWTON_JACOBIAN_CALCULATION_SET??? \see OPENCMISS::CMISSSolverNewtonJacobianCalculationSet
   SUBROUTINE SOLVER_NEWTON_JACOBIAN_CALCULATION_TYPE_SET(SOLVER,JACOBIAN_CALCULATION_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -7905,7 +7905,7 @@ CONTAINS
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Problem solver is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Solver is not associated",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("SOLVER_NEWTON_JACOBIAN_CALCULATION_TYPE_SET")
@@ -7920,7 +7920,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the linear solver associated with a Newton solver
+  !>Returns the linear solver associated with a Newton solver \todo should this be SOLVER_NONLINEAR_NEWTON_LINEAR_SOLVER_GET??? \see OPENCMISS::CMISSSolverNewtonLinearSolverGetSet
   SUBROUTINE SOLVER_NEWTON_LINEAR_SOLVER_GET(SOLVER,LINEAR_SOLVER,ERR,ERROR,*)
 
     !Argument variables
@@ -7977,7 +7977,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the line search alpha for a Newton linesearch solver
+  !>Sets/changes the line search alpha for a Newton linesearch solver \todo should this be SOLVER_NONLINEAR_NEWTON_LINESEARCH_ALPHA_SET??? \see OPENCMISS::CMISSSolverNewtonLineSearchAlphaSet
   SUBROUTINE SOLVER_NEWTON_LINESEARCH_ALPHA_SET(SOLVER,LINESEARCH_ALPHA,ERR,ERROR,*)
     
     !Argument variables
@@ -8406,7 +8406,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the line search maximum step for a nonlinear Newton linesearch solver
+  !>Sets/changes the line search maximum step for a nonlinear Newton linesearch solver. \todo should this be SOLVER_NONLINEAR_NEWTON_LINESEARCH_MAXSTEP_SET??? \see OPENCMISS::CMISSSolverNewtonLineSearchMaxStepSet
   SUBROUTINE SOLVER_NEWTON_LINESEARCH_MAXSTEP_SET(SOLVER,LINESEARCH_MAXSTEP,ERR,ERROR,*)
 
     !Argument variables
@@ -8631,7 +8631,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the line search step tolerance for a nonlinear Newton linesearch solver
+  !>Sets/changes the line search step tolerance for a nonlinear Newton line search solver. \todo should this be SOLVER_NONLINEAR_NEWTON_LINESEARCH_STEPTOL_SET??? \see OPENCMISS::CMISSSolverNewtonLineSearchStepTolSet
   SUBROUTINE SOLVER_NEWTON_LINESEARCH_STEPTOL_SET(SOLVER,LINESEARCH_STEPTOL,ERR,ERROR,*)
 
     !Argument variables
@@ -8703,7 +8703,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the line search type for a nonlinear Newton linesearch solver
+  !>Sets/changes the line search type for a nonlinear Newton linesearch solver \todo should this be SOLVER_NONLINEAR_NEWTON_LINESEARCH_TYPE_SET??? \see OPENCMISS::CMISSSolverNewtonLineSearchTypeSet
   SUBROUTINE SOLVER_NEWTON_LINESEARCH_TYPE_SET(SOLVER,LINESEARCH_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -8781,7 +8781,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the maximum number of function evaluations for a nonlinear Newton solver
+  !>Sets/changes the maximum number of function evaluations for a nonlinear Newton solver. \todo should this be SOLVER_NONLINEAR_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET??? \see OPENCMISS::CMISSSolverNewtonMaximumFunctionEvaluationsSet
   SUBROUTINE SOLVER_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET(SOLVER,MAXIMUM_FUNCTION_EVALUATIONS,ERR,ERROR,*)
 
     !Argument variables
@@ -8843,7 +8843,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the maximum number of iterations for a nonlinear Newton solver
+  !>Sets/changes the maximum number of iterations for a nonlinear Newton solver. \todo should this be SOLVER_NONLINEAR_NEWTON_MAXIMUM_ITERATIONS_SET??? \see OPENCMISS::CMISSSolverNewtonMaximumIterationsSet
   SUBROUTINE SOLVER_NEWTON_MAXIMUM_ITERATIONS_SET(SOLVER,MAXIMUM_ITERATIONS,ERR,ERROR,*)
 
     !Argument variables
@@ -8904,7 +8904,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the relative tolerance for a nonlinear Newton solver
+  !>Sets/changes the relative tolerance for a nonlinear Newton solver. \todo should this be SOLVER_NONLINEAR_NEWTON_RELATIVE_TOLERANCE_SET??? \see OPENCMISS::CMISSSolverNewtonRelativeToleranceSet
   SUBROUTINE SOLVER_NEWTON_RELATIVE_TOLERANCE_SET(SOLVER,RELATIVE_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
@@ -9031,7 +9031,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the solution tolerance for a nonlinear Newton solver
+  !>Sets/changes the solution tolerance for a nonlinear Newton solver. \todo should this be SOLVER_NONLINEAR_NEWTON_SOLUTION_TOLERANCE_SET??? \see OPENCMISS::CMISSSolverNewtonSolutionToleranceSet
   SUBROUTINE SOLVER_NEWTON_SOLUTION_TOLERANCE_SET(SOLVER,SOLUTION_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
@@ -9308,7 +9308,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the trust region delta0 for a nonlinear Newton trust region solver solver
+  !>Sets/changes the trust region delta0 for a nonlinear Newton trust region solver solver. \todo should this be SOLVER_NONLINEAR_NEWTON_TRUSTREGION_DELTA0_SET??? \see OPENCMISS::CMISSSolverNewtonTrustRegionDelta0Set
   SUBROUTINE SOLVER_NEWTON_TRUSTREGION_DELTA0_SET(SOLVER,TRUSTREGION_DELTA0,ERR,ERROR,*)
 
     !Argument variables
@@ -9519,7 +9519,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the trust region tolerance for a nonlinear Newton trust region solver
+  !>Sets/changes the trust region tolerance for a nonlinear Newton trust region solver. \todo should this be SOLVER_NONLINEAR_NEWTON_TRUSTREGION_TOLERANCE_SET??? \see OPENCMISS::CMISSSolverNewtonTrustRegionToleranceSet
   SUBROUTINE SOLVER_NEWTON_TRUSTREGION_TOLERANCE_SET(SOLVER,TRUSTREGION_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
@@ -9591,7 +9591,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of nonlinear Newton solver
+  !>Sets/changes the type of nonlinear Newton solver. \todo should this be SOLVER_NONLINEAR_NEWTON_TYPE_SET??? \see OPENCMISS::CMISSSolverNewtonTypeSet
   SUBROUTINE SOLVER_NEWTON_TYPE_SET(SOLVER,NEWTON_SOLVE_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -9718,7 +9718,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finalise a nonlinear solver for a problem solver
+  !>Finalise a nonlinear solver for a solver.
   SUBROUTINE SOLVER_NONLINEAR_FINALISE(NONLINEAR_SOLVER,ERR,ERROR,*)
 
     !Argument variables
@@ -9872,7 +9872,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of nonlinear solver
+  !>Sets/changes the type of nonlinear solver. \see OPENCMISS::CMISSSolverNonlinearTypeSet
   SUBROUTINE SOLVER_NONLINEAR_TYPE_SET(SOLVER,NONLINEAR_SOLVE_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -9954,7 +9954,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the output type for a solver
+  !>Sets/changes the output type for a solver. \see OPENCMISS::CMISSSolverOutputTypeSet
   SUBROUTINE SOLVER_OUTPUT_TYPE_SET(SOLVER,OUTPUT_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -10116,7 +10116,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns a pointer to the solver equations for a solver.
+  !>Returns a pointer to the solver equations for a solver. \see OPENCMISS::CMISSSolverSolverEquationsGet
   SUBROUTINE SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SOLVER_EQUATIONS,ERR,ERROR,*)
 
     !Argument variables
@@ -10156,7 +10156,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Solve the problem
+  !>Solve the problem. 
   SUBROUTINE SOLVER_SOLVE(SOLVER,ERR,ERROR,*)
 
     !Argument variables
@@ -10228,11 +10228,11 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the type for a solver
+  !>Sets/changes the type for a solver.
   SUBROUTINE SOLVER_TYPE_SET(SOLVER,SOLVE_TYPE,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the problem solver to set the iterative linear solver type
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the solver type for.
     INTEGER(INTG), INTENT(IN) :: SOLVE_TYPE !<The type of solver to be set \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string

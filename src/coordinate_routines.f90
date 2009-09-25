@@ -18,7 +18,7 @@
 !> under the License.
 !>
 !> The Original Code is OpenCMISS
-!>MAT
+!>
 !> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
 !> Kingdom. Portions created by the University of Auckland and University
@@ -994,87 +994,148 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the coordinate system dimension. Note: no error handling at the moment as there can be no errors for now. \todo Change to subroutine
-  PURE FUNCTION COORDINATE_SYSTEM_DIMENSION_GET(COORDINATE_SYSTEM)
+  !>Gets the coordinate system dimension. 
+  SUBROUTINE COORDINATE_SYSTEM_DIMENSION_GET(COORDINATE_SYSTEM,NUMBER_OF_DIMENSIONS,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM !<The coordinate system to get the dimension for
-    !Function Result
-    INTEGER(INTG) :: COORDINATE_SYSTEM_DIMENSION_GET
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<A pointer to the coordinate system to get the dimension for
+    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_DIMENSIONS !<On return, the number of dimensions in the coordinate system.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    COORDINATE_SYSTEM_DIMENSION_GET=COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
-    
+    CALL ENTERS("COORDINATE_SYSTEM_DIMENSION_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
+      IF(COORDINATE_SYSTEM%COORDINATE_SYSTEM_FINISHED) THEN
+        NUMBER_OF_DIMENSIONS=COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
+      ELSE
+        CALL FLAG_ERROR("Coordinate system has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
+    ENDIF
+   
+    CALL EXITS("COORDINATE_SYSTEM_DIMENSION_GET")
     RETURN
-  END FUNCTION COORDINATE_SYSTEM_DIMENSION_GET
+999 CALL ERRORS("COORDINATE_SYSTEM_DIMENSION_GET",ERR,ERROR)
+    CALL EXITS("COORDINATE_SYSTEM_DIMENSION_GET")
+    RETURN 1
+
+  END SUBROUTINE COORDINATE_SYSTEM_DIMENSION_GET
 
   !
   !================================================================================================================================
   !
 
-  !>Gets the coordinate system focus. \todo change to subroutine
-  FUNCTION COORDINATE_SYSTEM_FOCUS_GET(COORDINATE_SYSTEM,ERR,ERROR)
+  !>Returns the coordinate system focus. 
+  SUBROUTINE COORDINATE_SYSTEM_FOCUS_GET(COORDINATE_SYSTEM,FOCUS,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM !<The coordinate system to get the focus for
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<A pointer to the coordinate system to get the focus for
+    REAL(DP), INTENT(OUT) :: FOCUS !<On return, the focus of the coordinate system.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Function Result
-    REAL(DP) :: COORDINATE_SYSTEM_FOCUS_GET
     !Local Variables
 
     CALL ENTERS("COORDINATE_SYSTEM_FOCUS_GET",ERR,ERROR,*999)
 
-    SELECT CASE(COORDINATE_SYSTEM%TYPE)
-    CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE,COORDINATE_OBLATE_SPHEROIDAL_TYPE)
-      COORDINATE_SYSTEM_FOCUS_GET=COORDINATE_SYSTEM%FOCUS
-    CASE DEFAULT
-      CALL FLAG_ERROR("No focus defined for this coordinate system type.",ERR,ERROR,*999)
-    END SELECT
+    IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
+      IF(COORDINATE_SYSTEM%COORDINATE_SYSTEM_FINISHED) THEN
+        SELECT CASE(COORDINATE_SYSTEM%TYPE)
+        CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE,COORDINATE_OBLATE_SPHEROIDAL_TYPE)
+          FOCUS=COORDINATE_SYSTEM%FOCUS
+        CASE DEFAULT
+          CALL FLAG_ERROR("No focus defined for this coordinate system type.",ERR,ERROR,*999)
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("Coordinate system has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
+    ENDIF
     
     CALL EXITS("COORDINATE_SYSTEM_FOCUS_GET")
     RETURN
 999 CALL ERRORS("COORDINATE_SYSTEM_FOCUS_GET",ERR,ERROR)
     CALL EXITS("COORDINATE_SYSTEM_FOCUS_GET")
-    RETURN
-  END FUNCTION COORDINATE_SYSTEM_FOCUS_GET
+    RETURN 1
+    
+  END SUBROUTINE COORDINATE_SYSTEM_FOCUS_GET
 
   !
   !================================================================================================================================
   !
 
 
-  !>Gets the coordinate system radial interpolation type. Note: no error handling at the moment as there can be no errors for now. \todo change to subroutine
-  PURE FUNCTION COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET(COORDINATE_SYSTEM)
+  !>Gets the coordinate system radial interpolation type. 
+  SUBROUTINE COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET(COORDINATE_SYSTEM,RADIAL_INTERP_TYPE,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM !<The coordinate system to get the radial interpolation for
-    !Function Result
-    INTEGER(INTG) :: COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<The coordinate system to get the radial interpolation for
+    INTEGER(INTG), INTENT(OUT) :: RADIAL_INTERP_TYPE !<On return, the radial interpolation type for the coordinate system.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-
-    COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET=COORDINATE_SYSTEM%RADIAL_INTERPOLATION_TYPE
     
+    CALL ENTERS("COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
+      IF(COORDINATE_SYSTEM%COORDINATE_SYSTEM_FINISHED) THEN
+        SELECT CASE(COORDINATE_SYSTEM%TYPE)
+        CASE(COORDINATE_CYLINDRICAL_POLAR_TYPE,COORDINATE_SPHERICAL_POLAR_TYPE)
+          RADIAL_INTERP_TYPE=COORDINATE_SYSTEM%RADIAL_INTERPOLATION_TYPE
+        CASE DEFAULT
+          CALL FLAG_ERROR("No radial interpolation type defined for this coordinate system interpolation.",ERR,ERROR,*999)
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("Coordinate system has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET")
     RETURN
-  END FUNCTION COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET
+999 CALL ERRORS("COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET",ERR,ERROR)
+    CALL EXITS("COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET")
+    RETURN 1
+    
+  END SUBROUTINE COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET
 
   !
   !================================================================================================================================
   !
 
-  !>Gets the coordinate system type. Note: no error handling at the moment as there can be no errors for now. \todo change to subroutine
-  PURE FUNCTION COORDINATE_SYSTEM_TYPE_GET(COORDINATE_SYSTEM)
+  !>Gets the coordinate system type. 
+  SUBROUTINE COORDINATE_SYSTEM_TYPE_GET(COORDINATE_SYSTEM,SYSTEM_TYPE,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM !<The coordinate system to get the type for
-    !Function Result
-    INTEGER(INTG) :: COORDINATE_SYSTEM_TYPE_GET
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<A pointer to the coordinate system to get the type for
+    INTEGER(INTG), INTENT(OUT) :: SYSTEM_TYPE !<On return, the type for the coordinate system.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    COORDINATE_SYSTEM_TYPE_GET=COORDINATE_SYSTEM%TYPE
+    CALL ENTERS("COORDINATE_SYSTEM_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
+      IF(COORDINATE_SYSTEM%COORDINATE_SYSTEM_FINISHED) THEN
+        SYSTEM_TYPE=COORDINATE_SYSTEM%TYPE
+      ELSE
+        CALL FLAG_ERROR("Coordinate system has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
+    ENDIF
     
+    CALL EXITS("COORDINATE_SYSTEM_TYPE_GET")
     RETURN
-  END FUNCTION COORDINATE_SYSTEM_TYPE_GET
+999 CALL ERRORS("COORDINATE_SYSTEM_TYPE_GET",ERR,ERROR)
+    CALL EXITS("COORDINATE_SYSTEM_TYPE_GET")
+    RETURN 1
+
+  END SUBROUTINE COORDINATE_SYSTEM_TYPE_GET
 
   !
   !================================================================================================================================
@@ -3839,3 +3900,4 @@ CONTAINS
   !
   
 END MODULE COORDINATE_ROUTINES
+
