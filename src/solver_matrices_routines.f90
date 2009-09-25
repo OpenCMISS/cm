@@ -973,10 +973,6 @@ CONTAINS
                                     !Loop over the columns of the Jacobian matrix
                                     DO jacobian_column_number=1,JACOBIAN_MATRIX%NUMBER_OF_COLUMNS
                                       !Loop over the solution columns this Jacobian column is mapped to
-
-
-!NUMBER OF SOLVER_COLS DOES NOT SEEM TO BE DEFINED CORRECTLY...
-
                                       DO solver_column_idx=1,JACOBIAN_TO_SOLVER_MAP%JACOBIAN_COL_SOLVER_COLS_MAP( &
                                         & jacobian_column_number)%NUMBER_OF_SOLVER_COLS
                                         solver_column_number=JACOBIAN_TO_SOLVER_MAP%JACOBIAN_COL_SOLVER_COLS_MAP( &

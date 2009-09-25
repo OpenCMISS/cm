@@ -6252,20 +6252,20 @@ CONTAINS
           DELTA_T=DYNAMIC_SOLVER%TIME_INCREMENT
           SELECT CASE(DYNAMIC_SOLVER%DEGREE)
           CASE(SOLVER_DYNAMIC_FIRST_DEGREE)
-            STIFFNESS_MATRIX_COEFFICIENT=1.0_DP*DYNAMIC_SOLVER%THETA(1)*DELTA_T
-            DAMPING_MATRIX_COEFFICIENT=1.0_DP            
+            STIFFNESS_MATRIX_COEFFICIENT=-1.0_DP*DYNAMIC_SOLVER%THETA(1)*DELTA_T
+            DAMPING_MATRIX_COEFFICIENT=-1.0_DP            
             MASS_MATRIX_COEFFICIENT=0.0_DP
             JACOBIAN_MATRIX_COEFFICIENT=STIFFNESS_MATRIX_COEFFICIENT
           CASE(SOLVER_DYNAMIC_SECOND_DEGREE)
-            STIFFNESS_MATRIX_COEFFICIENT=1.0_DP*(DYNAMIC_SOLVER%THETA(2)*DELTA_T*DELTA_T)/2.0_DP
-            DAMPING_MATRIX_COEFFICIENT=1.0_DP*DYNAMIC_SOLVER%THETA(1)*DELTA_T
-            MASS_MATRIX_COEFFICIENT=1.0_DP
+            STIFFNESS_MATRIX_COEFFICIENT=-1.0_DP*(DYNAMIC_SOLVER%THETA(2)*DELTA_T*DELTA_T)/2.0_DP
+            DAMPING_MATRIX_COEFFICIENT=-1.0_DP*DYNAMIC_SOLVER%THETA(1)*DELTA_T
+            MASS_MATRIX_COEFFICIENT=-1.0_DP
             JACOBIAN_MATRIX_COEFFICIENT=STIFFNESS_MATRIX_COEFFICIENT
             FIRST_UPDATE_FACTOR=DELTA_T
           CASE(SOLVER_DYNAMIC_THIRD_DEGREE)
-            STIFFNESS_MATRIX_COEFFICIENT=1.0_DP*(DYNAMIC_SOLVER%THETA(3)*DELTA_T*DELTA_T*DELTA_T)/6.0_DP
-            DAMPING_MATRIX_COEFFICIENT=1.0_DP*(DYNAMIC_SOLVER%THETA(2)*DELTA_T*DELTA_T)/2.0_DP
-            MASS_MATRIX_COEFFICIENT=1.0_DP*DYNAMIC_SOLVER%THETA(1)*DELTA_T
+            STIFFNESS_MATRIX_COEFFICIENT=-1.0_DP*(DYNAMIC_SOLVER%THETA(3)*DELTA_T*DELTA_T*DELTA_T)/6.0_DP
+            DAMPING_MATRIX_COEFFICIENT=-1.0_DP*(DYNAMIC_SOLVER%THETA(2)*DELTA_T*DELTA_T)/2.0_DP
+            MASS_MATRIX_COEFFICIENT=-1.0_DP*DYNAMIC_SOLVER%THETA(1)*DELTA_T
             JACOBIAN_MATRIX_COEFFICIENT=STIFFNESS_MATRIX_COEFFICIENT
             FIRST_UPDATE_FACTOR=DELTA_T
             SECOND_UPDATE_FACTOR=DELTA_T*DELTA_T/2.0_DP
@@ -6307,7 +6307,6 @@ CONTAINS
                     CALL CPU_TIMER(USER_CPU,USER_TIME1,ERR,ERROR,*999)
                     CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME1,ERR,ERROR,*999)
                   ENDIF
-
 !               DO solver_matrix_idx=1,SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES
 !                 SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(solver_matrix_idx)%PTR
 !                 END DO
@@ -6316,7 +6315,8 @@ CONTAINS
                   IF(SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES==solver_matrix_idx) THEN
                     SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(1)%PTR
                     IF(ASSOCIATED(SOLVER_MATRIX)) THEN
-                      IF(SOLVER_MATRIX%UPDATE_MATRIX) THEN              
+                      IF(SOLVER_MATRIX%UPDATE_MATRIX) THEN      
+
                         SOLVER_DISTRIBUTED_MATRIX=>SOLVER_MATRIX%MATRIX
                         IF(ASSOCIATED(SOLVER_DISTRIBUTED_MATRIX)) THEN
                           !Initialise matrix to zero
@@ -6334,6 +6334,7 @@ CONTAINS
                                     DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
                                     IF(ASSOCIATED(DYNAMIC_MATRICES)) THEN
                                       IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
+
                                         IF(DYNAMIC_MAPPING%STIFFNESS_MATRIX_NUMBER/=0) THEN
                                           STIFFNESS_MATRIX=>DYNAMIC_MATRICES%MATRICES(DYNAMIC_MAPPING%STIFFNESS_MATRIX_NUMBER)%PTR
                                           IF(ASSOCIATED(STIFFNESS_MATRIX)) THEN
@@ -6343,6 +6344,7 @@ CONTAINS
                                             CALL FLAG_ERROR("Dynamic stiffness matrix is not associated.",ERR,ERROR,*999)
                                           ENDIF
                                         ENDIF
+
                                         IF(DYNAMIC_MAPPING%DAMPING_MATRIX_NUMBER/=0) THEN
                                           DAMPING_MATRIX=>DYNAMIC_MATRICES%MATRICES(DYNAMIC_MAPPING%DAMPING_MATRIX_NUMBER)%PTR
                                           IF(ASSOCIATED(DAMPING_MATRIX)) THEN
@@ -6352,6 +6354,7 @@ CONTAINS
                                             CALL FLAG_ERROR("Dynamic damping matrix is not associated.",ERR,ERROR,*999)
                                           ENDIF
                                         ENDIF
+
                                         IF(DYNAMIC_MAPPING%MASS_MATRIX_NUMBER/=0) THEN
                                           MASS_MATRIX=>DYNAMIC_MATRICES%MATRICES(DYNAMIC_MAPPING%MASS_MATRIX_NUMBER)%PTR
                                           IF(ASSOCIATED(MASS_MATRIX)) THEN
@@ -6361,6 +6364,7 @@ CONTAINS
                                             CALL FLAG_ERROR("Dynamic mass matrix is not associated.",ERR,ERROR,*999)
                                           ENDIF
                                         ENDIF
+
                                       ELSE
                                         IF(DYNAMIC_SOLVER%ORDER==SOLVER_DYNAMIC_SECOND_ORDER.AND. &
                                           & DYNAMIC_SOLVER%DEGREE==SOLVER_DYNAMIC_THIRD_DEGREE) THEN
@@ -6368,7 +6372,7 @@ CONTAINS
                                             MASS_MATRIX=>DYNAMIC_MATRICES%MATRICES(DYNAMIC_MAPPING%MASS_MATRIX_NUMBER)%PTR
                                             IF(ASSOCIATED(MASS_MATRIX)) THEN
                                               CALL SOLVER_MATRIX_EQUATIONS_MATRIX_ADD(SOLVER_MATRIX,equations_set_idx, &
-                                                & 1.0_DP,MASS_MATRIX,ERR,ERROR,*999)
+                                                & -1.0_DP,MASS_MATRIX,ERR,ERROR,*999)
                                             ELSE
                                               CALL FLAG_ERROR("Dynamic stiffness matrix is not associated.",ERR,ERROR,*999)
                                             ENDIF
@@ -6380,7 +6384,7 @@ CONTAINS
                                             DAMPING_MATRIX=>DYNAMIC_MATRICES%MATRICES(DYNAMIC_MAPPING%DAMPING_MATRIX_NUMBER)%PTR
                                             IF(ASSOCIATED(DAMPING_MATRIX)) THEN
                                               CALL SOLVER_MATRIX_EQUATIONS_MATRIX_ADD(SOLVER_MATRIX,equations_set_idx, &
-                                                & 1.0_DP,DAMPING_MATRIX,ERR,ERROR,*999)
+                                                & -1.0_DP,DAMPING_MATRIX,ERR,ERROR,*999)
                                             ELSE
                                               CALL FLAG_ERROR("Dynamic damping matrix is not associated.",ERR,ERROR,*999)
                                             ENDIF
@@ -6406,12 +6410,12 @@ CONTAINS
                                 & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."                          
                               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
-
                             NULLIFY(JACOBIAN_TO_SOLVER_MAP)
                             NULLIFY(JACOBIAN_MATRIX)
                             IF(SELECTION_TYPE==SOLVER_MATRICES_ALL.OR. &
                               & SELECTION_TYPE==SOLVER_MATRICES_NONLINEAR_ONLY.OR. &
                               & SELECTION_TYPE==SOLVER_MATRICES_JACOBIAN_ONLY) THEN
+
                               !Now set the values from the equations Jacobian
                               JACOBIAN_TO_SOLVER_MAP=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                                 & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP
@@ -6436,7 +6440,15 @@ CONTAINS
                         ELSE
                           CALL FLAG_ERROR("Solver matrix distributed matrix is not associated.",ERR,ERROR,*999)
                         ENDIF
-                        IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) SOLVER_MATRIX%UPDATE_MATRIX=.FALSE.
+
+                        IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+                          IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) SOLVER_MATRIX%UPDATE_MATRIX=.FALSE.
+                        ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN 
+                          IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.
+                        ELSE
+                          CALL FLAG_ERROR("Dynamic solver solve type is not associated.",ERR,ERROR,*999)
+                        END IF
+
                       ENDIF !Update matrix
                     ELSE
                       CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
@@ -6478,6 +6490,7 @@ CONTAINS
                     CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME1,ERR,ERROR,*999)
                   ENDIF
                   IF(SOLVER_MATRICES%UPDATE_RHS_VECTOR) THEN
+
                     SOLVER_RHS_VECTOR=>SOLVER_MATRICES%RHS_VECTOR
                     IF(ASSOCIATED(SOLVER_RHS_VECTOR)) THEN
                       !Initialise the RHS to zero
@@ -6486,244 +6499,250 @@ CONTAINS
                       DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                         EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
                         IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                          NULLIFY(DEPENDENT_FIELD) 
                           DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                           EQUATIONS=>EQUATIONS_SET%EQUATIONS
-                          IF(ASSOCIATED(EQUATIONS)) THEN
-                            EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
-                            IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
-                              EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-                              IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-                                DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
-                                IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
-                                  DYNAMIC_VARIABLE_TYPE=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
-                                  !Calculate the dynamic contributions
-                                  DYNAMIC_VARIABLE=>DYNAMIC_MAPPING%DYNAMIC_VARIABLE
-                                  IF(ASSOCIATED(DYNAMIC_VARIABLE)) THEN
-                                    DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
-                                    IF(ASSOCIATED(DYNAMIC_MATRICES)) THEN
-                                      DYNAMIC_TEMP_VECTOR=>DYNAMIC_MATRICES%TEMP_VECTOR
-                                      !Initialise the dynamic temporary vector to zero
-                                      CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(DYNAMIC_TEMP_VECTOR,0.0_DP,ERR,ERROR,*999)
-                                      IF(DYNAMIC_MAPPING%STIFFNESS_MATRIX_NUMBER/=0) THEN
-                                        STIFFNESS_MATRIX=>DYNAMIC_MATRICES%MATRICES(DYNAMIC_MAPPING%STIFFNESS_MATRIX_NUMBER)%PTR
-                                        IF(ASSOCIATED(STIFFNESS_MATRIX)) THEN
-                                          NULLIFY(PREDICTED_MEAN_DISPLACEMENT_VECTOR)
-                                          CALL FIELD_PARAMETER_SET_VECTOR_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                            & FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,PREDICTED_MEAN_DISPLACEMENT_VECTOR, &
-                                            & ERR,ERROR,*999)
-                                          CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE,-1.0_DP, &
-                                            & STIFFNESS_MATRIX%MATRIX,PREDICTED_MEAN_DISPLACEMENT_VECTOR, & 
-                                            & DYNAMIC_TEMP_VECTOR,ERR,ERROR,*999)
-                                        ELSE
-                                          CALL FLAG_ERROR("Dynamic stiffness matrix is not associated.",ERR,ERROR,*999)
-                                        ENDIF
-                                      ENDIF
-                                      IF(DYNAMIC_MAPPING%DAMPING_MATRIX_NUMBER/=0.AND. &
-                                        & DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_FIRST_DEGREE) THEN
-                                        DAMPING_MATRIX=>DYNAMIC_MATRICES%MATRICES(DYNAMIC_MAPPING%DAMPING_MATRIX_NUMBER)%PTR
-                                        IF(ASSOCIATED(DAMPING_MATRIX)) THEN
-                                          NULLIFY(PREDICTED_MEAN_VELOCITY_VECTOR)
-                                          CALL FIELD_PARAMETER_SET_VECTOR_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                            & FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE,PREDICTED_MEAN_VELOCITY_VECTOR, &
-                                            & ERR,ERROR,*999)
-                                          CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE,-1.0_DP, &
-                                            & DAMPING_MATRIX%MATRIX,PREDICTED_MEAN_VELOCITY_VECTOR,DYNAMIC_TEMP_VECTOR, &
-                                            & ERR,ERROR,*999)
-                                        ELSE
-                                          CALL FLAG_ERROR("Dynamic damping matrix is not associated.",ERR,ERROR,*999)
-                                        ENDIF
-                                      ENDIF
-                                      IF(DYNAMIC_MAPPING%MASS_MATRIX_NUMBER/=0.AND. &
-                                        & DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_SECOND_DEGREE) THEN
-                                        MASS_MATRIX=>DYNAMIC_MATRICES%MATRICES(DYNAMIC_MAPPING%MASS_MATRIX_NUMBER)%PTR
-                                        IF(ASSOCIATED(MASS_MATRIX)) THEN
-                                          NULLIFY(PREDICTED_MEAN_ACCELERATION_VECTOR)
-                                          CALL FIELD_PARAMETER_SET_VECTOR_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                            & FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE,PREDICTED_MEAN_ACCELERATION_VECTOR, &
-                                            & ERR,ERROR,*999)
-                                        ELSE
-                                          CALL FLAG_ERROR("Dynamic mass matrix is not associated.",ERR,ERROR,*999)
-                                        ENDIF
-                                      ENDIF
-                                    ELSE
-                                      CALL FLAG_ERROR("Equations matrices dynamic matrices is not associated.",ERR,ERROR,*999)
-                                    ENDIF
-                                  ELSE
-                                    CALL FLAG_ERROR("Dynamic variable is not associated.",ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                                !Calculate the contributions from any linear matrices 
-                                LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
-                                IF(ASSOCIATED(LINEAR_MAPPING)) THEN
-                                  LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
-                                  IF(ASSOCIATED(LINEAR_MATRICES)) THEN
-                                    DO equations_matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
-                                      LINEAR_MATRIX=>LINEAR_MATRICES%MATRICES(equations_matrix_idx)%PTR
-                                      IF(ASSOCIATED(LINEAR_MATRIX)) THEN
-                                        LINEAR_VARIABLE_TYPE=LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(equations_matrix_idx)% &
-                                          & VARIABLE_TYPE
-                                        LINEAR_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(equations_matrix_idx)% &
-                                          & VARIABLE
-                                        IF(ASSOCIATED(LINEAR_VARIABLE)) THEN
-                                          LINEAR_TEMP_VECTOR=>LINEAR_MATRIX%TEMP_VECTOR
-                                          !Initialise the linear temporary vector to zero
-                                          CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(LINEAR_TEMP_VECTOR,0.0_DP,ERR,ERROR,*999)
-                                          NULLIFY(DEPENDENT_VECTOR)
-                                          CALL FIELD_PARAMETER_SET_VECTOR_GET(DEPENDENT_FIELD,LINEAR_VARIABLE_TYPE, &
-                                            & FIELD_VALUES_SET_TYPE,DEPENDENT_VECTOR,ERR,ERROR,*999)
-                                           CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE,1.0_DP, &
-                                            & LINEAR_MATRIX%MATRIX,DEPENDENT_VECTOR,LINEAR_TEMP_VECTOR,ERR,ERROR,*999)
-                                        ELSE
-                                          CALL FLAG_ERROR("Linear variable is not associated.",ERR,ERROR,*999)
-                                        ENDIF
-                                      ELSE
-                                        LOCAL_ERROR="Linear matrix is not associated for linear matrix number "// &
-                                          & TRIM(NUMBER_TO_VSTRING(equations_matrix_idx,"*",ERR,ERROR))//"."
-                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                      ENDIF
-                                    ENDDO !equations_matrix_idx
-                                  ELSE
-                                    CALL FLAG_ERROR("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
-                                  ENDIF
-                                ENDIF
-                                SOURCE_MAPPING=>EQUATIONS_MAPPING%SOURCE_MAPPING
-                                IF(ASSOCIATED(SOURCE_MAPPING)) THEN
-                                  SOURCE_VECTOR=>EQUATIONS_MATRICES%SOURCE_VECTOR
-                                  IF(ASSOCIATED(SOURCE_VECTOR)) THEN
-                                    DISTRIBUTED_SOURCE_VECTOR=>SOURCE_VECTOR%VECTOR
-                                  ELSE
-                                    CALL FLAG_ERROR("Source vector vector is not associated.",ERR,ERROR,*999)
-                                  ENDIF
-                                ENDIF
-                                RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
-                                IF(ASSOCIATED(RHS_MAPPING)) THEN
-                                  RHS_VARIABLE_TYPE=RHS_MAPPING%RHS_VARIABLE_TYPE
-                                  CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,RHS_VARIABLE_TYPE, &
-                                    & FIELD_VALUES_SET_TYPE,RHS_PARAMETERS,ERR,ERROR,*999)
-                                  RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
-                                  IF(ASSOCIATED(RHS_VECTOR)) THEN
-                                    BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
-                                    IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
-!!TODO: what if the equations set doesn't have a RHS vector???
-                                      rhs_variable_type=RHS_MAPPING%RHS_VARIABLE_TYPE
-                                      RHS_VARIABLE=>RHS_MAPPING%RHS_VARIABLE
-                                      RHS_DOMAIN_MAPPING=>RHS_VARIABLE%DOMAIN_MAPPING
-                                      EQUATIONS_RHS_VECTOR=>RHS_VECTOR%VECTOR
-                                      RHS_BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP( &
-                                        & rhs_variable_type)%PTR
-                                      IF(ASSOCIATED(RHS_BOUNDARY_CONDITIONS)) THEN
-                                        !Loop over the rows in the equations set
-                                        DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
-                                          !Get the dynamic contribution to the the RHS values
-                                          CALL DISTRIBUTED_VECTOR_VALUES_GET(DYNAMIC_TEMP_VECTOR,equations_row_number, &
-                                            & DYNAMIC_VALUE,ERR,ERROR,*999)
-                                          !Get the linear matrices contribution to the RHS values if there are any
-                                          IF(ASSOCIATED(LINEAR_MAPPING)) THEN
-                                            LINEAR_VALUE_SUM=0.0_DP
-                                            DO equations_matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
-                                              LINEAR_MATRIX=>LINEAR_MATRICES%MATRICES(equations_matrix_idx)%PTR
-                                              LINEAR_TEMP_VECTOR=>LINEAR_MATRIX%TEMP_VECTOR
-                                              CALL DISTRIBUTED_VECTOR_VALUES_GET(LINEAR_TEMP_VECTOR,equations_row_number, &
-                                                & LINEAR_VALUE,ERR,ERROR,*999)
-                                              LINEAR_VALUE_SUM=LINEAR_VALUE_SUM+LINEAR_VALUE
-                                            ENDDO !equations_matrix_idx
-                                            DYNAMIC_VALUE=DYNAMIC_VALUE+LINEAR_VALUE_SUM
-                                          ENDIF
-                                          !Get the source vector contribute to the RHS values if there are any
-                                          IF(ASSOCIATED(SOURCE_MAPPING)) THEN
-                                            !Add in equations source values
-                                            CALL DISTRIBUTED_VECTOR_VALUES_GET(DISTRIBUTED_SOURCE_VECTOR,equations_row_number, &
-                                              & SOURCE_VALUE,ERR,ERROR,*999)
-                                            DYNAMIC_VALUE=DYNAMIC_VALUE+SOURCE_VALUE
-                                          ENDIF
-                                          !Loop over the solver rows associated with this equations set row
-                                          DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                            & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
-                                            solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
-                                              & solver_row_idx)
-                                            row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-                                              & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                                              & COUPLING_COEFFICIENTS(solver_row_idx)
-                                            VALUE=DYNAMIC_VALUE*row_coupling_coefficient
-                                            CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
+                          IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+                            IF(ASSOCIATED(EQUATIONS)) THEN
+                              EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+                              IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+                                EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
+                                IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
+                                  DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
+                                  IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
+                                    DYNAMIC_VARIABLE_TYPE=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
+                                    !Calculate the dynamic contributions
+                                    DYNAMIC_VARIABLE=>DYNAMIC_MAPPING%DYNAMIC_VARIABLE
+                                    IF(ASSOCIATED(DYNAMIC_VARIABLE)) THEN
+                                      DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
+                                      IF(ASSOCIATED(DYNAMIC_MATRICES)) THEN
+                                        DYNAMIC_TEMP_VECTOR=>DYNAMIC_MATRICES%TEMP_VECTOR
+                                        !Initialise the dynamic temporary vector to zero
+                                        CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(DYNAMIC_TEMP_VECTOR,0.0_DP,ERR,ERROR,*999)
+                                        IF(DYNAMIC_MAPPING%STIFFNESS_MATRIX_NUMBER/=0) THEN
+                                          STIFFNESS_MATRIX=>DYNAMIC_MATRICES%MATRICES(DYNAMIC_MAPPING%STIFFNESS_MATRIX_NUMBER)%PTR
+                                          IF(ASSOCIATED(STIFFNESS_MATRIX)) THEN
+                                            NULLIFY(PREDICTED_MEAN_DISPLACEMENT_VECTOR)
+                                            CALL FIELD_PARAMETER_SET_VECTOR_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                              & FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,PREDICTED_MEAN_DISPLACEMENT_VECTOR, &
                                               & ERR,ERROR,*999)
-                                          ENDDO !solver_row_idx
-                                          rhs_variable_dof=RHS_MAPPING%EQUATIONS_ROW_TO_RHS_DOF_MAP(equations_row_number)
-                                          rhs_global_dof=RHS_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(rhs_variable_dof)
-                                          rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(rhs_global_dof)
-                                          !Apply boundary conditions
-                                          SELECT CASE(rhs_boundary_condition)
-                                          CASE(BOUNDARY_CONDITION_NOT_FIXED)
-                                            !Get the equations RHS values
-                                            CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_RHS_VECTOR,equations_row_number, &
-                                              & RHS_VALUE,ERR,ERROR,*999)
-                                            !Loop over the solver rows associated with this equations set row
-                                            DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
-                                              solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                                & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
-                                                & solver_row_idx)
-                                              row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-                                                & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                                                & COUPLING_COEFFICIENTS(solver_row_idx)
-                                              VALUE=RHS_VALUE*row_coupling_coefficient
-                                              CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
-                                                & ERR,ERROR,*999)
-                                            ENDDO !solver_row_idx
-                                            !Note: the Dirichlet boundary conditions are implicity included by doing a matrix
-                                            !vector product above with the dynamic stiffness matrix and the mean predicited
-                                            !displacement vector
-                                          CASE(BOUNDARY_CONDITION_FIXED)
-                                            !Set Neumann boundary conditions
-                                            !Loop over the solver rows associated with this equations set row
-                                            DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
-                                              solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                                & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
-                                                & solver_row_idx)
-                                              row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-                                                & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                                                & COUPLING_COEFFICIENTS(solver_row_idx)
-                                              VALUE=RHS_PARAMETERS(rhs_variable_dof)*row_coupling_coefficient
-                                              CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
-                                                & ERR,ERROR,*999)
-                                            ENDDO !solver_row_idx
-                                          CASE(BOUNDARY_CONDITION_MIXED)
-                                            !Set Robin or is it Cauchy??? boundary conditions
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                          CASE DEFAULT
-                                            LOCAL_ERROR="The RHS boundary condition of "// &
-                                              & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
-                                              & " for RHS variable dof number "// &
-                                              & TRIM(NUMBER_TO_VSTRING(rhs_variable_dof,"*",ERR,ERROR))//" is invalid."
-                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                          END SELECT
-                                        ENDDO !equations_row_number
+                                            CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE,1.0_DP,&
+                                              & STIFFNESS_MATRIX%MATRIX,PREDICTED_MEAN_DISPLACEMENT_VECTOR, & 
+                                              & DYNAMIC_TEMP_VECTOR,ERR,ERROR,*999)
+                                          ELSE
+                                            CALL FLAG_ERROR("Dynamic stiffness matrix is not associated.",ERR,ERROR,*999)
+                                          ENDIF
+                                        ENDIF
+                                        IF(DYNAMIC_MAPPING%DAMPING_MATRIX_NUMBER/=0.AND. &
+                                          & DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_FIRST_DEGREE) THEN
+                                          DAMPING_MATRIX=>DYNAMIC_MATRICES%MATRICES(DYNAMIC_MAPPING%DAMPING_MATRIX_NUMBER)%PTR
+                                          IF(ASSOCIATED(DAMPING_MATRIX)) THEN
+                                            NULLIFY(PREDICTED_MEAN_VELOCITY_VECTOR)
+                                            CALL FIELD_PARAMETER_SET_VECTOR_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                              & FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE,PREDICTED_MEAN_VELOCITY_VECTOR, &
+                                              & ERR,ERROR,*999)
+                                            CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE,1.0_DP, &
+                                              & DAMPING_MATRIX%MATRIX,PREDICTED_MEAN_VELOCITY_VECTOR,DYNAMIC_TEMP_VECTOR, &
+                                              & ERR,ERROR,*999)
+                                          ELSE
+                                            CALL FLAG_ERROR("Dynamic damping matrix is not associated.",ERR,ERROR,*999)
+                                          ENDIF
+                                        ENDIF
+                                        IF(DYNAMIC_MAPPING%MASS_MATRIX_NUMBER/=0.AND. &
+                                          & DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_SECOND_DEGREE) THEN
+                                          MASS_MATRIX=>DYNAMIC_MATRICES%MATRICES(DYNAMIC_MAPPING%MASS_MATRIX_NUMBER)%PTR
+                                          IF(ASSOCIATED(MASS_MATRIX)) THEN
+                                            NULLIFY(PREDICTED_MEAN_ACCELERATION_VECTOR)
+                                            CALL FIELD_PARAMETER_SET_VECTOR_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                              & FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE,PREDICTED_MEAN_ACCELERATION_VECTOR, &
+                                              & ERR,ERROR,*999)
+                                          ELSE
+                                            CALL FLAG_ERROR("Dynamic mass matrix is not associated.",ERR,ERROR,*999)
+                                          ENDIF
+                                        ENDIF
                                       ELSE
-                                        CALL FLAG_ERROR("RHS boundary conditions variable is not associated.",ERR,ERROR,*999)
+                                        CALL FLAG_ERROR("Equations matrices dynamic matrices is not associated.",ERR,ERROR,*999)
                                       ENDIF
                                     ELSE
-                                      CALL FLAG_ERROR("Equations set boundary conditions is not associated.",ERR,ERROR,*999)
+                                      CALL FLAG_ERROR("Dynamic variable is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ELSE
-                                    CALL FLAG_ERROR("Equations matrices RHS vector is not associated.",ERR,ERROR,*999)
+                                    CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
                                   ENDIF
-                                  CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,RHS_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                                    & RHS_PARAMETERS,ERR,ERROR,*999)
+                                  !Calculate the contributions from any linear matrices 
+                                  LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
+                                  IF(ASSOCIATED(LINEAR_MAPPING)) THEN
+                                    LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
+                                    IF(ASSOCIATED(LINEAR_MATRICES)) THEN
+                                      DO equations_matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
+                                        LINEAR_MATRIX=>LINEAR_MATRICES%MATRICES(equations_matrix_idx)%PTR
+                                        IF(ASSOCIATED(LINEAR_MATRIX)) THEN
+                                          LINEAR_VARIABLE_TYPE=LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(equations_matrix_idx)% &
+                                            & VARIABLE_TYPE
+                                          LINEAR_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(equations_matrix_idx)% &
+                                            & VARIABLE
+                                          IF(ASSOCIATED(LINEAR_VARIABLE)) THEN
+                                            LINEAR_TEMP_VECTOR=>LINEAR_MATRIX%TEMP_VECTOR
+                                            !Initialise the linear temporary vector to zero
+                                            CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(LINEAR_TEMP_VECTOR,0.0_DP,ERR,ERROR,*999)
+                                            NULLIFY(DEPENDENT_VECTOR)
+                                            CALL FIELD_PARAMETER_SET_VECTOR_GET(DEPENDENT_FIELD,LINEAR_VARIABLE_TYPE, &
+                                              & FIELD_VALUES_SET_TYPE,DEPENDENT_VECTOR,ERR,ERROR,*999)
+                                            CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE,1.0_DP, &
+                                              & LINEAR_MATRIX%MATRIX,DEPENDENT_VECTOR,LINEAR_TEMP_VECTOR,ERR,ERROR,*999)
+                                          ELSE
+                                            CALL FLAG_ERROR("Linear variable is not associated.",ERR,ERROR,*999)
+                                          ENDIF
+                                        ELSE
+                                          LOCAL_ERROR="Linear matrix is not associated for linear matrix number "// &
+                                            & TRIM(NUMBER_TO_VSTRING(equations_matrix_idx,"*",ERR,ERROR))//"."
+                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        ENDIF
+                                      ENDDO !equations_matrix_idx
+                                    ELSE
+                                      CALL FLAG_ERROR("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
+                                    ENDIF
+                                  ENDIF
+                                  SOURCE_MAPPING=>EQUATIONS_MAPPING%SOURCE_MAPPING
+                                  IF(ASSOCIATED(SOURCE_MAPPING)) THEN
+                                    SOURCE_VECTOR=>EQUATIONS_MATRICES%SOURCE_VECTOR
+                                    IF(ASSOCIATED(SOURCE_VECTOR)) THEN
+                                      DISTRIBUTED_SOURCE_VECTOR=>SOURCE_VECTOR%VECTOR
+                                    ELSE
+                                      CALL FLAG_ERROR("Source vector vector is not associated.",ERR,ERROR,*999)
+                                    ENDIF
+                                  ENDIF
+                                  RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
+                                  IF(ASSOCIATED(RHS_MAPPING)) THEN
+                                    RHS_VARIABLE_TYPE=RHS_MAPPING%RHS_VARIABLE_TYPE
+                                    CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,RHS_VARIABLE_TYPE, &
+                                      & FIELD_VALUES_SET_TYPE,RHS_PARAMETERS,ERR,ERROR,*999)
+                                    RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
+                                    IF(ASSOCIATED(RHS_VECTOR)) THEN
+                                      BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
+                                      IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+  !!TODO: what if the equations set doesn't have a RHS vector???
+                                        rhs_variable_type=RHS_MAPPING%RHS_VARIABLE_TYPE
+                                        RHS_VARIABLE=>RHS_MAPPING%RHS_VARIABLE
+                                        RHS_DOMAIN_MAPPING=>RHS_VARIABLE%DOMAIN_MAPPING
+                                        EQUATIONS_RHS_VECTOR=>RHS_VECTOR%VECTOR
+                                        RHS_BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP( &
+                                          & rhs_variable_type)%PTR
+                                        IF(ASSOCIATED(RHS_BOUNDARY_CONDITIONS)) THEN
+                                          !Loop over the rows in the equations set
+                                          DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
+                                            !Get the dynamic contribution to the the RHS values
+                                            CALL DISTRIBUTED_VECTOR_VALUES_GET(DYNAMIC_TEMP_VECTOR,equations_row_number, &
+                                              & DYNAMIC_VALUE,ERR,ERROR,*999)
+                                            !Get the linear matrices contribution to the RHS values if there are any
+                                            IF(ASSOCIATED(LINEAR_MAPPING)) THEN
+                                              LINEAR_VALUE_SUM=0.0_DP
+                                              DO equations_matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
+                                                LINEAR_MATRIX=>LINEAR_MATRICES%MATRICES(equations_matrix_idx)%PTR
+                                                LINEAR_TEMP_VECTOR=>LINEAR_MATRIX%TEMP_VECTOR
+                                                CALL DISTRIBUTED_VECTOR_VALUES_GET(LINEAR_TEMP_VECTOR,equations_row_number, &
+                                                  & LINEAR_VALUE,ERR,ERROR,*999)
+                                                LINEAR_VALUE_SUM=LINEAR_VALUE_SUM+LINEAR_VALUE
+                                              ENDDO !equations_matrix_idx
+                                              DYNAMIC_VALUE=DYNAMIC_VALUE+LINEAR_VALUE_SUM
+                                            ENDIF
+                                            !Get the source vector contribute to the RHS values if there are any
+                                            IF(ASSOCIATED(SOURCE_MAPPING)) THEN
+                                              !Add in equations source values
+                                              CALL DISTRIBUTED_VECTOR_VALUES_GET(DISTRIBUTED_SOURCE_VECTOR,equations_row_number, &
+                                                & SOURCE_VALUE,ERR,ERROR,*999)
+                                              DYNAMIC_VALUE=DYNAMIC_VALUE+SOURCE_VALUE
+                                            ENDIF
+                                            !Loop over the solver rows associated with this equations set row
+                                            DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
+                                              solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                                & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
+                                                & solver_row_idx)
+                                              row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
+                                                & COUPLING_COEFFICIENTS(solver_row_idx)
+                                              VALUE=DYNAMIC_VALUE*row_coupling_coefficient
+                                              CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
+                                                & ERR,ERROR,*999)
+                                            ENDDO !solver_row_idx
+                                            rhs_variable_dof=RHS_MAPPING%EQUATIONS_ROW_TO_RHS_DOF_MAP(equations_row_number)
+                                            rhs_global_dof=RHS_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(rhs_variable_dof)
+                                            rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS% & 
+                                              & GLOBAL_BOUNDARY_CONDITIONS(rhs_global_dof)
+                                            !Apply boundary conditions
+                                            SELECT CASE(rhs_boundary_condition)
+                                            CASE(BOUNDARY_CONDITION_NOT_FIXED)
+                                              !Get the equations RHS values
+                                              CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_RHS_VECTOR,equations_row_number, &
+                                                & RHS_VALUE,ERR,ERROR,*999)
+                                              !Loop over the solver rows associated with this equations set row
+                                              DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                                & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
+                                                solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                                  & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
+                                                  & solver_row_idx)
+                                                row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                  & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
+                                                  & COUPLING_COEFFICIENTS(solver_row_idx)
+                                                VALUE=RHS_VALUE*row_coupling_coefficient
+                                                CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
+                                                  & ERR,ERROR,*999)
+                                              ENDDO !solver_row_idx
+                                              !Note: the Dirichlet boundary conditions are implicity included by doing a matrix
+                                              !vector product above with the dynamic stiffness matrix and the mean predicited
+                                              !displacement vector
+                                            CASE(BOUNDARY_CONDITION_FIXED)
+                                              !Set Neumann boundary conditions
+                                              !Loop over the solver rows associated with this equations set row
+                                              DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                                & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
+                                                solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                                  & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
+                                                  & solver_row_idx)
+                                                row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                  & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
+                                                  & COUPLING_COEFFICIENTS(solver_row_idx)
+                                                VALUE=RHS_PARAMETERS(rhs_variable_dof)*row_coupling_coefficient
+                                                CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
+                                                  & ERR,ERROR,*999)
+                                              ENDDO !solver_row_idx
+                                            CASE(BOUNDARY_CONDITION_MIXED)
+                                              !Set Robin or is it Cauchy??? boundary conditions
+                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CASE DEFAULT
+                                              LOCAL_ERROR="The RHS boundary condition of "// &
+                                                & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
+                                                & " for RHS variable dof number "// &
+                                                & TRIM(NUMBER_TO_VSTRING(rhs_variable_dof,"*",ERR,ERROR))//" is invalid."
+                                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                            END SELECT
+                                          ENDDO !equations_row_number
+                                        ELSE
+                                          CALL FLAG_ERROR("RHS boundary conditions variable is not associated.",ERR,ERROR,*999)
+                                        ENDIF
+                                      ELSE
+                                        CALL FLAG_ERROR("Equations set boundary conditions is not associated.",ERR,ERROR,*999)
+                                      ENDIF
+                                    ELSE
+                                      CALL FLAG_ERROR("Equations matrices RHS vector is not associated.",ERR,ERROR,*999)
+                                    ENDIF
+                                    CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,RHS_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                                      & RHS_PARAMETERS,ERR,ERROR,*999)
+                                  ELSE
+                                    CALL FLAG_ERROR("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
+                                  ENDIF
                                 ELSE
-                                  CALL FLAG_ERROR("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
+                                  CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*999)
+                                CALL FLAG_ERROR("Equations equations matrices is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Equations equations matrices is not associated.",ERR,ERROR,*999)
+                              CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+                            CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
                           CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
@@ -6770,7 +6789,8 @@ CONTAINS
                     CALL CPU_TIMER(USER_CPU,USER_TIME1,ERR,ERROR,*999)
                     CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME1,ERR,ERROR,*999)
                   ENDIF
-                  IF(SOLVER_MATRICES%UPDATE_RESIDUAL) THEN            
+                  IF(SOLVER_MATRICES%UPDATE_RESIDUAL) THEN       
+
                     SOLVER_RESIDUAL_VECTOR=>SOLVER_MATRICES%RESIDUAL
                     IF(ASSOCIATED(SOLVER_RESIDUAL_VECTOR)) THEN
                       !Initialise the residual to zero              
@@ -7135,7 +7155,6 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
    
     CALL ENTERS("SOLVER_MATRICES_STATIC_ASSEMBLE",ERR,ERROR,*999)
-
     IF(ASSOCIATED(SOLVER)) THEN
       SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
       IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
