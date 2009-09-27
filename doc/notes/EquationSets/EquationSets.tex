@@ -6,7 +6,286 @@
 
 \subsection{Linear Elasticity}
 
+Finite element formulation of linear elasticity problems is
+
 \subsection{Finite Elasticity}
+
+Formulation of finite element equations for finite elasticity (large deformation mechanics) implemented in OpenCMISS is based on the 
+\textit{\textbf{principle of virtual work}}. The finite element model consists of a set of non-linear algebric equations. Non-lineairty of 
+equations stems from non-linear stress-strain relationship and quadratic terms present in the strain tensor. A typical problem in large deformation 
+mechanics involves determination of the deformed geometry or mesh nodal parameters, from the finite element point of view, of the continuum 
+from a known undeformed geometry, subject to boundary conditions and satisfying stress-strain (constitutive) relationship. 
+  
+The boundary conditions can be either \textit{\textbf{Dirichlet}} (displacement), \textit{\textbf{Neumann}} (force) or a combination of them, known 
+as the mixed boundary conditions. Displacement boundary conditions are generally nodal based. However, force boundary conditions can take 
+any of the following form or a combination of them - nodally-based, distributed load (e.g. pressure) or force acting at a discerete point 
+on the boundary. In the latter two forms, the equivalent nodal forces are determined using the \textit{\textbf{method of work equivalence}} 
+\cite{hutton:2004} and the forces so obtained will then be added to the right hand side or the residual vector of the linear equation system.  
+
+There are a numerous ways of describing the mechanical characteristcs of deformable materials in large deformation mechanics or finite elasticity
+analyses. A predominantly used form for representing constitutive properties is a strain energy density function. This model gives the energy 
+required to deform a unit volume (hence energy density) of the deformable continuum as a function of Green-Lagrange strain tensor components or its 
+derived variables such as invariants or principal stretches. A material that has a strain energy density function is known as a 
+\textit{\textbf{hyperelastic}} or \textit{\textbf{Green-elastic material}}. 
+
+The deformed equlibrium state should also give the minimum total elastic potential enrgy. One can therfore formulate finite element equations 
+using the \textit{\textbf{Variational method}} apparaoch where an extremum of a functional (in this case total strain energy) is determined to 
+obtain mesh nodal parameters of the deformed continuum. It is also possible to derive the finite element equations starting from the governing
+equlibrium equations known as Cauchy equation of motion. The weak form of the governing equations is obtained by multilplying them with suitable
+weighting functions and integrating over the domain (method of weighted residuals). If interpolation or shape functions are used as weighting 
+functions, then the method is called the Galerkin finite element method. All three approaches (virtual work, variational method and 
+Galerkin formulation) result in the same finite element equations.     
+
+In the following sections the derivation of kinematic relationships of deformation, energy conjugacy, constitutive relastionships and final form 
+the finite element equations using the virtual work approach will be discussed in detail.
+
+\subsubsection{Kinematics of Deformation}
+In order to track the deformation of an infinitesimal length at a particle of the continuum, two coordinates systems are defined. An arbitrary
+orthogonal spatial coordinate system, which is fixed in space and a material coordinate system which is attached to the continuum and deforms 
+with the continuum. The material coordinate system, in general, is a curvi-linear coordinate system but must have mutually orthogonal axes at the
+undeformed state. However, in the deformed state, these axes are no longer orthogonal as they deform with the continuum (fig 1). In addition
+to these coordinate systems, there exit finite element coordinate system (one for each element) as well. These coordinates are normlised and 
+vary fron 0.0 to 1.0. The following notations are used to represent various coordinate systems and coordinates of a particle of the continuum.\\
+
+\noindent $Y_{1}$-$Y_{2}$-$Y_{3}$ - fixed spatial coordinate system axes - orthogonal\\
+$N_{1}$-$N_{2}$-$N_{3}$ - deforming material coordinate system axes  - orthogonal in the undeformed state\\
+$\Xi_{1}$-$\Xi_{2}$-$\Xi_{3}$ - element coordinate system - non-orthogonal in general and deforms with continuum\\
+
+\noindent $x_{1}$-$x_{2}$-$x_{3}$ [$\vect{x}$] - spatial coordinates of a particle in the undeformed state wrt $Y_{1}$-$Y_{2}$-$Y_{3}$ CS \\
+$z_{1}$-$z_{2}$-$z_{3}$ [$\vect{z}$] - spatial coordinates of the same particle in the deformed state wrt $Y_{1}$-$Y_{2}$-$Y_{3}$ CS \\ 
+$\nu_{1}$-$\nu_{2}$-$\nu_{3}$ [$\vect{\nu}$] - material coordinates of the particle wrt $N_{1}$-$N_{2}$-$N_{3}$ CS (these do not change) \\
+$\xi_{1}$-$\xi_{2}$-$\xi_{3}$ [$\vect{\xi}$] - element coordiantes of the particle wrt $\Xi_{1}$-$\Xi_{2}$-$\Xi_{3}$ CS (these too do not change)\\
+
+Since the directional vectors of the material coordinate system at any given point in the undeformed state is mutually orthogonal, the 
+relationship between spatial $\vect{x}$ and material $\vect{\nu}$ coordinates is simply a rotation. The user must define the undeformed 
+material coordinate system. Typically a nodally based interpolatable field known as fibre information (fibre, imbrication and sheet angles) 
+is input to OpenCMISS. These angles define how much the \textit{\textbf{reference or default material coordinate system}} must be rotated about 
+the reference material axes. The reference material coordinate system at a given point is defined as follows. The first direction $\nu_{1}$ is 
+in the $\xi_{1}$ direction. The second direction, $\nu_{2}$ is in the $\xi_{1}-\xi_{2}$ plane but orthogonal to $\nu_{1}$. Finally the third 
+direction $\nu_{3}$ is determined to be normal to both $\nu_{1}$ and $\nu_{2}$. Once the reference coordiante system is defined, it is then rotated 
+about $\nu_{3}$ by an angle equal to the interpolated fibre value at the point in counter-clock wise direction. This will be followed by a rotation 
+about new $\nu_{2}$ axis again in the counter-clock wise direation by an angle equal to the sheet value. The final rotation is performed about the 
+current $\nu_{1}$ by an angle defined by interpolated sheet value. Note that before a rotation is carried out about an arbitrary axis one must first 
+align(transform) the axis of rotation with one of the spatial coordinate system axes. Once the rotation is done, the rotated coordinate 
+system (material) must be inverse-transformed. 
+
+Having defined the undeformed orthogonal material coordinate system, the metric tensor $\delby{\vect{x}}{\vect{\nu}}$ can be determined. As mentioned,
+the tensor $\delby{\vect{x}}{\vect{\nu}}$ contains rotation required to align material coordinate system with spatial coordinate system. This tensor
+is therefore orthogonal. A similar metric tensor can be defined to relate the deformed coordinates $\vect{z}$ of the point to its material
+coordinates $\vect{\nu}$. Note that the latter coordinates do not change as the continuum deforms and more importantly this tensor is not 
+orthogonal as well. The metric tensor, $\delby{\vect{z}}{\vect{\nu}}$ is called the \textit{\textbf{deformation gradient tensor}} and denoted 
+as $\matr{F}$.
+
+\begin{equation}
+  \matr{F}=\delby{\vect{z}}{\vect{\nu}}
+  \label{eqn:deformationgradienttensor}
+\end{equation}
+ 
+It can be shown that the deformation grdient tensor contains rotation when an infintesimal length $\vect{dr_{0}}$ in the undeformed state undergoes 
+deformation. Since rotation does not contribute to any strain, it must be removed from the deformation gradient tensor. Any tensor can be decomposed 
+into an orthogonal tensor and a symmetric tensor (known as polar decomposition). In other words, the same deformation can be achieved by first 
+rotating $\vect{dr}$ and then stretching (shearing and scaling) or vice-versa. Thus, the deformation gradient tensor can be given by,
+
+\begin{equation}
+  \matr{F}=\delby{\vect{z}}{\vect{\nu}}=\matr{R}\matr{U}=\matr{V}\matr{R_{1}}
+  \label{eqn:polardecomposition}
+\end{equation}
+ 
+The rotation present in the deformation gradient tensor can be removed either by right or left multiplication of $\matr{F}$. The resulting tensors 
+lead to different strain measures. The right Cauchy deformation tensor $\matr{C}$ is obtained from,
+
+\begin{equation}
+  \matr{C}=\transpose{[\matr{R}\matr{U}]}[\matr{R}\matr{U}]=\transpose{\matr{U}}\transpose{\matr{R}}\matr{R}\matr{U}=\transpose{\matr{U}}\matr{U}
+  \label{eqn:rightcauchy}
+\end{equation}
+
+Similarly the left Cauchy deformation tensor or the Finger tensor \matr{B} is obtained from the left multiplication of \matr{F},
+
+\begin{equation}
+  \matr{B}=[\matr{V}\matr{R_{1}}]\transpose{[\matr{V}\matr{R_{1}}]}=\matr{V}\matr{R_{1}}\transpose{\matr{R_{1}}}\transpose{\matr{V}}=\matr{V}\transpose{\matr{V}}
+  \label{eqn:leftcauchy}
+\end{equation}
+
+\noindent Note that both $\matr{R}$ and $\matr{R_{1}}$ are orthogonal tensors and therfore satisfy the following condition,
+
+\begin{equation}
+  \transpose{\matr{R}}\matr{R}=\matr{R_{1}}\transpose{\matr{R_{1}}}=\matr{I}
+  \label{eqn:orthoganality}
+\end{equation}
+
+Since there is no rotation present in both $\matr{C}$ and $\matr{B}$, they can be used to define suitable strain measures as follows,
+
+\begin{equation}
+  \matr{E}=\frac{1}{2}\pbrac{\transpose{\delby{\vect{z}}{\vect{\nu}}}\delby{\vect{z}}{\vect{\nu}}-
+                       \transpose{\delby{\vect{x}}{\vect{\nu}}}\delby{\vect{x}}{\vect{\nu}}}=
+	    \frac{1}{2}(\matr{C}-\matr{I})	       
+  \label{eqn:greenstrain}
+\end{equation}
+
+\noindent and
+
+\begin{equation}
+  \vect{e}=\frac{1}{2}\bbrac{\pbrac{\delby{\vect{x}}{\vect{\nu}}\transpose{\delby{\vect{x}}{\vect{\nu}}}}^{-1}-
+                             \pbrac{\delby{\vect{z}}{\vect{\nu}}\transpose{\delby{\vect{z}}{\vect{\nu}}}}^{-1}}=
+			     \frac{1}{2}\pbrac{\matr{I}-\matr{B}^{-1}}  
+  \label{eqn:almansistrain}
+\end{equation}
+
+\noindent where $\matr{E}$ and $\vect{e}$ are called Green and Almansi strain tensors respectively. 
+Also note that $\delby{\vect{x}}{\vect{\nu}}$ is an orthogonal tensor. \\
+
+It is now necessary to establish a relationship between strain and displacement. Referring to figure 1, 
+
+\begin{equation}
+  \vect{z}=\vect{x}-\vect{u}
+  \label{eqn:displacement}
+\end{equation}
+
+\noindent where \vect{u} is the displacement vector. \\
+
+\noindent Differentiating \eqnref{eqn:displacement} using the chain rule,
+
+\begin{equation}
+  \delby{\vect{z}}{\vect{\nu}}=\delby{\vect{x}}{\vect{\nu}}-\delby{\vect{u}}{\vect{x}}\delby{\vect{x}}{\vect{\nu}}=
+                               \pbrac{\matr{I}-\delby{\vect{u}}{\vect{x}}}\delby{\vect{x}}{\vect{\nu}}  
+  \label{eqn:displacementgradient}
+\end{equation}
+
+\noindent Substituing \eqnref{eqn:displacementgradient} into \eqnref{eqn:greenstrain},
+
+\begin{equation}
+  \matr{E}=\bbrac{\transpose{\delby{\vect{x}}{\vect{\nu}}}\transpose{\pbrac{\matr{I}-\delby{\vect{u}}{\vect{x}}}}
+                  \pbrac{\matr{I}-\delby{\vect{u}}{\vect{x}}}\delby{\vect{x}}{\vect{\nu}}-\matr{I}}
+  \label{eqn:greendisplacement1}
+\end{equation}
+
+\noindent Simplifying,
+
+\begin{equation}
+  \matr{E}=\transpose{\delby{\vect{x}}{\vect{\nu}}}
+           \pbrac{\delby{\vect{u}}{\vect{x}}+\transpose{\delby{\vect{u}}{\vect{x}}}-
+	   \transpose{\delby{\vect{u}}{\vect{x}}}\delby{\vect{u}}{\vect{x}}}
+	   \delby{\vect{x}}{\vect{\nu}}
+  \label{eqn:greendisplacement2}
+\end{equation}
+ 
+As can be seen from \eqnref{eqn:greendisplacement2} the displacement gradient tensor $\delby{\vect{u}}{\vect{x}}$ is defined with respect to 
+undeformed coordnates $\vect{x}$. This means that the strain tensor $\matr{E}$ has Lagrangian description and hence it is also also called 
+the Green-Lagrange strain tensor. 
+ 
+A similar derivation can be employed to extablish a relationship between the Almansi and displacement gradient tensors and the final
+form is given by,
+
+\begin{equation}
+  \vect{e}=\delby{\vect{u}}{\vect{z}}+\transpose{\delby{\vect{u}}{\vect{z}}}+
+	   \transpose{\delby{\vect{u}}{\vect{z}}}\delby{\vect{u}}{\vect{z}}
+  \label{eqn:almansidisplacement}
+\end{equation}
+ 
+The displacement gradient tensor terms in \eqnref{eqn:almansidisplacement} are defined with respect to deformed coordinates $\vect{z}$ and
+therefore the strain tensor has Eulerian description. Thus it is also known as the Almansi-Euler strain tensor.
+
+\subsubsection{Energy Conjugacy}
+
+
+
+\subsubsection{Constitutive models}
+
+
+
+\subsubsection{Principle of Virtual Work}
+Elastic potential energy or simply elastic energy associated with the deformation can be given by strain and its energertically conjugate stress. 
+Note that the Cauchy stress and Almansi-Euler strain tensors and Second Piola-Kirchhoff (2PK) and Green-Lagrange tensors are energertically 
+conjugate. Thus, the \textit{\textbf{total internal energy}} due to strain in the body at the deformed state (fig. 3.1) can be given by,
+ 
+\begin{equation}
+  W_{int}=\gint{0}{v}{(\vect{e}:\vect{\sigma})}v
+  \label{eqn:totalenergy}
+\end{equation}
+
+where \vect{e} and \vect{\sigma} are Almansi strain tensor and Cauchy stress tensor respectively.  
+
+If the deformed body is further deformed by introducing virtual displacements, then the new internal elastic energy can be given by,
+
+\begin{equation}
+  {W_{int}+\delta W_{int}}=\gint{0}{v}{[\vect{(e+\delta{e})}:\vect{\sigma}]}v
+  \label{eqn:virtualtotalenergy}
+\end{equation}
+
+Deducting \eqnref{eqn:totalenergy} from \eqnref{eqn:virtualtotalenergy},
+
+\begin{equation}
+  \delta W_{int}=\gint{0}{v}{\pbrac{\vect{\delta \epsilon} : \vect{\sigma}}}v
+  \label{eqn:virtualenergy}
+\end{equation}
+
+Using \eqnref{eqn:almansidisplacement} for virtual strain,
+
+\begin{equation}
+  \vect{\delta e}=\delby{\vect{\delta u}}{\vect{z}} + \transpose{\delby{\vect{\delta u}}{\vect{z}}} + 
+                  \transpose{\delby{\vect{\delta u}}{\vect{z}}}\delby{\vect{\delta u}}{\vect{z}}
+  \label{eqn:virtualalmansidisplacement}
+\end{equation}
+
+Since virtual displacements are infinitesimally small, quadratic terms in \eqnref{eqn:virtualalmansidisplacement} can be neglected.
+The resulting strain tensor, known as small strain tensor \vect{\epsilon}, can be given as,
+
+\begin{equation}
+  \vect{\delta \epsilon}=\delby{\vect{\delta u}}{\vect{z}} + \transpose{\delby{\vect{\delta u}}{\vect{z}}} 
+  \label{eqn:virtualsmalldisplacement}
+\end{equation}
+ 
+Since both $\vect{\sigma}$ and $\vect{\delta \epsilon}$ are symmetric, new vectors are defined by inserting tensor components as follows,
+
+\begin{equation}
+  \vect{\delta \epsilon}=\transpose{\sqbrac{\delta \epsilon_{11} \hspace{4 pt} \delta \epsilon_{22} \hspace{4 pt} \delta \epsilon_{33} 
+                         \hspace{4 pt} 2\delta \epsilon_{12} \hspace{4 pt} 2\delta \epsilon_{23} \hspace{4 pt} 2\delta \epsilon_{13}}} :
+	       	         \vect{\sigma}=\transpose{\sqbrac{\delta \sigma_{11} \hspace{4 pt} \delta \sigma_{22} \hspace{4 pt} \delta \sigma_{33} 
+		         \hspace{4 pt} 2\delta \sigma_{12} \hspace{4 pt} 2\delta \sigma_{23} \hspace{4 pt} 2\delta \sigma_{13} }}	  		  
+  \label{eqn:newvectors}
+\end{equation} 
+
+Substituting \eqnref{eqn:newvectors} into \eqnref{eqn:virtualenergy},
+
+\begin{equation}
+  \delta W_{int}=\gint{0}{v}{\pbrac{\transpose{\vect{\delta \epsilon}} \vect{\sigma}}}v
+  \label{eqn:virtualenergy1}
+\end{equation}
+
+The strain vecotr $\vect{\delta \epsilon}$ can be related to displacement vector using the following equation,
+
+\begin{equation}
+  \vect{\delta \epsilon}=\matr{D} \vect{\delta u} 
+  \label{eqn:virtualsmalldisplacement1}
+\end{equation}
+
+\noindent where $\matr{D}$ and $\vect{u}$ are linear differential operator and displacement vector respectively and given by,
+
+\begin{equation}
+  \begin{array}{c} \matr{D} \end{array} =
+  \pbrac{ \begin{array}{ccc} \delby{}{z_{1}} & 0 & 0 \\ 
+                             0 & \delby{}{z_{2}} & 0 \\
+			     0 & 0 & \delby{}{z_{3}} \\
+			     \delby{}{z_{2}} & \delby{}{z_{1}} & 0 \\ 
+			     0 & \delby{}{z_{3}} & \delby{}{z_{2}} \\ 
+			     \delby{}{z_{3}} & 0 & \delby{}{z_{1}} \\ \end{array} }
+  \label{eqn:differentialoperator}
+\end{equation}
+
+\begin{equation}
+  \vect{\delta u}=\transpose{\pbrac{\delta u_{1} \hspace{4 pt} \delta u_{2} \hspace{4 pt} \delta u_{3}}}
+  \label{eqn:displacementvector}
+\end{equation}
+
+The virtual displacement is a finite element field and hence the value at any point can be obtained by interpolating nodal 
+virtual displacements.
+
+\begin{equation}
+  \vect{\delta u}=\matr{\Phi}\matr{\Delta}
+  \label{eqn:interpolation}
+\end{equation}
+
+
 
 \section{Fluid Mechanics Class}
 
