@@ -127,19 +127,6 @@
     Fortran constants. Audit regularly.
 
  **********************************************************/
-typedef struct
-{
-    int userNumber;
-    char isFinished;
-    int type;
-    int radialInterpolationType;
-    int numberOfDimensions;
-    double focus;
-    double origin[3];
-    double orientation[3][3];
-}
-CMISS_CoordinateSystem;
-
 
 /*
     API-local structs.
@@ -444,9 +431,9 @@ static char *FieldExport_GetVariableLabel( const int fieldType, const int variab
 }
 
 
-static char *FieldExport_GetCoordinateVariableLabel( CMISS_CoordinateSystem *coordinateSystem )
+static char *FieldExport_GetCoordinateVariableLabel( int coordinateSystemType )
 {
-    switch( coordinateSystem->type )
+    switch( coordinateSystemType )
     {
     case COORDINATE_RECTANGULAR_CARTESIAN_TYPE:
         return "coordinates,  coordinate, rectangular cartesian";
@@ -463,9 +450,9 @@ static char *FieldExport_GetCoordinateVariableLabel( CMISS_CoordinateSystem *coo
 }
 
 
-static char *FieldExport_GetCoordinateComponentLabel( CMISS_CoordinateSystem *coordinateSystem, int componentNumber )
+static char *FieldExport_GetCoordinateComponentLabel( int coordinateSystemType, int componentNumber )
 {
-    switch( coordinateSystem->type )
+    switch( coordinateSystemType )
     {
     case COORDINATE_RECTANGULAR_CARTESIAN_TYPE:
         if( componentNumber == 1 )
@@ -508,11 +495,11 @@ static int FieldExport_File_FieldCount( FileSession *const session, const int fi
 
 
 static int FieldExport_File_CoordinateVariable( FileSession *const session, const int variableIndex,
-                                        CMISS_CoordinateSystem *coordinateSystem, const int componentCount )
+                                        int coordinateSystemType, const int componentCount )
 {
     char *coordinateLabel;
 
-    coordinateLabel = FieldExport_GetCoordinateVariableLabel( coordinateSystem );
+    coordinateLabel = FieldExport_GetCoordinateVariableLabel( coordinateSystemType );
     
     return FieldExport_FPrintf( session, " %d) %s, #Components=%d\n", variableIndex, coordinateLabel, componentCount );
 }
@@ -528,10 +515,10 @@ static int FieldExport_File_Variable( FileSession *const session, const int vari
 }
 
 
-static int FieldExport_File_CoordinateComponent( FileSession *const session, CMISS_CoordinateSystem * coordinateSystem,
+static int FieldExport_File_CoordinateComponent( FileSession *const session, int coordinateSystemType,
     const int componentNumber, const int isNodal, const int numberOfXi, const int *const interpolationXi )
 {
-    const char * const componentLabel = FieldExport_GetCoordinateComponentLabel( coordinateSystem, componentNumber );
+    const char * const componentLabel = FieldExport_GetCoordinateComponentLabel( coordinateSystemType, componentNumber );
     const int headerType = isNodal ? FIELD_IO_INTERPOLATION_HEADER_NODAL : FIELD_IO_INTERPOLATION_HEADER_GRID;
 
     if( componentLabel == NULL )
@@ -964,10 +951,10 @@ static int FieldExport_File_DerivativeIndices( FileSession *session, const int c
 }
 
 
-static int FieldExport_File_CoordinateDerivativeIndices( FileSession *session, const int componentNumber, CMISS_CoordinateSystem * coordinateSystem,
+static int FieldExport_File_CoordinateDerivativeIndices( FileSession *session, const int componentNumber, int coordinateSystemType,
     const int numberOfDerivatives, const int *const derivatives, const int valueIndex )
 {
-    const char * const componentLabel = FieldExport_GetCoordinateComponentLabel( coordinateSystem, componentNumber );
+    const char * const componentLabel = FieldExport_GetCoordinateComponentLabel( coordinateSystemType, componentNumber );
 
     //MUSTDO add a proper GetComponentLabel( fieldType, variableType, componentNumber ) function.
     if( componentLabel == NULL )
@@ -1117,7 +1104,7 @@ int FieldExport_FieldCount( const int handle, const int fieldCount )
 }
 
 
-int FieldExport_CoordinateVariable( const int handle, const int variableNumber, CMISS_CoordinateSystem coordinateSystem,
+int FieldExport_CoordinateVariable( const int handle, const int variableNumber, int coordinateSystemType,
     const int componentCount )
 {
     SessionListEntry *session = FieldExport_GetSession( handle );
@@ -1128,7 +1115,7 @@ int FieldExport_CoordinateVariable( const int handle, const int variableNumber, 
     }
     else if( session->type == EXPORT_TYPE_FILE )
     {
-        return FieldExport_File_CoordinateVariable( &session->fileSession, variableNumber, &coordinateSystem, componentCount );
+        return FieldExport_File_CoordinateVariable( &session->fileSession, variableNumber, coordinateSystemType, componentCount );
     }
     else
     {
@@ -1157,7 +1144,7 @@ int FieldExport_Variable( const int handle, const int variableNumber, const int 
 }
 
 
-int FieldExport_CoordinateComponent( const int handle, CMISS_CoordinateSystem coordinateSystem,
+int FieldExport_CoordinateComponent( const int handle, int coordinateSystemType,
     const int componentNumber, const int isNodal, const int numberOfXi, const int * const interpolationXi )
 {
     SessionListEntry *session = FieldExport_GetSession( handle );
@@ -1168,7 +1155,7 @@ int FieldExport_CoordinateComponent( const int handle, CMISS_CoordinateSystem co
     }
     else if( session->type == EXPORT_TYPE_FILE )
     {
-        return FieldExport_File_CoordinateComponent( &session->fileSession, &coordinateSystem, componentNumber, isNodal, numberOfXi, interpolationXi );
+        return FieldExport_File_CoordinateComponent( &session->fileSession, coordinateSystemType, componentNumber, isNodal, numberOfXi, interpolationXi );
     }
     else
     {
@@ -1353,7 +1340,7 @@ int FieldExport_NodeValues( const int handle, const int nodeNumber, const int va
 }
 
 
-int FieldExport_CoordinateDerivativeIndices( const int handle, const int componentNumber, CMISS_CoordinateSystem coordinateSystem,
+int FieldExport_CoordinateDerivativeIndices( const int handle, const int componentNumber, const int coordinateSystemType,
     const int numberOfDerivatives, const int *const derivatives, const int valueIndex )
 {
     SessionListEntry *session = FieldExport_GetSession( handle );
@@ -1364,7 +1351,7 @@ int FieldExport_CoordinateDerivativeIndices( const int handle, const int compone
     }
     else if( session->type == EXPORT_TYPE_FILE )
     {
-        return FieldExport_File_CoordinateDerivativeIndices( &session->fileSession, componentNumber, &coordinateSystem, numberOfDerivatives, derivatives, valueIndex );
+        return FieldExport_File_CoordinateDerivativeIndices( &session->fileSession, componentNumber, coordinateSystemType, numberOfDerivatives, derivatives, valueIndex );
     }
     else
     {

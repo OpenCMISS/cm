@@ -189,13 +189,13 @@ MODULE FIELD_IO_ROUTINES
       INTEGER(C_INT) :: FieldExport_FieldCount
     END FUNCTION FieldExport_FieldCount
 
-    FUNCTION FieldExport_CoordinateVariable( handle, variableNumber, coordinateSystem, componentCount ) &
+    FUNCTION FieldExport_CoordinateVariable( handle, variableNumber, coordinateSystemType, componentCount ) &
       & BIND(C,NAME="FieldExport_CoordinateVariable")
       USE TYPES
       USE ISO_C_BINDING
       INTEGER(C_INT), VALUE :: handle
       INTEGER(C_INT), VALUE :: variableNumber
-      TYPE(COORDINATE_SYSTEM_TYPE), VALUE :: coordinateSystem
+      INTEGER(C_INT), VALUE :: coordinateSystemType
       INTEGER(C_INT), VALUE :: componentCount
       INTEGER(C_INT) :: FieldExport_CoordinateVariable
     END FUNCTION FieldExport_CoordinateVariable
@@ -212,13 +212,13 @@ MODULE FIELD_IO_ROUTINES
       INTEGER(C_INT) :: FieldExport_Variable
     END FUNCTION FieldExport_Variable
 
-    FUNCTION FieldExport_CoordinateComponent( handle, coordinateSystem, componentNumber, isNodal, &
+    FUNCTION FieldExport_CoordinateComponent( handle, coordinateSystemType, componentNumber, isNodal, &
       & numberOfXi, interpolationXi ) &
       & BIND(C,NAME="FieldExport_CoordinateComponent")
       USE TYPES
       USE ISO_C_BINDING
       INTEGER(C_INT), VALUE :: handle
-      TYPE(COORDINATE_SYSTEM_TYPE), VALUE :: coordinateSystem
+      INTEGER(C_INT), VALUE :: coordinateSystemType
       INTEGER(C_INT), VALUE :: componentNumber
       INTEGER(C_INT), VALUE :: isNodal
       INTEGER(C_INT), VALUE :: numberOfXi
@@ -320,13 +320,13 @@ MODULE FIELD_IO_ROUTINES
       INTEGER(C_INT) :: FieldExport_CloseSession
     END FUNCTION FieldExport_CloseSession
 
-    FUNCTION FieldExport_CoordinateDerivativeIndices( handle, componentNumber, coordinateSystem, numberOfDerivatives,  &
+    FUNCTION FieldExport_CoordinateDerivativeIndices( handle, componentNumber, coordinateSystemType, numberOfDerivatives,  &
       & derivatives, valueIndex ) BIND(C,NAME="FieldExport_CoordinateDerivativeIndices")
       USE TYPES
       USE ISO_C_BINDING
       INTEGER(C_INT), VALUE :: handle
       INTEGER(C_INT), VALUE :: componentNumber
-      TYPE(COORDINATE_SYSTEM_TYPE), VALUE :: coordinateSystem
+      INTEGER(C_INT), VALUE :: coordinateSystemType
       INTEGER(C_INT), VALUE :: numberOfDerivatives
       TYPE(C_PTR), VALUE :: derivatives
       INTEGER(C_INT), VALUE :: valueIndex
@@ -2803,7 +2803,7 @@ CONTAINS
 
         IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
           & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
-          ERR = FieldExport_CoordinateVariable( sessionHandle, var_idx, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM, &
+          ERR = FieldExport_CoordinateVariable( sessionHandle, var_idx, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM%TYPE, &
             & GROUP_VARIABLES(var_idx) )
         ELSE
           ERR = FieldExport_Variable( sessionHandle, var_idx, variable_ptr%FIELD%TYPE, variable_ptr%VARIABLE_TYPE, &
@@ -2833,7 +2833,7 @@ CONTAINS
 !!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
 !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
           INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)
-          ERR = FieldExport_CoordinateComponent( sessionHandle, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM, &
+          ERR = FieldExport_CoordinateComponent( sessionHandle, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM%TYPE, &
             & elementalInfoSet%COMPONENTS(comp_idx)%PTR%COMPONENT_NUMBER,isNodal,basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ))
         ELSE
 !!TEMP
@@ -4459,8 +4459,8 @@ CONTAINS
 
           IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
             & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
-            ERR = FieldExport_CoordinateVariable( sessionHandle, global_var_idx, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM, &
-              & variable_ptr%NUMBER_OF_COMPONENTS )
+            ERR = FieldExport_CoordinateVariable( sessionHandle, global_var_idx, &
+              & variable_ptr%FIELD%REGION%COORDINATE_SYSTEM%TYPE, variable_ptr%NUMBER_OF_COMPONENTS )
           ELSE
             ERR = FieldExport_Variable( sessionHandle, global_var_idx, variable_ptr%FIELD%TYPE, variable_ptr%VARIABLE_TYPE, &
               & variable_ptr%NUMBER_OF_COMPONENTS )
@@ -4486,7 +4486,7 @@ CONTAINS
                IF( fieldComponent%FIELD_VARIABLE%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
                  & fieldComponent%FIELD_VARIABLE%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
                  ERR = FieldExport_CoordinateDerivativeIndices( sessionHandle, fieldComponent%COMPONENT_NUMBER, &
-                   & variable_ptr%FIELD%REGION%COORDINATE_SYSTEM, 1, C_LOC(GROUP_DERIVATIVES), value_idx )
+                   & variable_ptr%FIELD%REGION%COORDINATE_SYSTEM%TYPE, 1, C_LOC(GROUP_DERIVATIVES), value_idx )
                ELSE
                  ERR = FieldExport_DerivativeIndices( sessionHandle, fieldComponent%COMPONENT_NUMBER, variable_ptr%FIELD%TYPE, &
                    & variable_ptr%VARIABLE_TYPE, 1, C_LOC(GROUP_DERIVATIVES), value_idx )
@@ -4516,7 +4516,7 @@ CONTAINS
              IF( component%FIELD_VARIABLE%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
                & component%FIELD_VARIABLE%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
                ERR = FieldExport_CoordinateDerivativeIndices( sessionHandle, component%COMPONENT_NUMBER, &
-                 & variable_ptr%FIELD%REGION%COORDINATE_SYSTEM,NUM_OF_NODAL_DEV, C_LOC(GROUP_DERIVATIVES), value_idx )
+                 & variable_ptr%FIELD%REGION%COORDINATE_SYSTEM%TYPE, NUM_OF_NODAL_DEV, C_LOC(GROUP_DERIVATIVES), value_idx )
              ELSE
                ERR = FieldExport_DerivativeIndices( sessionHandle, component%COMPONENT_NUMBER, variable_ptr%FIELD%TYPE, &
                  & variable_ptr%VARIABLE_TYPE,NUM_OF_NODAL_DEV, C_LOC(GROUP_DERIVATIVES), value_idx )
