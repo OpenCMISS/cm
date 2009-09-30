@@ -68,9 +68,32 @@ MODULE REGION_ROUTINES
   TYPE(REGIONS_TYPE) :: REGIONS
   
   !Interfaces
+
+  INTERFACE REGION_LABEL_GET
+    MODULE PROCEDURE REGION_LABEL_GET_C
+    MODULE PROCEDURE REGION_LABEL_GET_VS
+  END INTERFACE !REGION_LABEL_GET
   
-  PUBLIC REGION_CREATE_START,REGION_CREATE_FINISH,REGION_DESTROY,REGIONS_INITIALISE,REGIONS_FINALISE,REGION_USER_NUMBER_FIND, &
-    & REGION_COORDINATE_SYSTEM_GET,REGION_LABEL_GET,REGION_COORDINATE_SYSTEM_SET,REGION_LABEL_SET
+  INTERFACE REGION_LABEL_SET
+    MODULE PROCEDURE REGION_LABEL_SET_C
+    MODULE PROCEDURE REGION_LABEL_SET_VS
+  END INTERFACE !REGION_LABEL_SET
+  
+  PUBLIC REGION_COORDINATE_SYSTEM_GET,REGION_COORDINATE_SYSTEM_SET
+
+  PUBLIC REGION_CREATE_START,REGION_CREATE_FINISH
+
+  PUBLIC REGION_DESTROY
+
+  PUBLIC REGION_INITIALISE,REGION_FINALISE
+
+  PUBLIC REGION_LABEL_GET,REGION_LABEL_SET
+  
+  PUBLIC REGION_NODES_GET
+  
+  PUBLIC REGION_USER_NUMBER_FIND
+
+  PUBLIC REGIONS_INITIALISE,REGIONS_FINALISE
 
 CONTAINS
 
@@ -290,7 +313,7 @@ CONTAINS
   !
 
   !>Destroys a region given by USER_NUMBER and all sub-regions under it. \todo create destroy by pointer method. \see OPENCMISS::CMISSRegionDestroy
-  RECURSIVE SUBROUTINE REGION_DESTROY(USER_NUMBER,ERR,ERROR,*)
+  RECURSIVE SUBROUTINE REGION_DESTROY_NUMBER(USER_NUMBER,ERR,ERROR,*)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the region to destroy
@@ -301,7 +324,7 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(REGION_PTR_TYPE), POINTER :: NEW_SUB_REGIONS(:)
 
-    CALL ENTERS("REGION_DESTROY",ERR,ERROR,*999)
+    CALL ENTERS("REGION_DESTROY_NUMBER",ERR,ERROR,*999)
 
     NULLIFY(REGION)
     CALL REGION_USER_NUMBER_FIND(USER_NUMBER,REGION,ERR,ERROR,*999)
@@ -339,13 +362,43 @@ CONTAINS
       ELSE
         !Recursively delete sub regions first
         DO WHILE(REGION%NUMBER_OF_SUB_REGIONS>0)
-          CALL REGION_DESTROY(REGION%SUB_REGIONS(1)%PTR%USER_NUMBER,ERR,ERROR,*999)
+          CALL REGION_DESTROY_NUMBER(REGION%SUB_REGIONS(1)%PTR%USER_NUMBER,ERR,ERROR,*999)
         ENDDO
         !Now delete this instance
-        CALL REGION_DESTROY(REGION%USER_NUMBER,ERR,ERROR,*999)
+        CALL REGION_DESTROY_NUMBER(REGION%USER_NUMBER,ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Region number does not exist.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("REGION_DESTROY_NUMBER")
+    RETURN
+999 CALL ERRORS("REGION_DESTROY_NUMBER",ERR,ERROR)
+    CALL EXITS("REGION_DESTROY_NUMBER")
+    RETURN 1
+  END SUBROUTINE REGION_DESTROY_NUMBER
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroys a region identified by a pointer and all sub-regions under it. \see OPENCMISS::CMISSRegionDestroy
+  SUBROUTINE REGION_DESTROY(REGION,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to destroy
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: USER_NUMBER
+ 
+    CALL ENTERS("REGION_DESTROY",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(REGION)) THEN
+      USER_NUMBER=REGION%USER_NUMBER
+      CALL REGION_DESTROY_NUMBER(USER_NUMBER,ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("REGION_DESTROY")
@@ -435,39 +488,77 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the label of a region . \see OPENCMISS::CMISSRegionLabelGet
-  FUNCTION REGION_LABEL_GET(REGION,ERR,ERROR)
+  !>Returns the label of a region. \see OPENCMISS::CMISSRegionLabelGet
+  SUBROUTINE REGION_LABEL_GET_C(REGION,LABEL,ERR,ERROR,*)
 
     !Argument variables
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to get the label for
+    CHARACTER(LEN=*), INTENT(OUT) :: LABEL !<On return the region label.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Function result
-    TYPE(VARYING_STRING) :: REGION_LABEL_GET
     !Local Variables
+    INTEGER(INTG) :: C_LENGTH,VS_LENGTH
 
-    CALL ENTERS("REGION_LABEL_GET",ERR,ERROR,*999)
+    CALL ENTERS("REGION_LABEL_GET_C",ERR,ERROR,*999)
 
     IF(ASSOCIATED(REGION)) THEN
-      !CPB 20/2/07 The following line crashes the AIX compiler unless it has a VAR_STR(CHAR()) around it
-      REGION_LABEL_GET=VAR_STR(CHAR(REGION%LABEL))
+      C_LENGTH=LEN(LABEL)
+      VS_LENGTH=LEN_TRIM(REGION%LABEL)
+      LABEL=CHAR(REGION%LABEL)
+      IF(C_LENGTH>VS_LENGTH) THEN
+        LABEL=CHAR(LEN_TRIM(REGION%LABEL))
+      ELSE
+        LABEL=CHAR(REGION%LABEL,C_LENGTH)
+      ENDIF
     ELSE
       CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("REGION_LABEL_GET")
+    CALL EXITS("REGION_LABEL_GET_C")
     RETURN
-999 CALL ERRORS("REGION_LABEL_GET",ERR,ERROR)
-    CALL EXITS("REGION_LABEL_GET")
+999 CALL ERRORS("REGION_LABEL_GET_C",ERR,ERROR)
+    CALL EXITS("REGION_LABEL_GET_C")
+    RETURN 1
+    
+  END SUBROUTINE REGION_LABEL_GET_C
+
+   !
+  !================================================================================================================================
+  !
+
+  !>Returns the label of a region. \see OPENCMISS::CMISSRegionLabelGet
+  SUBROUTINE REGION_LABEL_GET_VS(REGION,LABEL,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to get the label for
+    TYPE(VARYING_STRING), INTENT(OUT) :: LABEL !<On return the region label.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("REGION_LABEL_GET_VS",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(REGION)) THEN
+      !CPB 20/2/07 The following line crashes the AIX compiler unless it has a VAR_STR(CHAR()) around it
+      LABEL=VAR_STR(CHAR(REGION%LABEL))
+    ELSE
+      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("REGION_LABEL_GET_VS")
     RETURN
-  END FUNCTION REGION_LABEL_GET
+999 CALL ERRORS("REGION_LABEL_GET_VS",ERR,ERROR)
+    CALL EXITS("REGION_LABEL_GET_VS")
+    RETURN 1
+    
+  END SUBROUTINE REGION_LABEL_GET_VS
 
   !
   !================================================================================================================================
   !
 
-  !>Sets the label of a region.\todo need a varying string method \see OPENCMISS::CMISSRegionLabelSet
-  SUBROUTINE REGION_LABEL_SET(REGION,LABEL,ERR,ERROR,*)
+  !>Sets the label of a region. \see OPENCMISS::CMISSRegionLabelSet
+  SUBROUTINE REGION_LABEL_SET_C(REGION,LABEL,ERR,ERROR,*)
 
     !Argument variables
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to set the label for 
@@ -476,7 +567,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("REGION_LABEL_SET",ERR,ERROR,*999)
+    CALL ENTERS("REGION_LABEL_SET_C",ERR,ERROR,*999)
 
     IF(ASSOCIATED(REGION)) THEN
       IF(REGION%REGION_FINISHED) THEN
@@ -488,13 +579,86 @@ CONTAINS
       CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("REGION_LABEL_SET")
+    CALL EXITS("REGION_LABEL_SET_C")
     RETURN
-999 CALL ERRORS("REGION_LABEL_SET",ERR,ERROR)
-    CALL EXITS("REGION_LABEL_SET")
+999 CALL ERRORS("REGION_LABEL_SET_C",ERR,ERROR)
+    CALL EXITS("REGION_LABEL_SET_C")
     RETURN 1
-  END SUBROUTINE REGION_LABEL_SET
+  END SUBROUTINE REGION_LABEL_SET_C
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the label of a region. \see OPENCMISS::CMISSRegionLabelSet
+  SUBROUTINE REGION_LABEL_SET_VS(REGION,LABEL,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to set the label for 
+    TYPE(VARYING_STRING), INTENT(IN) :: LABEL !<The label to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("REGION_LABEL_SET_VS",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(REGION)) THEN
+      IF(REGION%REGION_FINISHED) THEN
+        CALL FLAG_ERROR("Region has been finished.",ERR,ERROR,*999)
+      ELSE
+        REGION%LABEL=LABEL
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("REGION_LABEL_SET_VS")
+    RETURN
+999 CALL ERRORS("REGION_LABEL_SET_VS",ERR,ERROR)
+    CALL EXITS("REGION_LABEL_SET_VS")
+    RETURN 1
+  END SUBROUTINE REGION_LABEL_SET_VS
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns a pointer to the nodes for a region. \see OPENCMISS::CMISSRegionNodesGet
+  SUBROUTINE REGION_NODES_GET(REGION,NODES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to get the nodes for
+    TYPE(NODES_TYPE), POINTER :: NODES !<On exit, a pointer to the nodes for the region. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("REGION_NODES_GET",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(REGION)) THEN
+      IF(REGION%REGION_FINISHED) THEN 
+        IF(ASSOCIATED(NODES)) THEN
+          CALL FLAG_ERROR("Nodes is already associated.",ERR,ERROR,*998)
+        ELSE
+          NODES=>REGION%NODES
+          IF(.NOT.ASSOCIATED(NODES)) CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Region has not been finished.",ERR,ERROR,*998)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*998)
+    ENDIF
+       
+    CALL EXITS("REGION_NODES_GET")
+    RETURN
+999 NULLIFY(NODES)
+998 CALL ERRORS("REGION_NODES_GET",ERR,ERROR)
+    CALL EXITS("REGION_NODES_GET")
+    RETURN 1
+    
+  END SUBROUTINE REGION_NODES_GET
+  
   !
   !================================================================================================================================
   !
@@ -597,7 +761,7 @@ CONTAINS
     IF(ASSOCIATED(REGIONS%WORLD_REGION)) THEN
       !Destroy any global region daughter regions first
       DO nr=1,REGIONS%WORLD_REGION%NUMBER_OF_SUB_REGIONS
-        CALL REGION_DESTROY(REGIONS%WORLD_REGION%SUB_REGIONS(nr)%PTR%USER_NUMBER,ERR,ERROR,*999)
+        CALL REGION_DESTROY_NUMBER(REGIONS%WORLD_REGION%SUB_REGIONS(nr)%PTR%USER_NUMBER,ERR,ERROR,*999)
       ENDDO !region
       !Destroy global region and deallocated any memory allocated in the global region
       CALL REGION_FINALISE(REGIONS%WORLD_REGION,ERR,ERROR,*999)

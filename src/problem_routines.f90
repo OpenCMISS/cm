@@ -95,18 +95,33 @@ MODULE PROBLEM_ROUTINES
   
   PUBLIC PROBLEM_CREATE_START,PROBLEM_CREATE_FINISH,PROBLEM_DESTROY
 
-  PUBLIC PROBLEM_SPECIFICATION_SET
+  PUBLIC PROBLEM_SPECIFICATION_GET,PROBLEM_SPECIFICATION_SET
 
-  PUBLIC PROBLEM_CONTROL_LOOP_CREATE_START,PROBLEM_CONTROL_LOOP_CREATE_FINISH,PROBLEM_CONTROL_LOOP_DESTROY,PROBLEM_CONTROL_LOOP_GET
+  PUBLIC PROBLEM_CONTROL_LOOP_CREATE_START,PROBLEM_CONTROL_LOOP_CREATE_FINISH
+
+  PUBLIC PROBLEM_CONTROL_LOOP_DESTROY
+
+  PUBLIC PROBLEM_CONTROL_LOOP_GET
   
   PUBLIC PROBLEM_SOLVER_EQUATIONS_CREATE_START,PROBLEM_SOLVER_EQUATIONS_CREATE_FINISH
 
+  PUBLIC PROBLEM_SOLVER_EQUATIONS_DESTROY
+
+  PUBLIC PROBLEM_SOLVER_EQUATIONS_GET
+
   PUBLIC PROBLEM_SOLVER_JACOBIAN_EVALUATE,PROBLEM_SOLVER_RESIDUAL_EVALUATE
   
-  PUBLIC PROBLEM_SOLVERS_CREATE_START,PROBLEM_SOLVERS_CREATE_FINISH,PROBLEM_SOLVERS_DESTROY,PROBLEM_SOLVER_GET
+  PUBLIC PROBLEM_SOLVER_GET
    
   PUBLIC PROBLEM_SOLVE
 
+  PUBLIC PROBLEM_SOLVERS_CREATE_START,PROBLEM_SOLVERS_CREATE_FINISH
+
+  PUBLIC PROBLEM_SOLVERS_DESTROY
+  
+  PUBLIC PROBLEM_USER_NUMBER_FIND
+
+  
 CONTAINS
 
   !
@@ -117,7 +132,8 @@ CONTAINS
   RECURSIVE SUBROUTINE PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the
+    ! control loop to solve.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -147,32 +163,40 @@ CONTAINS
                 DO solver_idx=1,SOLVERS%NUMBER_OF_SOLVERS
                   SOLVER=>SOLVERS%SOLVERS(solver_idx)%PTR
 !sebk 7/8/2009 check
-                  CALL PROBLEM_SOLVER_EQUATIONS_PRE_SOLVE(CONTROL_LOOP,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
+                  CALL PROBLEM_SOLVER_EQUATIONS_PRE_SOLVE(CONTROL_LOOP,SOLVER&
+                    &%SOLVER_EQUATIONS,ERR,ERROR,*999)
                   IF(ASSOCIATED(SOLVER)) THEN
-                    CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
+                    CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER&
+                      &%SOLVER_EQUATIONS,ERR,ERROR,*999)
                   ELSE
-                    CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+                    CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,&
+                      &*999)
                   ENDIF
 !sebk 7/8/2009 check
-                  CALL PROBLEM_SOLVER_EQUATIONS_POST_SOLVE(CONTROL_LOOP,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
+                  CALL PROBLEM_SOLVER_EQUATIONS_POST_SOLVE(CONTROL_LOOP&
+                    &,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
                 ENDDO !solver_idx
               ELSE
-                CALL FLAG_ERROR("Control loop solvers is not associated.",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Control loop solvers is not associated.",ERR&
+                  &,ERROR,*999)
               ENDIF
             ELSE
-              !If there are sub loops the recursively solve those control loops
+              !If there are sub loops the recursively solve those control
+              ! loops
               DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
                 CONTROL_LOOP2=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
                 CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,*999)
               ENDDO !loop_idx
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Control loop simple loop is not associated.",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Control loop simple loop is not associated.",ERR&
+              &,ERROR,*999)
           ENDIF
         CASE(PROBLEM_CONTROL_FIXED_LOOP_TYPE)
           FIXED_LOOP=>CONTROL_LOOP%FIXED_LOOP
           IF(ASSOCIATED(FIXED_LOOP)) THEN
-            DO iteration_idx=FIXED_LOOP%START_ITERATION,FIXED_LOOP%STOP_ITERATION,FIXED_LOOP%ITERATION_INCREMENT
+            DO iteration_idx=FIXED_LOOP%START_ITERATION,FIXED_LOOP&
+              &%STOP_ITERATION,FIXED_LOOP%ITERATION_INCREMENT
               FIXED_LOOP%ITERATION_NUMBER=iteration_idx
               IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS==0) THEN
                 !If there are no sub loops then solve
@@ -182,32 +206,41 @@ CONTAINS
                     SOLVER=>SOLVERS%SOLVERS(solver_idx)%PTR
                     IF(ASSOCIATED(SOLVER)) THEN
 !sebk 7/8/2009 check
-                      CALL PROBLEM_SOLVER_EQUATIONS_PRE_SOLVE(CONTROL_LOOP,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
-                      CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
+                      CALL PROBLEM_SOLVER_EQUATIONS_PRE_SOLVE(CONTROL_LOOP&
+                        &,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
+                      CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER&
+                        &%SOLVER_EQUATIONS,ERR,ERROR,*999)
 !sebk 7/8/2009 check
-                      CALL PROBLEM_SOLVER_EQUATIONS_POST_SOLVE(CONTROL_LOOP,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
+                      CALL PROBLEM_SOLVER_EQUATIONS_POST_SOLVE(CONTROL_LOOP&
+                        &,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
                     ELSE
-                      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,&
+                        &*999)
                     ENDIF
                   ENDDO !solver_idx
                 ELSE
-                  CALL FLAG_ERROR("Control loop solvers is not associated.",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Control loop solvers is not associated."&
+                    &,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                !If there are sub loops the recursively solve those control loops
+                !If there are sub loops the recursively solve those control
+                ! loops
                 DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
                   CONTROL_LOOP2=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
-                  CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,*999)
+                  CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,&
+                    &*999)
                 ENDDO !loop_idx
               ENDIF
             ENDDO !iteration_idx
           ELSE
-            CALL FLAG_ERROR("Control loop fixed loop is not associated.",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Control loop fixed loop is not associated.",ERR&
+              &,ERROR,*999)
           ENDIF
         CASE(PROBLEM_CONTROL_TIME_LOOP_TYPE)
           TIME_LOOP=>CONTROL_LOOP%TIME_LOOP
           IF(ASSOCIATED(TIME_LOOP)) THEN
-            TIME_LOOP%CURRENT_TIME=TIME_LOOP%START_TIME
+            TIME_LOOP%CURRENT_TIME=TIME_LOOP%START_TIME+TIME_LOOP&
+              &%TIME_INCREMENT
             TIME_LOOP%ITERATION_NUMBER=0
             DO WHILE(TIME_LOOP%CURRENT_TIME<=TIME_LOOP%STOP_TIME)
               TIME_LOOP%ITERATION_NUMBER=TIME_LOOP%ITERATION_NUMBER+1
@@ -219,34 +252,44 @@ CONTAINS
                     SOLVER=>SOLVERS%SOLVERS(solver_idx)%PTR
                     IF(ASSOCIATED(SOLVER)) THEN
 !sebk 7/8/2009 check
-                      CALL PROBLEM_SOLVER_EQUATIONS_PRE_SOLVE(CONTROL_LOOP,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
-                      CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
+                      CALL PROBLEM_SOLVER_EQUATIONS_PRE_SOLVE(CONTROL_LOOP&
+                        &,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
+                      CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER&
+                        &%SOLVER_EQUATIONS,ERR,ERROR,*999)
 !sebk 7/8/2009 check
-                      CALL PROBLEM_SOLVER_EQUATIONS_POST_SOLVE(CONTROL_LOOP,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
+                      CALL PROBLEM_SOLVER_EQUATIONS_POST_SOLVE(CONTROL_LOOP&
+                        &,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
                     ELSE
-                      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,&
+                        &*999)
                     ENDIF
                   ENDDO !solver_idx
                 ELSE
-                  CALL FLAG_ERROR("Control loop solvers is not associated.",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Control loop solvers is not associated."&
+                    &,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                !If there are sub loops the recursively solve those control loops
+                !If there are sub loops the recursively solve those control
+                ! loops
                 DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
                   CONTROL_LOOP2=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
-                  CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,*999)
+                  CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,&
+                    &*999)
                 ENDDO !loop_idx
               ENDIF
-              TIME_LOOP%CURRENT_TIME=TIME_LOOP%CURRENT_TIME+TIME_LOOP%TIME_INCREMENT
+              TIME_LOOP%CURRENT_TIME=TIME_LOOP%CURRENT_TIME+TIME_LOOP&
+                &%TIME_INCREMENT
             ENDDO !time loop
           ELSE
-            CALL FLAG_ERROR("Control loop time loop is not associated.",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Control loop time loop is not associated.",ERR&
+              &,ERROR,*999)
           ENDIF
         CASE(PROBLEM_CONTROL_WHILE_LOOP_TYPE)
           WHILE_LOOP=>CONTROL_LOOP%WHILE_LOOP
           IF(ASSOCIATED(WHILE_LOOP)) THEN
             WHILE_LOOP%ITERATION_NUMBER=0
-            DO WHILE(WHILE_LOOP%CONTINUE_LOOP.AND.WHILE_LOOP%ITERATION_NUMBER<=WHILE_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS)
+            DO WHILE(WHILE_LOOP%CONTINUE_LOOP.AND.WHILE_LOOP%ITERATION_NUMBER&
+              &<=WHILE_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS)
               WHILE_LOOP%ITERATION_NUMBER=WHILE_LOOP%ITERATION_NUMBER+1
               IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS==0) THEN
                 !If there are no sub loops then solve
@@ -256,27 +299,35 @@ CONTAINS
                     SOLVER=>SOLVERS%SOLVERS(solver_idx)%PTR
                     IF(ASSOCIATED(SOLVER)) THEN
 !sebk 7/8/2009 check
-                      CALL PROBLEM_SOLVER_EQUATIONS_PRE_SOLVE(CONTROL_LOOP,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
-                      CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
+                      CALL PROBLEM_SOLVER_EQUATIONS_PRE_SOLVE(CONTROL_LOOP&
+                        &,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
+                      CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER&
+                        &%SOLVER_EQUATIONS,ERR,ERROR,*999)
 !sebk 7/8/2009 check
-                      CALL PROBLEM_SOLVER_EQUATIONS_POST_SOLVE(CONTROL_LOOP,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
+                      CALL PROBLEM_SOLVER_EQUATIONS_POST_SOLVE(CONTROL_LOOP&
+                        &,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
                     ELSE
-                      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,&
+                        &*999)
                     ENDIF
                   ENDDO !solver_idx
                 ELSE
-                  CALL FLAG_ERROR("Control loop solvers is not associated.",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Control loop solvers is not associated."&
+                    &,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                !If there are sub loops the recursively solve those control loops
+                !If there are sub loops the recursively solve those control
+                ! loops
                 DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
                   CONTROL_LOOP2=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
-                  CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,*999)
+                  CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,&
+                    &*999)
                 ENDDO !loop_idx
               ENDIF
             ENDDO !while loop
           ELSE
-            CALL FLAG_ERROR("Control loop while loop is not associated.",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Control loop while loop is not associated.",ERR&
+              &,ERROR,*999)
           ENDIF
         CASE DEFAULT
           LOCAL_ERROR="The control loop loop type of "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%LOOP_TYPE,"*",ERR,ERROR))// &

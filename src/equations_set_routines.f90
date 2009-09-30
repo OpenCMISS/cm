@@ -91,7 +91,7 @@ MODULE EQUATIONS_SET_ROUTINES
   PUBLIC EQUATIONS_SET_CREATE_START,EQUATIONS_SET_CREATE_FINISH,EQUATIONS_SET_DESTROY,EQUATIONS_SETS_INITIALISE, &
     & EQUATIONS_SETS_FINALISE
 
-  PUBLIC EQUATIONS_SET_EQUATIONS_CREATE_FINISH,EQUATIONS_SET_EQUATIONS_CREATE_START
+  PUBLIC EQUATIONS_SET_EQUATIONS_CREATE_FINISH,EQUATIONS_SET_EQUATIONS_CREATE_START,EQUATIONS_SET_EQUATIONS_DESTROY
   
   PUBLIC EQUATIONS_SET_MATERIALS_CREATE_START,EQUATIONS_SET_MATERIALS_CREATE_FINISH,EQUATIONS_SET_MATERIALS_DESTROY
 
@@ -99,13 +99,15 @@ MODULE EQUATIONS_SET_ROUTINES
  
   PUBLIC EQUATIONS_SET_JACOBIAN_EVALUATE,EQUATIONS_SET_RESIDUAL_EVALUATE
 
-  PUBLIC EQUATIONS_SET_SOLUTION_METHOD_SET
+  PUBLIC EQUATIONS_SET_SOLUTION_METHOD_GET,EQUATIONS_SET_SOLUTION_METHOD_SET
   
   PUBLIC EQUATIONS_SET_SOURCE_CREATE_START,EQUATIONS_SET_SOURCE_CREATE_FINISH,EQUATIONS_SET_SOURCE_DESTROY
 
+  PUBLIC EQUATIONS_SET_SPECIFICATION_GET,EQUATIONS_SET_SPECIFICATION_SET
+
   PUBLIC EQUATIONS_SET_ASSEMBLE
-  
-  PUBLIC EQUATIONS_SET_SPECIFICATION_SET
+
+  PUBLIC EQUATIONS_SET_USER_NUMBER_FIND
   
 CONTAINS
 
@@ -1577,7 +1579,7 @@ CONTAINS
   !
 
   !>Destroys an equations set identified by a user number on the give region and deallocates all memory. \see OPENCMISS::CMISSEquationsSetDestroy
-  SUBROUTINE EQUATIONS_SET_DESTROY(USER_NUMBER,REGION,ERR,ERROR,*)
+  SUBROUTINE EQUATIONS_SET_DESTROY_NUMBER(USER_NUMBER,REGION,ERR,ERROR,*)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the equations set to destroy
@@ -1593,7 +1595,7 @@ CONTAINS
 
     NULLIFY(NEW_EQUATIONS_SETS)
 
-    CALL ENTERS("EQUATIONS_SET_DESTROY",ERR,ERROR,*999)
+    CALL ENTERS("EQUATIONS_SET_DESTROY_NUMBER",ERR,ERROR,*999)
 
     IF(ASSOCIATED(REGION)) THEN
       IF(ASSOCIATED(REGION%EQUATIONS_SETS)) THEN
@@ -1646,6 +1648,70 @@ CONTAINS
       ENDIF
     ELSE
       CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*998)
+    ENDIF    
+
+    CALL EXITS("EQUATIONS_SET_DESTROY_NUMBER")
+    RETURN
+999 IF(ASSOCIATED(NEW_EQUATIONS_SETS)) DEALLOCATE(NEW_EQUATIONS_SETS)
+998 CALL ERRORS("EQUATIONS_SET_DESTROY_NUMBER",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_DESTROY_NUMBER")
+    RETURN 1   
+  END SUBROUTINE EQUATIONS_SET_DESTROY_NUMBER
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroys an equations set identified by a pointer and deallocates all memory. \see OPENCMISS::CMISSEquationsSetDestroy
+  SUBROUTINE EQUATIONS_SET_DESTROY(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to destroy
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: equations_set_idx,equations_set_position
+    TYPE(EQUATIONS_SETS_TYPE), POINTER :: EQUATIONS_SETS
+    TYPE(EQUATIONS_SET_PTR_TYPE), POINTER :: NEW_EQUATIONS_SETS(:)
+
+    NULLIFY(NEW_EQUATIONS_SETS)
+
+    CALL ENTERS("EQUATIONS_SET_DESTROY",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      EQUATIONS_SETS=>EQUATIONS_SET%EQUATIONS_SETS
+      IF(ASSOCIATED(EQUATIONS_SETS)) THEN
+        equations_set_position=EQUATIONS_SET%GLOBAL_NUMBER
+
+        !Destroy all the equations set components
+        CALL EQUATIONS_SET_FINALISE(EQUATIONS_SET,ERR,ERROR,*999)
+        
+        !Remove the equations set from the list of equations set
+        IF(EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS>1) THEN
+          ALLOCATE(NEW_EQUATIONS_SETS(EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS-1),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new equations sets.",ERR,ERROR,*999)
+          DO equations_set_idx=1,EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS
+            IF(equations_set_idx<equations_set_position) THEN
+              NEW_EQUATIONS_SETS(equations_set_idx)%PTR=>EQUATIONS_SETS%EQUATIONS_SETS(equations_set_idx)%PTR
+            ELSE IF(equations_set_idx>equations_set_position) THEN
+              EQUATIONS_SETS%EQUATIONS_SETS(equations_set_idx)%PTR%GLOBAL_NUMBER=EQUATIONS_SETS% &
+                & EQUATIONS_SETS(equations_set_idx)%PTR%GLOBAL_NUMBER-1
+              NEW_EQUATIONS_SETS(equations_set_idx-1)%PTR=>EQUATIONS_SETS%EQUATIONS_SETS(equations_set_idx)%PTR
+            ENDIF
+          ENDDO !equations_set_idx
+          IF(ASSOCIATED(EQUATIONS_SETS%EQUATIONS_SETS)) DEALLOCATE(EQUATIONS_SETS%EQUATIONS_SETS)
+          EQUATIONS_SETS%EQUATIONS_SETS=>NEW_EQUATIONS_SETS
+          EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS=EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS-1
+        ELSE
+          DEALLOCATE(EQUATIONS_SETS%EQUATIONS_SETS)
+          EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS=0
+        ENDIF
+        
+      ELSE
+        CALL FLAG_ERROR("Equations set equations set is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*998)
     ENDIF    
 
     CALL EXITS("EQUATIONS_SET_DESTROY")
@@ -2830,6 +2896,38 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Destroy the equations for an equations set. \see OPENCMISS::CMISSEquationsSetEquationsDestroy
+  SUBROUTINE EQUATIONS_SET_EQUATIONS_DESTROY(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to destroy the equations for.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("EQUATIONS_SET_EQUATIONS_DESTROY",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(ASSOCIATED(EQUATIONS_SET%EQUATIONS)) THEN        
+        CALL EQUATIONS_FINALISE(EQUATIONS_SET%EQUATIONS,ERR,ERROR,*999)
+      ELSE
+        CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_EQUATIONS_DESTROY")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_EQUATIONS_DESTROY",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_EQUATIONS_DESTROY")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_EQUATIONS_DESTROY
+
+  !
+  !================================================================================================================================
+  !
+
   !>Evaluates the Jacobian for a nonlinear equations set.
   SUBROUTINE EQUATIONS_SET_JACOBIAN_EVALUATE(EQUATIONS_SET,ERR,ERROR,*)
 
@@ -3758,6 +3856,39 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns the solution method for an equations set. \see OPENCMISS::CMISSEquationsSetSolutionMethodGet
+  SUBROUTINE EQUATIONS_SET_SOLUTION_METHOD_GET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to get the solution method for
+    INTEGER(INTG), INTENT(OUT) :: SOLUTION_METHOD !<On return, the equations set solution method \see EQUATIONS_SET_CONSTANTS_SolutionMethods,EQUATIONS_SET_CONSTANTS
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("EQUATIONS_SET_SOLUTION_METHOD_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(EQUATIONS_SET%EQUATIONS_SET_FINISHED) THEN
+        SOLUTION_METHOD=EQUATIONS_SET%SOLUTION_METHOD
+      ELSE
+        CALL FLAG_ERROR("Equations set has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("EQUATIONS_SET_SOLUTION_METHOD_GET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_SOLUTION_METHOD_GET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_SOLUTION_METHOD_GET")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_SOLUTION_METHOD_GET
+  
+  !
+  !================================================================================================================================
+  !
+
   !>Finish the creation of a source for an equation set. \see OPENCMISS::CMISSEquationsSetSourceCreateFinish
   SUBROUTINE EQUATIONS_SET_SOURCE_CREATE_FINISH(EQUATIONS_SET,ERR,ERROR,*)
 
@@ -4021,6 +4152,44 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns the equations set specification i.e., equations set class, type and subtype for an equations set. \see OPENCMISS::CMISSEquationsSetSpecificationGet
+  SUBROUTINE EQUATIONS_SET_SPECIFICATION_GET(EQUATIONS_SET,EQUATIONS_SET_CLASS,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE, &
+    & ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to get the specification for
+    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_SET_CLASS !<On return, the equations set class.
+    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_SET_TYPE_ !<On return, the equations set type.
+    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_SET_SUBTYPE !<On return, the equations set subtype.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("EQUATIONS_SET_SPECIFICATION_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(EQUATIONS_SET%EQUATIONS_SET_FINISHED) THEN
+        EQUATIONS_SET_CLASS=EQUATIONS_SET%CLASS
+        EQUATIONS_SET_TYPE_=EQUATIONS_SET%TYPE
+        EQUATIONS_SET_SUBTYPE=EQUATIONS_SET%SUBTYPE
+      ELSE
+        CALL FLAG_ERROR("Equations set has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("EQUATIONS_SET_SPECIFICATION_GET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_SPECIFICATION_GET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_SPECIFICATION_GET")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_SPECIFICATION_GET
+  
+  !
+  !================================================================================================================================
+  !
+
   !>Sets/changes the equations set specification i.e., equations set class, type and subtype for an equations set. \see OPENCMISS::CMISSEquationsSetSpecificationSet
   SUBROUTINE EQUATIONS_SET_SPECIFICATION_SET(EQUATIONS_SET,EQUATIONS_SET_CLASS,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE, &
     & ERR,ERROR,*)
@@ -4141,15 +4310,13 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) ::USER_NUMBER
 
     CALL ENTERS("EQUATIONS_SETS_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(REGION)) THEN
       IF(ASSOCIATED(REGION%EQUATIONS_SETS)) THEN
         DO WHILE(REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS>0)
-          USER_NUMBER=REGION%EQUATIONS_SETS%EQUATIONS_SETS(1)%PTR%USER_NUMBER
-          CALL EQUATIONS_SET_DESTROY(USER_NUMBER,REGION,ERR,ERROR,*999)
+          CALL EQUATIONS_SET_DESTROY(REGION%EQUATIONS_SETS%EQUATIONS_SETS(1)%PTR,ERR,ERROR,*999)
         ENDDO !problem_idx
         DEALLOCATE(REGION%EQUATIONS_SETS)
       ENDIF

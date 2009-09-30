@@ -49,6 +49,7 @@
 !> The top level OpenCMISS module. This module is the buffer module between the OpenCMISS library and user code.
 MODULE OPENCMISS
 
+  USE ANALYTIC_ANALYSIS_ROUTINES
   USE BASE_ROUTINES
   USE BASIS_ROUTINES
   USE BOUNDARY_CONDITIONS_ROUTINES
@@ -61,6 +62,8 @@ MODULE OPENCMISS
   USE FIELD_ROUTINES
   USE FIELD_IO_ROUTINES
   USE GENERATED_MESH_ROUTINES
+  USE HISTORY_ROUTINES
+  USE INPUT_OUTPUT
   USE ISO_C_BINDING
   USE ISO_VARYING_STRING
   USE KINDS
@@ -3351,7 +3354,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSSolverEquationsSparseMatrices,CMISSSolverEquationsFullMatrices
 
-  PUBLIC CMISSSolverDAEEulerTypeGet,CMISSSolverDAEEulerTypeSet
+  PUBLIC CMISSSolverDAEEulerSolverTypeSet
 
   PUBLIC CMISSSolverDAESolverTypeGet,CMISSSolverDAESolverTypeSet
 
@@ -3509,9 +3512,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
-    CALL CMISSCoordinateSystemInitialise(WorldCoordinateSystem)
-    CALL CMISSRegionInitialise(WorldRegion)
-    CALL CMISS_Initialise(WorldRegion%REGION,Err,ERROR,*999)
+    CALL CMISSCoordinateSystemTypeInitialise(WorldCoordinateSystem,Err)
+    CALL CMISSRegionTypeInitialise(WorldRegion,Err)
+    CALL CMISS_INITIALISE(WorldRegion%REGION,Err,ERROR,*999)
     !CALL CMISS_Initialise(WorldCoordinateSystem%COORDINATE_SYSTEM,WorldRegion%REGION,Err,ERROR,*999)
 
     RETURN
@@ -4142,7 +4145,7 @@ CONTAINS
     CALL ENTERS("CMISSMeshElementsTypeFinalise",Err,ERROR,*999)
     
     IF(ASSOCIATED(CMISSMeshElements%MESH_ELEMENTS))  &
-      & CALL MESH_ELEMENTS_DESTROY(CMISSMeshElements%MESH_ELEMENTS,Err,ERROR,*999)
+      & CALL MESH_TOPOLOGY_ELEMENTS_DESTROY(CMISSMeshElements%MESH_ELEMENTS,Err,ERROR,*999)
 
     CALL EXITS("CMISSMeshElementsTypeFinalise")
     RETURN
@@ -4448,7 +4451,7 @@ CONTAINS
     CALL ENTERS("CMISSSolverEquationsTypeFinalise",Err,ERROR,*999)
     
     IF(ASSOCIATED(CMISSSolverEquations%SOLVER_EQUATIONS))  &
-      & CALL SOLVER_DESTROY(CMISSSolverEquations%SOLVER_EQUATIONS,Err,ERROR,*999)
+      & CALL SOLVER_EQUATIONS_DESTROY(CMISSSolverEquations%SOLVER_EQUATIONS,Err,ERROR,*999)
 
     CALL EXITS("CMISSSolverEquationsTypeFinalise")
     RETURN
@@ -4990,7 +4993,7 @@ CONTAINS
     NULLIFY(BASIS)
     CALL BASIS_USER_NUMBER_FIND(UserNumber,BASIS,ERR,ERROR,*999)
     IF(ASSOCIATED(BASIS)) THEN
-      CALL BASIS_DESTROY(UserNumber,Err,ERROR,*999)
+      CALL BASIS_DESTROY(BASIS,Err,ERROR,*999)
     ELSE
       LOCAL_ERROR="A basis with an user number of "//TRIM(NUMBER_TO_VSTRING(UserNumber,"*",Err,ERROR))//" does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
@@ -5085,7 +5088,7 @@ CONTAINS
     CALL EXITS("CMISSBasisInterpolationXiGetObj")
     RETURN
 999 CALL ERRORS("CMISSBasisInterpolationXiGetObj",Err,ERROR)
-    CALL CMISS_HANDL_ERROR(Err,ERROR)
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
     CALL EXITS("CMISSBasisInterpolationXiGetObj")
     RETURN
     
@@ -6843,7 +6846,7 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
-    CALL EXTIS("CMISSControlLoopGetNumber11")
+    CALL EXITS("CMISSControlLoopGetNumber11")
     RETURN
 999 CALL ERRORS("CMISSControlLoopGetNumber11",Err,ERROR)
     CALL EXITS("CMISSControlLoopGetNumber11")
@@ -7549,7 +7552,7 @@ CONTAINS
     RETURN
 999 CALL ERRORS("CMISSControlLoopTimesSetObj",Err,ERROR)
     CALL EXITS("CMISSControlLoopTimesSetObj")
-    CALL CMISS_HANDLE_ERRORS(Err,ERROR)
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
   END SUBROUTINE CMISSControlLoopTimesSetObj
@@ -8101,7 +8104,7 @@ CONTAINS
     NULLIFY(COORDINATE_SYSTEM)
     CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(CoordinateSystemUserNumber,COORDINATE_SYSTEM,Err,ERROR,*999)
     IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
-      CALL COORDINATE_SYSTEM_RADIAL_INTERPOLATION_GET(COORDINATE_SYSTEM,RadialInterpolationType,Err,ERROR,*999)
+      CALL COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET(COORDINATE_SYSTEM,RadialInterpolationType,Err,ERROR,*999)
     ELSE
       LOCAL_ERROR="A coordinate system with an user number of "// &
         & TRIM(NUMBER_TO_VSTRING(CoordinateSystemUserNumber,"*",Err,ERROR))//" does not exist."
@@ -8132,7 +8135,7 @@ CONTAINS
 
     CALL ENTERS("CMISSCoordinateSystemRadialInterpolationGetObj",Err,ERROR,*999)
     
-    CALL COORDINATE_SYSTEM_RADIAL_INTERPOLATION_GET(CoordinateSystem%COORDINATE_SYSTEM,RadialInterpolationType,Err,ERROR,*999)
+    CALL COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET(CoordinateSystem%COORDINATE_SYSTEM,RadialInterpolationType,Err,ERROR,*999)
 
     CALL EXITS("CMISSCoordinateSystemRadialInterpolationGetObj")
     RETURN
@@ -8163,7 +8166,7 @@ CONTAINS
     NULLIFY(COORDINATE_SYSTEM)
     CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(CoordinateSystemUserNumber,COORDINATE_SYSTEM,Err,ERROR,*999)
     IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
-      CALL COORDINATE_SYSTEM_RADIAL_INTERPOLATION_SET(COORDINATE_SYSTEM,RadialInterpolationType,Err,ERROR,*999)
+      CALL COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET(COORDINATE_SYSTEM,RadialInterpolationType,Err,ERROR,*999)
     ELSE
       LOCAL_ERROR="A coordinate system with an user number of "// &
         & TRIM(NUMBER_TO_VSTRING(CoordinateSystemUserNumber,"*",Err,ERROR))//" does not exist."
@@ -8194,7 +8197,7 @@ CONTAINS
 
     CALL ENTERS("CMISSCoordinateSystemRadialInterpolationSetObj",Err,ERROR,*999)
     
-    CALL COORDINATE_SYSTEM_RADIAL_INTERPOLATION_SET(CoordinateSystem%COORDINATE_SYSTEM,RadialInterpolationType,Err,ERROR,*999)
+    CALL COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET(CoordinateSystem%COORDINATE_SYSTEM,RadialInterpolationType,Err,ERROR,*999)
 
     CALL EXITS("CMISSCoordinateSystemRadialInterpolationSetObj")
     RETURN
@@ -8603,7 +8606,7 @@ CONTAINS
     NULLIFY(EQUATIONS)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL EQUATIONS_SET_USER_NUMBER_FIND(REGION,EquationsSetUserNumber,Err,EQUATIONS_SET,ERROR,*999)
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
         CALL EQUATIONS_DESTROY(EQUATIONS,Err,ERROR,*999)
@@ -8676,7 +8679,7 @@ CONTAINS
     NULLIFY(EQUATIONS)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL EQUATIONS_SET_USER_NUMBER_FIND(REGION,EquationsSetUserNumber,Err,EQUATIONS_SET,ERROR,*999)
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
         CALL EQUATIONS_LINEARITY_TYPE_GET(EQUATIONS,LinearityType,Err,ERROR,*999)
@@ -8750,7 +8753,7 @@ CONTAINS
     NULLIFY(EQUATIONS)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL EQUATIONS_SET_USER_NUMBER_FIND(REGION,EquationsSetUserNumber,Err,EQUATIONS_SET,ERROR,*999)
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
         CALL EQUATIONS_LUMPING_TYPE_GET(EQUATIONS,LumpingType,Err,ERROR,*999)
@@ -8824,7 +8827,7 @@ CONTAINS
     NULLIFY(EQUATIONS)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL EQUATIONS_SET_USER_NUMBER_FIND(REGION,EquationsSetUserNumber,Err,EQUATIONS_SET,ERROR,*999)
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
         CALL EQUATIONS_LUMPING_TYPE_SET(EQUATIONS,LumpingType,Err,ERROR,*999)
@@ -8898,7 +8901,7 @@ CONTAINS
     NULLIFY(EQUATIONS)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL EQUATIONS_SET_USER_NUMBER_FIND(REGION,EquationsSetUserNumber,Err,EQUATIONS_SET,ERROR,*999)
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
         CALL EQUATIONS_OUTPUT_TYPE_GET(EQUATIONS,OutputType,Err,ERROR,*999)
@@ -8972,7 +8975,7 @@ CONTAINS
     NULLIFY(EQUATIONS)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL EQUATIONS_SET_USER_NUMBER_FIND(REGION,EquationsSetUserNumber,Err,EQUATIONS_SET,ERROR,*999)
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
         CALL EQUATIONS_OUTPUT_TYPE_SET(EQUATIONS,OutputType,Err,ERROR,*999)
@@ -9046,7 +9049,7 @@ CONTAINS
     NULLIFY(EQUATIONS)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL EQUATIONS_SET_USER_NUMBER_FIND(REGION,EquationsSetUserNumber,Err,EQUATIONS_SET,ERROR,*999)
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
         CALL EQUATIONS_SPARSITY_TYPE_GET(EQUATIONS,SparsityType,Err,ERROR,*999)
@@ -9120,7 +9123,7 @@ CONTAINS
     NULLIFY(EQUATIONS)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL EQUATIONS_SET_USER_NUMBER_FIND(REGION,EquationsSetUserNumber,Err,EQUATIONS_SET,ERROR,*999)
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
         CALL EQUATIONS_SPARSITY_TYPE_SET(EQUATIONS,SparsityType,Err,ERROR,*999)
@@ -9194,7 +9197,7 @@ CONTAINS
     NULLIFY(EQUATIONS)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL EQUATIONS_SET_USER_NUMBER_FIND(REGION,EquationsSetUserNumber,Err,EQUATIONS_SET,ERROR,*999)
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
         CALL EQUATIONS_TIME_DEPENDENCE_TYPE_GET(EQUATIONS,TimeDependenceType,Err,ERROR,*999)
@@ -9268,7 +9271,7 @@ CONTAINS
     NULLIFY(EQUATIONS_SET)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL EQUATIONS_SET_USER_NUMBER_FIND(REGION,EquationsSetUserNumber,Err,EQUATIONS_SET,ERROR,*999)
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_ANALYTIC_CREATE_FINISH(EQUATIONS_SET,Err,ERROR,*999)
       ELSE
@@ -9555,7 +9558,7 @@ CONTAINS
     NULLIFY(EQUATIONS_SET)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL EQUATIONS_SET_USER_NUMBER_FIND(REGION,EquationsSetUserNumber,Err,EQUATIONS_SET,ERROR,*999)
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_CREATE_FINISH(EQUATIONS_SET,Err,ERROR,*999)
       ELSE
@@ -9766,7 +9769,7 @@ CONTAINS
     NULLIFY(EQUATIONS_SET)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL EQUATIONS_SET_USER_NUMBER_FIND(REGION,EquationsSetUserNumber,Err,EQUATIONS_SET,ERROR,*999)
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_CREATE_FINISH(EQUATIONS_SET,Err,ERROR,*999)
       ELSE
@@ -9980,7 +9983,7 @@ CONTAINS
     NULLIFY(EQUATIONS_SET)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL EQUATIONS_SET_USER_NUMBER_FIND(REGION,EquationsSetUserNumber,Err,EQUATIONS_SET,ERROR,*999)
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_DEPENDENT_CREATE_FINISH(EQUATIONS_SET,Err,ERROR,*999)
       ELSE
@@ -10194,7 +10197,7 @@ CONTAINS
     NULLIFY(EQUATIONS_SET)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL EQUATIONS_SET_USER_NUMBER_FIND(REGION,EquationsSetUserNumber,Err,EQUATIONS_SET,ERROR,*999)
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_EQUATIONS_CREATE_FINISH(EQUATIONS_SET,Err,ERROR,*999)
       ELSE
@@ -10404,7 +10407,7 @@ CONTAINS
     NULLIFY(EQUATIONS_SET)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL EQUATIONS_SET_USER_NUMBER_FIND(REGION,EquationsSetUserNumber,Err,EQUATIONS_SET,ERROR,*999)
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_MATERIALS_CREATE_FINISH(EQUATIONS_SET,Err,ERROR,*999)
       ELSE
@@ -10619,7 +10622,7 @@ CONTAINS
     NULLIFY(EQUATIONS_SET)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL EQUATIONS_SET_USER_NUMBER_FIND(REGION,EquationsSetUserNumber,Err,EQUATIONS_SET,ERROR,*999)
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_SOLUTION_METHOD_GET(EQUATIONS_SET,SolutionMethod,Err,ERROR,*999)
       ELSE
@@ -10690,7 +10693,7 @@ CONTAINS
     NULLIFY(EQUATIONS_SET)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL EQUATIONS_SET_USER_NUMBER_FIND(REGION,EquationsSetUserNumber,Err,EQUATIONS_SET,ERROR,*999)
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SolutionMethod,Err,ERROR,*999)
       ELSE
@@ -10760,7 +10763,7 @@ CONTAINS
     NULLIFY(EQUATIONS_SET)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL EQUATIONS_SET_USER_NUMBER_FIND(REGION,EquationsSetUserNumber,Err,EQUATIONS_SET,ERROR,*999)
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_SOURCE_CREATE_FINISH(EQUATIONS_SET,Err,ERROR,*999)
       ELSE
@@ -10977,7 +10980,7 @@ CONTAINS
     NULLIFY(EQUATIONS_SET)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL EQUATIONS_SET_USER_NUMBER_FIND(REGION,EquationsSetUserNumber,Err,EQUATIONS_SET,ERROR,*999)
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_SPECIFICATION_GET(EQUATIONS_SET,EquationsSetClass,EquationsSetType,EquationsSetSubtype,Err,ERROR,*999)
       ELSE
@@ -11054,7 +11057,7 @@ CONTAINS
     NULLIFY(EQUATIONS_SET)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL EQUATIONS_SET_USER_NUMBER_FIND(REGION,EquationsSetUserNumber,Err,EQUATIONS_SET,ERROR,*999)
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_SPECIFICATION_SET(EQUATIONS_SET,EquationsSetClass,EquationsSetType,EquationsSetSubtype,Err,ERROR,*999)
       ELSE
@@ -13342,7 +13345,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL MESH_USER_NUMBER_FIND(REGION,MeshUserNumber,MESH,Err,ERROR,*999)
+        CALL MESH_USER_NUMBER_FIND(MeshUserNumber,REGION,MESH,Err,ERROR,*999)
         IF(ASSOCIATED(MESH)) THEN
           CALL DECOMPOSITION_USER_NUMBER_FIND(DecompositionUserNumber,MESH,DECOMPOSITION,Err,ERROR,*999)
           IF(ASSOCIATED(DECOMPOSITION)) THEN
@@ -18384,33 +18387,6 @@ CONTAINS
   !  
 
   !>Export nodal information for fields set identified by an object. \todo number method
-  SUBROUTINE CMISSFieldIONodesExportCCObj(Fields,FileName,Method,Err)
-  
-    !Argument variables
-    TYPE(CMISSFieldsType), INTENT(INOUT) :: Fields !<The fields to export the nodes for.
-    CHARACTER(LEN=*), INTENT(IN) :: FileName !<The file name to export the nodes to
-    CHARACTER(LEN=*), INTENT(IN):: Method !<The export method to use.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-  
-    CALL ENTERS("CMISSFieldIONodesExportCCObj",Err,ERROR,*999)
- 
-    CALL FIELD_IO_NODES_EXPORT(Fields%FIELDS,VAR_STR(FileName),VAR_STR(Method),Err,ERROR,*999)
-
-    CALL EXITS("CMISSFieldIONodesExportCCObj")
-    RETURN
-999 CALL ERRORS("CMISSFieldIONodesExportCCObj",Err,ERROR)
-    CALL EXITS("CMISSFieldIONodesExportCCObj")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSFieldIONodesExportCCObj
-
-  !  
-  !================================================================================================================================
-  !  
-
-  !>Export nodal information for fields set identified by an object. \todo number method
   SUBROUTINE CMISSFieldIONodesExportVSCObj(Fields,FileName,Method,Err)
   
     !Argument variables
@@ -19868,7 +19844,7 @@ CONTAINS
     !Argument variables
     TYPE(CMISSDecompositionType), INTENT(IN) :: Decomposition !<The decomposition to set the element domain for.
     INTEGER(INTG), INTENT(IN) :: ElementUserNumber !<The user number of the element to set the domain for.
-    INTEGER(INTG), INTENT(OUT) :: Domain !<The computational domain of the element to set.
+    INTEGER(INTG), INTENT(IN) :: Domain !<The computational domain of the element to set.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -20964,6 +20940,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: BasisUserNumber !<The user number of the default basis to use for the elements.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
@@ -20973,7 +20950,8 @@ CONTAINS
  
     NULLIFY(REGION)
     NULLIFY(MESH)
-    NULLIFY(MESH_ELEMENTS)
+    NULLIFY(BASIS)
+    NULLIFY(MESH_ELEMENTS)    
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL MESH_USER_NUMBER_FIND(MeshUserNumber,REGION,MESH,Err,ERROR,*999)
@@ -21402,7 +21380,7 @@ CONTAINS
       CALL MESH_USER_NUMBER_FIND(MeshUserNumber,REGION,MESH,Err,ERROR,*999)
       IF(ASSOCIATED(MESH)) THEN
         CALL MESH_TOPOLOGY_ELEMENTS_GET(MESH,MeshComponentNumber,MESH_ELEMENTS,Err,ERROR,*999)
-        CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NUMBER_GET(ElementGlobalNumber,ElementUserNumber,MESH_ELEMENTS,Err,ERROR,*999)
+        CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_GET(ElementGlobalNumber,ElementUserNumber,MESH_ELEMENTS,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
           & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -21439,7 +21417,8 @@ CONTAINS
   
     CALL ENTERS("CMISSMeshElementsUserNumberGetObj",Err,ERROR,*999)
  
-    CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NUMBER_GET(ElementGlobalNumber,ElementUserNumber,MeshElements%MESH_ELEMENTS,Err,ERROR,*999)
+    CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_GET(ElementGlobalNumber,ElementUserNumber,MeshElements%MESH_ELEMENTS, &
+      & Err,ERROR,*999)
 
     CALL EXITS("CMISSMeshElementsUserNumberGetObj")
     RETURN
@@ -21481,7 +21460,7 @@ CONTAINS
       CALL MESH_USER_NUMBER_FIND(MeshUserNumber,REGION,MESH,Err,ERROR,*999)
       IF(ASSOCIATED(MESH)) THEN
         CALL MESH_TOPOLOGY_ELEMENTS_GET(MESH,MeshComponentNumber,MESH_ELEMENTS,Err,ERROR,*999)
-        CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NUMBER_SET(ElementGlobalNumber,ElementUserNumber,MESH_ELEMENTS,Err,ERROR,*999)
+        CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_SET(ElementGlobalNumber,ElementUserNumber,MESH_ELEMENTS,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
           & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -21518,7 +21497,8 @@ CONTAINS
   
     CALL ENTERS("CMISSMeshElementsUserNumberSetObj",Err,ERROR,*999)
  
-    CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NUMBER_SET(ElementGlobalNumber,ElementUserNumber,MeshElements%MESH_ELEMENTS,Err,ERROR,*999)
+    CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_SET(ElementGlobalNumber,ElementUserNumber,MeshElements%MESH_ELEMENTS, &
+      & Err,ERROR,*999)
 
     CALL EXITS("CMISSMeshElementsUserNumberSetObj")
     RETURN
@@ -22198,7 +22178,6 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSProblemCreateStartNumber",Err,ERROR,*999)
  
@@ -22586,7 +22565,7 @@ CONTAINS
   SUBROUTINE CMISSProblemControlLoopGetObj1(Problem,ControlLoopIdentifiers,ControlLoop,Err)
   
     !Argument variables
-    TYPE(CMISSControlLoopType), INTENT(IN) :: Problem !<The problem to get the control loop for.
+    TYPE(CMISSProblemType), INTENT(IN) :: Problem !<The problem to get the control loop for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to get the control loop for.
     TYPE(CMISSControlLoopType), INTENT(INOUT) :: ControlLoop !<On return, the specified problem control loop.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
@@ -22687,7 +22666,7 @@ CONTAINS
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
-      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,Solver%SOVLER,Err,ERROR,*999)
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,Solver%SOLVER,Err,ERROR,*999)
     ELSE
       LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
@@ -22775,7 +22754,7 @@ CONTAINS
   SUBROUTINE CMISSProblemSolverGetObj1(Problem,ControlLoopIdentifiers,SolverIndex,Solver,Err)
   
     !Argument variables
-    TYPE(CMISSControlLoopType), INTENT(IN) :: Problem !<The problem to get the solver for.
+    TYPE(CMISSProblemType), INTENT(IN) :: Problem !<The problem to get the solver for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to get the solver for.
     INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the solver for.
     TYPE(CMISSSolverType), INTENT(INOUT) :: Solver !<On return, the specified solver.
@@ -22997,7 +22976,7 @@ CONTAINS
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
-      CALL PROBLEM_SOLVER_EQUATIONS_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SolverEquations%SOVLER_EQUATIONS,Err,ERROR,*999)
+      CALL PROBLEM_SOLVER_EQUATIONS_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SolverEquations%SOLVER_EQUATIONS,Err,ERROR,*999)
     ELSE
       LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
@@ -23086,7 +23065,7 @@ CONTAINS
   SUBROUTINE CMISSProblemSolverEquationsGetObj1(Problem,ControlLoopIdentifiers,SolverIndex,SolverEquations,Err)
   
     !Argument variables
-    TYPE(CMISSControlLoopType), INTENT(IN) :: Problem !<The problem to get the solver equations for.
+    TYPE(CMISSProblemType), INTENT(IN) :: Problem !<The problem to get the solver equations for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to get the solver equations for.
     INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the solver equations for.
     TYPE(CMISSSolverEquationsType), INTENT(INOUT) :: SolverEquations !<On return, the specified solver equations.
@@ -23950,7 +23929,7 @@ CONTAINS
     NULLIFY(REGION)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN      
-      CALL REGION_LABEL_SET(REGION,Label,Err,ERROR,*999)
+      CALL REGION_LABEL_SET(REGION,CHAR(Label),Err,ERROR,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
@@ -23980,7 +23959,7 @@ CONTAINS
   
     CALL ENTERS("CMISSRegionLabelSetVSObj",Err,ERROR,*999)
  
-    CALL REGION_LABEL_SET(Region%REGION,Label,Err,ERROR,*999)
+    CALL REGION_LABEL_SET(Region%REGION,CHAR(Label),Err,ERROR,*999)
 
     CALL EXITS("CMISSRegionLabelSetVSObj")
     RETURN
@@ -24020,7 +23999,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DAE_EULER_SOLVER_TYPE_GET(SOLVER,DAEEulerSolverType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -24061,7 +24040,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DAE_EULER_SOLVER_TYPE_GET(SOLVER,DAEEulerSolverType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -24128,7 +24107,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DAE_EULER_SOLVER_TYPE_SET(SOLVER,DAEEulerSolverType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -24169,7 +24148,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DAE_EULER_SOLVER_TYPE_SET(SOLVER,DAEEulerSolverType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -24236,7 +24215,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DAE_SOLVER_TYPE_GET(SOLVER,DAESolverType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -24277,7 +24256,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DAE_SOLVER_TYPE_GET(SOLVER,DAESolverType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -24344,7 +24323,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DAE_SOLVER_TYPE_SET(SOLVER,DAESolverType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -24385,7 +24364,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DAE_SOLVER_TYPE_SET(SOLVER,DAESolverType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -24436,9 +24415,9 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the DAE times for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the solver to set the DAE times for.
     INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the DAE times for.
-    INTEGER(INTG), INTENT(IN) :: StartTime !<The start time for the differential-algebraic solver.
-    INTEGER(INTG), INTENT(IN) :: EndTime !<The end time for the differential-algebraic solver.
-    INTEGER(INTG), INTENT(IN) :: InitialStep !<The (initial) time step for the differential-algebraic solver.
+    REAL(DP), INTENT(IN) :: StartTime !<The start time for the differential-algebraic solver.
+    REAL(DP), INTENT(IN) :: EndTime !<The end time for the differential-algebraic solver.
+    REAL(DP), INTENT(IN) :: InitialStep !<The (initial) time step for the differential-algebraic solver.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -24454,7 +24433,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DAE_TIMES_SET(SOLVER,StartTime,EndTime,InitialStep,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -24479,16 +24458,16 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the DAE times for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the DAE times for.
     INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the DAE times for.
-    INTEGER(INTG), INTENT(IN) :: StartTime !<The start time for the differential-algebraic solver.
-    INTEGER(INTG), INTENT(IN) :: EndTime !<The end time for the differential-algebraic solver.
-    INTEGER(INTG), INTENT(IN) :: InitialStep !<The (initial) time step for the differential-algebraic solver.
+    REAL(DP), INTENT(IN) :: StartTime !<The start time for the differential-algebraic solver.
+    REAL(DP), INTENT(IN) :: EndTime !<The end time for the differential-algebraic solver.
+    REAL(DP), INTENT(IN) :: InitialStep !<The (initial) time step for the differential-algebraic solver.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("",Err,ERROR,*999)
+    CALL ENTERS("CMISSSolverDAETimesSetNumber1",Err,ERROR,*999)
  
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -24497,7 +24476,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DAE_TIMES_SET(SOLVER,StartTime,EndTime,InitialStep,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -24520,10 +24499,10 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to set the DAE times for.
-    INTEGER(INTG), INTENT(IN) :: StartTime !<The start time for the differential-algebraic solver.
-    INTEGER(INTG), INTENT(IN) :: EndTime !<The end time for the differential-algebraic solver.
-    INTEGER(INTG), INTENT(IN) :: InitialStep !<The (initial) time step for the differential-algebraic solver.
-   INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    REAL(DP), INTENT(IN) :: StartTime !<The start time for the differential-algebraic solver.
+    REAL(DP), INTENT(IN) :: EndTime !<The end time for the differential-algebraic solver.
+    REAL(DP), INTENT(IN) :: InitialStep !<The (initial) time step for the differential-algebraic solver.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
     CALL ENTERS("CMISSSolverDAETimesSetObj",Err,ERROR,*999)
@@ -24566,7 +24545,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DYNAMIC_DEGREE_GET(SOLVER,Degree,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -24607,7 +24586,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DYNAMIC_DEGREE_GET(SOLVER,Degree,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -24674,7 +24653,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DYNAMIC_DEGREE_SET(SOLVER,Degree,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -24715,7 +24694,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DYNAMIC_DEGREE_SET(SOLVER,Degree,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -24782,7 +24761,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DYNAMIC_LINEARITY_TYPE_GET(SOLVER,LinearityType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -24823,7 +24802,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DYNAMIC_LINEARITY_TYPE_GET(SOLVER,LinearityType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -24892,9 +24871,10 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DYNAMIC_NONLINEAR_SOLVER_GET(SOLVER,NONLINEAR_SOLVER,Err,ERROR,*999)
       !todo: get the solver index from nonlinear solver
+      NonlinearSolverIndex=NONLINEAR_SOLVER%GLOBAL_NUMBER
       CALL FLAG_ERROR("Not implemented.",Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -24937,9 +24917,10 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DYNAMIC_NONLINEAR_SOLVER_GET(SOLVER,NONLINEAR_SOLVER,Err,ERROR,*999)
       !todo: get the solver index from nonlinear solver
+      NonlinearSolverIndex=NONLINEAR_SOLVER%GLOBAL_NUMBER
       CALL FLAG_ERROR("Not implemented.",Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -25007,9 +24988,10 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DYNAMIC_LINEAR_SOLVER_GET(SOLVER,LINEAR_SOLVER,Err,ERROR,*999)
       !todo: get the solver index from linear solver
+      LinearSolverIndex=LINEAR_SOLVER%GLOBAL_NUMBER
       CALL FLAG_ERROR("Not implemented.",Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -25051,9 +25033,10 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DYNAMIC_LINEAR_SOLVER_GET(SOLVER,LINEAR_SOLVER,Err,ERROR,*999)
       !todo: get the solver index from linear solver
+      LinearSolverIndex=LINEAR_SOLVER%GLOBAL_NUMBER
       CALL FLAG_ERROR("Not implemented.",Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -25119,7 +25102,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DYNAMIC_SCHEME_SET(SOLVER,Scheme,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -25158,9 +25141,9 @@ CONTAINS
     CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
-      CALL SOLVER_DYNAMIC_SCHME_SET(SOLVER,Scheme,Err,ERROR,*999)
+      CALL SOLVER_DYNAMIC_SCHEME_SET(SOLVER,Scheme,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -25182,7 +25165,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to set the scheme for.
-    TYPE(CMISSSolverType), INTENT(IN) :: Scheme !<The dynamic scheme to set. \see OPENCMISS_DynamicSchemeTypes
+    INTEGER(INTG), INTENT(IN) :: Scheme !<The dynamic scheme to set. \see OPENCMISS_DynamicSchemeTypes
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -25226,7 +25209,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,Theta,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -25267,7 +25250,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,Thetas,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -25308,7 +25291,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,Theta,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -25349,7 +25332,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,Thetas,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -25443,7 +25426,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DYNAMIC_TIMES_SET(SOLVER,CurrentTime,TimeIncrement,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -25485,7 +25468,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_DYNAMIC_TIMES_SET(SOLVER,CurrentTime,TimeIncrement,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -25514,7 +25497,7 @@ CONTAINS
   
     CALL ENTERS("CMISSSolverDynamicTimesSetObj",Err,ERROR,*999)
  
-    CALL SOLVER_DYNAMIC_SCHEME_SET(Solver%SOLVER,Scheme,Err,ERROR,*999)
+    CALL SOLVER_DYNAMIC_TIMES_SET(Solver%SOLVER,CurrentTime,TimeIncrement,Err,ERROR,*999)
 
     CALL EXITS("CMISSSolverDynamicTimesSetObj")
     RETURN
@@ -25552,7 +25535,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_LIBRARY_TYPE_GET(SOLVER,LibraryType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -25593,7 +25576,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_LIBRARY_TYPE_GET(SOLVER,LibraryType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -25659,7 +25642,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_LIBRARY_TYPE_SET(SOLVER,LibraryType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -25700,7 +25683,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_LIBRARY_TYPE_SET(SOLVER,LibraryType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -25766,7 +25749,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_LINEAR_DIRECT_TYPE_SET(SOLVER,DirectSolverType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -25807,7 +25790,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_LINEAR_DIRECT_TYPE_SET(SOLVER,DirectSolverType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -25874,7 +25857,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_LINEAR_ITERATIVE_ABSOLUTE_TOLERANCE_SET(SOLVER,AbsoluteTolerance,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -25916,7 +25899,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_LINEAR_ITERATIVE_ABSOLUTE_TOLERANCE_SET(SOLVER,AbsoluteTolerance,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -25983,7 +25966,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_LINEAR_ITERATIVE_DIVERGENCE_TOLERANCE_SET(SOLVER,DivergenceTolerance,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -26025,7 +26008,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_LINEAR_ITERATIVE_DIVERGENCE_TOLERANCE_SET(SOLVER,DivergenceTolerance,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -26092,7 +26075,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET(SOLVER,GMRESRestart,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -26134,7 +26117,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET(SOLVER,GMRESRestart,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -26201,7 +26184,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_LINEAR_ITERATIVE_MAXIMUM_ITERATIONS_SET(SOLVER,MaximumIterations,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -26243,7 +26226,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_LINEAR_ITERATIVE_MAXIMUM_ITERATIONS_SET(SOLVER,MaximumIterations,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -26310,7 +26293,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_LINEAR_ITERATIVE_PRECONDITIONER_TYPE_SET(SOLVER,PreconditionerType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -26352,7 +26335,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_LINEAR_ITERATIVE_PRECONDITIONER_TYPE_SET(SOLVER,PreconditionerType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -26419,7 +26402,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_LINEAR_ITERATIVE_RELATIVE_TOLERANCE_SET(SOLVER,RelativeTolerance,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -26461,7 +26444,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_LINEAR_ITERATIVE_RELATIVE_TOLERANCE_SET(SOLVER,RelativeTolerance,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -26527,7 +26510,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_LINEAR_ITERATIVE_TYPE_SET(SOLVER,IterativeSolverType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -26568,7 +26551,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_LINEAR_ITERATIVE_TYPE_SET(SOLVER,IterativeSolverType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -26634,7 +26617,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_LINEAR_TYPE_SET(SOLVER,LinearSolverType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -26675,7 +26658,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_LINEAR_TYPE_SET(SOLVER,LinearSolverType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -26741,7 +26724,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_ABSOLUTE_TOLERANCE_SET(SOLVER,AbsoluteTolerance,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -26783,7 +26766,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_ABSOLUTE_TOLERANCE_SET(SOLVER,AbsoluteTolerance,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -26850,7 +26833,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_JACOBIAN_CALCULATION_TYPE_SET(SOLVER,JacobianCalculationType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -26892,7 +26875,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_JACOBIAN_CALCULATION_TYPE_SET(SOLVER,JacobianCalculationType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -26959,9 +26942,10 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_LINEAR_SOLVER_GET(SOLVER,LINEAR_SOLVER,Err,ERROR,*999)
       !todo: get the solver index from linear solver
+      LinearSolverIndex=LINEAR_SOLVER%GLOBAL_NUMBER
       CALL FLAG_ERROR("Not implemented.",Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -27003,9 +26987,10 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_LINEAR_SOLVER_GET(SOLVER,LINEAR_SOLVER,Err,ERROR,*999)
       !todo: get the solver index from linear solver
+      LinearSolverIndex=LINEAR_SOLVER%GLOBAL_NUMBER
       CALL FLAG_ERROR("Not implemented.",Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -27071,7 +27056,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_LINESEARCH_ALPHA_SET(SOLVER,Alpha,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -27112,7 +27097,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_LINESEARCH_ALPHA_SET(SOLVER,Alpha,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -27178,7 +27163,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_LINESEARCH_MAXSTEP_SET(SOLVER,MaxStep,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -27219,7 +27204,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_LINESEARCH_MAXSTEP_SET(SOLVER,MaxStep,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -27285,7 +27270,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_LINESEARCH_STEPTOL_SET(SOLVER,StepTol,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -27326,7 +27311,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_LINESEARCH_STEPTOL_SET(SOLVER,StepTol,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -27392,7 +27377,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_LINESEARCH_TYPE_SET(SOLVER,LineSearchType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -27433,7 +27418,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_LINESEARCH_TYPE_SET(SOLVER,LineSearchType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -27500,7 +27485,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET(SOLVER,MaximumFunctionEvaluations,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -27542,7 +27527,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET(SOLVER,MaximumFunctionEvaluations,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -27608,7 +27593,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_MAXIMUM_ITERATIONS_SET(SOLVER,MaximumIterations,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -27650,7 +27635,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_MAXIMUM_ITERATIONS_SET(SOLVER,MaximumIterations,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -27716,7 +27701,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_RELATIVE_TOLERANCE_SET(SOLVER,RelativeTolerance,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -27758,7 +27743,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_RELATIVE_TOLERANCE_SET(SOLVER,RelativeTolerance,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -27824,7 +27809,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_SOLUTION_TOLERANCE_SET(SOLVER,SolutionTolerance,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -27866,7 +27851,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_SOLUTION_TOLERANCE_SET(SOLVER,SolutionTolerance,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -27932,7 +27917,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_TRUSTREGION_DELTA0_SET(SOLVER,Delta0,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -27973,7 +27958,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_TRUSTREGION_DELTA0_SET(SOLVER,Delta0,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -28039,7 +28024,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_TRUSTREGION_TOLERANCE_SET(SOLVER,Tolerance,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -28080,7 +28065,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_TRUSTREGION_TOLERANCE_SET(SOLVER,Tolerance,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -28146,7 +28131,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_TYPE_SET(SOLVER,NewtonSolveType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -28187,7 +28172,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NEWTON_TYPE_SET(SOLVER,NewtonSolveType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -28253,7 +28238,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NONLINEAR_TYPE_SET(SOLVER,NonlinearSolveType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -28294,7 +28279,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_NONLINEAR_TYPE_SET(SOLVER,NonlinearSolveType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -28360,7 +28345,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_OUTPUT_TYPE_SET(SOLVER,OutputType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -28401,7 +28386,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_OUTPUT_TYPE_SET(SOLVER,OutputType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -28467,7 +28452,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SolverEquations%SOLVER_EQUATIONS,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -28508,7 +28493,7 @@ CONTAINS
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
       CALL SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SolverEquations%SOLVER_EQUATIONS,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -28681,10 +28666,10 @@ CONTAINS
   !  
  
   !>Adds equations sets to solver equations identified by an object.
-  SUBROUTINE CMISSSolverEquationsEquationsSetAddObj(Solver,EquationsSet,EquationsSetIndex,Err)
+  SUBROUTINE CMISSSolverEquationsEquationsSetAddObj(SolverEquations,EquationsSet,EquationsSetIndex,Err)
   
     !Argument variables
-    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to add the equations set for.
+    TYPE(CMISSSolverEquationsType), INTENT(IN) :: SolverEquations !<The solver equations to add the equations set for.
     TYPE(CMISSEquationsSetType), INTENT(IN) :: EquationsSet !<The equations set to add.
     INTEGER(INTG), INTENT(OUT) :: EquationsSetIndex !<On return, the index of the added equations set in the solver equations.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
@@ -28692,7 +28677,8 @@ CONTAINS
   
     CALL ENTERS("CMISSSolverEquationsEquationsSetAddObj",Err,ERROR,*999)
  
-    CALL SOLVER_EQUATIONS_EQUATIONS_SET_ADD(Solver%SOLVER,EquationsSet%EQUATIONS_SET,EquationsSetIndex,Err,ERROR,*999)
+    CALL SOLVER_EQUATIONS_EQUATIONS_SET_ADD(SolverEquations%SOLVER_EQUATIONS,EquationsSet%EQUATIONS_SET,EquationsSetIndex, &
+      & Err,ERROR,*999)
 
     CALL EXITS("CMISSSolverEquationsEquationsSetAddObj")
     RETURN
@@ -28733,7 +28719,7 @@ CONTAINS
       CALL SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SOLVER_EQUATIONS,Err,ERROR,*999)
       CALL SOLVER_EQUATIONS_SPARSITY_TYPE_SET(SOLVER_EQUATIONS,SparsityType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -28777,7 +28763,7 @@ CONTAINS
       CALL SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SOLVER_EQUATIONS,Err,ERROR,*999)
       CALL SOLVER_EQUATIONS_SPARSITY_TYPE_SET(SOLVER_EQUATIONS,SparsityType,Err,ERROR,*999)
     ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF

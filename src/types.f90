@@ -1665,6 +1665,7 @@ MODULE TYPES
   !>Contains information on the type of solver to be used. \see OPENCMISS::CMISSSolverType
   TYPE SOLVER_TYPE
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS !<A pointer to the control loop solvers
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the solver in the list of solvers
     TYPE(SOLVER_TYPE), POINTER :: LINKING_SOLVER !<A pointer to any solver that is linking to this solver
     TYPE(SOLVER_TYPE), POINTER :: LINKED_SOLVER !<A pointer to any linked solver
     LOGICAL :: SOLVER_FINISHED !<Is .TRUE. if the solver has finished being created, .FALSE. if not.
