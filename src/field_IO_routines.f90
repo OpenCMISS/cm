@@ -4557,10 +4557,11 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: FILE_NAME !the prefix name of file.
+    TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: COMPONENT !the prefix name of file.
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING_NODES !The domain mapping to calculate nodal mappings
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES ! domain nodes
-    INTEGER(INTG) :: local_number, global_number, sessionHandle, paddingCount, padding(1)
-    INTEGER(INTG), ALLOCATABLE :: GROUP_DERIVATIVES(:), paddingInfo(:)
+    INTEGER(INTG) :: local_number, global_number, sessionHandle, paddingCount, padding(1), DERIVATIVE_INDEXES(PART_DERIV_S4_S4_S4)
+    INTEGER(INTG), ALLOCATABLE :: paddingInfo(:)
     INTEGER(INTG) :: nn, comp_idx,  dev_idx, NUM_OF_NODAL_DEV, MAX_NUM_OF_NODAL_DERIVATIVES, total_nodal_values
     REAL(C_DOUBLE), ALLOCATABLE, TARGET :: NODAL_BUFFER(:), TOTAL_NODAL_BUFFER(:)
     REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
@@ -4620,14 +4621,10 @@ CONTAINS
              IF(SIZE(NODAL_BUFFER)<MAX_NUM_OF_NODAL_DERIVATIVES) THEN
                 CALL REALLOCATE( NODAL_BUFFER, MAX_NUM_OF_NODAL_DERIVATIVES, &
                   & "Could not allocate temporary nodal buffer in IO writing", ERR, ERROR, *999 )
-                CALL REALLOCATE( GROUP_DERIVATIVES, MAX_NUM_OF_NODAL_DERIVATIVES, &
-                  & "Could not allocate temporary derivative buffer in IO writing", ERR, ERROR, *999 )
              ENDIF
           ELSE
              CALL REALLOCATE( NODAL_BUFFER, MAX_NUM_OF_NODAL_DERIVATIVES, &
                & "Could not allocate temporary nodal buffer in IO writing", ERR, ERROR, *999 )
-             CALL REALLOCATE( GROUP_DERIVATIVES, MAX_NUM_OF_NODAL_DERIVATIVES, &
-               & "Could not allocate temporary derivative buffer in IO writing", ERR, ERROR, *999 )
           ENDIF
        ENDIF !NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%SAME_HEADER==.FALSE.
 
@@ -4651,26 +4648,41 @@ CONTAINS
              ENDIF
           ENDDO
 
+          COMPONENT => NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(comp_idx)%PTR
+
           !finding the local numbering through the global to local mapping
-          DOMAIN_MAPPING_NODES=>NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(comp_idx)%PTR%DOMAIN%MAPPINGS%NODES
+          DOMAIN_MAPPING_NODES=>COMPONENT%DOMAIN%MAPPINGS%NODES
           !get the domain index for this variable component according to my own computional node number
           local_number = FindMyLocalDomainNumber( DOMAIN_MAPPING_NODES%GLOBAL_TO_LOCAL_MAP(global_number), &
             & my_computational_node_number )
           !use local domain information find the out the maximum number of derivatives
-          DOMAIN_NODES=>NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(comp_idx)%PTR%DOMAIN%TOPOLOGY%NODES
+          DOMAIN_NODES=>COMPONENT%DOMAIN%TOPOLOGY%NODES
+
+          NULLIFY(GEOMETRIC_PARAMETERS)
+          CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,FIELD_U_VARIABLE_TYPE, &
+             & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
 
           !get the nodal partial derivatives
           NUM_OF_NODAL_DEV=DOMAIN_NODES%NODES(local_number)%NUMBER_OF_DERIVATIVES
-          GROUP_DERIVATIVES(1:NUM_OF_NODAL_DEV)=DOMAIN_NODES%NODES(local_number)%PARTIAL_DERIVATIVE_INDEX(:)
-          !sort  the partial derivatives
-          CALL LIST_SORT(GROUP_DERIVATIVES(1:NUM_OF_NODAL_DEV),ERR,ERROR,*999)
+    
+          !Record the dof-index of each derivative (if it is present)      
+          DERIVATIVE_INDEXES = -1
           DO dev_idx=1, NUM_OF_NODAL_DEV
-             NULLIFY(GEOMETRIC_PARAMETERS)
-             CALL FIELD_PARAMETER_SET_DATA_GET(NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(comp_idx)%PTR% &
-               & FIELD_VARIABLE%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+             DERIVATIVE_INDEXES( DOMAIN_NODES%NODES(local_number)%PARTIAL_DERIVATIVE_INDEX(dev_idx) ) = dev_idx
+          ENDDO
 
-             NODAL_BUFFER(dev_idx)=GEOMETRIC_PARAMETERS(NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(comp_idx)%PTR%&
-               &PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(GROUP_DERIVATIVES(dev_idx),local_number))
+          !Output the dofs, sorted according to derivative index    
+          NUM_OF_NODAL_DEV = 0
+          DO dev_idx=1, size(DERIVATIVE_INDEXES)
+             IF( DERIVATIVE_INDEXES( dev_idx ) == -1 ) THEN
+                CYCLE
+             ENDIF
+
+             NUM_OF_NODAL_DEV = NUM_OF_NODAL_DEV + 1
+
+             NODAL_BUFFER( NUM_OF_NODAL_DEV ) = GEOMETRIC_PARAMETERS( COMPONENT%PARAM_TO_DOF_MAP% &
+              & NODE_PARAM2DOF_MAP( DERIVATIVE_INDEXES( dev_idx ), local_number ) )
+              
           ENDDO
           
           CALL GROW_ARRAY( TOTAL_NODAL_BUFFER, NUM_OF_NODAL_DEV, "Insufficient memory during I/O", ERR, ERROR, *999 )
@@ -4720,7 +4732,6 @@ CONTAINS
     !release the temporary memory
     CALL CHECKED_DEALLOCATE( NODAL_BUFFER )
     CALL CHECKED_DEALLOCATE( TOTAL_NODAL_BUFFER )
-    CALL CHECKED_DEALLOCATE( GROUP_DERIVATIVES )
     IF(ASSOCIATED(GEOMETRIC_PARAMETERS)) NULLIFY(GEOMETRIC_PARAMETERS)
 
     CALL EXITS("FIELD_IO_EXPORT_NODES_INTO_LOCAL_FILE")
