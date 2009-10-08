@@ -12,7 +12,7 @@ The general form for static equations is
 
 The general form for transient equations is
 \begin{equation}
-  \matr{M}\ddot{\fnof{\vect{u}}{t}}+\matr{C}\dot{\fnof{\vect{u}}{t}}+\matr{K}\fnof{\vect{u}}{t}+
+  \matr{M}\fnof{\ddot{\vect{u}}}{t}+\matr{C}\fnof{\dot{\vect{u}}}{t}+\matr{K}\fnof{\vect{u}}{t}+
   \fnof{\vect{g}}{\fnof{\vect{u}}{t}}+\fnof{\vect{f}}{t}=\vect{0}
   \label{eqn:generaltransientnonlinear}
 \end{equation}
@@ -26,7 +26,7 @@ $p$. With the known values of $\vect{u}_{n}$, $\dot{\vect{u}}_{n}$,
 $\ddot{\vect{u}}_{n}$ up to $\symover{p-1}{\vect{u}}_{n}$ at the beginning of
 the time step $\Delta t$ we can write the polynomial expansion as
 \begin{equation}
-  \fnof{\vect{u}}{t_{n}+\tau}\approx\fnof{\hat{\vect{u}}}{t_{n}+\tau}=\vect{u}_{n}+\tau\dot{\vect{u}}_{n}+
+  \fnof{\vect{u}}{t_{n}+\tau}\approx\fnof{\tilde{\vect{u}}}{t_{n}+\tau}=\vect{u}_{n}+\tau\dot{\vect{u}}_{n}+
   \frac{1}{2!}\tau^{2}\ddot{\vect{u}}_{n}+\cdots+\dfrac{1}{\factorial{p-1}}\tau^{p-1}\symover{p-1}{\vect{u}}_{n}+
   \dfrac{1}{p!}\tau^{p}\vect{\alpha}^{p}_{n}
   \label{eqn:timepolyexpansion}
@@ -133,7 +133,7 @@ $\dfrac{1}{t_{n+1}-t_{n}-\tau}=\dfrac{1}{\Delta t-\tau}$ times
 \eqnref{eqn:secondTaylorexpansion} we obtain
 \begin{equation}
   \dfrac{\fnof{\vect{g}}{\fnof{\vect{u}}{t_{n}}}}{\tau}+\dfrac{\fnof{\vect{g}}{\fnof{\vect{u}}{t_{n+1}}}}{\Delta
-    t \tau}=\pbrac{\dfrac{\Delta t}{\tau\pbrac{\Delta t-\tau}}}\fnof{\vect{g}}{\fnof{\vect{u}}{t_{n}+\tau}}+
+    t-\tau}=\pbrac{\dfrac{\Delta t}{\tau\pbrac{\Delta t-\tau}}}\fnof{\vect{g}}{\fnof{\vect{u}}{t_{n}+\tau}}+
   \pbrac{\dfrac{\Delta t}{\tau\pbrac{\Delta t-\tau}}}\orderof{\tau^{2}}
 \end{equation}
 
@@ -146,7 +146,7 @@ Multiplying through by $\dfrac{\tau\pbrac{\Delta t-\tau}}{\Delta t}$ gives
 
 Therefore
 \begin{equation}
-  \dfrac{\gint{0}{\Delta t}{\fnof{W}{\tau}\fnof{\vect{g}}{\fnof{\vect{u}}{t_{n+1}}}}{\tau}}
+  \dfrac{\gint{0}{\Delta t}{\fnof{W}{\tau}\fnof{\vect{g}}{\fnof{\vect{u}}{t_{n}+\tau}}}{\tau}}
   {\gint{0}{\Delta t}{\fnof{W}{\tau}}{\tau}}=\dfrac{\gint{0}{\Delta t}{\fnof{W}{\tau}
       \pbrac{\dfrac{\Delta t-\tau}{\Delta t}\fnof{\vect{g}}{\fnof{\vect{u}}{t_{n}}}+
         \dfrac{\tau}{\Delta t}\fnof{\vect{g}}{\fnof{\vect{u}}{t_{n+1}}}+\orderof{\tau^{2}}}}{\tau}}
@@ -155,7 +155,7 @@ Therefore
 
 Now if we recall that
 \begin{equation}
-\theta_{1}=\dfrac{\gint{0}{\Delta t}{\fnof{W}{\tau}\tau}{\tau}}{\gint{0}{\Delta t}{\fnof{W}{\tau}}{\tau}}
+\theta_{1}=\dfrac{\gint{0}{\Delta t}{\fnof{W}{\tau}\tau}{\tau}}{\Delta t\gint{0}{\Delta t}{\fnof{W}{\tau}}{\tau}}
 \end{equation}
 we can write
 \begin{equation}
