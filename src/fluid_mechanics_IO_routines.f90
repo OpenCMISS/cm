@@ -1337,7 +1337,7 @@ CONTAINS
     INTEGER(INTG):: a,b
     INTEGER(INTG) :: ERR
     TYPE(VARYING_STRING):: ERROR
-
+    REAL(DP) :: TEMP(3)
 !   REAL(DP),DIMENSION(832,3):: sebo_test_array
 !   sebo_test_array=0.0
 
@@ -1353,7 +1353,8 @@ CONTAINS
       MESH_INFO(I)%Lx=ArrayOfNodesDefined(I)
       ALLOCATE(MESH_INFO(I)%X(MESH_INFO(I)%Lx,3),STAT=ALLOC_ERROR)
       DO J = 1,MESH_INFO(I)%Lx
-        READ(1,*,END=35) MESH_INFO(I)%X(J,1:3)
+        READ(1,*,END=35) TEMP(1:3)
+        MESH_INFO(I)%X(J,1:3)=TEMP(1:3)
 !	WRITE(*,*) MESH_INFO(I)%X(J,1:3)
 !        READ(1,*,END=35) sebo_test_array(J,1:3)
 !	sebo_test_array(J,1:3)=(/1,2,3/)
@@ -1393,6 +1394,7 @@ CONTAINS
     INTEGER(INTG):: I,J
     INTEGER(INTG) :: ERR
     TYPE(VARYING_STRING):: ERROR
+    INTEGER(INTG) :: TEMP(200)
 
     READ(42,*) NAMz
     CLOSE(42)
@@ -1407,7 +1409,8 @@ CONTAINS
       MESH_INFO(I)%Lt=NumberOfElementsDefined(I)
       ALLOCATE(MESH_INFO(I)%T(MESH_INFO(I)%Lt,NumberOfNodesPerElement(I)),STAT=ALLOC_ERROR)
         DO J = 1,MESH_INFO(I)%Lt
-          READ(1,*,END=30) MESH_INFO(I)%T(J,1:NumberOfNodesPerElement(I))
+          READ(1,*,END=30) TEMP(1:NumberOfNodesPerElement(I))
+          MESH_INFO(I)%T(J,1:NumberOfNodesPerElement(I))=TEMP(1:NumberOfNodesPerElement(I))
         END DO
     END DO
     CLOSE(1)
