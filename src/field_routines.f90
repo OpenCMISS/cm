@@ -8210,48 +8210,48 @@ CONTAINS
                                       CASE(FIELD_INTG_TYPE)
                                         CALL FIELD_PARAMETER_SET_DATA_GET(FROM_FIELD,FROM_VARIABLE_TYPE,FROM_PARAMETER_SET_TYPE, &
                                           & FROM_PARAMETER_DATA_INTG,ERR,ERROR,*999)
-                                        DO elem_idx=1,FROM_DOMAIN_ELEMENTS%NUMBER_OF_ELEMENTS
+                                        DO elem_idx=1,FROM_DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
                                           local_ny=FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                             & ELEMENT_PARAM2DOF_MAP(elem_idx)
                                           VALUE_INTG=FROM_PARAMETER_DATA_INTG(local_ny)
-                                          CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(TO_FIELD,TO_VARIABLE_TYPE,TO_PARAMETER_SET_TYPE, &
-                                            & elem_idx,TO_COMPONENT_NUMBER,VALUE_INTG,ERR,ERROR,*999)
+                                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT(TO_FIELD,TO_VARIABLE_TYPE, &
+                                            & TO_PARAMETER_SET_TYPE,elem_idx,TO_COMPONENT_NUMBER,VALUE_INTG,ERR,ERROR,*999)
                                         ENDDO !elem_idx
                                         CALL FIELD_PARAMETER_SET_DATA_RESTORE(FROM_FIELD,FROM_VARIABLE_TYPE, &
                                           & FROM_PARAMETER_SET_TYPE,FROM_PARAMETER_DATA_INTG,ERR,ERROR,*999)
                                       CASE(FIELD_SP_TYPE)
                                         CALL FIELD_PARAMETER_SET_DATA_GET(FROM_FIELD,FROM_VARIABLE_TYPE,FROM_PARAMETER_SET_TYPE, &
                                           & FROM_PARAMETER_DATA_SP,ERR,ERROR,*999)
-                                        DO elem_idx=1,FROM_DOMAIN_ELEMENTS%NUMBER_OF_ELEMENTS
+                                        DO elem_idx=1,FROM_DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
                                           local_ny=FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                             & ELEMENT_PARAM2DOF_MAP(elem_idx)
                                           VALUE_SP=FROM_PARAMETER_DATA_SP(local_ny)
-                                          CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(TO_FIELD,TO_VARIABLE_TYPE,TO_PARAMETER_SET_TYPE, &
-                                            & elem_idx,TO_COMPONENT_NUMBER,VALUE_SP,ERR,ERROR,*999)
+                                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT(TO_FIELD,TO_VARIABLE_TYPE, &
+                                            & TO_PARAMETER_SET_TYPE,elem_idx,TO_COMPONENT_NUMBER,VALUE_SP,ERR,ERROR,*999)
                                         ENDDO !elem_idx
                                         CALL FIELD_PARAMETER_SET_DATA_RESTORE(FROM_FIELD,FROM_VARIABLE_TYPE, &
                                           & FROM_PARAMETER_SET_TYPE,FROM_PARAMETER_DATA_SP,ERR,ERROR,*999)
                                       CASE(FIELD_DP_TYPE)
                                         CALL FIELD_PARAMETER_SET_DATA_GET(FROM_FIELD,FROM_VARIABLE_TYPE,FROM_PARAMETER_SET_TYPE, &
                                           & FROM_PARAMETER_DATA_DP,ERR,ERROR,*999)
-                                        DO elem_idx=1,FROM_DOMAIN_ELEMENTS%NUMBER_OF_ELEMENTS
+                                        DO elem_idx=1,FROM_DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
                                           local_ny=FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                             & ELEMENT_PARAM2DOF_MAP(elem_idx)
                                           VALUE_DP=FROM_PARAMETER_DATA_DP(local_ny)
-                                          CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(TO_FIELD,TO_VARIABLE_TYPE,TO_PARAMETER_SET_TYPE, &
-                                            & elem_idx,TO_COMPONENT_NUMBER,VALUE_DP,ERR,ERROR,*999)
+                                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT(TO_FIELD,TO_VARIABLE_TYPE, &
+                                            & TO_PARAMETER_SET_TYPE,elem_idx,TO_COMPONENT_NUMBER,VALUE_DP,ERR,ERROR,*999)
                                         ENDDO !elem_idx
                                         CALL FIELD_PARAMETER_SET_DATA_RESTORE(FROM_FIELD,FROM_VARIABLE_TYPE, &
                                           & FROM_PARAMETER_SET_TYPE,FROM_PARAMETER_DATA_DP,ERR,ERROR,*999)
                                       CASE(FIELD_L_TYPE)
                                         CALL FIELD_PARAMETER_SET_DATA_GET(FROM_FIELD,FROM_VARIABLE_TYPE,FROM_PARAMETER_SET_TYPE, &
                                           & FROM_PARAMETER_DATA_L,ERR,ERROR,*999)
-                                        DO elem_idx=1,FROM_DOMAIN_ELEMENTS%NUMBER_OF_ELEMENTS
+                                        DO elem_idx=1,FROM_DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
                                           local_ny=FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                             & ELEMENT_PARAM2DOF_MAP(elem_idx)
                                           VALUE_L=FROM_PARAMETER_DATA_L(local_ny)
-                                          CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(TO_FIELD,TO_VARIABLE_TYPE,TO_PARAMETER_SET_TYPE, &
-                                            & elem_idx,TO_COMPONENT_NUMBER,VALUE_L,ERR,ERROR,*999)
+                                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT(TO_FIELD,TO_VARIABLE_TYPE, &
+                                            & TO_PARAMETER_SET_TYPE,elem_idx,TO_COMPONENT_NUMBER,VALUE_L,ERR,ERROR,*999)
                                         ENDDO !elem_idx
                                         CALL FIELD_PARAMETER_SET_DATA_RESTORE(FROM_FIELD,FROM_VARIABLE_TYPE, &
                                           & FROM_PARAMETER_SET_TYPE,FROM_PARAMETER_DATA_L,ERR,ERROR,*999)
@@ -8276,12 +8276,12 @@ CONTAINS
                                       CASE(FIELD_INTG_TYPE)
                                         CALL FIELD_PARAMETER_SET_DATA_GET(FROM_FIELD,FROM_VARIABLE_TYPE,FROM_PARAMETER_SET_TYPE, &
                                           & FROM_PARAMETER_DATA_INTG,ERR,ERROR,*999)
-                                        DO node_idx=1,FROM_DOMAIN_NODES%NUMBER_OF_NODES
+                                        DO node_idx=1,FROM_DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
                                           DO deriv_idx=1,FROM_DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
                                             local_ny=FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                               & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
                                             VALUE_INTG=FROM_PARAMETER_DATA_INTG(local_ny)
-                                            CALL FIELD_PARAMETER_SET_UPDATE_NODE(TO_FIELD,TO_VARIABLE_TYPE, &
+                                            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(TO_FIELD,TO_VARIABLE_TYPE, &
                                               & TO_PARAMETER_SET_TYPE,deriv_idx,node_idx,TO_COMPONENT_NUMBER, &
                                               & VALUE_INTG,ERR,ERROR,*999)
                                           ENDDO !deriv_idx
@@ -8291,12 +8291,12 @@ CONTAINS
                                       CASE(FIELD_SP_TYPE)
                                         CALL FIELD_PARAMETER_SET_DATA_GET(FROM_FIELD,FROM_VARIABLE_TYPE,FROM_PARAMETER_SET_TYPE, &
                                           & FROM_PARAMETER_DATA_SP,ERR,ERROR,*999)
-                                        DO node_idx=1,FROM_DOMAIN_NODES%NUMBER_OF_NODES
+                                        DO node_idx=1,FROM_DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
                                           DO deriv_idx=1,FROM_DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
                                             local_ny=FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                               & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
                                             VALUE_SP=FROM_PARAMETER_DATA_SP(local_ny)
-                                            CALL FIELD_PARAMETER_SET_UPDATE_NODE(TO_FIELD,TO_VARIABLE_TYPE, &
+                                            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(TO_FIELD,TO_VARIABLE_TYPE, &
                                               & TO_PARAMETER_SET_TYPE,deriv_idx,node_idx,TO_COMPONENT_NUMBER, &
                                               & VALUE_SP,ERR,ERROR,*999)
                                           ENDDO !deriv_idx
@@ -8306,12 +8306,12 @@ CONTAINS
                                       CASE(FIELD_DP_TYPE)
                                         CALL FIELD_PARAMETER_SET_DATA_GET(FROM_FIELD,FROM_VARIABLE_TYPE,FROM_PARAMETER_SET_TYPE, &
                                           & FROM_PARAMETER_DATA_DP,ERR,ERROR,*999)
-                                        DO node_idx=1,FROM_DOMAIN_NODES%NUMBER_OF_NODES
+                                        DO node_idx=1,FROM_DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
                                           DO deriv_idx=1,FROM_DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
                                             local_ny=FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                               & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
                                             VALUE_DP=FROM_PARAMETER_DATA_DP(local_ny)
-                                            CALL FIELD_PARAMETER_SET_UPDATE_NODE(TO_FIELD,TO_VARIABLE_TYPE, &
+                                            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(TO_FIELD,TO_VARIABLE_TYPE, &
                                               & TO_PARAMETER_SET_TYPE,deriv_idx,node_idx,TO_COMPONENT_NUMBER, &
                                               & VALUE_DP,ERR,ERROR,*999)
                                           ENDDO !deriv_idx
@@ -8321,12 +8321,12 @@ CONTAINS
                                       CASE(FIELD_L_TYPE)
                                         CALL FIELD_PARAMETER_SET_DATA_GET(FROM_FIELD,FROM_VARIABLE_TYPE,FROM_PARAMETER_SET_TYPE, &
                                           & FROM_PARAMETER_DATA_L,ERR,ERROR,*999)
-                                        DO node_idx=1,FROM_DOMAIN_NODES%NUMBER_OF_NODES
+                                        DO node_idx=1,FROM_DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
                                           DO deriv_idx=1,FROM_DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
                                             local_ny=FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                               & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
                                             VALUE_L=FROM_PARAMETER_DATA_L(local_ny)
-                                            CALL FIELD_PARAMETER_SET_UPDATE_NODE(TO_FIELD,TO_VARIABLE_TYPE, &
+                                            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(TO_FIELD,TO_VARIABLE_TYPE, &
                                               & TO_PARAMETER_SET_TYPE,deriv_idx,node_idx,TO_COMPONENT_NUMBER, &
                                               & VALUE_L,ERR,ERROR,*999)
                                           ENDDO !deriv_idx
