@@ -786,10 +786,10 @@ CONTAINS
                 IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED) THEN
                   CALL POISSON_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*999)
                 ELSE
-                  CALL FLAG_ERROR("Equations set analtyic has not been finished.",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Equations set analytic has not been finished.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations set analtyic is not associated.",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
               CALL FLAG_ERROR("Equations set dependent has not been finished.",ERR,ERROR,*999)
