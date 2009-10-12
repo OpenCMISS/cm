@@ -162,7 +162,6 @@ CONTAINS
               IF(ASSOCIATED(SOLVERS)) THEN
                 DO solver_idx=1,SOLVERS%NUMBER_OF_SOLVERS
                   SOLVER=>SOLVERS%SOLVERS(solver_idx)%PTR
-!sebk 7/8/2009 check
                   CALL PROBLEM_SOLVER_EQUATIONS_PRE_SOLVE(CONTROL_LOOP,SOLVER&
                     &%SOLVER_EQUATIONS,ERR,ERROR,*999)
                   IF(ASSOCIATED(SOLVER)) THEN
@@ -172,7 +171,6 @@ CONTAINS
                     CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,&
                       &*999)
                   ENDIF
-!sebk 7/8/2009 check
                   CALL PROBLEM_SOLVER_EQUATIONS_POST_SOLVE(CONTROL_LOOP&
                     &,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
                 ENDDO !solver_idx
@@ -205,12 +203,10 @@ CONTAINS
                   DO solver_idx=1,SOLVERS%NUMBER_OF_SOLVERS
                     SOLVER=>SOLVERS%SOLVERS(solver_idx)%PTR
                     IF(ASSOCIATED(SOLVER)) THEN
-!sebk 7/8/2009 check
                       CALL PROBLEM_SOLVER_EQUATIONS_PRE_SOLVE(CONTROL_LOOP&
                         &,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
                       CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER&
                         &%SOLVER_EQUATIONS,ERR,ERROR,*999)
-!sebk 7/8/2009 check
                       CALL PROBLEM_SOLVER_EQUATIONS_POST_SOLVE(CONTROL_LOOP&
                         &,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
                     ELSE
@@ -251,12 +247,10 @@ CONTAINS
                   DO solver_idx=1,SOLVERS%NUMBER_OF_SOLVERS
                     SOLVER=>SOLVERS%SOLVERS(solver_idx)%PTR
                     IF(ASSOCIATED(SOLVER)) THEN
-!sebk 7/8/2009 check
                       CALL PROBLEM_SOLVER_EQUATIONS_PRE_SOLVE(CONTROL_LOOP&
                         &,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
                       CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER&
                         &%SOLVER_EQUATIONS,ERR,ERROR,*999)
-!sebk 7/8/2009 check
                       CALL PROBLEM_SOLVER_EQUATIONS_POST_SOLVE(CONTROL_LOOP&
                         &,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
                     ELSE
@@ -298,12 +292,10 @@ CONTAINS
                   DO solver_idx=1,SOLVERS%NUMBER_OF_SOLVERS
                     SOLVER=>SOLVERS%SOLVERS(solver_idx)%PTR
                     IF(ASSOCIATED(SOLVER)) THEN
-!sebk 7/8/2009 check
                       CALL PROBLEM_SOLVER_EQUATIONS_PRE_SOLVE(CONTROL_LOOP&
                         &,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
                       CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER&
                         &%SOLVER_EQUATIONS,ERR,ERROR,*999)
-!sebk 7/8/2009 check
                       CALL PROBLEM_SOLVER_EQUATIONS_POST_SOLVE(CONTROL_LOOP&
                         &,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
                     ELSE
@@ -1009,8 +1001,6 @@ CONTAINS
         IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
           SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
           IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-! sebk 15/09/2009
-!|
             IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
               !Check if the nonlinear solver is linked to a dynamic solver 
               LINKING_SOLVER=>SOLVER%LINKING_SOLVER
@@ -1047,8 +1037,6 @@ CONTAINS
             ELSE
               CALL FLAG_ERROR("Solver equations solver type is not associated.",ERR,ERROR,*999)      
             END IF
-!|
-! sebk 18/08/2009
           ELSE
             CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
           ENDIF
@@ -1071,7 +1059,7 @@ CONTAINS
   
   !
   !================================================================================================================================
-  ! jjj
+  ! 
 
   !>Evaluates the residual for a nonlinear problem solver.
   SUBROUTINE PROBLEM_SOLVER_RESIDUAL_EVALUATE(SOLVER,ERR,ERROR,*)
@@ -1094,9 +1082,6 @@ CONTAINS
         IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
           SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
           IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-
-! sebk 15/09/2009
-!|
             IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
               !Check if the nonlinear solver is linked to a dynamic solver 
               LINKING_SOLVER=>SOLVER%LINKING_SOLVER
@@ -1116,9 +1101,7 @@ CONTAINS
                   CALL FLAG_ERROR("Solver equations linking solver mapping is not dynamic.",ERR,ERROR,*999)
                 END IF
               ELSE
-              ! Perform as normal nonlinear solver
-!|
-! sebk 15/09/2009
+                !Perform as normal nonlinear solver
                 !Copy the current solution vector to the dependent field
                 CALL SOLVER_VARIABLES_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
                 !Make sure the equations sets are up to date
@@ -1298,7 +1281,7 @@ CONTAINS
               CASE(PROBLEM_ELASTICITY_CLASS)
 !               do nothing???
               CASE(PROBLEM_FLUID_MECHANICS_CLASS)
-            !   do nothing???
+                CALL FLUID_MECHANICS_PRE_SOLVE_SET(CONTROL_LOOP,EQUATIONS_SET,ERR,ERROR,*999)
               CASE(PROBLEM_ELECTROMAGNETICS_CLASS)
             !   do nothing???
               CASE(PROBLEM_CLASSICAL_FIELD_CLASS)
@@ -1562,11 +1545,28 @@ CONTAINS
           IF(ASSOCIATED(CONTROL_LOOP)) THEN
             SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
             IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-              !Apply boundary conditition
+             !Make sure the equations sets are up to date
               DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                 EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                !CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)    
-              ENDDO !equations_set_idx          
+                !CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)
+!                 !Assemble the equations for nonlinear problems
+!                 CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
+
+!RESIDUAL EVALUATE --- CHECK --- CHECK --- CHECK !
+!RESIDUAL EVALUATE --- CHECK --- CHECK --- CHECK !
+!RESIDUAL EVALUATE --- CHECK --- CHECK --- CHECK !
+!RESIDUAL EVALUATE --- CHECK --- CHECK --- CHECK !
+
+                IF(.NOT.SOLVER%DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
+                  CALL EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
+                ENDIF
+
+!RESIDUAL EVALUATE --- CHECK --- CHECK --- CHECK !
+!RESIDUAL EVALUATE --- CHECK --- CHECK --- CHECK !
+!RESIDUAL EVALUATE --- CHECK --- CHECK --- CHECK !
+!RESIDUAL EVALUATE --- CHECK --- CHECK --- CHECK !
+
+              ENDDO !equations_set_idx
               !Get current control loop times
               CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
               !Set the solver time

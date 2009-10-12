@@ -81,12 +81,13 @@ MODULE STOKES_EQUATIONS_ROUTINES
 
   PUBLIC  STOKES_EQUATION_FINITE_ELEMENT_CALCULATE
   PUBLIC  STOKES_EQUATION_POST_SOLVE_SET
+  PUBLIC  STOKES_EQUATION_PRE_SOLVE_SET
 
 
 
 CONTAINS 
 
-! OK
+! 
 !================================================================================================================================
 !
 
@@ -134,7 +135,7 @@ CONTAINS
     RETURN 1
   END SUBROUTINE STOKES_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET
 
-! OK
+! 
 !================================================================================================================================
 !
 
@@ -183,7 +184,7 @@ CONTAINS
     RETURN 1
   END SUBROUTINE STOKES_EQUATION_EQUATIONS_SET_SUBTYPE_SET
 
-! OK
+! 
 !================================================================================================================================
 !
 
@@ -711,7 +712,7 @@ CONTAINS
                         ELSE
                          CALL FLAG_ERROR("Equations set equations has not been finished.",ERR,ERROR,*999)               
                         ENDIF
-                      ELSE
+                      ELSE 
                         CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
                       ENDIF
                     CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
@@ -762,7 +763,7 @@ CONTAINS
   END SUBROUTINE STOKES_EQUATION_EQUATIONS_SET_SETUP
           
          
-! OK      
+! 
 !================================================================================================================================
 !         
           
@@ -811,7 +812,7 @@ CONTAINS
     RETURN 1
   END SUBROUTINE STOKES_EQUATION_PROBLEM_SUBTYPE_SET
           
-! OK      
+! 
 !================================================================================================================================
 !
 
@@ -1459,8 +1460,7 @@ CONTAINS
     CALL ENTERS("STOKES_EQUATION_POST_SOLVE_SET",ERR,ERROR,*999)
 !    NULLIFY(REGION)
 
-
- 
+   
     IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
       SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
         CASE(PROBLEM_STATIC_STOKES_SUBTYPE,PROBLEM_LAPLACE_STOKES_SUBTYPE)
@@ -1470,7 +1470,7 @@ CONTAINS
           OUTPUT_ITERATION_NUMBER=CONTROL_LOOP%TIME_LOOP%OUTPUT_NUMBER
 
           IF(OUTPUT_ITERATION_NUMBER/=0) THEN
-            IF(CONTROL_LOOP%TIME_LOOP%CURRENT_TIME<CONTROL_LOOP%TIME_LOOP%STOP_TIME) THEN
+            IF(CONTROL_LOOP%TIME_LOOP%CURRENT_TIME<=CONTROL_LOOP%TIME_LOOP%STOP_TIME) THEN
               IF(CURRENT_LOOP_ITERATION<10) THEN
                 WRITE(OUTPUT_FILE,'("TIME_STEP_000",I0)') CURRENT_LOOP_ITERATION
               ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
@@ -1486,9 +1486,11 @@ CONTAINS
               EXPORT_FIELD=.TRUE.
               IF(EXPORT_FIELD) THEN          
                 IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
-                  CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields...",ERR,ERROR,*999)
+                  CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+                  CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields... ",ERR,ERROR,*999)
                   CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,FILE,ERR,ERROR,*999)
-                  CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"All fields exported...",ERR,ERROR,*999)
+                  CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+                  CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
                 ENDIF
               ENDIF 
             ENDIF 
@@ -1508,6 +1510,73 @@ CONTAINS
     CALL EXITS("STOKES_EQUATION_POST_SOLVE_SET")
     RETURN 1
   END SUBROUTINE STOKES_EQUATION_POST_SOLVE_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets up the Stokes problem pre solve.
+  SUBROUTINE STOKES_EQUATION_PRE_SOLVE_SET(CONTROL_LOOP,EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+!    TYPE(REGION_TYPE), POINTER :: REGION !<pointer to the region to be exported
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(VARYING_STRING) :: FILE,METHOD
+    CHARACTER(14) :: OUTPUT_FILE
+    LOGICAL :: EXPORT_FIELD
+!    INTEGER(INTG) :: REGION_USER_NUMBER
+    INTEGER(INTG) :: CURRENT_LOOP_ITERATION
+    INTEGER(INTG) :: OUTPUT_ITERATION_NUMBER
+
+    CALL ENTERS("STOKES_EQUATION_PRE_SOLVE_SET",ERR,ERROR,*999)
+!    NULLIFY(REGION)
+
+
+
+    IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+      SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+        CASE(PROBLEM_STATIC_STOKES_SUBTYPE,PROBLEM_LAPLACE_STOKES_SUBTYPE)
+          ! do nothing ???
+        CASE(PROBLEM_TRANSIENT_STOKES_SUBTYPE)
+          CURRENT_LOOP_ITERATION=CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER
+          OUTPUT_ITERATION_NUMBER=CONTROL_LOOP%TIME_LOOP%OUTPUT_NUMBER
+          IF(OUTPUT_ITERATION_NUMBER/=0) THEN
+            IF(CURRENT_LOOP_ITERATION==1) THEN
+              WRITE(OUTPUT_FILE,'("TIME_STEP_0000")')
+              FILE=OUTPUT_FILE
+    !          FILE="TRANSIENT_OUTPUT"
+              METHOD="FORTRAN"
+              EXPORT_FIELD=.TRUE.
+              IF(EXPORT_FIELD) THEN          
+                IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
+                  CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields...",ERR,ERROR,*999)
+                  CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,FILE,ERR,ERROR,*999)
+                  CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"All fields exported...",ERR,ERROR,*999)
+                ENDIF
+              ENDIF
+            ENDIF 
+          ENDIF 
+
+        CASE DEFAULT
+          LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+            & " is not valid for a Navier-Stokes fluid type of a fluid mechanics problem class."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("STOKES_EQUATION_PRE_SOLVE_SET")
+    RETURN
+999 CALL ERRORS("STOKES_EQUATION_PRE_SOLVE_SET",ERR,ERROR)
+    CALL EXITS("STOKES_EQUATION_PRE_SOLVE_SET")
+    RETURN 1
+  END SUBROUTINE STOKES_EQUATION_PRE_SOLVE_SET
 
   !
   !================================================================================================================================

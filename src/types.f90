@@ -1193,7 +1193,7 @@ MODULE TYPES
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RESIDUAL_VARIABLE_MAPPING !<A pointer to the residual variable domain mapping
     REAL(DP) :: RESIDUAL_COEFFICIENT !<The multiplicative coefficient applied to the residual vector
     INTEGER(INTG), ALLOCATABLE :: RESIDUAL_DOF_TO_EQUATIONS_ROW_MAP(:) !<RESIDUAL_DOF_TO_EQUATIONS_ROW_MAP(residual_dof_idx). The mapping from the residual_dof_idx'th residual dof in the residual variable to the equations row.   
-    INTEGER(INTG), ALLOCATABLE :: EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP(:) !<EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP(row_idx). The mapping from the row_idx'th row of the equations to the source dof.   
+    INTEGER(INTG), ALLOCATABLE :: EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP(:) !<EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP(row_idx). The mapping from the row_idx'th row of the equations to the residual dof.   
   END TYPE EQUATIONS_MAPPING_NONLINEAR_TYPE
 
   TYPE EQUATIONS_MAPPING_RHS_TYPE
