@@ -1275,6 +1275,24 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSEquationsSetEquationsDestroyObj
   END INTERFACE !CMISSEquationsSetEquationsDestroy
   
+  !>Finish the creation of independent fields for an equations set. \see OPENCMISS::CMISSEquationsSetIndependentCreateStart
+  INTERFACE CMISSEquationsSetIndependentCreateFinish
+    MODULE PROCEDURE CMISSEquationsSetIndependentCreateFinishNumber
+    MODULE PROCEDURE CMISSEquationsSetIndependentCreateFinishObj
+  END INTERFACE !CMISSEquationsSetIndependentCreateFinish
+  
+  !>Start the creation of independent fields for an equations set. \see OPENCMISS::CMISSEquationsSetMaterialsCreateFinish
+  INTERFACE CMISSEquationsSetIndependentCreateStart
+    MODULE PROCEDURE CMISSEquationsSetIndependentCreateStartNumber
+    MODULE PROCEDURE CMISSEquationsSetIndependentCreateStartObj
+  END INTERFACE !CMISSEquationsSetIndependentCreateStart
+  
+  !>Destroy the independent fields for an equations set.
+  INTERFACE CMISSEquationsSetIndependentDestroy
+    MODULE PROCEDURE CMISSEquationsSetIndependentDestroyNumber
+    MODULE PROCEDURE CMISSEquationsSetIndependentDestroyObj
+  END INTERFACE !CMISSEquationsSetIndependentDestroy
+  
   !>Finish the creation of materials for an equations set. \see OPENCMISS::CMISSEquationsSetMaterialsCreateStart
   INTERFACE CMISSEquationsSetMaterialsCreateFinish
     MODULE PROCEDURE CMISSEquationsSetMaterialsCreateFinishNumber
@@ -1356,6 +1374,10 @@ MODULE OPENCMISS
   PUBLIC CMISSEquationsSetEquationsCreateFinish,CMISSEquationsSetEquationsCreateStart
   
   PUBLIC CMISSEquationsSetEquationsDestroy
+  
+  PUBLIC CMISSEquationsSetIndependentCreateFinish,CMISSEquationsSetIndependentCreateStart
+  
+  PUBLIC CMISSEquationsSetIndependentDestroy
   
   PUBLIC CMISSEquationsSetMaterialsCreateFinish,CMISSEquationsSetMaterialsCreateStart
   
@@ -10384,6 +10406,224 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSEquationsSetEquationsDestroyObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Finish the creation of independent variables for an equations set identified by a user number.
+  SUBROUTINE CMISSEquationsSetIndependentCreateFinishNumber(RegionUserNumber,EquationsSetUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to finish the creation of independent variables for.
+    INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to finish the creation of independent variables for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSEquationsSetIndependentCreateFinishNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(EQUATIONS_SET)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
+      IF(ASSOCIATED(EQUATIONS_SET)) THEN
+        CALL EQUATIONS_SET_INDEPENDENT_CREATE_FINISH(EQUATIONS_SET,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSEquationsSetIndependentCreateFinishNumber")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSetIndependentCreateFinishNumber",Err,ERROR)
+    CALL EXITS("CMISSEquationsSetIndependentCreateFinishNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSEquationsSetIndependentCreateFinishNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finish the creation of independent variables for an equations set identified by an object.
+  SUBROUTINE CMISSEquationsSetIndependentCreateFinishObj(EquationsSet,Err)
+  
+    !Argument variables
+    TYPE(CMISSEquationsSetType), INTENT(INOUT) :: EquationsSet !<The equations set to finish the creation of independent variables for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSEquationsSetIndependentCreateFinishObj",Err,ERROR,*999)
+ 
+    CALL EQUATIONS_SET_INDEPENDENT_CREATE_FINISH(EquationsSet%EQUATIONS_SET,Err,ERROR,*999)
+
+    CALL EXITS("CMISSEquationsSetIndependentCreateFinishObj")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSetIndependentCreateFinishObj",Err,ERROR)
+    CALL EXITS("CMISSEquationsSetIndependentCreateFinishObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSEquationsSetIndependentCreateFinishObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Start the creation of independent variables for an equations set identified by a user number.
+  SUBROUTINE CMISSEquationsSetIndependentCreateStartNumber(RegionUserNumber,EquationsSetUserNumber,IndependentFieldUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to start the creation of independent variables for.
+    INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to start the creation of independent variables for.
+    INTEGER(INTG), INTENT(IN) :: IndependentFieldUserNumber !<The user number of the independent field.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(FIELD_TYPE), POINTER :: INDEPENDENT_FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSEquationsSetDependentCreateStartNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(EQUATIONS_SET)
+    NULLIFY(INDEPENDENT_FIELD)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
+      IF(ASSOCIATED(EQUATIONS_SET)) THEN
+        CALL FIELD_USER_NUMBER_FIND(IndependentFieldUserNumber,REGION,INDEPENDENT_FIELD,ERR,ERROR,*999)
+        CALL EQUATIONS_SET_DEPENDENT_CREATE_START(EQUATIONS_SET,IndependentFieldUserNumber,INDEPENDENT_FIELD,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSEquationsSetIndependentCreateStartNumber")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSetIndependentCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSEquationsSetIndependentCreateStartNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSEquationsSetIndependentCreateStartNumber
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Start the creation of independent variables for an equations set identified by an object.
+  SUBROUTINE CMISSEquationsSetIndependentCreateStartObj(EquationsSet,IndependentFieldUserNumber,IndependentField,Err)
+  
+    !Argument variables
+    TYPE(CMISSEquationsSetType), INTENT(OUT) :: EquationsSet !<The equations set to start the creation of independent variables on.
+    INTEGER(INTG), INTENT(IN) :: IndependentFieldUserNumber !<The user number of the dependent field.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: IndependentField !<If associated on entry, the user created independent field which has the same user number as the specified independent field user number. If not associated on entry, on return, the created independent field for the equations set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+ 
+    CALL ENTERS("CMISSEquationsSetIndependentCreateStartObj",Err,ERROR,*999)
+ 
+    CALL EQUATIONS_SET_INDEPENDENT_CREATE_START(EquationsSet%EQUATIONS_SET,IndependentFieldUserNumber,IndependentField%FIELD, &
+      & Err,ERROR,*999)
+    
+    CALL EXITS("CMISSEquationsSetIndependentCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSetIndependentCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSEquationsSetIndependentCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSEquationsSetIndependentCreateStartObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Destroy the independent variables for an equations set identified by a user number.
+  SUBROUTINE CMISSEquationsSetIndependentDestroyNumber(RegionUserNumber,EquationsSetUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to destroy the independent variables for.
+    INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to destroy the independent variables for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSEquationsSetIndependentDestroyNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(EQUATIONS_SET)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
+      IF(ASSOCIATED(EQUATIONS_SET)) THEN
+        CALL EQUATIONS_SET_INDEPENDENT_DESTROY(EQUATIONS_SET,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSEquationsSetIndependentDestroyNumber")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSetIndependentDestroyNumber",Err,ERROR)
+    CALL EXITS("CMISSEquationsSetIndependentDestroyNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSEquationsSetIndependentDestroyNumber
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Destroy the independent variables for an equations set identified by an object.
+  SUBROUTINE CMISSEquationsSetIndependentDestroyObj(EquationsSet,Err)
+  
+    !Argument variables
+    TYPE(CMISSEquationsSetType), INTENT(INOUT) :: EquationsSet !<The equations set to destroy the independent variables for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+ 
+    CALL ENTERS("CMISSEquationsSetIndependentDestroyObj",Err,ERROR,*999)
+ 
+    CALL EQUATIONS_SET_INDEPENDENT_DESTROY(EquationsSet%EQUATIONS_SET,Err,ERROR,*999)
+    
+    CALL EXITS("CMISSEquationsSetIndependentDestroyObj")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSetIndependentDestroyObj",Err,ERROR)
+    CALL EXITS("CMISSEquationsSetIndependentDestroyObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSEquationsSetIndependentDestroyObj
+
+  !  
+  !================================================================================================================================
+  !  
 
   !  
   !================================================================================================================================

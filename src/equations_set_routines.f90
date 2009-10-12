@@ -96,6 +96,8 @@ MODULE EQUATIONS_SET_ROUTINES
   PUBLIC EQUATIONS_SET_MATERIALS_CREATE_START,EQUATIONS_SET_MATERIALS_CREATE_FINISH,EQUATIONS_SET_MATERIALS_DESTROY
 
   PUBLIC EQUATIONS_SET_DEPENDENT_CREATE_START,EQUATIONS_SET_DEPENDENT_CREATE_FINISH,EQUATIONS_SET_DEPENDENT_DESTROY
+
+  PUBLIC EQUATIONS_SET_INDEPENDENT_CREATE_START,EQUATIONS_SET_INDEPENDENT_CREATE_FINISH,EQUATIONS_SET_INDEPENDENT_DESTROY
  
   PUBLIC EQUATIONS_SET_JACOBIAN_EVALUATE,EQUATIONS_SET_RESIDUAL_EVALUATE
 
@@ -1740,6 +1742,7 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       CALL EQUATIONS_SET_GEOMETRY_FINALISE(EQUATIONS_SET%GEOMETRY,ERR,ERROR,*999)
       CALL EQUATIONS_SET_DEPENDENT_FINALISE(EQUATIONS_SET%DEPENDENT,ERR,ERROR,*999)
+      CALL EQUATIONS_SET_INDEPENDENT_FINALISE(EQUATIONS_SET%INDEPENDENT,ERR,ERROR,*999)
       CALL EQUATIONS_SET_MATERIALS_FINALISE(EQUATIONS_SET%MATERIALS,ERR,ERROR,*999)
       CALL EQUATIONS_SET_SOURCE_FINALISE(EQUATIONS_SET%SOURCE,ERR,ERROR,*999)
       CALL EQUATIONS_SET_ANALYTIC_FINALISE(EQUATIONS_SET%ANALYTIC,ERR,ERROR,*999)
@@ -2154,6 +2157,269 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finish the creation of independent variables for an equations set. \see OPENCMISS::CMISSEquationsSetIndependentCreateFinish
+  SUBROUTINE EQUATIONS_SET_INDEPENDENT_CREATE_FINISH(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to finish the creation of the independent field for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(EQUATIONS_SET_SETUP_TYPE) :: EQUATIONS_SET_SETUP_INFO
+    TYPE(FIELD_TYPE), POINTER :: INDEPENDENT_FIELD
+
+    CALL ENTERS("EQUATIONS_SET_INDEPENDENT_CREATE_FINISH",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(ASSOCIATED(EQUATIONS_SET%INDEPENDENT)) THEN
+        IF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FINISHED) THEN
+          CALL FLAG_ERROR("Equations set independent field has already been finished.",ERR,ERROR,*999)
+        ELSE
+          !Initialise the setup
+          CALL EQUATIONS_SET_SETUP_INITIALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
+          EQUATIONS_SET_SETUP_INFO%SETUP_TYPE=EQUATIONS_SET_SETUP_INDEPENDENT_TYPE
+          EQUATIONS_SET_SETUP_INFO%ACTION_TYPE=EQUATIONS_SET_SETUP_FINISH_ACTION
+          INDEPENDENT_FIELD=>EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD
+          IF(ASSOCIATED(INDEPENDENT_FIELD)) THEN
+            EQUATIONS_SET_SETUP_INFO%FIELD_USER_NUMBER=INDEPENDENT_FIELD%USER_NUMBER
+            EQUATIONS_SET_SETUP_INFO%FIELD=>INDEPENDENT_FIELD
+            !Finish equations set specific startup
+            CALL EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
+          ELSE
+            CALL FLAG_ERROR("Equations set independent independent field is not associated.",ERR,ERROR,*999)
+          ENDIF
+          !Finalise the setup
+          CALL EQUATIONS_SET_SETUP_FINALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)          
+          !Finish independent creation
+          EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FINISHED=.TRUE.
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The equations set independent is not associated",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_INDEPENDENT_CREATE_FINISH")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_INDEPENDENT_CREATE_FINISH",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_INDEPENDENT_CREATE_FINISH")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_INDEPENDENT_CREATE_FINISH
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the creation of independent variables for an equations set. \see OPENCMISS::CMISSEquationsSetIndependentCreateStart
+  SUBROUTINE EQUATIONS_SET_INDEPENDENT_CREATE_START(EQUATIONS_SET,INDEPENDENT_FIELD_USER_NUMBER,INDEPENDENT_FIELD,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to start the creation of the materials field for
+    INTEGER(INTG), INTENT(IN) :: INDEPENDENT_FIELD_USER_NUMBER !<The user specified independent field number
+    TYPE(FIELD_TYPE), POINTER :: INDEPENDENT_FIELD !<If associated on entry, a pointer to the user created independent field which has the same user number as the specified independent field user number. If not associated on entry, on exit, a pointer to the created independent field for the equations set.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(EQUATIONS_SET_SETUP_TYPE) :: EQUATIONS_SET_SETUP_INFO
+    TYPE(FIELD_TYPE), POINTER :: FIELD,GEOMETRIC_FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION,INDEPENDENT_FIELD_REGION
+    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
+
+    CALL ENTERS("EQUATIONS_SET_INDEPENDENT_CREATE_START",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(ASSOCIATED(EQUATIONS_SET%INDEPENDENT)) THEN
+        CALL FLAG_ERROR("The equations set independent is already associated",ERR,ERROR,*998)        
+      ELSE
+        REGION=>EQUATIONS_SET%REGION
+        IF(ASSOCIATED(REGION)) THEN
+          IF(ASSOCIATED(INDEPENDENT_FIELD)) THEN
+            !Check the independent field has been finished
+            IF(INDEPENDENT_FIELD%FIELD_FINISHED) THEN
+              !Check the user numbers match
+              IF(INDEPENDENT_FIELD_USER_NUMBER/=INDEPENDENT_FIELD%USER_NUMBER) THEN
+                LOCAL_ERROR="The specified independent field user number of "// &
+                  & TRIM(NUMBER_TO_VSTRING(INDEPENDENT_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
+                  & " does not match the user number of the specified independent field of "// &
+                  & TRIM(NUMBER_TO_VSTRING(INDEPENDENT_FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+              INDEPENDENT_FIELD_REGION=>INDEPENDENT_FIELD%REGION
+              IF(ASSOCIATED(INDEPENDENT_FIELD_REGION)) THEN                
+                !Check the field is defined on the same region as the equations set
+                IF(INDEPENDENT_FIELD_REGION%USER_NUMBER/=REGION%USER_NUMBER) THEN
+                  LOCAL_ERROR="Invalid region setup. The specified independent field has been created on region number "// &
+                    & TRIM(NUMBER_TO_VSTRING(INDEPENDENT_FIELD_REGION%USER_NUMBER,"*",ERR,ERROR))// &
+                    & " and the specified equations set has been created on region number "// &
+                    & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+                !Check the specified independent field has the same decomposition as the geometric field
+                GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+                IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
+                  IF(.NOT.ASSOCIATED(GEOMETRIC_FIELD%DECOMPOSITION,INDEPENDENT_FIELD%DECOMPOSITION)) THEN
+                    CALL FLAG_ERROR("The specified independent field does not have the same decomposition as the geometric "// &
+                      & "field for the specified equations set.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("The geometric field is not associated for the specified equations set.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("The specified independent field region is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("The specified independent field has not been finished.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            !Check the user number has not already been used for a field in this region.
+            CALL FIELD_USER_NUMBER_FIND(INDEPENDENT_FIELD_USER_NUMBER,REGION,FIELD,ERR,ERROR,*999)
+            IF(ASSOCIATED(FIELD)) THEN
+              LOCAL_ERROR="The specified independent field user number of "// &
+                & TRIM(NUMBER_TO_VSTRING(INDEPENDENT_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
+                & "has already been used to create a field on region number "// &
+                & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ENDIF
+          !Initialise the equations set independent
+          CALL EQUATIONS_SET_INDEPENDENT_INITIALISE(EQUATIONS_SET,ERR,ERROR,*999)
+          IF(.NOT.ASSOCIATED(INDEPENDENT_FIELD)) EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED=.TRUE.
+          !Initialise the setup
+          CALL EQUATIONS_SET_SETUP_INITIALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
+          EQUATIONS_SET_SETUP_INFO%SETUP_TYPE=EQUATIONS_SET_SETUP_INDEPENDENT_TYPE
+          EQUATIONS_SET_SETUP_INFO%ACTION_TYPE=EQUATIONS_SET_SETUP_START_ACTION
+          EQUATIONS_SET_SETUP_INFO%FIELD_USER_NUMBER=INDEPENDENT_FIELD_USER_NUMBER
+          EQUATIONS_SET_SETUP_INFO%FIELD=>INDEPENDENT_FIELD
+          !Start equations set specific startup
+          CALL EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
+          !Finalise the setup
+          CALL EQUATIONS_SET_SETUP_FINALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
+          !Set pointers
+          IF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED) THEN            
+            INDEPENDENT_FIELD=>EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD
+          ELSE
+            EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD=>INDEPENDENT_FIELD
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Equation set region is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*998)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_INDEPENDENT_CREATE_START")
+    RETURN
+999 CALL EQUATIONS_SET_INDEPENDENT_FINALISE(EQUATIONS_SET%INDEPENDENT,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("EQUATIONS_SET_INDEPENDENT_CREATE_START",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_INDEPENDENT_CREATE_START")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_INDEPENDENT_CREATE_START
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroy the independent field for an equations set. \see OPENCMISS::CMISSEquationsSetIndependentDestroy
+  SUBROUTINE EQUATIONS_SET_INDEPENDENT_DESTROY(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to destroy the independent field for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("EQUATIONS_SET_INDEPENDENT_DESTROY",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(ASSOCIATED(EQUATIONS_SET%INDEPENDENT)) THEN
+        CALL EQUATIONS_SET_INDEPENDENT_FINALISE(EQUATIONS_SET%INDEPENDENT,ERR,ERROR,*999)
+      ELSE
+        CALL FLAG_ERROR("Equations set indpendent is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_INDEPENDENT_DESTROY")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_INDEPENDENT_DESTROY",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_INDEPENDENT_DESTROY")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_INDEPENDENT_DESTROY
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise the independent field for an equations set.
+  SUBROUTINE EQUATIONS_SET_INDEPENDENT_FINALISE(EQUATIONS_SET_INDEPENDENT,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_INDEPENDENT_TYPE), POINTER :: EQUATIONS_SET_INDEPENDENT !<A pointer to the equations set independent to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("EQUATIONS_SET_INDEPENDENT_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET_INDEPENDENT)) THEN
+      DEALLOCATE(EQUATIONS_SET_INDEPENDENT)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_INDEPENDENT_FINALISE")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_INDEPENDENT_FINALISE",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_INDEPENDENT_FINALISE")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_INDEPENDENT_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises the independent field for an equations set.
+  SUBROUTINE EQUATIONS_SET_INDEPENDENT_INITIALISE(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to initialise the independent for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+    
+    CALL ENTERS("EQUATIONS_SET_INDEPENDENT_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(ASSOCIATED(EQUATIONS_SET%INDEPENDENT)) THEN
+        CALL FLAG_ERROR("Independent field is already associated for these equations sets.",ERR,ERROR,*998)
+      ELSE
+        ALLOCATE(EQUATIONS_SET%INDEPENDENT,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations set independent field.",ERR,ERROR,*999)
+        EQUATIONS_SET%INDEPENDENT%EQUATIONS_SET=>EQUATIONS_SET
+        EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FINISHED=.FALSE.
+        EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED=.FALSE.
+        NULLIFY(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*998)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_INDEPENDENT_INITIALISE")
+    RETURN
+999 CALL EQUATIONS_SET_INDEPENDENT_FINALISE(EQUATIONS_SET%INDEPENDENT,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("EQUATIONS_SET_INDEPENDENT_INITIALISE",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_INDEPENDENT_INITIALISE")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_INDEPENDENT_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
   !>Initialises an equations set.
   SUBROUTINE EQUATIONS_SET_INITIALISE(EQUATIONS_SET,ERR,ERROR,*)
 
@@ -2177,6 +2443,7 @@ CONTAINS
       EQUATIONS_SET%SOLUTION_METHOD=0
       CALL EQUATIONS_SET_GEOMETRY_INITIALISE(EQUATIONS_SET,ERR,ERROR,*999)
       CALL EQUATIONS_SET_DEPENDENT_INITIALISE(EQUATIONS_SET,ERR,ERROR,*999)
+      NULLIFY(EQUATIONS_SET%INDEPENDENT)
       NULLIFY(EQUATIONS_SET%MATERIALS)
       NULLIFY(EQUATIONS_SET%SOURCE)
       NULLIFY(EQUATIONS_SET%ANALYTIC)
@@ -2633,7 +2900,7 @@ CONTAINS
             IF(ASSOCIATED(FIELD)) THEN
               LOCAL_ERROR="The specified dependent field user number of "// &
                 & TRIM(NUMBER_TO_VSTRING(DEPENDENT_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
-                & "has already been used to create a field on region number "// &
+                & " has already been used to create a field on region number "// &
                 & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF

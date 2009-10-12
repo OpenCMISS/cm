@@ -1268,19 +1268,23 @@ MODULE TYPES
     TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<A pointer to the geometric field for the equations.
     TYPE(FIELD_TYPE), POINTER :: FIBRE_FIELD !<A pointer to the fibre field for the equations (if one is defined).
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD !<A pointer to the dependent field for the equations 
+    TYPE(FIELD_TYPE), POINTER :: INDEPENDENT_FIELD !<A pointer to the independent field for the equations 
     TYPE(FIELD_TYPE), POINTER :: MATERIALS_FIELD !<A pointer to the material field for the equations (if one is defined).
     TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD !<A pointer to the source field for the equations (if one is defined).
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: GEOMETRIC_INTERP_PARAMETERS !<A pointer to the geometric interpolation parameters for the equations.
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: FIBRE_INTERP_PARAMETERS !<A pointer to the fibre interpolation parameters for the equations (if a fibre field is defined). 
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: DEPENDENT_INTERP_PARAMETERS !<A pointer to the dependent interpolation parameters for the equations. 
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INDEPENDENT_INTERP_PARAMETERS !<A pointer to the independent interpolation parameters for the equations. 
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: MATERIALS_INTERP_PARAMETERS !<A pointer to the material interpolation parameters for the equations (if a material field is defined). 
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: SOURCE_INTERP_PARAMETERS !<A pointer to the source interpolation parameters for the equations (if a source field is defined). 
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: GEOMETRIC_INTERP_POINT !<A pointer to the geometric interpolated point information for the equations. 
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: FIBRE_INTERP_POINT !<A pointer to the fibre interpolated point information for the equations (if a fibre field is defined). 
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: DEPENDENT_INTERP_POINT !<A pointer to the dependent interpolated point information for the equations. 
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INDEPENDENT_INTERP_POINT !<A pointer to the independent interpolated point information for the equations. 
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: MATERIALS_INTERP_POINT !<A pointer to the material interpolated point information for the equations (if a material field is defined). 
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: SOURCE_INTERP_POINT !<A pointer to the source interpolated point information for the equations (if a source field is defined).
     TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: DEPENDENT_INTERP_POINT_METRICS !<A pointer to the dependent interpolated point metrics information 
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: INDEPENDENT_INTERP_POINT_METRICS !<A pointer to the independent interpolated point metrics information 
     TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: GEOMETRIC_INTERP_POINT_METRICS !<A pointer to the geometric interpolated point metrics information 
     TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: FIBRE_INTERP_POINT_METRICS !<A pointer to the fibre interpolated point metrics information 
   END TYPE EQUATIONS_INTERPOLATION_TYPE
@@ -1366,6 +1370,14 @@ MODULE TYPES
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD !<A pointer to the dependent field for the equations set.
   END TYPE EQUATIONS_SET_DEPENDENT_TYPE
 
+  !>Contains information on the independent variables for the equations set.
+  TYPE EQUATIONS_SET_INDEPENDENT_TYPE
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
+    LOGICAL :: INDEPENDENT_FINISHED !<Is .TRUE. if the independent variables for the equations set has finished being created, .FALSE. if not.
+    LOGICAL :: INDEPENDENT_FIELD_AUTO_CREATED !<Is .TRUE. if the independent field has been auto created, .FALSE. if not.
+    TYPE(FIELD_TYPE), POINTER :: INDEPENDENT_FIELD !<A pointer to the independent field for the equations set.
+  END TYPE EQUATIONS_SET_INDEPENDENT_TYPE
+
   !>Contains information on the source for the equations set.
   TYPE EQUATIONS_SET_SOURCE_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
@@ -1401,6 +1413,7 @@ MODULE TYPES
     TYPE(EQUATIONS_SET_MATERIALS_TYPE), POINTER :: MATERIALS !<A pointer to the materials information for the equations set.
     TYPE(EQUATIONS_SET_SOURCE_TYPE), POINTER :: SOURCE !<A pointer to the source information for the equations set.
     TYPE(EQUATIONS_SET_DEPENDENT_TYPE) :: DEPENDENT !<The depedent variable information for the equations set.
+    TYPE(EQUATIONS_SET_INDEPENDENT_TYPE), POINTER :: INDEPENDENT !<A pointer to the indepedent field information for the equations set.
     TYPE(EQUATIONS_SET_ANALYTIC_TYPE), POINTER :: ANALYTIC !<A pointer to the analytic setup information for the equations set.
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !A pointer to the equations information for the equations set
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<A pointer to the boundary condition information for the equations set.
