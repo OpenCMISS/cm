@@ -865,73 +865,79 @@ static int FieldExport_FieldDerivateLabels( FileSession *session, const int numb
         return session->error;
     }
 
+    FieldExport_FPrintf( session, "(" );
     for( i = 0; i < numberOfDerivatives; i++ )
     {
+        if( i > 1 )
+        {
+            FieldExport_FPrintf( session, "," );
+        }
         switch( derivatives[i] )
         {
         case NO_PART_DERIV:
             break;
         case PART_DERIV_S1:
-              FieldExport_FPrintf( session, ", d/ds1" );
+              FieldExport_FPrintf( session, "d/ds1" );
               break;
         case PART_DERIV_S1_S1:
-              FieldExport_FPrintf( session, ", d2/ds1ds1" );
+              FieldExport_FPrintf( session, "d2/ds1ds1" );
               break;
         case PART_DERIV_S2:
-              FieldExport_FPrintf( session, ", d/ds2" );
+              FieldExport_FPrintf( session, "d/ds2" );
               break;
         case PART_DERIV_S2_S2:
-              FieldExport_FPrintf( session, ", d2/ds2ds2" );
-              break;
-        case PART_DERIV_S1_S2:
-              FieldExport_FPrintf( session, ", d/ds3" );
+              FieldExport_FPrintf( session, "d2/ds2ds2" );
               break;
         case PART_DERIV_S3:
-              FieldExport_FPrintf( session, ", d2/ds3ds3" );
+              FieldExport_FPrintf( session, "d/ds3" );
               break;
         case PART_DERIV_S3_S3:
-              FieldExport_FPrintf( session, ", d2/ds3ds3" );
+              FieldExport_FPrintf( session, "d2/ds3ds3" );
+              break;
+        case PART_DERIV_S1_S2:
+              FieldExport_FPrintf( session, "d2/ds1ds2" );
               break;
         case PART_DERIV_S1_S3:
-              FieldExport_FPrintf( session, ", d2/ds1ds3" );
+              FieldExport_FPrintf( session, "d2/ds1ds3" );
               break;
         case PART_DERIV_S2_S3:
-              FieldExport_FPrintf( session, ", d2/ds2ds3" );
+              FieldExport_FPrintf( session, "d2/ds2ds3" );
               break;
         case PART_DERIV_S1_S2_S3:
-              FieldExport_FPrintf( session, ", d3/ds1ds2ds3" );
+              FieldExport_FPrintf( session, "d3/ds1ds2ds3" );
               break;
         case PART_DERIV_S4:
-              FieldExport_FPrintf( session, ", d/ds4" );
+              FieldExport_FPrintf( session, "d/ds4" );
               break;
         case PART_DERIV_S4_S4:
-              FieldExport_FPrintf( session, ", d2/ds4ds4" );
+              FieldExport_FPrintf( session, "d2/ds4ds4" );
               break;
         case PART_DERIV_S1_S4:
-              FieldExport_FPrintf( session, ", d2/ds1ds4" );
+              FieldExport_FPrintf( session, "d2/ds1ds4" );
               break;
         case PART_DERIV_S2_S4:
-              FieldExport_FPrintf( session, ", d2/ds2ds4" );
+              FieldExport_FPrintf( session, "d2/ds2ds4" );
               break;
         case PART_DERIV_S3_S4:
-              FieldExport_FPrintf( session, ", d2/ds3ds4" );
+              FieldExport_FPrintf( session, "d2/ds3ds4" );
               break;
         case PART_DERIV_S1_S2_S4:
-              FieldExport_FPrintf( session, ", d3/ds1ds2ds4" );
+              FieldExport_FPrintf( session, "d3/ds1ds2ds4" );
               break;
         case PART_DERIV_S1_S3_S4:
-              FieldExport_FPrintf( session, ", d3/ds1ds3ds4" );
+              FieldExport_FPrintf( session, "d3/ds1ds3ds4" );
               break;
         case PART_DERIV_S2_S3_S4:
-              FieldExport_FPrintf( session, ", d3/ds2ds3ds4" );
+              FieldExport_FPrintf( session, "d3/ds2ds3ds4" );
               break;
         case PART_DERIV_S1_S2_S3_S4:
-              FieldExport_FPrintf( session, ", d4/ds1ds2ds3ds4" );
+              FieldExport_FPrintf( session, "d4/ds1ds2ds3ds4" );
               break;
         default:
               FieldExport_FPrintf( session, "unknown field variable type %d", derivatives[i] );
         }
     }
+    FieldExport_FPrintf( session, ")" );
 
     return session->error;
 }

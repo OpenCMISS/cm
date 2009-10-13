@@ -63,6 +63,7 @@ MODULE FIELD_IO_ROUTINES
   USE MPI
   USE CMISS_MPI
   USE INPUT_OUTPUT
+  USE DISTRIBUTED_MATRIX_VECTOR
 
   IMPLICIT NONE
 
@@ -2927,6 +2928,8 @@ CONTAINS
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: domainElementMapping
     TYPE(BASIS_TYPE), POINTER :: basis
     REAL(C_DOUBLE), ALLOCATABLE, TARGET :: scaleBuffer(:)
+    REAL(DP), POINTER :: SCALE_FACTORS(:)
+
 
     CALL ENTERS("FIELD_IO_EXPORT_ELEMENT_SCALE_FACTORS",ERR,ERROR,*999)
  
@@ -2955,8 +2958,9 @@ CONTAINS
         CALL REALLOCATE( scaleBuffer, SUM( basis%NUMBER_OF_DERIVATIVES(1:basis%NUMBER_OF_NODES ) ), &
           & "Could not allocate scale buffer in IO", ERR, ERROR, *999 )
 
-        !CALL DISTRIBUTED_VECTOR_DATA_GET(components%COMPONENTS(componentIndex)%PTR%FIELD%SCALINGS%SCALINGS(components%COMPONENTS(componentIndex)%PTR% &
-        !&SCALING_INDEX)%SCALE_FACTORS,SCALE_FACTORS,ERR,ERROR,*999)
+        CALL DISTRIBUTED_VECTOR_DATA_GET(component%FIELD_VARIABLE%FIELD%SCALINGS%SCALINGS(component% &
+           & SCALING_INDEX)%SCALE_FACTORS,SCALE_FACTORS,ERR,ERROR,*999)
+
         IF( .NOT.basis%DEGENERATE ) THEN
           DO nodeIndex = 1, basis%NUMBER_OF_NODES
             nodeNumber = domainElements%ELEMENTS( localNumber )%ELEMENT_NODES( nodeIndex )
@@ -2964,12 +2968,14 @@ CONTAINS
               nk = domainElements%ELEMENTS( localNumber )%ELEMENT_DERIVATIVES( derivativeIndex, nodeIndex )
               ny2 = domainNodes%NODES( nodeNumber )%DOF_INDEX( nk )
               scaleFactorCount = scaleFactorCount + 1
-              scaleBuffer( scaleFactorCount ) = 1 !SCALE_FACTORS(ny2) MUSTDO FIX THIS
+              scaleBuffer( scaleFactorCount ) = SCALE_FACTORS(ny2)
             ENDDO !derivativeIndex
           ENDDO !nodeIndex
         ELSE
           CALL FLAG_ERROR("exporting degenerated nodes has not been implemented",ERR,ERROR,*999)
         ENDIF
+        
+        NULLIFY( SCALE_FACTORS )
 
         ERR = FieldExport_ElementNodeScales( sessionHandle, firstScaleSet, scaleFactorCount, C_LOC( scaleBuffer ) )
         
