@@ -204,6 +204,11 @@ MODULE TYPES
     REAL(DP) :: ORIENTATION(3,3) !<ORIENTATION(nj,mj). he orientation matrix for the orientation of the coordinate system wrt to the global coordinate system. NOTE: maybe this should be wrt to the parent regions coordinate system - this would then go into the REGION type.
   END TYPE COORDINATE_SYSTEM_TYPE
 
+  !>A buffer type to allow for an array of pointers to a COORDINATE_SYSTEM_TYPE.
+  TYPE COORDINATE_SYSTEM_PTR_TYPE
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: PTR !<A pointer to the coordinate system
+  END TYPE COORDINATE_SYSTEM_PTR_TYPE
+  
   !
   !================================================================================================================================
   !

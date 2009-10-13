@@ -101,10 +101,11 @@ CONTAINS
     INTEGER(INTG) :: column_idx,dof_idx,DEPENDENT_VARIABLE_TYPE,DYNAMIC_EQUATIONS_MATRIX_OFFSET,equations_column, &
       & equations_matrix,equations_matrix_idx,equations_set_idx,global_dof,global_row,jacobian_column,local_dof, &
       & LINEAR_EQUATIONS_MATRIX_OFFSET,local_row,matrix_number,myrank,myrank_local_dof,NUMBER_OF_COLUMNS, &
-      & NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES,NUMBER_OF_LINEAR_EQUATIONS_MATRICES,NUMBER_OF_GLOBAL_SOLVER_COLS, &
-      & LOCAL_SOLVER_DOF_OFFSET,NUMBER_OF_GHOST_SOLVER_DOFS,NUMBER_OF_GLOBAL_SOLVER_ROWS,NUMBER_OF_LOCAL_SOLVER_COLS, &
-      & NUMBER_OF_LOCAL_SOLVER_DOFS,NUMBER_OF_LOCAL_SOLVER_ROWS,NUMBER_OF_VARIABLES,rank,rank_idx,row_idx,SOLVER_DOF, &
-      & solver_matrix_idx,TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS,variable_idx,variable_type,equations_row_number
+      & NUMBER_OF_EQUATIONS_COLUMNS,NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES,NUMBER_OF_LINEAR_EQUATIONS_MATRICES, &
+      & NUMBER_OF_GLOBAL_SOLVER_COLS,LOCAL_SOLVER_DOF_OFFSET,NUMBER_OF_GHOST_SOLVER_DOFS,NUMBER_OF_GLOBAL_SOLVER_ROWS, &
+      & NUMBER_OF_LOCAL_SOLVER_COLS,NUMBER_OF_LOCAL_SOLVER_DOFS,NUMBER_OF_LOCAL_SOLVER_ROWS,NUMBER_OF_VARIABLES, &
+      & rank,rank_idx,row_idx,SOLVER_DOF,solver_matrix_idx,TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS,variable_idx, &
+      & variable_type,equations_row_number
     LOGICAL :: INCLUDE_ROW,MYRANK_DOF,RANK_DOF
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
@@ -859,11 +860,11 @@ CONTAINS
                           & solver_matrix_idx)%DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS(DYNAMIC_EQUATIONS_MATRIX_OFFSET+ &
                           & equations_matrix_idx)%PTR%EQUATIONS_MATRIX=>DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS( &
                           & MATRIX_NUMBER)%EQUATIONS_MATRIX
-                        NUMBER_OF_COLUMNS=DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(MATRIX_NUMBER)%NUMBER_OF_COLUMNS
+                        NUMBER_OF_EQUATIONS_COLUMNS=DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(MATRIX_NUMBER)%NUMBER_OF_COLUMNS
                         ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                           & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS( &
                           & DYNAMIC_EQUATIONS_MATRIX_OFFSET+equations_matrix_idx)%PTR%EQUATIONS_COL_SOLVER_COLS_MAP( &
-                          & NUMBER_OF_COLUMNS),STAT=ERR)
+                          & NUMBER_OF_EQUATIONS_COLUMNS),STAT=ERR)
                         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dynamic equations column to solver columns map.", &
                           & ERR,ERROR,*999)
                       ENDDO !equations_matrix_idx
@@ -873,10 +874,10 @@ CONTAINS
                         SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                           & solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP%JACOBIAN_MATRIX=>NONLINEAR_MAPPING% &
                           & JACOBIAN_TO_VAR_MAP%JACOBIAN
-                        NUMBER_OF_COLUMNS=NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%NUMBER_OF_COLUMNS
+                        NUMBER_OF_EQUATIONS_COLUMNS=NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%NUMBER_OF_COLUMNS
                         ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                           & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP% &
-                          & JACOBIAN_COL_SOLVER_COLS_MAP(NUMBER_OF_COLUMNS),STAT=ERR)
+                          & JACOBIAN_COL_SOLVER_COLS_MAP(NUMBER_OF_EQUATIONS_COLUMNS),STAT=ERR)
                         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Jacobian column to solver columns map.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
@@ -895,11 +896,11 @@ CONTAINS
                             & solver_matrix_idx)%LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS(LINEAR_EQUATIONS_MATRIX_OFFSET+ &
                             & equations_matrix_idx)%PTR%EQUATIONS_MATRIX=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS( &
                             & MATRIX_NUMBER)%EQUATIONS_MATRIX
-                          NUMBER_OF_COLUMNS=LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(MATRIX_NUMBER)%NUMBER_OF_COLUMNS
+                          NUMBER_OF_EQUATIONS_COLUMNS=LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(MATRIX_NUMBER)%NUMBER_OF_COLUMNS
                           ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                             & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS( &
                             & LINEAR_EQUATIONS_MATRIX_OFFSET+equations_matrix_idx)%PTR%EQUATIONS_COL_SOLVER_COLS_MAP( &
-                            & NUMBER_OF_COLUMNS),STAT=ERR)
+                            & NUMBER_OF_EQUATIONS_COLUMNS),STAT=ERR)
                           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate linear equations column to solver columns map.", &
                             & ERR,ERROR,*999)
                         ENDDO !equations_matrix_idx
@@ -910,10 +911,10 @@ CONTAINS
                         SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                           & solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP%JACOBIAN_MATRIX=>NONLINEAR_MAPPING% &
                           & JACOBIAN_TO_VAR_MAP%JACOBIAN
-                        NUMBER_OF_COLUMNS=NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%NUMBER_OF_COLUMNS
+                        NUMBER_OF_EQUATIONS_COLUMNS=NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%NUMBER_OF_COLUMNS
                         ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                           & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP% &
-                          & JACOBIAN_COL_SOLVER_COLS_MAP(NUMBER_OF_COLUMNS),STAT=ERR)
+                          & JACOBIAN_COL_SOLVER_COLS_MAP(NUMBER_OF_EQUATIONS_COLUMNS),STAT=ERR)
                         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Jacobian column to solver columns map.",ERR,ERROR,*999)
                       ENDIF
                     ENDIF
