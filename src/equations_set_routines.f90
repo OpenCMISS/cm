@@ -449,7 +449,37 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE(EQUATIONS_QUASISTATIC)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+! chrm, 17/09/09
+            SELECT CASE(EQUATIONS%LINEARITY)
+            CASE(EQUATIONS_LINEAR)
+              SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+              CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+                CALL EQUATIONS_SET_ASSEMBLE_QUASISTATIC_LINEAR_FEM(EQUATIONS_SET,ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The equations set solution method of "// &
+                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
+                  & " is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+            CASE(EQUATIONS_NONLINEAR)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE(EQUATIONS_NONLINEAR_BCS)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE DEFAULT
+              LOCAL_ERROR="The equations linearity of "// &
+                & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
           CASE(EQUATIONS_FIRST_ORDER_DYNAMIC,EQUATIONS_SECOND_ORDER_DYNAMIC)
             SELECT CASE(EQUATIONS%LINEARITY)
             CASE(EQUATIONS_LINEAR)
@@ -963,6 +993,161 @@ CONTAINS
     CALL EXITS("EQUATIONS_SET_ASSEMBLE_STATIC_NONLINEAR_FEM")
     RETURN 1
   END SUBROUTINE EQUATIONS_SET_ASSEMBLE_STATIC_NONLINEAR_FEM
+
+  !
+  !================================================================================================================================
+  !
+
+! chrm, 17/09/09
+  
+  !>Assembles the equations stiffness matrix and rhs for a linear quasistatic equations set using the finite element method.
+  SUBROUTINE EQUATIONS_SET_ASSEMBLE_QUASISTATIC_LINEAR_FEM(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to assemble the equations for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: element_idx,ne,NUMBER_OF_TIMES
+    REAL(SP) :: ELEMENT_USER_ELAPSED,ELEMENT_SYSTEM_ELAPSED,USER_ELAPSED,USER_TIME1(1),USER_TIME2(1),USER_TIME3(1),USER_TIME4(1), &
+      & USER_TIME5(1),USER_TIME6(1),SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),SYSTEM_TIME3(1),SYSTEM_TIME4(1), &
+      & SYSTEM_TIME5(1),SYSTEM_TIME6(1)
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    
+    CALL ENTERS("EQUATIONS_SET_ASSEMBLE_QUASISTATIC_LINEAR_FEM",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+      IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+        EQUATIONS=>EQUATIONS_SET%EQUATIONS
+        IF(ASSOCIATED(EQUATIONS)) THEN
+          EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+          IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME1,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME1,ERR,ERROR,*999)
+            ENDIF
+            !Initialise the matrices and rhs vector
+            CALL EQUATIONS_MATRICES_VALUES_INITIALISE(EQUATIONS_MATRICES,EQUATIONS_MATRICES_LINEAR_ONLY,0.0_DP,ERR,ERROR,*999)
+            !Assemble the elements
+            !Allocate the element matrices 
+            CALL EQUATIONS_MATRICES_ELEMENT_INITIALISE(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ELEMENTS_MAPPING=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+              & MAPPINGS%ELEMENTS
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME2,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME2,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME2(1)-USER_TIME1(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME2(1)-SYSTEM_TIME1(1)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for equations setup and initialisation = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for equations setup and initialisation = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+              ELEMENT_USER_ELAPSED=0.0_SP
+              ELEMENT_SYSTEM_ELAPSED=0.0_SP
+            ENDIF
+            NUMBER_OF_TIMES=0
+            !Loop over the internal elements
+            DO element_idx=ELEMENTS_MAPPING%INTERNAL_START,ELEMENTS_MAPPING%INTERNAL_FINISH
+              ne=ELEMENTS_MAPPING%DOMAIN_LIST(element_idx)
+              NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
+              CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_SET_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDDO !element_idx                  
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME3,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME3,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME3(1)-USER_TIME2(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME3(1)-SYSTEM_TIME2(1)
+              ELEMENT_USER_ELAPSED=USER_ELAPSED
+              ELEMENT_SYSTEM_ELAPSED=SYSTEM_ELAPSED
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for internal equations assembly = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for internal equations assembly = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+             ENDIF
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME4,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME4,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME4(1)-USER_TIME3(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME4(1)-SYSTEM_TIME3(1)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for parameter transfer completion = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for parameter transfer completion = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)              
+            ENDIF
+            !Loop over the boundary and ghost elements
+            DO element_idx=ELEMENTS_MAPPING%BOUNDARY_START,ELEMENTS_MAPPING%GHOST_FINISH
+              ne=ELEMENTS_MAPPING%DOMAIN_LIST(element_idx)
+              NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
+              CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_SET_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDDO !element_idx
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME5,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME5,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME5(1)-USER_TIME4(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME5(1)-SYSTEM_TIME4(1)
+              ELEMENT_USER_ELAPSED=ELEMENT_USER_ELAPSED+USER_ELAPSED
+              ELEMENT_SYSTEM_ELAPSED=ELEMENT_SYSTEM_ELAPSED+USER_ELAPSED
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for boundary+ghost equations assembly = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for boundary+ghost equations assembly = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+              IF(NUMBER_OF_TIMES>0) THEN
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Average element user time for equations assembly = ", &
+                  & ELEMENT_USER_ELAPSED/NUMBER_OF_TIMES,ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Average element system time for equations assembly = ", &
+                  & ELEMENT_SYSTEM_ELAPSED/NUMBER_OF_TIMES,ERR,ERROR,*999)
+              ENDIF
+            ENDIF
+            !Finalise the element matrices
+            CALL EQUATIONS_MATRICES_ELEMENT_FINALISE(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            !Output equations matrices and RHS vector if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_MATRIX_OUTPUT) THEN
+              CALL EQUATIONS_MATRICES_OUTPUT(GENERAL_OUTPUT_TYPE,EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDIF
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME6,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME6,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME6(1)-USER_TIME1(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME6(1)-SYSTEM_TIME1(1)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for equations assembly = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total system time for equations assembly = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Equations matrices is not associated",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Equations is not associated",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Dependent field is not associated",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_ASSEMBLE_QUASISTATIC_LINEAR_FEM")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_ASSEMBLE_QUASISTATIC_LINEAR_FEM",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_ASSEMBLE_QUASISTATIC_LINEAR_FEM")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_ASSEMBLE_QUASISTATIC_LINEAR_FEM
 
   !
   !================================================================================================================================

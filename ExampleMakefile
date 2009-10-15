@@ -536,9 +536,11 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
   ifeq ($(ABI),64)
     PETSC_LIB_PATH +=  $(addprefix -L, /usr/X11R6/lib64/ )
     PETSC_LIB_PATH +=  $(addprefix -L, /usr/lib64/ )
+    PETSC_LIB_PATH +=  $(addprefix -L, /usr/lib64/openmotif/ )
   else
     PETSC_LIB_PATH +=  $(addprefix -L, /usr/X11R6/lib/ )
     PETSC_LIB_PATH +=  $(addprefix -L, /usr/lib/ )
+    PETSC_LIB_PATH +=  $(addprefix -L, /usr/lib/openmotif/ )
   endif
   ifeq ($(MPI),mpich2)
     PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/ )
