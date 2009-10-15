@@ -350,6 +350,17 @@ MODULE TYPES
     TYPE(BASIS_TYPE), POINTER :: BASIS !<The pointer to the basis used in the regular mesh.
   END TYPE GENERATED_MESH_REGULAR_TYPE
 
+  !>Contains information of a generated cylinder mesh
+  !>Allows only a 3D cylinder mesh with xi directions (r,theta,z)
+  TYPE GENERATED_MESH_CYLINDER_TYPE
+    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh.
+    REAL(DP), ALLOCATABLE :: ORIGIN(:) !<ORIGIN(nj). The position of the origin (centre) of lower face of cylinder mesh.
+    REAL(DP), ALLOCATABLE :: CYLINDER_EXTENT(:) !<CYLINDER_EXTENT(nj). The size of inner & outer radii and height of cylinder.
+    INTEGER(INTG) :: MESH_DIMENSION !<The dimension/number of Xi directions of the cylinder mesh.
+    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ELEMENTS_XI(:) !<NUMBER_OF_ELEMENTS(ni). The number of elements in radial, circumferential and axial directions
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<The pointer to the basis used in the regular mesh.
+  END TYPE GENERATED_MESH_CYLINDER_TYPE
+
   !>Contains information on a generated mesh. \see OPENCMISS::CMISSGeneratedMeshType
   TYPE GENERATED_MESH_TYPE
     INTEGER(INTG) :: USER_NUMBER
@@ -358,6 +369,7 @@ MODULE TYPES
     TYPE(REGION_TYPE), POINTER :: REGION
     INTEGER(INTG) :: GENERATED_TYPE
     TYPE(GENERATED_MESH_REGULAR_TYPE), POINTER :: REGULAR_MESH
+    TYPE(GENERATED_MESH_CYLINDER_TYPE), POINTER :: CYLINDER_MESH
     TYPE(MESH_TYPE), POINTER :: MESH
   END TYPE GENERATED_MESH_TYPE
   
