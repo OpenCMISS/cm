@@ -2847,6 +2847,15 @@ MODULE OPENCMISS
   !>@{
   INTEGER(INTG), PARAMETER :: CMISSSolverCMISSLibrary = SOLVER_CMISS_LIBRARY !<CMISS (internal) solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverPETScLibrary = SOLVER_PETSC_LIBRARY !<PETSc solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverMUMPSLibrary = SOLVER_MUMPS_LIBRARY !<MUMPS solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverSuperLULibrary = SOLVER_SUPERLU_LIBRARY !<SuperLU solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverSpoolesLULibrary = SOLVER_SPOOLES_LIBRARY !<SPOOLES solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverUMFPACKLibrary = SOLVER_UMFPACK_LIBRARY !<UMFPACK solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverLUSOLLibrary = SOLVER_LUSOL_LIBRARY !<LUSOL solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverESSLLibrary = SOLVER_ESSL_LIBRARY !<ESSL solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverLAPACKLibrary = SOLVER_LAPACK_LIBRARY !<LAPACK solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverTAOLibrary = SOLVER_TAO_LIBRARY !<TAO solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverHypreLibrary = SOLVER_HYPRE_LIBRARY !<Hypre solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_LinearSolverTypes OPENCMISS::Solver::LinearSolverTypes
   !> \brief The types of linear solvers.
@@ -2862,11 +2871,6 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDirectLU = SOLVER_DIRECT_LU !<LU direct linear solver. \see OPENCMISS_DirectLinearSolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDirectCholesky = SOLVER_DIRECT_CHOLESKY !<Cholesky direct linear solver. \see OPENCMISS_DirectLinearSolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDirectSVD = SOLVER_DIRECT_SVD !<SVD direct linear solver. \see OPENCMISS_DirectLinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDirectMUMPS = SOLVER_DIRECT_MUMPS !<MUMPS direct linear solver. \see OPENCMISS_DirectLinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDirectPastix = SOLVER_DIRECT_PASTIX !<PASTIX direct linear solver. \see OPENCMISS_DirectLinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDirectPLAPACK = SOLVER_DIRECT_PLAPACK !<PLAPACK direct linear solver. \see OPENCMISS_DirectLinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDirectSPOOLES = SOLVER_DIRECT_SPOOLES !<SPOOLES direct linear solver. \see OPENCMISS_DirectLinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDirectSuperLU = SOLVER_DIRECT_SUPERLU !<SUPERLU direct linear solver. \see OPENCMISS_DirectLinearSolverTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_IterativeLinearSolverTypes OPENCMISS::Solver::IterativeLinearSolverTypes
   !> \brief The types of iterative linear solvers.

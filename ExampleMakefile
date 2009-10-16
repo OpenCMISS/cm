@@ -60,6 +60,9 @@ endif
 include $(GLOBAL_ROOT)/utils/Makefile.inc
 
 #----------------------------------------------------------------------------------------------------------------------------------
+ifndef LIBRARY_VERSION
+  LIBRARY_VERSION := old
+endif
 
 ifndef MPI
   MPI := mpich2
@@ -111,11 +114,33 @@ EXAMPLE_ROOT = $(GLOBAL_ROOT)/examples/$(EXAMPLE_PATH)$(EXAMPLE_NAME)
 BASE_EXE_NAME = $(BASE_EXAMPLE_NAME)
 MAIN_SOURCE_DIR = $(GLOBAL_ROOT)/src
 EXAMPLE_SOURCE_DIR = $(EXAMPLE_ROOT)/src
-OBJECT_DIR := $(EXAMPLE_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)
+ifeq ($(LIBRARY_VERSION),new)
+  OBJECT_DIR := $(EXAMPLE_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+else
+  OBJECT_DIR := $(EXAMPLE_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)
+endif
 MODULE_DIR := $(OBJECT_DIR)
-EXE_DIR := $(EXAMPLE_ROOT)/bin/$(BIN_ARCH_DIR)
-EXE_NAME := $(BASE_EXE_NAME)$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)
+ifeq ($(LIBRARY_VERSION),new)
+  EXE_DIR := $(EXAMPLE_ROOT)/bin/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
+  EXE_NAME := $(BASE_EXE_NAME)$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+else
+  EXE_DIR := $(EXAMPLE_ROOT)/bin/$(BIN_ARCH_DIR)
+  EXE_NAME := $(BASE_EXE_NAME)$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)
+endif
 EXECUTABLE := $(EXE_DIR)/$(EXE_NAME)
+ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  ifeq ($(LIBRARY_VERSION),new)
+    EXTERNAL_DIR := $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+  else
+    EXTERNAL_DIR := $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)
+  endif
+else
+  ifeq ($(OPERATING_SYSTEM),aix)# AIX
+    EXTERNAL_DIR := $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+  else# windows
+    EXTERNAL_DIR := $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+  endif
+endif
 
 C_INCLUDE_DIRS := $(MAIN_SOURCE_DIR) \
   $(EXAMPLE_SOURCE_DIR) 
@@ -477,34 +502,21 @@ TAO_LIB_PATH =#
 TAO_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   ifeq ($(DEBUG),false)
-    ifeq ($(MPI),mpich2)
-      TAO_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/linux-gnu-c-opt/ )
-    else
-      TAO_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/lib/linux-gnu-c-opt/ )
-    endif
+    TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/linux-gnu-c-opt/ )
   else
-    ifeq ($(MPI),mpich2)
-      TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/linux-gnu-c-debug/ )
-    else
-      TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/lib/linux-gnu-c-debug/ )
-    endif
+    TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/linux-gnu-c-debug/ )
   endif
-  ifeq ($(MPI),mpich2)
-    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/ )
-    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  else
-    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/ )
-    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  endif
+  TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+  TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     ifeq ($(DEBUG),false)
-      TAO_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/aix-5.3.0.0-c-opt/ )
+      TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/aix-5.3.0.0-c-opt/ )
     else
-      TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/aix-5.3.0.0-c-debug/ )
+      TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/aix-5.3.0.0-c-debug/ )
     endif
-    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/ )
-    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/include/ )
+    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
   else# windows
     TAO_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     TAO_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -512,55 +524,40 @@ else
 endif
 
 #PETSc
-PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscdm -lpetscksp -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++
+PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++
 PETSC_LIB_PATH =#
 PETSC_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   ifeq ($(DEBUG),false)
-    ifeq ($(MPI),mpich2)
-      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/linux-gnu-c-opt/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/bmake/linux-gnu-c-opt/ )
-    else
-      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/lib/linux-gnu-c-opt/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/bmake/linux-gnu-c-opt/ )
-    endif
+    PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/linux-gnu-c-opt/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/bmake/linux-gnu-c-opt/ )
   else
-    ifeq ($(MPI),mpich2)
-      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/linux-gnu-c-debug/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/bmake/linux-gnu-c-debug/ )
-    else
-      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/lib/linux-gnu-c-debug/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/bmake/linux-gnu-c-debug/ )
-    endif
+    PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/linux-gnu-c-debug/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/bmake/linux-gnu-c-debug/ )
   endif
   ifeq ($(ABI),64)
-    PETSC_LIB_PATH +=  $(addprefix -L, /usr/X11R6/lib64/ )
-    PETSC_LIB_PATH +=  $(addprefix -L, /usr/lib64/ )
-    PETSC_LIB_PATH +=  $(addprefix -L, /usr/lib64/openmotif/ )
+    PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib64/ )
+    PETSC_LIB_PATH += $(addprefix -L, /usr/lib64/ )
+    PETSC_LIB_PATH += $(addprefix -L, /usr/lib64/openmotif/ )
   else
-    PETSC_LIB_PATH +=  $(addprefix -L, /usr/X11R6/lib/ )
-    PETSC_LIB_PATH +=  $(addprefix -L, /usr/lib/ )
-    PETSC_LIB_PATH +=  $(addprefix -L, /usr/lib/openmotif/ )
+    PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib/ )
+    PETSC_LIB_PATH += $(addprefix -L, /usr/lib/ )
+    PETSC_LIB_PATH += $(addprefix -L, /usr/lib/openmotif/ )
   endif
-  ifeq ($(MPI),mpich2)
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  else
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  endif
+  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     ifeq ($(DEBUG),false)
-      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/aix-5.3.0.0-c-opt/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/bmake/aix-5.3.0.0-c-opt/ )
+      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/aix-5.3.0.0-c-opt/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/bmake/aix-5.3.0.0-c-opt/ )
     else
-      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/aix-5.3.0.0-c-debug/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/bmake/aix-5.3.0.0-c-debug/ )
+      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/aix-5.3.0.0-c-debug/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/bmake/aix-5.3.0.0-c-debug/ )
     endif
-    PETSC_LIB_PATH +=  $(addprefix -L, /usr/X11R6/lib/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/include/ )
+    PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
   else# windows
     PETSC_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     PETSC_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -572,23 +569,14 @@ SUNDIALS_LIBRARIES = -lsundials_cvode -lsundials_nvecparallel -lsundials_nvecser
 SUNDIALS_LIB_PATH =#
 SUNDIALS_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  ifeq ($(MPI),mpich2)
-    SUNDIALS_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
-  else
-    SUNDIALS_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
-  endif
-  ifeq ($(MPI),mpich2)
-    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/ )
-    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  else
-    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/ )
-    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  endif
+  SUNDIALS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
+  SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+  SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    SUNDIALS_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib )
-    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/ )
-    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/include/ )
+    SUNDIALS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib )
+    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
   else# windows
     SUNDIALS_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     SUNDIALS_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -600,23 +588,14 @@ HYPRE_LIBRARIES = -lHYPRE
 HYPRE_LIB_PATH =#
 HYPRE_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  ifeq ($(MPI),mpich2)
-    HYPRE_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
-  else
-    HYPRE_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
-  endif
-  ifeq ($(MPI),mpich2)
-    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/ )
-    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  else
-    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/ )
-    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  endif
+  HYPRE_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
+  HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+  HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    HYPRE_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib )
-    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/ )
-    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/include/ )
+    HYPRE_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib )
+    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
   else# windows
     HYPRE_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     HYPRE_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -628,23 +607,14 @@ MUMPS_LIBRARIES = -ldmumps -lmumps_common -lpord
 MUMPS_LIB_PATH =#
 MUMPS_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  ifeq ($(MPI),mpich2)
-    MUMPS_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
-  else
-    MUMPS_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
-  endif
-  ifeq ($(MPI),mpich2)
-    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/ )
-    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  else
-    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/ )
-    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  endif
+  MUMPS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
+  MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+  MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    MUMPS_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib )
-    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/ )
-    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/include/ )
+    MUMPS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib )
+    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
   else# windows
     MUMPS_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     MUMPS_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -656,23 +626,14 @@ SCALAPACK_LIBRARIES = -lscalapack
 SCALAPACK_LIB_PATH =#
 SCALAPACK_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  ifeq ($(MPI),mpich2)
-    SCALAPACK_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
-  else
-    SCALAPACK_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
-  endif
-  ifeq ($(MPI),mpich2)
-    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/ )
-    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  else
-    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/ )
-    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  endif
+  SCALAPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
+  SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+  SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    SCALAPACK_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib )
-    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/ )
-    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/include/ )
+    SCALAPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib )
+    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
   else# windows
     SCALAPACK_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     SCALAPACK_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -684,23 +645,14 @@ BLACS_LIBRARIES = -lblacs -lblacsC -lblacsF77 -lblacs -lblacsC -lblacsF77
 BLACS_LIB_PATH =#
 BLACS_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  ifeq ($(MPI),mpich2)
-    BLACS_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
-  else
-    BLACS_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
-  endif
-  ifeq ($(MPI),mpich2)
-    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/ )
-    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  else
-    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/ )
-    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  endif
+  BLACS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
+  BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+  BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    BLACS_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib )
-    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/ )
-    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/include/ )
+    BLACS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib )
+    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
   else# windows
     BLACS_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     BLACS_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -712,10 +664,10 @@ PARMETIS_LIBRARIES = -lparmetis -lmetis
 PARMETIS_LIB_PATH =#
 PARMETIS_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
+  PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/ )
+    PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
   else# windows
     PARMETIS_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
   endif
@@ -732,7 +684,7 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
       MPI_LIBRARIES += -lmpe_f2cmpi -llmpe -lmpe
     endif
     MPI_LIBRARIES += -lmpich -lpthread -lrt
-    MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
+    MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
   else
     ifeq ($(MPI),intel)
       ifeq ($(MPIPROF),true)
@@ -749,9 +701,9 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
         MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib/ )
       endif
     else
-      MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
+      MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/lib/ )
       MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -lnsl -lutil
-      MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
+      MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
     endif
   endif
 else
@@ -804,7 +756,6 @@ $(OBJECT_DIR)/%.o : $(MAIN_SOURCE_DIR)/%.c
 
 $(OBJECT_DIR)/%.o : $(EXAMPLE_SOURCE_DIR)/%.c
 	( cd $(OBJECT_DIR) ; $(CC) -o $@ $(CFLAGS) $(CPPFLAGS) -c $< )
-
 
 OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/analytic_analysis_routines.o \
@@ -872,7 +823,6 @@ OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/trees.o \
 	$(OBJECT_DIR)/types.o 
 
-
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   MACHINE_OBJECTS = $(OBJECT_DIR)/machine_constants_linux.o
 else
@@ -896,7 +846,6 @@ $(OBJECT_DIR) :
 
 $(EXE_DIR) :
 	mkdir -p $@; 
-
 
 $(EXECUTABLE) : $(OBJECTS) 
 	$(EXE_LINK) -o $@ $(OBJECTS) $(ELFLAGS) $(EXTERNAL_LIBRARIES)
@@ -1698,9 +1647,6 @@ $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o	:	$(EXAMPLE_SOURCE_DIR)/$(BASE_EXAMPLE_NAME
 	$(OBJECT_DIR)/timer_f.o \
 	$(OBJECT_DIR)/types.o 
 
-
-
-
 # ----------------------------------------------------------------------------
 #
 # clean and clobber for removing objects and executable.
@@ -1737,12 +1683,12 @@ all64: debug64 opt64
 # TODO only for linux 64bit for now.
 test:
 # Test for 2x2 mesh using bilinear lagrange basis 
-	python $(CURDIR)/testscript.py $(CURDIR)/bin/$(LIB_ARCH_DIR)/$(BASE_EXAMPLE_NAME)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)
+	python $(CURDIR)/testscript.py $(CURDIR)/bin/$(LIB_ARCH_DIR)/$(BASE_EXAMPLE_NAME)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
 
 #-----------------------------------------------------------------------------
 
 help:
-	@echo "			Compile a version of openCMISS"
+	@echo "			Compile a version of OpenCMISS"
 	@echo "			=============================="
 	@echo
 	@echo "Examples of usage:   "
@@ -1759,7 +1705,8 @@ help:
 	@echo "	PROF=(true|)"
 	@echo "	MPIPROF=(true|)"
 	@echo "	ABI=(32|64)"
-	@echo "	COMPILER=(intel|gnu)"
+	@echo "	COMPILER=(intel|gnu|ibm)"
+	@echo "	LIBRARY_VERSION=(old|new)"
 	@echo 
 	@echo "Available targets:                            "
 	@echo

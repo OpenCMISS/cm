@@ -65,6 +65,8 @@ MODULE SOLVER_ROUTINES
 
   PRIVATE
 
+#include "include/petscversion.h"
+ 
   !Module parameters
 
   !> \addtogroup SOLVER_ROUTINES_SolverTypes SOLVER_ROUTINES::SolverTypes
@@ -76,7 +78,7 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DYNAMIC_TYPE=3 !<A dynamic solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DAE_TYPE=4 !<A differential-algebraic equation solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_EIGENPROBLEM_TYPE=5 !<A eigenproblem solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_OPTIMISER_TYPE=5 !<An optimiser solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_OPTIMISER_TYPE=6 !<An optimiser solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_SolverLibraries SOLVER_ROUTINES::SolverLibraries
@@ -85,7 +87,16 @@ MODULE SOLVER_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_CMISS_LIBRARY=LIBRARY_CMISS_TYPE !<CMISS (internal) solver library \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_PETSC_LIBRARY=LIBRARY_PETSC_TYPE !<PETSc solver library \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
-  !>@}
+  INTEGER(INTG), PARAMETER :: SOLVER_MUMPS_LIBRARY=LIBRARY_MUMPS_TYPE !<MUMPS solver library \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_SUPERLU_LIBRARY=LIBRARY_SUPERLU_TYPE !<SuperLU solver library \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_SPOOLES_LIBRARY=LIBRARY_SPOOLES_TYPE !<Spooles solver library \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_UMFPACK_LIBRARY=LIBRARY_UMFPACK_TYPE !<UMFPACK solver library \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_LUSOL_LIBRARY=LIBRARY_LUSOL_TYPE !<LUSOL solver library \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_ESSL_LIBRARY=LIBRARY_ESSL_TYPE !<ESSL solver library \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_LAPACK_LIBRARY=LIBRARY_LAPACK_TYPE !<LAPACK solver library \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_TAO_LIBRARY=LIBRARY_TAO_TYPE !<TAO solver library \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_HYPRE_LIBRARY=LIBRARY_HYPRE_TYPE !<Hypre solver library \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_LinearSolverTypes SOLVER_ROUTINES::LinearSolverTypes
   !> \brief The types of linear solvers
@@ -102,11 +113,6 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_LU=1 !<LU direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_CHOLESKY=2 !<Cholesky direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_SVD=3 !<SVD direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_MUMPS=4 !<MUMPS direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_PASTIX=5 !<PASTIX direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_PLAPACK=6 !<PLAPACK direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_SPOOLES=7 !<SPOOLES direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_DIRECT_SUPERLU=8 !<SUPERLU direct linear solver \see SOLVER_ROUTINES_DirectLinearSolverTypes,SOLVER_ROUTINES
   !>@}
   
   !> \addtogroup SOLVER_ROUTINES_IterativeLinearSolverTypes SOLVER_ROUTINES::IterativeLinearSolverTypes
@@ -295,12 +301,13 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVER_LINEAR_TYPE,SOLVER_NONLINEAR_TYPE,SOLVER_DYNAMIC_TYPE,SOLVER_DAE_TYPE,SOLVER_EIGENPROBLEM_TYPE,SOLVER_OPTIMISER_TYPE
 
-  PUBLIC SOLVER_CMISS_LIBRARY,SOLVER_PETSC_LIBRARY
+  PUBLIC SOLVER_CMISS_LIBRARY,SOLVER_PETSC_LIBRARY,SOLVER_MUMPS_LIBRARY,SOLVER_SUPERLU_LIBRARY,SOLVER_SPOOLES_LIBRARY, &
+    & SOLVER_UMFPACK_LIBRARY,SOLVER_LUSOL_LIBRARY,SOLVER_ESSL_LIBRARY,SOLVER_LAPACK_LIBRARY,SOLVER_TAO_LIBRARY, &
+    & SOLVER_HYPRE_LIBRARY
 
   PUBLIC SOLVER_LINEAR_DIRECT_SOLVE_TYPE,SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE
  
-  PUBLIC SOLVER_DIRECT_LU,SOLVER_DIRECT_CHOLESKY,SOLVER_DIRECT_SVD,SOLVER_DIRECT_MUMPS,SOLVER_DIRECT_PASTIX,SOLVER_DIRECT_PLAPACK, &
-    & SOLVER_DIRECT_SPOOLES,SOLVER_DIRECT_SUPERLU
+  PUBLIC SOLVER_DIRECT_LU,SOLVER_DIRECT_CHOLESKY,SOLVER_DIRECT_SVD
 
   PUBLIC SOLVER_ITERATIVE_RICHARDSON,SOLVER_ITERATIVE_CHEBYCHEV,SOLVER_ITERATIVE_CONJUGATE_GRADIENT, &
     & SOLVER_ITERATIVE_BICONJUGATE_GRADIENT,SOLVER_ITERATIVE_GMRES,SOLVER_ITERATIVE_BiCGSTAB,SOLVER_ITERATIVE_CONJGRAD_SQUARED
@@ -1043,6 +1050,153 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns the type of library to use for an Euler differential-algebraic equation solver
+  SUBROUTINE SOLVER_DAE_EULER_LIBRARY_TYPE_GET(EULER_DAE_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_DAE_SOLVER !<A pointer the differential-algebraic equation Euler solver to get the library type for
+    INTEGER(INTG), INTENT(OUT) :: SOLVER_LIBRARY_TYPE !<On return, the type of library used for the differential-algebraic equation Euler solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(BACKWARD_EULER_DAE_SOLVER_TYPE), POINTER :: BACKWARD_EULER_DAE_SOLVER
+    TYPE(FORWARD_EULER_DAE_SOLVER_TYPE), POINTER :: FORWARD_EULER_DAE_SOLVER
+    TYPE(IMPROVED_EULER_DAE_SOLVER_TYPE), POINTER :: IMPROVED_EULER_DAE_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_DAE_EULER_LIBRARY_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EULER_DAE_SOLVER)) THEN
+      SELECT CASE(EULER_DAE_SOLVER%EULER_TYPE)
+      CASE(SOLVER_DAE_EULER_FORWARD)
+        FORWARD_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%FORWARD_EULER_SOLVER
+        IF(ASSOCIATED(FORWARD_EULER_DAE_SOLVER)) THEN
+          SOLVER_LIBRARY_TYPE=FORWARD_EULER_DAE_SOLVER%SOLVER_LIBRARY
+        ELSE
+          CALL FLAG_ERROR("The forward Euler differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_DAE_EULER_BACKWARD)
+        BACKWARD_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%BACKWARD_EULER_SOLVER
+        IF(ASSOCIATED(BACKWARD_EULER_DAE_SOLVER)) THEN
+          SOLVER_LIBRARY_TYPE=BACKWARD_EULER_DAE_SOLVER%SOLVER_LIBRARY
+        ELSE
+          CALL FLAG_ERROR("The backward Euler differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_DAE_EULER_IMPROVED)
+        IMPROVED_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%IMPROVED_EULER_SOLVER
+        IF(ASSOCIATED(IMPROVED_EULER_DAE_SOLVER)) THEN
+          SOLVER_LIBRARY_TYPE=IMPROVED_EULER_DAE_SOLVER%SOLVER_LIBRARY
+        ELSE
+          CALL FLAG_ERROR("The improved Euler differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE DEFAULT
+        LOCAL_ERROR="The Euler differential-algebraic equations solver type of "// &
+          & TRIM(NUMBER_TO_VSTRING(EULER_DAE_SOLVER%EULER_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Euler DAE solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_DAE_EULER_LIBRARY_TYPE_GET")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_EULER_LIBRARY_TYPE_GET",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_EULER_LIBRARY_TYPE_GET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_EULER_LIBRARY_TYPE_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of library to use for an Euler differential-algebraic equation solver
+  SUBROUTINE SOLVER_DAE_EULER_LIBRARY_TYPE_SET(EULER_DAE_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_DAE_SOLVER !<A pointer the Euler differential-algebraic equation solver to set the library type for
+    INTEGER(INTG), INTENT(IN) :: SOLVER_LIBRARY_TYPE !<The type of library for the Euler differential-algebraic equation solver to set \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(BACKWARD_EULER_DAE_SOLVER_TYPE), POINTER :: BACKWARD_EULER_DAE_SOLVER
+    TYPE(FORWARD_EULER_DAE_SOLVER_TYPE), POINTER :: FORWARD_EULER_DAE_SOLVER
+    TYPE(IMPROVED_EULER_DAE_SOLVER_TYPE), POINTER :: IMPROVED_EULER_DAE_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_DAE_EULER_LIBRARY_TYPE_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EULER_DAE_SOLVER)) THEN
+      SELECT CASE(EULER_DAE_SOLVER%EULER_TYPE)
+      CASE(SOLVER_DAE_EULER_FORWARD)
+        FORWARD_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%FORWARD_EULER_SOLVER
+        IF(ASSOCIATED(FORWARD_EULER_DAE_SOLVER)) THEN
+          SELECT CASE(SOLVER_LIBRARY_TYPE)
+          CASE(SOLVER_CMISS_LIBRARY)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(SOLVER_PETSC_LIBRARY)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+              & " is invalid for a forward Euler DAE solver."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("The forward Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_DAE_EULER_BACKWARD)
+        BACKWARD_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%BACKWARD_EULER_SOLVER
+        IF(ASSOCIATED(BACKWARD_EULER_DAE_SOLVER)) THEN
+          SELECT CASE(SOLVER_LIBRARY_TYPE)
+          CASE(SOLVER_CMISS_LIBRARY)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(SOLVER_PETSC_LIBRARY)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+              & " is invalid for a backward Euler DAE solver."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("The backward Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_DAE_EULER_IMPROVED)
+        IMPROVED_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%IMPROVED_EULER_SOLVER
+        IF(ASSOCIATED(IMPROVED_EULER_DAE_SOLVER)) THEN
+          SELECT CASE(SOLVER_LIBRARY_TYPE)
+          CASE(SOLVER_CMISS_LIBRARY)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(SOLVER_PETSC_LIBRARY)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+              & " is invalid for an improved Euler DAE solver."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("The improved Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE DEFAULT
+        LOCAL_ERROR="The Euler differential-algebraic equations solver type of "// &
+          & TRIM(NUMBER_TO_VSTRING(EULER_DAE_SOLVER%EULER_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("The Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_DAE_EULER_LIBRARY_TYPE_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_EULER_LIBRARY_TYPE_SET",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_EULER_LIBRARY_TYPE_SET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_EULER_LIBRARY_TYPE_SET
+
+  !
+  !================================================================================================================================
+  !
+
   !>Solve using an Euler differential-algebraic equation solver.
   SUBROUTINE SOLVER_DAE_EULER_SOLVE(EULER_SOLVER,ERR,ERROR,*)
 
@@ -1305,6 +1459,275 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE SOLVER_DAE_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the type of library to use for a differential-algebraic equation solver
+  SUBROUTINE SOLVER_DAE_LIBRARY_TYPE_GET(DAE_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer the differential-algebraic equation solver to get the library type for
+    INTEGER(INTG), INTENT(OUT) :: SOLVER_LIBRARY_TYPE !<On return, the type of library used for the differential-algebraic equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(ADAMS_MOULTON_DAE_SOLVER_TYPE), POINTER :: ADAMS_MOULTON_DAE_SOLVER
+    TYPE(BDF_DAE_SOLVER_TYPE), POINTER :: BDF_DAE_SOLVER
+    TYPE(CRANK_NICHOLSON_DAE_SOLVER_TYPE), POINTER :: CRANK_NICHOLSON_DAE_SOLVER
+    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_DAE_SOLVER
+    TYPE(RUNGE_KUTTA_DAE_SOLVER_TYPE), POINTER :: RUNGE_KUTTA_DAE_SOLVER
+    TYPE(RUSH_LARSON_DAE_SOLVER_TYPE), POINTER :: RUSH_LARSON_DAE_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_DAE_LIBRARY_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DAE_SOLVER)) THEN
+      SELECT CASE(DAE_SOLVER%DAE_SOLVE_TYPE)
+      CASE(SOLVER_DAE_EULER)
+        EULER_DAE_SOLVER=>DAE_SOLVER%EULER_SOLVER
+        IF(ASSOCIATED(EULER_DAE_SOLVER)) THEN
+          CALL SOLVER_DAE_EULER_LIBRARY_TYPE_GET(EULER_DAE_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("Euler differential-algebraic solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_DAE_CRANK_NICHOLSON)
+        CRANK_NICHOLSON_DAE_SOLVER=>DAE_SOLVER%CRANK_NICHOLSON_SOLVER
+        IF(ASSOCIATED(CRANK_NICHOLSON_DAE_SOLVER)) THEN
+          SOLVER_LIBRARY_TYPE=CRANK_NICHOLSON_DAE_SOLVER%SOLVER_LIBRARY
+        ELSE
+          CALL FLAG_ERROR("The Crank-Nicholson differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_DAE_RUNGE_KUTTA)
+        RUNGE_KUTTA_DAE_SOLVER=>DAE_SOLVER%RUNGE_KUTTA_SOLVER
+        IF(ASSOCIATED(RUNGE_KUTTA_DAE_SOLVER)) THEN
+          SOLVER_LIBRARY_TYPE=RUNGE_KUTTA_DAE_SOLVER%SOLVER_LIBRARY
+        ELSE
+          CALL FLAG_ERROR("The Runge-Kutta differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_DAE_ADAMS_MOULTON)
+        ADAMS_MOULTON_DAE_SOLVER=>DAE_SOLVER%ADAMS_MOULTON_SOLVER
+        IF(ASSOCIATED(ADAMS_MOULTON_DAE_SOLVER)) THEN
+          SOLVER_LIBRARY_TYPE=ADAMS_MOULTON_DAE_SOLVER%SOLVER_LIBRARY
+        ELSE
+          CALL FLAG_ERROR("The Adams-Moulton differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_DAE_BDF)
+        BDF_DAE_SOLVER=>DAE_SOLVER%BDF_SOLVER
+        IF(ASSOCIATED(BDF_DAE_SOLVER)) THEN
+          SOLVER_LIBRARY_TYPE=BDF_DAE_SOLVER%SOLVER_LIBRARY
+        ELSE
+          CALL FLAG_ERROR("The BDF differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_DAE_RUSH_LARSON)
+        RUSH_LARSON_DAE_SOLVER=>DAE_SOLVER%RUSH_LARSON_SOLVER
+        IF(ASSOCIATED(RUSH_LARSON_DAE_SOLVER)) THEN
+          SOLVER_LIBRARY_TYPE=RUSH_LARSON_DAE_SOLVER%SOLVER_LIBRARY
+        ELSE
+          CALL FLAG_ERROR("The Rush-Larson differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE DEFAULT
+        LOCAL_ERROR="The differential-algebraic equations solver type of "// &
+          & TRIM(NUMBER_TO_VSTRING(DAE_SOLVER%DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("DAE solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_DAE_LIBRARY_TYPE_GET")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_LIBRARY_TYPE_GET",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_LIBRARY_TYPE_GET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_LIBRARY_TYPE_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of library to use for a differential-algebraic equation solver
+  SUBROUTINE SOLVER_DAE_LIBRARY_TYPE_SET(DAE_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer the differential-algebraic equation solver to set the library type for
+    INTEGER(INTG), INTENT(IN) :: SOLVER_LIBRARY_TYPE !<The type of library for the differential-algebraic equation solver to set \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(ADAMS_MOULTON_DAE_SOLVER_TYPE), POINTER :: ADAMS_MOULTON_DAE_SOLVER
+    TYPE(BACKWARD_EULER_DAE_SOLVER_TYPE), POINTER :: BACKWARD_EULER_DAE_SOLVER
+    TYPE(BDF_DAE_SOLVER_TYPE), POINTER :: BDF_DAE_SOLVER
+    TYPE(CRANK_NICHOLSON_DAE_SOLVER_TYPE), POINTER :: CRANK_NICHOLSON_DAE_SOLVER
+    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_DAE_SOLVER
+    TYPE(FORWARD_EULER_DAE_SOLVER_TYPE), POINTER :: FORWARD_EULER_DAE_SOLVER
+    TYPE(IMPROVED_EULER_DAE_SOLVER_TYPE), POINTER :: IMPROVED_EULER_DAE_SOLVER
+    TYPE(RUNGE_KUTTA_DAE_SOLVER_TYPE), POINTER :: RUNGE_KUTTA_DAE_SOLVER
+    TYPE(RUSH_LARSON_DAE_SOLVER_TYPE), POINTER :: RUSH_LARSON_DAE_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_DAE_LIBRARY_TYPE_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DAE_SOLVER)) THEN
+      SELECT CASE(DAE_SOLVER%DAE_SOLVE_TYPE)
+      CASE(SOLVER_DAE_EULER)
+        EULER_DAE_SOLVER=>DAE_SOLVER%EULER_SOLVER
+        IF(ASSOCIATED(EULER_DAE_SOLVER)) THEN
+          SELECT CASE(EULER_DAE_SOLVER%EULER_TYPE)
+          CASE(SOLVER_DAE_EULER_FORWARD)
+            FORWARD_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%FORWARD_EULER_SOLVER
+            IF(ASSOCIATED(FORWARD_EULER_DAE_SOLVER)) THEN
+              SELECT CASE(SOLVER_LIBRARY_TYPE)
+              CASE(SOLVER_CMISS_LIBRARY)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(SOLVER_PETSC_LIBRARY)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+                  & " is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+            ELSE
+              CALL FLAG_ERROR("The forward Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+            ENDIF
+          CASE(SOLVER_DAE_EULER_BACKWARD)
+            BACKWARD_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%BACKWARD_EULER_SOLVER
+            IF(ASSOCIATED(BACKWARD_EULER_DAE_SOLVER)) THEN
+              SELECT CASE(SOLVER_LIBRARY_TYPE)
+              CASE(SOLVER_CMISS_LIBRARY)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(SOLVER_PETSC_LIBRARY)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+                  & " is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+            ELSE
+              CALL FLAG_ERROR("The backward Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+            ENDIF
+          CASE(SOLVER_DAE_EULER_IMPROVED)
+            IMPROVED_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%IMPROVED_EULER_SOLVER
+            IF(ASSOCIATED(IMPROVED_EULER_DAE_SOLVER)) THEN
+              SELECT CASE(SOLVER_LIBRARY_TYPE)
+              CASE(SOLVER_CMISS_LIBRARY)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(SOLVER_PETSC_LIBRARY)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+                  & " is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+            ELSE
+              CALL FLAG_ERROR("The improved Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+            ENDIF
+          CASE DEFAULT
+            LOCAL_ERROR="The Euler differential-algebraic equations solver type of "// &
+              & TRIM(NUMBER_TO_VSTRING(EULER_DAE_SOLVER%EULER_TYPE,"*",ERR,ERROR))//" is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("The Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_DAE_CRANK_NICHOLSON)
+        CRANK_NICHOLSON_DAE_SOLVER=>DAE_SOLVER%CRANK_NICHOLSON_SOLVER
+        IF(ASSOCIATED(CRANK_NICHOLSON_DAE_SOLVER)) THEN
+          SELECT CASE(SOLVER_LIBRARY_TYPE)
+          CASE(SOLVER_CMISS_LIBRARY)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(SOLVER_PETSC_LIBRARY)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("The Crank-Nicholson differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_DAE_RUNGE_KUTTA)
+        RUNGE_KUTTA_DAE_SOLVER=>DAE_SOLVER%RUNGE_KUTTA_SOLVER
+        IF(ASSOCIATED(RUNGE_KUTTA_DAE_SOLVER)) THEN
+          SELECT CASE(SOLVER_LIBRARY_TYPE)
+          CASE(SOLVER_CMISS_LIBRARY)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(SOLVER_PETSC_LIBRARY)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("The Runge-Kutta differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_DAE_ADAMS_MOULTON)
+        ADAMS_MOULTON_DAE_SOLVER=>DAE_SOLVER%ADAMS_MOULTON_SOLVER
+        IF(ASSOCIATED(ADAMS_MOULTON_DAE_SOLVER)) THEN
+          SELECT CASE(SOLVER_LIBRARY_TYPE)
+          CASE(SOLVER_CMISS_LIBRARY)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(SOLVER_PETSC_LIBRARY)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("The Adams-Moulton differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_DAE_BDF)
+        BDF_DAE_SOLVER=>DAE_SOLVER%BDF_SOLVER
+        IF(ASSOCIATED(BDF_DAE_SOLVER)) THEN
+          SELECT CASE(SOLVER_LIBRARY_TYPE)
+          CASE(SOLVER_CMISS_LIBRARY)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(SOLVER_PETSC_LIBRARY)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("The BDF differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_DAE_RUSH_LARSON)
+        RUSH_LARSON_DAE_SOLVER=>DAE_SOLVER%RUSH_LARSON_SOLVER
+        IF(ASSOCIATED(RUSH_LARSON_DAE_SOLVER)) THEN
+          SELECT CASE(SOLVER_LIBRARY_TYPE)
+          CASE(SOLVER_CMISS_LIBRARY)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(SOLVER_PETSC_LIBRARY)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("The Rush-Larson differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE DEFAULT
+        LOCAL_ERROR="The differential-algebraic equations solver type of "// &
+          & TRIM(NUMBER_TO_VSTRING(DAE_SOLVER%DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("DAE solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_DAE_LIBRARY_TYPE_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_LIBRARY_TYPE_SET",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_LIBRARY_TYPE_SET")
+    RETURN 1
+    
+  END SUBROUTINE SOLVER_DAE_LIBRARY_TYPE_SET
 
   !
   !================================================================================================================================
@@ -2567,6 +2990,74 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns the type of library to use for a dynamic solver.
+  SUBROUTINE SOLVER_DYNAMIC_LIBRARY_TYPE_GET(DYNAMIC_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER !<A pointer the dynamic solver to get the library type for.
+    INTEGER(INTG), INTENT(OUT) :: SOLVER_LIBRARY_TYPE !<On exit, the type of library used for the dynamic solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("SOLVER_DYNAMIC_LIBRARY_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
+      SOLVER_LIBRARY_TYPE=DYNAMIC_SOLVER%SOLVER_LIBRARY
+    ELSE
+      CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_DYNAMIC_LIBRARY_TYPE_GET")
+    RETURN
+999 CALL ERRORS("SOLVER_DYNAMIC_LIBRARY_TYPE_GET",ERR,ERROR)    
+    CALL EXITS("SOLVER_DYNAMIC_LIBRARY_TYPE_GET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DYNAMIC_LIBRARY_TYPE_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of library to use for a dynamic solver.
+  SUBROUTINE SOLVER_DYNAMIC_LIBRARY_TYPE_SET(DYNAMIC_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER !<A pointer the dynamic solver to get the library type for.
+    INTEGER(INTG), INTENT(IN) :: SOLVER_LIBRARY_TYPE !<The type of library for the dynamic solver to set. \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_DYNAMIC_LIBRARY_TYPE_SET",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
+      SELECT CASE(SOLVER_LIBRARY_TYPE)
+      CASE(SOLVER_CMISS_LIBRARY)
+        DYNAMIC_SOLVER%SOLVER_LIBRARY=SOLVER_CMISS_LIBRARY
+      CASE DEFAULT
+        LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+          & " is invalid for a dynamic solver."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("SOLVER_DYNAMIC_LIBRARY_TYPE_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_DYNAMIC_LIBRARY_TYPE_SET",ERR,ERROR)    
+    CALL EXITS("SOLVER_DYNAMIC_LIBRARY_TYPE_SET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DYNAMIC_LIBRARY_TYPE_SET
+
+  !
+  !================================================================================================================================
+  !
+
   !>Returns the linearity type for the dynamic solver. \see OPENCMISS::CMISSSolverDynamicLinearityTypeGet
   SUBROUTINE SOLVER_DYNAMIC_LINEARITY_TYPE_GET(SOLVER,LINEARITY_TYPE,ERR,ERROR,*)
 
@@ -3646,6 +4137,74 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns the type of library to use for an eigenproblem solver.
+  SUBROUTINE SOLVER_EIGENPROBLEM_LIBRARY_TYPE_GET(EIGENPROBLEM_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EIGENPROBLEM_SOLVER_TYPE), POINTER :: EIGENPROBLEM_SOLVER !<A pointer the eigenproblem solver to get the library type for.
+    INTEGER(INTG), INTENT(OUT) :: SOLVER_LIBRARY_TYPE !<On exit, the type of library used for the eigenproblem solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("SOLVER_EIGENPROBLEM_LIBRARY_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EIGENPROBLEM_SOLVER)) THEN
+      SOLVER_LIBRARY_TYPE=EIGENPROBLEM_SOLVER%SOLVER_LIBRARY
+    ELSE
+      CALL FLAG_ERROR("Eigenproblem solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_EIGENPROBLEM_LIBRARY_TYPE_GET")
+    RETURN
+999 CALL ERRORS("SOLVER_EIGENPROBLEM_LIBRARY_TYPE_GET",ERR,ERROR)    
+    CALL EXITS("SOLVER_EIGENPROBLEM_LIBRARY_TYPE_GET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_EIGENPROBLEM_LIBRARY_TYPE_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of library to use for an eigenproblem solver.
+  SUBROUTINE SOLVER_EIGENPROBLEM_LIBRARY_TYPE_SET(EIGENPROBLEM_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EIGENPROBLEM_SOLVER_TYPE), POINTER :: EIGENPROBLEM_SOLVER !<A pointer the eigenproblem solver to get the library type for.
+    INTEGER(INTG), INTENT(IN) :: SOLVER_LIBRARY_TYPE !<The type of library for the eigenproblem solver to set. \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_EIGENPROBLEM_LIBRARY_TYPE_SET",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(EIGENPROBLEM_SOLVER)) THEN
+      SELECT CASE(SOLVER_LIBRARY_TYPE)
+      CASE(SOLVER_CMISS_LIBRARY)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="The specified solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+          & " is invalid for an eigenproblem solver."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("SOLVER_EIGENPROBLEM_LIBRARY_TYPE_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_EIGENPROBLEM_LIBRARY_TYPE_SET",ERR,ERROR)    
+    CALL EXITS("SOLVER_EIGENPROBLEM_LIBRARY_TYPE_SET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_EIGENPROBLEM_LIBRARY_TYPE_SET
+
+  !
+  !================================================================================================================================
+  !
+
   !>Solve a eigenproblem solver
   SUBROUTINE SOLVER_EIGENPROBLEM_SOLVE(EIGENPROBLEM_SOLVER,ERR,ERROR,*)
 
@@ -4165,6 +4724,7 @@ CONTAINS
       CALL SOLVER_DYNAMIC_FINALISE(SOLVER%DYNAMIC_SOLVER,ERR,ERROR,*999)        
       CALL SOLVER_DAE_FINALISE(SOLVER%DAE_SOLVER,ERR,ERROR,*999)        
       CALL SOLVER_EIGENPROBLEM_FINALISE(SOLVER%EIGENPROBLEM_SOLVER,ERR,ERROR,*999)
+      CALL SOLVER_OPTIMISER_FINALISE(SOLVER%OPTIMISER_SOLVER,ERR,ERROR,*999)
       IF(.NOT.ASSOCIATED(SOLVER%LINKING_SOLVER)) &
         & CALL SOLVER_EQUATIONS_FINALISE(SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
       DEALLOCATE(SOLVER)
@@ -4258,6 +4818,7 @@ CONTAINS
       NULLIFY(SOLVER%DYNAMIC_SOLVER)
       NULLIFY(SOLVER%DAE_SOLVER)
       NULLIFY(SOLVER%EIGENPROBLEM_SOLVER)
+      NULLIFY(SOLVER%OPTIMISER_SOLVER)
       NULLIFY(SOLVER%SOLVER_EQUATIONS)
     ELSE
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
@@ -4284,25 +4845,12 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    TYPE(ADAMS_MOULTON_DAE_SOLVER_TYPE), POINTER :: ADAMS_MOULTON_DAE_SOLVER
-    TYPE(BACKWARD_EULER_DAE_SOLVER_TYPE), POINTER :: BACKWARD_EULER_DAE_SOLVER
-    TYPE(BDF_DAE_SOLVER_TYPE), POINTER :: BDF_DAE_SOLVER
-    TYPE(CRANK_NICHOLSON_DAE_SOLVER_TYPE), POINTER :: CRANK_NICHOLSON_DAE_SOLVER
     TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
     TYPE(EIGENPROBLEM_SOLVER_TYPE), POINTER :: EIGENPROBLEM_SOLVER
-    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_DAE_SOLVER
-    TYPE(FORWARD_EULER_DAE_SOLVER_TYPE), POINTER :: FORWARD_EULER_DAE_SOLVER
-    TYPE(IMPROVED_EULER_DAE_SOLVER_TYPE), POINTER :: IMPROVED_EULER_DAE_SOLVER
-    TYPE(LINEAR_DIRECT_SOLVER_TYPE), POINTER :: DIRECT_SOLVER
-    TYPE(LINEAR_ITERATIVE_SOLVER_TYPE), POINTER :: ITERATIVE_SOLVER
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER
-    TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER
-    TYPE(NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER
-    TYPE(NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(RUNGE_KUTTA_DAE_SOLVER_TYPE), POINTER :: RUNGE_KUTTA_DAE_SOLVER
-    TYPE(RUSH_LARSON_DAE_SOLVER_TYPE), POINTER :: RUSH_LARSON_DAE_SOLVER
+    TYPE(OPTIMISER_SOLVER_TYPE), POINTER :: OPTIMISER_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("SOLVER_LIBRARY_TYPE_GET",ERR,ERROR,*999)
@@ -4312,74 +4860,21 @@ CONTAINS
       CASE(SOLVER_LINEAR_TYPE)
         LINEAR_SOLVER=>SOLVER%LINEAR_SOLVER
         IF(ASSOCIATED(LINEAR_SOLVER)) THEN
-          SELECT CASE(LINEAR_SOLVER%LINEAR_SOLVE_TYPE)
-          CASE(SOLVER_LINEAR_DIRECT_SOLVE_TYPE)
-            DIRECT_SOLVER=>LINEAR_SOLVER%DIRECT_SOLVER
-            IF(ASSOCIATED(DIRECT_SOLVER)) THEN                
-              SOLVER_LIBRARY_TYPE=DIRECT_SOLVER%SOLVER_LIBRARY
-            ELSE
-              CALL FLAG_ERROR("Linear solver direct solver is not associated.",ERR,ERROR,*999)
-            ENDIF
-          CASE(SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE)
-            ITERATIVE_SOLVER=>LINEAR_SOLVER%ITERATIVE_SOLVER
-            IF(ASSOCIATED(ITERATIVE_SOLVER)) THEN
-              SOLVER_LIBRARY_TYPE= ITERATIVE_SOLVER%SOLVER_LIBRARY
-            ELSE
-              CALL FLAG_ERROR("Linear solver iterative solver is not associated.",ERR,ERROR,*999)
-            ENDIF
-          CASE DEFAULT
-            LOCAL_ERROR="The linear solver type of "//TRIM(NUMBER_TO_VSTRING(LINEAR_SOLVER%LINEAR_SOLVE_TYPE,"*",ERR,ERROR))// &
-              & " is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          END SELECT
+          CALL SOLVER_LINEAR_LIBRARY_TYPE_GET(LINEAR_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
           CALL FLAG_ERROR("Solver linear solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_NONLINEAR_TYPE)
         NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
         IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-          SELECT CASE(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE)
-          CASE(SOLVER_NONLINEAR_NEWTON)
-            NEWTON_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER
-            IF(ASSOCIATED(NEWTON_SOLVER)) THEN
-              SELECT CASE(NEWTON_SOLVER%NEWTON_SOLVE_TYPE)
-              CASE(SOLVER_NEWTON_LINESEARCH)
-                LINESEARCH_SOLVER=>NEWTON_SOLVER%LINESEARCH_SOLVER
-                IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
-                  SOLVER_LIBRARY_TYPE=LINESEARCH_SOLVER%SOLVER_LIBRARY
-                ELSE
-                  CALL FLAG_ERROR("Newton line search solver is not associated.",ERR,ERROR,*999)
-                ENDIF
-              CASE(SOLVER_NEWTON_TRUSTREGION)
-                TRUSTREGION_SOLVER=>NEWTON_SOLVER%TRUSTREGION_SOLVER
-                IF(ASSOCIATED(TRUSTREGION_SOLVER)) THEN
-                  SOLVER_LIBRARY_TYPE=TRUSTREGION_SOLVER%SOLVER_LIBRARY
-                ELSE
-                  CALL FLAG_ERROR("Newton trust region solver is not associated.",ERR,ERROR,*999)
-                ENDIF
-              CASE DEFAULT
-                LOCAL_ERROR="The Newton solver type of "// &
-                  & TRIM(NUMBER_TO_VSTRING(NEWTON_SOLVER%NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              END SELECT
-            ELSE
-              CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
-            ENDIF
-          CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-          CASE(SOLVER_NONLINEAR_SQP)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-          CASE DEFAULT
-            LOCAL_ERROR="The nonlinear solver type of "// &
-              & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          END SELECT
+          CALL SOLVER_NONLINEAR_LIBRARY_TYPE_GET(NONLINEAR_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
           CALL FLAG_ERROR("Solver nonlinear solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_DYNAMIC_TYPE)
         DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
         IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN         
+          CALL SOLVER_DYNAMIC_LIBRARY_TYPE_GET(DYNAMIC_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
           SOLVER_LIBRARY_TYPE=DYNAMIC_SOLVER%SOLVER_LIBRARY
         ELSE
           CALL FLAG_ERROR("Solver dynamic solver is not associated.",ERR,ERROR,*999)
@@ -4387,89 +4882,24 @@ CONTAINS
       CASE(SOLVER_DAE_TYPE)
         DAE_SOLVER=>SOLVER%DAE_SOLVER
         IF(ASSOCIATED(DAE_SOLVER)) THEN
-          SELECT CASE(DAE_SOLVER%DAE_SOLVE_TYPE)
-          CASE(SOLVER_DAE_EULER)
-            EULER_DAE_SOLVER=>DAE_SOLVER%EULER_SOLVER
-            IF(ASSOCIATED(EULER_DAE_SOLVER)) THEN
-              SELECT CASE(EULER_DAE_SOLVER%EULER_TYPE)
-              CASE(SOLVER_DAE_EULER_FORWARD)
-                FORWARD_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%FORWARD_EULER_SOLVER
-                IF(ASSOCIATED(FORWARD_EULER_DAE_SOLVER)) THEN
-                  SOLVER_LIBRARY_TYPE=FORWARD_EULER_DAE_SOLVER%SOLVER_LIBRARY
-                ELSE
-                  CALL FLAG_ERROR("The forward Euler differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
-                ENDIF
-              CASE(SOLVER_DAE_EULER_BACKWARD)
-                BACKWARD_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%BACKWARD_EULER_SOLVER
-                IF(ASSOCIATED(BACKWARD_EULER_DAE_SOLVER)) THEN
-                  SOLVER_LIBRARY_TYPE=BACKWARD_EULER_DAE_SOLVER%SOLVER_LIBRARY
-                ELSE
-                  CALL FLAG_ERROR("The backward Euler differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
-                ENDIF
-              CASE(SOLVER_DAE_EULER_IMPROVED)
-                IMPROVED_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%IMPROVED_EULER_SOLVER
-                IF(ASSOCIATED(IMPROVED_EULER_DAE_SOLVER)) THEN
-                  SOLVER_LIBRARY_TYPE=IMPROVED_EULER_DAE_SOLVER%SOLVER_LIBRARY
-                ELSE
-                  CALL FLAG_ERROR("The improved Euler differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
-                ENDIF
-              CASE DEFAULT
-                LOCAL_ERROR="The Euler differential-algebraic equations solver type of "// &
-                  & TRIM(NUMBER_TO_VSTRING(EULER_DAE_SOLVER%EULER_TYPE,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              END SELECT
-            ELSE
-              CALL FLAG_ERROR("Euler differential-algebraic solver is not associated.",ERR,ERROR,*999)
-            ENDIF
-          CASE(SOLVER_DAE_CRANK_NICHOLSON)
-            CRANK_NICHOLSON_DAE_SOLVER=>DAE_SOLVER%CRANK_NICHOLSON_SOLVER
-            IF(ASSOCIATED(CRANK_NICHOLSON_DAE_SOLVER)) THEN
-              SOLVER_LIBRARY_TYPE=CRANK_NICHOLSON_DAE_SOLVER%SOLVER_LIBRARY
-            ELSE
-              CALL FLAG_ERROR("The Crank-Nicholson differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
-            ENDIF
-          CASE(SOLVER_DAE_RUNGE_KUTTA)
-            RUNGE_KUTTA_DAE_SOLVER=>DAE_SOLVER%RUNGE_KUTTA_SOLVER
-            IF(ASSOCIATED(RUNGE_KUTTA_DAE_SOLVER)) THEN
-              SOLVER_LIBRARY_TYPE=RUNGE_KUTTA_DAE_SOLVER%SOLVER_LIBRARY
-            ELSE
-              CALL FLAG_ERROR("The Runge-Kutta differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
-            ENDIF
-          CASE(SOLVER_DAE_ADAMS_MOULTON)
-            ADAMS_MOULTON_DAE_SOLVER=>DAE_SOLVER%ADAMS_MOULTON_SOLVER
-            IF(ASSOCIATED(ADAMS_MOULTON_DAE_SOLVER)) THEN
-              SOLVER_LIBRARY_TYPE=ADAMS_MOULTON_DAE_SOLVER%SOLVER_LIBRARY
-            ELSE
-              CALL FLAG_ERROR("The Adams-Moulton differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
-            ENDIF
-          CASE(SOLVER_DAE_BDF)
-            BDF_DAE_SOLVER=>DAE_SOLVER%BDF_SOLVER
-            IF(ASSOCIATED(BDF_DAE_SOLVER)) THEN
-              SOLVER_LIBRARY_TYPE=BDF_DAE_SOLVER%SOLVER_LIBRARY
-            ELSE
-              CALL FLAG_ERROR("The BDF differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
-            ENDIF
-          CASE(SOLVER_DAE_RUSH_LARSON)
-            RUSH_LARSON_DAE_SOLVER=>DAE_SOLVER%RUSH_LARSON_SOLVER
-            IF(ASSOCIATED(RUSH_LARSON_DAE_SOLVER)) THEN
-              SOLVER_LIBRARY_TYPE=RUSH_LARSON_DAE_SOLVER%SOLVER_LIBRARY
-            ELSE
-              CALL FLAG_ERROR("The Rush-Larson differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
-            ENDIF
-          CASE DEFAULT
-            LOCAL_ERROR="The differential-algebraic equations solver type of "// &
-              & TRIM(NUMBER_TO_VSTRING(DAE_SOLVER%DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          END SELECT
+          CALL SOLVER_DAE_LIBRARY_TYPE_GET(DAE_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
           CALL FLAG_ERROR("Solver differential-algebraic solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_EIGENPROBLEM_TYPE)
         EIGENPROBLEM_SOLVER=>SOLVER%EIGENPROBLEM_SOLVER
         IF(ASSOCIATED(EIGENPROBLEM_SOLVER)) THEN
+          CALL SOLVER_EIGENPROBLEM_LIBRARY_TYPE_GET(EIGENPROBLEM_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         ELSE
           CALL FLAG_ERROR("Solver eigenproblem solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_OPTIMISER_TYPE)
+        OPTIMISER_SOLVER=>SOLVER%OPTIMISER_SOLVER
+        IF(ASSOCIATED(OPTIMISER_SOLVER)) THEN
+          CALL SOLVER_OPTIMISER_LIBRARY_TYPE_GET(OPTIMISER_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("Solver optimiser solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE DEFAULT
         LOCAL_ERROR="The solver type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -4500,25 +4930,12 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    TYPE(ADAMS_MOULTON_DAE_SOLVER_TYPE), POINTER :: ADAMS_MOULTON_DAE_SOLVER
-    TYPE(BACKWARD_EULER_DAE_SOLVER_TYPE), POINTER :: BACKWARD_EULER_DAE_SOLVER
-    TYPE(BDF_DAE_SOLVER_TYPE), POINTER :: BDF_DAE_SOLVER
-    TYPE(CRANK_NICHOLSON_DAE_SOLVER_TYPE), POINTER :: CRANK_NICHOLSON_DAE_SOLVER
     TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
     TYPE(EIGENPROBLEM_SOLVER_TYPE), POINTER :: EIGENPROBLEM_SOLVER
-    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_DAE_SOLVER
-    TYPE(FORWARD_EULER_DAE_SOLVER_TYPE), POINTER :: FORWARD_EULER_DAE_SOLVER
-    TYPE(IMPROVED_EULER_DAE_SOLVER_TYPE), POINTER :: IMPROVED_EULER_DAE_SOLVER
-    TYPE(LINEAR_DIRECT_SOLVER_TYPE), POINTER :: DIRECT_SOLVER
-    TYPE(LINEAR_ITERATIVE_SOLVER_TYPE), POINTER :: ITERATIVE_SOLVER
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER
-    TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER
-    TYPE(NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER
-    TYPE(NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
-    TYPE(RUNGE_KUTTA_DAE_SOLVER_TYPE), POINTER :: RUNGE_KUTTA_DAE_SOLVER
-    TYPE(RUSH_LARSON_DAE_SOLVER_TYPE), POINTER :: RUSH_LARSON_DAE_SOLVER
+    TYPE(OPTIMISER_SOLVER_TYPE), POINTER :: OPTIMISER_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("SOLVER_LIBRARY_TYPE_SET",ERR,ERROR,*999)
@@ -4531,278 +4948,35 @@ CONTAINS
         CASE(SOLVER_LINEAR_TYPE)
           LINEAR_SOLVER=>SOLVER%LINEAR_SOLVER
           IF(ASSOCIATED(LINEAR_SOLVER)) THEN
-            SELECT CASE(LINEAR_SOLVER%LINEAR_SOLVE_TYPE)
-            CASE(SOLVER_LINEAR_DIRECT_SOLVE_TYPE)
-              DIRECT_SOLVER=>LINEAR_SOLVER%DIRECT_SOLVER
-              IF(ASSOCIATED(DIRECT_SOLVER)) THEN
-                SELECT CASE(SOLVER_LIBRARY_TYPE)
-                CASE(SOLVER_CMISS_LIBRARY)
-                  DIRECT_SOLVER%SOLVER_LIBRARY=SOLVER_CMISS_LIBRARY
-                CASE(SOLVER_PETSC_LIBRARY)
-                  DIRECT_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
-                CASE DEFAULT
-                  LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
-                    & " is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT                  
-              ELSE
-                CALL FLAG_ERROR("Linear solver direct solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            CASE(SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE)
-              ITERATIVE_SOLVER=>LINEAR_SOLVER%ITERATIVE_SOLVER
-              IF(ASSOCIATED(ITERATIVE_SOLVER)) THEN
-                SELECT CASE(SOLVER_LIBRARY_TYPE)
-                CASE(SOLVER_CMISS_LIBRARY)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                CASE(SOLVER_PETSC_LIBRARY)
-                  ITERATIVE_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
-                CASE DEFAULT
-                  LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
-                    & " is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-              ELSE
-                CALL FLAG_ERROR("Linear solver iterative solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            CASE DEFAULT
-              LOCAL_ERROR="The linear solver type of "//TRIM(NUMBER_TO_VSTRING(LINEAR_SOLVER%LINEAR_SOLVE_TYPE,"*",ERR,ERROR))// &
-                & " is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT
+            CALL SOLVER_LINEAR_LIBRARY_TYPE_SET(LINEAR_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
           ELSE
             CALL FLAG_ERROR("Solver linear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         CASE(SOLVER_NONLINEAR_TYPE)
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
           IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-            SELECT CASE(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE)
-            CASE(SOLVER_NONLINEAR_NEWTON)
-              NEWTON_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER
-              IF(ASSOCIATED(NEWTON_SOLVER)) THEN
-                SELECT CASE(NEWTON_SOLVER%NEWTON_SOLVE_TYPE)
-                CASE(SOLVER_NEWTON_LINESEARCH)
-                  LINESEARCH_SOLVER=>NEWTON_SOLVER%LINESEARCH_SOLVER
-                  IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
-                    SELECT CASE(SOLVER_LIBRARY_TYPE)
-                    CASE(SOLVER_CMISS_LIBRARY)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                    CASE(SOLVER_PETSC_LIBRARY)
-                      LINESEARCH_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
-                    CASE DEFAULT
-                      LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
-                        & " is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    END SELECT
-                  ELSE
-                    CALL FLAG_ERROR("Newton line search solver is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                CASE(SOLVER_NEWTON_TRUSTREGION)
-                  TRUSTREGION_SOLVER=>NEWTON_SOLVER%TRUSTREGION_SOLVER
-                  IF(ASSOCIATED(TRUSTREGION_SOLVER)) THEN
-                    SELECT CASE(SOLVER_LIBRARY_TYPE)
-                    CASE(SOLVER_CMISS_LIBRARY)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                    CASE(SOLVER_PETSC_LIBRARY)
-                      TRUSTREGION_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
-                    CASE DEFAULT
-                      LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
-                        & " is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    END SELECT
-                  ELSE
-                    CALL FLAG_ERROR("Newton trust region solver is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                CASE DEFAULT
-                  LOCAL_ERROR="The Newton solver type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(NEWTON_SOLVER%NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-              ELSE
-                CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-            CASE(SOLVER_NONLINEAR_SQP)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-            CASE DEFAULT
-              LOCAL_ERROR="The nonlinear solver type of "// &
-                & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT
+            CALL SOLVER_NONLINEAR_LIBRARY_TYPE_SET(NONLINEAR_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
           ELSE
             CALL FLAG_ERROR("Solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         CASE(SOLVER_DYNAMIC_TYPE)
           DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
           IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
-            SELECT CASE(SOLVER_LIBRARY_TYPE)
-            CASE(SOLVER_CMISS_LIBRARY)
-              !Set the library type for dynamic nonlinear solver
-              DYNAMIC_SOLVER%SOLVER_LIBRARY=SOLVER_CMISS_LIBRARY
-            CASE(SOLVER_PETSC_LIBRARY)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-            CASE DEFAULT
-              LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT
+            CALL SOLVER_DYNAMIC_LIBRARY_TYPE_SET(DYNAMIC_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
           ELSE
             CALL FLAG_ERROR("Solver dynamic solver is not associated.",ERR,ERROR,*999)
           ENDIF
         CASE(SOLVER_DAE_TYPE)
           DAE_SOLVER=>SOLVER%DAE_SOLVER
           IF(ASSOCIATED(DAE_SOLVER)) THEN
-            SELECT CASE(DAE_SOLVER%DAE_SOLVE_TYPE)
-            CASE(SOLVER_DAE_EULER)
-              EULER_DAE_SOLVER=>DAE_SOLVER%EULER_SOLVER
-              IF(ASSOCIATED(EULER_DAE_SOLVER)) THEN
-                SELECT CASE(EULER_DAE_SOLVER%EULER_TYPE)
-                CASE(SOLVER_DAE_EULER_FORWARD)
-                  FORWARD_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%FORWARD_EULER_SOLVER
-                  IF(ASSOCIATED(FORWARD_EULER_DAE_SOLVER)) THEN
-                    SELECT CASE(SOLVER_LIBRARY_TYPE)
-                    CASE(SOLVER_CMISS_LIBRARY)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                    CASE(SOLVER_PETSC_LIBRARY)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                    CASE DEFAULT
-                      LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
-                        & " is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    END SELECT
-                  ELSE
-                    CALL FLAG_ERROR("The forward Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                CASE(SOLVER_DAE_EULER_BACKWARD)
-                  BACKWARD_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%BACKWARD_EULER_SOLVER
-                  IF(ASSOCIATED(BACKWARD_EULER_DAE_SOLVER)) THEN
-                    SELECT CASE(SOLVER_LIBRARY_TYPE)
-                    CASE(SOLVER_CMISS_LIBRARY)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                    CASE(SOLVER_PETSC_LIBRARY)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                    CASE DEFAULT
-                      LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
-                        & " is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    END SELECT
-                  ELSE
-                    CALL FLAG_ERROR("The backward Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                CASE(SOLVER_DAE_EULER_IMPROVED)
-                  IMPROVED_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%IMPROVED_EULER_SOLVER
-                  IF(ASSOCIATED(IMPROVED_EULER_DAE_SOLVER)) THEN
-                    SELECT CASE(SOLVER_LIBRARY_TYPE)
-                    CASE(SOLVER_CMISS_LIBRARY)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                    CASE(SOLVER_PETSC_LIBRARY)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                    CASE DEFAULT
-                      LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
-                        & " is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    END SELECT
-                  ELSE
-                    CALL FLAG_ERROR("The improved Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                CASE DEFAULT
-                  LOCAL_ERROR="The Euler differential-algebraic equations solver type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(EULER_DAE_SOLVER%EULER_TYPE,"*",ERR,ERROR))//" is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-              ELSE
-                CALL FLAG_ERROR("The Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            CASE(SOLVER_DAE_CRANK_NICHOLSON)
-              CRANK_NICHOLSON_DAE_SOLVER=>DAE_SOLVER%CRANK_NICHOLSON_SOLVER
-              IF(ASSOCIATED(CRANK_NICHOLSON_DAE_SOLVER)) THEN
-                SELECT CASE(SOLVER_LIBRARY_TYPE)
-                CASE(SOLVER_CMISS_LIBRARY)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                CASE(SOLVER_PETSC_LIBRARY)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                CASE DEFAULT
-                  LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
-                    & " is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-              ELSE
-                CALL FLAG_ERROR("The Crank-Nicholson differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            CASE(SOLVER_DAE_RUNGE_KUTTA)
-              RUNGE_KUTTA_DAE_SOLVER=>DAE_SOLVER%RUNGE_KUTTA_SOLVER
-              IF(ASSOCIATED(RUNGE_KUTTA_DAE_SOLVER)) THEN
-                SELECT CASE(SOLVER_LIBRARY_TYPE)
-                CASE(SOLVER_CMISS_LIBRARY)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                CASE(SOLVER_PETSC_LIBRARY)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                CASE DEFAULT
-                  LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
-                    & " is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-              ELSE
-                CALL FLAG_ERROR("The Runge-Kutta differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            CASE(SOLVER_DAE_ADAMS_MOULTON)
-              ADAMS_MOULTON_DAE_SOLVER=>DAE_SOLVER%ADAMS_MOULTON_SOLVER
-              IF(ASSOCIATED(ADAMS_MOULTON_DAE_SOLVER)) THEN
-                SELECT CASE(SOLVER_LIBRARY_TYPE)
-                CASE(SOLVER_CMISS_LIBRARY)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                CASE(SOLVER_PETSC_LIBRARY)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                CASE DEFAULT
-                  LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
-                    & " is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-              ELSE
-                CALL FLAG_ERROR("The Adams-Moulton differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            CASE(SOLVER_DAE_BDF)
-              BDF_DAE_SOLVER=>DAE_SOLVER%BDF_SOLVER
-              IF(ASSOCIATED(BDF_DAE_SOLVER)) THEN
-                SELECT CASE(SOLVER_LIBRARY_TYPE)
-                CASE(SOLVER_CMISS_LIBRARY)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                CASE(SOLVER_PETSC_LIBRARY)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                CASE DEFAULT
-                  LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
-                    & " is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-              ELSE
-                CALL FLAG_ERROR("The BDF differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            CASE(SOLVER_DAE_RUSH_LARSON)
-              RUSH_LARSON_DAE_SOLVER=>DAE_SOLVER%RUSH_LARSON_SOLVER
-              IF(ASSOCIATED(RUSH_LARSON_DAE_SOLVER)) THEN
-                SELECT CASE(SOLVER_LIBRARY_TYPE)
-                CASE(SOLVER_CMISS_LIBRARY)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                CASE(SOLVER_PETSC_LIBRARY)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                CASE DEFAULT
-                  LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
-                    & " is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-              ELSE
-                CALL FLAG_ERROR("The Rush-Larson differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
-              ENDIF
-            CASE DEFAULT
-              LOCAL_ERROR="The differential-algebraic equations solver type of "// &
-                & TRIM(NUMBER_TO_VSTRING(DAE_SOLVER%DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT
+            CALL SOLVER_DAE_LIBRARY_TYPE_SET(DAE_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
           ELSE
             CALL FLAG_ERROR("Solver differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
           ENDIF
         CASE(SOLVER_EIGENPROBLEM_TYPE)
           EIGENPROBLEM_SOLVER=>SOLVER%EIGENPROBLEM_SOLVER
           IF(ASSOCIATED(EIGENPROBLEM_SOLVER)) THEN
+            CALL SOLVER_EIGENPROBLEM_LIBRARY_TYPE_SET(EIGENPROBLEM_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
             SELECT CASE(SOLVER_LIBRARY_TYPE)
             CASE(SOLVER_CMISS_LIBRARY)
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
@@ -4815,11 +4989,18 @@ CONTAINS
           ELSE
             CALL FLAG_ERROR("Solver eigenproblem solver is not associated.",ERR,ERROR,*999)
           ENDIF
+        CASE(SOLVER_OPTIMISER_TYPE)
+          OPTIMISER_SOLVER=>SOLVER%OPTIMISER_SOLVER
+          IF(ASSOCIATED(OPTIMISER_SOLVER)) THEN
+            CALL SOLVER_OPTIMISER_LIBRARY_TYPE_SET(OPTIMISER_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
+          ELSE
+            CALL FLAG_ERROR("Solver optimiser solver is not associated.",ERR,ERROR,*999)
+          ENDIF
         CASE DEFAULT
           LOCAL_ERROR="The solver type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
-     ENDIF
+      ENDIF
     ELSE
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
@@ -4922,6 +5103,62 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalise a Cholesky direct linear solver and deallocate all memory.
+  SUBROUTINE SOLVER_LINEAR_DIRECT_CHOLESKY_FINALISE(DIRECT_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(LINEAR_DIRECT_SOLVER_TYPE), POINTER :: DIRECT_SOLVER !<A pointer to the linear direct solver to finalise the Cholesky solver for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_LINEAR_DIRECT_CHOLESKY_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DIRECT_SOLVER)) THEN
+      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("SOLVER_LINEAR_DIRECT_CHOLESKY_FINALISE")
+    RETURN
+999 CALL ERRORS("SOLVER_LINEAR_DIRECT_CHOLESKY_FINALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_LINEAR_DIRECT_CHOLESKY_FINALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_LINEAR_DIRECT_CHOLESKY_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise a Cholesky direct linear solver for a direct linear solver.
+  SUBROUTINE SOLVER_LINEAR_DIRECT_CHOLESKY_INITIALISE(DIRECT_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(LINEAR_DIRECT_SOLVER_TYPE), POINTER :: DIRECT_SOLVER !<A pointer the direct linear solver to initialise the Cholesky direct linear solver for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    
+    CALL ENTERS("SOLVER_LINEAR_DIRECT_CHOLESKY_INITIALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DIRECT_SOLVER)) THEN
+      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("Direct linear solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("SOLVER_LINEAR_DIRECT_CHOLESKY_INITIALISE")
+    RETURN
+999 CALL ERRORS("SOLVER_LINEAR_DIRECT_CHOLESKY_INITIALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_LINEAR_DIRECT_CHOLESKY_INITIALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_LINEAR_DIRECT_CHOLESKY_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
   !>Finishes the process of creating a linear direct solver 
   SUBROUTINE SOLVER_LINEAR_DIRECT_CREATE_FINISH(LINEAR_DIRECT_SOLVER,ERR,ERROR,*)
 
@@ -4949,120 +5186,142 @@ CONTAINS
 !
 !           IF(.NOT.LINEAR_SOLVER%LINKED_NEWTON_PETSC_SOLVER) &
 !             & CALL FLAG_ERROR("Only not use a direct solver with a linked PETSC nonlinear Newton solver.",ERR,ERROR,*999)
-          SELECT CASE(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY)
-          CASE(SOLVER_CMISS_LIBRARY)
-            IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
-              SOLVER_EQUATIONS=>SOLVER%LINKING_SOLVER%SOLVER_EQUATIONS
-              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
-                IF(.NOT.ASSOCIATED(SOLVER_MATRICES)) &
-                  & CALL FLAG_ERROR("Linked solver equation solver matrices is not associated.",ERR,ERROR,*999)
-              ELSE
-                CALL FLAG_ERROR("Linked solver solver equations is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                !Create the solver matrices
-                CALL SOLVER_MATRICES_CREATE_START(SOLVER_EQUATIONS,SOLVER_MATRICES,ERR,ERROR,*999)
-                CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_CMISS_LIBRARY,ERR,ERROR,*999)
-                SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
-                CASE(SOLVER_SPARSE_MATRICES)
-                  CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
-                    & ERR,ERROR,*999)
-                CASE(SOLVER_FULL_MATRICES)
-                  CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE/), &
-                    & ERR,ERROR,*999)
-                CASE DEFAULT
-                  LOCAL_ERROR="The specified solver equations sparsity type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))// &
-                    & " is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-                CALL SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
-              ELSE
-                CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ENDIF
-          CASE(SOLVER_PETSC_LIBRARY)
-            IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
-              SOLVER_EQUATIONS=>SOLVER%LINKING_SOLVER%SOLVER_EQUATIONS
-              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
-                IF(.NOT.ASSOCIATED(SOLVER_MATRICES)) &
-                  & CALL FLAG_ERROR("Linked solver equation solver matrices is not associated.",ERR,ERROR,*999)
-              ELSE
-                CALL FLAG_ERROR("Linked solver solver equations is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                !Create the solver matrices and vectors
-                NULLIFY(SOLVER_MATRICES)
-                CALL SOLVER_MATRICES_CREATE_START(SOLVER_EQUATIONS,SOLVER_MATRICES,ERR,ERROR,*999)
-                CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_PETSC_LIBRARY,ERR,ERROR,*999)
-                SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
-                CASE(SOLVER_SPARSE_MATRICES)
-                  CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
-                    & ERR,ERROR,*999)
-                CASE(SOLVER_FULL_MATRICES)
-                  CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE/), &
-                    & ERR,ERROR,*999)
-                CASE DEFAULT
-                  LOCAL_ERROR="The specified solver equations sparsity type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))// &
-                    & " is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-                CALL SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
-              ELSE
-                CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ENDIF
-
-            CALL PETSC_KSPCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
-
-            !Set any further KSP options from the command line options
-            CALL PETSC_KSPSETFROMOPTIONS(LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
-            !Set the solver matrix to be the KSP matrix
-            IF(SOLVER_MATRICES%NUMBER_OF_MATRICES==1) THEN
-              SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(1)%PTR%MATRIX
-              IF(ASSOCIATED(SOLVER_MATRIX)) THEN
-                IF(ASSOCIATED(SOLVER_MATRIX%PETSC)) THEN
-                  CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
-                    & PETSC_DIFFERENT_NONZERO_PATTERN,ERR,ERROR,*999)
-                 !Set the matrix type
-                 SELECT CASE(LINEAR_DIRECT_SOLVER%DIRECT_SOLVER_TYPE)
-                 CASE(SOLVER_DIRECT_MUMPS)
-                   CALL PETSC_MATSETTYPE(SOLVER_MATRIX%PETSC%MATRIX,PETSC_AIJMUMPS,ERR,ERROR,*999)
-                 CASE(SOLVER_DIRECT_PASTIX)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(SOLVER_DIRECT_PLAPACK)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(SOLVER_DIRECT_SPOOLES)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(SOLVER_DIRECT_SUPERLU)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The direct solver type of "// &
-                     & TRIM(NUMBER_TO_VSTRING(LINEAR_DIRECT_SOLVER%DIRECT_SOLVER_TYPE,"*",ERR,ERROR))//" is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                 END SELECT
+          SELECT CASE(LINEAR_DIRECT_SOLVER%DIRECT_SOLVER_TYPE)
+          CASE(SOLVER_DIRECT_LU)
+            SELECT CASE(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY)
+            CASE(SOLVER_CMISS_LIBRARY)
+              !?????
+              IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
+                SOLVER_EQUATIONS=>SOLVER%LINKING_SOLVER%SOLVER_EQUATIONS
+                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                  SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
+                  IF(.NOT.ASSOCIATED(SOLVER_MATRICES)) &
+                    & CALL FLAG_ERROR("Linked solver equation solver matrices is not associated.",ERR,ERROR,*999)
                 ELSE
-                  CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Linked solver solver equations is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Solver matrices distributed matrix is not associated.",ERR,ERROR,*999)
+                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                  !Create the solver matrices
+                  CALL SOLVER_MATRICES_CREATE_START(SOLVER_EQUATIONS,SOLVER_MATRICES,ERR,ERROR,*999)
+                  CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_CMISS_LIBRARY,ERR,ERROR,*999)
+                  SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
+                  CASE(SOLVER_SPARSE_MATRICES)
+                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
+                      & ERR,ERROR,*999)
+                  CASE(SOLVER_FULL_MATRICES)
+                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE/), &
+                      & ERR,ERROR,*999)
+                  CASE DEFAULT
+                    LOCAL_ERROR="The specified solver equations sparsity type of "// &
+                      & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))// &
+                      & " is invalid."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
+                  CALL SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+                ENDIF
               ENDIF
-            ELSE
-              LOCAL_ERROR="The given number of solver matrices of "// &
-                & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))// &
-                & " is invalid. There should only be one solver matrix for a linear direct solver."
+            CASE(SOLVER_MUMPS_LIBRARY)
+              !Call MUMPS through PETSc
+              IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
+                SOLVER_EQUATIONS=>SOLVER%LINKING_SOLVER%SOLVER_EQUATIONS
+                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                  SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
+                  IF(.NOT.ASSOCIATED(SOLVER_MATRICES)) &
+                    & CALL FLAG_ERROR("Linked solver equation solver matrices is not associated.",ERR,ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("Linked solver solver equations is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                  !Create the solver matrices and vectors
+                  NULLIFY(SOLVER_MATRICES)
+                  CALL SOLVER_MATRICES_CREATE_START(SOLVER_EQUATIONS,SOLVER_MATRICES,ERR,ERROR,*999)
+                  CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_PETSC_LIBRARY,ERR,ERROR,*999)
+                  SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
+                  CASE(SOLVER_SPARSE_MATRICES)
+                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
+                      & ERR,ERROR,*999)
+                  CASE(SOLVER_FULL_MATRICES)
+                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE/), &
+                      & ERR,ERROR,*999)
+                  CASE DEFAULT
+                    LOCAL_ERROR="The specified solver equations sparsity type of "// &
+                      & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))// &
+                      & " is invalid."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
+                  CALL SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ENDIF
+
+              CALL PETSC_KSPCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
+              
+              !Set any further KSP options from the command line options
+              CALL PETSC_KSPSETFROMOPTIONS(LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
+              !Set the solver matrix to be the KSP matrix
+              IF(SOLVER_MATRICES%NUMBER_OF_MATRICES==1) THEN
+                SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(1)%PTR%MATRIX
+                IF(ASSOCIATED(SOLVER_MATRIX)) THEN
+                  IF(ASSOCIATED(SOLVER_MATRIX%PETSC)) THEN
+                    CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
+                      & PETSC_DIFFERENT_NONZERO_PATTERN,ERR,ERROR,*999)
+#if ( PETSC_VERSION_MAJOR == 3 )
+                    !Set the KSP type to preonly
+                    CALL PETSC_KSPSETTYPE(LINEAR_DIRECT_SOLVER%KSP,PETSC_KSPPREONLY,ERR,ERROR,*999)
+                    !Get the pre-conditioner
+                    CALL PETSC_KSPGETPC(LINEAR_DIRECT_SOLVER%KSP,LINEAR_DIRECT_SOLVER%PC,ERR,ERROR,*999)
+                    !Set the PC type to LU
+                    CALL PETSC_PCSETTYPE(LINEAR_DIRECT_SOLVER%PC,PETSC_PCLU,ERR,ERROR,*999)
+                    !Set the PC factorisation package to MUMPS
+                    CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_MUMPS,ERR,ERROR,*999)
+#else                    
+                    !Set the matrix type to MUMPS    
+                    CALL PETSC_MATSETTYPE(SOLVER_MATRIX%PETSC%MATRIX,PETSC_AIJMUMPS,ERR,ERROR,*999)
+#endif
+                  ELSE
+                    CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Solver matrices distributed matrix is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                LOCAL_ERROR="The given number of solver matrices of "// &
+                  & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))// &
+                  & " is invalid. There should only be one solver matrix for a linear direct solver."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            CASE(SOLVER_SUPERLU_LIBRARY)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE(SOLVER_SPOOLES_LIBRARY)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE(SOLVER_UMFPACK_LIBRARY)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE(SOLVER_LUSOL_LIBRARY)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE(SOLVER_ESSL_LIBRARY)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE(SOLVER_LAPACK_LIBRARY)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE DEFAULT
+              LOCAL_ERROR="The solver library type of "// &
+                & TRIM(NUMBER_TO_VSTRING(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            ENDIF
+            END SELECT
+          CASE(SOLVER_DIRECT_CHOLESKY)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(SOLVER_DIRECT_SVD)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
           CASE DEFAULT
-          LOCAL_ERROR="The solver library type of "// &
-              & TRIM(NUMBER_TO_VSTRING(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
+            LOCAL_ERROR="The direct solver type of "// &
+              & TRIM(NUMBER_TO_VSTRING(LINEAR_DIRECT_SOLVER%DIRECT_SOLVER_TYPE,"*",ERR,ERROR))// &
+              & " is invalid."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
@@ -5100,14 +5359,10 @@ CONTAINS
     CALL ENTERS("SOLVER_LINEAR_DIRECT_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(LINEAR_DIRECT_SOLVER)) THEN
-      DEALLOCATE(LINEAR_DIRECT_SOLVER)
-    ENDIF
-
-    IF(ASSOCIATED(LINEAR_DIRECT_SOLVER)) THEN
       LINEAR_SOLVER=>LINEAR_DIRECT_SOLVER%LINEAR_SOLVER
       IF(ASSOCIATED(LINEAR_SOLVER)) THEN
         IF(.NOT.LINEAR_SOLVER%LINKED_NEWTON_PETSC_SOLVER) THEN
-          CALL PETSC_KSPFINALISE(LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
+          CALL SOLVER_LINEAR_DIRECT_LU_FINALISE(LINEAR_DIRECT_SOLVER,ERR,ERROR,*999)
         ENDIF
       ENDIF
       DEALLOCATE(LINEAR_DIRECT_SOLVER)
@@ -5145,9 +5400,9 @@ CONTAINS
         ALLOCATE(LINEAR_SOLVER%DIRECT_SOLVER,STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate linear solver direct solver.",ERR,ERROR,*999)
         LINEAR_SOLVER%DIRECT_SOLVER%LINEAR_SOLVER=>LINEAR_SOLVER
-        LINEAR_SOLVER%DIRECT_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
-        LINEAR_SOLVER%DIRECT_SOLVER%DIRECT_SOLVER_TYPE=SOLVER_DIRECT_MUMPS !TODO: fix this with respect to library
-        CALL PETSC_KSPINITIALISE(LINEAR_SOLVER%DIRECT_SOLVER%KSP,ERR,ERROR,*999)
+        !Default to an LU direct linear solver
+        LINEAR_SOLVER%DIRECT_SOLVER%DIRECT_SOLVER_TYPE=SOLVER_DIRECT_LU
+        CALL SOLVER_LINEAR_DIRECT_LU_INITIALISE(LINEAR_SOLVER%DIRECT_SOLVER,ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Linear solver is not associated.",ERR,ERROR,*998)
@@ -5161,6 +5416,198 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE SOLVER_LINEAR_DIRECT_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the type of library to use for a direct linear solver.
+  SUBROUTINE SOLVER_LINEAR_DIRECT_LIBRARY_TYPE_GET(DIRECT_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(LINEAR_DIRECT_SOLVER_TYPE), POINTER :: DIRECT_SOLVER !<A pointer the direct linear solver to get the library type for.
+    INTEGER(INTG), INTENT(OUT) :: SOLVER_LIBRARY_TYPE !<On exit, the type of library used for the direct linear solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+ 
+    CALL ENTERS("SOLVER_LINEAR_DIRECT_LIBRARY_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DIRECT_SOLVER)) THEN
+      SELECT CASE(DIRECT_SOLVER%DIRECT_SOLVER_TYPE)
+      CASE(SOLVER_DIRECT_LU)
+        SOLVER_LIBRARY_TYPE=DIRECT_SOLVER%SOLVER_LIBRARY
+      CASE(SOLVER_DIRECT_CHOLESKY)
+        SOLVER_LIBRARY_TYPE=DIRECT_SOLVER%SOLVER_LIBRARY
+      CASE(SOLVER_DIRECT_SVD)
+        SOLVER_LIBRARY_TYPE=DIRECT_SOLVER%SOLVER_LIBRARY
+      CASE DEFAULT
+        LOCAL_ERROR="The direct linear solver type of "// &
+          & TRIM(NUMBER_TO_VSTRING(DIRECT_SOLVER%DIRECT_SOLVER_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Direct linear solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_LINEAR_DIRECT_LIBRARY_TYPE_GET")
+    RETURN
+999 CALL ERRORS("SOLVER_LINEAR_DIRECT_LIBRARY_TYPE_GET",ERR,ERROR)    
+    CALL EXITS("SOLVER_LINEAR_DIRECT_LIBRARY_TYPE_GET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_LINEAR_DIRECT_LIBRARY_TYPE_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of library to use for a direct linear solver.
+  SUBROUTINE SOLVER_LINEAR_DIRECT_LIBRARY_TYPE_SET(DIRECT_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(LINEAR_DIRECT_SOLVER_TYPE), POINTER :: DIRECT_SOLVER !<A pointer the direct linear solver to get the library type for.
+    INTEGER(INTG), INTENT(IN) :: SOLVER_LIBRARY_TYPE !<The type of library for the direct linear solver to set. \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_LINEAR_DIRECT_LIBRARY_TYPE_SET",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(DIRECT_SOLVER)) THEN
+      SELECT CASE(DIRECT_SOLVER%DIRECT_SOLVER_TYPE)
+      CASE(SOLVER_DIRECT_LU)
+        SELECT CASE(SOLVER_LIBRARY_TYPE)
+        CASE(SOLVER_CMISS_LIBRARY)
+          CALL FLAG_ERROR("Not implemeted.",ERR,ERROR,*999)
+        CASE(SOLVER_MUMPS_LIBRARY)
+          DIRECT_SOLVER%SOLVER_LIBRARY=SOLVER_MUMPS_LIBRARY
+        CASE(SOLVER_SUPERLU_LIBRARY)
+          CALL FLAG_ERROR("Not implemeted.",ERR,ERROR,*999)
+        CASE(SOLVER_SPOOLES_LIBRARY)
+          CALL FLAG_ERROR("Not implemeted.",ERR,ERROR,*999)
+        CASE(SOLVER_LUSOL_LIBRARY)
+          CALL FLAG_ERROR("Not implemeted.",ERR,ERROR,*999)
+        CASE(SOLVER_ESSL_LIBRARY)
+          CALL FLAG_ERROR("Not implemeted.",ERR,ERROR,*999)
+        CASE(SOLVER_LAPACK_LIBRARY)
+          CALL FLAG_ERROR("Not implemeted.",ERR,ERROR,*999)
+        CASE DEFAULT
+          LOCAL_ERROR="The specified solver library type of "// &
+            & TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            & " is invalid for a LU direct linear solver."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
+        END SELECT
+      CASE(SOLVER_DIRECT_CHOLESKY)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(SOLVER_DIRECT_SVD)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="The direct linear solver type of "// &
+          & TRIM(NUMBER_TO_VSTRING(DIRECT_SOLVER%DIRECT_SOLVER_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Direct linear solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("SOLVER_LINEAR_DIRECT_LIBRARY_TYPE_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_LINEAR_DIRECT_LIBRARY_TYPE_SET",ERR,ERROR)    
+    CALL EXITS("SOLVER_LINEAR_DIRECT_LIBRARY_TYPE_SET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_LINEAR_DIRECT_LIBRARY_TYPE_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise a LU direct linear solver and deallocate all memory.
+  SUBROUTINE SOLVER_LINEAR_DIRECT_LU_FINALISE(DIRECT_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(LINEAR_DIRECT_SOLVER_TYPE), POINTER :: DIRECT_SOLVER !<A pointer to the linear direct solver to finalise the LU solver for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_LINEAR_DIRECT_LU_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DIRECT_SOLVER)) THEN
+      SELECT CASE(DIRECT_SOLVER%SOLVER_LIBRARY)
+      CASE(SOLVER_CMISS_LIBRARY)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(SOLVER_MUMPS_LIBRARY)
+        !Call MUMPS through PETSc
+        CALL PETSC_PCFINALISE(DIRECT_SOLVER%PC,ERR,ERROR,*999)
+        CALL PETSC_KSPFINALISE(DIRECT_SOLVER%KSP,ERR,ERROR,*999)
+      CASE(SOLVER_SUPERLU_LIBRARY)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(SOLVER_SPOOLES_LIBRARY)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(SOLVER_UMFPACK_LIBRARY)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(SOLVER_LUSOL_LIBRARY)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(SOLVER_ESSL_LIBRARY)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(SOLVER_LAPACK_LIBRARY)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="The solver library type of "// &
+          & TRIM(NUMBER_TO_VSTRING(DIRECT_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))// &
+          & " is invalid for a LU direct linear solver."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ENDIF
+
+    CALL EXITS("SOLVER_LINEAR_DIRECT_LU_FINALISE")
+    RETURN
+999 CALL ERRORS("SOLVER_LINEAR_DIRECT_LU_FINALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_LINEAR_DIRECT_LU_FINALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_LINEAR_DIRECT_LU_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise a LU direct linear solver for a direct linear solver.
+  SUBROUTINE SOLVER_LINEAR_DIRECT_LU_INITIALISE(DIRECT_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(LINEAR_DIRECT_SOLVER_TYPE), POINTER :: DIRECT_SOLVER !<A pointer the direct linear solver to initialise the LU direct linear solver for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+    
+    CALL ENTERS("SOLVER_LINEAR_DIRECT_LU_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(DIRECT_SOLVER)) THEN
+      !Default to MUMPS library
+      DIRECT_SOLVER%SOLVER_LIBRARY=SOLVER_MUMPS_LIBRARY
+      !Call MUMPS through PETSc
+      CALL PETSC_PCINITIALISE(DIRECT_SOLVER%PC,ERR,ERROR,*999)
+      CALL PETSC_KSPINITIALISE(DIRECT_SOLVER%KSP,ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("Direct linear solver is not associated.",ERR,ERROR,*998)
+    ENDIF
+        
+    CALL EXITS("SOLVER_LINEAR_DIRECT_LU_INITIALISE")
+    RETURN
+999 CALL SOLVER_LINEAR_DIRECT_LU_FINALISE(DIRECT_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("SOLVER_LINEAR_DIRECT_LU_INITIALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_LINEAR_DIRECT_LU_INITIALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_LINEAR_DIRECT_LU_INITIALISE
 
   !
   !================================================================================================================================
@@ -5232,24 +5679,50 @@ CONTAINS
                           CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        SELECT CASE(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY)
-                        CASE(SOLVER_CMISS_LIBRARY)
-                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                        CASE(SOLVER_PETSC_LIBRARY)
-                          IF(ASSOCIATED(RHS_VECTOR%PETSC)) THEN
-                            IF(ASSOCIATED(SOLVER_VECTOR%PETSC)) THEN
-                              !Solver the linear system
-                              CALL PETSC_KSPSOLVE(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR,SOLVER_VECTOR%PETSC%VECTOR, &
-                                & ERR,ERROR,*999)
+                        SELECT CASE(LINEAR_DIRECT_SOLVER%DIRECT_SOLVER_TYPE)
+                        CASE(SOLVER_DIRECT_LU)                         
+                          SELECT CASE(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY)
+                          CASE(SOLVER_CMISS_LIBRARY)
+                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          CASE(SOLVER_MUMPS_LIBRARY)
+                            !Call MUMPS through PETSc
+                            IF(ASSOCIATED(RHS_VECTOR%PETSC)) THEN
+                              IF(ASSOCIATED(SOLVER_VECTOR%PETSC)) THEN
+                                !Solve the linear system
+                                CALL PETSC_KSPSOLVE(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR,SOLVER_VECTOR%PETSC%VECTOR, &
+                                  & ERR,ERROR,*999)
+                              ELSE
+                                CALL FLAG_ERROR("Solver vector PETSc vector is not associated.",ERR,ERROR,*999)
+                              ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Solver vector PETSc vector is not associated.",ERR,ERROR,*999)
+                              CALL FLAG_ERROR("RHS vector petsc PETSc is not associated.",ERR,ERROR,*999)
                             ENDIF
-                          ELSE
-                            CALL FLAG_ERROR("RHS vector petsc PETSc is not associated.",ERR,ERROR,*999)
-                          ENDIF
+                          CASE(SOLVER_SUPERLU_LIBRARY)
+                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          CASE(SOLVER_SPOOLES_LIBRARY)
+                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          CASE(SOLVER_UMFPACK_LIBRARY)
+                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          CASE(SOLVER_LUSOL_LIBRARY)
+                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          CASE(SOLVER_ESSL_LIBRARY)
+                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          CASE(SOLVER_LAPACK_LIBRARY)
+                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          CASE DEFAULT
+                            LOCAL_ERROR="The solver library type of "// &
+                              & TRIM(NUMBER_TO_VSTRING(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))// &
+                              & " is invalid for a LU direct linear solver."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          END SELECT
+                        CASE(SOLVER_DIRECT_CHOLESKY)
+                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CASE(SOLVER_DIRECT_SVD)
+                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                         CASE DEFAULT
-                          LOCAL_ERROR="The solver library type of "// &
-                            & TRIM(NUMBER_TO_VSTRING(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
+                          LOCAL_ERROR="The direct linear solver type of "// &
+                            & TRIM(NUMBER_TO_VSTRING(LINEAR_DIRECT_SOLVER%DIRECT_SOLVER_TYPE,"*",ERR,ERROR))// &
+                            & " is invalid."
                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT
                       ENDIF
@@ -5296,6 +5769,62 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalise a SVD direct linear solver and deallocate all memory.
+  SUBROUTINE SOLVER_LINEAR_DIRECT_SVD_FINALISE(LINEAR_DIRECT_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(LINEAR_DIRECT_SOLVER_TYPE), POINTER :: LINEAR_DIRECT_SOLVER !<A pointer to the linear direct solver to finalise the SVD solver for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_LINEAR_DIRECT_SVD_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(LINEAR_DIRECT_SOLVER)) THEN
+      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("SOLVER_LINEAR_DIRECT_SVD_FINALISE")
+    RETURN
+999 CALL ERRORS("SOLVER_LINEAR_DIRECT_SVD_FINALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_LINEAR_DIRECT_SVD_FINALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_LINEAR_DIRECT_SVD_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise a SVD direct linear solver for a direct linear solver.
+  SUBROUTINE SOLVER_LINEAR_DIRECT_SVD_INITIALISE(DIRECT_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(LINEAR_DIRECT_SOLVER_TYPE), POINTER :: DIRECT_SOLVER !<A pointer the direct linear solver to initialise the SVD direct linear solver for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    
+    CALL ENTERS("SOLVER_LINEAR_DIRECT_SVD_INITIALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DIRECT_SOLVER)) THEN
+      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("Direct linear solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("SOLVER_LINEAR_DIRECT_SVD_INITIALISE")
+    RETURN
+999 CALL ERRORS("SOLVER_LINEAR_DIRECT_SVD_INITIALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_LINEAR_DIRECT_SVD_INITIALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_LINEAR_DIRECT_SVD_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
   !>Sets/changes the type of direct linear solver. \see OPENCMISS::CMISSSolverLinearDirectTypeSet
   SUBROUTINE SOLVER_LINEAR_DIRECT_TYPE_SET(SOLVER,DIRECT_SOLVER_TYPE,ERR,ERROR,*)
 
@@ -5318,40 +5847,29 @@ CONTAINS
             IF(SOLVER%LINEAR_SOLVER%LINEAR_SOLVE_TYPE==SOLVER_LINEAR_DIRECT_SOLVE_TYPE) THEN
               IF(ASSOCIATED(SOLVER%LINEAR_SOLVER%DIRECT_SOLVER)) THEN
                 IF(DIRECT_SOLVER_TYPE/=SOLVER%LINEAR_SOLVER%DIRECT_SOLVER%DIRECT_SOLVER_TYPE) THEN
+                  !Finalise the old direct solver
                   SELECT CASE(SOLVER%LINEAR_SOLVER%DIRECT_SOLVER%SOLVER_LIBRARY)
-                  CASE(SOLVER_CMISS_LIBRARY)
-                    SELECT CASE(DIRECT_SOLVER_TYPE)
-                    CASE(SOLVER_DIRECT_LU)
-                      SOLVER%LINEAR_SOLVER%DIRECT_SOLVER%DIRECT_SOLVER_TYPE=SOLVER_DIRECT_LU
-                    CASE(SOLVER_DIRECT_CHOLESKY)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                    CASE(SOLVER_DIRECT_SVD)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                      
-                    CASE DEFAULT
-                      LOCAL_ERROR="The direct solver type of "//TRIM(NUMBER_TO_VSTRING(DIRECT_SOLVER_TYPE,"*",ERR,ERROR))// &
-                        & " is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    END SELECT                   
-                  CASE(SOLVER_PETSC_LIBRARY)
-                    SELECT CASE(DIRECT_SOLVER_TYPE)
-                    CASE(SOLVER_DIRECT_MUMPS)
-                      SOLVER%LINEAR_SOLVER%DIRECT_SOLVER%DIRECT_SOLVER_TYPE=SOLVER_DIRECT_MUMPS
-                    CASE(SOLVER_DIRECT_PASTIX)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                    CASE(SOLVER_DIRECT_PLAPACK)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                    CASE(SOLVER_DIRECT_SPOOLES)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                    CASE(SOLVER_DIRECT_SUPERLU)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                    CASE DEFAULT
-                      LOCAL_ERROR="The direct solver type of "//TRIM(NUMBER_TO_VSTRING(DIRECT_SOLVER_TYPE,"*",ERR,ERROR))// &
-                        & " is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    END SELECT
+                  CASE(SOLVER_DIRECT_LU)
+                    CALL SOLVER_LINEAR_DIRECT_LU_FINALISE(SOLVER%LINEAR_SOLVER%DIRECT_SOLVER,ERR,ERROR,*999)
+                  CASE(SOLVER_DIRECT_CHOLESKY)
+                    CALL SOLVER_LINEAR_DIRECT_CHOLESKY_FINALISE(SOLVER%LINEAR_SOLVER%DIRECT_SOLVER,ERR,ERROR,*999)
+                  CASE(SOLVER_DIRECT_SVD)
+                    CALL SOLVER_LINEAR_DIRECT_SVD_FINALISE(SOLVER%LINEAR_SOLVER%DIRECT_SOLVER,ERR,ERROR,*999)
                   CASE DEFAULT
-                    LOCAL_ERROR="The solver library type of "// &
-                      & TRIM(NUMBER_TO_VSTRING(SOLVER%LINEAR_SOLVER%DIRECT_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))// &
+                    LOCAL_ERROR="The direct solver type of "//TRIM(NUMBER_TO_VSTRING(DIRECT_SOLVER_TYPE,"*",ERR,ERROR))// &
+                      & " is invalid."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
+                  !Initialise the new library
+                  SELECT CASE(DIRECT_SOLVER_TYPE)
+                  CASE(SOLVER_DIRECT_LU)
+                    CALL SOLVER_LINEAR_DIRECT_LU_INITIALISE(SOLVER%LINEAR_SOLVER%DIRECT_SOLVER,ERR,ERROR,*999)
+                  CASE(SOLVER_DIRECT_CHOLESKY)
+                    CALL SOLVER_LINEAR_DIRECT_CHOLESKY_INITIALISE(SOLVER%LINEAR_SOLVER%DIRECT_SOLVER,ERR,ERROR,*999)
+                  CASE(SOLVER_DIRECT_SVD)
+                    CALL SOLVER_LINEAR_DIRECT_SVD_INITIALISE(SOLVER%LINEAR_SOLVER%DIRECT_SOLVER,ERR,ERROR,*999)
+                  CASE DEFAULT
+                    LOCAL_ERROR="The direct solver type of "//TRIM(NUMBER_TO_VSTRING(DIRECT_SOLVER_TYPE,"*",ERR,ERROR))// &
                       & " is invalid."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
@@ -5542,6 +6060,7 @@ CONTAINS
       IF(ASSOCIATED(LINEAR_SOLVER)) THEN
         SOLVER=>LINEAR_SOLVER%SOLVER
         IF(ASSOCIATED(SOLVER)) THEN
+          !Should really check iterative types here and then the solver library but as they are all PETSc for now hold off.
           SELECT CASE(LINEAR_ITERATIVE_SOLVER%SOLVER_LIBRARY)
           CASE(SOLVER_CMISS_LIBRARY)
             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
@@ -5920,6 +6439,156 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE SOLVER_LINEAR_ITERATIVE_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the type of library to use for an iterative linear solver.
+  SUBROUTINE SOLVER_LINEAR_ITERATIVE_LIBRARY_TYPE_GET(ITERATIVE_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(LINEAR_ITERATIVE_SOLVER_TYPE), POINTER :: ITERATIVE_SOLVER !<A pointer the iterative linear solver to get the library type for.
+    INTEGER(INTG), INTENT(OUT) :: SOLVER_LIBRARY_TYPE !<On exit, the type of library used for the iterative linear solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+ 
+    CALL ENTERS("SOLVER_LINEAR_ITERATIVE_LIBRARY_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(ITERATIVE_SOLVER)) THEN
+      SELECT CASE(ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE)
+      CASE(SOLVER_ITERATIVE_RICHARDSON)
+        SOLVER_LIBRARY_TYPE=ITERATIVE_SOLVER%SOLVER_LIBRARY
+      CASE(SOLVER_ITERATIVE_CHEBYCHEV)
+        SOLVER_LIBRARY_TYPE=ITERATIVE_SOLVER%SOLVER_LIBRARY
+      CASE(SOLVER_ITERATIVE_CONJUGATE_GRADIENT)
+        SOLVER_LIBRARY_TYPE=ITERATIVE_SOLVER%SOLVER_LIBRARY
+      CASE(SOLVER_ITERATIVE_GMRES)
+        SOLVER_LIBRARY_TYPE=ITERATIVE_SOLVER%SOLVER_LIBRARY
+      CASE(SOLVER_ITERATIVE_BiCGSTAB)
+        SOLVER_LIBRARY_TYPE=ITERATIVE_SOLVER%SOLVER_LIBRARY
+      CASE(SOLVER_ITERATIVE_CONJGRAD_SQUARED)
+        SOLVER_LIBRARY_TYPE=ITERATIVE_SOLVER%SOLVER_LIBRARY
+      CASE DEFAULT
+        LOCAL_ERROR="The iterative linear solver type of "// &
+          & TRIM(NUMBER_TO_VSTRING(ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Iterative linear solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_LINEAR_ITERATIVE_LIBRARY_TYPE_GET")
+    RETURN
+999 CALL ERRORS("SOLVER_LINEAR_ITERATIVE_LIBRARY_TYPE_GET",ERR,ERROR)    
+    CALL EXITS("SOLVER_LINEAR_ITERATIVE_LIBRARY_TYPE_GET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_LINEAR_ITERATIVE_LIBRARY_TYPE_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of library to use for an iterative linear solver.
+  SUBROUTINE SOLVER_LINEAR_ITERATIVE_LIBRARY_TYPE_SET(ITERATIVE_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(LINEAR_ITERATIVE_SOLVER_TYPE), POINTER :: ITERATIVE_SOLVER !<A pointer the iterative linear solver to get the library type for.
+    INTEGER(INTG), INTENT(IN) :: SOLVER_LIBRARY_TYPE !<The type of library for the iterative linear solver to set. \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("SOLVER_LINEAR_ITERATIVE_LIBRARY_TYPE_SET",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(ITERATIVE_SOLVER)) THEN
+      SELECT CASE(ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE)
+      CASE(SOLVER_ITERATIVE_RICHARDSON)
+        SELECT CASE(SOLVER_LIBRARY_TYPE)
+        CASE(SOLVER_CMISS_LIBRARY)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(SOLVER_PETSC_LIBRARY)
+          ITERATIVE_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
+        CASE DEFAULT
+          LOCAL_ERROR="The specified solver library type of "// &
+            & TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            & " is invalid for a Richardson iterative linear solver."
+        END SELECT
+      CASE(SOLVER_ITERATIVE_CHEBYCHEV)
+        SELECT CASE(SOLVER_LIBRARY_TYPE)
+        CASE(SOLVER_CMISS_LIBRARY)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(SOLVER_PETSC_LIBRARY)
+          ITERATIVE_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
+        CASE DEFAULT
+          LOCAL_ERROR="The specified solver library type of "// &
+            & TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            & " is invalid for a Chebychev iterative linear solver."
+        END SELECT
+      CASE(SOLVER_ITERATIVE_CONJUGATE_GRADIENT)
+        SELECT CASE(SOLVER_LIBRARY_TYPE)
+        CASE(SOLVER_CMISS_LIBRARY)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(SOLVER_PETSC_LIBRARY)
+          ITERATIVE_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
+        CASE DEFAULT
+          LOCAL_ERROR="The specified solver library type of "// &
+            & TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            & " is invalid for a Conjugate gradient iterative linear solver."
+        END SELECT
+      CASE(SOLVER_ITERATIVE_GMRES)
+        SELECT CASE(SOLVER_LIBRARY_TYPE)
+        CASE(SOLVER_CMISS_LIBRARY)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(SOLVER_PETSC_LIBRARY)
+          ITERATIVE_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
+        CASE DEFAULT
+          LOCAL_ERROR="The specified solver library type of "// &
+            & TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            & " is invalid for a GMRES iterative linear solver."
+        END SELECT
+      CASE(SOLVER_ITERATIVE_BiCGSTAB)
+        SELECT CASE(SOLVER_LIBRARY_TYPE)
+        CASE(SOLVER_CMISS_LIBRARY)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(SOLVER_PETSC_LIBRARY)
+          ITERATIVE_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
+        CASE DEFAULT
+          LOCAL_ERROR="The specified solver library type of "// &
+            & TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            & " is invalid for a BiCGSTAB iterative linear solver."
+        END SELECT
+      CASE(SOLVER_ITERATIVE_CONJGRAD_SQUARED)
+        SELECT CASE(SOLVER_LIBRARY_TYPE)
+        CASE(SOLVER_CMISS_LIBRARY)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(SOLVER_PETSC_LIBRARY)
+          ITERATIVE_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
+        CASE DEFAULT
+          LOCAL_ERROR="The specified solver library type of "// &
+            & TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            & " is invalid for a Conjugate gradient squared iterative linear solver."
+        END SELECT
+      CASE DEFAULT
+        LOCAL_ERROR="The iterative linear solver type of "// &
+          & TRIM(NUMBER_TO_VSTRING(ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Iterative linear solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("SOLVER_LINEAR_ITERATIVE_LIBRARY_TYPE_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_LINEAR_ITERATIVE_LIBRARY_TYPE_SET",ERR,ERROR)    
+    CALL EXITS("SOLVER_LINEAR_ITERATIVE_LIBRARY_TYPE_SET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_LINEAR_ITERATIVE_LIBRARY_TYPE_SET
 
   !
   !================================================================================================================================
@@ -6470,6 +7139,110 @@ CONTAINS
    
   END SUBROUTINE SOLVER_LINEAR_ITERATIVE_TYPE_SET
         
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the type of library to use for a linear solver.
+  SUBROUTINE SOLVER_LINEAR_LIBRARY_TYPE_GET(LINEAR_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer the linear solver to get the library type for.
+     INTEGER(INTG), INTENT(OUT) :: SOLVER_LIBRARY_TYPE !<On exit, the type of library used for the linear solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(LINEAR_DIRECT_SOLVER_TYPE), POINTER :: DIRECT_SOLVER
+    TYPE(LINEAR_ITERATIVE_SOLVER_TYPE), POINTER :: ITERATIVE_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_LINEAR_LIBRARY_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(LINEAR_SOLVER)) THEN
+      SELECT CASE(LINEAR_SOLVER%LINEAR_SOLVE_TYPE)
+      CASE(SOLVER_LINEAR_DIRECT_SOLVE_TYPE)
+        DIRECT_SOLVER=>LINEAR_SOLVER%DIRECT_SOLVER
+        IF(ASSOCIATED(DIRECT_SOLVER)) THEN
+          CALL SOLVER_LINEAR_DIRECT_LIBRARY_TYPE_GET(DIRECT_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("Linear solver direct solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE)
+        ITERATIVE_SOLVER=>LINEAR_SOLVER%ITERATIVE_SOLVER
+        IF(ASSOCIATED(ITERATIVE_SOLVER)) THEN
+          CALL SOLVER_LINEAR_ITERATIVE_LIBRARY_TYPE_GET(ITERATIVE_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("Linear solver iterative solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE DEFAULT
+        LOCAL_ERROR="The linear solver type of "//TRIM(NUMBER_TO_VSTRING(LINEAR_SOLVER%LINEAR_SOLVE_TYPE,"*",ERR,ERROR))// &
+          & " is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Linear solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_LINEAR_LIBRARY_TYPE_GET")
+    RETURN
+999 CALL ERRORS("SOLVER_LINEAR_LIBRARY_TYPE_GET",ERR,ERROR)    
+    CALL EXITS("SOLVER_LINEAR_LIBRARY_TYPE_GET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_LINEAR_LIBRARY_TYPE_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of library to use for a linear solver.
+  SUBROUTINE SOLVER_LINEAR_LIBRARY_TYPE_SET(LINEAR_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer the linear solver to get the library type for.
+     INTEGER(INTG), INTENT(IN) :: SOLVER_LIBRARY_TYPE !<The type of library for the linear solver to set. \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(LINEAR_DIRECT_SOLVER_TYPE), POINTER :: DIRECT_SOLVER
+    TYPE(LINEAR_ITERATIVE_SOLVER_TYPE), POINTER :: ITERATIVE_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_LINEAR_LIBRARY_TYPE_SET",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(LINEAR_SOLVER)) THEN
+      SELECT CASE(LINEAR_SOLVER%LINEAR_SOLVE_TYPE)
+      CASE(SOLVER_LINEAR_DIRECT_SOLVE_TYPE)
+        DIRECT_SOLVER=>LINEAR_SOLVER%DIRECT_SOLVER
+        IF(ASSOCIATED(DIRECT_SOLVER)) THEN
+          CALL SOLVER_LINEAR_DIRECT_LIBRARY_TYPE_SET(DIRECT_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("Linear solver direct solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE)
+        ITERATIVE_SOLVER=>LINEAR_SOLVER%ITERATIVE_SOLVER
+        IF(ASSOCIATED(ITERATIVE_SOLVER)) THEN
+          CALL SOLVER_LINEAR_ITERATIVE_LIBRARY_TYPE_SET(ITERATIVE_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("Linear solver iterative solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE DEFAULT
+        LOCAL_ERROR="The linear solver type of "//TRIM(NUMBER_TO_VSTRING(LINEAR_SOLVER%LINEAR_SOLVE_TYPE,"*",ERR,ERROR))// &
+          & " is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Linear solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("SOLVER_LINEAR_LIBRARY_TYPE_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_LINEAR_LIBRARY_TYPE_SET",ERR,ERROR)    
+    CALL EXITS("SOLVER_LINEAR_LIBRARY_TYPE_SET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_LINEAR_LIBRARY_TYPE_SET
+
   !
   !================================================================================================================================
   !
@@ -8401,6 +9174,128 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns the type of library to use for a Newton solver.
+  SUBROUTINE SOLVER_NEWTON_LIBRARY_TYPE_GET(NEWTON_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER !<A pointer the Newton solver to get the library type for.
+    INTEGER(INTG), INTENT(OUT) :: SOLVER_LIBRARY_TYPE !<On exit, the type of library used for the Newton solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER
+    TYPE(NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+ 
+    CALL ENTERS("SOLVER_NEWTON_LIBRARY_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(NEWTON_SOLVER)) THEN
+      SELECT CASE(NEWTON_SOLVER%NEWTON_SOLVE_TYPE)
+      CASE(SOLVER_NEWTON_LINESEARCH)
+        LINESEARCH_SOLVER=>NEWTON_SOLVER%LINESEARCH_SOLVER
+        IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
+          SOLVER_LIBRARY_TYPE=LINESEARCH_SOLVER%SOLVER_LIBRARY
+        ELSE
+          CALL FLAG_ERROR("Newton line search solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_NEWTON_TRUSTREGION)
+        TRUSTREGION_SOLVER=>NEWTON_SOLVER%TRUSTREGION_SOLVER
+        IF(ASSOCIATED(TRUSTREGION_SOLVER)) THEN
+          SOLVER_LIBRARY_TYPE=TRUSTREGION_SOLVER%SOLVER_LIBRARY
+        ELSE
+          CALL FLAG_ERROR("Newton trust region solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE DEFAULT
+        LOCAL_ERROR="The Newton solver type of "// &
+          & TRIM(NUMBER_TO_VSTRING(NEWTON_SOLVER%NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_NEWTON_LIBRARY_TYPE_GET")
+    RETURN
+999 CALL ERRORS("SOLVER_NEWTON_LIBRARY_TYPE_GET",ERR,ERROR)    
+    CALL EXITS("SOLVER_NEWTON_LIBRARY_TYPE_GET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_NEWTON_LIBRARY_TYPE_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of library to use for a Newton solver.
+  SUBROUTINE SOLVER_NEWTON_LIBRARY_TYPE_SET(NEWTON_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER !<A pointer the Newton solver to get the library type for.
+    INTEGER(INTG), INTENT(IN) :: SOLVER_LIBRARY_TYPE !<The type of library for the optimiser solver to set. \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER
+    TYPE(NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_NEWTON_LIBRARY_TYPE_SET",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(NEWTON_SOLVER)) THEN
+      SELECT CASE(NEWTON_SOLVER%NEWTON_SOLVE_TYPE)
+      CASE(SOLVER_NEWTON_LINESEARCH)
+        LINESEARCH_SOLVER=>NEWTON_SOLVER%LINESEARCH_SOLVER
+        IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
+          SELECT CASE(SOLVER_LIBRARY_TYPE)
+          CASE(SOLVER_CMISS_LIBRARY)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(SOLVER_PETSC_LIBRARY)
+            LINESEARCH_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
+          CASE DEFAULT
+            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+              & " is invalid for a Newton linesearch solver."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Newton line search solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_NEWTON_TRUSTREGION)
+        TRUSTREGION_SOLVER=>NEWTON_SOLVER%TRUSTREGION_SOLVER
+        IF(ASSOCIATED(TRUSTREGION_SOLVER)) THEN
+          SELECT CASE(SOLVER_LIBRARY_TYPE)
+          CASE(SOLVER_CMISS_LIBRARY)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(SOLVER_PETSC_LIBRARY)
+            TRUSTREGION_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
+          CASE DEFAULT
+            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+              & " is invalid for a Newton trustregion solver."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Newton trust region solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE DEFAULT
+        LOCAL_ERROR="The Newton solver type of "// &
+          & TRIM(NUMBER_TO_VSTRING(NEWTON_SOLVER%NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("SOLVER_NEWTON_LIBRARY_TYPE_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_NEWTON_LIBRARY_TYPE_SET",ERR,ERROR)    
+    CALL EXITS("SOLVER_NEWTON_LIBRARY_TYPE_SET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_NEWTON_LIBRARY_TYPE_SET
+
+  !
+  !================================================================================================================================
+  !
+
   !>Returns the linear solver associated with a Newton solver \todo should this be SOLVER_NONLINEAR_NEWTON_LINEAR_SOLVER_GET??? \see OPENCMISS::CMISSSolverNewtonLinearSolverGetSet
   SUBROUTINE SOLVER_NEWTON_LINEAR_SOLVER_GET(SOLVER,LINEAR_SOLVER,ERR,ERROR,*)
 
@@ -8712,9 +9607,15 @@ CONTAINS
                               CALL PETSC_MATFDCOLORINGCREATE(JACOBIAN_MATRIX%PETSC%MATRIX,LINESEARCH_SOLVER% &
                                 & JACOBIAN_ISCOLORING,LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
                               CALL PETSC_ISCOLORINGDESTROY(LINESEARCH_SOLVER%JACOBIAN_ISCOLORING,ERR,ERROR,*999)
+#if ( PETSC_VERSION_MAJOR == 3 )
+                              CALL PETSC_MATFDCOLORINGSETFUNCTION(LINESEARCH_SOLVER%JACOBIAN_FDCOLORING, &
+                                & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER, &
+                                & ERR,ERROR,*999)
+#else                              
                               CALL PETSC_MATFDCOLORINGSETFUNCTIONSNES(LINESEARCH_SOLVER%JACOBIAN_FDCOLORING, &
                                 & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER, &
                                 & ERR,ERROR,*999)
+#endif
                               CALL PETSC_MATFDCOLORINGSETFROMOPTIONS(LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
                               CALL PETSC_SNESSETJACOBIAN(LINESEARCH_SOLVER%SNES,JACOBIAN_MATRIX%PETSC%MATRIX, &
                                 & JACOBIAN_MATRIX%PETSC%MATRIX,SNESDefaultComputeJacobianColor,LINESEARCH_SOLVER% &
@@ -10270,6 +11171,102 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns the type of library to use for a nonlinear solver.
+  SUBROUTINE SOLVER_NONLINEAR_LIBRARY_TYPE_GET(NONLINEAR_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer the nonlinear solver to get the library type for.
+    INTEGER(INTG), INTENT(OUT) :: SOLVER_LIBRARY_TYPE !<On exit, the type of library used for the nonlinear solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_NONLINEAR_LIBRARY_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
+      SELECT CASE(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE)
+      CASE(SOLVER_NONLINEAR_NEWTON)
+        NEWTON_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER
+        IF(ASSOCIATED(NEWTON_SOLVER)) THEN
+          CALL SOLVER_NEWTON_LIBRARY_TYPE_GET(NEWTON_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(SOLVER_NONLINEAR_SQP)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="The nonlinear solver type of "// &
+          & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_NONLINEAR_LIBRARY_TYPE_GET")
+    RETURN
+999 CALL ERRORS("SOLVER_NONLINEAR_LIBRARY_TYPE_GET",ERR,ERROR)    
+    CALL EXITS("SOLVER_NONLINEAR_LIBRARY_TYPE_GET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_NONLINEAR_LIBRARY_TYPE_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of library to use for a nonlinear solver.
+  SUBROUTINE SOLVER_NONLINEAR_LIBRARY_TYPE_SET(NONLINEAR_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer the nonlinear solver to get the library type for.
+    INTEGER(INTG), INTENT(IN) :: SOLVER_LIBRARY_TYPE !<The type of library for the nonlinear solver to set. \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+ 
+    CALL ENTERS("SOLVER_NONLINEAR_LIBRARY_TYPE_SET",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
+      SELECT CASE(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE)
+      CASE(SOLVER_NONLINEAR_NEWTON)
+        NEWTON_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER
+        IF(ASSOCIATED(NEWTON_SOLVER)) THEN
+          CALL SOLVER_NEWTON_LIBRARY_TYPE_SET(NEWTON_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(SOLVER_NONLINEAR_SQP)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="The nonlinear solver type of "// &
+          & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_NONLINEAR_LIBRARY_TYPE_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_NONLINEAR_LIBRARY_TYPE_SET",ERR,ERROR)    
+    CALL EXITS("SOLVER_NONLINEAR_LIBRARY_TYPE_SET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_NONLINEAR_LIBRARY_TYPE_SET
+
+  !
+  !================================================================================================================================
+  !
+
   !>Monitors the nonlinear solve.
   SUBROUTINE SOLVER_NONLINEAR_MONITOR(NONLINEAR_SOLVER,ITS,NORM,ERR,ERROR,*)
 
@@ -10431,6 +11428,200 @@ CONTAINS
    
   END SUBROUTINE SOLVER_NONLINEAR_TYPE_SET
   
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the process of creating an optimiser solver 
+  SUBROUTINE SOLVER_OPTIMISER_CREATE_FINISH(OPTIMISER_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(OPTIMISER_SOLVER_TYPE), POINTER :: OPTIMISER_SOLVER !<A pointer to the optimiser solver to finish the creation of.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_OPTIMISER_CREATE_FINISH",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(OPTIMISER_SOLVER)) THEN
+      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("Optimiser solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("SOLVER_OPTIMISER_CREATE_FINISH")
+    RETURN
+999 CALL ERRORS("SOLVER_OPTIMISER_CREATE_FINISH",ERR,ERROR)    
+    CALL EXITS("SOLVER_OPTIMISER_CREATE_FINISH")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_OPTIMISER_CREATE_FINISH
+        
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise a optimiser solver.
+  SUBROUTINE SOLVER_OPTIMISER_FINALISE(OPTIMISER_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(OPTIMISER_SOLVER_TYPE), POINTER :: OPTIMISER_SOLVER !<A pointer the optimiser solver to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_OPTIMISER_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(OPTIMISER_SOLVER)) THEN        
+      DEALLOCATE(OPTIMISER_SOLVER)
+    ENDIF
+         
+    CALL EXITS("SOLVER_OPTIMISER_FINALISE")
+    RETURN
+999 CALL ERRORS("SOLVER_OPTIMISER_FINALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_OPTIMISER_FINALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_OPTIMISER_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise an optimiser solver for a solver.
+  SUBROUTINE SOLVER_OPTIMISER_INITIALISE(SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to initialise the optimiser solver for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+
+    CALL ENTERS("SOLVER_OPTIMISER_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(ASSOCIATED(SOLVER%OPTIMISER_SOLVER)) THEN
+        CALL FLAG_ERROR("Optimiser solver is already associated for this solver.",ERR,ERROR,*998)
+      ELSE
+        ALLOCATE(SOLVER%OPTIMISER_SOLVER,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver optimiser solver.",ERR,ERROR,*999)
+        SOLVER%OPTIMISER_SOLVER%SOLVER=>SOLVER
+        SOLVER%OPTIMISER_SOLVER%SOLVER_LIBRARY=SOLVER_TAO_LIBRARY
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+    ENDIF
+        
+    CALL EXITS("SOLVER_OPTIMISER_INITIALISE")
+    RETURN
+999 CALL SOLVER_OPTIMISER_FINALISE(SOLVER%OPTIMISER_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("SOLVER_OPTIMISER_INITIALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_OPTIMISER_INITIALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_OPTIMISER_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the type of library to use for an optimiser solver.
+  SUBROUTINE SOLVER_OPTIMISER_LIBRARY_TYPE_GET(OPTIMISER_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(OPTIMISER_SOLVER_TYPE), POINTER :: OPTIMISER_SOLVER !<A pointer the optimiser solver to get the library type for.
+    INTEGER(INTG), INTENT(OUT) :: SOLVER_LIBRARY_TYPE !<On exit, the type of library used for the optimiser solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("SOLVER_OPTIMISER_LIBRARY_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(OPTIMISER_SOLVER)) THEN
+      SOLVER_LIBRARY_TYPE=OPTIMISER_SOLVER%SOLVER_LIBRARY
+    ELSE
+      CALL FLAG_ERROR("Optimiser solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_OPTIMISER_LIBRARY_TYPE_GET")
+    RETURN
+999 CALL ERRORS("SOLVER_OPTIMISER_LIBRARY_TYPE_GET",ERR,ERROR)    
+    CALL EXITS("SOLVER_OPTIMISER_LIBRARY_TYPE_GET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_OPTIMISER_LIBRARY_TYPE_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of library to use for an optimisation solver.
+  SUBROUTINE SOLVER_OPTIMISER_LIBRARY_TYPE_SET(OPTIMISER_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(OPTIMISER_SOLVER_TYPE), POINTER :: OPTIMISER_SOLVER !<A pointer the optimiser solver to get the library type for.
+    INTEGER(INTG), INTENT(IN) :: SOLVER_LIBRARY_TYPE !<The type of library for the optimiser solver to set. \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_OPTIMISER_LIBRARY_TYPE_SET",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(OPTIMISER_SOLVER)) THEN
+      SELECT CASE(SOLVER_LIBRARY_TYPE)
+      CASE(SOLVER_CMISS_LIBRARY)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(SOLVER_TAO_LIBRARY)
+        OPTIMISER_SOLVER%SOLVER_LIBRARY=SOLVER_TAO_LIBRARY
+      CASE DEFAULT
+        LOCAL_ERROR="The specified solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+          & " is invalid for an optimiser solver."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Optimiser solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("SOLVER_OPTIMISER_LIBRARY_TYPE_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_OPTIMISER_LIBRARY_TYPE_SET",ERR,ERROR)    
+    CALL EXITS("SOLVER_OPTIMISER_LIBRARY_TYPE_SET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_OPTIMISER_LIBRARY_TYPE_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Solve an optimiser solver
+  SUBROUTINE SOLVER_OPTIMISER_SOLVE(OPTIMISER_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(OPTIMISER_SOLVER_TYPE), POINTER :: OPTIMISER_SOLVER !<A pointer the optimiser solver to solve
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_OPTIMISER_SOLVE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(OPTIMISER_SOLVER)) THEN        
+      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("Optimiser solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+         
+    CALL EXITS("SOLVER_OPTIMISER_SOLVE")
+    RETURN
+999 CALL ERRORS("SOLVER_OPTIMISER_SOLVE",ERR,ERROR)    
+    CALL EXITS("SOLVER_OPTIMISER_SOLVE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_OPTIMISER_SOLVE
+
   !
   !================================================================================================================================
   !
@@ -10743,6 +11934,8 @@ CONTAINS
               CALL SOLVER_DAE_INITIALISE(SOLVER,ERR,ERROR,*999)
             CASE(SOLVER_EIGENPROBLEM_TYPE)
               CALL SOLVER_EIGENPROBLEM_INITIALISE(SOLVER,ERR,ERROR,*999)
+            CASE(SOLVER_OPTIMISER_TYPE)
+              CALL SOLVER_OPTIMISER_INITIALISE(SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The specified solve type of "//TRIM(NUMBER_TO_VSTRING(SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -10759,6 +11952,8 @@ CONTAINS
               CALL SOLVER_DAE_FINALISE(SOLVER%DAE_SOLVER,ERR,ERROR,*999)
             CASE(SOLVER_EIGENPROBLEM_TYPE)
               CALL SOLVER_EIGENPROBLEM_FINALISE(SOLVER%EIGENPROBLEM_SOLVER,ERR,ERROR,*999)
+            CASE(SOLVER_OPTIMISER_TYPE)
+              CALL SOLVER_OPTIMISER_FINALISE(SOLVER%OPTIMISER_SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The solver solve type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -10785,6 +11980,8 @@ CONTAINS
       CALL SOLVER_DAE_FINALISE(SOLVER%DAE_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
     CASE(SOLVER_EIGENPROBLEM_TYPE)
       CALL SOLVER_EIGENPROBLEM_FINALISE(SOLVER%EIGENPROBLEM_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
+    CASE(SOLVER_OPTIMISER_TYPE)
+      CALL SOLVER_OPTIMISER_FINALISE(SOLVER%OPTIMISER_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
     END SELECT
 998 CALL ERRORS("SOLVER_TYPE_SET",ERR,ERROR)    
     CALL EXITS("SOLVER_TYPE_SET")

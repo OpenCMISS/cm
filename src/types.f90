@@ -924,7 +924,7 @@ MODULE TYPES
     TYPE(VARYING_STRING) :: VARIABLE_LABEL !<The lable for the variable
     TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field for this field variable.
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region for this field variable.
-    INTEGER(INTG) :: DIMENSION !<The dimension of the field. \see FIELD_ROUTINES_DimensionTypes
+    INTEGER(INTG) :: DIMENSION !<The dimension of the field variable. \see FIELD_ROUTINES_DimensionTypes
     INTEGER(INTG) :: DATA_TYPE !<The data type of the field variable.  \see FIELD_ROUTINES_DataTypes,FIELD_ROUTINES
     INTEGER(INTG) :: DOF_ORDER_TYPE !<The order of the DOF's in the field variable \see FIELD_ROUTINES_DOFOrderTypes,FIELD_ROUTINES
     INTEGER(INTG) :: MAX_NUMBER_OF_INTERPOLATION_PARAMETERS !<The maximum number of interpolation parameters in an element for a field variable. 
@@ -1529,7 +1529,7 @@ MODULE TYPES
     REAL(DP) :: CURRENT_TIME !<The current time value for the dynamic solver.
     REAL(DP) :: TIME_INCREMENT !<The time increment for the dynamic solver to solver for.
     TYPE(SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linked linear solver
-    TYPE(SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer to the linked linear solver
+    TYPE(SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer to the linked nonlinear solver
   END TYPE DYNAMIC_SOLVER_TYPE
   
   !>Contains information for an eigenproblem solver
@@ -1537,6 +1537,12 @@ MODULE TYPES
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the eigenproblem solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
   END TYPE EIGENPROBLEM_SOLVER_TYPE
+  
+  !>Contains information for an optimiser solver
+  TYPE OPTIMISER_SOLVER_TYPE
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the optimiser solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+  END TYPE OPTIMISER_SOLVER_TYPE
 
   !>Contains information for an forward Euler differential-algebraic equation solver
   TYPE FORWARD_EULER_DAE_SOLVER_TYPE
@@ -1617,6 +1623,7 @@ MODULE TYPES
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linear solver
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the linear solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
     INTEGER(INTG) :: DIRECT_SOLVER_TYPE !<The type of direct linear solver
+    TYPE(PETSC_PC_TYPE) :: PC !<The PETSc preconditioner object
     TYPE(PETSC_KSP_TYPE) :: KSP !<The PETSc solver object
   END TYPE LINEAR_DIRECT_SOLVER_TYPE
 
@@ -1708,6 +1715,7 @@ MODULE TYPES
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER !<A pointer to the dynamic solver information
     TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer to the differential-algebraic equation solver information
     TYPE(EIGENPROBLEM_SOLVER_TYPE), POINTER :: EIGENPROBLEM_SOLVER !<A pointer to the eigenproblem solver information
+    TYPE(OPTIMISER_SOLVER_TYPE), POINTER :: OPTIMISER_SOLVER !<A pointer to the optimiser solver information
 
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver equations
 
