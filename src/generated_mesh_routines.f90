@@ -72,6 +72,15 @@ MODULE GENERATED_MESH_ROUTINES
   INTEGER(INTG), PARAMETER :: GENERATED_MESH_FRACTAL_TREE_MESH_TYPE=3 !<A fractal tree generated mesh. \see GENERATED_MESH_ROUTINES_GeneratedMeshTypes,GENERATED_MESH_ROUTINES
   INTEGER(INTG), PARAMETER :: GENERATED_MESH_CYLINDER_MESH_TYPE=4 !<A cylinder generated mesh. \see GENERATED_MESH_ROUTINES_GeneratedMeshTypes,GENERATED_MESH_ROUTINES
   !>@}
+
+  !> \addtogroup GENERATED_MESH_ROUTINES_GeneratedMeshCylinderSurfaces GENERATED_MESH_ROUTINES::GeneratedMeshCylinderSurfaces
+  !> \brief Generated mesh cylinder type surface types.
+  !>@{
+  INTEGER(INTG), PARAMETER :: GENERATED_MESH_CYLINDER_INNER_SURFACE=1  !<Inner surface of the cylinder. \see GENERATED_MESH_ROUTINES_GeneratedMeshCylinderSurfaces,GENERATED_MESH_ROUTINES
+  INTEGER(INTG), PARAMETER :: GENERATED_MESH_CYLINDER_OUTER_SURFACE=2  !<Outer surface of the cylinder. \see GENERATED_MESH_ROUTINES_GeneratedMeshCylinderSurfaces,GENERATED_MESH_ROUTINES
+  INTEGER(INTG), PARAMETER :: GENERATED_MESH_CYLINDER_TOP_SURFACE=3    !<Top surface of the cylinder. \see GENERATED_MESH_ROUTINES_GeneratedMeshCylinderSurfaces,GENERATED_MESH_ROUTINES
+  INTEGER(INTG), PARAMETER :: GENERATED_MESH_CYLINDER_BOTTOM_SURFACE=4 !<Bottom surface of the cylinder. \see GENERATED_MESH_ROUTINES_GeneratedMeshCylinderSurfaces,GENERATED_MESH_ROUTINES
+  !>@}
   
   !Module types
 
@@ -80,8 +89,11 @@ MODULE GENERATED_MESH_ROUTINES
 
   !Interfaces
   
-  PUBLIC GENERATED_MESH_REGULAR_MESH_TYPE,GENERATED_MESH_POLAR_MESH_TYPE,GENERATED_MESH_FRACTAL_TREE_MESH_TYPE, &
-       & GENERATED_MESH_CYLINDER_MESH_TYPE
+  PUBLIC GENERATED_MESH_REGULAR_MESH_TYPE,GENERATED_MESH_POLAR_MESH_TYPE
+  PUBLIC GENERATED_MESH_FRACTAL_TREE_MESH_TYPE,GENERATED_MESH_CYLINDER_MESH_TYPE
+
+  public GENERATED_MESH_CYLINDER_INNER_SURFACE,GENERATED_MESH_CYLINDER_OUTER_SURFACE
+  public GENERATED_MESH_CYLINDER_TOP_SURFACE,GENERATED_MESH_CYLINDER_BOTTOM_SURFACE
   
   PUBLIC GENERATED_MESHES_INITIALISE,GENERATED_MESHES_FINALISE
 
@@ -96,6 +108,8 @@ MODULE GENERATED_MESH_ROUTINES
     & GENERATED_MESH_TYPE_GET
 
   PUBLIC GENERATED_MESH_USER_NUMBER_FIND
+
+  PUBLIC GENERATED_MESH_CYLINDER_SURFACES_GET
   
 CONTAINS
   
@@ -1713,7 +1727,8 @@ CONTAINS
         IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==3) THEN
           CALL FIELD_SCALING_TYPE_GET(FIELD,SCALING_TYPE,ERR,ERROR,*999)
           IF(SCALING_TYPE/=FIELD_UNIT_SCALING) &
-          & CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"If the cyinder looks wonky, set field scaling to unit scaling.",ERR,ERROR,*999)
+          & CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"  Note: If the cyinder looks wonky, set field scaling to&
+          & unit scaling type.",ERR,ERROR,*999)
           NUMBER_OF_PLANAR_NODES=TOTAL_NUMBER_NODES_XI(1)*TOTAL_NUMBER_NODES_XI(2)
           DO component_idx=1,3
             INTERPOLATION_TYPES(component_idx)=FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE
@@ -1789,7 +1804,7 @@ CONTAINS
                     ! assign derivative
                     ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(nk,np)
                     CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                        & ny,DERIV,ERR,ERROR,*999)
+                         & ny,DERIV,ERR,ERROR,*999)
                   ENDDO !nk
                 ENDIF !derivatives
               ENDDO !component_idx
@@ -1830,7 +1845,94 @@ CONTAINS
   !================================================================================================================================
   ! 
 
-  !>Calculates the mesh topology information for a given cylinder (Not to be called directly)
+  !>Provides an easy way to grab surfaces for boundary condition assignment
+  SUBROUTINE GENERATED_MESH_CYLINDER_SURFACES_GET(CYLINDER_MESH,SURFACE_TYPE,ELEMENTS,NODES,ERR,ERROR,*)
+    ! Argument variables
+    TYPE(GENERATED_MESH_CYLINDER_TYPE), POINTER :: CYLINDER_MESH !<A pointer to the cylinder mesh object
+    INTEGER(INTG), INTENT(IN) :: SURFACE_TYPE !<A constant identifying the type of surface to get \see GENERATED_MESH_ROUTINES_GeneratedMeshCylinderSurfaces,GENERATED_MESH_ROUTINES
+    INTEGER(INTG), ALLOCATABLE, INTENT(OUT) :: ELEMENTS(:,:) !<On exit, contains the list of elements owning the surface (global numbers?)
+    INTEGER(INTG), ALLOCATABLE, INTENT(OUT) :: NODES(:,:) !<On exit, contains the list of nodes belonging to the surface
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    ! Local variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS
+    INTEGER(INTG),ALLOCATABLE :: NIDX(:,:,:),EIDX(:,:,:)
+    INTEGER(INTG) :: NUMBER_OF_ELEMENTS_XI(3) !Specified number of elements in each xi direction
+    INTEGER(INTG) :: NUMBER_OF_NODES_XI(3) ! Number of nodes per element in each xi direction (basis property)
+    INTEGER(INTG) :: total_number_of_nodes,total_number_of_elements
+    REAL(DP) :: delta(3),deltai(3)
+    
+    CALL ENTERS("GENERATED_MESH_CYLINDER_SURFACES_GET",ERR,ERROR,*999)
+
+    ! let's go
+    IF(ALLOCATED(CYLINDER_MESH%NUMBER_OF_ELEMENTS_XI)) THEN
+      NUMBER_OF_ELEMENTS_XI=CYLINDER_MESH%NUMBER_OF_ELEMENTS_XI
+      IF(ASSOCIATED(CYLINDER_MESH%BASIS)) THEN
+        BASIS=>CYLINDER_MESH%BASIS
+        IF(.NOT.ALLOCATED(ELEMENTS)) THEN
+          IF(.NOT.ALLOCATED(NODES)) THEN
+            NUMBER_OF_NODES_XI=BASIS%NUMBER_OF_NODES_XI
+            ! build indices first (some of these are dummy arguments)
+            CALL GENERATED_MESH_CYLINDER_BUILD_NODE_INDICES(NUMBER_OF_ELEMENTS_XI,NUMBER_OF_NODES_XI, &
+              & cylinder_mesh%cylinder_extent,total_number_of_nodes,total_number_of_elements,NIDX,EIDX, &
+              & delta,deltai,ERR,ERROR,*999)
+            SELECT CASE(SURFACE_TYPE)
+            CASE(GENERATED_MESH_CYLINDER_INNER_SURFACE)
+              ALLOCATE(NODES(SIZE(NIDX,2),SIZE(NIDX,3)),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array",ERR,ERROR,*999)
+              ALLOCATE(ELEMENTS(SIZE(EIDX,2),SIZE(EIDX,3)),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ELEMENTS array",ERR,ERROR,*999)
+              NODES=NIDX(1,:,:)
+              ELEMENTS=EIDX(1,:,:)
+            CASE(GENERATED_MESH_CYLINDER_OUTER_SURFACE)
+              ALLOCATE(NODES(SIZE(NIDX,2),SIZE(NIDX,3)),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array",ERR,ERROR,*999)
+              ALLOCATE(ELEMENTS(SIZE(EIDX,2),SIZE(EIDX,3)),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ELEMENTS array",ERR,ERROR,*999)
+              NODES=NIDX(SIZE(NIDX,1),:,:)
+              ELEMENTS=EIDX(SIZE(EIDX,1),:,:)
+            CASE(GENERATED_MESH_CYLINDER_TOP_SURFACE)
+              ALLOCATE(NODES(SIZE(NIDX,1),SIZE(NIDX,2)),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array",ERR,ERROR,*999)
+              ALLOCATE(ELEMENTS(SIZE(EIDX,1),SIZE(EIDX,2)),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ELEMENTS array",ERR,ERROR,*999)
+              NODES=NIDX(:,:,SIZE(NIDX,3))
+              ELEMENTS=EIDX(:,:,SIZE(EIDX,3))
+            CASE(GENERATED_MESH_CYLINDER_BOTTOM_SURFACE)
+              ALLOCATE(NODES(SIZE(NIDX,1),SIZE(NIDX,2)),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array",ERR,ERROR,*999)
+              ALLOCATE(ELEMENTS(SIZE(EIDX,1),SIZE(EIDX,2)),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ELEMENTS array",ERR,ERROR,*999)
+              NODES=NIDX(:,:,1)
+              ELEMENTS=EIDX(:,:,1)
+            CASE DEFAULT
+              CALL FLAG_ERROR("Specified surface type is invalid.",ERR,ERROR,*999)
+            END SELECT
+          ELSE
+            CALL FLAG_ERROR("Output NODES array is already allocated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Output ELEMENTS array is already allocated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Cylinder mesh object does not have a basis associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Cylinder mesh object does not have number of elements property specified.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("GENERATED_MESH_CYLINDER_SURFACES_GET")
+    RETURN
+999 CALL ERRORS("GENERATED_MESH_CYLINDER_SURFACES_GET",ERR,ERROR)
+    CALL EXITS("GENERATED_MESH_CYLINDER_SURFACES_GET")
+    RETURN 1  
+  END SUBROUTINE GENERATED_MESH_CYLINDER_SURFACES_GET
+
+  !
+  !================================================================================================================================
+  ! 
+
+  !>Calculates the mesh topology information for a given cylinder (Not to be called by user)
   SUBROUTINE GENERATED_MESH_CYLINDER_BUILD_NODE_INDICES(NUMBER_ELEMENTS_XI,NUMBER_OF_NODES_XI,CYLINDER_EXTENT, &
     & TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_ELEMENTS,NIDX,EIDX,DELTA,DELTAi,ERR,ERROR,*)
     ! Argument variables
@@ -1849,7 +1951,6 @@ CONTAINS
     ! Local variables
     INTEGER(INTG) :: xi_idx,ne1,ne2,ne3,nn1,nn2,nn3,NN,NE
     INTEGER(INTG) :: TOTAL_NUMBER_NODES_XI(3) ! total number of nodes in each xi direction
-
     
     CALL ENTERS("GENERATED_MESH_CYLINDER_BUILD_NODE_INDICES",ERR,ERROR,*999)
     
