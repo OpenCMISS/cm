@@ -45,4 +45,5 @@ tail -f [slave dir]/twistd.log
 - It could contain one build master(machine to trigger the builds on different build slaves and deliver information about the build results through protocols like HTTP, mail)
 - It could contain several build slaves (obtain codes from svn repository and do the build under build master's instructions).
 - Build master and build slaves can be on the same machine. 
+- The svn update for buildbot allows source code update from other branches or previous revisions. To do that, in the svn builder page, either enter the branch path from cm directory(exclusive) in the "Branch to build" text field or enter the revision number in the "Revision to build" text field.
 */

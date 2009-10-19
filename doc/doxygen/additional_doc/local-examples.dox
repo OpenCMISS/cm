@@ -20,5 +20,5 @@
    - path: Mandatory. The example path from examples folder.
    - nodes: Mandatory. Number of computational nodes.
    - args: Optional. Arguments for the executables separated by space.
-   - input: Optional. Inputs for the executables separated by new line (\n). 
+   - input: Optional. Inputs for the executables separated by new line (\\n). 
 */
