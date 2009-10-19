@@ -65,10 +65,6 @@ MODULE CMISS_PETSC
 #include "include/finclude/petscvec.h"
 #include "include/finclude/petscviewer.h"
 
-#if ( PETSC_VERSION_MAJOR ==2)
-#define MatSolverPackage INTEGER
-#endif
-
   !Module parameters
 
   !Insert mode types
@@ -592,12 +588,14 @@ MODULE CMISS_PETSC
       Mat A
       PetscInt ierr
     END SUBROUTINE MatZeroEntries
-    
+
+#if ( PETSC_MAJOR_VERSION == 3 ) 
     SUBROUTINE PCFactorSetMatSolverPackage(pc,solverpackage,ierr)
       PC pc
       MatSolverPackage solverpackage
       PetscInt ierr
     END SUBROUTINE PCFactorSetMatSolverPackage
+#endif
     
     SUBROUTINE PCSetType(pc,method,ierr)
       PC pc
@@ -1096,8 +1094,12 @@ MODULE CMISS_PETSC
     & PETSC_MAT_SOLVER_PETSC
 #endif
   
-  PUBLIC PETSC_PCINITIALISE,PETSC_PCFINALISE,PETSC_PCSETTYPE,PETSC_PCFACTORSETMATSOLVERPACKAGE
+  PUBLIC PETSC_PCINITIALISE,PETSC_PCFINALISE,PETSC_PCSETTYPE
 
+#if ( PETSC_VERSION_MAJOR == 3 )
+  PUBLIC PETSC_PCFACTORSETMATSOLVERPACKAGE
+#endif
+  
   PUBLIC PETSC_TS_EULER,PETSC_TS_BEULER,PETSC_TS_PSEUDO,PETSC_TS_SUNDIALS,PETSC_TS_CRANK_NICHOLSON,PETSC_TS_RUNGE_KUTTA
 
   PUBLIC PETSC_TS_LINEAR,PETSC_TS_NONLINEAR
@@ -3197,6 +3199,7 @@ CONTAINS
   !================================================================================================================================
   !
 
+#if ( PETSC_VERSION_MAJOR == 3 )
   !>Buffer routine to the PETSc PCFactoSetMatSolverPackage routine.
   SUBROUTINE PETSC_PCFACTORSETMATSOLVERPACKAGE(PC_,SOLVER_PACKAGE,ERR,ERROR,*)
 
@@ -3209,9 +3212,7 @@ CONTAINS
 
     CALL ENTERS("PETSC_PCFACTORSETMATSOLVERPACKAGE",ERR,ERROR,*999)
 
-#if ( PETSC_VERSION_MAJOR == 3 )
     CALL PCFactorSetMatSolverPackage(PC_%PC_,SOLVER_PACKAGE,ERR)
-#endif
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
@@ -3225,6 +3226,7 @@ CONTAINS
     CALL EXITS("PETSC_PCFACTORSETMATSOLVERPACKAGE")
     RETURN 1
   END SUBROUTINE PETSC_PCFACTORSETMATSOLVERPACKAGE
+#ENDIF
     
   !
   !================================================================================================================================
