@@ -1,4 +1,4 @@
-!> \file
+!> \file 
 !> $Id: Stokes_equations_routines.f90 372 2009-04-20
 !> \author Sebastian Krittian
 !> \brief This module handles all Stokes fluid routines.
@@ -81,7 +81,7 @@ MODULE STOKES_EQUATIONS_ROUTINES
 
   PUBLIC  STOKES_EQUATION_FINITE_ELEMENT_CALCULATE
   PUBLIC  STOKES_EQUATION_POST_SOLVE
-  PUBLIC  STOKES_EQUATION_PRE_SOLVE_SET
+  PUBLIC  STOKES_EQUATION_PRE_SOLVE
 
 
 
@@ -109,7 +109,8 @@ CONTAINS
 
       CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE, &
          & EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE, &
-         & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE)        
+         & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE, &
+         & EQUATIONS_SET_ALE_STOKES_SUBTYPE)        
 
         SELECT CASE(SOLUTION_METHOD)
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
@@ -166,6 +167,10 @@ CONTAINS
             EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
             EQUATIONS_SET%TYPE=EQUATIONS_SET_STOKES_EQUATION_TYPE
             EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE
+      CASE(EQUATIONS_SET_ALE_STOKES_SUBTYPE)
+            EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
+            EQUATIONS_SET%TYPE=EQUATIONS_SET_STOKES_EQUATION_TYPE
+            EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_ALE_STOKES_SUBTYPE
       CASE(EQUATIONS_SET_OPTIMISED_STOKES_SUBTYPE)
             CALL FLAG_ERROR("Not implemented yet.",ERR,ERROR,*999)
       CASE DEFAULT
@@ -197,7 +202,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: GEOMETRIC_SCALING_TYPE
+    INTEGER(INTG) :: GEOMETRIC_SCALING_TYPE,GEOMETRIC_MESH_COMPONENT
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(DECOMPOSITION_TYPE), POINTER :: GEOMETRIC_DECOMPOSITION
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
@@ -206,6 +211,7 @@ CONTAINS
     TYPE(EQUATIONS_SET_MATERIALS_TYPE), POINTER :: EQUATIONS_MATERIALS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG):: DEPENDENT_FIELD_NUMBER_OF_VARIABLES,DEPENDENT_FIELD_NUMBER_OF_COMPONENTS
+    INTEGER(INTG):: INDEPENDENT_FIELD_NUMBER_OF_VARIABLES,INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS
     INTEGER(INTG):: NUMBER_OF_DIMENSIONS,GEOMETRIC_COMPONENT_NUMBER
     INTEGER(INTG):: MATERIAL_FIELD_NUMBER_OF_VARIABLES,MATERIAL_FIELD_NUMBER_OF_COMPONENTS,I
 
@@ -227,7 +233,8 @@ CONTAINS
   
         CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE, &
           & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE, &
-          & EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE)
+          & EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE, &
+          & EQUATIONS_SET_ALE_STOKES_SUBTYPE)
   
           SELECT CASE(EQUATIONS_SET_SETUP%SETUP_TYPE)
   
@@ -238,7 +245,7 @@ CONTAINS
             CASE(EQUATIONS_SET_SETUP_INITIAL_TYPE)
               SELECT CASE(EQUATIONS_SET%SUBTYPE)
                 CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE, &
-                  & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE)
+                  & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE,EQUATIONS_SET_ALE_STOKES_SUBTYPE)
                 SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
                     CASE(EQUATIONS_SET_SETUP_START_ACTION)
                       CALL STOKES_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET ,&
@@ -259,14 +266,14 @@ CONTAINS
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
   
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !!! GEOMETRY FIELD !!!
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
             CASE(EQUATIONS_SET_SETUP_GEOMETRY_TYPE)
               SELECT CASE(EQUATIONS_SET%SUBTYPE)
                 CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE, &
-                  & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE)
+                  & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE,EQUATIONS_SET_ALE_STOKES_SUBTYPE)
                     !Do nothing???
                 CASE DEFAULT
                   LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
@@ -280,9 +287,10 @@ CONTAINS
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
             CASE(EQUATIONS_SET_SETUP_DEPENDENT_TYPE)
+
               SELECT CASE(EQUATIONS_SET%SUBTYPE)
               CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE, &
-                  & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE)
+                  & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE,EQUATIONS_SET_ALE_STOKES_SUBTYPE)
                   SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
                    !Set start action
                     CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -302,49 +310,43 @@ CONTAINS
                         !apply decomposition rule found on new created field
                         CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                           & GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
-                      !point new field to geometric field
+                        !point new field to geometric field
                         CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,EQUATIONS_SET%GEOMETRY% &
                           & GEOMETRIC_FIELD,ERR,ERROR,*999)
                         !set number of variables to 2 (1 for U and one for DELUDELN)
                         DEPENDENT_FIELD_NUMBER_OF_VARIABLES=2
                         CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
-                        & DEPENDENT_FIELD_NUMBER_OF_VARIABLES,ERR,ERROR,*999)
+                          & DEPENDENT_FIELD_NUMBER_OF_VARIABLES,ERR,ERROR,*999)
                         CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,(/FIELD_U_VARIABLE_TYPE, &
-                        & FIELD_DELUDELN_VARIABLE_TYPE/),ERR,ERROR,*999)
+                          & FIELD_DELUDELN_VARIABLE_TYPE/),ERR,ERROR,*999)
                         CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                          & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
                         CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
-                        & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                          & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
                         CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & FIELD_DP_TYPE,ERR,ERROR,*999)
+                          & FIELD_DP_TYPE,ERR,ERROR,*999)
                         CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
-                        & FIELD_DP_TYPE,ERR,ERROR,*999)
+                          & FIELD_DP_TYPE,ERR,ERROR,*999)
                         CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                          & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
        
                         !calculate number of components with one component for each dimension and one for pressure
-                      DEPENDENT_FIELD_NUMBER_OF_COMPONENTS=NUMBER_OF_DIMENSIONS+1
+                        DEPENDENT_FIELD_NUMBER_OF_COMPONENTS=NUMBER_OF_DIMENSIONS+1
                         CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
                           & FIELD_U_VARIABLE_TYPE,DEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                         CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                           & FIELD_DELUDELN_VARIABLE_TYPE,DEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
-  
-                        !set first i components to velocity field (2) and the (i+1)th component to the pressure field (3)
+
+
+                        CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                          & 1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                        !Default to the geometric interpolation setup
                         DO I=1,DEPENDENT_FIELD_NUMBER_OF_COMPONENTS
-                          IF(I<DEPENDENT_FIELD_NUMBER_OF_COMPONENTS) THEN
-                            ! set velocity components
-                            CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                              & I,2,ERR,ERROR,*999)
-                            CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
-                              & FIELD_DELUDELN_VARIABLE_TYPE,I,2,ERR,ERROR,*999)
-                          ELSE
-                            ! set pressure component
-                            CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
-                              & FIELD_U_VARIABLE_TYPE,I,3,ERR,ERROR,*999)
-                            CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
-                              & FIELD_DELUDELN_VARIABLE_TYPE,I,3,ERR,ERROR,*999)
-                          END IF
-                      END DO
+                          CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
+                            & FIELD_U_VARIABLE_TYPE,I,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                          CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
+                            & FIELD_DELUDELN_VARIABLE_TYPE,I,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                        END DO
   
                         SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
                           !Specify fem solution method
@@ -365,7 +367,7 @@ CONTAINS
                               & //TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// " is invalid."
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT     
-                    ELSE
+                      ELSE
                         !Check the user specified field
                         CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
                         CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DEPENDENT_TYPE,ERR,ERROR,*999)
@@ -386,7 +388,7 @@ CONTAINS
                         DEPENDENT_FIELD_NUMBER_OF_COMPONENTS=NUMBER_OF_DIMENSIONS+1
                         CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, &
                           & DEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
-                      CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
+                        CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
                           & DEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
   
                         SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
@@ -420,7 +422,130 @@ CONTAINS
                     & " is invalid for a Stokes equation."
                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
+
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          !!! INDEPENDENT FIELD FOR ALE!!!
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
+            CASE(EQUATIONS_SET_SETUP_INDEPENDENT_TYPE)
+
+              SELECT CASE(EQUATIONS_SET%SUBTYPE)
+              CASE(EQUATIONS_SET_ALE_STOKES_SUBTYPE)
+                  SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
+                   !Set start action
+                    CASE(EQUATIONS_SET_SETUP_START_ACTION)
+                      IF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED) THEN
+                        !Create the auto created independent field
+                        !start field creation with name 'INDEPENDENT_FIELD'
+                        CALL FIELD_CREATE_START(EQUATIONS_SET_SETUP%FIELD_USER_NUMBER,EQUATIONS_SET%REGION, &
+                          & EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,ERR,ERROR,*999)
+                        !start creation of a new field
+                        CALL FIELD_TYPE_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+                        !define new created field to be independent
+                        CALL FIELD_DEPENDENT_TYPE_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                          & FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
+                        !look for decomposition rule already defined
+                        CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION, &
+                          & ERR,ERROR,*999)
+                        !apply decomposition rule found on new created field
+                        CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                          & GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
+                        !point new field to geometric field
+                        CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,EQUATIONS_SET% & 
+                          & GEOMETRY%GEOMETRIC_FIELD,ERR,ERROR,*999)
+                        !set number of variables to 1 (1 for U)
+                        INDEPENDENT_FIELD_NUMBER_OF_VARIABLES=1
+                        CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                        & INDEPENDENT_FIELD_NUMBER_OF_VARIABLES,ERR,ERROR,*999)
+                        CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, & 
+                          & (/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
+                        CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                        CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_DP_TYPE,ERR,ERROR,*999)
+                        CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                        !calculate number of components with one component for each dimension
+                        INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS=NUMBER_OF_DIMENSIONS
+                        CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, & 
+                          & FIELD_U_VARIABLE_TYPE,INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+                        CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                          & 1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                        !Default to the geometric interpolation setup
+                        DO I=1,INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS
+                          CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, & 
+                            & FIELD_U_VARIABLE_TYPE,I,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                        END DO
+
+!                         SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+!                           !Specify fem solution method
+!                           CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+!                             DO I=1,INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS
+!                               CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+!                               & FIELD_U_VARIABLE_TYPE,I,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+!                             END DO
+!                             CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE, &
+!                               & ERR,ERROR,*999)
+!                             CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE, &
+!                               & ERR,ERROR,*999)
+!                             !Other solutions not defined yet
+!                           CASE DEFAULT
+!                             LOCAL_ERROR="The solution method of " &
+!                               & //TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// " is invalid."
+!                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+!                         END SELECT 
+
+                      ELSE
+                        !Check the user specified field
+                        CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+                        CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
+                        CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,1,ERR,ERROR,*999)
+                        CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
+                        CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
+                          & ERR,ERROR,*999)
+                        CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
+                        CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+   
+                        !calculate number of components with one component for each dimension and one for pressure
+                        INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS=NUMBER_OF_DIMENSIONS+1
+                        CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+   
+!                         SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+!                           CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+!                             CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1, &
+!                               & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+!                             CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
+!                               & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+!                           CASE DEFAULT
+!                             LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD, &
+!                               &"*",ERR,ERROR))//" is invalid."
+!                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+!                         END SELECT
+
+                      ENDIF    
+ 
+                    !Specify finish action
+                    CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
+                      IF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED) THEN
+                        CALL FIELD_CREATE_FINISH(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,ERR,ERROR,*999)
+                      ENDIF
+        
+                    CASE DEFAULT
+                      LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+                      & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+                      & " is invalid for a standard Stokes fluid"
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
+                CASE DEFAULT
+                  LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+                    & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+                    & " is invalid for a Stokes equation."
+                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+
+
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !!! MATERIALS FIELD !!!
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -428,7 +553,7 @@ CONTAINS
             CASE(EQUATIONS_SET_SETUP_MATERIALS_TYPE)
               SELECT CASE(EQUATIONS_SET%SUBTYPE)
                 CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE, &
-                & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE)
+                & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE,EQUATIONS_SET_ALE_STOKES_SUBTYPE)
                   !variable X with has Y components, here Y represents viscosity only
                   MATERIAL_FIELD_NUMBER_OF_VARIABLES=1!X
                   MATERIAL_FIELD_NUMBER_OF_COMPONENTS=2!Y
@@ -449,7 +574,7 @@ CONTAINS
                           CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION, & 
                             & ERR,ERROR,*999)
                           !apply decomposition rule found on new created field
-                        CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(EQUATIONS_SET%MATERIALS%MATERIALS_FIELD, &
+                          CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(EQUATIONS_SET%MATERIALS%MATERIALS_FIELD, &
                             & GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
                           !point new field to geometric field
                           CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,EQUATIONS_SET%GEOMETRY% &
@@ -530,7 +655,7 @@ CONTAINS
             CASE(EQUATIONS_SET_SETUP_SOURCE_TYPE)
               SELECT CASE(EQUATIONS_SET%SUBTYPE)
                 CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE, &
-                  & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE)
+                  & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE,EQUATIONS_SET_ALE_STOKES_SUBTYPE)
                   !TO DO: INCLUDE GRAVITY AS SOURCE TYPE
                   SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
                   CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -617,7 +742,7 @@ CONTAINS
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
               
-                CASE(EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE)
+                CASE(EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE,EQUATIONS_SET_ALE_STOKES_SUBTYPE)
                 SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
                     CASE(EQUATIONS_SET_SETUP_START_ACTION)
                       EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
@@ -701,7 +826,7 @@ CONTAINS
             CASE(EQUATIONS_SET_SETUP_BOUNDARY_CONDITIONS_TYPE)
               SELECT CASE(EQUATIONS_SET%SUBTYPE)
                 CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE, &
-                  & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE)
+                  & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE,EQUATIONS_SET_ALE_STOKES_SUBTYPE)
   
                 SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
                     CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -794,6 +919,10 @@ CONTAINS
           PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
           PROBLEM%TYPE=PROBLEM_STOKES_EQUATION_TYPE
           PROBLEM%SUBTYPE=PROBLEM_TRANSIENT_STOKES_SUBTYPE
+        CASE(PROBLEM_ALE_STOKES_SUBTYPE)
+          PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
+          PROBLEM%TYPE=PROBLEM_STOKES_EQUATION_TYPE
+          PROBLEM%SUBTYPE=PROBLEM_ALE_STOKES_SUBTYPE
         CASE(PROBLEM_OPTIMISED_STOKES_SUBTYPE)
           CALL FLAG_ERROR("Not implemented yet.",ERR,ERROR,*999)
         CASE DEFAULT
@@ -827,8 +956,8 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP,CONTROL_LOOP_ROOT
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER, MESH_SOLVER
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS,MESH_SOLVER_EQUATIONS
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
 
 
@@ -836,7 +965,9 @@ CONTAINS
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(SOLVER)
+    NULLIFY(MESH_SOLVER)
     NULLIFY(SOLVER_EQUATIONS)
+    NULLIFY(MESH_SOLVER_EQUATIONS)
     NULLIFY(SOLVERS)
     IF(ASSOCIATED(PROBLEM)) THEN
       SELECT CASE(PROBLEM%SUBTYPE)
@@ -1037,6 +1168,125 @@ CONTAINS
           END SELECT
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!! PROBLEM_ALE_STOKES_SUBTYPE !!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        CASE(PROBLEM_ALE_STOKES_SUBTYPE)
+          SELECT CASE(PROBLEM_SETUP%SETUP_TYPE)
+            CASE(PROBLEM_SETUP_INITIAL_TYPE)
+              SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
+                CASE(PROBLEM_SETUP_START_ACTION)
+                  !Do nothing????
+                CASE(PROBLEM_SETUP_FINISH_ACTION)
+                  !Do nothing????
+                CASE DEFAULT
+                  LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+                    & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+                    & " is invalid for a transient Stokes fluid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+            CASE(PROBLEM_SETUP_CONTROL_TYPE)
+              SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
+                CASE(PROBLEM_SETUP_START_ACTION)
+                  !Set up a time control loop
+                  CALL CONTROL_LOOP_CREATE_START(PROBLEM,CONTROL_LOOP,ERR,ERROR,*999)
+                  CALL CONTROL_LOOP_TYPE_SET(CONTROL_LOOP,PROBLEM_CONTROL_TIME_LOOP_TYPE,ERR,ERROR,*999)
+                CASE(PROBLEM_SETUP_FINISH_ACTION)
+                  !Finish the control loops
+                  CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
+                  CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
+                  CALL CONTROL_LOOP_CREATE_FINISH(CONTROL_LOOP,ERR,ERROR,*999)            
+                CASE DEFAULT
+                  LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+                    & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+                    & " is invalid for a transient Stokes fluid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+            CASE(PROBLEM_SETUP_SOLVERS_TYPE)
+              !Get the control loop
+              CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
+              CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
+              SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
+                CASE(PROBLEM_SETUP_START_ACTION)
+                  !Start the solvers creation
+                  CALL SOLVERS_CREATE_START(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
+                  CALL SOLVERS_NUMBER_SET(SOLVERS,2,ERR,ERROR,*999)
+                  !Set the first solver to be a linear solver for the Laplace mesh movement problem
+                  CALL SOLVERS_SOLVER_GET(SOLVERS,1,MESH_SOLVER,ERR,ERROR,*999)
+                  CALL SOLVER_TYPE_SET(MESH_SOLVER,SOLVER_LINEAR_TYPE,ERR,ERROR,*999)
+                  !Set solver defaults
+                  CALL SOLVER_LIBRARY_TYPE_SET(MESH_SOLVER,SOLVER_PETSC_LIBRARY,ERR,ERROR,*999)
+                  !Set the solver to be a first order dynamic solver 
+                  CALL SOLVERS_SOLVER_GET(SOLVERS,2,SOLVER,ERR,ERROR,*999)
+                  CALL SOLVER_TYPE_SET(SOLVER,SOLVER_DYNAMIC_TYPE,ERR,ERROR,*999)
+                  CALL SOLVER_DYNAMIC_ORDER_SET(SOLVER,SOLVER_DYNAMIC_FIRST_ORDER,ERR,ERROR,*999)
+                  !Set solver defaults
+                  CALL SOLVER_DYNAMIC_DEGREE_SET(SOLVER,SOLVER_DYNAMIC_FIRST_DEGREE,ERR,ERROR,*999)
+                  CALL SOLVER_DYNAMIC_SCHEME_SET(SOLVER,SOLVER_DYNAMIC_CRANK_NICHOLSON_SCHEME,ERR,ERROR,*999)
+                  CALL SOLVER_LIBRARY_TYPE_SET(SOLVER,SOLVER_CMISS_LIBRARY,ERR,ERROR,*999)
+
+                CASE(PROBLEM_SETUP_FINISH_ACTION)
+                  !Get the solvers
+                  CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
+                  !Finish the solvers creation
+                  CALL SOLVERS_CREATE_FINISH(SOLVERS,ERR,ERROR,*999)
+                CASE DEFAULT
+                  LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+                   & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+                   & " is invalid for a transient Stokes fluid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+            CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
+              SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
+                CASE(PROBLEM_SETUP_START_ACTION)
+                  !Get the control loop
+                  CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
+                  CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
+                  !Get the solver
+                  CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
+                  CALL SOLVERS_SOLVER_GET(SOLVERS,1,MESH_SOLVER,ERR,ERROR,*999)
+                  !Create the solver equations
+                  CALL SOLVER_EQUATIONS_CREATE_START(MESH_SOLVER,MESH_SOLVER_EQUATIONS,ERR,ERROR,*999)
+                  CALL SOLVER_EQUATIONS_LINEARITY_TYPE_SET(MESH_SOLVER_EQUATIONS,SOLVER_EQUATIONS_LINEAR,ERR,ERROR,*999)
+                  CALL SOLVER_EQUATIONS_TIME_DEPENDENCE_TYPE_SET(MESH_SOLVER_EQUATIONS,SOLVER_EQUATIONS_STATIC,ERR,ERROR,*999)
+                  CALL SOLVER_EQUATIONS_SPARSITY_TYPE_SET(MESH_SOLVER_EQUATIONS,SOLVER_SPARSE_MATRICES,ERR,ERROR,*999)
+                  CALL SOLVERS_SOLVER_GET(SOLVERS,2,SOLVER,ERR,ERROR,*999)
+                  !Create the solver equations
+                  CALL SOLVER_EQUATIONS_CREATE_START(SOLVER,SOLVER_EQUATIONS,ERR,ERROR,*999)
+                  CALL SOLVER_EQUATIONS_LINEARITY_TYPE_SET(SOLVER_EQUATIONS,SOLVER_EQUATIONS_LINEAR,ERR,ERROR,*999)
+                  CALL SOLVER_EQUATIONS_TIME_DEPENDENCE_TYPE_SET(SOLVER_EQUATIONS,SOLVER_EQUATIONS_FIRST_ORDER_DYNAMIC,&
+                    & ERR,ERROR,*999)
+                  CALL SOLVER_EQUATIONS_SPARSITY_TYPE_SET(SOLVER_EQUATIONS,SOLVER_SPARSE_MATRICES,ERR,ERROR,*999)
+                CASE(PROBLEM_SETUP_FINISH_ACTION)
+                  !Get the control loop
+                  CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
+                  CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
+                  !Get the solver equations
+                  CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
+                  CALL SOLVERS_SOLVER_GET(SOLVERS,1,MESH_SOLVER,ERR,ERROR,*999)
+                  CALL SOLVER_SOLVER_EQUATIONS_GET(MESH_SOLVER,MESH_SOLVER_EQUATIONS,ERR,ERROR,*999)
+                  !Finish the solver equations creation
+                  CALL SOLVER_EQUATIONS_CREATE_FINISH(MESH_SOLVER_EQUATIONS,ERR,ERROR,*999)             
+
+                  CALL SOLVERS_SOLVER_GET(SOLVERS,2,SOLVER,ERR,ERROR,*999)
+                  CALL SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SOLVER_EQUATIONS,ERR,ERROR,*999)
+                  !Finish the solver equations creation
+                  CALL SOLVER_EQUATIONS_CREATE_FINISH(SOLVER_EQUATIONS,ERR,ERROR,*999)             
+
+
+                CASE DEFAULT
+                  LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+                    & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+                    & " is invalid for a transient Stokes fluid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+            CASE DEFAULT
+              LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+                & " is invalid for a transient Stokes fluid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!! DEFAULT !!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1045,7 +1295,6 @@ CONTAINS
             & " is not valid for a Stokes fluid type of a fluid mechanics problem class."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
-
     ELSE
       CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
@@ -1087,19 +1336,21 @@ CONTAINS
 
     TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: RHS_VECTOR
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: STIFFNESS_MATRIX, DAMPING_MATRIX
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD,INDEPENDENT_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME,QUADRATURE_SCHEME1,QUADRATURE_SCHEME2
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER:: x,out
 !    LOGICAL :: GRADIENT_TRANSPOSE
 
-!    DOUBLE PRECISION:: test(89,89),test2(89,89),scaling,square
-    DOUBLE PRECISION:: AG_MATRIX(256,256) ! "A" Matrix ("G"radient part) - maximum size allocated
-    DOUBLE PRECISION:: AL_MATRIX(256,256) ! "A" Matrix ("L"aplace part) - maximum size allocated
-    DOUBLE PRECISION:: BT_MATRIX(256,256) ! "B" "T"ranspose Matrix - maximum size allocated
-    DOUBLE PRECISION:: MT_MATRIX(256,256) ! "M"ass "T"ime Matrix - maximum size allocated
-    DOUBLE PRECISION:: CT_MATRIX(256,256) ! "C"onvective "T"erm Matrix - maximum size allocated
+!    REAL(DP) :: test(89,89),test2(89,89),scaling,square
+    REAL(DP) :: AG_MATRIX(256,256) ! "A" Matrix ("G"radient part) - maximum size allocated
+    REAL(DP) :: AL_MATRIX(256,256) ! "A" Matrix ("L"aplace part) - maximum size allocated
+    REAL(DP) :: BT_MATRIX(256,256) ! "B" "T"ranspose Matrix - maximum size allocated
+    REAL(DP) :: MT_MATRIX(256,256) ! "M"ass "T"ime Matrix - maximum size allocated
+    REAL(DP) :: CT_MATRIX(256,256) ! "C"onvective "T"erm Matrix - maximum size allocated
+    REAL(DP) :: ALE_MATRIX(256,256) ! "A"rbitrary "L"agrangian "E"ulerian Matrix - maximum size allocated
+    REAL(DP) :: W_VALUE(3)
 
     CALL ENTERS("STOKES_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
 
@@ -1110,6 +1361,7 @@ CONTAINS
     BT_MATRIX=0.0
     MT_MATRIX=0.0
     CT_MATRIX=0.0
+    ALE_MATRIX=0.0
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
@@ -1117,11 +1369,12 @@ CONTAINS
 
         SELECT CASE(EQUATIONS_SET%SUBTYPE)
           CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE, &
-            & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE)
+            & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE,PROBLEM_ALE_STOKES_SUBTYPE)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! SET POINTERS !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
+            INDEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%INDEPENDENT_FIELD
             GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
             MATERIALS_FIELD=>EQUATIONS%INTERPOLATION%MATERIALS_FIELD
             EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
@@ -1141,7 +1394,7 @@ CONTAINS
                 FIELD_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
                 STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
                 UPDATE_MATRIX=STIFFNESS_MATRIX%UPDATE_MATRIX
-              CASE(EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE)
+              CASE(EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE,PROBLEM_ALE_STOKES_SUBTYPE)
                 DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
                 STIFFNESS_MATRIX=>DYNAMIC_MATRICES%MATRICES(1)%PTR
                 DAMPING_MATRIX=>DYNAMIC_MATRICES%MATRICES(2)%PTR
@@ -1160,6 +1413,9 @@ CONTAINS
               & GEOMETRIC_INTERP_PARAMETERS,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
               & MATERIALS_INTERP_PARAMETERS,ERR,ERROR,*999)
+             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_MESH_VELOCITY_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+               & INDEPENDENT_INTERP_PARAMETERS,ERR,ERROR,*999)
+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! LOOP OVER GAUSS POINTS !!!
@@ -1172,10 +1428,23 @@ CONTAINS
                 & GEOMETRIC_INTERP_POINT_METRICS,ERR,ERROR,*999)
               CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
                 & MATERIALS_INTERP_POINT,ERR,ERROR,*999)
+              CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+                & INDEPENDENT_INTERP_POINT,ERR,ERROR,*999)
+
+! ! ! ! HOW TO INTERPOLATE INDPENDENT FIELD??? 
+! ! ! ! 
+! ! ! ! xxx
+
               !Define MU_PARAM, viscosity=1
               MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(1,NO_PART_DERIV)
               !Define RHO_PARAM, density=2
               RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(2,NO_PART_DERIV)
+
+              W_VALUE(1)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT%VALUES(1,NO_PART_DERIV)
+              W_VALUE(2)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT%VALUES(2,NO_PART_DERIV)
+              IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
+                W_VALUE(3)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT%VALUES(3,NO_PART_DERIV)
+              END IF 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! CALCULATE PARTIAL MATRICES !!!
@@ -1183,6 +1452,7 @@ CONTAINS
 
               IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_STOKES_SUBTYPE.OR. &
                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE.OR. &
+                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_STOKES_SUBTYPE.OR. &
                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE) THEN
                 !Loop over field components
 
@@ -1279,6 +1549,32 @@ CONTAINS
                           END IF
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!! ALE CONTRIBUTION !!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+                          IF(STIFFNESS_MATRIX%UPDATE_MATRIX) THEN
+                            !GRADIENT TRANSPOSE TYPE
+                            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_STOKES_SUBTYPE) THEN 
+                              IF(nh==mh) THEN 
+                                SUM=0.0_DP
+!!! TODO CHECK!!!!!!!!!!!!!!
+                                !Calculate SUM 
+                                DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                                  DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                                    SUM=SUM-RHO_PARAM*W_VALUE(mi)*DPHINS_DXI(ni)*DXI_DX(ni,mi)*PHIMS
+                                  ENDDO !ni
+                                ENDDO !mi
+                                !Calculate MATRIX
+                                ALE_MATRIX(mhs,nhs)=ALE_MATRIX(mhs,nhs)+SUM*JGW
+
+! ! ! WRITE(*,*)'PASSIERT DAS HIER ALLES???'
+
+                              END IF
+                            END IF
+                          END IF
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! B TRANSPOSE !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1299,7 +1595,8 @@ CONTAINS
 !!! M !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-                          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE) THEN
+                          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE.OR. &
+                            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_STOKES_SUBTYPE) THEN
                             IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
                               IF(nh==mh) THEN 
                                 SUM=0.0_DP 
@@ -1334,11 +1631,12 @@ CONTAINS
        
             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_STOKES_SUBTYPE.OR.  &
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_STOKES_SUBTYPE.OR. &
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE) THEN
 
               IF(STIFFNESS_MATRIX%UPDATE_MATRIX) THEN
                 STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,1:nhs_min)=AL_MATRIX(1:mhs_min,1:nhs_min)+AG_MATRIX(1:mhs_min, &
-                  & 1:nhs_min)
+                  & 1:nhs_min)+ALE_MATRIX(1:mhs_min,1:nhs_min)
                 STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,nhs_min+1:nhs_max)=BT_MATRIX(1:mhs_min,nhs_min+1:nhs_max)
 
                 DO mhs=mhs_min+1,mhs_max
@@ -1350,7 +1648,8 @@ CONTAINS
               END IF
             END IF
 
-            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE) THEN
+            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE.OR. & 
+              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_STOKES_SUBTYPE) THEN
               IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
                 DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,1:nhs_min)=MT_MATRIX(1:mhs_min,1:nhs_min)
               END IF
@@ -1444,12 +1743,13 @@ CONTAINS
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER!<A pointer to the solver
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER2 !<A pointer to the solver
 !    TYPE(REGION_TYPE), POINTER :: REGION !<pointer to the region to be exported
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -1463,7 +1763,8 @@ CONTAINS
 
     CALL ENTERS("STOKES_EQUATION_POST_SOLVE",ERR,ERROR,*999)
 !    NULLIFY(REGION)
- 
+    NULLIFY(SOLVER2)
+
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
@@ -1471,44 +1772,22 @@ CONTAINS
             CASE(PROBLEM_STATIC_STOKES_SUBTYPE,PROBLEM_LAPLACE_STOKES_SUBTYPE)
               ! do nothing ???
             CASE(PROBLEM_TRANSIENT_STOKES_SUBTYPE)
-              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-                IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-                  !Make sure the equations sets are up to date
-                  DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
-                    EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-
-                    CURRENT_LOOP_ITERATION=CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER
-                    OUTPUT_ITERATION_NUMBER=CONTROL_LOOP%TIME_LOOP%OUTPUT_NUMBER
-
-                    IF(OUTPUT_ITERATION_NUMBER/=0) THEN
-                      IF(CONTROL_LOOP%TIME_LOOP%CURRENT_TIME<CONTROL_LOOP%TIME_LOOP%STOP_TIME) THEN
-                        IF(CURRENT_LOOP_ITERATION<10) THEN
-                          WRITE(OUTPUT_FILE,'("TIME_STEP_000",I0)') CURRENT_LOOP_ITERATION
-                        ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
-                          WRITE(OUTPUT_FILE,'("TIME_STEP_00",I0)') CURRENT_LOOP_ITERATION
-                        ELSE IF(CURRENT_LOOP_ITERATION<1000) THEN
-                          WRITE(OUTPUT_FILE,'("TIME_STEP_0",I0)') CURRENT_LOOP_ITERATION
-                        ELSE IF(CURRENT_LOOP_ITERATION<10000) THEN
-                          WRITE(OUTPUT_FILE,'("TIME_STEP_",I0)') CURRENT_LOOP_ITERATION
-                        END IF
-                        FILE=OUTPUT_FILE
-  !                    FILE="TRANSIENT_OUTPUT"
-                        METHOD="FORTRAN"
-                        EXPORT_FIELD=.TRUE.
-                        IF(EXPORT_FIELD) THEN          
-                          IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields...",ERR,ERROR,*999)
-                            CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,FILE,ERR,ERROR,*999)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"All fields exported...",ERR,ERROR,*999)
-                          ENDIF
-                        ENDIF 
-                      ENDIF 
-                    ENDIF
-                  ENDDO
-                ENDIF
-              ENDIF
+              CALL STOKES_EQUATION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            CASE(PROBLEM_ALE_STOKES_SUBTYPE)
+              !Post solve for the linear solver
+              IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Mesh movement post solve... ",ERR,ERROR,*999)
+                CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,2,SOLVER2,ERR,ERROR,*999)
+                IF(ASSOCIATED(SOLVER2%DYNAMIC_SOLVER)) THEN
+                  SOLVER2%DYNAMIC_SOLVER%ALE=.TRUE.
+                ELSE  
+                  CALL FLAG_ERROR("Dynamic solver is not associated for ALE problem.",ERR,ERROR,*999)
+                END IF
+              !Post solve for the linear solver
+              ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"ALE Stokes post solve... ",ERR,ERROR,*999)
+                CALL STOKES_EQUATION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              END IF
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a Stokes fluid type of a fluid mechanics problem class."
@@ -1535,72 +1814,663 @@ CONTAINS
   !================================================================================================================================
   !
 
+
   !>Sets up the Stokes problem pre solve.
-  SUBROUTINE STOKES_EQUATION_PRE_SOLVE_SET(CONTROL_LOOP,EQUATIONS_SET,ERR,ERROR,*)
+  SUBROUTINE STOKES_EQUATION_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER2 !<A pointer to the solvers
 !    TYPE(REGION_TYPE), POINTER :: REGION !<pointer to the region to be exported
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(VARYING_STRING) :: FILE,METHOD
     CHARACTER(14) :: OUTPUT_FILE
-    LOGICAL :: EXPORT_FIELD
+
 !    INTEGER(INTG) :: REGION_USER_NUMBER
     INTEGER(INTG) :: CURRENT_LOOP_ITERATION
     INTEGER(INTG) :: OUTPUT_ITERATION_NUMBER
+    INTEGER(INTG) :: equations_set_idx
 
-    CALL ENTERS("STOKES_EQUATION_PRE_SOLVE_SET",ERR,ERROR,*999)
+    CALL ENTERS("STOKES_EQUATION_PRE_SOLVE",ERR,ERROR,*999)
 !    NULLIFY(REGION)
-
-
-
-    IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-      SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
-        CASE(PROBLEM_STATIC_STOKES_SUBTYPE,PROBLEM_LAPLACE_STOKES_SUBTYPE)
-          ! do nothing ???
-        CASE(PROBLEM_TRANSIENT_STOKES_SUBTYPE)
-          CURRENT_LOOP_ITERATION=CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER
-          OUTPUT_ITERATION_NUMBER=CONTROL_LOOP%TIME_LOOP%OUTPUT_NUMBER
-          IF(OUTPUT_ITERATION_NUMBER/=0) THEN
-            IF(CURRENT_LOOP_ITERATION==1) THEN
-              WRITE(OUTPUT_FILE,'("TIME_STEP_0000")')
-              FILE=OUTPUT_FILE
-    !          FILE="TRANSIENT_OUTPUT"
-              METHOD="FORTRAN"
-              EXPORT_FIELD=.TRUE.
-              IF(EXPORT_FIELD) THEN          
-                IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
-                  CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields...",ERR,ERROR,*999)
-                  CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,FILE,ERR,ERROR,*999)
-                  CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"All fields exported...",ERR,ERROR,*999)
-                ENDIF
-              ENDIF
-            ENDIF 
-          ENDIF 
-
-        CASE DEFAULT
-          LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-            & " is not valid for a Navier-Stokes fluid type of a fluid mechanics problem class."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
+    NULLIFY(SOLVER2)
+ 
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(ASSOCIATED(SOLVER)) THEN
+        IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            CASE(PROBLEM_STATIC_STOKES_SUBTYPE,PROBLEM_LAPLACE_STOKES_SUBTYPE)
+              ! do nothing ???
+            CASE(PROBLEM_TRANSIENT_STOKES_SUBTYPE)
+              ! do nothing ???
+                CALL STOKES_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            CASE(PROBLEM_ALE_STOKES_SUBTYPE)
+              !Pre solve for the linear solver
+              IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Mesh movement pre solve... ",ERR,ERROR,*999)
+                !Update boundary conditions for mesh-movement
+                CALL STOKES_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,2,SOLVER2,ERR,ERROR,*999)
+                IF(ASSOCIATED(SOLVER2%DYNAMIC_SOLVER)) THEN
+                  SOLVER2%DYNAMIC_SOLVER%ALE=.FALSE.
+                ELSE  
+                  CALL FLAG_ERROR("Dynamic solver is not associated for ALE problem.",ERR,ERROR,*999)
+                END IF
+                !Update material properties for Laplace mesh movement
+                CALL STOKES_EQUATION_PRE_SOLVE_ALE_UPDATE_PARAMETERS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              !Pre solve for the linear solver
+              ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"ALE Stokes pre solve... ",ERR,ERROR,*999)
+                IF(SOLVER%DYNAMIC_SOLVER%ALE) THEN
+                  !First update mesh and calculates boundary velocity values
+                  CALL STOKES_EQUATION_PRE_SOLVE_ALE_UPDATE_MESH(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                  !Then apply both normal and moving mesh boundary conditions
+                  CALL STOKES_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                ELSE  
+                  CALL FLAG_ERROR("Mesh motion calculation not successful for ALE problem.",ERR,ERROR,*999)
+                END IF
+              ELSE  
+                CALL FLAG_ERROR("Solver type is not associated for ALE problem.",ERR,ERROR,*999)
+              END IF
+            CASE DEFAULT
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                & " is not valid for a Stokes fluid type of a fluid mechanics problem class."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("STOKES_EQUATION_PRE_SOLVE_SET")
+    CALL EXITS("STOKES_EQUATION_PRE_SOLVE")
     RETURN
-999 CALL ERRORS("STOKES_EQUATION_PRE_SOLVE_SET",ERR,ERROR)
-    CALL EXITS("STOKES_EQUATION_PRE_SOLVE_SET")
+999 CALL ERRORS("STOKES_EQUATION_PRE_SOLVE",ERR,ERROR)
+    CALL EXITS("STOKES_EQUATION_PRE_SOLVE")
     RETURN 1
-  END SUBROUTINE STOKES_EQUATION_PRE_SOLVE_SET
+  END SUBROUTINE STOKES_EQUATION_PRE_SOLVE
+  !
+  !================================================================================================================================
+  !
+ 
+  !>Update boundary conditions for Stokes flow pre solve
+  SUBROUTINE STOKES_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
+
+    REAL(DP) :: CURRENT_TIME,TIME_INCREMENT,DISPLACEMENT_VALUE
+    REAL(DP) :: VALUE !<The value to add
+
+    INTEGER(INTG) :: VARIABLE_TYPE !<The field variable type to add \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+    INTEGER(INTG) :: FIELD_SET_TYPE !<The field parameter set identifier \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
+    INTEGER(INTG) :: DERIVATIVE_NUMBER !<The node derivative number
+    INTEGER(INTG) :: COMPONENT_NUMBER !<The field variable component number
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_NODES !<The total number of (geometry) nodes
+    INTEGER(INTG) :: LOCAL_NODE_NUMBER
+    INTEGER(INTG) :: equations_row_number,global_ny
+    INTEGER(INTG) :: BOUNDARY_CONDITION_CHECK_VARIABLE,NUMBER_OF_COMPONENTS,number_of_node_parameters
+    REAL(DP), POINTER :: MESH_VELOCITY_VALUES(:)
+
+    CALL ENTERS("STOKES_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+!       write(*,*)'CURRENT_TIME = ',CURRENT_TIME
+!       write(*,*)'TIME_INCREMENT = ',TIME_INCREMENT
+      IF(ASSOCIATED(SOLVER)) THEN
+        IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            CASE(PROBLEM_STATIC_STOKES_SUBTYPE,PROBLEM_LAPLACE_STOKES_SUBTYPE)
+              ! do nothing ???
+            CASE(PROBLEM_TRANSIENT_STOKES_SUBTYPE)
+              ! do nothing ???
+            CASE(PROBLEM_ALE_STOKES_SUBTYPE)
+
+              !Pre solve for the linear solver
+              IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Mesh movement change boundary conditions... ",ERR,ERROR,*999)
+                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                  EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
+                  IF(ASSOCIATED(EQUATIONS)) THEN
+                    EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+                    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                      BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
+                      IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+                        BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS% & 
+                          & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
+                        IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+                          DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                          IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+                            NUMBER_OF_COMPONENTS=DEPENDENT_FIELD%VARIABLES(1)%NUMBER_OF_COMPONENTS
+                            DO component_number=1,NUMBER_OF_COMPONENTS
+                              number_of_node_parameters=DEPENDENT_FIELD%VARIABLES(1)%COMPONENTS(component_number)% & 
+                                & PARAM_TO_DOF_MAP%NUMBER_OF_NODE_PARAMETERS
+                              DO equations_row_number=1,number_of_node_parameters
+                                global_ny=equations_row_number+number_of_node_parameters*(component_number-1)
+                                DISPLACEMENT_VALUE=0.0_DP
+                                IF(component_number==1) THEN
+                                  BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
+                                    & GLOBAL_BOUNDARY_CONDITIONS(global_ny)
+                                  IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
+                                    DISPLACEMENT_VALUE=0.0_DP
+                                  END IF
+                                ELSE IF(component_number==2) THEN
+                                  BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
+                                    & GLOBAL_BOUNDARY_CONDITIONS(global_ny)
+                                  IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
+!                                     DISPLACEMENT_VALUE=-(1.0_DP-1.0_DP*COS(2.0_DP*PI*CURRENT_TIME/4.0_DP))
+                                    DISPLACEMENT_VALUE=0.01_DP*CURRENT_TIME
+                                  END IF
+                                ELSE IF(component_number==3) THEN
+                                  BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
+                                    & GLOBAL_BOUNDARY_CONDITIONS(global_ny)
+                                  IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
+                                    DISPLACEMENT_VALUE=0.0_DP
+                                  END IF
+                                END IF
+                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
+                                  & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,global_ny, & 
+                                  & DISPLACEMENT_VALUE,ERR,ERROR,*999)
+                              END DO
+                            END DO
+
+!This part should be read in out of a file eventually
+
+                          END IF
+                        ELSE
+                          CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                        END IF
+                      ELSE
+                        CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
+                      END IF
+                    ELSE
+                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                    END IF
+                  ELSE
+                    CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                  END IF                
+                ELSE
+                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+                END IF  
+                CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                  & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                  & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+
+              !Pre solve for the linear solver
+              ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Mesh movement change boundary conditions... ",ERR,ERROR,*999)
+                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                  EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
+                  IF(ASSOCIATED(EQUATIONS)) THEN
+                    EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+                    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                      CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                        & FIELD_MESH_VELOCITY_SET_TYPE,MESH_VELOCITY_VALUES,ERR,ERROR,*999)
+                      BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
+                      IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+                        BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS% & 
+                          & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
+                        IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+                          DO equations_row_number=1,EQUATIONS%EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
+                            global_ny=equations_row_number
+                            BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
+                              & GLOBAL_BOUNDARY_CONDITIONS(global_ny)
+                            IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
+                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
+                                & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,equations_row_number, & 
+                                & MESH_VELOCITY_VALUES(equations_row_number),ERR,ERROR,*999)
+                            END IF
+                          END DO
+
+!This part should be read in out of a file eventually
+
+                        ELSE
+                          CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                        END IF
+                      ELSE
+                        CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
+                      END IF
+                    ELSE
+                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                    END IF
+                  ELSE
+                    CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                  END IF                
+                ELSE
+                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+                END IF  
+                CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                  & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                  & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+              END IF
+              ! do nothing ???
+            CASE DEFAULT
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                & " is not valid for a Stokes equation fluid type of a fluid mechanics problem class."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+! !     CALL BOUNDARY_CONDITIONS_SET_LOCAL_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,DOF_INDICES, &
+! !       & DOF_CONDITION,DOF_VALUES,ERR,ERROR,*999)
+
+    CALL EXITS("STOKES_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS")
+    RETURN
+999 CALL ERRORS("STOKES_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS",ERR,ERROR)
+    CALL EXITS("STOKES_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS")
+    RETURN 1
+  END SUBROUTINE STOKES_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS
 
   !
   !================================================================================================================================
   !
+  !>Update mesh velocity and move mesh for ALE Stokes problem
+  SUBROUTINE STOKES_EQUATION_PRE_SOLVE_ALE_UPDATE_MESH(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solvers
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER_ALE_STOKES, SOLVER_LAPLACE !<A pointer to the solvers
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD_LAPLACE, INDEPENDENT_FIELD_ALE_STOKES
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS_LAPLACE, SOLVER_EQUATIONS_ALE_STOKES  !<A pointer to the solver equations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING_LAPLACE, SOLVER_MAPPING_ALE_STOKES !<A pointer to the solver mapping
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET_LAPLACE, EQUATIONS_SET_ALE_STOKES !<A pointer to the equations set
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    REAL(DP) :: CURRENT_TIME,TIME_INCREMENT,ALPHA
+    REAL(DP) :: VALUE !<The value to add
+    REAL(DP), POINTER :: MESH_DISPLACEMENT_VALUES(:)
+
+    INTEGER(INTG) :: VARIABLE_TYPE !<The field variable type to add \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+    INTEGER(INTG) :: FIELD_SET_TYPE !<The field parameter set identifier \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
+    INTEGER(INTG) :: DERIVATIVE_NUMBER !<The node derivative number
+    INTEGER(INTG) :: COMPONENT_NUMBER !<The field variable component number
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_NODES !<The total number of (geometry) nodes
+    INTEGER(INTG) :: LOCAL_NODE_NUMBER
+    INTEGER(INTG) :: EQUATIONS_SET_IDX
+    INTEGER(INTG) :: I,NUMBER_OF_DIMENSIONS_LAPLACE,NUMBER_OF_DIMENSIONS_ALE_STOKES,GEOMETRIC_MESH_COMPONENT,equations_row_number
+
+
+    CALL ENTERS("STOKES_EQUATION_PRE_SOLVE_ALE_UPDATE_MESH",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+!       write(*,*)'CURRENT_TIME = ',CURRENT_TIME
+!       write(*,*)'TIME_INCREMENT = ',TIME_INCREMENT
+
+      NULLIFY(SOLVER_LAPLACE)
+      NULLIFY(SOLVER_ALE_STOKES)
+
+      IF(ASSOCIATED(SOLVER)) THEN
+        IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            CASE(PROBLEM_STATIC_STOKES_SUBTYPE,PROBLEM_LAPLACE_STOKES_SUBTYPE)
+              ! do nothing ???
+            CASE(PROBLEM_TRANSIENT_STOKES_SUBTYPE)
+              ! do nothing ???
+            CASE(PROBLEM_ALE_STOKES_SUBTYPE)
+              !Update mesh within the dynamic solver
+              IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+                IF(SOLVER%DYNAMIC_SOLVER%ALE) THEN
+
+                  !Get the dependent field for the three component Laplace problem
+                  CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,1,SOLVER_LAPLACE,ERR,ERROR,*999)
+                  SOLVER_EQUATIONS_LAPLACE=>SOLVER_LAPLACE%SOLVER_EQUATIONS
+                  IF(ASSOCIATED(SOLVER_EQUATIONS_LAPLACE)) THEN
+                    SOLVER_MAPPING_LAPLACE=>SOLVER_EQUATIONS_LAPLACE%SOLVER_MAPPING
+                    IF(ASSOCIATED(SOLVER_MAPPING_LAPLACE)) THEN
+                      EQUATIONS_SET_LAPLACE=>SOLVER_MAPPING_LAPLACE%EQUATIONS_SETS(1)%PTR
+                      IF(ASSOCIATED(EQUATIONS_SET_LAPLACE)) THEN
+                        DEPENDENT_FIELD_LAPLACE=>EQUATIONS_SET_LAPLACE%DEPENDENT%DEPENDENT_FIELD
+                      ELSE
+                        CALL FLAG_ERROR("Laplace equations set is not associated.",ERR,ERROR,*999)
+                      END IF
+
+                      CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET_LAPLACE%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                        & NUMBER_OF_DIMENSIONS_LAPLACE,ERR,ERROR,*999)
+
+                    ELSE
+                      CALL FLAG_ERROR("Laplace solver mapping is not associated.",ERR,ERROR,*999)
+                    END IF
+                  ELSE
+                    CALL FLAG_ERROR("Laplace solver equations are not associated.",ERR,ERROR,*999)
+                  END IF
+
+                  !Get the independent field for the ALE Stokes problem
+                  CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,2,SOLVER_ALE_STOKES,ERR,ERROR,*999)
+                  SOLVER_EQUATIONS_ALE_STOKES=>SOLVER_ALE_STOKES%SOLVER_EQUATIONS
+                  IF(ASSOCIATED(SOLVER_EQUATIONS_ALE_STOKES)) THEN
+                    SOLVER_MAPPING_ALE_STOKES=>SOLVER_EQUATIONS_ALE_STOKES%SOLVER_MAPPING
+                    IF(ASSOCIATED(SOLVER_MAPPING_ALE_STOKES)) THEN
+                      EQUATIONS_SET_ALE_STOKES=>SOLVER_MAPPING_ALE_STOKES%EQUATIONS_SETS(1)%PTR
+                      IF(ASSOCIATED(EQUATIONS_SET_ALE_STOKES)) THEN
+                        INDEPENDENT_FIELD_ALE_STOKES=>EQUATIONS_SET_ALE_STOKES%INDEPENDENT%INDEPENDENT_FIELD
+                      ELSE
+                        CALL FLAG_ERROR("ALE Stokes equations set is not associated.",ERR,ERROR,*999)
+                      END IF
+
+                      CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET_ALE_STOKES%GEOMETRY%GEOMETRIC_FIELD, & 
+                        & FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS_ALE_STOKES,ERR,ERROR,*999)
+
+                    ELSE
+                      CALL FLAG_ERROR("ALE Stokes solver mapping is not associated.",ERR,ERROR,*999)
+                    END IF
+                  ELSE
+                    CALL FLAG_ERROR("ALE Stokes solver equations are not associated.",ERR,ERROR,*999)
+                  END IF
+ 
+                  !Copy result from Laplace mesh movement to Stokes' independent field
+                  IF(NUMBER_OF_DIMENSIONS_ALE_STOKES==NUMBER_OF_DIMENSIONS_LAPLACE) THEN
+                    DO I=1,NUMBER_OF_DIMENSIONS_ALE_STOKES
+                      CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(DEPENDENT_FIELD_LAPLACE, & 
+                        & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,I,INDEPENDENT_FIELD_ALE_STOKES, & 
+                        & FIELD_U_VARIABLE_TYPE,FIELD_MESH_DISPLACEMENT_SET_TYPE,I,ERR,ERROR,*999)
+                    END DO
+                  ELSE
+                    CALL FLAG_ERROR("Dimension of Laplace and ALE Stokes equations set is not consistent.",ERR,ERROR,*999)
+                  END IF
+
+                  !Use calculated values to update mesh
+                  CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET_ALE_STOKES%GEOMETRY%GEOMETRIC_FIELD, & 
+                    & FIELD_U_VARIABLE_TYPE,1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                  CALL FIELD_PARAMETER_SET_DATA_GET(INDEPENDENT_FIELD_ALE_STOKES,FIELD_U_VARIABLE_TYPE, & 
+                    & FIELD_MESH_DISPLACEMENT_SET_TYPE,MESH_DISPLACEMENT_VALUES,ERR,ERROR,*999)
+                  EQUATIONS=>SOLVER_MAPPING_LAPLACE%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
+                  IF(ASSOCIATED(EQUATIONS)) THEN
+                    EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
+                    IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
+                      DO equations_row_number=1,EQUATIONS%EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
+                        CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(EQUATIONS_SET_ALE_STOKES%GEOMETRY%GEOMETRIC_FIELD, & 
+                          & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,equations_row_number, & 
+                          & MESH_DISPLACEMENT_VALUES(equations_row_number),ERR,ERROR,*999)
+                      END DO
+                    ELSE
+                      CALL FLAG_ERROR("Equations mapping is not associated.",ERR,ERROR,*999)
+                    END IF
+                  ELSE
+                    CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                  END IF
+                  CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET_ALE_STOKES%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                    & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                  CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET_ALE_STOKES%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                    & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+
+                  !Now use displacement values to calculate velocity values
+                  TIME_INCREMENT=CONTROL_LOOP%TIME_LOOP%TIME_INCREMENT
+                  ALPHA=1.0_DP/TIME_INCREMENT
+                  CALL FIELD_PARAMETER_SETS_COPY(INDEPENDENT_FIELD_ALE_STOKES,FIELD_U_VARIABLE_TYPE, & 
+                    & FIELD_MESH_DISPLACEMENT_SET_TYPE,FIELD_MESH_VELOCITY_SET_TYPE,ALPHA,ERR,ERROR,*999)
+                ELSE  
+                  CALL FLAG_ERROR("Mesh motion calculation not successful for ALE problem.",ERR,ERROR,*999)
+                END IF
+              ELSE  
+                CALL FLAG_ERROR("Mesh update is not defined for non-dynamic problems.",ERR,ERROR,*999)
+              END IF
+            CASE DEFAULT
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                & " is not valid for a Stokes equation fluid type of a fluid mechanics problem class."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+    CALL EXITS("STOKES_EQUATION_PRE_SOLVE_ALE_UPDATE_MESH")
+    RETURN
+999 CALL ERRORS("STOKES_EQUATION_PRE_SOLVE_ALE_UPDATE_MESH",ERR,ERROR)
+    CALL EXITS("STOKES_EQUATION_PRE_SOLVE_ALE_UPDATE_MESH")
+    RETURN 1
+  END SUBROUTINE STOKES_EQUATION_PRE_SOLVE_ALE_UPDATE_MESH
+
+  !
+  !================================================================================================================================
+  !
+  !>Update mesh parameters for three component Laplace problem
+  SUBROUTINE STOKES_EQUATION_PRE_SOLVE_ALE_UPDATE_PARAMETERS(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
+    REAL(DP) :: VALUE !<The value to add
+
+    INTEGER(INTG) :: VARIABLE_TYPE !<The field variable type to add \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+    INTEGER(INTG) :: FIELD_SET_TYPE !<The field parameter set identifier \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
+    INTEGER(INTG) :: DERIVATIVE_NUMBER !<The node derivative number
+    INTEGER(INTG) :: COMPONENT_NUMBER !<The field variable component number
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_NODES !<The total number of (geometry) nodes
+    INTEGER(INTG) :: LOCAL_NODE_NUMBER
+    INTEGER(INTG) :: EQUATIONS_SET_IDX
+
+
+    CALL ENTERS("STOKES_EQUATION_PRE_SOLVE_ALE_UPDATE_PARAMETERS",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+!       write(*,*)'CURRENT_TIME = ',CURRENT_TIME
+!       write(*,*)'TIME_INCREMENT = ',TIME_INCREMENT
+      IF(ASSOCIATED(SOLVER)) THEN
+        IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            CASE(PROBLEM_STATIC_STOKES_SUBTYPE,PROBLEM_LAPLACE_STOKES_SUBTYPE)
+              ! do nothing ???
+            CASE(PROBLEM_TRANSIENT_STOKES_SUBTYPE)
+              ! do nothing ???
+            CASE(PROBLEM_ALE_STOKES_SUBTYPE)
+              ! do nothing ???
+            CASE DEFAULT
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                & " is not valid for a Stokes equation fluid type of a fluid mechanics problem class."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+    CALL EXITS("STOKES_EQUATION_PRE_SOLVE_ALE_UPDATE_PARAMETERS")
+    RETURN
+999 CALL ERRORS("STOKES_EQUATION_PRE_SOLVE_ALE_UPDATE_PARAMETERS",ERR,ERROR)
+    CALL EXITS("STOKES_EQUATION_PRE_SOLVE_ALE_UPDATE_PARAMETERS")
+    RETURN 1
+  END SUBROUTINE STOKES_EQUATION_PRE_SOLVE_ALE_UPDATE_PARAMETERS
+
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Output data post solve
+  SUBROUTINE STOKES_EQUATION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
+    REAL(DP) :: VALUE !<The value to add
+
+    INTEGER(INTG) :: VARIABLE_TYPE !<The field variable type to add \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+    INTEGER(INTG) :: FIELD_SET_TYPE !<The field parameter set identifier \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
+    INTEGER(INTG) :: DERIVATIVE_NUMBER !<The node derivative number
+    INTEGER(INTG) :: COMPONENT_NUMBER !<The field variable component number
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_NODES !<The total number of (geometry) nodes
+    INTEGER(INTG) :: LOCAL_NODE_NUMBER,CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER
+    INTEGER(INTG) :: EQUATIONS_SET_IDX
+
+    LOGICAL :: EXPORT_FIELD
+    TYPE(VARYING_STRING) :: FILE,METHOD
+    CHARACTER(14) :: OUTPUT_FILE
+
+
+    CALL ENTERS("STOKES_EQUATION_POST_SOLVE_OUTPUT_DATA",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+!       write(*,*)'CURRENT_TIME = ',CURRENT_TIME
+!       write(*,*)'TIME_INCREMENT = ',TIME_INCREMENT
+      IF(ASSOCIATED(SOLVER)) THEN
+        IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            CASE(PROBLEM_STATIC_STOKES_SUBTYPE,PROBLEM_LAPLACE_STOKES_SUBTYPE,PROBLEM_TRANSIENT_STOKES_SUBTYPE, &
+              & PROBLEM_ALE_STOKES_SUBTYPE)
+              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                  !Make sure the equations sets are up to date
+                  DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                    EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+
+                    CURRENT_LOOP_ITERATION=CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER
+                    OUTPUT_ITERATION_NUMBER=CONTROL_LOOP%TIME_LOOP%OUTPUT_NUMBER
+
+                    IF(OUTPUT_ITERATION_NUMBER/=0) THEN
+                      IF(CONTROL_LOOP%TIME_LOOP%CURRENT_TIME<=CONTROL_LOOP%TIME_LOOP%STOP_TIME) THEN
+                        IF(CURRENT_LOOP_ITERATION<10) THEN
+                          WRITE(OUTPUT_FILE,'("TIME_STEP_000",I0)') CURRENT_LOOP_ITERATION
+                        ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
+                          WRITE(OUTPUT_FILE,'("TIME_STEP_00",I0)') CURRENT_LOOP_ITERATION
+                        ELSE IF(CURRENT_LOOP_ITERATION<1000) THEN
+                          WRITE(OUTPUT_FILE,'("TIME_STEP_0",I0)') CURRENT_LOOP_ITERATION
+                        ELSE IF(CURRENT_LOOP_ITERATION<10000) THEN
+                          WRITE(OUTPUT_FILE,'("TIME_STEP_",I0)') CURRENT_LOOP_ITERATION
+                        END IF
+                        FILE=OUTPUT_FILE
+  !          FILE="TRANSIENT_OUTPUT"
+                        METHOD="FORTRAN"
+                        EXPORT_FIELD=.TRUE.
+                        IF(EXPORT_FIELD) THEN          
+                          IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields... ",ERR,ERROR,*999)
+                            CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,FILE,ERR,ERROR,*999)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+                          ENDIF
+                        ENDIF 
+                      ENDIF 
+                    ENDIF
+                  ENDDO
+                ENDIF
+              ENDIF
+            CASE DEFAULT
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                & " is not valid for a Stokes equation fluid type of a fluid mechanics problem class."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+    CALL EXITS("STOKES_EQUATION_POST_SOLVE_OUTPUT_DATA")
+    RETURN
+999 CALL ERRORS("STOKES_EQUATION_POST_SOLVE_OUTPUT_DATA",ERR,ERROR)
+    CALL EXITS("STOKES_EQUATION_POST_SOLVE_OUTPUT_DATA")
+    RETURN 1
+  END SUBROUTINE STOKES_EQUATION_POST_SOLVE_OUTPUT_DATA
+
+  !
+  !================================================================================================================================
+  !
+
+
 END MODULE STOKES_EQUATIONS_ROUTINES
 
   !

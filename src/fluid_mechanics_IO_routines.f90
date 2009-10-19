@@ -273,7 +273,9 @@ CONTAINS
       END DO
     END DO
 
-    NumberOfFields=REGION%fields%number_of_fields
+!     NumberOfFields=REGION%fields%number_of_fields
+! Hack for ALE... to be removed later
+    NumberOfFields=3
     NumberOfDimensions=REGION%coordinate_system%number_of_dimensions
     NumberOfVariableComponents=REGION%equations_sets%equations_sets(1)%ptr%dependent%dependent_field% &
       & variables(1)%number_of_components

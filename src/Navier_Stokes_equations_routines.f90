@@ -1,4 +1,4 @@
-!> \file 
+!> \file  
 !> $Id: Navier_Stokes_equations_routines.f90 372 2009-04-20
 !> \author Sebastian Krittian
 !> \brief This module handles all Navier-Stokes fluid routines.
@@ -81,7 +81,7 @@ MODULE NAVIER_STOKES_EQUATIONS_ROUTINES
   PUBLIC NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE
   PUBLIC NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE
   PUBLIC NAVIER_STOKES_EQUATION_POST_SOLVE
-  PUBLIC NAVIER_STOKES_EQUATION_PRE_SOLVE_SET
+  PUBLIC NAVIER_STOKES_EQUATION_PRE_SOLVE
 
 
 
@@ -206,7 +206,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: GEOMETRIC_SCALING_TYPE
+    INTEGER(INTG) :: GEOMETRIC_SCALING_TYPE,GEOMETRIC_MESH_COMPONENT
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(DECOMPOSITION_TYPE), POINTER :: GEOMETRIC_DECOMPOSITION
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
@@ -337,22 +337,16 @@ CONTAINS
                         CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                           & FIELD_DELUDELN_VARIABLE_TYPE,DEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
 
-                        !set first i components to velocity field (2) and the (i+1)th component to the pressure field (3)
+                        CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                          & 1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                        !Default to the geometric interpolation setup
                         DO I=1,DEPENDENT_FIELD_NUMBER_OF_COMPONENTS
-                          IF(I<DEPENDENT_FIELD_NUMBER_OF_COMPONENTS) THEN
-                            ! set velocity components
-                            CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-                              & FIELD_U_VARIABLE_TYPE,I,2,ERR,ERROR,*999)
-                           CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
-                             & FIELD_DELUDELN_VARIABLE_TYPE,I,2,ERR,ERROR,*999)
-                         ELSE
-                           ! set pressure component
-                           CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
-                             & FIELD_U_VARIABLE_TYPE,I,3,ERR,ERROR,*999)
-                           CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
-                             & FIELD_DELUDELN_VARIABLE_TYPE,I,3,ERR,ERROR,*999)
-                          END IF
+                          CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
+                            & FIELD_U_VARIABLE_TYPE,I,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                          CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
+                            & FIELD_DELUDELN_VARIABLE_TYPE,I,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                         END DO
+
 
                         SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
                           !Specify fem solution method
@@ -1155,17 +1149,17 @@ CONTAINS
     INTEGER:: x,out
 !    LOGICAL :: GRADIENT_TRANSPOSE
 
-!    DOUBLE PRECISION:: test(89,89),test2(89,89),scaling,square
-    DOUBLE PRECISION:: AG_MATRIX(256,256) ! "A" Matrix ("G"radient part) - maximum size allocated
-    DOUBLE PRECISION:: AL_MATRIX(256,256) ! "A" Matrix ("L"aplace part) - maximum size allocated
-    DOUBLE PRECISION:: BT_MATRIX(256,256) ! "B" "T"ranspose Matrix - maximum size allocated
-    DOUBLE PRECISION:: MT_MATRIX(256,256) ! "M"ass "T"ime Matrix - maximum size allocated
-    DOUBLE PRECISION:: CT_MATRIX(256,256) ! "C"onvective "T"erm Matrix - maximum size allocated
-    DOUBLE PRECISION:: RH_VECTOR(256) ! "R"ight "H"and vector - maximum size allocated
-    DOUBLE PRECISION:: NL_VECTOR(256) ! "N"on "L"inear vector - maximum size allocated
+!    REAL(DP) :: test(89,89),test2(89,89),scaling,square
+    REAL(DP) :: AG_MATRIX(256,256) ! "A" Matrix ("G"radient part) - maximum size allocated
+    REAL(DP) :: AL_MATRIX(256,256) ! "A" Matrix ("L"aplace part) - maximum size allocated
+    REAL(DP) :: BT_MATRIX(256,256) ! "B" "T"ranspose Matrix - maximum size allocated
+    REAL(DP) :: MT_MATRIX(256,256) ! "M"ass "T"ime Matrix - maximum size allocated
+    REAL(DP) :: CT_MATRIX(256,256) ! "C"onvective "T"erm Matrix - maximum size allocated
+    REAL(DP) :: RH_VECTOR(256) ! "R"ight "H"and vector - maximum size allocated
+    REAL(DP) :: NL_VECTOR(256) ! "N"on "L"inear vector - maximum size allocated
     
-    DOUBLE PRECISION:: U_VALUE(3)
-    DOUBLE PRECISION:: U_DERIV(3,3)
+    REAL(DP) :: U_VALUE(3)
+    REAL(DP) :: U_DERIV(3,3)
 
     
     CALL ENTERS("NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR,*999)
@@ -1559,12 +1553,12 @@ CONTAINS
     INTEGER:: x
 
 
-    !DOUBLE PRECISION:: test(89,89),test2(89,89),scaling,square
-    DOUBLE PRECISION:: J1_MATRIX(256,256) ! "A" Matrix ("G"radient part) - maximum size allocated
-    DOUBLE PRECISION:: J2_MATRIX(256,256) ! "A" Matrix ("L"aplace part) - maximum size allocated
+    !REAL(DP) :: test(89,89),test2(89,89),scaling,square
+    REAL(DP) :: J1_MATRIX(256,256) ! "A" Matrix ("G"radient part) - maximum size allocated
+    REAL(DP) :: J2_MATRIX(256,256) ! "A" Matrix ("L"aplace part) - maximum size allocated
     
-    DOUBLE PRECISION:: U_VALUE(3)
-    DOUBLE PRECISION:: U_DERIV(3,3)
+    REAL(DP) :: U_VALUE(3)
+    REAL(DP) :: U_DERIV(3,3)
 
 
     CALL ENTERS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR,*999)
@@ -1854,7 +1848,7 @@ CONTAINS
                     OUTPUT_ITERATION_NUMBER=CONTROL_LOOP%TIME_LOOP%OUTPUT_NUMBER
 
                     IF(OUTPUT_ITERATION_NUMBER/=0) THEN
-                      IF(CONTROL_LOOP%TIME_LOOP%CURRENT_TIME<CONTROL_LOOP%TIME_LOOP%STOP_TIME) THEN
+                      IF(CONTROL_LOOP%TIME_LOOP%CURRENT_TIME<=CONTROL_LOOP%TIME_LOOP%STOP_TIME) THEN
                         IF(CURRENT_LOOP_ITERATION<10) THEN
                           WRITE(OUTPUT_FILE,'("TIME_STEP_000",I0)') CURRENT_LOOP_ITERATION
                         ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
@@ -1865,18 +1859,21 @@ CONTAINS
                           WRITE(OUTPUT_FILE,'("TIME_STEP_",I0)') CURRENT_LOOP_ITERATION
                         END IF
                         FILE=OUTPUT_FILE
-  !                    FILE="TRANSIENT_OUTPUT"
+  !          FILE="TRANSIENT_OUTPUT"
                         METHOD="FORTRAN"
                         EXPORT_FIELD=.TRUE.
                         IF(EXPORT_FIELD) THEN          
                           IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields...",ERR,ERROR,*999)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields... ",ERR,ERROR,*999)
                             CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,FILE,ERR,ERROR,*999)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"All fields exported...",ERR,ERROR,*999)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
                           ENDIF
                         ENDIF 
                       ENDIF 
                     ENDIF
+
                   ENDDO
                 ENDIF
               ENDIF
@@ -1907,15 +1904,18 @@ CONTAINS
   !   
       
   !>Sets up the Navier-Stokes problem pre solve.
-  SUBROUTINE NAVIER_STOKES_EQUATION_PRE_SOLVE_SET(CONTROL_LOOP,EQUATIONS_SET,ERR,ERROR,*)
+  SUBROUTINE NAVIER_STOKES_EQUATION_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 !    TYPE(REGION_TYPE), POINTER :: REGION !<pointer to the region to be exported
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(VARYING_STRING) :: FILE,METHOD
     CHARACTER(14) :: OUTPUT_FILE
@@ -1923,49 +1923,77 @@ CONTAINS
 !    INTEGER(INTG) :: REGION_USER_NUMBER
     INTEGER(INTG) :: CURRENT_LOOP_ITERATION
     INTEGER(INTG) :: OUTPUT_ITERATION_NUMBER
+    INTEGER(INTG) :: equations_set_idx
 
-    CALL ENTERS("NAVIER_STOKES_EQUATION_PRE_SOLVE_SET",ERR,ERROR,*999)
+    CALL ENTERS("NAVIER_STOKES_EQUATION_PRE_SOLVE",ERR,ERROR,*999)
 !    NULLIFY(REGION)
- 
-    IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-      SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
-        CASE(PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE)
-          ! do nothing ???
-        CASE(PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE)
-          CURRENT_LOOP_ITERATION=CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER
-          OUTPUT_ITERATION_NUMBER=CONTROL_LOOP%TIME_LOOP%OUTPUT_NUMBER
 
-          IF(OUTPUT_ITERATION_NUMBER==0) THEN
-            WRITE(OUTPUT_FILE,'("TIME_STEP_000",I0)') CURRENT_LOOP_ITERATION
-            FILE=OUTPUT_FILE
-  !          FILE="TRANSIENT_OUTPUT"
-            METHOD="FORTRAN"
-            EXPORT_FIELD=.TRUE.
-            IF(EXPORT_FIELD) THEN          
-              IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
-                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields...",ERR,ERROR,*999)
-                CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,FILE,ERR,ERROR,*999)
-                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"All fields exported...",ERR,ERROR,*999)
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(ASSOCIATED(SOLVER)) THEN
+        IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            CASE(PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE)
+              ! do nothing ???
+            CASE(PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE)
+              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                  !Make sure the equations sets are up to date
+                  DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                    EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+
+! ! !                     CURRENT_LOOP_ITERATION=CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER
+! ! !                     OUTPUT_ITERATION_NUMBER=CONTROL_LOOP%TIME_LOOP%OUTPUT_NUMBER
+! ! ! 
+! ! !                     IF(OUTPUT_ITERATION_NUMBER/=0) THEN
+! ! !                       IF(CONTROL_LOOP%TIME_LOOP%CURRENT_TIME<CONTROL_LOOP%TIME_LOOP%STOP_TIME) THEN
+! ! !                         IF(CURRENT_LOOP_ITERATION<10) THEN
+! ! !                           WRITE(OUTPUT_FILE,'("TIME_STEP_000",I0)') CURRENT_LOOP_ITERATION
+! ! !                         ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
+! ! !                           WRITE(OUTPUT_FILE,'("TIME_STEP_00",I0)') CURRENT_LOOP_ITERATION
+! ! !                         ELSE IF(CURRENT_LOOP_ITERATION<1000) THEN
+! ! !                           WRITE(OUTPUT_FILE,'("TIME_STEP_0",I0)') CURRENT_LOOP_ITERATION
+! ! !                         ELSE IF(CURRENT_LOOP_ITERATION<10000) THEN
+! ! !                           WRITE(OUTPUT_FILE,'("TIME_STEP_",I0)') CURRENT_LOOP_ITERATION
+! ! !                         END IF
+! ! !                         FILE=OUTPUT_FILE
+! ! !   !                    FILE="TRANSIENT_OUTPUT"
+! ! !                         METHOD="FORTRAN"
+! ! !                         EXPORT_FIELD=.TRUE.
+! ! !                         IF(EXPORT_FIELD) THEN          
+! ! !                           IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
+! ! !                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields...",ERR,ERROR,*999)
+! ! !                             CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,FILE,ERR,ERROR,*999)
+! ! !                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"All fields exported...",ERR,ERROR,*999)
+! ! !                           ENDIF
+! ! !                         ENDIF 
+! ! !                       ENDIF 
+! ! !                     ENDIF
+                  ENDDO
+                ENDIF
               ENDIF
-            ENDIF 
-          ENDIF 
-
-        CASE DEFAULT
-          LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-            & " is not valid for a Navier-Stokes fluid type of a fluid mechanics problem class."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
+            CASE DEFAULT
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                & " is not valid for a Navier-Stokes fluid type of a fluid mechanics problem class."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
-
-    CALL EXITS("NAVIER_STOKES_EQUATION_PRE_SOLVE_SET")
+      
+    CALL EXITS("NAVIER_STOKES_EQUATION_PRE_SOLVE")
     RETURN
-999 CALL ERRORS("NAVIER_STOKES_EQUATION_PRE_SOLVE_SET",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_EQUATION_PRE_SOLVE_SET")
+999 CALL ERRORS("NAVIER_STOKES_EQUATION_PRE_SOLVE",ERR,ERROR)
+    CALL EXITS("NAVIER_STOKES_EQUATION_PRe_SOLVE")
     RETURN 1
-  END SUBROUTINE NAVIER_STOKES_EQUATION_PRE_SOLVE_SET
-
+  END SUBROUTINE NAVIER_STOKES_EQUATION_PRE_SOLVE
   !
   !================================================================================================================================
   !

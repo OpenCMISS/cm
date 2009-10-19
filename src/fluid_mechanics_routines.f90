@@ -482,48 +482,6 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  ! chrm 09.10.09
-
-  !>Sets up the pre-solve input for a fluid mechanics problem class.
-  SUBROUTINE FLUID_MECHANICS_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("FLUID_MECHANICS_PRE_SOLVE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-      SELECT CASE(CONTROL_LOOP%PROBLEM%TYPE)
-      CASE(PROBLEM_STOKES_EQUATION_TYPE)
-        !do nothing???
-      CASE(PROBLEM_NAVIER_STOKES_EQUATION_TYPE)
-        !do nothing???
-      CASE(PROBLEM_DARCY_EQUATION_TYPE)
-        CALL DARCY_EQUATION_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-      CASE DEFAULT
-        LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
-          & " is not valid for a fluid mechanics problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-    ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("FLUID_MECHANICS_PRE_SOLVE")
-    RETURN
-999 CALL ERRORS("FLUID_MECHANICS_PRE_SOLVE",ERR,ERROR)
-    CALL EXITS("FLUID_MECHANICS_PRE_SOLVE")
-    RETURN 1
-  END SUBROUTINE FLUID_MECHANICS_PRE_SOLVE
-
-  !
-  !================================================================================================================================
-  !
 
   !>Sets up the output type for a fluid mechanics problem class.
   SUBROUTINE FLUID_MECHANICS_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
@@ -567,27 +525,26 @@ CONTAINS
 
 
   !>Sets up the output type for a fluid mechanics problem class.
-  SUBROUTINE FLUID_MECHANICS_PRE_SOLVE_SET(CONTROL_LOOP,EQUATIONS_SET,ERR,ERROR,*)
+  SUBROUTINE FLUID_MECHANICS_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("FLUID_MECHANICS_PRE_SOLVE_SET",ERR,ERROR,*999)
+    CALL ENTERS("FLUID_MECHANICS_POST_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
       SELECT CASE(CONTROL_LOOP%PROBLEM%TYPE)
       CASE(PROBLEM_STOKES_EQUATION_TYPE)
-        !do nothing for now. TODO: WRITE OUT INITIAL FIELD ???
-!         CALL STOKES_EQUATION_PRE_SOLVE_SET(CONTROL_LOOP,EQUATIONS_SET,ERR,ERROR,*999)
+        CALL STOKES_EQUATION_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
       CASE(PROBLEM_NAVIER_STOKES_EQUATION_TYPE)
-        CALL NAVIER_STOKES_EQUATION_PRE_SOLVE_SET(CONTROL_LOOP,EQUATIONS_SET,ERR,ERROR,*999)
+        CALL NAVIER_STOKES_EQUATION_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
       CASE(PROBLEM_DARCY_EQUATION_TYPE)
-        !do nothing???
+        CALL DARCY_EQUATION_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics problem class."
@@ -597,12 +554,12 @@ CONTAINS
       CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("FLUID_MECHANICS_POST_SOLVE_SET")
+    CALL EXITS("FLUID_MECHANICS_PRE_SOLVE")
     RETURN
-999 CALL ERRORS("FLUID_MECHANICS_POST_SOLVE_SET",ERR,ERROR)
-    CALL EXITS("FLUID_MECHANICS_POST_SOLVE_SET")
+999 CALL ERRORS("FLUID_MECHANICS_PRE_SOLVE",ERR,ERROR)
+    CALL EXITS("FLUID_MECHANICS_PRE_SOLVE")
     RETURN 1
-  END SUBROUTINE FLUID_MECHANICS_PRE_SOLVE_SET
+  END SUBROUTINE FLUID_MECHANICS_PRE_SOLVE
 
   !
   !================================================================================================================================

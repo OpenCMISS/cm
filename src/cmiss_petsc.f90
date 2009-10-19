@@ -65,6 +65,10 @@ MODULE CMISS_PETSC
 #include "include/finclude/petscvec.h"
 #include "include/finclude/petscviewer.h"
 
+#if ( PETSC_VERSION_MAJOR ==2)
+#define MatSolverPackage INTEGER
+#endif
+
   !Module parameters
 
   !Insert mode types
