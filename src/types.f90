@@ -145,8 +145,8 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: INTERPOLATION_TYPE(:) !<INTERPOLATION_TYPE(ni). The interpolation type in the nic'th Xi coordinate direction. Old CMISS name IBT(1,ni,nb) \see BASIS_ROUTINES_InterpolationTypes
     INTEGER(INTG), ALLOCATABLE :: INTERPOLATION_ORDER(:)!<INTERPOLATION_ORDER(ni). The interpolation order in the nic'th Xi coordinate direction. Old CMISS name IBT(2,ni,nb) \see BASIS_ROUTINES_InterpolationOrder 
     !Degenerate information
-    LOGICAL :: DEGENERATE !<Is .TRUE. if the basis is a degenerate basis (i.e., has collpased nodes), .FALSE. if not.
-    INTEGER(INTG), ALLOCATABLE :: COLLAPSED_XI(:) !<COLLAPSED_XI(ni). The collpased state of the ni'th direction. COLLAPSED_XI can be either XI_COLLAPSED, COLLAPSED_AT_XI0, COLLAPSED_AT_XI1 or NOT_COLLAPSED dependending on whether or not the ni'th direction is collapsed, has a perpendicular Xi collapsed at the xi=0 end of the ni'th direction, has a perpendicular xi collapsed at the xi=1 of the ni'th direction or is not collapsed. NOTE: in old cmiss the value IBT(1,ni) = 5 or 6 was set for the ni that was collapsed. The perpendicular line/face was then stored in IBT(3,ni). For this the quadratic1 and quadratic2 type interpolation types are set on the perpendicular xi direction and the ni direction that is collapsed will have COLLAPSED_XI(ni) set to XI_COLLAPSED. BE CAREFUL WITH THIS WHEN TRANSLATING OLD CMISS CODE. Old CMISS name IBT(1,ni) ???? \see BASIS_ROUTINES_XiCollapse
+    LOGICAL :: DEGENERATE !<Is .TRUE. if the basis is a degenerate basis (i.e., has collapsed nodes), .FALSE. if not.
+    INTEGER(INTG), ALLOCATABLE :: COLLAPSED_XI(:) !<COLLAPSED_XI(ni). The collapsed state of the ni'th direction. COLLAPSED_XI can be either XI_COLLAPSED, COLLAPSED_AT_XI0, COLLAPSED_AT_XI1 or NOT_COLLAPSED depending on whether or not the ni'th direction is collapsed, has a perpendicular Xi collapsed at the xi=0 end of the ni'th direction, has a perpendicular xi collapsed at the xi=1 of the ni'th direction or is not collapsed. NOTE: in old cmiss the value IBT(1,ni) = 5 or 6 was set for the ni that was collapsed. The perpendicular line/face was then stored in IBT(3,ni). For this the quadratic1 and quadratic2 type interpolation types are set on the perpendicular xi direction and the ni direction that is collapsed will have COLLAPSED_XI(ni) set to XI_COLLAPSED. BE CAREFUL WITH THIS WHEN TRANSLATING OLD CMISS CODE. Old CMISS name IBT(1,ni) ???? \see BASIS_ROUTINES_XiCollapse
     INTEGER(INTG) :: NUMBER_OF_COLLAPSED_XI !<The number of xi directions in the basis that are collapsed.
     LOGICAL, ALLOCATABLE :: NODE_AT_COLLAPSE(:) !<NODE_AT_COLLAPSE(nn). Is .TRUE. if the nn'th node of the basis is at a collapse, .FALSE. if not.
     !Quadrature
@@ -171,7 +171,11 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS_IN_LOCAL_LINE(:,:) !<NODE_NUMBERS_IN_LOCAL_LINE(nnl,nae). The local node numbers (nn) for the nnl'th line node in the nae'th local line for the basis. Old CMISS name NNL(1..,nae,nb).
     INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_NUMBERS_IN_LOCAL_LINE(:,:) !<DERIVATIVES_NUMBERS_IN_LOCAL_LINE(nnl,nae). The derivative numbers (nk) for the nnl'th line node in the nae'th local line for the basis.
     !Face information
-!!TODO:
+    INTEGER(INTG) :: NUMBER_OF_LOCAL_FACES !<The number of local faces in the basis.
+    INTEGER(INTG), ALLOCATABLE :: LOCAL_FACE_XI_DIRECTION(:) !<LOCAL_FACE_XI_DIRECTION(nae). The Xi direction of the nae'th local face for the basis.
+    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_NODES_IN_LOCAL_FACE(:) !<NUMBER_OF_NODES_IN_LOCAL_FACE(nae). The the number of nodes in the nae'th local face for the basis. Old CMISS name NNL(0,nae,nb).
+    INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS_IN_LOCAL_FACE(:,:) !<NODE_NUMBERS_IN_LOCAL_FACE(nnl,nae). The local node numbers (nn) for the nnl'th face node in the nae'th local face for the basis. Old CMISS name NNL(1..,nae,nb).
+    INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_NUMBERS_IN_LOCAL_FACE(:,:) !<DERIVATIVES_NUMBERS_IN_LOCAL_FACE(nnl,nae). The derivative numbers (nk) for the nnl'th face node in the nae'th local face for the basis.
     !Sub-basis information
     TYPE(BASIS_PTR_TYPE), POINTER :: LINE_BASES(:) !<LINE_BASES(nae). The pointer to the basis for the nae'th line for the basis.
     TYPE(BASIS_PTR_TYPE), POINTER :: FACE_BASES(:) !<FACE_BASES(naf). The pointer to the basis for the naf'th face for the basis.
@@ -471,6 +475,8 @@ MODULE TYPES
     INTEGER(INTG), POINTER :: SURROUNDING_ELEMENTS(:) !<SURROUNDING_ELEMENTS(nep). The local element number of the nep'th element that is surrounding the node. Old CMISS name NENP(np,nep,0:nr). \todo Change this to allocatable.
     INTEGER(INTG) :: NUMBER_OF_NODE_LINES !<The number of lines surrounding the node in the domain.
     INTEGER(INTG), ALLOCATABLE :: NODE_LINES(:) !<NODE_LINES(nlp). The local line number of the nlp'th line that is surrounding the node.
+    INTEGER(INTG) :: NUMBER_OF_NODE_FACES !<The number of faces surrounding the node in the domain.
+    INTEGER(INTG), ALLOCATABLE :: NODE_FACES(:) !<NODE_FACES(nlp). The local face number of the nlp'th face that is surrounding the node.
     LOGICAL :: BOUNDARY_NODE !<Is .TRUE. if the node is on the boundary of the mesh for the domain, .FALSE. if not.
   END TYPE DOMAIN_NODE_TYPE
 
@@ -734,6 +740,24 @@ MODULE TYPES
     TYPE(DECOMPOSITION_LINE_TYPE), ALLOCATABLE :: LINES(:) !<LINES(nl). The pointer to the array of topology information for the lines of this decomposition. LINES(nl) contains the topological information for the nl'th local line of the decomposition.
   END TYPE DECOMPOSITION_LINES_TYPE
 
+  !>Contains the information for a face in a decomposition.
+  TYPE DECOMPOSITION_FACE_TYPE
+    INTEGER(INTG) :: NUMBER !<The face number in the decomposition.
+    INTEGER(INTG) :: XI_DIRECTION !<The Xi direction of the face, the direction of the normal to the face
+    INTEGER(INTG) :: NUMBER_OF_SURROUNDING_ELEMENTS !<The number of elements that surround (use) this face.
+    INTEGER(INTG), ALLOCATABLE :: SURROUNDING_ELEMENTS(:) !<SURROUNDING_ELEMENTS(nel). The local element number of the nel'th element that surrounds (uses) this face. 
+    INTEGER(INTG), ALLOCATABLE :: ELEMENT_FACES(:) !<ELEMENT_FACES(nel). The local arc number of the nel'th element that surrounds (uses) this face.
+!    INTEGER(INTG) :: ADJACENT_FACES(0:1) !<ADJACENT_FACES(0:1). The face number of adjacent faces. ADJACENT_FACES(0) is the face number adjacent in the -xi direction. ADJACENT_FACES(1) is the face number adjacent in the +xi direction. Old CMISS name NPL(2..3,0,nl).
+    LOGICAL :: BOUNDARY_FACE !<Is .TRUE. if the face is on the boundary of the mesh for the domain, .FALSE. if not.
+  END TYPE DECOMPOSITION_FACE_TYPE
+
+  !>Contains the topology information for the faces of a decomposition.
+  TYPE DECOMPOSITION_FACES_TYPE
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<The pointer to the decomposition for this faces topology information.
+    INTEGER(INTG) :: NUMBER_OF_FACES !<The number of faces in this decomposition topology.
+    TYPE(DECOMPOSITION_FACE_TYPE), ALLOCATABLE :: FACES(:) !<FACES(nl). The pointer to the array of topology information for the faces of this decomposition. FACES(nl) contains the topological information for the nl'th local face of the decomposition.
+  END TYPE DECOMPOSITION_FACES_TYPE
+
   !>Contains the information for an element in a decomposition.
   TYPE DECOMPOSITION_ELEMENT_TYPE
     INTEGER(INTG) :: LOCAL_NUMBER !<The local element number in the decomposition.
@@ -742,6 +766,7 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ADJACENT_ELEMENTS(:) !<NUMBER_OF_ADJACENT_ELEMENTS(-ni:ni). The number of elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent element before the element in the ni'th direction and +ni gives the adjacent element after the element in the ni'th direction. The ni=0 index should be 1 for the current element. Old CMISS name NXI(-ni:ni,0:nei,ne).
     INTEGER(INTG), ALLOCATABLE :: ADJACENT_ELEMENTS(:,:) !<ADJACENT_ELEMENTS(nei,-ni:ni). The local element numbers of the elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent elements before the element in the ni'th direction and +ni gives the adjacent elements after the element in the ni'th direction. The ni=0 index should give the current element number. Old CMISS name NXI(-ni:ni,0:nei,ne).
     INTEGER(INTG), ALLOCATABLE :: ELEMENT_LINES(:) !<ELEMENT_LINES(nae). The local decomposition line number corresponding to the nae'th local line of the element. Old CMISS name NLL(nae,ne). 
+    INTEGER(INTG), ALLOCATABLE :: ELEMENT_FACES(:) !<ELEMENT_FACES(nae). The local decomposition face number corresponding to the nae'th local face of the element. Old CMISS name NLL(nae,ne). 
     LOGICAL :: BOUNDARY_ELEMENT !<Is .TRUE. if the element is on the boundary of the mesh for the domain, .FALSE. if not.
   END TYPE DECOMPOSITION_ELEMENT_TYPE
 
@@ -757,6 +782,7 @@ MODULE TYPES
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<The pointer to the decomposition for this topology information.
     TYPE(DECOMPOSITION_ELEMENTS_TYPE), POINTER :: ELEMENTS !<The pointer to the topology information for the elements of this decomposition.
     TYPE(DECOMPOSITION_LINES_TYPE), POINTER :: LINES !<The pointer to the topology information for the lines of this decomposition.
+    TYPE(DECOMPOSITION_FACES_TYPE), POINTER :: FACES !<The pointer to the topology information for the faces of this decomposition.
   END TYPE DECOMPOSITION_TOPOLOGY_TYPE
 
   !>Contains information on the mesh decomposition. \see OPENCMISS::CMISSDecompositionType
@@ -1210,7 +1236,7 @@ MODULE TYPES
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RESIDUAL_VARIABLE_MAPPING !<A pointer to the residual variable domain mapping
     REAL(DP) :: RESIDUAL_COEFFICIENT !<The multiplicative coefficient applied to the residual vector
     INTEGER(INTG), ALLOCATABLE :: RESIDUAL_DOF_TO_EQUATIONS_ROW_MAP(:) !<RESIDUAL_DOF_TO_EQUATIONS_ROW_MAP(residual_dof_idx). The mapping from the residual_dof_idx'th residual dof in the residual variable to the equations row.   
-    INTEGER(INTG), ALLOCATABLE :: EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP(:) !<EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP(row_idx). The mapping from the row_idx'th row of the equations to the residual dof.   
+    INTEGER(INTG), ALLOCATABLE :: EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP(:) !<EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP(row_idx). The mapping from the row_idx'th row of the equations to the source dof.   
   END TYPE EQUATIONS_MAPPING_NONLINEAR_TYPE
 
   TYPE EQUATIONS_MAPPING_RHS_TYPE
