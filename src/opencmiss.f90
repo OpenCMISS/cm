@@ -5322,7 +5322,7 @@ CONTAINS
   SUBROUTINE CMISSBasisNumberOfXiGetObj(Basis,NumberOfXi,Err)
   
     !Argument variables
-    TYPE(CMISSBasisType), INTENT(IN) :: Basis !The basis to get the number of xi directions for.
+    TYPE(CMISSBasisType), INTENT(IN) :: Basis !<The basis to get the number of xi directions for.
     INTEGER(INTG), INTENT(OUT) :: NumberOfXi !<On return, the number of xi directions in the specified basis.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
@@ -23622,7 +23622,7 @@ CONTAINS
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the specification for.
-    INTEGER(INTG), INTENT(IN) :: ProblemClass !The problem class to set. \see OPENCMISS_ProblemClasses
+    INTEGER(INTG), INTENT(IN) :: ProblemClass !<The problem class to set. \see OPENCMISS_ProblemClasses
     INTEGER(INTG), INTENT(IN) :: ProblemType !<The problem type to set. \see OPENCMISS_ProblemTypes
     INTEGER(INTG), INTENT(IN) :: ProblemSubtype !<The problem subtype to set. \see OPENCMISS_ProblemSubTypes
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
@@ -28046,7 +28046,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The Newton solver to set the relative tolerance for.
-    REAL(DP), INTENT(IN) :: RelativeTolerance !The relative tolerance for the Newton solver to set.
+    REAL(DP), INTENT(IN) :: RelativeTolerance !<The relative tolerance for the Newton solver to set.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -28330,7 +28330,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton trust region solver to set the tolerance for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the tolerance for.
     INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the tolerance for.
-    REAL(DP), INTENT(IN) :: Tolerance !The tolerance for the Newton trust region solver to set.
+    REAL(DP), INTENT(IN) :: Tolerance !<The tolerance for the Newton trust region solver to set.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -28368,7 +28368,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The Newton trust region solver to set the tolerance for.
-    REAL(DP), INTENT(IN) :: Tolerance !The tolerance for the Newton trust region solver to set.
+    REAL(DP), INTENT(IN) :: Tolerance !<The tolerance for the Newton trust region solver to set.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -28437,7 +28437,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton solver to set the type for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the type for.
     INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the type for.
-    INTEGER(INTG), INTENT(IN) :: NewtonSolveType !The type of the Newton solver to set. \see OPENCMISS_NewtonSolverTypes
+    INTEGER(INTG), INTENT(IN) :: NewtonSolveType !<The type of the Newton solver to set. \see OPENCMISS_NewtonSolverTypes
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -28475,7 +28475,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The Newton solver to set the type for.
-    INTEGER(INTG), INTENT(IN) :: NewtonSolveType !The type of the Newton solver to set. \see OPENCMISS_NewtonSolverTypes
+    INTEGER(INTG), INTENT(IN) :: NewtonSolveType !<The type of the Newton solver to set. \see OPENCMISS_NewtonSolverTypes
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
