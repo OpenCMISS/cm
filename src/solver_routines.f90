@@ -2408,7 +2408,7 @@ CONTAINS
     TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: DAMPING_MATRIX,EQUATIONS_MATRIX,MASS_MATRIX
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD, INDEPENDENT_FIELD
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD !, INDEPENDENT_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: DYNAMIC_VARIABLE,LINEAR_VARIABLE
     TYPE(SOLVER_TYPE), POINTER :: SOLVER,LINEAR_SOLVER,NONLINEAR_SOLVER
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
@@ -2455,7 +2455,6 @@ CONTAINS
                                 IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
                                   & FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE( &
                                   & DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
-!TODO: Check -> sebk
                                 IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
                                   IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_INCREMENTAL_VALUES_SET_TYPE)% & 
                                     & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
@@ -2473,26 +2472,6 @@ CONTAINS
                                     & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
                                     & FIELD_PREVIOUS_RESIDUAL_SET_TYPE,ERR,ERROR,*999)
                                 END IF
-
-                                IF(DYNAMIC_SOLVER%ALE) THEN
-                                  INDEPENDENT_FIELD=>EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD
-                                  IF(ASSOCIATED(INDEPENDENT_FIELD)) THEN
-                                    IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_MESH_DISPLACEMENT_SET_TYPE)% & 
-                                      & PTR)) CALL FIELD_PARAMETER_SET_CREATE(INDEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                      & FIELD_MESH_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
-                                    IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_MESH_VELOCITY_SET_TYPE)% & 
-                                      & PTR)) CALL FIELD_PARAMETER_SET_CREATE(INDEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                      & FIELD_MESH_VELOCITY_SET_TYPE,ERR,ERROR,*999)
-                                  ELSE
-                                    LOCAL_ERROR="Equations set independent field is not associated for equations set index "// &
-                                      & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-
-                                END IF
-
-!
-!TODO: Check -> sebk
                               CASE(SOLVER_DYNAMIC_SECOND_DEGREE)
                                 IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_PREVIOUS_VALUES_SET_TYPE)%PTR)) &
                                   & CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
@@ -2509,7 +2488,6 @@ CONTAINS
                                 IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
                                   & FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD, &
                                   & DYNAMIC_VARIABLE_TYPE,FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE,ERR,ERROR,*999)
-!TODO: Check -> sebk
                                 IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
                                   IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_INCREMENTAL_VALUES_SET_TYPE)% & 
                                     & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
@@ -2529,9 +2507,6 @@ CONTAINS
                                     & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
                                     & FIELD_PREVIOUS_RESIDUAL_SET_TYPE,ERR,ERROR,*999)
                                 END IF
-!
-!TODO: Check -> sebk
-
                               CASE(SOLVER_DYNAMIC_THIRD_DEGREE)
                                 IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_PREVIOUS_VALUES_SET_TYPE)%PTR)) &
                                   & CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
@@ -2558,8 +2533,6 @@ CONTAINS
                                   & FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE( &
                                   & DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE, &
                                   & ERR,ERROR,*999)
-
-!TODO: Check -> sebk
                                 IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
                                   IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_INCREMENTAL_VALUES_SET_TYPE)% & 
                                     & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
@@ -2583,9 +2556,6 @@ CONTAINS
                                     & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
                                     & FIELD_PREVIOUS_RESIDUAL_SET_TYPE,ERR,ERROR,*999)
                                 END IF
- 
-!
-!TODO: Check -> sebk
                               CASE DEFAULT
                                 LOCAL_ERROR="The dynamic solver degree of "// &
                                   & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
@@ -3424,9 +3394,6 @@ CONTAINS
                           DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
                           IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
                             DYNAMIC_VARIABLE_TYPE=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
-
-!TODO: Check ->  sebk 
-!
                             IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
                               !Store the solver residual from the previous nonlinear solve (or initial values) 
                               NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
@@ -3459,9 +3426,6 @@ CONTAINS
                                 CALL FLAG_ERROR("Equations mapping nonlinear mapping is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ENDIF
-
-!
-!TODO: Check ->  sebk 
                             IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
                               !Calculate the mean predicted and predicted values for this dependent field
                               SELECT CASE(DYNAMIC_SOLVER%DEGREE)
@@ -4025,9 +3989,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: degree_idx
+!     INTEGER(INTG) :: degree_idx
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+!     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("SOLVER_DYNAMIC_ALE_SET",ERR,ERROR,*999)
 
@@ -7765,12 +7729,9 @@ CONTAINS
                     IF(ASSOCIATED(SOLVER_RHS_VECTOR)) THEN
                       !Initialise the RHS to zero
                       CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(SOLVER_RHS_VECTOR,0.0_DP,ERR,ERROR,*999)          
-
                       !Get the solver variables data                  
                       NULLIFY(CHECK_DATA)
                       CALL DISTRIBUTED_VECTOR_DATA_GET(SOLVER_RHS_VECTOR,CHECK_DATA,ERR,ERROR,*999)             
-
-  
                       !Loop over the equations sets
                       DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                         EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
@@ -7936,7 +7897,6 @@ CONTAINS
 
                                             !Get the nonlinear vector contribute to the RHS values if nonlinear solve
                                             IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN 
-! TODO CHECK sebk
                                               NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
                                                 IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
                                                  NULLIFY(PREVIOUS_RESIDUAL_PARAMETERS)
@@ -7949,9 +7909,7 @@ CONTAINS
                                                   DYNAMIC_VALUE=DYNAMIC_VALUE+PREVIOUS_RESIDUAL_VALUE*(1.0_DP-DYNAMIC_SOLVER% & 
                                                     & THETA(1))
                                                 ENDIF
-! TODO CHECK sebk
                                             END IF
-
                                             !Loop over the solver rows associated with this equations set row
                                             DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                                               & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
@@ -8081,12 +8039,6 @@ CONTAINS
                   ENDIF
                 ENDIF
               END IF
-!sebk
-! |
-! |
-! ADD IN RESIDUAL CALCULATION
-! |
-! |
 
               NULLIFY(SOLVER_RESIDUAL_VECTOR)
               IF(SELECTION_TYPE==SOLVER_MATRICES_ALL.OR. &
@@ -12152,16 +12104,13 @@ CONTAINS
                               SOLVER_VALUE=SOLVER_DATA(solver_dof_idx)*variable_coefficient+additive_constant
                               !Set the dependent field dof
                               IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
-!TODO check sebk 06/10/2009
-!
                                 NULLIFY(PREVIOUS_DATA)
                                 CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
                                   & FIELD_PREVIOUS_VALUES_SET_TYPE,PREVIOUS_DATA,ERR,ERROR,*999)
                                 PREVIOUS_VALUE=PREVIOUS_DATA(variable_dof)
                                 CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                   & FIELD_VALUES_SET_TYPE,variable_dof,PREVIOUS_VALUE,ERR,ERROR,*999)
-!
-!TODO check sebk 06/10/2009
+
                                 DISPLACEMENT_VALUE=DYNAMIC_DISPLACEMENT_FACTOR*SOLVER_VALUE
                                 CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                   & FIELD_VALUES_SET_TYPE,variable_dof,DISPLACEMENT_VALUE,ERR,ERROR,*999)
