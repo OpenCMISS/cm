@@ -3226,7 +3226,7 @@ CONTAINS
     CALL EXITS("PETSC_PCFACTORSETMATSOLVERPACKAGE")
     RETURN 1
   END SUBROUTINE PETSC_PCFACTORSETMATSOLVERPACKAGE
-#ENDIF
+#endif
     
   !
   !================================================================================================================================

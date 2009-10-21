@@ -180,6 +180,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("GENERATED_MESH_BASIS_SET",ERR,ERROR,*999)
 
@@ -193,19 +194,25 @@ CONTAINS
             IF(ASSOCIATED(GENERATED_MESH%REGULAR_MESH)) THEN 
               GENERATED_MESH%REGULAR_MESH%BASIS=>BASIS 
             ELSE
-              CALL FLAG_ERROR("Regular generated mesh is not associated",ERR,ERROR,*999)
-            END IF
+              CALL FLAG_ERROR("Regular generated mesh is not associated.",ERR,ERROR,*999)
+            ENDIF
+          CASE(GENERATED_MESH_POLAR_MESH_TYPE)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GENERATED_MESH_FRACTAL_TREE_MESH_TYPE)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
           CASE(GENERATED_MESH_CYLINDER_MESH_TYPE)
             IF(ASSOCIATED(GENERATED_MESH%CYLINDER_MESH)) THEN
               GENERATED_MESH%CYLINDER_MESH%BASIS=>BASIS 
             ELSE
-              CALL FLAG_ERROR("Cylinder generated mesh is not associated",ERR,ERROR,*999)
-            END IF
+              CALL FLAG_ERROR("Cylinder generated mesh is not associated.",ERR,ERROR,*999)
+            ENDIF
           CASE DEFAULT
-            CALL FLAG_ERROR("Generated mesh type is either invalid or not implemented",ERR,ERROR,*999)
+            LOCAL_ERROR="The generated mesh type of "//TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%GENERATED_TYPE,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT          
         ELSE
-          CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Basis is not associated,",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
@@ -473,6 +480,10 @@ CONTAINS
             & TRIM(NUMBER_TO_VSTRING(SIZE(GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT,1),"*",ERR,ERROR))//"."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
+      CASE(GENERATED_MESH_POLAR_MESH_TYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(GENERATED_MESH_FRACTAL_TREE_MESH_TYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(GENERATED_MESH_CYLINDER_MESH_TYPE)
         IF(SIZE(EXTENT,1)>=3) THEN
           EXTENT=GENERATED_MESH%CYLINDER_MESH%CYLINDER_EXTENT
@@ -482,7 +493,9 @@ CONTAINS
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       CASE DEFAULT
-        CALL FLAG_ERROR("Generated mesh type is either invalid or not implemented",ERR,ERROR,*999)
+        LOCAL_ERROR="The generated mesh mesh type of "//TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%GENERATED_TYPE,"*",ERR,ERROR))// &
+          & " is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
       CALL FLAG_ERROR("Generated mesh is not associated",ERR,ERROR,*999)
@@ -508,6 +521,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("GENERATED_MESH_EXTENT_SET",ERR,ERROR,*999)
 
@@ -522,16 +536,22 @@ CONTAINS
             GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT=EXTENT 
           ELSE
             CALL FLAG_ERROR("Regular generated mesh is not associated.",ERR,ERROR,*999)
-          END IF
+          ENDIF
+        CASE(GENERATED_MESH_POLAR_MESH_TYPE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(GENERATED_MESH_FRACTAL_TREE_MESH_TYPE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         CASE(GENERATED_MESH_CYLINDER_MESH_TYPE)
           IF(ASSOCIATED(GENERATED_MESH%CYLINDER_MESH)) THEN 
             ALLOCATE(GENERATED_MESH%CYLINDER_MESH%CYLINDER_EXTENT(SIZE(EXTENT)),STAT=ERR)
             GENERATED_MESH%CYLINDER_MESH%CYLINDER_EXTENT=EXTENT 
           ELSE
             CALL FLAG_ERROR("Cylinder generated mesh is not associated.",ERR,ERROR,*999)
-          END IF
+          ENDIF
         CASE DEFAULT
-          CALL FLAG_ERROR("Generated mesh type is either invalid or not implemented.",ERR,ERROR,*999)
+          LOCAL_ERROR="The generated mesh mesh type of "//TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%GENERATED_TYPE,"*",ERR,ERROR))// &
+            & " is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
@@ -562,6 +582,7 @@ CONTAINS
 
     IF(ASSOCIATED(GENERATED_MESH)) THEN
       CALL GENERATED_MESH_REGULAR_FINALISE(GENERATED_MESH%REGULAR_MESH,ERR,ERROR,*999)
+      CALL GENERATED_MESH_CYLINDER_FINALISE(GENERATED_MESH%CYLINDER_MESH,ERR,ERROR,*999)
       NULLIFY(GENERATED_MESH%MESH%GENERATED_MESH)
       NULLIFY(GENERATED_MESH%MESH)
       DEALLOCATE(GENERATED_MESH)
@@ -639,6 +660,10 @@ CONTAINS
             & TRIM(NUMBER_TO_VSTRING(SIZE(GENERATED_MESH%REGULAR_MESH%NUMBER_OF_ELEMENTS_XI,1),"*",ERR,ERROR))//"."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
+      CASE(GENERATED_MESH_POLAR_MESH_TYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(GENERATED_MESH_FRACTAL_TREE_MESH_TYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(GENERATED_MESH_CYLINDER_MESH_TYPE)
         IF(SIZE(NUMBER_OF_ELEMENTS,1)>=SIZE(GENERATED_MESH%CYLINDER_MESH%NUMBER_OF_ELEMENTS_XI,1)) THEN
           NUMBER_OF_ELEMENTS=GENERATED_MESH%CYLINDER_MESH%NUMBER_OF_ELEMENTS_XI
@@ -649,7 +674,9 @@ CONTAINS
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       CASE DEFAULT
-        CALL FLAG_ERROR("Generated mesh type is either invalid or not implemented.",ERR,ERROR,*999)
+        LOCAL_ERROR="The generated mesh mesh type of "//TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%GENERATED_TYPE,"*",ERR,ERROR))// &
+          & " is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
       CALL FLAG_ERROR("Generated mesh is not associated.",ERR,ERROR,*999)
@@ -675,6 +702,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("GENERATED_MESH_NUMBER_OF_ELEMENTS_SET",ERR,ERROR,*999)
 
@@ -689,7 +717,11 @@ CONTAINS
             GENERATED_MESH%REGULAR_MESH%NUMBER_OF_ELEMENTS_XI=NUMBER_OF_ELEMENTS_XI 
           ELSE
             CALL FLAG_ERROR("Regular generated mesh is not associated.",ERR,ERROR,*999)
-          END IF
+          ENDIF
+        CASE(GENERATED_MESH_POLAR_MESH_TYPE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(GENERATED_MESH_FRACTAL_TREE_MESH_TYPE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         CASE(GENERATED_MESH_CYLINDER_MESH_TYPE)
           IF(ASSOCIATED(GENERATED_MESH%CYLINDER_MESH)) THEN
             ALLOCATE(GENERATED_MESH%CYLINDER_MESH%NUMBER_OF_ELEMENTS_XI(SIZE(NUMBER_OF_ELEMENTS_XI)),STAT=ERR)
@@ -698,7 +730,9 @@ CONTAINS
             CALL FLAG_ERROR("Cylinder generated mesh is not associated.",ERR,ERROR,*999)
           ENDIF
         CASE DEFAULT
-          CALL FLAG_ERROR("Generated mesh type is either invalid or not implemented.",ERR,ERROR,*999)
+          LOCAL_ERROR="The generated mesh mesh type of "//TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%GENERATED_TYPE,"*",ERR,ERROR))// &
+            & " is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
@@ -740,6 +774,10 @@ CONTAINS
             & TRIM(NUMBER_TO_VSTRING(SIZE(GENERATED_MESH%REGULAR_MESH%ORIGIN,1),"*",ERR,ERROR))//"."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
+      CASE(GENERATED_MESH_POLAR_MESH_TYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(GENERATED_MESH_FRACTAL_TREE_MESH_TYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(GENERATED_MESH_CYLINDER_MESH_TYPE)
         IF(SIZE(ORIGIN,1)>=SIZE(GENERATED_MESH%CYLINDER_MESH%ORIGIN,1)) THEN
           ORIGIN=GENERATED_MESH%CYLINDER_MESH%ORIGIN 
@@ -749,7 +787,9 @@ CONTAINS
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       CASE DEFAULT
-        CALL FLAG_ERROR("Generated mesh type is either invalid or not implemented",ERR,ERROR,*999)
+        LOCAL_ERROR="The generated mesh mesh type of "//TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%GENERATED_TYPE,"*",ERR,ERROR))// &
+          & " is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
       CALL FLAG_ERROR("Generated mesh is not associated",ERR,ERROR,*999)
@@ -775,6 +815,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("GENERATED_MESH_ORIGIN_SET",ERR,ERROR,*999)
 
@@ -792,7 +833,11 @@ CONTAINS
             GENERATED_MESH%REGULAR_MESH%ORIGIN=ORIGIN 
           ELSE
             CALL FLAG_ERROR("Regular generated mesh is not associated.",ERR,ERROR,*999)
-          END IF
+          ENDIF
+        CASE(GENERATED_MESH_POLAR_MESH_TYPE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(GENERATED_MESH_FRACTAL_TREE_MESH_TYPE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         CASE(GENERATED_MESH_CYLINDER_MESH_TYPE)
           IF(ASSOCIATED(GENERATED_MESH%CYLINDER_MESH)) THEN 
             IF(SIZE(ORIGIN,1)==3) THEN
@@ -808,7 +853,9 @@ CONTAINS
             CALL FLAG_ERROR("Cylinder generated mesh is not associated.",ERR,ERROR,*999)
           END IF
         CASE DEFAULT
-          CALL FLAG_ERROR("Generated mesh type is either invalid or not implemented.",ERR,ERROR,*999)
+          LOCAL_ERROR="The generated mesh mesh type of "//TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%GENERATED_TYPE,"*",ERR,ERROR))// &
+            & " is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
@@ -880,7 +927,7 @@ CONTAINS
                         IF(.NOT.ALL(NUMBER_ELEMENTS_XI>0)) CALL FLAG_ERROR("Must have 1 or more elements in all directions.", &
                           & ERR,ERROR,*999)
                         IF(.NOT.ALL(BASIS%COLLAPSED_XI==BASIS_NOT_COLLAPSED))  &
-                          & CALL FLAG_ERROR("Degenerate (collapsed) basis not implemented",ERR,ERROR,*999)
+                          & CALL FLAG_ERROR("Degenerate (collapsed) basis not implemented.",ERR,ERROR,*999)
                         !Calculate sizes
                         TOTAL_NUMBER_OF_NODES=1
                         TOTAL_NUMBER_OF_ELEMENTS=1
@@ -964,38 +1011,38 @@ CONTAINS
                         CALL MESH_CREATE_FINISH(GENERATED_MESH%MESH,ERR,ERROR,*999)                        
                       ELSE
                         CALL FLAG_ERROR("The number of xi directions of the given basis does not match the size of &
-                          &the number of elements for the mesh",ERR,ERROR,*999)
+                          &the number of elements for the mesh.",ERR,ERROR,*999)
                       ENDIF  
                     CASE(BASIS_SIMPLEX_TYPE)                  
-                      CALL FLAG_ERROR("Regular meshes with simplex basis types is not implemented",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Regular meshes with simplex basis types is not implemented.",ERR,ERROR,*999)
                     CASE DEFAULT
-                      CALL FLAG_ERROR("Basis type is either invalid or not implemented",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Basis type is either invalid or not implemented.",ERR,ERROR,*999)
                     END SELECT
                   ELSE
-                    CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+                    CALL FLAG_ERROR("Basis is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
                   CALL FLAG_ERROR("The number of dimensions of the given regular mesh does not match the size of &
-                    &the maximum extent",ERR,ERROR,*999)
+                    &the maximum extent.",ERR,ERROR,*999)
                 ENDIF
               ELSE
                 CALL FLAG_ERROR("The number of dimensions of the given regular mesh does not match the size of &
-                  &the origin",ERR,ERROR,*999)
+                  &the origin.",ERR,ERROR,*999)
               ENDIF
             CASE DEFAULT
-              CALL FLAG_ERROR("Coordinate type is either invalid or not implemented",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Coordinate type is either invalid or not implemented.",ERR,ERROR,*999)
             END SELECT
           ELSE
-            CALL FLAG_ERROR("Coordiate System is not associated",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Coordiate System is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Regular mesh is not associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Regular mesh is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Generated Mesh is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Generated Mesh is not associated.",ERR,ERROR,*999)
     ENDIF
 
     IF(ALLOCATED(NUMBER_ELEMENTS_XI)) DEALLOCATE(NUMBER_ELEMENTS_XI)
@@ -1019,7 +1066,7 @@ CONTAINS
   SUBROUTINE GENERATED_MESH_CYLINDER_CREATE_FINISH(GENERATED_MESH,MESH_USER_NUMBER,ERR,ERROR,*)
     !Argument variables
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh
-    INTEGER(INTG), INTENT(IN) :: MESH_USER_NUMBER !<The user number for the mesh to generate
+    INTEGER(INTG), INTENT(IN) :: MESH_USER_NUMBER !<The user number for the mesh to generate.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1073,11 +1120,11 @@ CONTAINS
                           IF(NUMBER_ELEMENTS_XI(2)<3) CALL FLAG_ERROR("Need >2 elements around the circumferential direction.", &
                             & ERR,ERROR,*999)
                           IF(.NOT.ALL(BASIS%COLLAPSED_XI==BASIS_NOT_COLLAPSED))  &
-                            & CALL FLAG_ERROR("Degenerate (collapsed) basis not implemented",ERR,ERROR,*999)
+                            & CALL FLAG_ERROR("Degenerate (collapsed) basis not implemented.",ERR,ERROR,*999)
                           !Calculate nodes and element sizes
                           CALL GENERATED_MESH_CYLINDER_BUILD_NODE_INDICES(NUMBER_ELEMENTS_XI,BASIS%NUMBER_OF_NODES_XI, &
-                          & CYLINDER_MESH%CYLINDER_EXTENT, TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_ELEMENTS, &
-                          & NIDX,EIDX,DELTA,DELTAi,ERR,ERROR,*999)
+                            & CYLINDER_MESH%CYLINDER_EXTENT, TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_ELEMENTS, &
+                            & NIDX,EIDX,DELTA,DELTAi,ERR,ERROR,*999)
                           !Create the default node set
                           !TODO we finish create after the nodes are initialised?
                           NULLIFY(NODES)
@@ -1093,7 +1140,7 @@ CONTAINS
                           CALL MESH_TOPOLOGY_ELEMENTS_CREATE_START(GENERATED_MESH%MESH,1,BASIS,MESH_ELEMENTS,ERR,ERROR,*999)
                           !Set the elements for the regular mesh
                           ALLOCATE(ELEMENT_NODES(BASIS%NUMBER_OF_NODES),STAT=ERR)
-                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element nodes",ERR,ERROR,*999)                
+                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element nodes.",ERR,ERROR,*999)                
                           ! calculate element topology (nodes per each element)
                           ! the idea is to translate given (r,theta,z) to NIDX equivalents, which include interior nodes
                           ne=0
@@ -1130,41 +1177,41 @@ CONTAINS
                           CALL MESH_CREATE_FINISH(GENERATED_MESH%MESH,ERR,ERROR,*999)                        
                         ELSE
                           CALL FLAG_ERROR("The number of xi directions of the given basis does not match the size of &
-                            &the number of elements for the mesh",ERR,ERROR,*999)
+                            &the number of elements for the mesh.",ERR,ERROR,*999)
                         ENDIF  
                       CASE(BASIS_SIMPLEX_TYPE)                  
-                        CALL FLAG_ERROR("Regular meshes with simplex basis types is not implemented",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Cylinder meshes with simplex basis types is not implemented.",ERR,ERROR,*999)
                       CASE DEFAULT
-                        CALL FLAG_ERROR("Basis type is either invalid or not implemented",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Basis type is either invalid or not implemented.",ERR,ERROR,*999)
                       END SELECT
                     ELSE
-                      CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Basis is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
                     CALL FLAG_ERROR("The number of dimensions of the given regular mesh does not match the size of &
-                      &the maximum extent",ERR,ERROR,*999)
+                      &the maximum extent.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
                   CALL FLAG_ERROR("The number of dimensions of the given regular mesh does not match the size of &
-                    &the origin",ERR,ERROR,*999)
+                    &the origin.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Cylinder mesh requires a 3 dimensional coordinate system",ERR,ERROR,*999) 
+                CALL FLAG_ERROR("Cylinder mesh requires a 3 dimensional coordinate system.",ERR,ERROR,*999) 
               ENDIF
             CASE DEFAULT
-              CALL FLAG_ERROR("Coordinate type is either invalid or not implemented",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Coordinate type is either invalid or not implemented.",ERR,ERROR,*999)
             END SELECT
           ELSE
-            CALL FLAG_ERROR("Coordiate System is not associated",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Coordiate System is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Regular mesh is not associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Regular mesh is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Generated Mesh is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Generated Mesh is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("GENERATED_MESH_CYLINDER_CREATE_FINISH")
@@ -1219,12 +1266,14 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
     
     CALL ENTERS("GENERATED_MESH_CYLINDER_INITIALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(GENERATED_MESH)) THEN
       IF(ASSOCIATED(GENERATED_MESH%CYLINDER_MESH)) THEN
-        CALL FLAG_ERROR("Cylinder mesh is already associated for this generated mesh.",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Cylinder mesh is already associated for this generated mesh.",ERR,ERROR,*998)
       ELSE
         ALLOCATE(GENERATED_MESH%CYLINDER_MESH,STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate cylinder generated mesh.",ERR,ERROR,*999)
@@ -1233,13 +1282,13 @@ CONTAINS
         NULLIFY(GENERATED_MESH%CYLINDER_MESH%BASIS)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Generated mesh is not associated.",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Generated mesh is not associated.",ERR,ERROR,*998)
     ENDIF
     
     CALL EXITS("GENERATED_MESH_CYLINDER_INITIALISE")
     RETURN
-    ! TODO invalidate other associations
-999 CALL ERRORS("GENERATED_MESH_CYLINDER_INITIALISE",ERR,ERROR)
+999 CALL GENERATED_MESH_CYLINDER_FINALISE(GENERATED_MESH%CYLINDER_MESH,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("GENERATED_MESH_CYLINDER_INITIALISE",ERR,ERROR)
     CALL EXITS("GENERATED_MESH_CYLINDER_INITIALISE")
     RETURN 1
   END SUBROUTINE GENERATED_MESH_CYLINDER_INITIALISE
@@ -1284,12 +1333,14 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    
-    CALL ENTERS("GENERATED_MESH_REGULAR_INITIALISE",ERR,ERROR,*999)
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+     
+    CALL ENTERS("GENERATED_MESH_REGULAR_INITIALISE",ERR,ERROR,*998)
 
     IF(ASSOCIATED(GENERATED_MESH)) THEN
       IF(ASSOCIATED(GENERATED_MESH%REGULAR_MESH)) THEN
-        CALL FLAG_ERROR("Regular mesh is already associated for this generated mesh.",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Regular mesh is already associated for this generated mesh.",ERR,ERROR,*998)
       ELSE
         ALLOCATE(GENERATED_MESH%REGULAR_MESH,STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate regular generated mesh.",ERR,ERROR,*999)
@@ -1298,13 +1349,13 @@ CONTAINS
         NULLIFY(GENERATED_MESH%REGULAR_MESH%BASIS)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Generated mesh is not associated.",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Generated mesh is not associated.",ERR,ERROR,*998)
     ENDIF
     
     CALL EXITS("GENERATED_MESH_REGULAR_INITIALISE")
     RETURN
-    ! TODO invalidate other associations
-999 CALL ERRORS("GENERATED_MESH_REGULAR_INITIALISE",ERR,ERROR)
+999 CALL GENERATED_MESH_REGULAR_FINALISE(GENERATED_MESH%REGULAR_MESH,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("GENERATED_MESH_REGULAR_INITIALISE",ERR,ERROR)
     CALL EXITS("GENERATED_MESH_REGULAR_INITIALISE")
     RETURN 1
   END SUBROUTINE GENERATED_MESH_REGULAR_INITIALISE
@@ -1351,7 +1402,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-     INTEGER(INTG) :: OLD_GENERATED_TYPE
+    INTEGER(INTG) :: OLD_GENERATED_TYPE
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("GENERATED_MESH_TYPE_SET",ERR,ERROR,*999)
 
@@ -1361,22 +1413,35 @@ CONTAINS
       ELSE
         OLD_GENERATED_TYPE=GENERATED_MESH%GENERATED_TYPE
         IF(OLD_GENERATED_TYPE/=GENERATED_TYPE) THEN
+          !Initialise the new generated mesh type
           SELECT CASE(GENERATED_TYPE)
           CASE(GENERATED_MESH_REGULAR_MESH_TYPE) 
             CALL GENERATED_MESH_REGULAR_INITIALISE(GENERATED_MESH,ERR,ERROR,*999)
+          CASE(GENERATED_MESH_POLAR_MESH_TYPE)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GENERATED_MESH_FRACTAL_TREE_MESH_TYPE)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
           CASE(GENERATED_MESH_CYLINDER_MESH_TYPE)
             CALL GENERATED_MESH_CYLINDER_INITIALISE(GENERATED_MESH,ERR,ERROR,*999)
           CASE DEFAULT
-            CALL FLAG_ERROR("Generated mesh type is either invalid or not implemented.",ERR,ERROR,*999)
+            LOCAL_ERROR="The specified generated mesh mesh type of "//TRIM(NUMBER_TO_VSTRING(GENERATED_TYPE,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
-          
+          !Finalise the new generated mesh type          
           SELECT CASE(OLD_GENERATED_TYPE)
           CASE(GENERATED_MESH_REGULAR_MESH_TYPE) 
             CALL GENERATED_MESH_REGULAR_FINALISE(GENERATED_MESH%REGULAR_MESH,ERR,ERROR,*999)
+          CASE(GENERATED_MESH_POLAR_MESH_TYPE)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GENERATED_MESH_FRACTAL_TREE_MESH_TYPE)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
           CASE(GENERATED_MESH_CYLINDER_MESH_TYPE)
             CALL GENERATED_MESH_CYLINDER_FINALISE(GENERATED_MESH%CYLINDER_MESH,ERR,ERROR,*999)
           CASE DEFAULT
-            CALL FLAG_ERROR("Generated mesh type is either invalid or not implemented.",ERR,ERROR,*999)
+            LOCAL_ERROR="The generated mesh mesh type of "//TRIM(NUMBER_TO_VSTRING(OLD_GENERATED_TYPE,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ENDIF
       ENDIF
@@ -1505,25 +1570,33 @@ CONTAINS
             SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
               CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
                 CALL GENERATED_MESH_REGULAR_GEOMETRIC_PARAMETERS_CALCULATE(GENERATED_MESH%REGULAR_MESH,FIELD,ERR,ERROR,*999)
+              CASE(GENERATED_MESH_POLAR_MESH_TYPE)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(GENERATED_MESH_FRACTAL_TREE_MESH_TYPE)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE(GENERATED_MESH_CYLINDER_MESH_TYPE)
                 CALL GENERATED_MESH_CYLINDER_GEOMETRIC_PARAMETERS_CALCULATE(GENERATED_MESH%CYLINDER_MESH,FIELD,ERR,ERROR,*999)
               CASE DEFAULT
-                CALL FLAG_ERROR("Generated mesh type is either invalid or not implemented",ERR,ERROR,*999)
+                LOCAL_ERROR="The generated mesh mesh type of "// &
+                  & TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%GENERATED_TYPE,"*",ERR,ERROR))// &
+                  & " is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FLAG_ERROR("Generated mesh type is either invalid or not implemented.",ERR,ERROR,*999)
               END SELECT
             ELSE
-              CALL FLAG_ERROR("Generated mesh is not associated",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Generated mesh is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The region for field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
-            & " is not associated"
+            & " is not associated."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" has not been finished"
+        LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" has not been finished."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("GENERATED_MESH_GEOMETRIC_PARAMETERS_CALCULATE")
@@ -1616,7 +1689,7 @@ CONTAINS
                   CASE(3)
                     nd=(global_np2-global_np1)/(TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2))
                   CASE DEFAULT
-                    CALL FLAG_ERROR("Invalid component number",ERR,ERROR,*999)
+                    CALL FLAG_ERROR("Invalid component number.",ERR,ERROR,*999)
                   END SELECT
                   IF(np1==np) THEN
                     DERIVATIVES_NUMBER_OF_LINES(nk1)=DERIVATIVES_NUMBER_OF_LINES(nk1)+1
@@ -1642,7 +1715,7 @@ CONTAINS
           ELSE
             LOCAL_ERROR="Component number "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
               & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
-              & " does not have node based interpolation"
+              & " does not have node based interpolation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ENDDO !component_idx
@@ -1651,11 +1724,11 @@ CONTAINS
         CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
       ELSE
         LOCAL_ERROR="The standard field variable is not associated for field number "// &
-          & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))
+          & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" is not a geometric field"
+      LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" is not a geometric field."
       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
     ENDIF
 
@@ -1717,7 +1790,7 @@ CONTAINS
         DELTAi(xi_idx)=DELTA(xi_idx)/(NUMBER_OF_NODES_XI(xi_idx)-1)
       ENDDO
     ELSE
-      CALL FLAG_ERROR("Cylinder mesh does not have a basis associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Cylinder mesh does not have a basis associated.",ERR,ERROR,*999)
     ENDIF
 
     ! assign to the field
@@ -1727,8 +1800,8 @@ CONTAINS
         IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==3) THEN
           CALL FIELD_SCALING_TYPE_GET(FIELD,SCALING_TYPE,ERR,ERROR,*999)
           IF(SCALING_TYPE/=FIELD_UNIT_SCALING) &
-          & CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"  Note: If the cyinder looks wonky, set field scaling to&
-          & unit scaling type.",ERR,ERROR,*999)
+            & CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"  Note: If the cyinder looks wonky, set field scaling to&
+            & unit scaling type.",ERR,ERROR,*999)
           NUMBER_OF_PLANAR_NODES=TOTAL_NUMBER_NODES_XI(1)*TOTAL_NUMBER_NODES_XI(2)
           DO component_idx=1,3
             INTERPOLATION_TYPES(component_idx)=FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE
@@ -1810,20 +1883,20 @@ CONTAINS
               ENDDO !component_idx
             ENDDO !np
           ELSE
-            CALL FLAG_ERROR("All field variable components must have node-based interpolation",ERR,ERROR,*999)
+            CALL FLAG_ERROR("All field variable components must have node-based interpolation.",ERR,ERROR,*999)
           ENDIF
           CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
           CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Geometric field must be three dimensional",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Geometric field must be three dimensional.",ERR,ERROR,*999)
         ENDIF
       ELSE
         LOCAL_ERROR="The standard field variable is not associated for field number "// &
-          & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))
+          & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" is not a geometric field"
+      LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" is not a geometric field."
       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
     ENDIF
 
@@ -1861,6 +1934,7 @@ CONTAINS
     INTEGER(INTG) :: NUMBER_OF_NODES_XI(3) ! Number of nodes per element in each xi direction (basis property)
     INTEGER(INTG) :: total_number_of_nodes,total_number_of_elements
     REAL(DP) :: delta(3),deltai(3)
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("GENERATED_MESH_CYLINDER_SURFACES_GET",ERR,ERROR,*999)
 
@@ -1879,34 +1953,35 @@ CONTAINS
             SELECT CASE(SURFACE_TYPE)
             CASE(GENERATED_MESH_CYLINDER_INNER_SURFACE)
               ALLOCATE(NODES(SIZE(NIDX,2),SIZE(NIDX,3)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
               ALLOCATE(ELEMENTS(SIZE(EIDX,2),SIZE(EIDX,3)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ELEMENTS array",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ELEMENTS array.",ERR,ERROR,*999)
               NODES=NIDX(1,:,:)
               ELEMENTS=EIDX(1,:,:)
             CASE(GENERATED_MESH_CYLINDER_OUTER_SURFACE)
               ALLOCATE(NODES(SIZE(NIDX,2),SIZE(NIDX,3)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
               ALLOCATE(ELEMENTS(SIZE(EIDX,2),SIZE(EIDX,3)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ELEMENTS array",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ELEMENTS array.",ERR,ERROR,*999)
               NODES=NIDX(SIZE(NIDX,1),:,:)
               ELEMENTS=EIDX(SIZE(EIDX,1),:,:)
             CASE(GENERATED_MESH_CYLINDER_TOP_SURFACE)
               ALLOCATE(NODES(SIZE(NIDX,1),SIZE(NIDX,2)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
               ALLOCATE(ELEMENTS(SIZE(EIDX,1),SIZE(EIDX,2)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ELEMENTS array",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ELEMENTS array.",ERR,ERROR,*999)
               NODES=NIDX(:,:,SIZE(NIDX,3))
               ELEMENTS=EIDX(:,:,SIZE(EIDX,3))
             CASE(GENERATED_MESH_CYLINDER_BOTTOM_SURFACE)
               ALLOCATE(NODES(SIZE(NIDX,1),SIZE(NIDX,2)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
               ALLOCATE(ELEMENTS(SIZE(EIDX,1),SIZE(EIDX,2)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ELEMENTS array",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ELEMENTS array.",ERR,ERROR,*999)
               NODES=NIDX(:,:,1)
               ELEMENTS=EIDX(:,:,1)
             CASE DEFAULT
-              CALL FLAG_ERROR("Specified surface type is invalid.",ERR,ERROR,*999)
+              LOCAL_ERROR="The specified surface type of "//TRIM(NUMBER_TO_VSTRING(SURFACE_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE
             CALL FLAG_ERROR("Output NODES array is already allocated.",ERR,ERROR,*999)
@@ -1975,7 +2050,7 @@ CONTAINS
         
         ! calculate NIDX first
         ALLOCATE(NIDX(TOTAL_NUMBER_NODES_XI(1),TOTAL_NUMBER_NODES_XI(2),TOTAL_NUMBER_NODES_XI(3)),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NIDX array",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NIDX array.",ERR,ERROR,*999)
         NN=0
         DO nn3=1,TOTAL_NUMBER_NODES_XI(3)
           DO nn2=1,TOTAL_NUMBER_NODES_XI(2)
@@ -1989,7 +2064,7 @@ CONTAINS
 
         ! now do EIDX
         ALLOCATE(EIDX(NUMBER_ELEMENTS_XI(1),NUMBER_ELEMENTS_XI(2),NUMBER_ELEMENTS_XI(3)),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate EIDX array",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate EIDX array.",ERR,ERROR,*999)
         NE=0
         DO ne3=1,NUMBER_ELEMENTS_XI(3)
           DO ne2=1,NUMBER_ELEMENTS_XI(2)
@@ -2002,10 +2077,10 @@ CONTAINS
         TOTAL_NUMBER_OF_ELEMENTS=NE
       
       ELSE
-        CALL FLAG_ERROR("NIDX array is already allocated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("NIDX array is already allocated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("EIDX array is already allocated",ERR,error,*999)
+      CALL FLAG_ERROR("EIDX array is already allocated.",ERR,error,*999)
     ENDIF
 
     CALL EXITS("GENERATED_MESH_CYLINDER_BUILD_NODE_INDICES")

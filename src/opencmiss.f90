@@ -230,7 +230,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSFieldType,CMISSFieldTypeFinalise,CMISSFieldTypeInitialise
 
-  PUBLIC CMISSFieldsType,CMISSFieldsTypeFinalise,CMISSFieldsTypeInitialise
+  PUBLIC CMISSFieldsType,CMISSFieldsTypeCreate,CMISSFieldsTypeFinalise,CMISSFieldsTypeInitialise
 
   PUBLIC CMISSGeneratedMeshType,CMISSGeneratedMeshTypeFinalise,CMISSGeneratedMeshTypeInitialise
 
@@ -404,9 +404,9 @@ MODULE OPENCMISS
   
   !>Starts the creation of a new basis. \see OPENCMISS::CMISSBasisCreateFinish
   INTERFACE CMISSBasisCreateStart
-    MODULE PROCEDURE CMISSBasisCreateFinishNumber
-    MODULE PROCEDURE CMISSBasisCreateFinishObj
-  END INTERFACE !CMISSBasisCreateFinish
+    MODULE PROCEDURE CMISSBasisCreateStartNumber
+    MODULE PROCEDURE CMISSBasisCreateStartObj
+  END INTERFACE !CMISSBasisCreateStart
   
   !>Destroys a basis.
   INTERFACE CMISSBasisDestroy
@@ -708,7 +708,9 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSControlLoopTypeSetObj
   END INTERFACE !CMISSControlLoopTypeSet
 
-   PUBLIC CMISSControlLoopCurrentTimesGet
+  PUBLIC CMISSControlLoopNode
+  
+  PUBLIC CMISSControlLoopCurrentTimesGet
    
   PUBLIC CMISSControlLoopDestroy
 
@@ -2892,7 +2894,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverIterativeJacobiPreconditioner = SOLVER_ITERATIVE_JACOBI_PRECONDITIONER !<Jacobi preconditioner type. \see OPENCMISS_IterativePreconditionerTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverIterativeBlockJacobiPreconditioner = SOLVER_ITERATIVE_BLOCK_JACOBI_PRECONDITIONER !<Iterative block Jacobi preconditioner type. \see OPENCMISS_IterativePreconditionerTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverIterativeSORPreconditioner = SOLVER_ITERATIVE_SOR_PRECONDITIONER !<Successive over relaxation preconditioner type. \see OPENCMISS_IterativePreconditionerTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverIterativeIncompleteCholeskyPreconditioner = SOLVER_ITERATIVE_INCOMPLETE_CHOLESKY_PRECONDITIONER !<Incomplete Cholesky preconditioner type. \see OPENCMISS_IterativePreconditionerTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverIterativeIncompleteCholeskyPreconditioner = &
+    & SOLVER_ITERATIVE_INCOMPLETE_CHOLESKY_PRECONDITIONER !<Incomplete Cholesky preconditioner type. \see OPENCMISS_IterativePreconditionerTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverIterativeIncompleteLUPreconditioner = SOLVER_ITERATIVE_INCOMPLETE_LU_PRECONDITIONER !<Incomplete LU preconditioner type. \see OPENCMISS_IterativePreconditionerTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverIterativeAdditiveSchwarzPreconditioner = SOLVER_ITERATIVE_ADDITIVE_SCHWARZ_PRECONDITIONER !<Additive Schwrz preconditioner type. \see OPENCMISS_IterativePreconditionerTypes,OPENCMISS
   !>@}
@@ -3334,9 +3337,6 @@ MODULE OPENCMISS
 
   PUBLIC CMISSSolverLinearDirectSolveType,CMISSSolverLinearIterativeSolveType
 
-  PUBLIC CMISSSolverDirectLU,CMISSSolverDirectCholesky,CMISSSolverDirectSVD,CMISSSolverDirectMUMPS,CMISSSolverDirectPastix, &
-    & CMISSSolverDirectPLAPACK,CMISSSolverDirectSPOOLES,CMISSSolverDirectSuperLU
-
   PUBLIC CMISSSolverIterativeRichardson,CMISSSolverIterativeChebychev,CMISSSolverIterativeConjugateGradient, &
     & CMISSSolverIterativeBiconjugateGradinet,CMISSSolverIterativeGMRES,CMISSSolverIterativeBiCGSTAB,CMISSSolverConjgradSquared
 
@@ -3504,10 +3504,10 @@ CONTAINS
   !
   
   !>Initialises CMISS returning a user number to the world coordinate system and region.
-  SUBROUTINE CMISSInitialiseNumber(WorldCoordinateUserNumber,WorldRegionUserNumber,Err)
+  SUBROUTINE CMISSInitialiseNumber(WorldCoordinateSystemUserNumber,WorldRegionUserNumber,Err)
   
     !Argument variables
-    INTEGER(INTG), INTENT(OUT) :: WorldCoordinateUserNumber !<On return, the world coordinate system user number.
+    INTEGER(INTG), INTENT(OUT) :: WorldCoordinateSystemUserNumber !<On return, the world coordinate system user number.
     INTEGER(INTG), INTENT(OUT) :: WorldRegionUserNumber !<On return, the world region user number.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
@@ -3518,7 +3518,7 @@ CONTAINS
     NULLIFY(WORLD_REGION)
     CALL CMISS_Initialise(WORLD_REGION,Err,ERROR,*999)
     !CALL CMISS_Initialise(WORLD_COORDINATE_SYSTEM,WORLD_REGION,Err,ERROR,*999)
-    WorldCoordinateUserNumber=0
+    WorldCoordinateSystemUserNumber=0
     !WorldCoordinateUserNumber=WORLD_COORDINATE_SYSTEM%USER_NUMBER
     WorldRegionUserNumber=WORLD_REGION%USER_NUMBER
 
@@ -3536,8 +3536,8 @@ CONTAINS
   SUBROUTINE CMISSInitialiseObj(WorldCoordinateSystem,WorldRegion,Err)
   
     !Argument variables
-    TYPE(CMISSCoordinateSystemType), INTENT(OUT) :: WorldCoordinateSystem !<On return, the world coordinate system.
-    TYPE(CMISSRegionType), INTENT(OUT) :: WorldRegion !<On return, the world region.
+    TYPE(CMISSCoordinateSystemType), INTENT(INOUT) :: WorldCoordinateSystem !<On return, the world coordinate system.
+    TYPE(CMISSRegionType), INTENT(INOUT) :: WorldRegion !<On return, the world region.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
@@ -3957,6 +3957,40 @@ CONTAINS
   END SUBROUTINE CMISSFieldTypeInitialise
 
   !
+  !================================================================================================================================
+  !
+
+  !>Creates a CMISSFieldsType object for an object reference.
+  SUBROUTINE CMISSFieldsTypeCreate(Region,Fields,Err)
+  
+    !Argument variables
+    TYPE(CMISSRegionType), INTENT(IN) :: Region !<The region to get the fields from
+    TYPE(CMISSFieldsType), INTENT(INOUT) :: Fields !<On return, the fields attached to the specified region. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSFieldsTypeCreate",Err,ERROR,*999)
+
+    IF(ASSOCIATED(Region%REGION)) THEN
+      IF(ASSOCIATED(Fields%FIELDS)) THEN
+        CALL FLAG_ERROR("Fields is already associated.",ERR,ERROR,*999)
+      ELSE
+        Fields%FIELDS=>Region%REGION%FIELDS
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("The region is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSFieldsTypeCreate")
+    RETURN
+999 CALL ERRORS("CMISSFieldsTypeCreate",Err,ERROR)
+    CALL EXITS("CMISSFieldsTypeCreate")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldsTypeCreate
+
+   !
   !================================================================================================================================
   !
 
@@ -13574,7 +13608,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to set the mesh decomposition for.
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to set the mesh decomposition for.
     INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<The user number of the mesh to set the mesh decomposition for.
-    INTEGER(INTG), INTENT(OUT) :: DecompositionUserNumber !<The field mesh decomposition user number to set. 
+    INTEGER(INTG), INTENT(IN) :: DecompositionUserNumber !<The field mesh decomposition user number to set. 
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
@@ -13635,7 +13669,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to get the mesh decomposition for.
-    TYPE(CMISSDecompositionType), INTENT(OUT) :: MeshDecomposition !<On return, the mesh decomposition for the field.
+    TYPE(CMISSDecompositionType), INTENT(IN) :: MeshDecomposition !<The mesh decomposition for the field to set.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -18508,7 +18542,7 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldIOElementsExportCCObj",Err,ERROR,*999)
  
-    CALL FIELD_IO_NODES_EXPORT(Fields%FIELDS,VAR_STR(FileName),VAR_STR(Method),Err,ERROR,*999)
+    CALL FIELD_IO_ELEMENTS_EXPORT(Fields%FIELDS,VAR_STR(FileName),VAR_STR(Method),Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldIOElementsExportCCObj")
     RETURN
@@ -18536,7 +18570,7 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldIOElementsExportVSCObj",Err,ERROR,*999)
  
-    CALL FIELD_IO_NODES_EXPORT(Fields%FIELDS,FileName,VAR_STR(Method),Err,ERROR,*999)
+    CALL FIELD_IO_ELEMENTS_EXPORT(Fields%FIELDS,FileName,VAR_STR(Method),Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldIOElementsExportVSCObj")
     RETURN
@@ -18564,7 +18598,7 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldIOElementsExportCVSObj",Err,ERROR,*999)
  
-    CALL FIELD_IO_NODES_EXPORT(Fields%FIELDS,VAR_STR(FileName),Method,Err,ERROR,*999)
+    CALL FIELD_IO_ELEMENTS_EXPORT(Fields%FIELDS,VAR_STR(FileName),Method,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldIOElementsExportCVSObj")
     RETURN
@@ -18591,7 +18625,7 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldIOElementsExportVSVSObj",Err,ERROR,*999)
  
-    CALL FIELD_IO_NODES_EXPORT(Fields%FIELDS,FileName,Method,Err,ERROR,*999)
+    CALL FIELD_IO_ELEMENTS_EXPORT(Fields%FIELDS,FileName,Method,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldIOElementsExportVSVSObj")
     RETURN
