@@ -1410,6 +1410,7 @@ CONTAINS
 !    REAL(DP) :: test(89,89),test2(89,89),scaling,square
     REAL(DP) :: AG_MATRIX(256,256) ! "A" Matrix ("G"radient part) - maximum size allocated
     REAL(DP) :: AL_MATRIX(256,256) ! "A" Matrix ("L"aplace part) - maximum size allocated
+    REAL(DP) :: ALE_MATRIX(256,256) ! "A"rbitrary "L"agrangian "E"ulerian Matrix - maximum size allocated
     REAL(DP) :: BT_MATRIX(256,256) ! "B" "T"ranspose Matrix - maximum size allocated
     REAL(DP) :: MT_MATRIX(256,256) ! "M"ass "T"ime Matrix - maximum size allocated
     REAL(DP) :: CT_MATRIX(256,256) ! "C"onvective "T"erm Matrix - maximum size allocated
@@ -1425,6 +1426,7 @@ CONTAINS
     out=0
     AG_MATRIX=0.0_DP
     AL_MATRIX=0.0_DP
+    ALE_MATRIX=0.0_DP
     BT_MATRIX=0.0_DP
     MT_MATRIX=0.0_DP
     CT_MATRIX=0.0_DP
@@ -1629,6 +1631,29 @@ CONTAINS
                         END IF
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!! ALE CONTRIBUTION !!! 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+                          !This part must be either here or within the nonlinear vector
+                          !To be proved that there is no difference
+                          IF(STIFFNESS_MATRIX%UPDATE_MATRIX) THEN
+                            !GRADIENT TRANSPOSE TYPE
+                            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE) THEN 
+                              IF(nh==mh) THEN 
+                                SUM=0.0_DP
+                                !Calculate SUM 
+                                DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                                  DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                                    SUM=SUM-RHO_PARAM*W_VALUE(mi)*DPHINS_DXI(ni)*DXI_DX(ni,mi)*PHIMS
+                                  ENDDO !ni
+                                ENDDO !mi
+                                !Calculate MATRIX
+                                ALE_MATRIX(mhs,nhs)=ALE_MATRIX(mhs,nhs)+SUM*JGW
+                              END IF
+                            END IF
+                          END IF
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! B TRANSPOSE !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1706,6 +1731,10 @@ CONTAINS
                   U_DERIV(1,3)=0.0_DP
                   U_DERIV(2,3)=0.0_DP
                 END IF
+
+                !Here W_VALUES must be ZERO if ALE part of linear matrix
+                W_VALUE=0.0_DP
+
                 mhs=0
                 DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
                   MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
@@ -1752,7 +1781,7 @@ CONTAINS
             IF(STIFFNESS_MATRIX%FIRST_ASSEMBLY) THEN
               IF(STIFFNESS_MATRIX%UPDATE_MATRIX) THEN
                 STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,1:nhs_min)=(AL_MATRIX(1:mhs_min,1:nhs_min)+ &
-                  & AG_MATRIX(1:mhs_min,1:nhs_min))
+                  & AG_MATRIX(1:mhs_min,1:nhs_min)+ALE_MATRIX(1:mhs_min,1:nhs_min))
                 STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,nhs_min+1:nhs_max)=(BT_MATRIX(1:mhs_min,nhs_min+1:nhs_max))
                 DO mhs=mhs_min+1,mhs_max
                   DO nhs=1,nhs_min
@@ -2001,6 +2030,9 @@ CONTAINS
         !!! CALCULATE PARTIAL MATRICES !!!
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  
+              !Here W_VALUES must be ZERO if ALE part of linear matrix
+              W_VALUE=0.0_DP
+
               IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
