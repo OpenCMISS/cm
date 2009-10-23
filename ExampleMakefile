@@ -539,10 +539,12 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
     PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib64/ )
     PETSC_LIB_PATH += $(addprefix -L, /usr/lib64/ )
     PETSC_LIB_PATH += $(addprefix -L, /usr/lib64/openmotif/ )
+    PETSC_LIB_PATH +=  $(addprefix -L, /usr/lib64/openmotif/ )
   else
     PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib/ )
     PETSC_LIB_PATH += $(addprefix -L, /usr/lib/ )
     PETSC_LIB_PATH += $(addprefix -L, /usr/lib/openmotif/ )
+    PETSC_LIB_PATH +=  $(addprefix -L, /usr/lib/openmotif/ )
   endif
   PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
   PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
@@ -758,6 +760,7 @@ $(OBJECT_DIR)/%.o : $(EXAMPLE_SOURCE_DIR)/%.c
 	( cd $(OBJECT_DIR) ; $(CC) -o $@ $(CFLAGS) $(CPPFLAGS) -c $< )
 
 OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
+	$(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/analytic_analysis_routines.o \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
@@ -866,6 +869,29 @@ ifeq ($(OPERATING_SYSTEM),aix)
 
 endif
 
+$(OBJECT_DIR)/advection_diffusion_equation_routines.o	:	$(MAIN_SOURCE_DIR)/advection_diffusion_equation_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/boundary_condition_routines.o \
+	$(OBJECT_DIR)/constants.o \
+	$(OBJECT_DIR)/control_loop_routines.o \
+	$(OBJECT_DIR)/distributed_matrix_vector.o \
+	$(OBJECT_DIR)/domain_mappings.o \
+	$(OBJECT_DIR)/equations_routines.o \
+	$(OBJECT_DIR)/equations_mapping_routines.o \
+	$(OBJECT_DIR)/equations_matrices_routines.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/matrix_vector.o \
+	$(OBJECT_DIR)/problem_constants.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/solver_routines.o \
+	$(OBJECT_DIR)/timer_f.o \
+	$(OBJECT_DIR)/types.o
+
 $(OBJECT_DIR)/analytic_analysis_routines.o  : $(MAIN_SOURCE_DIR)/analytic_analysis_routines.f90 \
 	$(OBJECT_DIR)/basis_routines.o \
 	$(OBJECT_DIR)/cmiss_mpi.o \
@@ -945,6 +971,7 @@ $(OBJECT_DIR)/boundary_condition_routines.o  : $(MAIN_SOURCE_DIR)/boundary_condi
 	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/classical_field_routines.o	:	$(MAIN_SOURCE_DIR)/classical_field_routines.f90 \
+	$(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/diffusion_equation_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
