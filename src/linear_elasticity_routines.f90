@@ -478,7 +478,7 @@ CONTAINS
     INTEGER(INTG) :: OFF_DIAG_COMP(3),OFF_DIAG_DEP_VAR(2,2,3),DIAG_SUB_MAT_LOC(3),OFF_DIAG_SUB_MAT_LOC(2,3)
     INTEGER(INTG) :: DEPENDENT_BASES_EP(3) !,GEOMETRIC_BASES_EP(:)
     REAL(DP) :: JRWG,C(6,6),JRWG_DIAG_C(3,3),JRWG_OFF_DIAG_C(2,3)
-    REAL(DP),ALLOCATABLE :: SF(:)
+    REAL(DP):: SF(64*3)
 
     !LOGICAL :: SAME_BASIS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
@@ -496,7 +496,7 @@ CONTAINS
     TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: GEOMETRIC_INTERP_POINT_METRICS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE DPHI_DX_COMP_TYPE !A type to store DPHIDX for each mesh component
-      REAL(DP),ALLOCATABLE :: DPHIDX(:,:)
+    REAL(DP) :: DPHIDX(64,3)
     END TYPE DPHI_DX_COMP_TYPE
     TYPE(DPHI_DX_COMP_TYPE) :: DPHIDX_COMP(3)
 
@@ -545,7 +545,8 @@ CONTAINS
         CASE(EQUATIONS_SET_THREE_DIMENSIONAL_SUBTYPE,EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRESS_SUBTYPE, &
           & EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRAIN_SUBTYPE,EQUATIONS_SET_ONE_DIMENSIONAL_SUBTYPE)
           !//
-          !!These parameters will not change for 1D,2D,3D Linear Elasticity
+          !Parameters for number of off diagonal stress/strain terms for a given number of xi directions and order of calculation for shear terms
+          !These parameters do not change for 1D,2D,3D Linear Elasticity
           OFF_DIAG_COMP = (/0,1,3/)
           OFF_DIAG_DEP_VAR(1,1,:) = (/1,1,2/)
           OFF_DIAG_DEP_VAR(1,2,:) = (/2,3,3/)
@@ -557,11 +558,6 @@ CONTAINS
           OFF_DIAG_SUB_MAT_LOC(2,:) = (/DEPENDENT_BASES_EP(1),DIAG_SUB_MAT_LOC(3),DIAG_SUB_MAT_LOC(3)/)
 
           IF(EQUATIONS_MATRIX%UPDATE_MATRIX) THEN
-            DO ni=1,NUMBER_OF_XI
-              ALLOCATE(DPHIDX_COMP(ni)%DPHIDX(DEPENDENT_BASES_EP(ni),NUMBER_OF_XI),STAT=ERR)
-              !!TODO:: add number to string
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate DPHIDX_COMP",ERR,ERROR,*999)
-            ENDDO
             !Get the geometric, fibre & material field interpolation parameters
             GEOMETRIC_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS
             !FIBRE_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%FIBRE_INTERP_PARAMETERS
@@ -698,8 +694,6 @@ CONTAINS
             DEPENDENT_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS
             CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,DEPENDENT_INTERPOLATION_PARAMETERS, &
               & ERR,ERROR,*999)
-            ALLOCATE(SF(TOTAL_DEPENDENT_BASIS_EP),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate SF",ERR,ERROR,*999)
             DO xi=1,NUMBER_OF_XI
               SF(DIAG_SUB_MAT_LOC(xi)+1:SUM(DEPENDENT_BASES_EP(1:xi)))=DEPENDENT_INTERPOLATION_PARAMETERS%SCALE_FACTORS(:,xi)
             ENDDO !xi
@@ -712,7 +706,6 @@ CONTAINS
               !!TODO:: Check if RHS update required for Linear Elasticity ie is the RHS the force terms but they are set during assembling and not here?
               IF(RHS_VECTOR%UPDATE_VECTOR) RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)*SF(mhs)
             ENDDO !mhs
-            DEALLOCATE(SF)
           ENDIF
 
           IF(EQUATIONS_MATRIX%UPDATE_MATRIX) THEN
@@ -725,11 +718,6 @@ CONTAINS
               ENDDO !nhs
             ENDDO !mhs
           ENDIF
-
-          !Deallocate memory.
-          DO ni=1,NUMBER_OF_XI
-            IF(ALLOCATED(DPHIDX_COMP(ni)%DPHIDX)) DEALLOCATE(DPHIDX_COMP(ni)%DPHIDX)
-          ENDDO
 
         CASE(EQUATIONS_SET_PLATE_SUBTYPE)
           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
