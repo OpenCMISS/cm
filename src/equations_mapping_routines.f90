@@ -242,28 +242,28 @@ CONTAINS
                   CALL FLAG_ERROR("The dependent variable mapped to the RHS vector is not associated.",ERR,ERROR,*999)
                 ENDIF
               ENDIF
-              !Check that the number of rows are consistent with the source vector if it exists
-              IF(CREATE_VALUES_CACHE%SOURCE_VARIABLE_TYPE/=0) THEN
-                SOURCE_VARIABLE=>SOURCE_FIELD%VARIABLE_TYPE_MAP(CREATE_VALUES_CACHE%SOURCE_VARIABLE_TYPE)%PTR
-                IF(ASSOCIATED(SOURCE_VARIABLE)) THEN
-                  IF(SOURCE_VARIABLE%NUMBER_OF_DOFS/=NUMBER_OF_ROWS) THEN
-                    LOCAL_ERROR="Invalid equations set up. The number of rows in the equations set ("// &
-                      & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_ROWS,"*",ERR,ERROR))// &
-                      & ") does not match the number of rows in the source vector ("// &
-                      & TRIM(NUMBER_TO_VSTRING(SOURCE_VARIABLE%NUMBER_OF_DOFS,"*",ERR,ERROR))//")."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  ENDIF
-                  IF(SOURCE_VARIABLE%TOTAL_NUMBER_OF_DOFS/=TOTAL_NUMBER_OF_ROWS) THEN
-                    LOCAL_ERROR="Invalid equations set up. The total number of rows in the equations set ("// &
-                      & TRIM(NUMBER_TO_VSTRING(TOTAL_NUMBER_OF_ROWS,"*",ERR,ERROR))// &
-                      & ") does not match the total number of rows in the source vector ("// &
-                      & TRIM(NUMBER_TO_VSTRING(SOURCE_VARIABLE%TOTAL_NUMBER_OF_DOFS,"*",ERR,ERROR))//")."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("The source variable mapped to the source vector is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ENDIF
+              !!Check that the number of rows are consistent with the source vector if it exists
+              !IF(CREATE_VALUES_CACHE%SOURCE_VARIABLE_TYPE/=0) THEN
+              !  SOURCE_VARIABLE=>SOURCE_FIELD%VARIABLE_TYPE_MAP(CREATE_VALUES_CACHE%SOURCE_VARIABLE_TYPE)%PTR
+              !  IF(ASSOCIATED(SOURCE_VARIABLE)) THEN
+              !    IF(SOURCE_VARIABLE%NUMBER_OF_DOFS/=NUMBER_OF_ROWS) THEN
+              !      LOCAL_ERROR="Invalid equations set up. The number of rows in the equations set ("// &
+              !        & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_ROWS,"*",ERR,ERROR))// &
+              !        & ") does not match the number of rows in the source vector ("// &
+              !        & TRIM(NUMBER_TO_VSTRING(SOURCE_VARIABLE%NUMBER_OF_DOFS,"*",ERR,ERROR))//")."
+              !      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              !    ENDIF
+              !    IF(SOURCE_VARIABLE%TOTAL_NUMBER_OF_DOFS/=TOTAL_NUMBER_OF_ROWS) THEN
+              !      LOCAL_ERROR="Invalid equations set up. The total number of rows in the equations set ("// &
+              !        & TRIM(NUMBER_TO_VSTRING(TOTAL_NUMBER_OF_ROWS,"*",ERR,ERROR))// &
+              !        & ") does not match the total number of rows in the source vector ("// &
+              !        & TRIM(NUMBER_TO_VSTRING(SOURCE_VARIABLE%TOTAL_NUMBER_OF_DOFS,"*",ERR,ERROR))//")."
+              !      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              !    ENDIF
+              !  ELSE
+              !    CALL FLAG_ERROR("The source variable mapped to the source vector is not associated.",ERR,ERROR,*999)
+              !  ENDIF
+              !ENDIF
               EQUATIONS_MAPPING%NUMBER_OF_ROWS=NUMBER_OF_ROWS
               EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS=TOTAL_NUMBER_OF_ROWS
               EQUATIONS_MAPPING%NUMBER_OF_GLOBAL_ROWS=NUMBER_OF_GLOBAL_ROWS
@@ -643,23 +643,23 @@ CONTAINS
                   SOURCE_MAPPING%SOURCE_VARIABLE_TYPE=CREATE_VALUES_CACHE%SOURCE_VARIABLE_TYPE
                   SOURCE_VARIABLE=>SOURCE_FIELD%VARIABLE_TYPE_MAP(CREATE_VALUES_CACHE%SOURCE_VARIABLE_TYPE)%PTR
                   SOURCE_MAPPING%SOURCE_VARIABLE=>SOURCE_VARIABLE
-                  SOURCE_MAPPING%SOURCE_VARIABLE_MAPPING=>SOURCE_VARIABLE%DOMAIN_MAPPING
-                  SOURCE_MAPPING%SOURCE_COEFFICIENT=CREATE_VALUES_CACHE%SOURCE_COEFFICIENT
-                  !Allocate and set up the row mappings
-                  ALLOCATE(SOURCE_MAPPING%SOURCE_DOF_TO_EQUATIONS_ROW_MAP(SOURCE_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate source dof to equations row map.",ERR,ERROR,*999)
-                  ALLOCATE(SOURCE_MAPPING%EQUATIONS_ROW_TO_SOURCE_DOF_MAP(TOTAL_NUMBER_OF_ROWS),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations row to source map.",ERR,ERROR,*999)
-                  DO dof_idx=1,SOURCE_VARIABLE%TOTAL_NUMBER_OF_DOFS
-                    !1-1 mapping for now
-                    row_idx=dof_idx
-                    SOURCE_MAPPING%SOURCE_DOF_TO_EQUATIONS_ROW_MAP(dof_idx)=row_idx
-                  ENDDO !dof_idx
-                  DO row_idx=1,TOTAL_NUMBER_OF_ROWS
-                    !1-1 mapping for now
-                    dof_idx=row_idx
-                    SOURCE_MAPPING%EQUATIONS_ROW_TO_SOURCE_DOF_MAP(row_idx)=dof_idx
-                  ENDDO !row_idx
+              !    SOURCE_MAPPING%SOURCE_VARIABLE_MAPPING=>SOURCE_VARIABLE%DOMAIN_MAPPING
+              !    SOURCE_MAPPING%SOURCE_COEFFICIENT=CREATE_VALUES_CACHE%SOURCE_COEFFICIENT
+              !    !Allocate and set up the row mappings
+              !    ALLOCATE(SOURCE_MAPPING%SOURCE_DOF_TO_EQUATIONS_ROW_MAP(SOURCE_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
+              !    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate source dof to equations row map.",ERR,ERROR,*999)
+              !    ALLOCATE(SOURCE_MAPPING%EQUATIONS_ROW_TO_SOURCE_DOF_MAP(TOTAL_NUMBER_OF_ROWS),STAT=ERR)
+              !    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations row to source map.",ERR,ERROR,*999)
+              !    DO dof_idx=1,SOURCE_VARIABLE%TOTAL_NUMBER_OF_DOFS
+              !      !1-1 mapping for now
+              !      row_idx=dof_idx
+              !      SOURCE_MAPPING%SOURCE_DOF_TO_EQUATIONS_ROW_MAP(dof_idx)=row_idx
+              !    ENDDO !dof_idx
+              !    DO row_idx=1,TOTAL_NUMBER_OF_ROWS
+              !      !1-1 mapping for now
+              !      dof_idx=row_idx
+              !      SOURCE_MAPPING%EQUATIONS_ROW_TO_SOURCE_DOF_MAP(row_idx)=dof_idx
+              !    ENDDO !row_idx
                 ELSE
                   CALL FLAG_ERROR("Source mapping is not associated.",ERR,ERROR,*999)
                 ENDIF
@@ -861,13 +861,13 @@ CONTAINS
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Total number of source DOFs = ",SOURCE_MAPPING%SOURCE_VARIABLE% &
           & TOTAL_NUMBER_OF_DOFS,ERR,ERROR,*999)
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Source coefficient = ",SOURCE_MAPPING%SOURCE_COEFFICIENT,ERR,ERROR,*999)
-        CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"    Row mappings:",ERR,ERROR,*999)
-        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOURCE_MAPPING%SOURCE_VARIABLE%TOTAL_NUMBER_OF_DOFS,5,5, &
-          & SOURCE_MAPPING%SOURCE_DOF_TO_EQUATIONS_ROW_MAP,'("    DOF to row mappings :",5(X,I13))','(25X,5(X,I13))', &
-          & ERR,ERROR,*999) 
-        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS,5,5, &
-          & SOURCE_MAPPING%EQUATIONS_ROW_TO_SOURCE_DOF_MAP,'("    Row to DOF mappings :",5(X,I13))','(25X,5(X,I13))', &
-          & ERR,ERROR,*999) 
+        !CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"    Row mappings:",ERR,ERROR,*999)
+        !CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOURCE_MAPPING%SOURCE_VARIABLE%TOTAL_NUMBER_OF_DOFS,5,5, &
+        !  & SOURCE_MAPPING%SOURCE_DOF_TO_EQUATIONS_ROW_MAP,'("    DOF to row mappings :",5(X,I13))','(25X,5(X,I13))', &
+        !  & ERR,ERROR,*999) 
+        !CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS,5,5, &
+        !  & SOURCE_MAPPING%EQUATIONS_ROW_TO_SOURCE_DOF_MAP,'("    Row to DOF mappings :",5(X,I13))','(25X,5(X,I13))', &
+        !  & ERR,ERROR,*999) 
       ENDIF
     ENDIF
        
