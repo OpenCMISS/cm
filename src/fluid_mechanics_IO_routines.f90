@@ -1709,8 +1709,8 @@ CONTAINS
 
     IF( NumberOfDimensions==2 ) THEN
       DO I = 1,NodesPerMeshComponent(1)
-        IF( abs(mod( ((NodeXValue(I)-DARCY%X1) / DARCY%max_node_spacing), 1.0)) < DARCY%GEOM_TOL ) THEN
-          IF( abs(mod( ((NodeYValue(I)-DARCY%Y1) / DARCY%max_node_spacing), 1.0)) < DARCY%GEOM_TOL ) THEN
+        IF( abs(mod( ((NodeXValue(I)-DARCY%X1) / DARCY%max_node_spacing), 1.0_DP)) < DARCY%GEOM_TOL ) THEN
+          IF( abs(mod( ((NodeYValue(I)-DARCY%Y1) / DARCY%max_node_spacing), 1.0_DP)) < DARCY%GEOM_TOL ) THEN
 
               WRITE(23,'("    ", es25.16 )')NodeXValue(I)
               WRITE(23,'("    ", es25.16 )')NodeYValue(I)
@@ -1734,9 +1734,9 @@ CONTAINS
       WRITE(23,*) ' '
     ELSE IF( NumberOfDimensions==3 ) THEN
       DO I = 1,NodesPerMeshComponent(1)
-        IF( abs(mod( ((NodeXValue(I)-DARCY%X1) / DARCY%max_node_spacing), 1.0)) < DARCY%GEOM_TOL ) THEN
-          IF( abs(mod( ((NodeYValue(I)-DARCY%Y1) / DARCY%max_node_spacing), 1.0)) < DARCY%GEOM_TOL ) THEN
-            IF( abs(mod( ((NodeZValue(I)-DARCY%Z1) / DARCY%max_node_spacing), 1.0)) < DARCY%GEOM_TOL ) THEN
+        IF( abs(mod( ((NodeXValue(I)-DARCY%X1) / DARCY%max_node_spacing), 1.0_DP)) < DARCY%GEOM_TOL ) THEN
+          IF( abs(mod( ((NodeYValue(I)-DARCY%Y1) / DARCY%max_node_spacing), 1.0_DP)) < DARCY%GEOM_TOL ) THEN
+            IF( abs(mod( ((NodeZValue(I)-DARCY%Z1) / DARCY%max_node_spacing), 1.0_DP)) < DARCY%GEOM_TOL ) THEN
 
               WRITE(23,'("    ", es25.16 )')NodeXValue(I)
               WRITE(23,'("    ", es25.16 )')NodeYValue(I)
