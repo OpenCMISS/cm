@@ -1,3 +1,4 @@
+#if 1==0
 /* \file
  * $Id$
  * \author Caton Little
@@ -40,6 +41,7 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  */
+#endif
 
 #ifndef FIELD_EXPORT_CONSTANTS_H
 #define FIELD_EXPORT_CONSTANTS_H
