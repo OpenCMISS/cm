@@ -218,11 +218,12 @@ ifeq ($(OPERATING_SYSTEM),linux)
   OPTCF_FLGS =# Use separate flags for fortran and c
   olist_args = $1
 
+  #Default Compilers. Note that if COMPILER is not set then the default is intel (see OPENCMISS_ROOT/cm/utils/make.inc)
+  #if icc/ifort not found then falls back to the gnu compilers below
   CC = gcc
   FC = gfortran
 
   ifeq ($(COMPILER),intel)
-
     #Use Intel compilers if available (icc -V sends output to STDERR and exits with error).
     ifneq (,$(shell icc -V 2>&1 | grep -i intel))
       CC = icc
@@ -230,8 +231,18 @@ ifeq ($(OPERATING_SYSTEM),linux)
     ifneq (,$(shell ifort -V 2>&1 | grep -i intel))
       FC = ifort
     endif
-
-  endif	
+  else
+    ifeq ($(COMPILER),gnu) #Default
+      #pass
+    else
+      ifeq ($(COMPILER),ibm)
+        FC = xlf90_r
+        CC = xlc_r
+      else
+        $(error invalid COMPILER specification)
+      endif
+    endif
+  endif
 
   # Set the flags for the various different CC compilers
   ifeq ($(CC),gcc)# gcc
