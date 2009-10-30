@@ -636,7 +636,8 @@ $(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.f90
 $(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.c
 	( cd $(OBJECT_DIR) ; $(CC) -o $@ $(CFLAGS) $(CPPFLAGS) -c $< )
 
-OBJECTS = $(OBJECT_DIR)/analytic_analysis_routines.o \
+OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
+        $(OBJECT_DIR)/analytic_analysis_routines.o \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
 	$(OBJECT_DIR)/bioelectric_routines.o \
@@ -753,6 +754,29 @@ ifeq ($(OPERATING_SYSTEM),aix)
    $(OBJECT_DIR)/timer_c.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
 
 endif
+
+$(OBJECT_DIR)/advection_diffusion_equation_routines.o	:	$(SOURCE_DIR)/advection_diffusion_equation_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/boundary_condition_routines.o \
+	$(OBJECT_DIR)/constants.o \
+	$(OBJECT_DIR)/control_loop_routines.o \
+	$(OBJECT_DIR)/distributed_matrix_vector.o \
+	$(OBJECT_DIR)/domain_mappings.o \
+	$(OBJECT_DIR)/equations_routines.o \
+	$(OBJECT_DIR)/equations_mapping_routines.o \
+	$(OBJECT_DIR)/equations_matrices_routines.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/matrix_vector.o \
+	$(OBJECT_DIR)/problem_constants.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/solver_routines.o \
+	$(OBJECT_DIR)/timer_f.o \
+	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/analytic_analysis_routines.o  : $(SOURCE_DIR)/analytic_analysis_routines.f90 \
 	$(OBJECT_DIR)/basis_routines.o \
