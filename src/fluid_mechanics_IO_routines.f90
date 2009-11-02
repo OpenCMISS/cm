@@ -219,7 +219,8 @@ CONTAINS
 
     !Argument variables
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to get the coordinate system for
-    TYPE(VARYING_STRING), INTENT(IN) :: NAME !<the prefix name of file.
+!     TYPE(VARYING_STRING), INTENT(IN) :: NAME !<the prefix name of file.
+    CHARACTER(14) :: NAME !<the prefix name of file.
     INTEGER(INTG) :: ERR !<The error code
     TYPE(VARYING_STRING):: ERROR !<The error string
     !Local Variables
@@ -447,8 +448,9 @@ CONTAINS
 
     IMPLICIT NONE
 
-    TYPE(VARYING_STRING), INTENT(IN) :: NAME !<the prefix name of file.
+    CHARACTER(14), INTENT(IN) :: NAME !<the prefix name of file.
     TYPE(VARYING_STRING) :: FILENAME !<the prefix name of file.
+!     CHARACTER :: FILENAME !<the prefix name of file.
     INTEGER(INTG):: I
     INTEGER(INTG) :: ERR
     TYPE(VARYING_STRING):: ERROR 
@@ -579,8 +581,10 @@ CONTAINS
   !> Executes element writing process.
   SUBROUTINE FLUID_MECHANICS_IO_WRITE_ELEMENTS_CMGUI(NAME)
 
-    TYPE(VARYING_STRING), INTENT(IN) :: NAME !<the prefix name of file.
+!     TYPE(VARYING_STRING), INTENT(IN) :: NAME !<the prefix name of file.
+    CHARACTER(14), INTENT(IN) :: NAME !<the prefix name of file.
     TYPE(VARYING_STRING) :: FILENAME !<the prefix name of file.
+!     CHARACTER :: FILENAME !<the prefix name of file.
     ! CHARACTER*60 ELEM_TYPE
     INTEGER(INTG):: I,J,K
     INTEGER(INTG) :: ERR
@@ -798,7 +802,7 @@ CONTAINS
   !
 
   !> Reads in information defined by cmheart input file format.
-  SUBROUTINE FLUID_MECHANICS_IO_READ_CMHEART(EXPORT,ERR,ERROR,*)
+  SUBROUTINE FLUID_MECHANICS_IO_READ_CMHEART(EXPORT,ERR)
 
     !Argument variables
     TYPE (EXPORT_CONTAINER):: EXPORT  

@@ -1,4 +1,4 @@
-r!> \file
+!> \file
 !> $Id: opencmiss.f90 542 2009-06-03 17:16:22Z chrispbradley $
 !> \author Chris Bradley
 !> \brief The top level OpenCMISS module.
@@ -183,7 +183,7 @@ MODULE OPENCMISS
 
  !>Contains information for a region.
   TYPE CMISSRegionType
-    PRIVATE
+!     PRIVATE
     TYPE(REGION_TYPE), POINTER :: REGION
   END TYPE CMISSRegionType
 
@@ -542,6 +542,14 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionNotFixed = BOUNDARY_CONDITION_NOT_FIXED !<The dof is not fixed. \see OPENCMISS_BoundaryConditionsTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionFixed = BOUNDARY_CONDITION_FIXED !<The dof is fixed as a boundary condition. \see OPENCMISS_BoundaryConditionsTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionMixed = BOUNDARY_CONDITION_MIXED !<The dof is set as a mixed boundary condition. \see OPENCMISS_BoundaryConditionsTypes,OPENCMISS
+
+  !Temporary boundary flags (to be removed when general boundary object becomes available!)
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionFixedWall = BOUNDARY_CONDITION_FIXED_WALL
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionInletWall = BOUNDARY_CONDITION_FIXED_INLET
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionMovedWall = BOUNDARY_CONDITION_MOVED_WALL
+
+
+
   !>@}
   !>@}
   
@@ -600,6 +608,9 @@ MODULE OPENCMISS
   END INTERFACE !CMISSEquationsSetBoundaryConditionsGet
 
   PUBLIC CMISSBoundaryConditionNotFixed,CMISSBoundaryConditionFixed,CMISSBoundaryConditionMixed
+  !Temporary boundary flags (to be removed when general boundary object becomes available!)
+  PUBLIC CMISSBoundaryConditionFixedWall,CMISSBoundaryConditionInletWall,CMISSBoundaryConditionMovedWall
+
 
   PUBLIC CMISSBoundaryConditionsDestroy
 
@@ -1123,15 +1134,18 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStaticStokesSubtype = EQUATIONS_SET_STATIC_STOKES_SUBTYPE !<Static Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLaplaceStokesSubtype = EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE !<Laplace type Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetTransientStokesSubtype = EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE !<Transient Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetALEStokesSubtype = EQUATIONS_SET_ALE_STOKES_SUBTYPE !<ALE Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetOptimisedStokesSubtype = EQUATIONS_SET_OPTIMISED_STOKES_SUBTYPE !<Optimised Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStaticNavierStokesSubtype = EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE !<Static Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLaplaceNavierStokesSubtype = EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE !<Laplace type Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetTransientNavierStokesSubtype = EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE !<Transient Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetALENavierStokesSubtype = EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE !<ALE Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetOptimisedNavierStokesSubtype = EQUATIONS_SET_OPTIMISED_NAVIER_STOKES_SUBTYPE !<Optimised Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardDarcySubtype = EQUATIONS_SET_STANDARD_DARCY_SUBTYPE !<Standard Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuasistaticDarcySubtype = EQUATIONS_SET_QUASISTATIC_DARCY_SUBTYPE !<Quasistatic Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardLaplaceSubtype = EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE !<Standard Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetGeneralisedLaplaceSubtype = EQUATIONS_SET_GENERALISED_LAPLACE_SUBTYPE !<Generalised Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMovingMeshLaplaceSubtype = EQUATIONS_SET_MOVING_MESH_LAPLACE_SUBTYPE !<Moving mesh Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourcePoissonSubtype = EQUATIONS_SET_CONSTANT_SOURCE_POISSON_SUBTYPE !<Constant source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourcePoissonSubtype = EQUATIONS_SET_LINEAR_SOURCE_POISSON_SUBTYPE !<Linear source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuadraticSourcePoissonSubtype = EQUATIONS_SET_QUADRATIC_SOURCE_POISSON_SUBTYPE !<Quadratic source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -1211,11 +1225,13 @@ MODULE OPENCMISS
   PUBLIC CMISSEquationsSetNoSubtype,CMISSEquationsSetThreeDimensionalSubtype,CMISSEquationsSetPlaneStressSubtype, &
     & CMISSEquationsSetPlaneStrainSubtype,CMISSEquationsSetPlateSubtype,CMISSEquationsSetShellSubtype, &
     & CMISSEquationsSetStaticStokesSubtype,CMISSEquationsSetLaplaceStokesSubtype,CMISSEquationsSetTransientStokesSubtype, &
+    & CMISSEquationsSetALEStokesSubtype,CMISSEquationsSetALENavierStokesSubtype, &
     & CMISSEquationsSetOptimisedStokesSubtype,CMISSEquationsSetStaticNavierStokesSubtype, &
     & CMISSEquationsSetLaplaceNavierStokesSubtype,CMISSEquationsSetTransientNavierStokesSubtype,&
     & CMISSEquationsSetOptimisedNavierStokesSubtype,CMISSEquationsSetStandardDarcySubtype, &
     & CMISSEquationsSetQuasistaticDarcySubtype,CMISSEquationsSetStandardLaplaceSubtype, &
-    & CMISSEquationsSetGeneralisedLaplaceSubtype,CMISSEquationsSetConstantSourcePoissonSubtype, &
+    & CMISSEquationsSetMovingMeshLaplaceSubtype,CMISSEquationsSetGeneralisedLaplaceSubtype, & 
+    & CMISSEquationsSetConstantSourcePoissonSubtype, &
     & CMISSEquationsSetLinearSourcePoissonSubtype,CMISSEquationsSetQuadraticSourcePoissonSubtype, &
     & CMISSEquationsSetExponentialSourcePoissonSubtype,CMISSEquationsSetNoSourceHelmholtzSubtype, &
     & CMISSEquationsSetNoSourceDiffusionSubtype,CMISSEquationsSetConstantSourceDiffusionSubtype, &
@@ -1959,7 +1975,8 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSFieldVariableTypesSetNumber
     MODULE PROCEDURE CMISSFieldVariableTypesSetObj
   END INTERFACE !CMISSFieldVariableTypesSet
-    
+
+  
   PUBLIC CMISSFieldDependentType,CMISSFieldIndependentType
 
   PUBLIC CMISSFieldScalarDimensionType,CMISSFieldVectorDimensionType,CMISSFieldTensorDimensionType
@@ -2592,10 +2609,12 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemStaticStokesSubtype = PROBLEM_STATIC_STOKES_SUBTYPE !<Static Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemLaplaceStokesSubtype = PROBLEM_LAPLACE_STOKES_SUBTYPE !<Laplace type Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemTransientStokesSubtype = PROBLEM_TRANSIENT_STOKES_SUBTYPE !<Transient Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemOptimisedSotkesSubtype = PROBLEM_OPTIMISED_STOKES_SUBTYPE !<Optimised Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemALEStokesSubtype = PROBLEM_ALE_STOKES_SUBTYPE !<ALE Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemOptimisedStokesSubtype = PROBLEM_OPTIMISED_STOKES_SUBTYPE !<Optimised Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemStaticNavierStokesSubtype = PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE !<Static Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemLaplaceNavierStokesSubtype = PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE !<Laplace type Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemTransientNavierStokesSubtype = PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE !<Transient Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemALENavierStokesSubtype = PROBLEM_ALE_NAVIER_STOKES_SUBTYPE !<ALE Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemOptimisedNavierStokesSubtype = PROBLEM_OPTIMISED_NAVIER_STOKES_SUBTYPE !<Optimised Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemStandardDarcySubtype = PROBLEM_STANDARD_DARCY_SUBTYPE !<Standard Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemQuasistaticDarcySubtype = PROBLEM_QUASISTATIC_DARCY_SUBTYPE !<Quasistatic Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -2653,10 +2672,10 @@ MODULE OPENCMISS
   PUBLIC CMISSProblemNoSubtype
 
   PUBLIC CMISSProblemStaticStokesSubtype,CMISSProblemLaplaceStokesSubtype,CMISSProblemTransientStokesSubtype, &
-    & CMISSProblemOptimisedSotkesSubtype
+    & CMISSProblemOptimisedStokesSubtype,CMISSProblemALEStokesSubtype
 
   PUBLIC CMISSProblemStaticNavierStokesSubtype,CMISSProblemLaplaceNavierStokesSubtype,CMISSProblemTransientNavierStokesSubtype, &
-    & CMISSProblemOptimisedNavierStokesSubtype
+    & CMISSProblemOptimisedNavierStokesSubtype,CMISSProblemALENavierStokesSubtype
 
   PUBLIC CMISSProblemStandardDarcySubtype,CMISSProblemQuasistaticDarcySubtype
 
@@ -3404,11 +3423,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolverEquationsSparsityTypeSetNumber1
     MODULE PROCEDURE CMISSSolverEquationsSparsityTypeSetObj
   END INTERFACE !CMISSSolverEquationsSparsityTypeSet
+
   
   PUBLIC CMISSSolverLinearType,CMISSSolverNonlinearType,CMISSSolverDynamicType,CMISSSolverDAEType,CMISSSolverEigenproblemType, &
     & CMISSSolverOptimiserType
 
-  PUBLIC CMISSSolverCMISSLibrary,CMISSSolverPETScLibrary
+  PUBLIC CMISSSolverCMISSLibrary,CMISSSolverPETScLibrary,CMISSSolverMUMPSLibrary
 
   PUBLIC CMISSSolverLinearDirectSolveType,CMISSSolverLinearIterativeSolveType
 
