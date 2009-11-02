@@ -1,4 +1,4 @@
-!> \file
+r!> \file
 !> $Id: opencmiss.f90 542 2009-06-03 17:16:22Z chrispbradley $
 !> \author Chris Bradley
 !> \brief The top level OpenCMISS module.
@@ -54,6 +54,7 @@ MODULE OPENCMISS
   USE BASIS_ROUTINES
   USE BOUNDARY_CONDITIONS_ROUTINES
   USE CMISS
+  USE CONSTANTS
   USE CONTROL_LOOP_ROUTINES
   USE COORDINATE_ROUTINES
   USE EQUATIONS_ROUTINES
@@ -612,6 +613,41 @@ MODULE OPENCMISS
 
 !!==================================================================================================================================
 !!
+!! CONSTANTS
+!!
+!!==================================================================================================================================
+
+  !Module parameters
+
+  !> \addtogroup OPENCMISS_Constants OPENCMISS::Constants
+  !> \brief Control loops constants.
+  !>@{  
+  !> \addtogroup OPENCMISS_GlobalDerivativeConstants OPENCMISS::Constants::GlobalDerivativeConstants
+  !> \brief Global derivative constant identifiers
+  !> \see OPENCMISS_CONSTANTS,OPENCMISS
+  !>@{ 
+  INTEGER(INTG), PARAMETER :: CMISSNoGlobalDerivative = NO_GLOBAL_DERIV !<No global derivative i.e., u \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSGlobalDerivativeS1 = GLOBAL_DERIV_S1 !<First global derivative in the s1 direction i.e., du/ds1 \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISSGlobalDerivativeS2 = GLOBAL_DERIV_S2 !<First global derivative in the s2 direction i.e., du/ds2 \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSGlobalDerivativeS1S2 = GLOBAL_DERIV_S1_S2 !<Global Cross derivative in the s1 and s2 direction i.e., d^2u/ds1ds2 \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSGlobalDerivativeS3 = GLOBAL_DERIV_S3 !<First global derivative in the s3 direction i.e., du/ds3 \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSGlobalDerivativeS1S3 = GLOBAL_DERIV_S1_S3 !<Global Cross derivative in the s1 and s3 direction i.e., d^2u/ds1ds3 \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSGlobalDerivativeS2S3 = GLOBAL_DERIV_S2_S3 !<Global Cross derivative in the s2 and s3 direction i.e., d^2u/ds2ds3 \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSGlobalDerivativeS1S2S3 = GLOBAL_DERIV_S1_S2_S3 !<Cross derivative in the s1, s2 and s3 direction i.e., d^3u/ds1ds2ds3 \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS
+  !>@}
+  !>@}
+  
+  !Module types
+
+  !Module variables
+
+  !Interfaces
+
+  PUBLIC CMISSNoGlobalDerivative,CMISSGlobalDerivativeS1,CMISSGlobalDerivativeS2,CMISSGlobalDerivativeS1S2, &
+    & CMISSGlobalDerivativeS3,CMISSGlobalDerivativeS1S3,CMISSGlobalDerivativeS2S3,CMISSGlobalDerivativeS1S2S3
+
+!!==================================================================================================================================
+!!
 !! CONTROL_LOOP_ROUTINES
 !!
 !!==================================================================================================================================
@@ -687,6 +723,13 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSControlLoopNumberOfSubLoopsSetObj
   END INTERFACE !CMISSControlLoopNumberOfSubLoopsGet
 
+  !>Sets/changes the output parameters for a time control loop.
+  INTERFACE CMISSControlLoopTimeOutputSet
+    MODULE PROCEDURE CMISSControlLoopTimeOutputSetNumber0
+    MODULE PROCEDURE CMISSControlLoopTimeOutputSetNumber1
+    MODULE PROCEDURE CMISSControlLoopTimeOutputSetObj
+  END INTERFACE !CMISSControlLoopTimeOutputSet
+
   !>Returns the time parameters for a time control loop.
   INTERFACE CMISSControlLoopTimesGet
     MODULE PROCEDURE CMISSControlLoopTimesGetNumber0
@@ -722,6 +765,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSControlLoopNumberOfSubLoopsGet,CMISSControlLoopNumberOfSubLoopsSet
 
+  PUBLIC CMISSControlLoopTimeOutputSet
+  
   PUBLIC CMISSControlLoopTimesGet,CMISSControlLoopTimesSet
 
   PUBLIC CMISSControlLoopTypeSet
@@ -7424,6 +7469,110 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSControlLoopNumberOfSubLoopsSetObj
+
+  !
+  !================================================================================================================================
+  !  
+  
+  !>Sets/changes the output parameters for a time control loop identified by user numbers.
+  SUBROUTINE CMISSControlLoopTimeOutputSetNumber0(ProblemUserNumber,ControlLoopIdentifier,OutputFrequency,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the output parameters for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier.
+    INTEGER(INTG), INTENT(IN) :: OutputFrequency !<The output frequency modulo to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSControlLoopTimeOutputSetNumber0",Err,ERROR,*999)
+    
+    NULLIFY(CONTROL_LOOP)
+    NULLIFY(PROBLEM)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_CONTROL_LOOP_GET(PROBLEM,ControlLoopIdentifier,CONTROL_LOOP,Err,ERROR,*999)
+      CALL CONTROL_LOOP_TIME_OUTPUT_SET(CONTROL_LOOP,OutputFrequency,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSControlLoopTimeOutputSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopTimeOutputSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSControlLoopTimeOutputSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopTimeOutputSetNumber0
+
+  !
+  !================================================================================================================================
+  !  
+  
+  !>Sets/changes the output parameters for a time control loop identified by user numbers.
+  SUBROUTINE CMISSControlLoopTimeOutputSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,OutputFrequency,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the output parameters for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<The control loop identifier.
+    INTEGER(INTG), INTENT(IN) :: OutputFrequency !<The output frequency modulo to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+
+    CALL ENTERS("CMISSControlLoopTimeOutputSetNumber1",Err,ERROR,*999)
+    
+    NULLIFY(CONTROL_LOOP)
+    NULLIFY(PROBLEM)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_CONTROL_LOOP_GET(PROBLEM,ControlLoopIdentifiers,CONTROL_LOOP,Err,ERROR,*999)
+      CALL CONTROL_LOOP_TIME_OUTPUT_SET(CONTROL_LOOP,OutputFrequency,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSControlLoopTimeOutputSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopTimeOutputSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSControlLoopTimeOutputSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopTimeOutputSetNumber1
+
+  !
+  !================================================================================================================================
+  !  
+  
+  !>Sets/changes the output parameters for a time control loop identified by an object.
+  SUBROUTINE CMISSControlLoopTimeOutputSetObj(ControlLoop,OutputFrequency,Err)
+  
+    !Argument variables
+    TYPE(CMISSControlLoopType), INTENT(INOUT) :: ControlLoop !<The control loop to set the output parameters for.
+    INTEGER(INTG), INTENT(IN) ::  OutputFrequency !<The output frequency modulo to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSControlLoopTimeOutputSetObj",Err,ERROR,*999)
+    
+    CALL CONTROL_LOOP_TIME_OUTPUT_SET(ControlLoop%CONTROL_LOOP,OutputFrequency,Err,ERROR,*999)
+
+    CALL EXITS("CMISSControlLoopTimeOutputSetObj")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopTimeOutputSetObj",Err,ERROR)
+    CALL EXITS("CMISSControlLoopTimeOuputSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopTimeOutputSetObj
 
   !
   !================================================================================================================================
