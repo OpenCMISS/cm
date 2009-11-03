@@ -1103,7 +1103,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityType = EQUATIONS_SET_LINEAR_ELASTICITY_TYPE !<Linear elasticity equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityType = EQUATIONS_SET_FINITE_ELASTICITY_TYPE !<Finite elasticity equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesEquationType = EQUATIONS_SET_STOKES_EQUATION_TYPE !<Stokes equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesType = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE !<Navier-Stokes equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesEquationType = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE !<Navier-Stokes equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetDarcyEquationType = EQUATIONS_SET_DARCY_EQUATION_TYPE !<Darcy equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetElectrostaticType = EQUATIONS_SET_ELECTROSTATIC_TYPE !<Electrostatic equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMagnetoStaticType = EQUATIONS_SET_MAGNETOSTATIC_TYPE !<Magnetostatic equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
@@ -1215,7 +1215,7 @@ MODULE OPENCMISS
     & CMISSEquationsSetModalClass,CMISSEquationsSetFittingClass,CMISSEquationsSetOptimisationClass
 
   PUBLIC CMISSEquationsSetNoType,CMISSEquationsSetLinearElasticityType,CMISSEquationsSetFiniteElasticityType, &
-    & CMISSEquationsSetStokesEquationType,CMISSEquationsSetNavierStokesType,CMISSEquationsSetDarcyEquationType, &
+    & CMISSEquationsSetStokesEquationType,CMISSEquationsSetNavierStokesEquationType,CMISSEquationsSetDarcyEquationType, &
     & CMISSEquationsSetElectrostaticType,CMISSEquationsSetMagnetoStaticType,CMISSEquationsSetMaxwellsEquationType, &
     & CMISSEquationsSetLaplaceEquationType,CMISSEquationsSetPoissonEquationType,CMISSEquationsSetHelmholtzEquationType, &
     & CMISSEquationsSetWaveEquationType,CMISSEquationsSetDiffusionEquationType,CMISSEquationsSetAdvectionDiffusionEquationType, &
@@ -2584,7 +2584,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemLinearElasticityType = PROBLEM_LINEAR_ELASTICITY_TYPE !<Linear elasticity problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemFiniteElasticityType = PROBLEM_FINITE_ELASTICITY_TYPE !<Finite elasticity problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemStokesEquationType = PROBLEM_STOKES_EQUATION_TYPE !<Stokes equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
-  INTEGER(INTG), PARAMETER :: CMISSProblemNavierStokesType = PROBLEM_NAVIER_STOKES_EQUATION_TYPE !<Navier-Stokes problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISSProblemNavierStokesEquationType = PROBLEM_NAVIER_STOKES_EQUATION_TYPE !<Navier-Stokes problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemDarcyEquationType = PROBLEM_DARCY_EQUATION_TYPE !<Darcy equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemElectrostaticType = PROBLEM_ELECTROSTATIC_TYPE !<Electrostatic problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemMagnetostaticType = PROBLEM_MAGNETOSTATIC_TYPE !<Magnetostatic problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
@@ -2657,7 +2657,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSProblemLinearElasticityType,CMISSProblemFiniteElasticityType
 
-  PUBLIC CMISSProblemStokesEquationType,CMISSProblemNavierStokesType,CMISSProblemDarcyEquationType
+  PUBLIC CMISSProblemStokesEquationType,CMISSProblemNavierStokesEquationType,CMISSProblemDarcyEquationType
 
   PUBLIC CMISSProblemElectrostaticType,CMISSProblemMagnetostaticType,CMISSProblemMaxwellsEquationsType
 
