@@ -465,7 +465,8 @@ MODULE TYPES
   !>Contains the topology information for a local node of a domain.
   TYPE DOMAIN_NODE_TYPE
     INTEGER(INTG) :: LOCAL_NUMBER !<The local node number in the domain.
-    INTEGER(INTG) :: GLOBAL_NUMBER !<The corresponding global node number in the mesh of the local node number in the domain.
+    INTEGER(INTG) :: MESH_NUMBER !<The corresponding global node number in the mesh of the local node number in the domain i.e., the mesh node number.
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The corresponding global number for the node i.e., the node number in the list of nodes for the region.
     INTEGER(INTG) :: USER_NUMBER !<The corresponding user number for the node.
     INTEGER(INTG) :: NUMBER_OF_DERIVATIVES !<The number of global derivatives at the node for the domain. Old CMISS name NKT(nj,np)
     INTEGER(INTG), ALLOCATABLE :: GLOBAL_DERIVATIVE_INDEX(:) !<GLOBAL_DERIVATIVE_INDEX(nk). The global derivative index of the nk'th global derivative for the node.
