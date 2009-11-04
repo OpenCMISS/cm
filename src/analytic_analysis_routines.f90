@@ -837,14 +837,28 @@ CONTAINS
                         BASIS=>DOMAIN_ELEMENTS3%ELEMENTS(element_idx)%BASIS
                         NUMERICAL_INT=0.0_DP
                         ANALYTIC_INT=0.0_DP
-                        DO parameter_idx=1,BASIS%NUMBER_OF_ELEMENT_PARAMETERS
-                          NUMERICAL_INT=NUMERICAL_INT+QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,NO_PART_DERIV,gauss_idx)* &
-                            & NUMERICAL_INTERP_PARAMETERS%PARAMETERS(parameter_idx,component_idx)* &
-                            & NUMERICAL_INTERP_PARAMETERS%SCALE_FACTORS(parameter_idx,component_idx)
-                          ANALYTIC_INT=ANALYTIC_INT+QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,NO_PART_DERIV,gauss_idx)* &
-                            & ANALYTIC_INTERP_PARAMETERS%PARAMETERS(parameter_idx,component_idx)* &
-                            & ANALYTIC_INTERP_PARAMETERS%SCALE_FACTORS(parameter_idx,component_idx)
-                        ENDDO !parameter_idx
+                        SELECT CASE(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE)
+                        CASE(FIELD_NO_SCALING)
+                          DO parameter_idx=1,BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                            NUMERICAL_INT=NUMERICAL_INT+QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,NO_PART_DERIV,gauss_idx)* &
+                              & NUMERICAL_INTERP_PARAMETERS%PARAMETERS(parameter_idx,component_idx)
+                            ANALYTIC_INT=ANALYTIC_INT+QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,NO_PART_DERIV,gauss_idx)* &
+                              & ANALYTIC_INTERP_PARAMETERS%PARAMETERS(parameter_idx,component_idx)
+                          ENDDO !parameter_idx
+                        CASE(FIELD_UNIT_SCALING,FIELD_ARC_LENGTH_SCALING,FIELD_ARITHMETIC_MEAN_SCALING,FIELD_HARMONIC_MEAN_SCALING)
+                          DO parameter_idx=1,BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                            NUMERICAL_INT=NUMERICAL_INT+QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,NO_PART_DERIV,gauss_idx)* &
+                              & NUMERICAL_INTERP_PARAMETERS%PARAMETERS(parameter_idx,component_idx)* &
+                              & NUMERICAL_INTERP_PARAMETERS%SCALE_FACTORS(parameter_idx,component_idx)
+                            ANALYTIC_INT=ANALYTIC_INT+QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,NO_PART_DERIV,gauss_idx)* &
+                              & ANALYTIC_INTERP_PARAMETERS%PARAMETERS(parameter_idx,component_idx)* &
+                              & ANALYTIC_INTERP_PARAMETERS%SCALE_FACTORS(parameter_idx,component_idx)
+                          ENDDO !parameter_idx
+                        CASE DEFAULT
+                          LOCAL_ERROR="The dependent field scaling type of "// &
+                            & TRIM(NUMBER_TO_VSTRING(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE,"*",ERR,ERROR))//" is invalid."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        END SELECT
                         INTEGRAL_ERRORS(1,component_idx)=INTEGRAL_ERRORS(1,component_idx)+NUMERICAL_INT*RWG
                         INTEGRAL_ERRORS(2,component_idx)=INTEGRAL_ERRORS(2,component_idx)+NUMERICAL_INT**2*RWG
                         INTEGRAL_ERRORS(3,component_idx)=INTEGRAL_ERRORS(3,component_idx)+ANALYTIC_INT*RWG
@@ -875,14 +889,28 @@ CONTAINS
                         BASIS=>DOMAIN_ELEMENTS3%ELEMENTS(element_idx)%BASIS
                         NUMERICAL_INT=0.0_DP
                         ANALYTIC_INT=0.0_DP
-                        DO parameter_idx=1,BASIS%NUMBER_OF_ELEMENT_PARAMETERS
-                          NUMERICAL_INT=NUMERICAL_INT+QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,NO_PART_DERIV,gauss_idx)* &
-                            & NUMERICAL_INTERP_PARAMETERS%PARAMETERS(parameter_idx,component_idx)* &
-                            & NUMERICAL_INTERP_PARAMETERS%SCALE_FACTORS(parameter_idx,component_idx)
-                          ANALYTIC_INT=ANALYTIC_INT+QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,NO_PART_DERIV,gauss_idx)* &
-                            & ANALYTIC_INTERP_PARAMETERS%PARAMETERS(parameter_idx,component_idx)* &
-                            & ANALYTIC_INTERP_PARAMETERS%SCALE_FACTORS(parameter_idx,component_idx)
-                        ENDDO !parameter_idx
+                        SELECT CASE(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE)
+                        CASE(FIELD_NO_SCALING)
+                          DO parameter_idx=1,BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                            NUMERICAL_INT=NUMERICAL_INT+QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,NO_PART_DERIV,gauss_idx)* &
+                              & NUMERICAL_INTERP_PARAMETERS%PARAMETERS(parameter_idx,component_idx)
+                            ANALYTIC_INT=ANALYTIC_INT+QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,NO_PART_DERIV,gauss_idx)* &
+                              & ANALYTIC_INTERP_PARAMETERS%PARAMETERS(parameter_idx,component_idx)
+                          ENDDO !parameter_idx
+                        CASE(FIELD_UNIT_SCALING,FIELD_ARC_LENGTH_SCALING,FIELD_ARITHMETIC_MEAN_SCALING,FIELD_HARMONIC_MEAN_SCALING)
+                          DO parameter_idx=1,BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                            NUMERICAL_INT=NUMERICAL_INT+QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,NO_PART_DERIV,gauss_idx)* &
+                              & NUMERICAL_INTERP_PARAMETERS%PARAMETERS(parameter_idx,component_idx)* &
+                              & NUMERICAL_INTERP_PARAMETERS%SCALE_FACTORS(parameter_idx,component_idx)
+                            ANALYTIC_INT=ANALYTIC_INT+QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,NO_PART_DERIV,gauss_idx)* &
+                              & ANALYTIC_INTERP_PARAMETERS%PARAMETERS(parameter_idx,component_idx)* &
+                              & ANALYTIC_INTERP_PARAMETERS%SCALE_FACTORS(parameter_idx,component_idx)
+                          ENDDO !parameter_idx
+                        CASE DEFAULT
+                          LOCAL_ERROR="The dependent field scaling type of "// &
+                            & TRIM(NUMBER_TO_VSTRING(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE,"*",ERR,ERROR))//" is invalid."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        END SELECT
                         GHOST_INTEGRAL_ERRORS(1,component_idx)=GHOST_INTEGRAL_ERRORS(1,component_idx)+NUMERICAL_INT*RWG
                         GHOST_INTEGRAL_ERRORS(2,component_idx)=GHOST_INTEGRAL_ERRORS(2,component_idx)+NUMERICAL_INT**2*RWG
                         GHOST_INTEGRAL_ERRORS(3,component_idx)=GHOST_INTEGRAL_ERRORS(3,component_idx)+ANALYTIC_INT*RWG
