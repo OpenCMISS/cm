@@ -2652,8 +2652,8 @@ CONTAINS
     TYPE(BASIS_PTR_TYPE), ALLOCATABLE :: listScaleBases(:)
     TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: component
     INTEGER(INTG), ALLOCATABLE :: GROUP_LOCAL_NUMBER(:), GROUP_SCALE_FACTORS(:)
-    INTEGER(INTG), ALLOCATABLE :: GROUP_NODE(:), GROUP_VARIABLES(:), NODE_INDEXES(:)
-    INTEGER(C_INT), TARGET :: INTERPOLATION_XI(3),ELEMENT_DERIVATIVES(64*64),NUMBER_OF_DERIVATIVES(64)
+    INTEGER(INTG), ALLOCATABLE :: GROUP_NODE(:), GROUP_VARIABLES(:)
+    INTEGER(C_INT), TARGET :: INTERPOLATION_XI(3),ELEMENT_DERIVATIVES(64*64),NUMBER_OF_DERIVATIVES(64), NODE_INDEXES(128)
     INTEGER(INTG) :: nn, mm, NUM_OF_VARIABLES, MAX_NUM_NODES !NUM_OF_NODES
     INTEGER(INTG) :: local_number, isNodal
     INTEGER(INTG) :: num_scl, num_node, comp_idx, scaleIndex, scaleIndex1, var_idx, derivativeIndex !value_idx field_idx global_var_idx comp_idx1 ny2
@@ -2886,11 +2886,6 @@ CONTAINS
               derivativeIndex = derivativeIndex + 1
             ENDDO !mm
           ENDDO !nn
-
-          !CPL
-          CALL REALLOCATE( NODE_INDEXES, BASIS%NUMBER_OF_NODES, &
-            & "Could not allocate NODE_INDEXES in exelem header", ERR, ERROR, *999 )
-          NODE_INDEXES = 1
 
           !Find the local-node index in the element's total node list.
           !TODO This assumes nested subsets of nodes, and will therefore break on, e.g., mixed quad and cubic interpolation
