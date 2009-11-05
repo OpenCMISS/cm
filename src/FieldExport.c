@@ -262,47 +262,55 @@ static int FieldExport_File_InterpolationHeader( FileSession *const session, con
 
     for( i = 0; i < numberOfXi; i++ )
     {
-        switch( interpolationXi[i] )
+        if( labelType == FIELD_IO_INTERPOLATION_HEADER_GRID )
         {
-        case BASIS_LINEAR_LAGRANGE_INTERPOLATION:
             scaleFactorCount *= 2;
             label = "l.Lagrange";
-            break;
-        case BASIS_QUADRATIC_LAGRANGE_INTERPOLATION:
-            scaleFactorCount *= 3;
-            label = "q.Lagrange";
-            break;
-        case BASIS_CUBIC_LAGRANGE_INTERPOLATION:
-            scaleFactorCount *= 4;
-            label = "c.Lagrange";
-            break;
-        case BASIS_CUBIC_HERMITE_INTERPOLATION:
-            scaleFactorCount *= 4;
-            label = "c.Hermite";
-            break;
-        case BASIS_QUADRATIC1_HERMITE_INTERPOLATION:
-            scaleFactorCount *= 4;
-            label = "q1.Hermite";
-            break;
-        case BASIS_QUADRATIC2_HERMITE_INTERPOLATION:
-            scaleFactorCount *= 4;
-            label = "q2.Hermite";
-            break;
-        case BASIS_LINEAR_SIMPLEX_INTERPOLATION:
-            scaleFactorCount = numberOfXi + 1;
-            label = "l.simplex";
-            break;
-        case BASIS_QUADRATIC_SIMPLEX_INTERPOLATION:
-            scaleFactorCount = ( numberOfXi + 1 ) * ( numberOfXi + 2 ) / 2;
-            label = "q.simplex";
-            break;
-        case BASIS_CUBIC_SIMPLEX_INTERPOLATION:
-            scaleFactorCount = ( numberOfXi + 1 ) * ( numberOfXi + 2 ) * ( numberOfXi + 3 ) / 2;
-            label = "c.simplex";
-            break;
-        default:
-            free( linked );
-            return FIELD_EXPORT_ERROR_UNKNOWN_INTERPOLATION;
+        }
+        else
+        {
+            switch( interpolationXi[i] )
+            {
+            case BASIS_LINEAR_LAGRANGE_INTERPOLATION:
+                scaleFactorCount *= 2;
+                label = "l.Lagrange";
+                break;
+            case BASIS_QUADRATIC_LAGRANGE_INTERPOLATION:
+                scaleFactorCount *= 3;
+                label = "q.Lagrange";
+                break;
+            case BASIS_CUBIC_LAGRANGE_INTERPOLATION:
+                scaleFactorCount *= 4;
+                label = "c.Lagrange";
+                break;
+            case BASIS_CUBIC_HERMITE_INTERPOLATION:
+                scaleFactorCount *= 4;
+                label = "c.Hermite";
+                break;
+            case BASIS_QUADRATIC1_HERMITE_INTERPOLATION:
+                scaleFactorCount *= 4;
+                label = "q1.Hermite";
+                break;
+            case BASIS_QUADRATIC2_HERMITE_INTERPOLATION:
+                scaleFactorCount *= 4;
+                label = "q2.Hermite";
+                break;
+            case BASIS_LINEAR_SIMPLEX_INTERPOLATION:
+                scaleFactorCount = numberOfXi + 1;
+                label = "l.simplex";
+                break;
+            case BASIS_QUADRATIC_SIMPLEX_INTERPOLATION:
+                scaleFactorCount = ( numberOfXi + 1 ) * ( numberOfXi + 2 ) / 2;
+                label = "q.simplex";
+                break;
+            case BASIS_CUBIC_SIMPLEX_INTERPOLATION:
+                scaleFactorCount = ( numberOfXi + 1 ) * ( numberOfXi + 2 ) * ( numberOfXi + 3 ) / 2;
+                label = "c.simplex";
+                break;
+            default:
+                free( linked );
+                return FIELD_EXPORT_ERROR_UNKNOWN_INTERPOLATION;
+            }
         }
 
         FieldExport_FPrintf( session, "%s", label );
@@ -587,7 +595,7 @@ static int FieldExport_File_ElementGridSize( FileSession *const session, const i
 
 
 static int FieldExport_File_NodeScaleIndexes( FileSession *const session, const int nodeCount, const int *const derivativeCount,
-    const int *const elementDerivatives, int firstScaleIndex )
+    const int *const elementDerivatives, const int *const nodeIndexes, int firstScaleIndex )
 {
     int i, j;
     int derivativeIndex = 0;
@@ -596,7 +604,7 @@ static int FieldExport_File_NodeScaleIndexes( FileSession *const session, const 
 
     for( i = 0; i < nodeCount; i++ )
     {
-        FieldExport_FPrintf( session, " %5d.  #Values=%d\n", i + 1, derivativeCount[i] );
+        FieldExport_FPrintf( session, " %5d.  #Values=%d\n", nodeIndexes[i], derivativeCount[i] );
         FieldExport_FPrintf( session, "      Value indices:  " );
         for( j = 0; j < derivativeCount[i]; j++ )
         {
@@ -606,8 +614,16 @@ static int FieldExport_File_NodeScaleIndexes( FileSession *const session, const 
         FieldExport_FPrintf( session, "      Scale factor indices: " );
         for( j = 0; j < derivativeCount[i]; j++ )
         {
-            firstScaleIndex++;
-            FieldExport_FPrintf( session, " %3d", firstScaleIndex );
+            //We're currently using firstScaleIndex == -1 to tell us that there's no scaling. Ugly but functional.
+            if( firstScaleIndex >= 0 )
+            {
+                firstScaleIndex++;
+                FieldExport_FPrintf( session, " %3d", firstScaleIndex );
+            }
+            else
+            {
+                FieldExport_FPrintf( session, " 0" );
+            }
         }
         FieldExport_FPrintf( session, "\n" );
     }
@@ -1209,7 +1225,7 @@ int FieldExport_ElementGridSize( const int handle, const int numberOfXi )
 
 
 int FieldExport_NodeScaleIndexes( const int handle, const int nodeCount, const int *const derivativeCount,
-    const int *const elementDerivatives, const int firstScaleIndex )
+    const int *const elementDerivatives, const int *const nodeIndexes, const int firstScaleIndex )
 {
     SessionListEntry *session = FieldExport_GetSession( handle );
     
@@ -1219,7 +1235,7 @@ int FieldExport_NodeScaleIndexes( const int handle, const int nodeCount, const i
     }
     else if( session->type == EXPORT_TYPE_FILE )
     {
-        return FieldExport_File_NodeScaleIndexes( &session->fileSession, nodeCount, derivativeCount, elementDerivatives, firstScaleIndex );
+        return FieldExport_File_NodeScaleIndexes( &session->fileSession, nodeCount, derivativeCount, elementDerivatives, nodeIndexes, firstScaleIndex );
     }
     else
     {

@@ -72,7 +72,7 @@ int fieldexport_component( const int handle, const int componentNumber, const in
 int fieldexport_elementgridsize( const int handle, const int numberOfXi );
 
 int fieldexport_nodescaleindexes( const int handle, const int nodeCount, const int *const derivativeCount,
-	const int *const elementDerivatives, const int firstScaleIndex );
+	const int *const elementDerivatives, const int *const nodeIndexes, const int firstScaleIndex );
 
 int fieldexport_elementindex( const int handle, const int dimensionCount, const int index );
 
