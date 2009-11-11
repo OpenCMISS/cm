@@ -4881,6 +4881,7 @@ CONTAINS
     CALL ENTERS("MESH_TOPOLOGY_BOUNDARY_CALCULATE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(TOPOLOGY)) THEN
+
       IF(ASSOCIATED(TOPOLOGY%NODES)) THEN        
         IF(ASSOCIATED(TOPOLOGY%ELEMENTS)) THEN
           DO element_idx=1,TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS
@@ -4897,6 +4898,7 @@ CONTAINS
                     XI_DIRECTION=ni
                     MATCH_INDEX=BASIS%NUMBER_OF_NODES_XI(ni)
                   ENDIF
+
                   DO nn=1,BASIS%NUMBER_OF_NODES
                     IF(BASIS%NODE_POSITION_INDEX(nn,XI_DIRECTION)==MATCH_INDEX) THEN
                       node_idx=TOPOLOGY%ELEMENTS%ELEMENTS(element_idx)%MESH_ELEMENT_NODES(nn)
@@ -5614,11 +5616,11 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: j,ne,ne1,ne2,nep1,nep2,ni,nn,nn1,nn2,np,np1,np2,DUMMY_ERR,FACE_XI(2),NODE_POSITION_INDEX(3)
+    INTEGER(INTG) :: j,ne,ne1,nep1,ni,nn,nn1,nn2,np,np1,DUMMY_ERR,FACE_XI(2),NODE_POSITION_INDEX(3)
     INTEGER(INTG) :: xi_direction,direction_index,xi_dir_check,xi_dir_search,NUMBER_NODE_MATCHES
     INTEGER(INTG) :: NUMBER_SURROUNDING,MAX_NUMBER_SURROUNDING,NUMBER_OF_NODES_XI(3)
     INTEGER(INTG), POINTER :: NODE_MATCHES(:),ADJACENT_ELEMENTS(:)
-    LOGICAL :: FOUND,XI_COLLAPSED,FACE_COLLAPSED(-3:3)
+    LOGICAL :: XI_COLLAPSED,FACE_COLLAPSED(-3:3),SUBSET
     TYPE(VARYING_STRING) :: DUMMY_ERROR
     TYPE(LIST_TYPE), POINTER :: NODE_MATCH_LIST
     TYPE(LIST_PTR_TYPE) :: ADJACENT_ELEMENTS_LIST(-3:3)
@@ -5691,6 +5693,7 @@ CONTAINS
               FACE_XI(1)=OTHER_XI_DIRECTIONS3(ni,2,1)
               FACE_XI(2)=OTHER_XI_DIRECTIONS3(ni,3,1)
               !Loop over the two faces
+
               DO direction_index=-1,1,2
                 xi_direction=direction_index*ni                  
                 !Find nodes in the element on the appropriate face/line/point
@@ -5732,22 +5735,13 @@ CONTAINS
                   DO nep1=1,TOPOLOGY%NODES%NODES(np1)%NUMBER_OF_SURROUNDING_ELEMENTS
                     ne1=TOPOLOGY%NODES%NODES(np1)%SURROUNDING_ELEMENTS(nep1)
                     IF(ne1/=ne) THEN !Don't want the current element
-                      FOUND=.FALSE.
-                      nn2=2
-                      DO WHILE(nn2<=NUMBER_NODE_MATCHES.AND..NOT.FOUND)
-                        np2=NODE_MATCHES(nn2)
-                        nep2=1
-                        DO WHILE(nep2<=TOPOLOGY%NODES%NODES(np2)%NUMBER_OF_SURROUNDING_ELEMENTS.AND..NOT.FOUND)
-                          ne2=TOPOLOGY%NODES%NODES(np2)%SURROUNDING_ELEMENTS(nep2)
-                          IF(ne1==ne2) THEN
-                            FOUND=.TRUE.
-                          ELSE
-                            nep2=nep2+1
-                          ENDIF
-                        ENDDO !nep2
-                        nn2=nn2+1
-                      ENDDO !nn2
-                      IF(FOUND) THEN
+                      ! grab the nodes list for current and this surrouding elements
+                      ! current face : NODE_MATCHES
+                      ! candidate element : TOPOLOGY%ELEMENTS%ELEMENTS(ne1)%MESH_ELEMENT_NODES ! should this be GLOBAL_ELEMENT_NODES?
+                      ! if all of current face belongs to the candidate element, we will have found the neighbour
+                      CALL LIST_SUBSET_OF(NODE_MATCHES,TOPOLOGY%ELEMENTS%ELEMENTS(ne1)%MESH_ELEMENT_NODES, &
+                           & SUBSET,ERR,ERROR,*999)
+                      IF(SUBSET) THEN
                         CALL LIST_ITEM_ADD(ADJACENT_ELEMENTS_LIST(xi_direction)%PTR,ne1,ERR,ERROR,*999)
                         NUMBER_SURROUNDING=NUMBER_SURROUNDING+1
                       ENDIF
@@ -5800,7 +5794,6 @@ CONTAINS
         ENDDO !ni
       ENDDO !ne
     ENDIF
-    
     CALL EXITS("MESH_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENTS_CALCULATE")
     RETURN
 999 IF(ASSOCIATED(NODE_MATCHES)) DEALLOCATE(NODE_MATCHES)

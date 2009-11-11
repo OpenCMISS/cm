@@ -171,6 +171,16 @@ MODULE LISTS
     MODULE PROCEDURE LIST_SORT_SHELL_DP_ARRAY
   END INTERFACE !LIST_SORT_SHELL
 
+  !>Calculates the intersection of two arrays
+  INTERFACE LIST_INTERSECTION
+    MODULE PROCEDURE LIST_INTERSECTION_INTG_ARRAY
+  END INTERFACE
+
+  !>Checks whether an array is a subset of another array
+  INTERFACE LIST_SUBSET_OF
+    MODULE PROCEDURE LISTS_SUBSET_OF_INTG_ARRAY
+  END INTERFACE
+
   PUBLIC LIST_TYPE,LIST_PTR_TYPE
 
   PUBLIC LIST_INTG_TYPE,LIST_SP_TYPE,LIST_DP_TYPE
@@ -181,6 +191,8 @@ MODULE LISTS
   PUBLIC LIST_SEARCH,LIST_SEARCH_LINEAR
   
   PUBLIC LIST_SORT,LIST_SORT_BUBBLE,LIST_SORT_HEAP,LIST_SORT_SHELL
+
+  PUBLIC LIST_INTERSECTION,LIST_SUBSET_OF
   
 CONTAINS
 
@@ -477,6 +489,7 @@ CONTAINS
             NEW_SIZE=MAX(2*LIST%NUMBER_IN_LIST,1)
             ALLOCATE(NEW_LIST(NEW_SIZE),STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new list",ERR,ERROR,*999)
+            NEW_LIST=0
             NEW_LIST(1:LIST%NUMBER_IN_LIST)=LIST%LIST_INTG(1:LIST%NUMBER_IN_LIST)
             IF(ASSOCIATED(LIST%LIST_INTG)) DEALLOCATE(LIST%LIST_INTG)
             LIST%LIST_INTG=>NEW_LIST
@@ -1794,6 +1807,184 @@ CONTAINS
     RETURN 1
   END SUBROUTINE LIST_SORT_SHELL_DP_ARRAY
   
+  !
+  !================================================================================================================================
+  !
+
+  !>Finds the intersection of two sets (arrays), leaving the original arrays intact
+  SUBROUTINE LIST_INTERSECTION_INTG_ARRAY(A,B,C,ERR,ERROR,*)
+    
+    ! Argument variables
+    INTEGER(INTG), INTENT(IN), TARGET :: A(:)   !<One of the two arrays to find the intersection for
+    INTEGER(INTG), INTENT(IN), TARGET :: B(:)   !<Other array to find the intersection for
+    INTEGER(INTG), ALLOCATABLE, INTENT(OUT) :: C(:) !<On exit, contains the list of common elements of the arrays
+    INTEGER(INTG), INTENT(OUT) :: ERR          !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    ! Local variables
+    INTEGER(INTG) :: SIZE_SHORTER,SIZE_LONGER
+    INTEGER(INTG) :: I,J,START,NUMBER_OF_MATCHES
+    INTEGER(INTG),POINTER :: LONGER(:),SHORTER(:)
+    INTEGER(INTG),ALLOCATABLE :: MATCHES(:)
+    INTEGER(INTG),ALLOCATABLE :: LONG_ARRAY(:),SHORT_ARRAY(:)   !<copies, if needed
+    
+    CALL ENTERS("LIST_INTERSECTION_INTG_ARRAY",ERR,ERROR,*999)
+
+    ! if the lists are small, it's probably easier to directly compare: O(n^2)
+    ! but if they're big, sort first then compare: O(n log n)*2 + 2*O(n)
+
+    IF(ALLOCATED(C)) THEN
+      ! theoretically this cannot happen?
+      CALL FLAG_ERROR("Output array is already allocated",ERR,ERROR,*999)
+    ELSE
+      ! start finding the intersection
+      NULLIFY(LONGER)
+      NULLIFY(SHORTER)
+      ! it's quicker to compare shorter array elements to longer ones
+      IF(SIZE(A)>SIZE(B)) THEN
+        LONGER=>A
+        SHORTER=>B
+      ELSE
+        LONGER=>B
+        SHORTER=>A
+      ENDIF
+      SIZE_SHORTER=SIZE(SHORTER)
+      SIZE_LONGER=SIZE(LONGER)
+      ALLOCATE(MATCHES(SIZE_SHORTER))
+      NUMBER_OF_MATCHES=0
+
+      ! long or short lists?
+      IF(SIZE_LONGER*SIZE_SHORTER<=1E4) THEN  ! a rather arbitrary cutoff...
+        ! 'short' lists - begin comparing straight away
+        DO I=1,SIZE_SHORTER
+          DO J=1,SIZE_LONGER
+            IF(SHORTER(I)==LONGER(J)) THEN
+              NUMBER_OF_MATCHES=NUMBER_OF_MATCHES+1
+              MATCHES(NUMBER_OF_MATCHES)=SHORTER(I)
+            ENDIF
+          ENDDO
+        ENDDO
+      ELSE
+        ! 'long' lists - make copies of the arrays
+        ALLOCATE(LONG_ARRAY(SIZE_LONGER),SHORT_ARRAY(SIZE_SHORTER))
+        LONG_ARRAY=LONGER
+        SHORT_ARRAY=SHORTER
+        ! sort both arrays
+        CALL LIST_SORT(LONG_ARRAY,ERR,ERROR,*999)
+        CALL LIST_SORT(SHORT_ARRAY,ERR,ERROR,*999)
+        ! compare now
+        START=1
+        DO I=1,SIZE_SHORTER
+          DO J=START,SIZE_LONGER
+            IF(LONG_ARRAY(J)==SHORT_ARRAY(I)) THEN
+              NUMBER_OF_MATCHES=NUMBER_OF_MATCHES+1
+              MATCHES(NUMBER_OF_MATCHES)=SHORT_ARRAY(I)
+              START=MIN(J+1,SIZE_LONGER)
+              EXIT
+            ELSEIF(LONG_ARRAY(J)>SHORT_ARRAY(I)) THEN
+              ! can start here next time
+              START=MAX(J-1,1)
+              EXIT
+            ENDIF
+          ENDDO
+        ENDDO
+        DEALLOCATE(LONG_ARRAY,SHORT_ARRAY)
+      ENDIF ! long or short lists
+      ! cut the array down to size
+      ALLOCATE(C(NUMBER_OF_MATCHES))
+      C=MATCHES(1:NUMBER_OF_MATCHES)
+      DEALLOCATE(MATCHES)
+    ENDIF
+
+    CALL EXITS("LIST_INTERSECTION_INTG_ARRAY")
+    RETURN
+999 CALL ERRORS("LIST_INTERSECTION_INTG_ARRAY",ERR,ERROR)
+    CALL EXITS("LIST_INTERSECTION_INTG_ARRAY")
+    RETURN 1
+
+  END SUBROUTINE LIST_INTERSECTION_INTG_ARRAY
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finds out whether array A is a subset of array B
+  SUBROUTINE LISTS_SUBSET_OF_INTG_ARRAY(A,B,SUBSET,ERR,ERROR,*)
+    ! Argument variables
+    INTEGER(INTG), INTENT(IN) :: A(:)   !<Supposed subset (to test for)
+    INTEGER(INTG), INTENT(IN) :: B(:)   !<Supposed superset
+    LOGICAL, INTENT(OUT) :: SUBSET              !<On exit, TRUE if A is a subset of B
+    INTEGER(INTG), INTENT(OUT) :: ERR           !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR  !<The error string
+    ! Logical variables
+    INTEGER(INTG) :: SIZE_A,SIZE_B,I,J,START,SIZE_REDUCE
+    INTEGER(INTG),ALLOCATABLE :: A_SORTED(:),B_SORTED(:)
+
+    CALL ENTERS("LISTS_SUBSET_OF_INTG_ARRAY",ERR,ERROR,*999)
+
+    SIZE_A=SIZE(A)
+    SIZE_B=SIZE(B)
+    SUBSET=.FALSE.
+    
+    ! some easy tests
+    IF(SIZE_A>SIZE_B) THEN
+      RETURN
+    ENDIF
+
+    SIZE_REDUCE=0
+    DO I=1,SIZE_A
+      IF(A(I)==0) SIZE_REDUCE=SIZE_REDUCE+1
+    ENDDO
+    SIZE_A=SIZE_A-SIZE_REDUCE
+    SIZE_REDUCE=0
+    DO I=1,SIZE_B
+      IF(B(I)==0) SIZE_REDUCE=SIZE_REDUCE+1
+    ENDDO
+    SIZE_B=SIZE_B-SIZE_REDUCE
+
+    ! short of long arrays?
+    IF(SIZE_A*SIZE_B<=1E4) THEN
+      ! 'short' arrays - just compare without sorting
+      DO I=1,SIZE_A
+        DO J=1,SIZE_B
+          IF(A(I)==B(J)) THEN
+            EXIT
+          ELSEIF(J==SIZE_B) THEN
+            RETURN
+          ENDIF
+        ENDDO
+        IF(I==SIZE_A) SUBSET=.TRUE.
+      ENDDO
+    ELSE
+      ! 'long' arrays - sort first
+      ALLOCATE(A_SORTED(SIZE_A),B_SORTED(SIZE_B))
+      A_SORTED=A
+      B_SORTED=B
+      CALL LIST_SORT(A_SORTED,ERR,ERROR,*999)
+      CALL LIST_SORT(B_SORTED,ERR,ERROR,*999)
+      START=1
+      DO I=1,SIZE_A
+        DO J=1,SIZE_B
+          IF(A(I)==B(J)) THEN
+            START=MIN(J+1,SIZE_B)
+            EXIT
+          ELSEIF(A(I)<B(J)) THEN
+            DEALLOCATE(A_SORTED,B_SORTED)
+            RETURN
+          ENDIF
+        ENDDO
+        IF(I==SIZE_A) SUBSET=.TRUE.
+      ENDDO
+      DEALLOCATE(A_SORTED,B_SORTED)
+    ENDIF
+
+    CALL EXITS("LISTS_SUBSET_OF_INTG_ARRAY")
+    RETURN
+999 CALL ERRORS("LISTS_SUBSET_OF_INTG_ARRAY",ERR,ERROR)
+    CALL EXITS("LISTS_SUBSET_OF_INTG_ARRAY")
+    RETURN 1
+
+  END SUBROUTINE LISTS_SUBSET_OF_INTG_ARRAY
+
   !
   !================================================================================================================================
   !
