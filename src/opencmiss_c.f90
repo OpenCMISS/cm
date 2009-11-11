@@ -156,6 +156,7 @@ CONTAINS
       IF(ASSOCIATED(CoordinateSystemType)) THEN
         CALL CMISSCoordinateSystemTypeFinalise(CoordinateSystemType,CMISSCoordinateSystemTypeFinaliseC)
         DEALLOCATE(CoordinateSystemType)
+        CoordinateSystemTypePtr=C_NULL_PTR
       ENDIF
     ENDIF
 
@@ -216,6 +217,7 @@ CONTAINS
       IF(ASSOCIATED(RegionType)) THEN
         CALL CMISSRegionTypeFinalise(RegionType,CMISSRegionTypeFinaliseC)
         DEALLOCATE(RegionType)
+        RegionTypePtr=C_NULL_PTR
       ENDIF
     ENDIF
 
@@ -340,24 +342,111 @@ CONTAINS
 !!
 !!==================================================================================================================================
 
-  !>Returns the character string label for a region identified by an user number for C.
-  FUNCTION CMISSRegionLabelGetCNum(RegionUserNumber,LabelSize,Label) BIND(C,NAME="CMISSRegionLabelGetNum")
+  !>Finishes the process of creating a region identified by a pointer for C.
+  FUNCTION CMISSRegionCreateFinishCPtr(RegionPtr) BIND(C,NAME="CMISSRegionCreateFinish")
+  
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: RegionPtr
+    !Function variable
+    INTEGER(C_INT) :: CMISSRegionCreateFinishCPtr
+    !Local variables
+    TYPE(CMISSRegionType), POINTER :: Region
+
+    CMISSRegionCreateFinishCPtr=CMISSNoError
+    IF(C_ASSOCIATED(RegionPtr)) THEN
+      CALL C_F_POINTER(RegionPtr,Region)
+      IF(ASSOCIATED(Region)) THEN        
+        CALL CMISSRegionCreateFinish(Region,CMISSRegionCreateFinishCPtr)
+      ELSE
+        CMISSRegionCreateFinishCPtr=CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSRegionCreateFinishCPtr=CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+    
+  END FUNCTION CMISSRegionCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the process of creating a region identified by an user number for C.
+  FUNCTION CMISSRegionCreateFinishCNum(RegionUserNumber) BIND(C,NAME="CMISSRegionCreateFinishNum")
   
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber
-    INTEGER(C_INT), VALUE, INTENT(IN) :: LabelSize
-    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(OUT) :: Label(LabelSize)
     !Function variable
-    INTEGER(C_INT) :: CMISSRegionLabelGetCNum
+    INTEGER(C_INT) :: CMISSRegionCreateFinishCNum
     !Local variables
-    CHARACTER(LEN=LabelSize-1) :: FLabel
- 
-    CALL CMISSRegionLabelGet(RegionUserNumber,FLabel,CMISSRegionLabelGetCNum)
-    CALL CMISSF2CString(Flabel,Label)
- 
+
+    CALL CMISSRegionCreateFinish(RegionUserNumber,CMISSRegionCreateFinishCNum)
+
     RETURN
     
-  END FUNCTION CMISSRegionLabelGetCNum
+  END FUNCTION CMISSRegionCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Starts the process of creating a region identified by a pointer for C.
+  FUNCTION CMISSRegionCreateStartCPtr(RegionUserNumber,ParentRegionPtr,RegionPtr) BIND(C,NAME="CMISSRegionCreateStart")
+  
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ParentRegionPtr
+    TYPE(C_PTR), VALUE, INTENT(IN) :: RegionPtr
+    !Function variable
+    INTEGER(C_INT) :: CMISSRegionCreateStartCPtr
+    !Local variables
+    TYPE(CMISSRegionType), POINTER :: Region,ParentRegion
+
+    CMISSRegionCreateStartCPtr=CMISSNoError
+    IF(C_ASSOCIATED(ParentRegionPtr)) THEN
+      CALL C_F_POINTER(ParentRegionPtr,ParentRegion)
+      IF(ASSOCIATED(ParentRegion)) THEN        
+        IF(C_ASSOCIATED(RegionPtr)) THEN
+          CALL C_F_POINTER(RegionPtr,Region)
+          IF(ASSOCIATED(Region)) THEN        
+            CALL CMISSRegionCreateStart(RegionUserNumber,ParentRegion,Region,CMISSRegionCreateStartCPtr)
+          ELSE
+            CMISSRegionCreateStartCPtr=CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSRegionCreateStartCPtr=CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSRegionCreateStartCPtr=CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSRegionCreateStartCPtr=CMISSPointerIsNULL
+    ENDIF
+    
+    RETURN
+    
+  END FUNCTION CMISSRegionCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the process of creating a region identified by an user number for C.
+  FUNCTION CMISSRegionCreateStartCNum(RegionUserNumber,ParentRegionUserNumber) BIND(C,NAME="CMISSRegionCreateStartNum")
+  
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ParentRegionUserNumber
+    !Function variable
+    INTEGER(C_INT) :: CMISSRegionCreateStartCNum
+    !Local variables
+
+    CALL CMISSRegionCreateStart(RegionUserNumber,ParentRegionUserNumber,CMISSRegionCreateStartCNum)
+
+    RETURN
+    
+  END FUNCTION CMISSRegionCreateStartCNum
 
   !
   !================================================================================================================================
@@ -396,30 +485,30 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !>Sets/changes the label for a region identified by an user number for C.
-  FUNCTION CMISSRegionLabelSetCNum(RegionUserNumber,LabelSize,Label) BIND(C,NAME="CMISSRegionLabelSetNum")
+
+  !>Returns the character string label for a region identified by an user number for C.
+  FUNCTION CMISSRegionLabelGetCNum(RegionUserNumber,LabelSize,Label) BIND(C,NAME="CMISSRegionLabelGetNum")
   
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber
     INTEGER(C_INT), VALUE, INTENT(IN) :: LabelSize
-    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: Label(LabelSize)
+    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(OUT) :: Label(LabelSize)
     !Function variable
-    INTEGER(C_INT) :: CMISSRegionLabelSetCNum
+    INTEGER(C_INT) :: CMISSRegionLabelGetCNum
     !Local variables
     CHARACTER(LEN=LabelSize-1) :: FLabel
  
-    CALL CMISSC2FString(Label,Flabel)
-    CALL CMISSRegionLabelSet(RegionUserNumber,FLabel,CMISSRegionLabelSetCNum)
-    
+    CALL CMISSRegionLabelGet(RegionUserNumber,FLabel,CMISSRegionLabelGetCNum)
+    CALL CMISSF2CString(Flabel,Label)
+ 
     RETURN
     
-  END FUNCTION CMISSRegionLabelSetCNum
+  END FUNCTION CMISSRegionLabelGetCNum
 
   !
   !================================================================================================================================
   !
-
+  
   !>Sets/changes the label for a region identified by a pointer for C.
   FUNCTION CMISSRegionLabelSetCPtr(RegionPtr,LabelSize,Label) BIND(C,NAME="CMISSRegionLabelSet")
   
@@ -449,6 +538,29 @@ CONTAINS
     RETURN
     
   END FUNCTION CMISSRegionLabelSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the label for a region identified by an user number for C.
+  FUNCTION CMISSRegionLabelSetCNum(RegionUserNumber,LabelSize,Label) BIND(C,NAME="CMISSRegionLabelSetNum")
+  
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber
+    INTEGER(C_INT), VALUE, INTENT(IN) :: LabelSize
+    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: Label(LabelSize)
+    !Function variable
+    INTEGER(C_INT) :: CMISSRegionLabelSetCNum
+    !Local variables
+    CHARACTER(LEN=LabelSize-1) :: FLabel
+ 
+    CALL CMISSC2FString(Label,Flabel)
+    CALL CMISSRegionLabelSet(RegionUserNumber,FLabel,CMISSRegionLabelSetCNum)
+    
+    RETURN
+    
+  END FUNCTION CMISSRegionLabelSetCNum
 
   !
   !================================================================================================================================

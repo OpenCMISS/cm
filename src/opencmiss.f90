@@ -24026,7 +24026,7 @@ CONTAINS
   !================================================================================================================================
   !  
   
-  !>Finishes the process creating a region identified by user number.
+  !>Finishes the process of creating a region identified by user number.
   SUBROUTINE CMISSRegionCreateFinishNumber(RegionUserNumber,Err)
   
     !Argument variables

@@ -52,6 +52,9 @@
 
 #define CMISSNoError 0
 
+#define CMISSTrue 1
+#define CMISSFalse 0
+
 /*
  *=================================================================================================================================
  *
@@ -140,6 +143,17 @@ CMISSError CMISSInitialise(CMISSCoordinateSystemType **WorldCoordinateSystem,
  *
  *==================================================================================================================================
  */
+
+CMISSError CMISSRegionCreateFinish(CMISSRegionType *Region);
+
+CMISSError CMISSRegionCreateFinishNum(int RegionUserNumber);
+
+CMISSError CMISSRegionCreateStart(int RegionUserNumber,
+				  CMISSRegionType *ParentRegion,
+				  CMISSRegionType *Region);
+
+CMISSError CMISSRegionCreateStartNum(int RegionUserNumber,
+				     int ParentRegionUserNumber);
 
 CMISSError CMISSRegionLabelGet(CMISSRegionType *Region,
 			       int LabelSize,
