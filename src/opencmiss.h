@@ -50,10 +50,10 @@
  * Defines
  */
 
-#define CMISSNoError 0
+const int CMISSNoError=0;
 
-#define CMISSTrue 1
-#define CMISSFalse 0
+const int CMISSTrue=1;
+const int CMISSFalse=0;
 
 /*
  *=================================================================================================================================
@@ -93,12 +93,21 @@
  */
 
 /* 
+ * Struct defs
+ */
+
+struct CMISSCoordinateSystemType_;
+struct CMISSRegionType_;
+
+/* 
  * Type defs
  */
 
+
+
 typedef int CMISSError;
-typedef void CMISSCoordinateSystemType;
-typedef void CMISSRegionType;
+typedef struct CMISSCoordinateSystemType_ *CMISSCoordinateSystemType;
+typedef struct CMISSRegionType_ *CMISSRegionType;
 
 /* 
  * Protypes
@@ -112,13 +121,13 @@ typedef void CMISSRegionType;
  *==================================================================================================================================
  */
 
-CMISSError CMISSCoordinateSystemTypeFinalise(CMISSCoordinateSystemType **CoordinateSystem);
+CMISSError CMISSCoordinateSystemTypeFinalise(CMISSCoordinateSystemType *CoordinateSystem);
 
-CMISSError CMISSCoordinateSystemTypeInitialise(CMISSCoordinateSystemType **CoordinateSystem);
+CMISSError CMISSCoordinateSystemTypeInitialise(CMISSCoordinateSystemType *CoordinateSystem);
 
-CMISSError CMISSRegionTypeFinalise(CMISSRegionType **Region);
+CMISSError CMISSRegionTypeFinalise(CMISSRegionType *Region);
 
-CMISSError CMISSRegionTypeInitialise(CMISSRegionType **Region);
+CMISSError CMISSRegionTypeInitialise(CMISSRegionType *Err);
 
 /*
  *=================================================================================================================================
@@ -133,8 +142,8 @@ CMISSError CMISSFinalise();
 CMISSError CMISSInitialiseNum(int *WorldCoordinateSystemUserNumber,
 			      int *WorldRegionUserNumber);
 
-CMISSError CMISSInitialise(CMISSCoordinateSystemType **WorldCoordinateSystem,
-			   CMISSRegionType **WorldRegion);
+CMISSError CMISSInitialise(CMISSCoordinateSystemType *WorldCoordinateSystem,
+			   CMISSRegionType *WorldRegion);
 
 /*
  *=================================================================================================================================
@@ -144,29 +153,29 @@ CMISSError CMISSInitialise(CMISSCoordinateSystemType **WorldCoordinateSystem,
  *==================================================================================================================================
  */
 
-CMISSError CMISSRegionCreateFinish(CMISSRegionType *Region);
+CMISSError CMISSRegionCreateFinish(CMISSRegionType Region);
 
-CMISSError CMISSRegionCreateFinishNum(int RegionUserNumber);
+CMISSError CMISSRegionCreateFinishNum(const int RegionUserNumber);
 
-CMISSError CMISSRegionCreateStart(int RegionUserNumber,
-				  CMISSRegionType *ParentRegion,
-				  CMISSRegionType *Region);
+CMISSError CMISSRegionCreateStart(const int RegionUserNumber,
+				  const CMISSRegionType ParentRegion,
+				  CMISSRegionType Region);
 
-CMISSError CMISSRegionCreateStartNum(int RegionUserNumber,
-				     int ParentRegionUserNumber);
+CMISSError CMISSRegionCreateStartNum(const int RegionUserNumber,
+				     const int ParentRegionUserNumber);
 
-CMISSError CMISSRegionLabelGet(CMISSRegionType *Region,
-			       int LabelSize,
+CMISSError CMISSRegionLabelGet(const CMISSRegionType Region,
+			       const int LabelSize,
 			       char *Label);
 
-CMISSError CMISSRegionLabelGetNum(int RegionUserNumber,
-				  int LabelSize,
+CMISSError CMISSRegionLabelGetNum(const int RegionUserNumber,
+				  const int LabelSize,
 				  char *Label);
 
-CMISSError CMISSRegionLabelSet(CMISSRegionType *Region,
-			       int LabelSize,
-			       char *Label);
+CMISSError CMISSRegionLabelSet(const CMISSRegionType Region,
+			       const int LabelSize,
+			       const char *Label);
 
-CMISSError CMISSRegionLabelSetNum(int RegionUserNumber,
-				  int LabelSize,
-				  char *Label);
+CMISSError CMISSRegionLabelSetNum(const int RegionUserNumber,
+				  const int LabelSize,
+				  const char *Label);
