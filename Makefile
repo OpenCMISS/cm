@@ -26,7 +26,7 @@
 # License for the specific language governing rights and limitations
 # under the License.
 #
-# The Original Code is openCMISS
+# The Original Code is OpenCMISS
 #
 # The Initial Developer of the Original Code is University of Auckland,
 # Auckland, New Zealand and University of Oxford, Oxford, United
@@ -95,7 +95,11 @@ else
     ifeq ($(MPI),openmpi)
       MPI := openmpi
     else
-      $(error unknown MPI type - $(MPI))
+      ifeq ($(MPI),mvapich2)
+        MPI := mvapich2
+      else
+        $(error unknown MPI type - $(MPI))
+      endif
     endif
   endif
 endif
@@ -111,6 +115,10 @@ ifeq ($(MPIPROF),true)
   endif
 endif
 
+ifndef LANGUAGE
+  LANGUAGE := Fortran
+endif
+
 #----------------------------------------------------------------------------------------------------------------------------------
 
 BASE_LIB_NAME = OpenCMISS
@@ -118,8 +126,12 @@ SOURCE_DIR = $(GLOBAL_ROOT)/src
 OBJECT_DIR := $(GLOBAL_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
 MODULE_DIR := $(OBJECT_DIR)
 INC_DIR := $(GLOBAL_ROOT)/include/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
-INC_NAME := opencmiss.mod
-INCLUDE := $(INC_DIR)/$(INC_NAME)
+MOD_INC_NAME := opencmiss.mod
+MOD_INCLUDE := $(INC_DIR)/$(MOD_INC_NAME)
+MOD_SOURCE_INC := $(OBJECT_DIR)/$(MOD_INC_NAME)
+HEADER_INC_NAME := opencmiss.h
+HEADER_INCLUDE := $(INC_DIR)/$(HEADER_INC_NAME)
+HEADER_SOURCE_INC := $(SOURCE_DIR)/$(HEADER_INC_NAME)
 LIB_DIR := $(GLOBAL_ROOT)/lib/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
 LIB_NAME := lib$(BASE_LIB_NAME)$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX).a
 LIBRARY := $(LIB_DIR)/$(LIB_NAME)
@@ -135,7 +147,6 @@ endif
 
 C_INCLUDE_DIRS := $(SOURCE_DIR) 
 F_INCLUDE_DIRS := $(MODULE_DIR)
-
 
 #----------------------------------------------------------------------------------------------------------------------------------
 # compiling commands
@@ -620,7 +631,6 @@ endif
 #BLAS/lapack
 BLAS_INCLUDE_PATH =#
 
-
 EXTERNAL_INCLUDE_PATH = $(strip $(TAO_INCLUDE_PATH) $(PETSC_INCLUDE_PATH) $(SUNDIALS_INCLUDE_PATH) $(HYPRE_INCLUDE_PATH) $(MUMPS_INCLUDE_PATH) $(SCALAPCK_INCLUDE_PATH) $(BLACS_INCLUDE_PATH) $(PARMETIS_INCLUDE_PATH) $(MPI_INCLUDE_PATH) $(BLAS_INCLUDE_PATH))
 
 CPPFLAGS += $(EXTERNAL_INCLUDE_PATH)
@@ -688,6 +698,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/Navier_Stokes_equations_routines.o \
 	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/opencmiss.o \
+	$(OBJECT_DIR)/opencmiss_c.o \
 	$(OBJECT_DIR)/Poisson_equations_routines.o \
 	$(OBJECT_DIR)/problem_constants.o \
 	$(OBJECT_DIR)/problem_routines.o \
@@ -703,7 +714,6 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/trees.o \
 	$(OBJECT_DIR)/types.o 
 
-
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   MACHINE_OBJECTS = $(OBJECT_DIR)/machine_constants_linux.o
 else
@@ -718,7 +728,8 @@ OBJECTS += $(MACHINE_OBJECTS)
 
 main: preliminaries \
 	$(LIBRARY) \
-	$(INCLUDE)
+	$(MOD_INCLUDE) \
+	$(HEADER_INCLUDE)
 
 preliminaries: $(OBJECT_DIR) \
 	$(INC_DIR) \
@@ -736,8 +747,11 @@ $(LIB_DIR) :
 $(LIBRARY) : $(OBJECTS) 
 	$(AR) $(ARFLAGS) $@ $(OBJECTS)
 
-$(INCLUDE) : $(OBJECT_DIR)/opencmiss.mod 
-	cp $(OBJECT_DIR)/opencmiss.mod $@ 
+$(MOD_INCLUDE) : $(MOD_SOURCE_INC)
+	cp $(MOD_SOURCE_INC) $@ 
+
+$(HEADER_INCLUDE) : $(HEADER_SOURCE_INC)
+	cp $(HEADER_SOURCE_INC) $@ 
 
 # Place the list of dependencies for the objects here.
 #
@@ -1392,6 +1406,9 @@ $(OBJECT_DIR)/opencmiss.o	:	$(SOURCE_DIR)/opencmiss.f90 \
 	$(OBJECT_DIR)/timer_f.o \
 	$(OBJECT_DIR)/types.o 
 
+$(OBJECT_DIR)/opencmiss_c.o	:	$(SOURCE_DIR)/opencmiss_c.f90 \
+	$(OBJECT_DIR)/opencmiss.o 
+
 $(OBJECT_DIR)/Poisson_equations_routines.o	:	$(SOURCE_DIR)/Poisson_equations_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
@@ -1559,7 +1576,7 @@ $(OBJECT_DIR)/types.o	:	$(SOURCE_DIR)/types.f90 \
 
 clean:
 	@echo "Cleaning house ..."
-	rm -rf $(OBJECT_DIR) $(LIBRARY) 
+	rm -rf $(OBJECT_DIR) $(LIBRARY) $(MOD_INCLUDE) $(HEADER_INCLUDE)
 
 allclean:
 	@echo "Cleaning house ..."
@@ -1589,7 +1606,7 @@ all64: debug64 opt64
 #-----------------------------------------------------------------------------
 
 help:
-	@echo "           Compile a library version of openCMISS"
+	@echo "           Compile a library version of OpenCMISS"
 	@echo "           ======================================"
 	@echo
 	@echo "Examples of usage:   "
@@ -1602,11 +1619,12 @@ help:
 	@echo "Options: (The former is the default unless specified.)"
 	@echo
 	@echo "	(DEBUG=|OPT=)"
-	@echo "	MPI=(mpich2|intel|openmpi)"
+	@echo "	MPI=(mpich2|intel|openmpi|mvapich2)"
 	@echo "	PROF=(true|)"
 	@echo "	MPIPROF=(true|)"
 	@echo "	ABI=(32|64)"
 	@echo "	COMPILER=(intel|gnu)"
+	@echo " LANGUAGE=(Fortran|C)"
 	@echo 
 	@echo "Available targets:                            "
 	@echo
