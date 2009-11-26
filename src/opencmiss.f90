@@ -183,7 +183,7 @@ MODULE OPENCMISS
 
  !>Contains information for a region.
   TYPE CMISSRegionType
-!     PRIVATE
+    PRIVATE
     TYPE(REGION_TYPE), POINTER :: REGION
   END TYPE CMISSRegionType
 
@@ -1209,6 +1209,28 @@ MODULE OPENCMISS
   !>@{  
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonTwoDim1 = EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_1 !<u=ln(4/(x+y+1^2)) \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
   !>@}
+  !> \addtogroup OPENCMISS_StokesAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Stokes
+  !> \brief The analytic function types for a Stokes equation.
+  !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
+  !>@{  
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesTwoDim1 = EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesTwoDim2 = EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesTwoDim3 = EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesThreeDim1 = EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesThreeDim2 = EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesThreeDim3 = EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
+  !>@}
+  !> \addtogroup OPENCMISS_NavierStokesAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::NavierStokes
+  !> \brief The analytic function types for a Navier-Stokes equation.
+  !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
+  !>@{  
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesTwoDim1 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesTwoDim2 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesTwoDim3 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesThreeDim1 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesThreeDim2 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesThreeDim3 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
+  !>@}
   !>@}
   !>@}
   
@@ -1257,6 +1279,12 @@ MODULE OPENCMISS
     & CMISSEquationsSetLaplaceEquationThreeDim1,CMISSEquationsSetLaplaceEquationThreeDim2
 
   PUBLIC CMISSEquationsSetPoissonTwoDim1
+
+  PUBLIC CMISSEquationsSetStokesTwoDim1,CMISSEquationsSetStokesTwoDim2,CMISSEquationsSetStokesTwoDim3
+  PUBLIC CMISSEquationsSetStokesThreeDim1,CMISSEquationsSetStokesThreeDim2,CMISSEquationsSetStokesThreeDim3
+
+  PUBLIC CMISSEquationsSetNavierStokesTwoDim1,CMISSEquationsSetNavierStokesTwoDim2,CMISSEquationsSetNavierStokesTwoDim3
+  PUBLIC CMISSEquationsSetNavierStokesThreeDim1,CMISSEquationsSetNavierStokesThreeDim2,CMISSEquationsSetNavierStokesThreeDim3
   
 !!==================================================================================================================================
 !!
