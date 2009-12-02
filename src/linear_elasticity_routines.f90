@@ -96,8 +96,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: component_idx,deriv_idx,dim_idx,local_ny,node_idx,NUMBER_OF_DIMENSIONS,variable_idx,variable_type,BC_X_counter
-    REAL(DP) :: ANALYTIC_VALUE,BC_VALUE,X(3)
+    INTEGER(INTG) :: component_idx,deriv_idx,dim_idx,local_ny,node_idx,NUMBER_OF_DIMENSIONS,variable_idx,variable_type
+    INTEGER(INTG) :: BC_X_FORCE_counter,BC_X_counter,BC_Y_counter
+    REAL(DP) :: ANALYTIC_VALUE,BC_VALUE,X(3),GEOMETRIC_TOL,FORCE_X,FORCE_Y,FORCE_X_AREA,FORCE_Y_AREA,LENGTH,WIDTH,HEIGHT,E_X,v_X
     REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
     LOGICAL :: SET_BC
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
@@ -108,7 +109,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR    
     
     CALL ENTERS("LINEAR_ELASTICITY_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR,*999)
-    
+    GEOMETRIC_TOL=1.0E-10_DP
     !!TODO: Use Geometric/Material Field values to prescribe values in analytic solution, currently hardcodded geometry & material properties
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
@@ -125,6 +126,8 @@ CONTAINS
             ! IDENTIFY BOUNDARY CONDITION NODES
             !
             BC_X_counter = 0
+            BC_Y_counter = 0
+            BC_X_FORCE_counter = 0
             DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
               variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
               FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
@@ -138,109 +141,126 @@ CONTAINS
                         IF(ASSOCIATED(DOMAIN_NODES)) THEN
                           !Loop over the local nodes excluding the ghosts.
                           DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-                            IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
-                              !!TODO \todo We should interpolate the geometric field here and the node position.
-                              DO dim_idx=1,NUMBER_OF_DIMENSIONS
-                                local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
-                                X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
-                              ENDDO !dim_idx
-                              !Loop over the derivatives
-                              DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-
-                                IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN !If we are a boundary node
-                                  SET_BC = .FALSE.
-                                  SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
-                                  !
-                                  ! TWO DIMENSIONAL LINEAR ELASTICITY
-                                  !
-                                  CASE(EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_TWO_DIM_PLANE_STRESS_1)
-                                    SELECT CASE(component_idx)
-                                    CASE(1) !u component
-                                      SELECT CASE(variable_type)
-                                      CASE(FIELD_U_VARIABLE_TYPE)
-                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
-                                        CASE(NO_GLOBAL_DERIV)
-                                          !pass
-                                        END SELECT
-                                      CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                       SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
-                                        CASE(NO_GLOBAL_DERIV)
-                                          IF (X(1)==0.0_DP) THEN
-                                            BC_X_counter = BC_X_counter + 1
-                                          ENDIF
-                                        END SELECT
-                                      END SELECT
-                                    CASE(2) !v component
-                                      SELECT CASE(variable_type)
-                                      CASE(FIELD_U_VARIABLE_TYPE)
-                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
-                                        CASE(NO_GLOBAL_DERIV)
-                                          !pass
-                                        END SELECT
-                                      CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                       SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
-                                        CASE(NO_GLOBAL_DERIV)
-                                          !pass
-                                        END SELECT
-                                      END SELECT
-                                    END SELECT
-
-                                  !
-                                  ! THREE DIMENSIONAL LINEAR ELASTICITY
-                                  !
-                                  CASE(EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_THREE_DIM_1)
-                                    SELECT CASE(component_idx)
-                                    CASE(1) !u component
-                                      SELECT CASE(variable_type)
-                                      CASE(FIELD_U_VARIABLE_TYPE)
-                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
-                                        CASE(NO_GLOBAL_DERIV)
-                                          !pass
-                                        END SELECT
-                                      CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                       SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
-                                        CASE(NO_GLOBAL_DERIV)
-                                          IF (X(1)==0.0_DP) THEN
-                                            BC_X_counter = BC_X_counter + 1
-                                          ENDIF
-                                        END SELECT
-                                      END SELECT
-                                    CASE(2) !v component
-                                      SELECT CASE(variable_type)
-                                      CASE(FIELD_U_VARIABLE_TYPE)
-                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
-                                        CASE(NO_GLOBAL_DERIV)
-                                          !pass
-                                        END SELECT
-                                      CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                       SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
-                                        CASE(NO_GLOBAL_DERIV)
-                                          !pass
-                                        END SELECT
-                                      END SELECT
-                                    CASE(3) !w component
-                                      SELECT CASE(variable_type)
-                                      CASE(FIELD_U_VARIABLE_TYPE)
-                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
-                                        CASE(NO_GLOBAL_DERIV)
-                                          !pass
-                                        END SELECT
-                                      CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                       SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
-                                        CASE(NO_GLOBAL_DERIV)
-                                          !pass
-                                        END SELECT
-                                      END SELECT
-                                    END SELECT
-                                  CASE DEFAULT
-                                    LOCAL_ERROR="The analytic function type of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
-                                      & " is invalid."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            !!TODO \todo We should interpolate the geometric field here and the node position.
+                            DO dim_idx=1,NUMBER_OF_DIMENSIONS
+                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
+                              X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
+                            ENDDO !dim_idx
+                            !Loop over the derivatives
+                            DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                              SET_BC = .FALSE.
+                              SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
+                              !
+                              ! ONE DIMENSIONAL LINEAR ELASTICITY
+                              !
+                              CASE(EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_ONE_DIM_1)
+                                SELECT CASE(variable_type)
+                                CASE(FIELD_U_VARIABLE_TYPE)
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  CASE(NO_GLOBAL_DERIV)
+                                    !pass
                                   END SELECT
-                                ENDIF
-                              ENDDO !deriv_idx
-                            ENDIF
+                                CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  CASE(NO_GLOBAL_DERIV)
+                                    !pass
+                                  END SELECT
+                                END SELECT
+
+                              !
+                              ! TWO DIMENSIONAL LINEAR ELASTICITY
+                              !
+                              CASE(EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_TWO_DIM_PLANE_STRESS_1)
+                                SELECT CASE(component_idx)
+                                CASE(1) !u component
+                                  SELECT CASE(variable_type)
+                                  CASE(FIELD_U_VARIABLE_TYPE)
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    CASE(NO_GLOBAL_DERIV)
+                                      !pass
+                                    END SELECT
+                                  CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    CASE(NO_GLOBAL_DERIV)
+!                                      IF (ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) THEN
+!                                        BC_X_counter = BC_X_counter + 1
+!                                      ENDIF
+                                    END SELECT
+                                  END SELECT
+                                CASE(2) !v component
+                                  SELECT CASE(variable_type)
+                                  CASE(FIELD_U_VARIABLE_TYPE)
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    CASE(NO_GLOBAL_DERIV)
+                                      IF (ABS(X(2)-0.0_DP) < GEOMETRIC_TOL) THEN
+                                        BC_Y_counter = BC_Y_counter + 1
+                                      IF (ABS(X(2)-0.0_DP) < GEOMETRIC_TOL) THEN
+                                        BC_X_counter = BC_X_counter + 1
+                                      ENDIF
+                                      ENDIF
+                                    END SELECT
+                                  CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    CASE(NO_GLOBAL_DERIV)
+                                      !pass
+                                    END SELECT
+                                  END SELECT
+                                END SELECT
+
+                              !
+                              ! THREE DIMENSIONAL LINEAR ELASTICITY
+                              !
+                              CASE(EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_THREE_DIM_1)
+                                SELECT CASE(component_idx)
+                                CASE(1) !u component
+                                  SELECT CASE(variable_type)
+                                  CASE(FIELD_U_VARIABLE_TYPE)
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    CASE(NO_GLOBAL_DERIV)
+                                      !pass
+                                    END SELECT
+                                  CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    CASE(NO_GLOBAL_DERIV)
+                                      IF (ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) THEN
+                                        BC_X_FORCE_counter = BC_X_FORCE_counter + 1 
+                                      ENDIF
+                                    END SELECT
+                                  END SELECT
+                                CASE(2) !v component
+                                  SELECT CASE(variable_type)
+                                  CASE(FIELD_U_VARIABLE_TYPE)
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    CASE(NO_GLOBAL_DERIV)
+                                      !pass
+                                    END SELECT
+                                  CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    CASE(NO_GLOBAL_DERIV)
+                                      !pass
+                                    END SELECT
+                                  END SELECT
+                                CASE(3) !w component
+                                  SELECT CASE(variable_type)
+                                  CASE(FIELD_U_VARIABLE_TYPE)
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    CASE(NO_GLOBAL_DERIV)
+                                      !pass
+                                    END SELECT
+                                  CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    CASE(NO_GLOBAL_DERIV)
+                                      !pass
+                                    END SELECT
+                                  END SELECT
+                                END SELECT
+                              CASE DEFAULT
+                                LOCAL_ERROR="The analytic function type of "// &
+                                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                                  & " is invalid."
+                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              END SELECT
+                            ENDDO !deriv_idx
                           ENDDO !node_idx
                         ELSE
                           CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
@@ -289,9 +309,67 @@ CONTAINS
                               SET_BC = .FALSE.
                               SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
                               !
+                              ! ONE DIMENSIONAL LINEAR ELASTICITY
+                              !
+                              CASE(EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_ONE_DIM_1)
+                                FORCE_X=25.0_DP
+                                LENGTH = 100.0_DP
+                                WIDTH=25.0_DP
+                                HEIGHT=25.0_DP
+                                SELECT CASE(variable_type)
+                                !!TODO set material parameters from material field
+                                CASE(FIELD_U_VARIABLE_TYPE)
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  CASE(NO_GLOBAL_DERIV)
+                                    ANALYTIC_VALUE=X(1)*FORCE_X/(10E3_DP*25.0_DP*25.0_DP)
+                                    IF (ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) THEN
+                                      SET_BC = .TRUE.
+                                      BC_VALUE=0.0_DP
+                                    ENDIF
+                                  CASE(GLOBAL_DERIV_S1)
+                                    ANALYTIC_VALUE=1.0_DP
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
+                                      & " is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                 SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  CASE(NO_GLOBAL_DERIV)
+                                    IF (ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) THEN
+                                      ANALYTIC_VALUE=-FORCE_X
+                                    ELSE
+                                      ANALYTIC_VALUE=0.0_DP
+                                    ENDIF
+                                    IF (ABS(X(1)-100.0_DP) < GEOMETRIC_TOL) THEN
+                                      SET_BC = .TRUE.
+                                      BC_VALUE=FORCE_X
+                                    ENDIF
+                                  CASE(GLOBAL_DERIV_S1)
+                                    ANALYTIC_VALUE=1.0_DP
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
+                                      & " is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                CASE DEFAULT
+                                  LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+                                    & " is invalid."
+                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                END SELECT
+                              !
                               ! TWO DIMENSIONAL LINEAR ELASTICITY
                               !
                               CASE(EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_TWO_DIM_PLANE_STRESS_1)
+                                LENGTH = 20.0_DP
+                                WIDTH=20.0_DP
+                                HEIGHT=5.0_DP
+                                FORCE_Y=50.0_DP
+                                FORCE_Y_AREA=WIDTH*HEIGHT
+                                E_X = 10.0E3_DP
+                                v_X = 0.3_DP
                                 SELECT CASE(component_idx)
                                 CASE(1) !u component
                                 !u=Sigmax*x/E
@@ -300,8 +378,8 @@ CONTAINS
                                   CASE(FIELD_U_VARIABLE_TYPE)
                                     SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                     CASE(NO_GLOBAL_DERIV)
-                                      ANALYTIC_VALUE=X(1)/10E3_DP
-                                      IF (X(1)==0.0_DP) THEN
+                                      ANALYTIC_VALUE=(-v_X*X(1)*(FORCE_Y/FORCE_Y_AREA))/E_X
+                                      IF (ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) THEN
                                         SET_BC = .TRUE.
                                         BC_VALUE=0.0_DP
                                       ENDIF
@@ -320,15 +398,7 @@ CONTAINS
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                     CASE(NO_GLOBAL_DERIV)
-                                      IF (X(1)==0.0_DP) THEN
-                                        ANALYTIC_VALUE=-100.0_DP/BC_X_counter
-                                      ELSE!IF (X(1)==20.0_DP) THEN
-                                        ANALYTIC_VALUE=0.0_DP
-                                      ENDIF
-                                      IF (X(1)==20.0_DP) THEN
-                                        SET_BC = .TRUE.
-                                        BC_VALUE=100.0_DP/BC_X_counter
-                                      ENDIF
+                                      ANALYTIC_VALUE=0.0_DP
                                     CASE(GLOBAL_DERIV_S1)
                                       ANALYTIC_VALUE=1.0_DP
                                     CASE(GLOBAL_DERIV_S2)
@@ -352,8 +422,8 @@ CONTAINS
                                   CASE(FIELD_U_VARIABLE_TYPE)
                                     SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                     CASE(NO_GLOBAL_DERIV)
-                                      ANALYTIC_VALUE=-(0.3_DP*X(2))/10E3_DP
-                                      IF (X(2)==0.0_DP) THEN
+                                      ANALYTIC_VALUE=(X(2)*(FORCE_Y/FORCE_Y_AREA))/E_X
+                                      IF (ABS(X(2)-0.0_DP) < GEOMETRIC_TOL) THEN
                                         SET_BC = .TRUE.
                                         BC_VALUE=0.0_DP
                                       ENDIF
@@ -372,7 +442,29 @@ CONTAINS
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                     CASE(NO_GLOBAL_DERIV)
-                                      ANALYTIC_VALUE=0.0_DP
+                                      IF (ABS(X(2)-0.0_DP) < GEOMETRIC_TOL) THEN
+                                        ANALYTIC_VALUE=-FORCE_Y/BC_X_counter
+                                      ELSE
+                                        ANALYTIC_VALUE=0.0_DP
+                                      ENDIF
+                                      IF (ABS(X(2)-WIDTH) < GEOMETRIC_TOL) THEN
+                                        IF ((ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) .OR. (ABS(X(1)-LENGTH) < GEOMETRIC_TOL)) THEN
+                                          SET_BC = .TRUE.
+                                          BC_VALUE=FORCE_Y/(BC_X_counter-1.0_DP)*0.5_DP
+                                        ELSE
+                                          SET_BC = .TRUE.
+                                          BC_VALUE=FORCE_Y/(BC_X_counter-1.0_DP)
+                                        ENDIF
+                                      ENDIF
+                                      IF (ABS(X(2)-0.0_DP) < GEOMETRIC_TOL) THEN
+                                        IF ((ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) .OR. (ABS(X(1)-LENGTH) < GEOMETRIC_TOL)) THEN
+                                          ANALYTIC_VALUE=-FORCE_Y/(BC_X_counter-1.0_DP)*0.5_DP
+                                        ELSE
+                                          ANALYTIC_VALUE=-FORCE_Y/(BC_X_counter-1.0_DP)
+                                        ENDIF
+                                      ELSE
+                                        ANALYTIC_VALUE=0.0_DP
+                                      ENDIF
                                     CASE(GLOBAL_DERIV_S1)
                                       ANALYTIC_VALUE=0.0_DP
                                     CASE(GLOBAL_DERIV_S2)
@@ -399,6 +491,10 @@ CONTAINS
                               ! THREE DIMENSIONAL LINEAR ELASTICITY
                               !
                               CASE(EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_THREE_DIM_1)
+                                FORCE_X=25.0_DP/2.0_DP
+                                LENGTH = 100.0_DP
+                                WIDTH=25.0_DP/2.0_DP
+                                HEIGHT=25.0_DP/2.0_DP
                                 SELECT CASE(component_idx)
                                 CASE(1) !u component
                                 !u=Sigmax*x/E
@@ -406,8 +502,8 @@ CONTAINS
                                   CASE(FIELD_U_VARIABLE_TYPE)
                                     SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                     CASE(NO_GLOBAL_DERIV)
-                                      ANALYTIC_VALUE=X(1)*100.0_DP/(2500.0_DP*30E6_DP)
-                                      IF (X(1)==0.0_DP) THEN
+                                      ANALYTIC_VALUE=X(1)*25.0_DP/(625.0_DP*30E6_DP)
+                                      IF (ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) THEN
                                         SET_BC = .TRUE.
                                         BC_VALUE=0.0_DP
                                       ENDIF
@@ -434,14 +530,14 @@ CONTAINS
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                                     SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                     CASE(NO_GLOBAL_DERIV)
-                                      IF (X(1)==0.0_DP) THEN
-                                        ANALYTIC_VALUE=-100.0_DP/BC_X_counter
+                                      IF (ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) THEN
+                                        ANALYTIC_VALUE=-25.0_DP/BC_X_FORCE_counter
                                       ELSE
                                         ANALYTIC_VALUE=0.0_DP
                                       ENDIF
-                                      IF (X(1)==100.0_DP) THEN
+                                      IF (ABS(X(1)-100.0_DP) < GEOMETRIC_TOL) THEN
                                         SET_BC = .TRUE.
-                                        BC_VALUE=100.0_DP/BC_X_counter
+                                        BC_VALUE=25.0_DP/BC_X_FORCE_counter
                                       ENDIF
                                     CASE(GLOBAL_DERIV_S1)
                                       ANALYTIC_VALUE=0.0_DP
@@ -474,8 +570,8 @@ CONTAINS
                                   CASE(FIELD_U_VARIABLE_TYPE)
                                     SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                     CASE(NO_GLOBAL_DERIV)
-                                      ANALYTIC_VALUE=-X(2)*0.25_DP*100.0_DP/(2500.0_DP*30E6_DP)
-                                      IF (X(2)==0.0_DP) THEN
+                                      ANALYTIC_VALUE=-X(2)*0.25_DP*25.0_DP/(625.0_DP*30E6_DP)
+                                      IF (ABS(X(2)-0.0_DP) < GEOMETRIC_TOL) THEN
                                         SET_BC = .TRUE.
                                         BC_VALUE=0.0_DP
                                       ENDIF
@@ -534,8 +630,8 @@ CONTAINS
                                   CASE(FIELD_U_VARIABLE_TYPE)
                                     SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                     CASE(NO_GLOBAL_DERIV)
-                                      ANALYTIC_VALUE=-X(3)*0.25_DP*100.0_DP/(2500.0_DP*30E6_DP)
-                                      IF (X(3)==0.0_DP) THEN
+                                      ANALYTIC_VALUE=-X(3)*0.25_DP*25.0_DP/(625.0_DP*30E6_DP)
+                                      IF (ABS(X(3)-0.0_DP) < GEOMETRIC_TOL) THEN
                                         SET_BC = .TRUE.
                                         BC_VALUE=0.0_DP
                                       ENDIF
@@ -959,7 +1055,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("LINEAR_ELASTICITY_TENSOR",ERR,ERROR,*999)
-
+    ELASTICITY_TENSOR=0.0_DP
     SELECT CASE(EQUATIONS_SET_SUBTYPE)
     !Note: Fortran uses column major format for arrays.
     CASE(EQUATIONS_SET_THREE_DIMENSIONAL_SUBTYPE)
@@ -989,9 +1085,9 @@ CONTAINS
       ELASTICITY_TENSOR(1:6,1)=(/C11,C21,C31,0.0_DP,0.0_DP,0.0_DP/)
       ELASTICITY_TENSOR(1:6,2)=(/C12,C22,C32,0.0_DP,0.0_DP,0.0_DP/)
       ELASTICITY_TENSOR(1:6,3)=(/C13,C23,C33,0.0_DP,0.0_DP,0.0_DP/)
-      ELASTICITY_TENSOR(1:6,4)=(/0.0_DP,0.0_DP,0.0_DP,C44,0.0_DP,0.0_DP/)
-      ELASTICITY_TENSOR(1:6,5)=(/0.0_DP,0.0_DP,0.0_DP,0.0_DP,C55,0.0_DP/)
-      ELASTICITY_TENSOR(1:6,6)=(/0.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP,C66/)
+      ELASTICITY_TENSOR(4,4)=C44
+      ELASTICITY_TENSOR(5,5)=C55
+      ELASTICITY_TENSOR(6,6)=C66
     CASE(EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRESS_SUBTYPE)
       !Plane Stress Isotropic Elasticity Tensor
       E1 = MATERIALS_INTERPOLATED_POINT%values(1,1)
@@ -1003,7 +1099,6 @@ CONTAINS
       C12 = C11*v21
       C21 = C12
       C66 = E1/(2.0_DP*(1.0_DP+v12)) != G12
-      ELASTICITY_TENSOR=0.0_DP
       ELASTICITY_TENSOR(1,1)=C11
       ELASTICITY_TENSOR(1,2)=C21
       ELASTICITY_TENSOR(2,1)=C21
@@ -1021,23 +1116,16 @@ CONTAINS
       C12 = C22*v12
       C21 = C12
       C66 = E1/(2.0_DP*(1.0_DP+v12)) != G12
-      ELASTICITY_TENSOR=0.0_DP
       ELASTICITY_TENSOR(1,1)=C11
       ELASTICITY_TENSOR(1,2)=C21
       ELASTICITY_TENSOR(2,1)=C21
       ELASTICITY_TENSOR(2,2)=C22
       ELASTICITY_TENSOR(6,6)=C66
     CASE(EQUATIONS_SET_ONE_DIMENSIONAL_SUBTYPE)
-      !!TODO:: Set this up correctly
       !Plane Strain Isotropic Linear Elasticity Tensor
       E1 = MATERIALS_INTERPOLATED_POINT%values(1,1)
-      v12 = MATERIALS_INTERPOLATED_POINT%values(2,1)
-      gama = 1.0_DP/(1.0_DP-v12-v21)
-      C11 = E1*gama*(1.0_DP-v12)/(1.0_DP+v12)
-      C66 = E1/(2.0_DP*(1.0_DP+v12)) != G12
-      ELASTICITY_TENSOR=0.0_DP
+      C11 = E1
       ELASTICITY_TENSOR(1,1)=C11
-      ELASTICITY_TENSOR(6,6)=C66
     CASE(EQUATIONS_SET_PLATE_SUBTYPE)
       CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
     CASE(EQUATIONS_SET_SHELL_SUBTYPE)
@@ -1321,23 +1409,6 @@ CONTAINS
               & " is invalid for a linear elasticity equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
-!        CASE(EQUATIONS_SET_SETUP_ANALYTIC_TYPE)
-!          SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
-!          CASE(EQUATIONS_SET_SETUP_START_ACTION)
-!            IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-!              !Do nothing
-!            ELSE
-!              CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
-!            ENDIF
-!          CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
-!            !Do nothing
-!            !? Maybe set finished flag????
-!          CASE DEFAULT
-!            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
-!              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
-!              & " is invalid for a linear elasticity equation."
-!            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-!          END SELECT
 
         CASE(EQUATIONS_SET_SETUP_ANALYTIC_TYPE)
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
@@ -1728,23 +1799,6 @@ CONTAINS
               & " is invalid for a linear elasticity equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
-!        CASE(EQUATIONS_SET_SETUP_ANALYTIC_TYPE)
-!          SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
-!          CASE(EQUATIONS_SET_SETUP_START_ACTION)
-!            IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-!              !Do nothing
-!            ELSE
-!              CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
-!            ENDIF
-!          CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
-!            !Do nothing
-!            !? Maybe set finished flag????
-!          CASE DEFAULT
-!            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
-!              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
-!              & " is invalid for a linear elasticity equation."
-!            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-!          END SELECT
 
         CASE(EQUATIONS_SET_SETUP_ANALYTIC_TYPE)
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
@@ -2136,23 +2190,78 @@ CONTAINS
               & " is invalid for a linear elasticity equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
+
         CASE(EQUATIONS_SET_SETUP_ANALYTIC_TYPE)
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
             IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-              !Do nothing
+              DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+              IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+                GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+                IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
+                  CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                  !List 3 Dimensional Analytic function types currently implemented
+                  SELECT CASE(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE)
+                  CASE(EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_ONE_DIM_1)
+                    !Check that we are in 1D
+                    IF(NUMBER_OF_DIMENSIONS/=1) THEN
+                      LOCAL_ERROR="The number of geometric dimensions of "// &
+                        & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+                        & " is invalid. The analytic function type of "// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                        & " requires that there be 1 geometric dimension."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                    !Create analytic field if required
+                    !Set analtyic function type
+                    EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_ONE_DIM_1
+                  CASE DEFAULT
+                    LOCAL_ERROR="The specified analytic function type of "// &
+                      & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                      & " is invalid for a standard Linear Elasticity equation."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
+                ELSE
+                  CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+                ENDIF
+             ELSE
+                CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+              ENDIF
             ELSE
               CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
-            !Do nothing
-            !? Maybe set finished flag????
+            IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+              ANALYTIC_FIELD=>EQUATIONS_SET%ANALYTIC%ANALYTIC_FIELD
+              IF(ASSOCIATED(ANALYTIC_FIELD)) THEN
+                IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FIELD_AUTO_CREATED) THEN
+                  CALL FIELD_CREATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,ERR,ERROR,*999)
+                ENDIF
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+            ENDIF
+          CASE(EQUATIONS_SET_SETUP_GENERATE_ACTION)
+            IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
+              IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+                IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED) THEN
+                  CALL LINEAR_ELASTICITY_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("Equations set analtyic has not been finished.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Equations set analtyic is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Equations set dependent has not been finished.",ERR,ERROR,*999)
+            ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a linear elasticity equation."
+              & " is invalid for a standard Linear Elasticity equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
+
         CASE(EQUATIONS_SET_SETUP_EQUATIONS_TYPE)
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
