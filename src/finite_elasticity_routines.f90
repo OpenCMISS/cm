@@ -283,7 +283,7 @@ CONTAINS
           & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS       
         DEPENDENT_QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
         DEPENDENT_NUMBER_OF_GAUSS_POINTS=DEPENDENT_QUADRATURE_SCHEME%NUMBER_OF_GAUSS
-	DEPENDENT_NUMBER_OF_COMPONENTS=DEPENDENT_FIELD%VARIABLES(1)%NUMBER_OF_COMPONENTS
+        DEPENDENT_NUMBER_OF_COMPONENTS=DEPENDENT_FIELD%VARIABLES(1)%NUMBER_OF_COMPONENTS
 
         !Initialise tensors and matrices
         DO idx1=1,3
@@ -295,7 +295,7 @@ CONTAINS
           ENDDO
         ENDDO        
         DO component_idx=1,3 !Always 3D
-	  DO parameter_idx=1,64
+          DO parameter_idx=1,64
             DFDZ(parameter_idx,component_idx)=0.0_DP
           ENDDO
         ENDDO
@@ -323,7 +323,7 @@ CONTAINS
           GAUSS_WEIGHTS=DEPENDENT_QUADRATURE_SCHEME%GAUSS_WEIGHTS(gauss_idx)
 
           CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
-            & DEPENDENT_INTERPOLATED_POINT,ERR,ERROR,*999)	    
+            & DEPENDENT_INTERPOLATED_POINT,ERR,ERROR,*999)
           CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
             & GEOMETRIC_INTERPOLATED_POINT,ERR,ERROR,*999)
           CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
@@ -339,48 +339,48 @@ CONTAINS
            
           CALL FINITE_ELASTICITY_GAUSS_DFDZ(DEPENDENT_INTERPOLATED_POINT,ELEMENT_NUMBER,gauss_idx,DFDZ,ERR,ERROR,*999)
 
-	  element_dof_idx=0
-	  DO component_idx=1,DEPENDENT_NUMBER_OF_COMPONENTS
-	    IF(component_idx<DEPENDENT_NUMBER_OF_COMPONENTS) THEN !geomteric components
-	      DEPENDENT_COMPONENT_INTERPOLATION_TYPE=DEPENDENT_FIELD%VARIABLES(1)%COMPONENTS(component_idx)%INTERPOLATION_TYPE
-	      IF(DEPENDENT_COMPONENT_INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN !node based
-	       NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS=DEPENDENT_FIELD%VARIABLES(1)%COMPONENTS(component_idx)% &
-		 & MAX_NUMBER_OF_INTERPOLATION_PARAMETERS	      
-	       DO parameter_idx=1,NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS  
-		  element_dof_idx=element_dof_idx+1    
-		  NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)= &
-		    & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)+ &
-		    & GAUSS_WEIGHTS*Jxxi*Jznu*(CAUCHY_TENSOR(component_idx,1)*DFDZ(parameter_idx,1)+ &
-		    & CAUCHY_TENSOR(component_idx,2)*DFDZ(parameter_idx,2)+ &
-		    & CAUCHY_TENSOR(component_idx,3)*DFDZ(parameter_idx,3))	 
-		ENDDO
-	      ELSEIF(DEPENDENT_COMPONENT_INTERPOLATION_TYPE==FIELD_ELEMENT_BASED_INTERPOLATION) THEN !element based - probably not required
-		element_dof_idx=element_dof_idx+1
-		!TODO:  	
-	      ENDIF
-	    ELSEIF(component_idx==DEPENDENT_NUMBER_OF_COMPONENTS) THEN !hydrostatic pressure component
-	      DEPENDENT_COMPONENT_INTERPOLATION_TYPE=DEPENDENT_FIELD%VARIABLES(1)%COMPONENTS(component_idx)%INTERPOLATION_TYPE       
-	      IF(DEPENDENT_COMPONENT_INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN !node based			       
-		COMPONENT_BASIS=>DEPENDENT_FIELD%VARIABLES(1)%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS% &
-		  & ELEMENTS(ELEMENT_NUMBER)%BASIS	     
-		COMPONENT_QUADRATURE_SCHEME=>COMPONENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR	       
-	        NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS=DEPENDENT_FIELD%VARIABLES(1)%COMPONENTS(component_idx)% &
-		  & MAX_NUMBER_OF_INTERPOLATION_PARAMETERS	      	       	       
-	        DO parameter_idx=1,NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS 
-	          element_dof_idx=element_dof_idx+1 
+          element_dof_idx=0
+          DO component_idx=1,DEPENDENT_NUMBER_OF_COMPONENTS
+            IF(component_idx<DEPENDENT_NUMBER_OF_COMPONENTS) THEN !geomteric components
+              DEPENDENT_COMPONENT_INTERPOLATION_TYPE=DEPENDENT_FIELD%VARIABLES(1)%COMPONENTS(component_idx)%INTERPOLATION_TYPE
+              IF(DEPENDENT_COMPONENT_INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN !node based
+                NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS=DEPENDENT_FIELD%VARIABLES(1)%COMPONENTS(component_idx)% &
+                  & MAX_NUMBER_OF_INTERPOLATION_PARAMETERS      
+                DO parameter_idx=1,NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS  
+                  element_dof_idx=element_dof_idx+1    
                   NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)= &
                     & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)+ &
-                    & GAUSS_WEIGHTS*Jxxi*COMPONENT_QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,1,gauss_idx)*(Jznu-1.0_DP)		       
-	        ENDDO	        		        
-	      ELSEIF(DEPENDENT_COMPONENT_INTERPOLATION_TYPE==FIELD_ELEMENT_BASED_INTERPOLATION) THEN !element based
-		element_dof_idx=element_dof_idx+1	     
-		NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)= &
-		  & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)+GAUSS_WEIGHTS*Jxxi*(Jznu-1.0_DP)      
-	      ENDIF
-	    ENDIF
-	  ENDDO !component_idx        
-	ENDDO !gauss_idx
-			     
+                    & GAUSS_WEIGHTS*Jxxi*Jznu*(CAUCHY_TENSOR(component_idx,1)*DFDZ(parameter_idx,1)+ &
+                    & CAUCHY_TENSOR(component_idx,2)*DFDZ(parameter_idx,2)+ &
+                    & CAUCHY_TENSOR(component_idx,3)*DFDZ(parameter_idx,3))
+                ENDDO
+              ELSEIF(DEPENDENT_COMPONENT_INTERPOLATION_TYPE==FIELD_ELEMENT_BASED_INTERPOLATION) THEN !element based - probably not required
+                element_dof_idx=element_dof_idx+1
+                !TODO:  	
+              ENDIF
+            ELSEIF(component_idx==DEPENDENT_NUMBER_OF_COMPONENTS) THEN !hydrostatic pressure component
+              DEPENDENT_COMPONENT_INTERPOLATION_TYPE=DEPENDENT_FIELD%VARIABLES(1)%COMPONENTS(component_idx)%INTERPOLATION_TYPE
+              IF(DEPENDENT_COMPONENT_INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN !node based			       
+                COMPONENT_BASIS=>DEPENDENT_FIELD%VARIABLES(1)%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS% &
+                  & ELEMENTS(ELEMENT_NUMBER)%BASIS     
+                COMPONENT_QUADRATURE_SCHEME=>COMPONENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+                NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS=DEPENDENT_FIELD%VARIABLES(1)%COMPONENTS(component_idx)% &
+                  & MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
+                DO parameter_idx=1,NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS 
+                  element_dof_idx=element_dof_idx+1 
+                  NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)= &
+                    & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)+ &
+                    & GAUSS_WEIGHTS*Jxxi*COMPONENT_QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,1,gauss_idx)*(Jznu-1.0_DP)
+                ENDDO
+              ELSEIF(DEPENDENT_COMPONENT_INTERPOLATION_TYPE==FIELD_ELEMENT_BASED_INTERPOLATION) THEN !element based
+                element_dof_idx=element_dof_idx+1     
+                NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)= &
+                  & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)+GAUSS_WEIGHTS*Jxxi*(Jznu-1.0_DP)      
+              ENDIF
+            ENDIF
+          ENDDO !component_idx        
+        ENDDO !gauss_idx
+    
       ELSE
         CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
       ENDIF
@@ -531,11 +531,11 @@ CONTAINS
     DO component_idx=1,3
       DO parameter_idx=1,64 
         DO xi_idx=1,3
-	  DFDXI(component_idx,parameter_idx,xi_idx)=0.0_DP
+          DFDXI(component_idx,parameter_idx,xi_idx)=0.0_DP
         ENDDO
       ENDDO
     ENDDO
-      	
+      
     DO component_idx=1,3 !Always 3 spatial coordinates (3D)
       DO xi_idx=1,3 !Thus always 3 element coordinates
         derivative_idx=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(xi_idx)  !2,4,7      
@@ -554,9 +554,10 @@ CONTAINS
         & MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
       DO parameter_idx=1,NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS
         DO xi_idx=1,3
-	  derivative_idx=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(xi_idx)  !2,4,7 
-	  DFDXI(component_idx,parameter_idx,xi_idx)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,derivative_idx,GAUSS_POINT_NUMBER)
-	ENDDO
+          derivative_idx=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(xi_idx)  !2,4,7 
+          DFDXI(component_idx,parameter_idx,xi_idx)= &
+            & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,derivative_idx,GAUSS_POINT_NUMBER)
+        ENDDO
       ENDDO      
     ENDDO
     
@@ -566,8 +567,8 @@ CONTAINS
       NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS=FIELD%VARIABLES(1)%COMPONENTS(component_idx)% &
         & MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
       DO parameter_idx=1,NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS
-	DFDZ(parameter_idx,component_idx)=DFDXI(component_idx,parameter_idx,1)*DXIDZ(1,component_idx)+ &
-	  & DFDXI(component_idx,parameter_idx,2)*DXIDZ(2,component_idx)+DFDXI(component_idx,parameter_idx,3)*DXIDZ(3,component_idx)	   
+        DFDZ(parameter_idx,component_idx)=DFDXI(component_idx,parameter_idx,1)*DXIDZ(1,component_idx)+ &
+          & DFDXI(component_idx,parameter_idx,2)*DXIDZ(2,component_idx)+DFDXI(component_idx,parameter_idx,3)*DXIDZ(3,component_idx)
       ENDDO    
     ENDDO    
     
@@ -665,7 +666,7 @@ CONTAINS
                 CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
                   & component_idx,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
               ENDDO !component_idx
-	      
+      
 !kmith :09.06.09 - Do we need this ?      
               !Set the hydrostatic component to that of the first geometric component
               CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -676,7 +677,7 @@ CONTAINS
                 & NUMBER_OF_COMPONENTS,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)            
 !kmith
               
-	      SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+            SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
               CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
                 !Set the displacement components to node based interpolation
                 DO component_idx=1,NUMBER_OF_DIMENSIONS
@@ -743,7 +744,7 @@ CONTAINS
 !                  & FIELD_ELEMENT_BASED_INTERPOLATION,ERR,ERROR,*999)
 !kmith
               
-	      CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+              CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)

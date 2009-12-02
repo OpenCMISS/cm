@@ -2648,7 +2648,6 @@ CONTAINS
     TYPE(DOMAIN_ELEMENT_TYPE), POINTER :: MAX_NODE_ELEMENT
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES ! domain nodes
     TYPE(BASIS_TYPE), POINTER :: BASIS
-    TYPE(MESH_ELEMENT_TYPE), POINTER :: ELEMENT
     TYPE(BASIS_PTR_TYPE), ALLOCATABLE :: listScaleBases(:)
     TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: component
     INTEGER(INTG), ALLOCATABLE :: GROUP_LOCAL_NUMBER(:), GROUP_SCALE_FACTORS(:)
@@ -3678,7 +3677,6 @@ CONTAINS
 
     !local variables
     INTEGER(INTG) :: component_idx
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING_NODES !The domain mapping to calculate nodal mappings
     INTEGER(INTG) :: local_number1, local_number2, tmp1
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES1, DOMAIN_NODES2
     INTEGER(INTG), ALLOCATABLE:: array1(:), array2(:)
@@ -4403,7 +4401,6 @@ CONTAINS
     !Local Variables
     TYPE(FIELD_TYPE), POINTER :: field_ptr
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: variable_ptr
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING_NODES !The domain mapping to calculate nodal mappings
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES ! domain nodes
     TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: component, fieldComponent
     INTEGER(INTG), ALLOCATABLE, TARGET :: GROUP_FIELDS(:), GROUP_VARIABLES(:), GROUP_DERIVATIVES(:)
@@ -4625,7 +4622,6 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: FILE_NAME !the prefix name of file.
     TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: COMPONENT !the prefix name of file.
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING_NODES !The domain mapping to calculate nodal mappings
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES ! domain nodes
     INTEGER(INTG) :: local_number, global_number, sessionHandle, paddingCount, DERIVATIVE_INDEXES(PART_DERIV_S4_S4_S4)
     INTEGER(INTG), ALLOCATABLE :: paddingInfo(:)
@@ -5137,7 +5133,7 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: FIELD
     TYPE(DOMAIN_NODES_TYPE), POINTER:: DOMAIN_NODES !nodes in local domain
     TYPE(FIELD_VARIABLE_TYPE), POINTER:: FIELD_VARIABLE !field variable
-    INTEGER(INTG) :: field_idx, var_idx, component_idx, np, nn, num_field, local_number !temporary variable
+    INTEGER(INTG) :: field_idx, var_idx, component_idx, np, nn, num_field !temporary variable
     LOGICAL :: foundNewNode
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 

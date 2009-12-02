@@ -703,7 +703,6 @@ CONTAINS
 
     REAL(DP):: SOURCE
     REAL(DP):: COORD_X, COORD_Y, COORD_Z, ARG_X, ARG_Y, ARG_Z
-    REAL(DP):: MIDPOINT_X, MIDPOINT_Y
     REAL(DP):: PERM_OVER_VIS_PARAM
     REAL(DP):: k_xx, k_yy, k_zz
 
@@ -1636,10 +1635,8 @@ CONTAINS
 !     REAL(DP) :: k_xx, k_yy, k_zz
 
     INTEGER(INTG) :: VARIABLE_TYPE !<The field variable type to add \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
-    INTEGER(INTG) :: FIELD_SET_TYPE !<The field parameter set identifier \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
     INTEGER(INTG) :: DERIVATIVE_NUMBER !<The node derivative number
     INTEGER(INTG) :: COMPONENT_NUMBER !<The field variable component number
-    INTEGER(INTG) :: TOTAL_NUMBER_OF_NODES !<The total number of (geometry) nodes
     INTEGER(INTG) :: LOCAL_NODE_NUMBER
     INTEGER(INTG) :: EQUATIONS_SET_IDX
 
@@ -1830,10 +1827,8 @@ CONTAINS
     REAL(DP) :: VALUE !<The value to add
 
     INTEGER(INTG) :: VARIABLE_TYPE !<The field variable type to add \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
-    INTEGER(INTG) :: FIELD_SET_TYPE !<The field parameter set identifier \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
     INTEGER(INTG) :: DERIVATIVE_NUMBER !<The node derivative number
     INTEGER(INTG) :: COMPONENT_NUMBER !<The field variable component number
-    INTEGER(INTG) :: TOTAL_NUMBER_OF_NODES !<The total number of (geometry) nodes
     INTEGER(INTG) :: LOCAL_NODE_NUMBER
     INTEGER(INTG) :: EQUATIONS_SET_IDX
 
