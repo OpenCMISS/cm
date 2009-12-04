@@ -763,7 +763,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSControlLoopTimesSetObj
   END INTERFACE !CMISSControlLoopTimesSet
 
-  !>Sets/Changes the loop type for a control loop. \todo Is this really a public method? \todo need a get method
+  !>Sets/Changes the loop type for a control loop. \todo Is this really a public       method? \todo need a get method
   INTERFACE CMISSControlLoopTypeSet
     MODULE PROCEDURE CMISSControlLoopTypeSetNumber0
     MODULE PROCEDURE CMISSControlLoopTypeSetNumber1
