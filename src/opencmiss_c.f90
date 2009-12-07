@@ -87,7 +87,7 @@ MODULE OPENCMISS_C
 
   PUBLIC CMISSRegionTypeFinaliseC, CMISSRegionTypeInitialiseC
   
-  PUBLIC CMISSFinaliseC,CMISSInitialiseNumberC,CMISSInitialiseCPtr
+  PUBLIC CMISSFinaliseC,CMISSInitialiseCNum,CMISSInitialiseCPtr
 
 CONTAINS
 
@@ -186,11 +186,11 @@ CONTAINS
   FUNCTION CMISSBasisTypeInitialiseC (BasisTypePtr) BIND(C, NAME = "CMISSBasisTypeInitialise")
 
 	!Argument variables
-	TYPE(C_PTR), INTENT(INOUT) :: BasisTypePtr !<C pointer to CMISSBasisType object to initialise.
+  TYPE(C_PTR), INTENT(INOUT) :: BasisTypePtr !<C pointer to CMISSBasisType object to initialise.
 	!Function variable
-	INTEGER(C_INT) :: CMISSBasisTypeInitialiseC !<Error code.
+  INTEGER(C_INT) :: CMISSBasisTypeInitialiseC !<Error code.
 	!Local Variables
-	INTEGER(C_INT) :: Err
+  INTEGER(C_INT) :: Err
     TYPE (CMISSBasisType), POINTER :: BasisType
 
     IF(C_ASSOCIATED(BasisTypePtr)) THEN
@@ -427,9 +427,9 @@ CONTAINS
     IF(C_ASSOCIATED(DecompositionTypePtr)) THEN
       CALL C_F_POINTER (DecompositionTypePtr, DecompositionType)
       IF(ASSOCIATED(DecompositionType)) THEN
-    	CALL CMISSDecompositionTypeFinalise (DecompositionType, CMISSDecompositionTypeFinaliseC)
-    	DEALLOCATE(DecompositionType)
-    	DecompositionTypePtr = C_NULL_PTR
+        CALL CMISSDecompositionTypeFinalise (DecompositionType, CMISSDecompositionTypeFinaliseC)
+        DEALLOCATE(DecompositionType)
+        DecompositionTypePtr = C_NULL_PTR
       ELSE
         CMISSDecompositionTypeFinaliseC = CMISSErrorConvertingPointer
       ENDIF
@@ -1435,12 +1435,12 @@ END FUNCTION CMISSFieldsTypeCreateC
   & "CMISSAnalyticAnalysisOutputNumber")
 
     !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber
-    INTEGER(C_INT),VALUE, INTENT(IN) :: FieldUserNumber
-    INTEGER(C_INT), VALUE, INTENT(IN) :: FileNameSize
-    CHARACTER(LEN=1, KIND=C_CHAR), INTENT(IN) :: FileName(FileNameSize)
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to
+    INTEGER(C_INT),VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FileNameSize !<The file name size, for C.
+    CHARACTER(LEN=1, KIND=C_CHAR), INTENT(IN) :: FileName(FileNameSize) !<If not empty, the filename to output the analytic analysis to, for C. If empty, the analysis will be output to the standard output.
     !Function variable
-    INTEGER(C_INT) :: CMISSAnalyticAnalysisOutputNumberC
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisOutputNumberC !<Error Code.
     !Local variables
     CHARACTER(LEN=FileNameSize-1) :: FFileName
 
@@ -1459,11 +1459,11 @@ END FUNCTION CMISSFieldsTypeCreateC
   FUNCTION CMISSAnalyticAnalysisOutputPtrC(FieldPtr,FileNameSize, FileName) BIND(C, NAME = "CMISSAnalyticAnalysisOutputObj")
 
     !Argument variables
-    TYPE(C_PTR), INTENT(OUT) :: FieldPtr
-    INTEGER(C_INT), VALUE, INTENT(IN) :: FileNameSize
-    CHARACTER(LEN=1, KIND=C_CHAR), INTENT(IN) :: FileName(FileNameSize)
+    TYPE(C_PTR), INTENT(OUT) :: FieldPtr !<The dependent field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FileNameSize !<The file name size, for C.
+    CHARACTER(LEN=1, KIND=C_CHAR), INTENT(IN) :: FileName(FileNameSize) !<If not empty, the filename to output the analytic analysis to, for C. If empty, the analysis will be output to the standard output.
     !Function variable
-    INTEGER(C_INT) :: CMISSAnalyticAnalysisOutputPtrC
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisOutputPtrC !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
     CHARACTER(LEN = FileNameSize-1) :: FFileName
@@ -1526,20 +1526,20 @@ END FUNCTION CMISSFieldsTypeCreateC
   !
 
   !>Initialises CMISS for C returning a user number to the world coordinate system and region.
-  FUNCTION CMISSInitialiseNumberC(WorldCoordinateSystemUserNumber,WorldRegionUserNumber) BIND(C,NAME="CMISSInitialiseNum")
+  FUNCTION CMISSInitialiseCNum(WorldCoordinateSystemUserNumber,WorldRegionUserNumber) BIND(C,NAME="CMISSInitialiseNum")
   
     !Argument variables
     INTEGER(C_INT), INTENT(OUT) :: WorldCoordinateSystemUserNumber
     INTEGER(C_INT), INTENT(OUT) :: WorldRegionUserNumber
     !Function variable
-    INTEGER(C_INT) :: CMISSInitialiseNumberC
+    INTEGER(C_INT) :: CMISSInitialiseCNum
     !Local variables
   
-    CALL CMISSInitialise(WorldCoordinateSystemUserNumber,WorldRegionUserNumber,CMISSInitialiseNumberC)
+    CALL CMISSInitialise(WorldCoordinateSystemUserNumber,WorldRegionUserNumber,CMISSInitialiseCNum)
 
     RETURN
     
-  END FUNCTION CMISSInitialiseNumberC
+    END FUNCTION CMISSInitialiseCNum
 
   !
   !================================================================================================================================
@@ -1586,8 +1586,8 @@ END FUNCTION CMISSFieldsTypeCreateC
 !!==================================================================================================================================
 
   !>Returns the interpolation type for a field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldComponentInterpolationGetNumberC(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
-    & InterpolationType) BIND(C,NAME = "CMISSFieldComponentInterpolationGetNumber")
+  FUNCTION CMISSFieldComponentInterpolationGetCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & InterpolationType) BIND(C,NAME = "CMISSFieldComponentInterpolationGetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the interpolation type for, for C.
@@ -1596,23 +1596,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the interpolation type for, for C.
     INTEGER(C_INT), INTENT(OUT) :: InterpolationType !<The interpolation type for C. \see OPENCMISS_FieldInterpolationTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldComponentInterpolationGetNumberC !<Error Code.
+    INTEGER(C_INT) ::  CMISSFieldComponentInterpolationGetCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldComponentInterpolationGetNumber(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
-    & InterpolationType, CMISSFieldComponentInterpolationGetNumberC)
+    CALL CMISSFieldComponentInterpolationGet(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & InterpolationType, CMISSFieldComponentInterpolationGetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldComponentInterpolationGetNumberC
+  END FUNCTION CMISSFieldComponentInterpolationGetCNum
 
   !!
   !!==================================================================================================================================
   !!
 
   !>Returns the interpolation type for a field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldComponentInterpolationGetPtrC(FieldPtr,VariableType,ComponentNumber,InterpolationType) BIND(C, NAME = &
-  & "CMISSFieldComponentInterpolationGetObj")
+  FUNCTION CMISSFieldComponentInterpolationGetCPtr(FieldPtr,VariableType,ComponentNumber,InterpolationType) BIND(C, NAME = &
+  & "CMISSFieldComponentInterpolationGet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the interpolation type for, for C.
@@ -1620,34 +1620,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the interpolation type for, for C.
     INTEGER(C_INT), INTENT(OUT) :: InterpolationType !<The interpolation type for C. \see OPENCMISS_FieldInterpolationTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldComponentInterpolationGetPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldComponentInterpolationGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldComponentInterpolationGetPtrC = CMISSNoError
+    CMISSFieldComponentInterpolationGetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldComponentInterpolationGetObj(Field, VariableType,ComponentNumber,InterpolationType, &
-        & CMISSFieldComponentInterpolationGetPtrC)
+        CALL CMISSFieldComponentInterpolationGet(Field, VariableType,ComponentNumber,InterpolationType, &
+        & CMISSFieldComponentInterpolationGetCPtr)
       ELSE
-        CMISSFieldComponentInterpolationGetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldComponentInterpolationGetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldComponentInterpolationGetPtrC = CMISSPointerIsNULL
+      CMISSFieldComponentInterpolationGetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldComponentInterpolationGetPtrC
+  END FUNCTION CMISSFieldComponentInterpolationGetCPtr
 
   !!
   !!==================================================================================================================================
   !!
 
   !>Sets/changes the interpolation type for a field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldComponentInterpolationSetNumberC(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
-    & InterpolationType) BIND(C, NAME = "CMISSFieldComponentInterpolationSetNumber")
+  FUNCTION CMISSFieldComponentInterpolationSetCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & InterpolationType) BIND(C, NAME = "CMISSFieldComponentInterpolationSetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to set the interpolation type to, for C.
@@ -1656,15 +1656,15 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to set the interpolation type to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: InterpolationType !<The interpolation type for C. \see OPENCMISS_FieldInterpolationTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldComponentInterpolationSetNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldComponentInterpolationSetCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldComponentInterpolationSetNumber(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber,InterpolationType,&
-    & CMISSFieldComponentInterpolationSetNumberC)
+    CALL CMISSFieldComponentInterpolationSet(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber,InterpolationType,&
+    & CMISSFieldComponentInterpolationSetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldComponentInterpolationSetNumberC
+  END FUNCTION CMISSFieldComponentInterpolationSetCNum
 
 
   !!
@@ -1672,8 +1672,8 @@ END FUNCTION CMISSFieldsTypeCreateC
   !!
 
   !>Sets/changes the interpolation type for a field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldComponentInterpolationSetPtrC(FieldPtr,VariableType,ComponentNumber,InterpolationType) &
-   & BIND(C, NAME = "CMISSFieldComponentInterpolationSetObj")
+  FUNCTION CMISSFieldComponentInterpolationSetCPtr(FieldPtr,VariableType,ComponentNumber,InterpolationType) &
+   & BIND(C, NAME = "CMISSFieldComponentInterpolationSet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to set the interpolation type to, for C.
@@ -1681,26 +1681,26 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to set the interpolation type to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: InterpolationType !<The interpolation type for C. \see OPENCMISS_FieldInterpolationTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldComponentInterpolationSetPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldComponentInterpolationSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldComponentInterpolationSetPtrC = CMISSNoError
+    CMISSFieldComponentInterpolationSetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr,Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldComponentInterpolationSetObj(Field, VariableType, ComponentNumber,InterpolationType, &
-        & CMISSFieldComponentInterpolationSetPtrC)
+        CALL CMISSFieldComponentInterpolationSet(Field, VariableType, ComponentNumber,InterpolationType, &
+        & CMISSFieldComponentInterpolationSetCPtr)
       ELSE
-        CMISSFieldComponentInterpolationSetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldComponentInterpolationSetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldComponentInterpolationSetPtrC = CMISSPointerIsNULL
+      CMISSFieldComponentInterpolationSetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldComponentInterpolationSetPtrC
+  END FUNCTION CMISSFieldComponentInterpolationSetCPtr
 
 
   !!
@@ -1708,8 +1708,8 @@ END FUNCTION CMISSFieldsTypeCreateC
   !!
 
   !>Returns the character string label for a field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldComponentLabelGetCNumberC(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber,LabelSize,Label) &
-  & BIND(C, NAME = "CMISSFieldComponentLabelGetCNumber")
+  FUNCTION CMISSFieldComponentLabelGetCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber,LabelSize,Label) &
+  & BIND(C, NAME = "CMISSFieldComponentLabelGetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the label for, for C.
@@ -1719,25 +1719,25 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: LabelSize !< Label size
     CHARACTER(LEN=1,KIND=C_CHAR), INTENT(OUT) :: Label(LabelSize) !<The field variable component character string label to get, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldComponentLabelGetCNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldComponentLabelGetCNum !<Error Code.
     !Local variables
     CHARACTER(LEN=LabelSize-1) :: FLabel
 
-    CALL CMISSFieldComponentLabelGetCNumber(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber,FLabel, &
-    & CMISSFieldComponentLabelGetCNumberC)
+    CALL CMISSFieldComponentLabelGet(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber,FLabel, &
+    & CMISSFieldComponentLabelGetCNum)
     CALL CMISSF2CString(Flabel,Label)
 
     RETURN
 
-  END FUNCTION CMISSFieldComponentLabelGetCNumberC
+  END FUNCTION CMISSFieldComponentLabelGetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Returns the character string label for a field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldComponentLabelGetCPtrC(FieldPtr,VariableType,ComponentNumber,LabelSize,Label) BIND(C, NAME = &
-  & "CMISSFieldComponentLabelGetCObj")
+  FUNCTION CMISSFieldComponentLabelGetCPtr(FieldPtr,VariableType,ComponentNumber,LabelSize,Label) BIND(C, NAME = &
+  & "CMISSFieldComponentLabelGet")
 
     !Argument variable
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the label for.
@@ -1746,34 +1746,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: LabelSize !< Label size
     CHARACTER(LEN=1,KIND=C_CHAR), INTENT(OUT) :: Label(LabelSize) !<The field variable component character string label to get, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldComponentLabelGetCPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldComponentLabelGetCPtr !<Error Code.
     !Local variable
     CHARACTER(LEN=LabelSize-1) :: FLabel
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldComponentLabelGetCPtrC = CMISSNoError
+    CMISSFieldComponentLabelGetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldComponentLabelGetCObj(Field,VariableType,ComponentNumber,FLabel,CMISSFieldComponentLabelGetCPtrC)
+        CALL CMISSFieldComponentLabelGet(Field,VariableType,ComponentNumber,FLabel,CMISSFieldComponentLabelGetCPtr)
         CALL CMISSF2CString(FLabel, Label)
       ELSE
-        CMISSFieldComponentLabelGetCPtrC=CMISSErrorConvertingPointer
+        CMISSFieldComponentLabelGetCPtr=CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldComponentLabelGetCPtrC=CMISSPointerIsNULL
+      CMISSFieldComponentLabelGetCPtr=CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldComponentLabelGetCPtrC
+  END FUNCTION CMISSFieldComponentLabelGetCPtr
 
   !
   !================================================================================================================================
   !
   !>Sets/changes the character string label for a field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldComponentLabelSetCNumberC(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber,LabelSize,Label)&
-  & BIND(C,NAME= "CMISSFieldComponentLabelSetCNumber")
+  FUNCTION CMISSFieldComponentLabelSetCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber,LabelSize,Label)&
+  & BIND(C,NAME= "CMISSFieldComponentLabelSetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to set the label to, for C.
@@ -1783,25 +1783,25 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: LabelSize !< Label size
     CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: Label(LabelSize) !<The field variable component character string label to set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldComponentLabelSetCNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldComponentLabelSetCNum !<Error Code.
     !Local variables
     CHARACTER(LEN=LabelSize-1) :: FLabel
 
     CALL CMISSC2FString(Label,Flabel)
-    CALL CMISSFieldComponentLabelSetCNumber(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber,FLabel, &
-    & CMISSFieldComponentLabelSetCNumberC)
+    CALL CMISSFieldComponentLabelSet(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber,FLabel, &
+    & CMISSFieldComponentLabelSetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldComponentLabelSetCNumberC
+  END FUNCTION CMISSFieldComponentLabelSetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the character string label for a field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldComponentLabelSetCPtrC(FieldPtr,VariableType,ComponentNumber,LabelSize,Label) BIND(C, NAME= &
-  & "CMISSFieldComponentLabelSetCObj")
+  FUNCTION CMISSFieldComponentLabelSetCPtr(FieldPtr,VariableType,ComponentNumber,LabelSize,Label) BIND(C, NAME= &
+  & "CMISSFieldComponentLabelSetC")
 
     !Argument variable
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to set the label to.
@@ -1810,34 +1810,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: LabelSize !<Label Size
     CHARACTER(LEN = 1, KIND=C_CHAR), INTENT(IN) :: Label(LabelSize) !<The field variable component character string label to set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldComponentLabelSetCPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldComponentLabelSetCPtr !<Error Code.
     !Local variable
     CHARACTER(LEN=LabelSize-1) :: FLabel
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldComponentLabelSetCPtrC = CMISSNoError
+    CMISSFieldComponentLabelSetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
         CALL CMISSC2FString(Label, FLabel)
-        CALL CMISSFieldComponentLabelSetCObj(Field,VariableType,ComponentNumber,FLabel,CMISSFieldComponentLabelSetCPtrC)
+        CALL CMISSFieldComponentLabelSet(Field,VariableType,ComponentNumber,FLabel,CMISSFieldComponentLabelSetCPtr)
       ELSE
-        CMISSFieldComponentLabelSetCPtrC = CMISSErrorConvertingPointer
+        CMISSFieldComponentLabelSetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldComponentLabelSetCPtrC = CMISSPointerIsNULL
+      CMISSFieldComponentLabelSetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
-  END FUNCTION CMISSFieldComponentLabelSetCPtrC
+  END FUNCTION CMISSFieldComponentLabelSetCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Returns the mesh component number for a field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldComponentMeshComponentGetNumberC(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
-    & MeshComponent)
+  FUNCTION CMISSFieldComponentMeshComponentGetCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & MeshComponent) BIND(C, NAME = "CMISSFieldComponentMeshComponentGetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the mesh component number for, for C.
@@ -1846,23 +1846,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the mesh component number for, for C.
     INTEGER(C_INT), INTENT(OUT) :: MeshComponent !<The mesh component number to get, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldComponentMeshComponentGetNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldComponentMeshComponentGetCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldComponentMeshComponentGetNumber(RegionUserNumber, FieldUserNumber, VariableType, ComponentNumber, MeshComponent,&
-    & CMISSFieldComponentMeshComponentGetNumberC)
+    CALL CMISSFieldComponentMeshComponentGet(RegionUserNumber, FieldUserNumber, VariableType, ComponentNumber, MeshComponent,&
+    & CMISSFieldComponentMeshComponentGetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldComponentMeshComponentGetNumberC
+  END FUNCTION CMISSFieldComponentMeshComponentGetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Returns the mesh component number for a field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldComponentMeshComponentGetPtrC(FieldPtr,VariableType,ComponentNumber,MeshComponent) BIND(C, &
-  & NAME = "CMISSFieldComponentMeshComponentGetObj")
+  FUNCTION CMISSFieldComponentMeshComponentGetCPtr(FieldPtr,VariableType,ComponentNumber,MeshComponent) BIND(C, &
+  & NAME = "CMISSFieldComponentMeshComponentGet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the mesh component number for.
@@ -1870,33 +1870,33 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the mesh component number for, for C.
     INTEGER(C_INT), INTENT(OUT) :: MeshComponent !<The mesh component number to get, for C.
     !Function Variables
-    INTEGER(C_INT) :: CMISSFieldComponentMeshComponentGetPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldComponentMeshComponentGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldComponentMeshComponentGetPtrC = CMISSNoError
+    CMISSFieldComponentMeshComponentGetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldComponentMeshComponentGetObj(Field, VariableType, ComponentNumber, MeshComponent, &
-        & CMISSFieldComponentMeshComponentGetPtrC)
+        CALL CMISSFieldComponentMeshComponentGet(Field, VariableType, ComponentNumber, MeshComponent, &
+        & CMISSFieldComponentMeshComponentGetCPtr)
       ELSE
-        CMISSFieldComponentMeshComponentGetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldComponentMeshComponentGetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldComponentMeshComponentGetPtrC = CMISSPointerIsNULL
+      CMISSFieldComponentMeshComponentGetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldComponentMeshComponentGetPtrC
+  END FUNCTION CMISSFieldComponentMeshComponentGetCPtr
 
   !
   !================================================================================================================================
   !
   !>Sets/changes the mesh component number for a field variable component for a field identified by a user number.
-  FUNCTION CMISSFieldComponentMeshComponentSetNumberC(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
-    & MeshComponent) BIND(C, NAME = "CMISSFieldComponentMeshComponentSetNumber")
+  FUNCTION CMISSFieldComponentMeshComponentSetCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & MeshComponent) BIND(C, NAME = "CMISSFieldComponentMeshComponentSetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to set the mesh component number to, for C.
@@ -1905,23 +1905,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to set the mesh component number to, for C.
     INTEGER(C_INT), INTENT(IN) :: MeshComponent !<The mesh component number to set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldComponentMeshComponentSetNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldComponentMeshComponentSetCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldComponentMeshComponentSetNumber(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber,MeshComponent, &
-    & CMISSFieldComponentMeshComponentSetNumberC)
+    CALL CMISSFieldComponentMeshComponentSet(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber,MeshComponent, &
+    & CMISSFieldComponentMeshComponentSetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldComponentMeshComponentSetNumberC
+  END FUNCTION CMISSFieldComponentMeshComponentSetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the mesh component number for a field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldComponentMeshComponentSetPtrC(FieldPtr,VariableType,ComponentNumber,MeshComponent) BIND(C, &
-  & NAME = "CMISSFieldComponentMeshComponentSetObj")
+  FUNCTION CMISSFieldComponentMeshComponentSetCPtr(FieldPtr,VariableType,ComponentNumber,MeshComponent) BIND(C, &
+  & NAME = "CMISSFieldComponentMeshComponentSet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to set the mesh component number to.
@@ -1929,33 +1929,33 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to set the mesh component number to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: MeshComponent !<The mesh component number to set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldComponentMeshComponentSetPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldComponentMeshComponentSetCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldComponentMeshComponentSetPtrC = CMISSNoError
+    CMISSFieldComponentMeshComponentSetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldComponentMeshComponentSetObj(Field,VariableType,ComponentNumber,MeshComponent, &
-        & CMISSFieldComponentMeshComponentSetPtrC)
+        CALL CMISSFieldComponentMeshComponentSet(Field,VariableType,ComponentNumber,MeshComponent, &
+        & CMISSFieldComponentMeshComponentSetCPtr)
       ELSE
-        CMISSFieldComponentMeshComponentSetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldComponentMeshComponentSetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldComponentMeshComponentSetPtrC = CMISSPointerIsNULL
+      CMISSFieldComponentMeshComponentSetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldComponentMeshComponentSetPtrC
+  END FUNCTION CMISSFieldComponentMeshComponentSetCPtr
   !
   !================================================================================================================================
   !
 
   !>Initialises the values of parameter set of a field variable component to an integer constant value for a field identified by a user number for C.
-  FUNCTION CMISSFieldComponentValuesInitialiseIntgNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldComponentValuesInitialiseIntgNumber")
+  FUNCTION CMISSFieldComponentValuesInitialiseIntgCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldComponentValuesInitialiseIntgNum")
 
         !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to initialise the field variable component for, for C.
@@ -1965,23 +1965,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to initialise the field variable component for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: Value !<The value to initialise the parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldComponentValuesInitialiseIntgNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldComponentValuesInitialiseIntgCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldComponentValuesInitialiseIntgNumber(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, &
-    & ComponentNumber, Value, CMISSFieldComponentValuesInitialiseIntgNumberC)
+    CALL CMISSFieldComponentValuesInitialiseIntg(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, &
+    & ComponentNumber, Value, CMISSFieldComponentValuesInitialiseIntgCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldComponentValuesInitialiseIntgNumberC
+  END FUNCTION CMISSFieldComponentValuesInitialiseIntgCNum
 
   !
   !================================================================================================================================
   !
 
   !>Initialises the values of parameter set of a field variable component to an integer constant value for a field identified by an object for C.
-  FUNCTION CMISSFieldComponentValuesInitialiseIntgPtrC(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) &
-  & BIND(C, NAME ="CMISSFieldComponentValuesInitialiseIntgObj")
+  FUNCTION CMISSFieldComponentValuesInitialiseIntgCPtr(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) &
+  & BIND(C, NAME ="CMISSFieldComponentValuesInitialiseIntg")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field initialise the field variable component for, for C.
@@ -1990,34 +1990,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to initialise the field variable component for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: Value !<The value to initialise the parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldComponentValuesInitialiseIntgPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldComponentValuesInitialiseIntgCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldComponentValuesInitialiseIntgPtrC = CMISSNoError
+    CMISSFieldComponentValuesInitialiseIntgCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldComponentValuesInitialiseIntgObj(Field, VariableType, FieldSetType, ComponentNumber, Value, &
-        & CMISSFieldComponentValuesInitialiseIntgPtrC)
+        CALL CMISSFieldComponentValuesInitialiseIntg(Field, VariableType, FieldSetType, ComponentNumber, Value, &
+        & CMISSFieldComponentValuesInitialiseIntgCPtr)
       ELSE
-        CMISSFieldComponentValuesInitialiseIntgPtrC = CMISSErrorConvertingPointer
+        CMISSFieldComponentValuesInitialiseIntgCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldComponentValuesInitialiseIntgPtrC = CMISSPointerIsNULL
+      CMISSFieldComponentValuesInitialiseIntgCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldComponentValuesInitialiseIntgPtrC
+  END FUNCTION CMISSFieldComponentValuesInitialiseIntgCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Initialises the values of parameter set of a field variable component to a single precision constant value for a field identified by a user number for C.
-  FUNCTION CMISSFieldComponentValuesInitialiseSPNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldComponentValuesInitialiseSPNumber")
+  FUNCTION CMISSFieldComponentValuesInitialiseSPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldComponentValuesInitialiseSPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to initialise the field variable component for, for C.
@@ -2027,22 +2027,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to initialise the field variable component for, for C.
     REAL(C_FLOAT), INTENT(IN) :: Value !<The value to initialise the parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldComponentValuesInitialiseSPNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldComponentValuesInitialiseSPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldComponentValuesInitialiseSPNumber(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, &
-    & ComponentNumber, Value, CMISSFieldComponentValuesInitialiseSPNumberC)
+    CALL CMISSFieldComponentValuesInitialiseSP(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, &
+    & ComponentNumber, Value, CMISSFieldComponentValuesInitialiseSPCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldComponentValuesInitialiseSPNumberC
+  END FUNCTION CMISSFieldComponentValuesInitialiseSPCNum
+
 
   !
   !================================================================================================================================
   !
 
   !>Initialises the values of parameter set of a field variable component to a single precision constant value for a field identified by an object, for C.
-  FUNCTION CMISSFieldComponentValuesInitialiseSPPtrC(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, NAME = &
+  FUNCTION CMISSFieldComponentValuesInitialiseSPCPtr(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, NAME = &
   & "CMISSFieldComponentValuesInitialiseSP")
 
     !Argument variables
@@ -2052,34 +2053,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to initialise the field variable component for, for C.
     REAL(C_FLOAT), INTENT(IN) :: Value !<The value to initialise the parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldComponentValuesInitialiseSPPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldComponentValuesInitialiseSPCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldComponentValuesInitialiseSPPtrC = CMISSNoError
+    CMISSFieldComponentValuesInitialiseSPCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
         CALL CMISSFieldComponentValuesInitialiseSP(Field, VariableType, FieldSetType, ComponentNumber, Value, &
-        & CMISSFieldComponentValuesInitialiseSPPtrC)
+        & CMISSFieldComponentValuesInitialiseSPCPtr)
       ELSE
-        CMISSFieldComponentValuesInitialiseSPPtrC = CMISSErrorConvertingPointer
+        CMISSFieldComponentValuesInitialiseSPCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldComponentValuesInitialiseSPPtrC = CMISSPointerIsNULL
+      CMISSFieldComponentValuesInitialiseSPCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldComponentValuesInitialiseSPPtrC
+  END FUNCTION CMISSFieldComponentValuesInitialiseSPCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Initialises the values of parameter set of a field variable component to a double precision constant value for a field identified by a user number, for C.
-  FUNCTION CMISSFieldComponentValuesInitialiseDPNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldComponentValuesInitialiseDPNumber")
+  FUNCTION CMISSFieldComponentValuesInitialiseDPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldComponentValuesInitialiseDPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to initialise the field variable component for, for C.
@@ -2089,22 +2090,22 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to initialise the field variable component for, for C.
     REAL(C_DOUBLE), INTENT(IN) :: Value !<The value to initialise the parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldComponentValuesInitialiseDPNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldComponentValuesInitialiseDPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldComponentValuesInitialiseDPNumber(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType,&
-    & ComponentNumber, Value, CMISSFieldComponentValuesInitialiseDPNumberC)
+    CALL CMISSFieldComponentValuesInitialiseDP(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType,&
+    & ComponentNumber, Value, CMISSFieldComponentValuesInitialiseDPCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldComponentValuesInitialiseDPNumberC
+  END FUNCTION CMISSFieldComponentValuesInitialiseDPCNum
 
   !
   !================================================================================================================================
   !
 
   !>Initialises the values of parameter set of a field variable component to a double precision constant value for a field identified by an object, for C.
-  FUNCTION CMISSFieldComponentValuesInitialiseDPPtrC(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) &
+  FUNCTION CMISSFieldComponentValuesInitialiseDPCPtr(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) &
   & BIND(C, NAME = "CMISSFieldComponentValuesInitialiseDP")
 
       !Argument variables
@@ -2114,31 +2115,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to initialise the field variable component for, for C.
     REAL(C_DOUBLE), INTENT(IN) :: Value !<The value to initialise the parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldComponentValuesInitialiseDPPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldComponentValuesInitialiseDPCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldComponentValuesInitialiseDPPtrC = CMISSNoError
+    CMISSFieldComponentValuesInitialiseDPCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
         CALL CMISSFieldComponentValuesInitialiseDP(Field, VariableType, FieldSetType, ComponentNumber, Value, &
-        & CMISSFieldComponentValuesInitialiseDPPtrC)
+        & CMISSFieldComponentValuesInitialiseDPCPtr)
       ELSE
-        CMISSFieldComponentValuesInitialiseDPPtrC = CMISSErrorConvertingPointer
+        CMISSFieldComponentValuesInitialiseDPCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldComponentValuesInitialiseDPPtrC = CMISSPointerIsNULL
+      CMISSFieldComponentValuesInitialiseDPCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldComponentValuesInitialiseDPPtrC
+  END FUNCTION CMISSFieldComponentValuesInitialiseDPCPtr
 
+  !
+  !================================================================================================================================
+  !
 
   !>Initialises the values of parameter set of a field variable component to a logical constant value for a field identified by a user number, for C.
-  FUNCTION CMISSFieldComponentValuesInitialiseLNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldComponentValuesInitialiseLNumber")
+  FUNCTION CMISSFieldComponentValuesInitialiseLCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldComponentValuesInitialiseLNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to initialise the field variable component for, for C.
@@ -2148,23 +2152,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to initialise the field variable component for, for C.
     LOGICAL(C_BOOL), INTENT(IN) :: Value !<The value to initialise the parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldComponentValuesInitialiseLNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldComponentValuesInitialiseLCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldComponentValuesInitialiseLNumber(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, ComponentNumber,&
-    & Value, CMISSFieldComponentValuesInitialiseLNumberC)
+    CALL CMISSFieldComponentValuesInitialiseL(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, ComponentNumber,&
+    & Value, CMISSFieldComponentValuesInitialiseLCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldComponentValuesInitialiseLNumberC
+  END FUNCTION CMISSFieldComponentValuesInitialiseLCNum
 
   !
   !================================================================================================================================
   !
 
   !>Initialises the values of parameter set of a field variable component to a logical constant value for a field identified by an object, for C.
-  FUNCTION CMISSFieldComponentValuesInitialiseLPtrC(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) &
-  & BIND(C, NAME = "CMISSFieldComponentValuesInitialiseLObj")
+  FUNCTION CMISSFieldComponentValuesInitialiseLCPtr(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) &
+  & BIND(C, NAME = "CMISSFieldComponentValuesInitialiseL")
 
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to initialise the field variable component for, for C. \see OPENCMISS_FieldVariableTypes
@@ -2172,88 +2176,88 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to initialise the field variable component for, for C.
     LOGICAL(C_BOOL), INTENT(IN) :: Value !<The value to initialise the parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldComponentValuesInitialiseLPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldComponentValuesInitialiseLCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldComponentValuesInitialiseLPtrC = CMISSNoError
+    CMISSFieldComponentValuesInitialiseLCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldComponentValuesInitialiseLObj(Field, VariableType, FieldSetType, ComponentNumber, Value, &
-        & CMISSFieldComponentValuesInitialiseLPtrC)
+        CALL CMISSFieldComponentValuesInitialiseL(Field, VariableType, FieldSetType, ComponentNumber, Value, &
+        & CMISSFieldComponentValuesInitialiseLCPtr)
       ELSE
-        CMISSFieldComponentValuesInitialiseLPtrC = CMISSErrorConvertingPointer
+        CMISSFieldComponentValuesInitialiseLCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldComponentValuesInitialiseLPtrC = CMISSPointerIsNULL
+      CMISSFieldComponentValuesInitialiseLCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldComponentValuesInitialiseLPtrC
+  END FUNCTION CMISSFieldComponentValuesInitialiseLCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Returns the data type for a field variable for a field identified by a user number, for C.
-  FUNCTION CMISSFieldDataTypeGetNumberC(RegionUserNumber,FieldUserNumber,VariableType,DataType) BIND(C,NAME= &
-  & "CMISSFieldDataTypeGetNumber")
+  FUNCTION CMISSFieldDataTypeGetCNum(RegionUserNumber,FieldUserNumber,VariableType,DataType) BIND(C,NAME= &
+  & "CMISSFieldDataTypeGetNum")
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the data type for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to get the data type for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to get the data type for, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), INTENT(OUT) :: DataType !<The field variable data type to get, for C. \see OPENCMISS_FieldDataTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldDataTypeGetNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldDataTypeGetCNum !<Error Code.
     !Local variables
 
-    CALL  CMISSFieldDataTypeGetNumber(RegionUserNumber,FieldUserNumber,VariableType,DataType,CMISSFieldDataTypeGetNumberC)
+    CALL  CMISSFieldDataTypeGet(RegionUserNumber,FieldUserNumber,VariableType,DataType,CMISSFieldDataTypeGetCNum)
 
     RETURN
 
-  END FUNCTION  CMISSFieldDataTypeGetNumberC
+  END FUNCTION  CMISSFieldDataTypeGetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Returns the data type for a field variable for a field identified by an object, for C.
-  FUNCTION CMISSFieldDataTypeGetPtrC(FieldPtr,VariableType,DataType) BIND(C, NAME = "CMISSFieldDataTypeGetObj")
+  FUNCTION CMISSFieldDataTypeGetCPtr(FieldPtr,VariableType,DataType) BIND(C, NAME = "CMISSFieldDataTypeGet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<The field to get the data type for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to get the data type for, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), INTENT(OUT) :: DataType !<The field variable data type to get, for C. \see OPENCMISS_FieldDataTypes
     !Function Variables
-    INTEGER(C_INT) :: CMISSFieldDataTypeGetPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldDataTypeGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldDataTypeGetPtrC = CMISSNoError
+    CMISSFieldDataTypeGetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldDataTypeGetObj(Field, VariableType, DataType, CMISSFieldDataTypeGetPtrC)
+        CALL CMISSFieldDataTypeGet(Field, VariableType, DataType, CMISSFieldDataTypeGetCPtr)
       ELSE
-        CMISSFieldDataTypeGetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldDataTypeGetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldDataTypeGetPtrC = CMISSPointerIsNULL
+      CMISSFieldDataTypeGetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldDataTypeGetPtrC
+  END FUNCTION CMISSFieldDataTypeGetCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the data type for a field variable for a field identified by a user number, for C.
-  FUNCTION CMISSFieldDataTypeSetNumberC(RegionUserNumber,FieldUserNumber,VariableType,DataType) BIND(C, NAME = &
-  & "CMISSFieldDataTypeSetNumber")
+  FUNCTION CMISSFieldDataTypeSetCNum(RegionUserNumber,FieldUserNumber,VariableType,DataType) BIND(C, NAME = &
+  & "CMISSFieldDataTypeSetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to set the data type to, for C.
@@ -2261,54 +2265,54 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to set the data type to, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: DataType !<The field variable data type to set, for C. \see OPENCMISS_FieldDataTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldDataTypeSetNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldDataTypeSetCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldDataTypeSetNumber(RegionUserNumber, FieldUserNumber,VariableType, DataType,CMISSFieldDataTypeSetNumberC)
+    CALL CMISSFieldDataTypeSet(RegionUserNumber, FieldUserNumber,VariableType, DataType,CMISSFieldDataTypeSetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldDataTypeSetNumberC
+  END FUNCTION CMISSFieldDataTypeSetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the data type for a field variable for a field identified by an object, for C.
-  FUNCTION CMISSFieldDataTypeSetPtrC(FieldPtr,VariableType,DataType) BIND(C, NAME = "CMISSFieldDataTypeSetObj")
+  FUNCTION CMISSFieldDataTypeSetCPtr(FieldPtr,VariableType,DataType) BIND(C, NAME = "CMISSFieldDataTypeSet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to set the data type to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for the field to set the data type to, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: DataType !<The field variable data type to set, for C. \see OPENCMISS_FieldDataTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldDataTypeSetPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldDataTypeSetCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldDataTypeSetPtrC = CMISSNoError
+    CMISSFieldDataTypeSetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldDataTypeSetObj(Field, VariableType, DataType,CMISSFieldDataTypeSetPtrC)
+        CALL CMISSFieldDataTypeSet(Field, VariableType, DataType,CMISSFieldDataTypeSetCPtr)
       ELSE
-        CMISSFieldDataTypeSetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldDataTypeSetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldDataTypeSetPtrC = CMISSPointerIsNULL
+      CMISSFieldDataTypeSetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldDataTypeSetPtrC
+  END FUNCTION CMISSFieldDataTypeSetCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Returns the DOF order type for a field variable for a field identified by a user number, for C.
-  FUNCTION CMISSFieldDOFOrderTypeGetNumberC(RegionUserNumber,FieldUserNumber,VariableType,DOFOrderType) BIND( &
-  & C, NAME = "CMISSFieldDOFOrderTypeGetNumber")
+  FUNCTION CMISSFieldDOFOrderTypeGetCNum(RegionUserNumber,FieldUserNumber,VariableType,DOFOrderType) BIND( &
+  & C, NAME = "CMISSFieldDOFOrderTypeGetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the DOF order type for, for C.
@@ -2316,55 +2320,56 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to get the DOF order type for, for C.\see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), INTENT(OUT) :: DOFOrderType !<The field variable DOF Order type to get, for C.  \see OPENCMISS_FieldDOFOrderTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldDOFOrderTypeGetNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldDOFOrderTypeGetCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldDOFOrderTypeGetNumber(RegionUserNumber, FieldUserNumber, VariableType, DOFOrderType, &
-    & CMISSFieldDOFOrderTypeGetNumberC)
+    CALL CMISSFieldDOFOrderTypeGet(RegionUserNumber, FieldUserNumber, VariableType, DOFOrderType, &
+    & CMISSFieldDOFOrderTypeGetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldDOFOrderTypeGetNumberC
+  END FUNCTION CMISSFieldDOFOrderTypeGetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Returns the DOF Order type for a field variable for a field identified by an object, for C.
-  FUNCTION CMISSFieldDOFOrderTypeGetPtrC(FieldPtr,VariableType,DOFOrderType) BIND(C, NAME = "CMISSFieldDOFOrderTypeGetObj")
+  FUNCTION CMISSFieldDOFOrderTypeGetCPtr(FieldPtr,VariableType,DOFOrderType) BIND(C, NAME = "CMISSFieldDOFOrderTypeGet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer of the field to get the DOF Order type for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for the field to get the DOF Order type for, for C \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), INTENT(OUT) :: DOFOrderType !<The field variable DOF Order type to get, for C. \see OPENCMISS_FieldDOFOrderTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldDOFOrderTypeGetPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldDOFOrderTypeGetCPtr
+ !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldDOFOrderTypeGetPtrC = CMISSNoError
+    CMISSFieldDOFOrderTypeGetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr,Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldDOFOrderTypeGetObj(Field, VariableType, DOFOrderType, CMISSFieldDOFOrderTypeGetPtrC)
+        CALL CMISSFieldDOFOrderTypeGet(Field, VariableType, DOFOrderType,CMISSFieldDOFOrderTypeGetCPtr)
       ELSE
-        CMISSFieldDOFOrderTypeGetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldDOFOrderTypeGetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldDOFOrderTypeGetPtrC = CMISSPointerIsNULL
+      CMISSFieldDOFOrderTypeGetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldDOFOrderTypeGetPtrC
+  END FUNCTION CMISSFieldDOFOrderTypeGetCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the DOF order type for a field variable for a field identified by a user number for C.
-  FUNCTION CMISSFieldDOFOrderTypeSetNumberC(RegionUserNumber,FieldUserNumber,VariableType,DOFOrderType) BIND(C, &
-  & NAME = "CMISSFieldDOFOrderTypeSetNumber")
+  FUNCTION CMISSFieldDOFOrderTypeSetCNum(RegionUserNumber,FieldUserNumber,VariableType,DOFOrderType) BIND(C, &
+  & NAME = "CMISSFieldDOFOrderTypeSetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number for the region containing the field to set the DOF Order type to, for C.
@@ -2372,116 +2377,116 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to set the DOF Order type to, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: DOFOrderType !<The field variable DOF Order type to set, for C. \see OPENCMISS_FieldDOFOrderTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldDOFOrderTypeSetNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldDOFOrderTypeSetCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldDOFOrderTypeSetNumber(RegionUserNumber, FieldUserNumber, VariableType, DOFOrderType, &
-    & CMISSFieldDOFOrderTypeSetNumberC)
+    CALL CMISSFieldDOFOrderTypeSet(RegionUserNumber, FieldUserNumber, VariableType, DOFOrderType, &
+    & CMISSFieldDOFOrderTypeSetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldDOFOrderTypeSetNumberC
+  END FUNCTION CMISSFieldDOFOrderTypeSetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the DOF Order type for a field variable for a field identified by an object for C.
-  FUNCTION CMISSFieldDOFOrderTypeSetPtrC(FieldPtr,VariableType,DOFOrderType) BIND(C, NAME = "CMISSFieldDOFOrderTypeSetObj")
+  FUNCTION CMISSFieldDOFOrderTypeSetCPtr(FieldPtr,VariableType,DOFOrderType) BIND(C, NAME = "CMISSFieldDOFOrderTypeSet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to set the DOF Order type to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to set the DOF Order type to, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: DOFOrderType !<The field variable DOF Order type to set, for C. \see OPENCMISS_FieldDOFOrderTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldDOFOrderTypeSetPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldDOFOrderTypeSetCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldDOFOrderTypeSetPtrC = CMISSNoError
+    CMISSFieldDOFOrderTypeSetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldDOFOrderTypeSetObj(Field, VariableType, DOFOrderType, CMISSFieldDOFOrderTypeSetPtrC)
+        CALL CMISSFieldDOFOrderTypeSet(Field, VariableType, DOFOrderType, CMISSFieldDOFOrderTypeSetCPtr)
       ELSE
-        CMISSFieldDOFOrderTypeSetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldDOFOrderTypeSetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldDOFOrderTypeSetPtrC = CMISSPointerIsNULL
+      CMISSFieldDOFOrderTypeSetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldDOFOrderTypeSetPtrC
+  END FUNCTION CMISSFieldDOFOrderTypeSetCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Finishes the creation of a field identified by a user number for C.
-  FUNCTION CMISSFieldCreateFinishNumberC(RegionUserNumber,FieldUserNumber) BIND(C, NAME = "CMISSFieldCreateFinishNumber")
+  FUNCTION CMISSFieldCreateFinishCNum(RegionUserNumber,FieldUserNumber) BIND(C, NAME = "CMISSFieldCreateFinishNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to finish the creation of, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to finish the creation of, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldCreateFinishNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldCreateFinishCNum !<Error Code.
 
-    CALL CMISSFieldCreateFinishNumber(RegionUserNumber,FieldUserNumber,CMISSFieldCreateFinishNumberC)
+    CALL CMISSFieldCreateFinish(RegionUserNumber,FieldUserNumber,CMISSFieldCreateFinishCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldCreateFinishNumberC
+  END FUNCTION CMISSFieldCreateFinishCNum
 
   !
   !================================================================================================================================
   !
 
   !>Finishes the creation of a field identified by an object for C.
-  FUNCTION CMISSFieldCreateFinishPtrC(FieldPtr) BIND(C, NAME = "CMISSFieldCreateFinishObj")
+  FUNCTION CMISSFieldCreateFinishCPtr(FieldPtr) BIND(C, NAME = "CMISSFieldCreateFinish")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to finish the creation of.
     !Function variable
-    INTEGER(C_INT) ::CMISSFieldCreateFinishPtrC !<Error Code.
+    INTEGER(C_INT) ::CMISSFieldCreateFinishCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldCreateFinishPtrC = CMISSNoError
+    CMISSFieldCreateFinishCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldCreateFinishObj(Field,CMISSFieldCreateFinishPtrC)
+        CALL CMISSFieldCreateFinish(Field,CMISSFieldCreateFinishCPtr)
       ELSE
-        CMISSFieldCreateFinishPtrC = CMISSErrorConvertingPointer
+        CMISSFieldCreateFinishCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldCreateFinishPtrC = CMISSPointerIsNULL
+      CMISSFieldCreateFinishCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldCreateFinishPtrC
+  END FUNCTION CMISSFieldCreateFinishCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Starts the creation of a field identified by a user number for C.
-  FUNCTION CMISSFieldCreateStartNumberC(FieldUserNumber,RegionUserNumber) BIND(C, NAME = "CMISFieldCreateStartNumber")
+  FUNCTION CMISSFieldCreateStartCNum(FieldUserNumber,RegionUserNumber) BIND(C, NAME = "CMISFieldCreateStartNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber!<The user number of the region containing the field to start the creation of, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the field to start the creation of, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldCreateStartNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldCreateStartCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldCreateStartNumber(FieldUserNumber, RegionUserNumber, CMISSFieldCreateStartNumberC)
+    CALL CMISSFieldCreateStart(FieldUserNumber, RegionUserNumber, CMISSFieldCreateStartCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldCreateStartNumberC
+  END FUNCTION CMISSFieldCreateStartCNum
 
 
   !
@@ -2489,42 +2494,42 @@ END FUNCTION CMISSFieldsTypeCreateC
   !
 
   !>Starts the creation of a field identified by an object for C.
-  FUNCTION CMISSFieldCreateStartPtrC(FieldUserNumber,RegionPtr,FieldPtr) BIND(C, NAME ="CMISSFieldCreateStartObj")
+  FUNCTION CMISSFieldCreateStartCPtr(FieldUserNumber,RegionPtr,FieldPtr) BIND(C, NAME ="CMISSFieldCreateStart")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber  !<The user number of the field to start the creation of, for C.
     TYPE(C_PTR), INTENT(IN) :: RegionPtr !<C pointer to the region to create the field on.
     TYPE(C_PTR), INTENT(IN) :: FieldPtr !<C pointer to the created field.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldCreateStartPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldCreateStartCPtr !<Error Code.
     !Local variable
     TYPE(CMISSRegionType), POINTER :: Region
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldCreateStartPtrC = CMISSNoError
+    CMISSFieldCreateStartCPtr = CMISSNoError
     IF(C_ASSOCIATED(RegionPtr)) THEN
       CALL C_F_POINTER(RegionPtr, Region)
       IF(ASSOCIATED(Region)) THEN
         IF(C_ASSOCIATED(FieldPtr)) THEN
           CALL C_F_POINTER(FieldPtr, Field)
           IF(ASSOCIATED(Field)) THEN
-            CALL CMISSFieldCreateStartObj(FieldUserNumber, Region, Field, CMISSFieldCreateStartPtrC)
+            CALL CMISSFieldCreateStart(FieldUserNumber, Region, Field, CMISSFieldCreateStartCPtr)
           ELSE
-            CMISSFieldCreateStartPtrC = CMISSErrorConvertingPointer
+            CMISSFieldCreateStartCPtr = CMISSErrorConvertingPointer
           ENDIF
         ELSE
-          CMISSFieldCreateStartPtrC = CMISSPointerIsNULL
+          CMISSFieldCreateStartCPtr = CMISSPointerIsNULL
         ENDIF
       ELSE
-        CMISSFieldCreateStartPtrC = CMISSErrorConvertingPointer
+        CMISSFieldCreateStartCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldCreateStartPtrC = CMISSPointerIsNULL
+      CMISSFieldCreateStartCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldCreateStartPtrC
+  END FUNCTION CMISSFieldCreateStartCPtr
 
 
   !
@@ -2532,22 +2537,22 @@ END FUNCTION CMISSFieldsTypeCreateC
   !
 
   !>Returns the dependent type for a field identified by a user number for C.
-  FUNCTION CMISSFieldDependentTypeGetNumberC(RegionUserNumber,FieldUserNumber,DependentType) BIND(C, NAME = &
-  & "CMISSFieldDependentTypeGetNumber")
+  FUNCTION CMISSFieldDependentTypeGetCNum(RegionUserNumber,FieldUserNumber,DependentType) BIND(C, NAME = &
+  & "CMISSFieldDependentTypeGetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number for the region containing the field to get the dependent type for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number for the field to get the dependent type for, for C.
     INTEGER(C_INT), INTENT(OUT) :: DependentType !<The field dependent type to get, for C. \see OPENCMISS_FieldDependentTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldDependentTypeGetNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldDependentTypeGetCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldDependentTypeGetNumber(RegionUserNumber, FieldUserNumber, DependentType, CMISSFieldDependentTypeGetNumberC)
+    CALL CMISSFieldDependentTypeGet(RegionUserNumber, FieldUserNumber, DependentType, CMISSFieldDependentTypeGetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldDependentTypeGetNumberC
+  END FUNCTION CMISSFieldDependentTypeGetCNum
 
 
   !
@@ -2555,31 +2560,31 @@ END FUNCTION CMISSFieldsTypeCreateC
   !
 
   !>Returns the dependent type for a field identified by an object for C.
-  FUNCTION CMISSFieldDependentTypeGetPtrC(FieldPtr,DependentType) BIND(C, NAME = "CMISSFieldDependentTypeGetObj")
+  FUNCTION CMISSFieldDependentTypeGetCPtr(FieldPtr,DependentType) BIND(C, NAME = "CMISSFieldDependentTypeGet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the dependent type for, for C.
     INTEGER(C_INT), INTENT(OUT) :: DependentType !<The field dependent type for C. \see OPENCMISS_FieldDependentTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldDependentTypeGetPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldDependentTypeGetCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldDependentTypeGetPtrC = CMISSNoError
+    CMISSFieldDependentTypeGetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF (ASSOCIATED(Field)) THEN
-        CALL CMISSFieldDependentTypeGetObj(Field, DependentType, CMISSFieldDependentTypeGetPtrC)
+        CALL CMISSFieldDependentTypeGet(Field, DependentType, CMISSFieldDependentTypeGetCPtr)
       ELSE
-        CMISSFieldDependentTypeGetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldDependentTypeGetCPtr= CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldDependentTypeGetPtrC = CMISSPointerIsNULL
+      CMISSFieldDependentTypeGetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldDependentTypeGetPtrC
+  END FUNCTION CMISSFieldDependentTypeGetCPtr
 
 
   !
@@ -2587,22 +2592,22 @@ END FUNCTION CMISSFieldsTypeCreateC
   !
 
   !>Sets/changes the dependent type for a field identified by a user number for C.
-  FUNCTION CMISSFieldDependentTypeSetNumberC(RegionUserNumber,FieldUserNumber,DependentType) BIND(C, NAME  = &
-  & "CMISSFieldDependentTypeSetNumber")
+  FUNCTION CMISSFieldDependentTypeSetCNum(RegionUserNumber,FieldUserNumber,DependentType) BIND(C, NAME  = &
+  & "CMISSFieldDependentTypeSetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number for the region containing the field to set the dependent type to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number for the field to set the dependent type to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DependentType !<The field dependent type for C. \see OPENCMISS_FieldDependentTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldDependentTypeSetNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldDependentTypeSetCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldDependentTypeSetNumber(RegionUserNumber,FieldUserNumber,DependentType,CMISSFieldDependentTypeSetNumberC)
+    CALL CMISSFieldDependentTypeSet(RegionUserNumber,FieldUserNumber,DependentType,CMISSFieldDependentTypeSetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldDependentTypeSetNumberC
+  END FUNCTION CMISSFieldDependentTypeSetCNum
 
 
   !
@@ -2610,89 +2615,89 @@ END FUNCTION CMISSFieldsTypeCreateC
   !
 
   !>Sets/changes the dependent type for a field identified by an object for C.
-  FUNCTION CMISSFieldDependentTypeSetPtrC(FieldPtr,DependentType) BIND(C, NAME = "CMISSFieldDependentTypeSetObj")
+  FUNCTION CMISSFieldDependentTypeSetCPtr(FieldPtr,DependentType) BIND(C, NAME = "CMISSFieldDependentTypeSet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to set the dependent type to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DependentType !<The field dependent type, for C. \see OPENCMISS_FieldDependentTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldDependentTypeSetPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldDependentTypeSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldDependentTypeSetPtrC = CMISSNoError
+    CMISSFieldDependentTypeSetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldDependentTypeSetObj(Field, DependentType, CMISSFieldDependentTypeSetPtrC)
+        CALL CMISSFieldDependentTypeSet(Field, DependentType, CMISSFieldDependentTypeSetCPtr)
       ELSE
-        CMISSFieldDependentTypeSetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldDependentTypeSetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldDependentTypeSetPtrC = CMISSPointerIsNULL
+      CMISSFieldDependentTypeSetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldDependentTypeSetPtrC
+  END FUNCTION CMISSFieldDependentTypeSetCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Destroys a field identified by a user number for C.
-  FUNCTION CMISSFieldDestroyNumberC(RegionUserNumber,FieldUserNumber) BIND(C, NAME = "CMISSFieldDestroyNumber")
+  FUNCTION CMISSFieldDestroyCNum(RegionUserNumber,FieldUserNumber) BIND(C, NAME = "CMISSFieldDestroyNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to destroy for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to destroy for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldDestroyNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldDestroyCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldDestroyNumber(RegionUserNumber, FieldUserNumber, CMISSFieldDestroyNumberC)
+    CALL CMISSFieldDestroy(RegionUserNumber, FieldUserNumber, CMISSFieldDestroyCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldDestroyNumberC
+  END FUNCTION CMISSFieldDestroyCNum
 
   !
   !================================================================================================================================
   !
 
   !>Destroys a field identified by an object for C.
-  FUNCTION CMISSFieldDestroyPtrC(FieldPtr) BIND(C,NAME = "CMISSFieldDestroyObj")
+  FUNCTION CMISSFieldDestroyCPtr(FieldPtr) BIND(C,NAME = "CMISSFieldDestroy")
 
     !Argument variable
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to destroy for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldDestroyPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldDestroyCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldDestroyPtrC = CMISSNoError
+    CMISSFieldDestroyCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF (ASSOCIATED(Field)) THEN
-        CALL CMISSFieldDestroyObj(Field, CMISSFieldDestroyPtrC)
+        CALL CMISSFieldDestroy(Field, CMISSFieldDestroyCPtr)
       ELSE
-        CMISSFieldDestroyPtrC = CMISSErrorConvertingPointer
+        CMISSFieldDestroyCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldDestroyPtrC = CMISSPointerIsNULL
+      CMISSFieldDestroyCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldDestroyPtrC
+  END FUNCTION CMISSFieldDestroyCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Returns the dimension for a field identified by a user number for C.
-  FUNCTION CMISSFieldDimensionGetNumberC(RegionUserNumber,FieldUserNumber,VariableType,DIMENSION) BIND(C, NAME = &
-  & "CMISSFieldDimensionGetNumber")
+  FUNCTION CMISSFieldDimensionGetCNum(RegionUserNumber,FieldUserNumber,VariableType,DIMENSION) BIND(C, NAME = &
+  & "CMISSFieldDimensionGetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the dimension for, for C.
@@ -2700,54 +2705,54 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to get the dimension for, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), INTENT(OUT) :: Dimension !<The field dimension for C. \see OPENCMISS_FieldDimensionTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldDimensionGetNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldDimensionGetCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldDimensionGetNumber(RegionUserNumber, FieldUserNumber, VariableType, DIMENSION, CMISSFieldDimensionGetNumberC)
+    CALL CMISSFieldDimensionGet(RegionUserNumber, FieldUserNumber, VariableType, DIMENSION, CMISSFieldDimensionGetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldDimensionGetNumberC
+  END FUNCTION CMISSFieldDimensionGetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Returns the dimension for a field identified by an object for C.
-  FUNCTION CMISSFieldDimensionGetPtrC(FieldPtr,VariableType,Dimension) BIND(C, NAME = "CMISSFieldDimensionGetObj")
+  FUNCTION CMISSFieldDimensionGetCPtr(FieldPtr,VariableType,Dimension) BIND(C, NAME = "CMISSFieldDimensionGet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the dimension for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to get the dimension for, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), INTENT(OUT) :: Dimension !<The field dimension for C. \see OPENCMISS_FieldDimensionTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldDimensionGetPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldDimensionGetCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldDimensionGetPtrC = CMISSNoError
+    CMISSFieldDimensionGetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldDimensionGetObj(Field, VariableType, Dimension, CMISSFieldDimensionGetPtrC)
+        CALL CMISSFieldDimensionGet(Field, VariableType, Dimension, CMISSFieldDimensionGetCPtr)
       ELSE
-        CMISSFieldDimensionGetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldDimensionGetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldDimensionGetPtrC = CMISSPointerIsNULL
+      CMISSFieldDimensionGetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldDimensionGetPtrC
+  END FUNCTION CMISSFieldDimensionGetCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the dimension for a field identified by a user number for C.
-  FUNCTION CMISSFieldDimensionSetNumberC(RegionUserNumber,FieldUserNumber,VariableType,Dimension) BIND(C, NAME = &
-  & "CMISSFieldDimensionSetNumber")
+  FUNCTION CMISSFieldDimensionSetCNum(RegionUserNumber,FieldUserNumber,VariableType,Dimension) BIND(C, NAME = &
+  & "CMISSFieldDimensionSetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to set the dimension to, for C.
@@ -2755,181 +2760,181 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to set the dimension to, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: Dimension !<The field dimension for C. \see OPENCMISS_FieldDimensionTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldDimensionSetNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldDimensionSetCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldDimensionSetNumber(RegionUserNumber, FieldUserNumber, VariableType, Dimension, CMISSFieldDimensionSetNumberC)
+    CALL CMISSFieldDimensionSet(RegionUserNumber, FieldUserNumber, VariableType, Dimension, CMISSFieldDimensionSetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldDimensionSetNumberC
+  END FUNCTION CMISSFieldDimensionSetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the dimension for a field identified by an object for C.
-  FUNCTION CMISSFieldDimensionSetPtrC(FieldPtr,VariableType,Dimension) BIND(C, NAME= "CMISSFieldDimensionSetObj")
+  FUNCTION CMISSFieldDimensionSetCPtr(FieldPtr,VariableType,Dimension) BIND(C, NAME= "CMISSFieldDimensionSet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to set the dimension to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to set the dimension to, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: Dimension !<The field dimension, for C. \see OPENCMISS_FieldDimensionTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldDimensionSetPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldDimensionSetCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldDimensionSetPtrC = CMISSNoError
+    CMISSFieldDimensionSetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldDimensionSetObj(Field, VariableType, Dimension, CMISSFieldDimensionSetPtrC)
+        CALL CMISSFieldDimensionSet(Field, VariableType, Dimension, CMISSFieldDimensionSetCPtr)
       ELSE
-        CMISSFieldDimensionSetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldDimensionSetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldDimensionSetPtrC = CMISSPointerIsNULL
+      CMISSFieldDimensionSetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldDimensionSetPtrC
+  END FUNCTION CMISSFieldDimensionSetCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Returns the geometric field for a field identified by a user number for C.
-  FUNCTION CMISSFieldGeometricFieldGetNumberC(RegionUserNumber,FieldUserNumber,GeometricFieldUserNumber) BIND(C, NAME = &
-  & "CMISSFieldGeometricFieldGetNumber")
+  FUNCTION CMISSFieldGeometricFieldGetCNum(RegionUserNumber,FieldUserNumber,GeometricFieldUserNumber) BIND(C, NAME = &
+  & "CMISSFieldGeometricFieldGetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the geometric field for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to get the geometric field for, for C.
     INTEGER(C_INT), INTENT(OUT) :: GeometricFieldUserNumber !<The field geometric field user number, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldGeometricFieldGetNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldGeometricFieldGetCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldGeometricFieldGetNumber(RegionUserNumber, FieldUserNumber, GeometricFieldUserNumber, &
-    & CMISSFieldGeometricFieldGetNumberC)
+    CALL CMISSFieldGeometricFieldGet(RegionUserNumber, FieldUserNumber, GeometricFieldUserNumber, &
+    & CMISSFieldGeometricFieldGetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldGeometricFieldGetNumberC
+  END FUNCTION CMISSFieldGeometricFieldGetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Returns the geometric field for a field identified by an object for C.
-  FUNCTION CMISSFieldGeometricFieldGetPtrC(FieldPtr,GeometricFieldPtr) BIND(C, NAME = "CMISSFieldGeometricFieldGetObj")
+  FUNCTION CMISSFieldGeometricFieldGetCPtr(FieldPtr,GeometricFieldPtr) BIND(C, NAME = "CMISSFieldGeometricFieldGet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to set the geometric field to, for C.
     TYPE(C_PTR), INTENT(OUT) :: GeometricFieldPtr !<C pointer to the geometric field for the field, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldGeometricFieldGetPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldGeometricFieldGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
     TYPE(CMISSFieldType), POINTER :: GeometricField
 
-    CMISSFieldGeometricFieldGetPtrC = CMISSNoError
+    CMISSFieldGeometricFieldGetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
         IF(C_ASSOCIATED(GeometricFieldPtr)) THEN
           CALL C_F_POINTER(GeometricFieldPtr, GeometricField)
           IF(ASSOCIATED(GeometricField)) THEN
-            CALL CMISSFieldGeometricFieldGetObj(Field, GeometricField, CMISSFieldGeometricFieldGetPtrC)
+            CALL CMISSFieldGeometricFieldGet(Field, GeometricField, CMISSFieldGeometricFieldGetCPtr)
           ELSE
-            CMISSFieldGeometricFieldGetPtrC = CMISSErrorConvertingPointer
+            CMISSFieldGeometricFieldGetCPtr = CMISSErrorConvertingPointer
           ENDIF
         ELSE
-          CMISSFieldGeometricFieldGetPtrC = CMISSPointerIsNULL
+          CMISSFieldGeometricFieldGetCPtr = CMISSPointerIsNULL
         ENDIF
       ELSE
-        CMISSFieldGeometricFieldGetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldGeometricFieldGetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldGeometricFieldGetPtrC = CMISSPointerIsNULL
+      CMISSFieldGeometricFieldGetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldGeometricFieldGetPtrC
+  END FUNCTION CMISSFieldGeometricFieldGetCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the geometric field for a field identified by a user number for C.
-  FUNCTION CMISSFieldGeometricFieldSetNumberC(RegionUserNumber,FieldUserNumber,GeometricFieldUserNumber) BIND(C, &
-  & NAME = "CMISSFieldGeometricFieldSetNumber")
+  FUNCTION CMISSFieldGeometricFieldSetCNum(RegionUserNumber,FieldUserNumber,GeometricFieldUserNumber) BIND(C, &
+  & NAME = "CMISSFieldGeometricFieldSetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region corresponding to the field to set the geometric field to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !< The user number for the field to set the geometric field to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeometricFieldUserNumber !<The field geometric field user number to set for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldGeometricFieldSetNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldGeometricFieldSetCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldGeometricFieldSetNumber(RegionUserNumber,FieldUserNumber,GeometricFieldUserNumber,&
-    & CMISSFieldGeometricFieldSetNumberC)
+    CALL CMISSFieldGeometricFieldSetNum(RegionUserNumber,FieldUserNumber,GeometricFieldUserNumber,&
+    & CMISSFieldGeometricFieldSetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldGeometricFieldSetNumberC
+  END FUNCTION CMISSFieldGeometricFieldSetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the geometric field for a field identified by an object for C.
-  FUNCTION CMISSFieldGeometricFieldSetPtrC(FieldPtr,GeometricFieldPtr) BIND(C, NAME = "CMISSFieldGeometricFieldSetObj")
+  FUNCTION CMISSFieldGeometricFieldSetCPtr(FieldPtr,GeometricFieldPtr) BIND(C, NAME = "CMISSFieldGeometricFieldSet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to set the geometric field to, for C.
     TYPE(C_PTR), VALUE, INTENT(IN) :: GeometricFieldPtr !<C pointer to the geometric field for the field, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldGeometricFieldSetPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldGeometricFieldSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
     TYPE(CMISSFieldType), POINTER :: GeometricField
 
-    CMISSFieldGeometricFieldSetPtrC = CMISSNoError
+    CMISSFieldGeometricFieldSetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
         IF(C_ASSOCIATED(GeometricFieldPtr)) THEN
           CALL C_F_POINTER(GeometricFieldPtr, GeometricField)
           IF(ASSOCIATED(GeometricField)) THEN
-            CALL CMISSFieldGeometricFieldSetObj(Field, GeometricField, CMISSFieldGeometricFieldSetPtrC)
+            CALL CMISSFieldGeometricFieldSet(Field, GeometricField, CMISSFieldGeometricFieldSetCPtr)
           ELSE
-            CMISSFieldGeometricFieldSetPtrC = CMISSErrorConvertingPointer
+            CMISSFieldGeometricFieldSetCPtr = CMISSErrorConvertingPointer
           ENDIF
         ELSE
-          CMISSFieldGeometricFieldSetPtrC = CMISSPointerIsNULL
+          CMISSFieldGeometricFieldSetCPtr = CMISSPointerIsNULL
         ENDIF
       ELSE
-        CMISSFieldGeometricFieldSetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldGeometricFieldSetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-     CMISSFieldGeometricFieldSetPtrC = CMISSPointerIsNULL
+     CMISSFieldGeometricFieldSetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldGeometricFieldSetPtrC
+  END FUNCTION CMISSFieldGeometricFieldSetCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Returns the character string label for a field identified by a user number for C.
-  FUNCTION CMISSFieldLabelGetCNumberC(RegionUserNumber,FieldUserNumber,LabelSize,Label) BIND(C, NAME = "CMISSFieldLabelGetCNum")
+  FUNCTION CMISSFieldLabelGetCNum(RegionUserNumber,FieldUserNumber,LabelSize,Label) BIND(C, NAME = "CMISSFieldLabelGetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the label for, for C.
@@ -2937,57 +2942,57 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: LabelSize !<Label Size
     CHARACTER(LEN = 1, KIND = C_CHAR), INTENT(OUT) :: Label(LabelSize) !<The field character string label for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldLabelGetCNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldLabelGetCNum !<Error Code.
     !Local variables
     CHARACTER(LEN = LabelSize - 1) :: FLabel
 
-    CALL CMISSFieldLabelGetCNum(RegionUserNumber,FieldUserNumber,FLabel,CMISSFieldLabelGetCNumberC)
+    CALL CMISSFieldLabelGet(RegionUserNumber,FieldUserNumber,FLabel,CMISSFieldLabelGetCNum)
     CALL CMISSF2CString(FLabel, Label)
 
     RETURN
 
-  END FUNCTION CMISSFieldLabelGetCNumberC
+  END FUNCTION CMISSFieldLabelGetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Returns the character string label for a field identified by an object for C.
-  FUNCTION CMISSFieldLabelGetCPtrC(FieldPtr,LabelSize,Label) BIND(C, NAME = "CMISSFieldLabelGetC")
+  FUNCTION CMISSFieldLabelGetCPtr(FieldPtr,LabelSize,Label) BIND(C, NAME = "CMISSFieldLabelGet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the label for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: LabelSize !<Label size
     CHARACTER(LEN=1, KIND=C_CHAR), INTENT(OUT) :: Label(LabelSize) !<The field character string label for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldLabelGetCPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldLabelGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
     CHARACTER(LEN = LabelSize -1) :: FLabel
 
-    CMISSFieldLabelGetCPtrC = CMISSNoError
+    CMISSFieldLabelGetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldLabelGetC(Field, FLabel, CMISSFieldLabelGetCPtrC)
+        CALL CMISSFieldLabelGet(Field, FLabel, CMISSFieldLabelGetCPtr)
         CALL CMISSF2CString(FLabel, Label)
       ELSE
-        CMISSFieldLabelGetCPtrC = CMISSErrorConvertingPointer
+        CMISSFieldLabelGetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldLabelGetCPtrC = CMISSPointerIsNULL
+      CMISSFieldLabelGetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldLabelGetCPtrC
+  END FUNCTION CMISSFieldLabelGetCPtr
 
   !!
   !================================================================================================================================
   !!
 
   !>Sets/changes the character string label for a field identified by a user number for C.
-  FUNCTION CMISSFieldLabelSetCNumberC(RegionUserNumber,FieldUserNumber,LabelSize, Label) BIND(C, NAME = "CMISSFieldLabelSetCNumber")
+  FUNCTION CMISSFieldLabelSetCNum(RegionUserNumber,FieldUserNumber,LabelSize, Label) BIND(C, NAME = "CMISSFieldLabelSetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to set the label for, for C.
@@ -2995,50 +3000,50 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: LabelSize !<The label size.
     CHARACTER(LEN = 1, KIND= C_CHAR), INTENT(IN) :: Label(LabelSize) !<The field character string label for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldLabelSetCNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldLabelSetCNum !<Error Code.
     !Local variables
     CHARACTER(LEN = LabelSize-1) :: FLabel
 
     CALL CMISSC2FString (Label, FLabel)
-    CALL CMISSFieldLabelSetCNumber(RegionUserNumber, FieldUserNumber, FLabel,CMISSFieldLabelSetCNumberC)
+    CALL CMISSFieldLabelSet(RegionUserNumber, FieldUserNumber, FLabel,CMISSFieldLabelSetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldLabelSetCNumberC
+  END FUNCTION CMISSFieldLabelSetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the character string label for a field identified by an object for C.
-  FUNCTION CMISSFieldLabelSetCPtrC(FieldPtr,LabelSize, Label) BIND(C, NAME = "CMISSFieldLabelSetCObj")
+  FUNCTION CMISSFieldLabelSetCPtr(FieldPtr,LabelSize, Label) BIND(C, NAME = "CMISSFieldLabelSet")
 
     !Argument variable
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to set the label to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: LabelSize !<The label size
     CHARACTER(LEN=1, KIND = C_CHAR), INTENT(IN) :: Label(LabelSize) !<The field character string label for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldLabelSetCPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldLabelSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
     CHARACTER(LEN=LabelSize-1) :: FLabel
 
-    CMISSFieldLabelSetCPtrC = CMISSNoError
+    CMISSFieldLabelSetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
         CALL CMISSC2FString(Label, FLabel)
-        CALL CMISSFieldLabelSetCObj(Field,FLabel,CMISSFieldLabelSetCPtrC)
+        CALL CMISSFieldLabelSet(Field,FLabel,CMISSFieldLabelSetCPtr)
       ELSE
-        CMISSFieldLabelSetCPtrC = CMISSErrorConvertingPointer
+        CMISSFieldLabelSetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldLabelSetCPtrC = CMISSPointerIsNULL
+      CMISSFieldLabelSetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldLabelSetCPtrC
+  END FUNCTION CMISSFieldLabelSetCPtr
 
 
   !
@@ -3047,72 +3052,72 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Returns the mesh decomposition for a field identified by a user number for C.
 
-  FUNCTION CMISSFieldMeshDecompositionGetNumberC(RegionUserNumber,FieldUserNumber,DecompositionUserNumber) &
-    & BIND(C, NAME = "CMISSFieldMeshDecompositionGetNumber")
+  FUNCTION CMISSFieldMeshDecompositionGetCNum(RegionUserNumber,FieldUserNumber,DecompositionUserNumber) &
+    & BIND(C, NAME = "CMISSFieldMeshDecompositionGetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to set the mesh decomposition to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number for the field to set the mesh decomposition to, for C.
-    INTEGER(C_INT), VALUE, INTENT(IN) :: DecompositionUserNumber !<The field mesh decomposition user number for C.
+    INTEGER(C_INT), INTENT(OUT) :: DecompositionUserNumber !<The field mesh decomposition user number for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldMeshDecompositionGetNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldMeshDecompositionGetCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldMeshDecompositionGetNumber(RegionUserNumber,FieldUserNumber,DecompositionUserNumber,&
-    & CMISSFieldMeshDecompositionGetNumberC)
+    CALL CMISSFieldMeshDecompositionGet(RegionUserNumber,FieldUserNumber,DecompositionUserNumber,&
+    & CMISSFieldMeshDecompositionGetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldMeshDecompositionGetNumberC
+  END FUNCTION CMISSFieldMeshDecompositionGetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Returns the mesh decomposition for a field identified by an object for C.
-  FUNCTION CMISSFieldMeshDecompositionGetPtrC(FieldPtr,MeshDecompositionPtr) BIND(C, NAME = "CMISSFieldMeshDecompositionGetObj")
+  FUNCTION CMISSFieldMeshDecompositionGetCPtr(FieldPtr,MeshDecompositionPtr) BIND(C, NAME = "CMISSFieldMeshDecompositionGet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the mesh decomposition for, for C.
     TYPE(C_PTR), INTENT(OUT) :: MeshDecompositionPtr !<C pointer to the field mesh decomposition for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldMeshDecompositionGetPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldMeshDecompositionGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
     TYPE(CMISSDecompositionType), POINTER :: MeshDecomposition
 
-    CMISSFieldMeshDecompositionGetPtrC = CMISSNoError
+    CMISSFieldMeshDecompositionGetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
         IF(C_ASSOCIATED(MeshDecompositionPtr)) THEN
           CALL C_F_POINTER(MeshDecompositionPtr, MeshDecomposition)
           IF(ASSOCIATED(MeshDecomposition)) THEN
-            CALL CMISSFieldMeshDecompositionGetObj(Field, MeshDecomposition, CMISSFieldMeshDecompositionGetPtrC)
+            CALL CMISSFieldMeshDecompositionGet(Field, MeshDecomposition, CMISSFieldMeshDecompositionGetCPtr)
           ELSE
-            CMISSFieldMeshDecompositionGetPtrC = CMISSErrorConvertingPointer
+            CMISSFieldMeshDecompositionGetCPtr = CMISSErrorConvertingPointer
           ENDIF
         ELSE
-          CMISSFieldMeshDecompositionGetPtrC = CMISSPointerIsNULL
+          CMISSFieldMeshDecompositionGetCPtr = CMISSPointerIsNULL
         ENDIF
       ELSE
-        CMISSFieldMeshDecompositionGetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldMeshDecompositionGetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldMeshDecompositionGetPtrC = CMISSPointerIsNULL
+      CMISSFieldMeshDecompositionGetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldMeshDecompositionGetPtrC
+  END FUNCTION CMISSFieldMeshDecompositionGetCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the mesh decomposition for a field identified by a user number for C.
-  FUNCTION CMISSFieldMeshDecompositionSetNumberC(RegionUserNumber,FieldUserNumber,MeshUserNumber,DecompositionUserNumber) &
-  & BIND(C, NAME = "CMISSFieldMeshDecompositionSetNumber")
+  FUNCTION CMISSFieldMeshDecompositionSetCNum(RegionUserNumber,FieldUserNumber,MeshUserNumber,DecompositionUserNumber) &
+  & BIND(C, NAME = "CMISSFieldMeshDecompositionSetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to set the mesh decomposition to, for C.
@@ -3120,64 +3125,64 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: MeshUserNumber !<The user number for the mesh to set the mesh decomposititon to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DecompositionUserNumber !<The field mesh decomposition user number for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldMeshDecompositionSetNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldMeshDecompositionSetCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldMeshDecompositionSetNumber(RegionUserNumber,FieldUserNumber,MeshUserNumber,DecompositionUserNumber,&
-    & CMISSFieldMeshDecompositionSetNumberC)
+    CALL CMISSFieldMeshDecompositionSet(RegionUserNumber,FieldUserNumber,MeshUserNumber,DecompositionUserNumber,&
+    & CMISSFieldMeshDecompositionSetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldMeshDecompositionSetNumberC
+  END FUNCTION CMISSFieldMeshDecompositionSetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the mesh decomposition for a field identified by an object for C.
-  FUNCTION CMISSFieldMeshDecompositionSetPtrC(FieldPtr,MeshDecompositionPtr) BIND(C,NAME = "CMISSFieldMeshDecompositionSetObj")
+  FUNCTION CMISSFieldMeshDecompositionSetCPtr(FieldPtr,MeshDecompositionPtr) BIND(C,NAME = "CMISSFieldMeshDecompositionSet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to set the mesh decomposition to, for C.
     TYPE(C_PTR), VALUE, INTENT(IN) :: MeshDecompositionPtr !<C pointer to the mesh decomposition for the field to set.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldMeshDecompositionSetPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldMeshDecompositionSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
     TYPE(CMISSDecompositionType), POINTER :: MeshDecomposition
 
-    CMISSFieldMeshDecompositionSetPtrC = CMISSNoError
+    CMISSFieldMeshDecompositionSetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr,Field)
       IF(ASSOCIATED(Field)) THEN
         IF(C_ASSOCIATED(MeshDecompositionPtr)) THEN
           CALL C_F_POINTER(MeshDecompositionPtr, MeshDecomposition)
           IF (ASSOCIATED(MeshDecomposition)) THEN
-            CALL CMISSFieldMeshDecompositionSetObj(Field, MeshDecomposition, CMISSFieldMeshDecompositionSetPtrC)
+            CALL CMISSFieldMeshDecompositionSet(Field, MeshDecomposition, CMISSFieldMeshDecompositionSetCPtr)
           ELSE
-            CMISSFieldMeshDecompositionSetPtrC = CMISSErrorConvertingPointer
+            CMISSFieldMeshDecompositionSetCPtr = CMISSErrorConvertingPointer
           ENDIF
         ELSE
-          CMISSFieldMeshDecompositionSetPtrC = CMISSPointerIsNULL
+          CMISSFieldMeshDecompositionSetCPtr = CMISSPointerIsNULL
         ENDIF
       ELSE
-        CMISSFieldMeshDecompositionSetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldMeshDecompositionSetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldMeshDecompositionSetPtrC = CMISSPointerIsNULL
+      CMISSFieldMeshDecompositionSetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldMeshDecompositionSetPtrC
+  END FUNCTION CMISSFieldMeshDecompositionSetCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Returns the number of componenets for a field variable for a field identified by a user number for C.
-  FUNCTION CMISSFieldNumberOfComponentsGetNumberC(RegionUserNumber,FieldUserNumber,VariableType,NumberOfComponents) &
-  & BIND(C, NAME = "CMISSFieldNumberOfComponentsGetNumber")
+  FUNCTION CMISSFieldNumberOfComponentsGetCNum(RegionUserNumber,FieldUserNumber,VariableType,NumberOfComponents) &
+  & BIND(C, NAME = "CMISSFieldNumberOfComponentsGetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber
@@ -3185,48 +3190,48 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType
     INTEGER(C_INT), INTENT(OUT) :: NumberOfComponents
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldNumberOfComponentsGetNumberC
+    INTEGER(C_INT) :: CMISSFieldNumberOfComponentsGetCNum
     !Local variables
 
-    CALL CMISSFieldnumberOfComponentsGetNumber(RegionUserNumber, FieldUserNumber, VariableType, NumberOfComponents, &
-    & CMISSFieldNumberOfComponentsGetNumberC)
+    CALL CMISSFieldnumberOfComponentsGet(RegionUserNumber, FieldUserNumber, VariableType, NumberOfComponents, &
+    & CMISSFieldNumberOfComponentsGetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldNumberOfComponentsGetNumberC
+  END FUNCTION CMISSFieldNumberOfComponentsGetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Returns the number of components for a field variable for a field identified by an object for C.
-  FUNCTION CMISSFieldNumberOfComponentsGetPtrC(FieldPtr,VariableType,NumberOfComponents) BIND(C, NAME = &
-  & "CMISSFieldNumberOfComponentsGetObj")
+  FUNCTION CMISSFieldNumberOfComponentsGetCPtr(FieldPtr,VariableType,NumberOfComponents) BIND(C, NAME = &
+  & "CMISSFieldNumberOfComponentsGet")
 
     !Argument variables
     TYPE(C_PTR),VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the number of components for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to get the number of components for, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), INTENT(OUT) :: NumberOfComponents !<The number of components in the field variable for C.
     !Function variables
-    INTEGER(C_INT) :: CMISSFieldNumberOfComponentsGetPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldNumberOfComponentsGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldNumberOfComponentsGetPtrC = CMISSNoError
+    CMISSFieldNumberOfComponentsGetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldNumberOfComponentsGetObj(Field, VariableType, NumberOfComponents)
+        CALL CMISSFieldNumberOfComponentsGet(Field, VariableType, NumberOfComponents, CMISSFieldNumberOfComponentsGetCPtr)
       ELSE
-        CMISSFieldNumberOfComponentsGetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldNumberOfComponentsGetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldNumberOfComponentsGetPtrC = CMISSPointerIsNULL
+      CMISSFieldNumberOfComponentsGetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldNumberOfComponentsGetPtrC
+  END FUNCTION CMISSFieldNumberOfComponentsGetCPtr
 
 
   !
@@ -3234,8 +3239,8 @@ END FUNCTION CMISSFieldsTypeCreateC
   !
 
   !>Sets/changes the number of componenets for a field variable for a field identified by a user number for C.
-  FUNCTION CMISSFieldNumberOfComponentsSetNumberC(RegionUserNumber,FieldUserNumber,VariableType,NumberOfComponents) &
-  & BIND(C, NAME = "CMISSFieldNumberOfComponentsSetNumber")
+  FUNCTION CMISSFieldNumberOfComponentsSetCNum(RegionUserNumber,FieldUserNumber,VariableType,NumberOfComponents) &
+  & BIND(C, NAME = "CMISSFieldNumberOfComponentsSetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number for the region containing the field to set the number of components to, for C.
@@ -3243,156 +3248,156 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to set the number of components to, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: NumberOfComponents !<The number of components in the field variable for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldNumberOfComponentsSetNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldNumberOfComponentsSetCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldNumberOfComponentsSetNumber(RegionUserNumber,FieldUserNumber,VariableType,NumberOfComponents, &
-    & CMISSFieldNumberofComponentsSetNumberC)
+    CALL CMISSFieldNumberOfComponentsSet(RegionUserNumber,FieldUserNumber,VariableType,NumberOfComponents, &
+    & CMISSFieldNumberofComponentsSetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldNumberOfComponentsSetNumberC
+  END FUNCTION CMISSFieldNumberOfComponentsSetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the number of components for a field variable for a field identified by an object for C.
-  FUNCTION CMISSFieldNumberOfComponentsSetPtrC(FieldPtr,VariableType,NumberOfComponents) BIND(C, NAME = &
-  & "CMISSFieldNumberOfComponentsSetObj")
+  FUNCTION CMISSFieldNumberOfComponentsSetCPtr(FieldPtr,VariableType,NumberOfComponents) BIND(C, NAME = &
+  & "CMISSFieldNumberOfComponentsSet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to set the number of components for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to set the number of components for, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: NumberOfComponents !<The number of components in the field variables for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldNumberOfComponentsSetPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldNumberOfComponentsSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldNumberOfComponentsSetPtrC = CMISSNoError
+    CMISSFieldNumberOfComponentsSetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldNumberOfComponentsSetObj(Field, VariableType, NumberOfComponents, CMISSFieldNumberOfComponentsSetPtrC)
+        CALL CMISSFieldNumberOfComponentsSet(Field, VariableType, NumberOfComponents, CMISSFieldNumberOfComponentsSetCPtr)
       ELSE
-        CMISSFieldNumberOfComponentsSetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldNumberOfComponentsSetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldNumberOfComponentsSetPtrC = CMISSPointerIsNULL
+      CMISSFieldNumberOfComponentsSetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldNumberOfComponentsSetPtrC
+  END FUNCTION CMISSFieldNumberOfComponentsSetCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Returns the number of variables for a field identified by a user number for C.
-  FUNCTION CMISSFieldNumberOfVariablesGetNumberC(RegionUserNumber,FieldUserNumber,NumberOfVariables) BIND(C, NAME = &
-  & "CMISSFieldNumberOfVariablesGetNumber")
+  FUNCTION CMISSFieldNumberOfVariablesGetCNum(RegionUserNumber,FieldUserNumber,NumberOfVariables) BIND(C, NAME = &
+  & "CMISSFieldNumberOfVariablesGetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the number of variables for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number for the field to get the number of variables for, for C.
     INTEGER(C_INT), INTENT(OUT) :: NumberOfVariables !<The number of variables in the field, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldNumberOfVariablesGetNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldNumberOfVariablesGetCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldNumberOfVariablesGetNumber(RegionUserNumber, FieldUserNumber, NumberOfVariables, &
-    & CMISSFieldNumberOfVariablesGetNumberC)
+    CALL CMISSFieldNumberOfVariablesGet(RegionUserNumber, FieldUserNumber, NumberOfVariables, &
+    & CMISSFieldNumberOfVariablesGetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldNumberOfVariablesGetNumberC
+  END FUNCTION CMISSFieldNumberOfVariablesGetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Returns the number of variables for a field identified by an object for C.
-  FUNCTION CMISSFieldNumberOfVariablesGetPtrC(FieldPtr,NumberOfVariables) BIND(C, NAME = "CMISSFieldNumberOfVariablesGetObj")
+  FUNCTION CMISSFieldNumberOfVariablesGetCPtr(FieldPtr,NumberOfVariables) BIND(C, NAME = "CMISSFieldNumberOfVariablesGet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the number of variables for, for C.
     INTEGER(C_INT), INTENT(OUT) :: NumberOfVariables !<The number of variables in the field for C.
     !Function variables
-    INTEGER(C_INT) :: CMISSFieldNumberOfVariablesGetPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldNumberOfVariablesGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldNumberOfVariablesGetPtrC = CMISSNoError
+    CMISSFieldNumberOfVariablesGetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr,Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldNumberOfVariablesGetObj(Field, NumberOfVariables, CMISSFieldNumberOfVariablesGetPtrC)
+        CALL CMISSFieldNumberOfVariablesGet(Field, NumberOfVariables, CMISSFieldNumberOfVariablesGetCPtr)
       ELSE
-        CMISSFieldNumberOfVariablesGetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldNumberOfVariablesGetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldNumberOfVariablesGetPtrC = CMISSPointerIsNULL
+      CMISSFieldNumberOfVariablesGetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldNumberOfVariablesGetPtrC
+  END FUNCTION CMISSFieldNumberOfVariablesGetCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the number of variables for a field identified by a user number for C.
-  FUNCTION CMISSFieldNumberOfVariablesSetNumberC(RegionUserNumber,FieldUserNumber,NumberOfVariables) BIND(C, &
-  & NAME = "CMISSFieldNumberOfVariablesSetNumber")
+  FUNCTION CMISSFieldNumberOfVariablesSetCNum(RegionUserNumber,FieldUserNumber,NumberOfVariables) BIND(C, &
+  & NAME = "CMISSFieldNumberOfVariablesSetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to set the number of variables to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to set the number of variables to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: NumberOfVariables !<The number of variables set to the field, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldNumberOfVariablesSetNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldNumberOfVariablesSetCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldNumberofVariablesSetNumber(RegionUserNumber, FieldUserNumber, NumberOfVariables, &
-    & CMISSFieldNumberOfVariablesSetNumberC)
+    CALL CMISSFieldNumberofVariablesSet(RegionUserNumber, FieldUserNumber, NumberOfVariables, &
+    & CMISSFieldNumberOfVariablesSetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldNumberOfVariablesSetNumberC
+  END FUNCTION CMISSFieldNumberOfVariablesSetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the number of variables for a field identified by an object for C.
-  FUNCTION CMISSFieldNumberOfVariablesSetPtrC(FieldPtr,NumberOfVariables) BIND(C, NAME = "CMISSFieldNumberOfVariablesSetObj")
+  FUNCTION CMISSFieldNumberOfVariablesSetCPtr(FieldPtr,NumberOfVariables) BIND(C, NAME = "CMISSFieldNumberOfVariablesSet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr
     INTEGER(C_INT), VALUE, INTENT(IN) :: NumberOfVariables
     !Function variables
-    INTEGER(C_INT) :: CMISSFieldNumberOfVariablesSetPtrC
+    INTEGER(C_INT) :: CMISSFieldNumberOfVariablesSetCPtr
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldNumberOfVariablesSetPtrC = CMISSNoError
+    CMISSFieldNumberOfVariablesSetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldNumberOfVariablesSetObj(Field, NumberOfVariables, CMISSFieldNumberOfVariablesSetPtrC)
+        CALL CMISSFieldNumberOfVariablesSet(Field, NumberOfVariables, CMISSFieldNumberOfVariablesSetCPtr)
       ELSE
-        CMISSFieldNumberOfVariablesSetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldNumberOfVariablesSetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldNumberOfVariablesSetPtrC = CMISSPointerIsNULL
+      CMISSFieldNumberOfVariablesSetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldNumberOfVariablesSetPtrC
+  END FUNCTION CMISSFieldNumberOfVariablesSetCPtr
 
 
   !
@@ -3400,8 +3405,8 @@ END FUNCTION CMISSFieldsTypeCreateC
   !
 
   !>Adds the given integer value to the given parameter set for the constant of the field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetAddConstantIntgNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & ComponentNumber,Value) BIND(C, NAME= "CMISSFieldParameterSetAddConstantIntgNumber")
+  FUNCTION CMISSFieldParameterSetAddConstantIntgCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & ComponentNumber,Value) BIND(C, NAME= "CMISSFieldParameterSetAddConstantIntgNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to add the constant to the field parameter set for, for C.
@@ -3411,23 +3416,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the constant to the field parameter set for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: Value !<The integer value to add to the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddConstantIntgNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddConstantIntgCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddConstantIntgNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & ComponentNumber,Value, CMISSFieldParameterSetAddConstantIntgNumberC)
+    CALL CMISSFieldParameterSetAddConstantIntg(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & ComponentNumber,Value, CMISSFieldParameterSetAddConstantIntgCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetAddConstantIntgNumberC
+  END FUNCTION CMISSFieldParameterSetAddConstantIntgCNum
 
   !
   !================================================================================================================================
   !
 
   !>Adds the given integer value to the given parameter set for the constant of the field variable component for a field identified by an object.
-  FUNCTION CMISSFieldParameterSetAddConstantIntgPtrC(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, &
-  & NAME= "CMISSFieldParameterSetAddConstantIntgObj")
+  FUNCTION CMISSFieldParameterSetAddConstantIntgCPtr(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, &
+  & NAME= "CMISSFieldParameterSetAddConstantIntg")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to add the constant to the field parameter set for, for C.
@@ -3436,26 +3441,26 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to add the constant to the field parameter set for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: Value  !<The integer value to add to the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddConstantIntgPtrC
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddConstantIntgCPtr
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetAddConstantIntgPtrC =CMISSNoError
+    CMISSFieldParameterSetAddConstantIntgCPtr =CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddConstantIntgObj(Field, VariableType, FieldSetType, ComponentNumber, Value, &
-        & CMISSFieldParameterSetAddConstantIntgPtrC)
+        CALL CMISSFieldParameterSetAddConstantIntg(Field, VariableType, FieldSetType, ComponentNumber, Value, &
+        & CMISSFieldParameterSetAddConstantIntgCPtr)
       ELSE
-        CMISSFieldParameterSetAddConstantIntgPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetAddConstantIntgCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetAddConstantIntgPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetAddConstantIntgCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetAddConstantIntgPtrC
+  END FUNCTION CMISSFieldParameterSetAddConstantIntgCPtr
 
   !
   !================================================================================================================================
@@ -3463,8 +3468,8 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Adds the given single precision value to the given parameter set for the constant of the field variable component for a field identified by a user number for C.
 
-  FUNCTION CMISSFieldParameterSetAddConstantSPNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddConstantSPNumber")
+  FUNCTION CMISSFieldParameterSetAddConstantSPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddConstantSPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number for the region containing the field to add the constant to the field parameter set for, for C.
@@ -3474,23 +3479,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to add the constant to the field parameter set for, for C.
     REAL(C_FLOAT), VALUE, INTENT(IN) :: Value  !<The single precision value to add to the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddConstantSPNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddConstantSPCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddConstantSPNumber (RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber,&
-    & Value,CMISSFieldParameterSetAddConstantSPNumberC)
+    CALL CMISSFieldParameterSetAddConstantSP (RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber,&
+    & Value,CMISSFieldParameterSetAddConstantSPCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetAddConstantSPNumberC
+  END FUNCTION CMISSFieldParameterSetAddConstantSPCNum
 
   !
   !================================================================================================================================
   !
 
   !>Adds the given single precision value to the given parameter set for the constant of the field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetAddConstantSPPtrC(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, NAME = &
-  & "CMISSFieldParameterSetAddConstantSPObj")
+  FUNCTION CMISSFieldParameterSetAddConstantSPCPtr(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, NAME = &
+  & "CMISSFieldParameterSetAddConstantSP")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to add the constant to the field parameter set for, for C
@@ -3499,34 +3504,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to add the constant to the field parameter set for, for C.
     REAL(C_FLOAT), VALUE, INTENT(IN) :: Value  !<The single precision value to add to the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddConstantSPPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddConstantSPCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetAddConstantSPPtrC = CMISSNoError
+    CMISSFieldParameterSetAddConstantSPCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddConstantSPObj(Field, VariableType, FieldSetType, ComponentNumber, Value, &
-        & CMISSFieldParameterSetAddConstantSPPtrC)
+        CALL CMISSFieldParameterSetAddConstantSP(Field, VariableType, FieldSetType, ComponentNumber, Value, &
+        & CMISSFieldParameterSetAddConstantSPCPtr)
       ELSE
-        CMISSFieldParameterSetAddConstantSPPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetAddConstantSPCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetAddConstantSPPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetAddConstantSPCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetAddConstantSPPtrC
+  END FUNCTION CMISSFieldParameterSetAddConstantSPCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Adds the given double precision value to the given parameter set for the constant of the field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetAddConstantDPNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddConstantDPNumber")
+  FUNCTION CMISSFieldParameterSetAddConstantDPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddConstantDPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number for the region containing the field to add the constant to the field parameter set for, for C.
@@ -3536,23 +3541,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to add the constant to the field parameter set for, for C.
     REAL(C_DOUBLE), VALUE, INTENT(IN) :: Value  !<The double precision value to add to the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddConstantDPNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddConstantDPCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddConstantDPNumber (RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber,&
-    & Value,CMISSFieldParameterSetAddConstantDPNumberC)
+    CALL CMISSFieldParameterSetAddConstantDP(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber,&
+    & Value,CMISSFieldParameterSetAddConstantDPCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetAddConstantDPNumberC
+  END FUNCTION CMISSFieldParameterSetAddConstantDPCNum
 
   !
   !================================================================================================================================
   !
 
   !>Adds the given double precision value to the given parameter set for the constant of the field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetAddConstantDPPtrC(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, &
-  & NAME = "CMISSFieldParameterSetAddConstantDPObj")
+  FUNCTION CMISSFieldParameterSetAddConstantDPCPtr(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, &
+  & NAME = "CMISSFieldParameterSetAddConstantDP")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to add the constant to the field parameter set for, for C
@@ -3561,34 +3566,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to add the constant to the field parameter set for, for C.
     REAL(C_DOUBLE), VALUE, INTENT(IN) :: Value  !<The double precision value to add to the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddConstantDPPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddConstantDPCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetAddConstantDPPtrC = CMISSNoError
+    CMISSFieldParameterSetAddConstantDPCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddConstantDPObj(Field, VariableType, FieldSetType, ComponentNumber, Value, &
-        & CMISSFieldParameterSetAddConstantDPPtrC)
+        CALL CMISSFieldParameterSetAddConstantDP(Field, VariableType, FieldSetType, ComponentNumber, Value, &
+        & CMISSFieldParameterSetAddConstantDPCPtr)
       ELSE
-        CMISSFieldParameterSetAddConstantDPPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetAddConstantDPCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetAddConstantDPPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetAddConstantDPCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetAddConstantDPPtrC
+  END FUNCTION CMISSFieldParameterSetAddConstantDPCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Adds the given logical value to the given parameter set for the constant of the field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetAddConstantLNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddConstantLNumber")
+  FUNCTION CMISSFieldParameterSetAddConstantLCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddConstantLNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to add the constant to the field parameter set for, for C.
@@ -3598,23 +3603,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to add the constant to the field parameter set for, for C.
     LOGICAL(C_BOOL), INTENT(IN) :: Value  !<The logical value to add to the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddConstantLNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddConstantLCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetAddConstantLNumber(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, ComponentNumber, &
-    & Value, CMISSFieldParameterSetAddConstantLNumberC)
+    CALL CMISSFieldParameterSetAddConstantL(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, ComponentNumber, &
+    & Value, CMISSFieldParameterSetAddConstantLCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetAddConstantLNumberC
+  END FUNCTION CMISSFieldParameterSetAddConstantLCNum
 
   !
   !================================================================================================================================
   !
 
   !>Adds the given logical value to the given parameter set for the constant of the field variable component for a field identified by an object.
-  FUNCTION CMISSFieldParameterSetAddConstantLPtrC(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, &
-  & NAME = "CMISSFieldParameterSetAddConstantLPtrC")
+  FUNCTION CMISSFieldParameterSetAddConstantLCPtr(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, &
+  & NAME = "CMISSFieldParameterSetAddConstantL")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr  !<C pointer to the field to add the constant to the field parameter set for, for C.
@@ -3623,35 +3628,35 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to add the constant to the field parameter set for, for C.
     LOGICAL(C_BOOL), INTENT(IN) :: Value  !<The logical value to add to the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddConstantLPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddConstantLCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetAddConstantLPtrC = CMISSNoError
+    CMISSFieldParameterSetAddConstantLCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddConstantLObj(Field, VariableType, FieldSetType, ComponentNumber, Value, &
-        & CMISSFieldParameterSetAddConstantLPtrC)
+        CALL CMISSFieldParameterSetAddConstantL(Field, VariableType, FieldSetType, ComponentNumber, Value, &
+        & CMISSFieldParameterSetAddConstantLCPtr)
       ELSE
-        CMISSFieldParameterSetAddConstantLPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetAddConstantLCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetAddConstantLPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetAddConstantLCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
 
-  END FUNCTION CMISSFieldParameterSetAddConstantLPtrC
+  END FUNCTION CMISSFieldParameterSetAddConstantLCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Adds the given integer value to an element in the given parameter set for field variable component for a field identified by a user number, for C.
-  FUNCTION CMISSFieldParameterSetAddElementIntgNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & UserElementNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddElementIntgNumber")
+  FUNCTION CMISSFieldParameterSetAddElementIntgCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & UserElementNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddElementIntgNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to add the value to the element in the field parameter set for, for C.
@@ -3662,23 +3667,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the element in the field parameter set for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: Value !<The integer value to add to the element in the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddElementIntgNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddElementIntgCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddElementIntgNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
-    & ComponentNumber,Value, CMISSFieldParameterSetAddElementIntgNumberC)
+    CALL CMISSFieldParameterSetAddElementIntg(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
+    & ComponentNumber,Value, CMISSFieldParameterSetAddElementIntgCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetAddElementIntgNumberC
+  END FUNCTION CMISSFieldParameterSetAddElementIntgCNum
 
   !
   !================================================================================================================================
   !
 
   !>Adds the given integer value to an element in the given parameter set for field variable component for a field identified by an object, for C.
-  FUNCTION CMISSFieldParameterSetAddElementIntgPtrC(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value) &
-  & BIND(C, NAME = "CMISSFieldParameterSetAddElementIntgObj")
+  FUNCTION CMISSFieldParameterSetAddElementIntgCPtr(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value) &
+  & BIND(C, NAME = "CMISSFieldParameterSetAddElementIntg")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr  !<C pointer to the field to add the value to the element in the field parameter set.
@@ -3688,34 +3693,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the element in the field parameter set for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: Value !<The integer value to add to the element in the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddElementIntgPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddElementIntgCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetAddElementIntgPtrC =CMISSNoError
+    CMISSFieldParameterSetAddElementIntgCPtr =CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddElementIntgObj(Field, VariableType, FieldSetType, UserElementNumber, ComponentNumber, Value, &
-        & CMISSFieldParameterSetAddElementIntgPtrC)
+        CALL CMISSFieldParameterSetAddElementIntg(Field, VariableType, FieldSetType, UserElementNumber, ComponentNumber, Value, &
+        & CMISSFieldParameterSetAddElementIntgCPtr)
       ELSE
-        CMISSFieldParameterSetAddElementIntgPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetAddElementIntgCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetAddElementIntgPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetAddElementIntgCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetAddElementIntgPtrC
+  END FUNCTION CMISSFieldParameterSetAddElementIntgCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Adds the given single precision value to an element in the given parameter set for field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetAddElementSPNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & UserElementNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddElementSPNumber")
+  FUNCTION CMISSFieldParameterSetAddElementSPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & UserElementNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddElementSPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to add the value to the element in the field parameter set for, for C.
@@ -3726,23 +3731,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the element in the field parameter set for, for C.
     REAL(C_FLOAT), VALUE, INTENT(IN) :: Value  !<The single precision value to add to the element in the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddElementSPNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddElementSPCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddElementSPNumber (RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
-    & ComponentNumber,Value,CMISSFieldParameterSetAddElementSPNumberC)
+    CALL CMISSFieldParameterSetAddElementSP(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
+    & ComponentNumber,Value,CMISSFieldParameterSetAddElementSPCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetAddElementSPNumberC
+  END FUNCTION CMISSFieldParameterSetAddElementSPCNum
 
   !
   !================================================================================================================================
   !
 
   !>Adds the given single precision value to an element in the given parameter set for field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetAddElementSPPtrC(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value) &
-  & BIND(C, NAME = "CMISSFieldParameterSetAddElementSPObj")
+  FUNCTION CMISSFieldParameterSetAddElementSPCPtr(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value) &
+  & BIND(C, NAME = "CMISSFieldParameterSetAddElementSP")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr  !<C pointer to the field to add the value to the element in the field parameter set.
@@ -3752,34 +3757,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the element in the field parameter set for, for C.
     REAL(C_FLOAT), VALUE, INTENT(IN) :: Value  !<The single precision value to add to the element in the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddElementSPPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddElementSPCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetAddElementSPPtrC =CMISSNoError
+    CMISSFieldParameterSetAddElementSPCPtr =CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddElementSPObj(Field, VariableType, FieldSetType, UserElementNumber, ComponentNumber, Value, &
-        & CMISSFieldParameterSetAddElementSPPtrC)
+        CALL CMISSFieldParameterSetAddElementSP(Field, VariableType, FieldSetType, UserElementNumber, ComponentNumber, Value, &
+        & CMISSFieldParameterSetAddElementSPCPtr)
       ELSE
-        CMISSFieldParameterSetAddElementSPPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetAddElementSPCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetAddElementSPPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetAddElementSPCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetAddElementSPPtrC
+  END FUNCTION CMISSFieldParameterSetAddElementSPCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Adds the given double precision value to an element in the given parameter set for field variable component for a field identified by a user number, for C.
-  FUNCTION CMISSFieldParameterSetAddElementDPNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & UserElementNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddElementDPNumber")
+  FUNCTION CMISSFieldParameterSetAddElementDPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & UserElementNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddElementDPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to add the value to the element in the field parameter set for, for C.
@@ -3790,15 +3795,15 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the element in the field parameter set for, for C.
     REAL(C_DOUBLE), VALUE, INTENT(IN) :: Value  !<The double precision value to add to the element in the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddElementDPNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddElementDPCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddElementDPNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber,&
-    & ComponentNumber,Value,CMISSFieldParameterSetAddElementDPNumberC)
+    CALL CMISSFieldParameterSetAddElementDP(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber,&
+    & ComponentNumber,Value,CMISSFieldParameterSetAddElementDPCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetAddElementDPNumberC
+  END FUNCTION CMISSFieldParameterSetAddElementDPCNum
 
 
     !
@@ -3806,8 +3811,8 @@ END FUNCTION CMISSFieldsTypeCreateC
   !
 
   !>Adds the given double precision value to an element in the given parameter set for field variable component for a field identified by an object, for C.
-  FUNCTION CMISSFieldParameterSetAddElementDPPtrC(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value) &
-  & BIND(C, NAME = "CMISSFieldParameterSetAddElementDPObj")
+  FUNCTION CMISSFieldParameterSetAddElementDPCPtr(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value) &
+  & BIND(C, NAME = "CMISSFieldParameterSetAddElementDP")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr  !<C pointer to the field to add the value to the element in the field parameter set.
@@ -3817,34 +3822,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the element in the field parameter set for, for C.
     REAL(C_DOUBLE), VALUE, INTENT(IN) :: Value  !<The double precision value to add to the element in the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddElementDPPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddElementDPCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetAddElementDPPtrC =CMISSNoError
+    CMISSFieldParameterSetAddElementDPCPtr =CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddElementDPObj(Field, VariableType, FieldSetType, UserElementNumber, ComponentNumber, Value, &
-        & CMISSFieldParameterSetAddElementDPPtrC)
+        CALL CMISSFieldParameterSetAddElementDP(Field, VariableType, FieldSetType, UserElementNumber, ComponentNumber, Value, &
+        & CMISSFieldParameterSetAddElementDPCPtr)
       ELSE
-        CMISSFieldParameterSetAddElementDPPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetAddElementDPCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetAddElementDPPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetAddElementDPCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetAddElementDPPtrC
+  END FUNCTION CMISSFieldParameterSetAddElementDPCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Adds the given logical value to an element in the given parameter set for field variable component for a field identified by a user number, for C.
-  FUNCTION CMISSFieldParameterSetAddElementLNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & UserElementNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddElementLNumber")
+  FUNCTION CMISSFieldParameterSetAddElementLCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & UserElementNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddElementLNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to add the value to the element in the field parameter set for, for C.
@@ -3855,23 +3860,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the element in the field parameter set for, for C.
     LOGICAL(C_BOOL), INTENT(IN) :: Value  !<The logical value to add to the element in the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddElementLNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddElementLCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddElementLNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
-    & ComponentNumber,Value,CMISSFieldParameterSetAddElementLNumberC)
+    CALL CMISSFieldParameterSetAddElementL(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
+    & ComponentNumber,Value,CMISSFieldParameterSetAddElementLCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetAddElementLNumberC
+  END FUNCTION CMISSFieldParameterSetAddElementLCNum
 
     !
   !================================================================================================================================
   !
 
   !>Adds the given logical value to an element in the given parameter set for field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetAddElementLPtrC(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value) &
-  & BIND(C, NAME = "CMISSFieldParameterSetAddElementLObj")
+  FUNCTION CMISSFieldParameterSetAddElementLCPtr(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value) &
+  & BIND(C, NAME = "CMISSFieldParameterSetAddElementL")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr  !<C pointer to the field to add the value to the element in the field parameter set.
@@ -3881,33 +3886,33 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the element in the field parameter set for, for C.
     LOGICAL(C_BOOL), INTENT(IN) :: Value  !<The logical value to add to the element in the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddElementLPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddElementLCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetAddElementLPtrC =CMISSNoError
+    CMISSFieldParameterSetAddElementLCPtr =CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddElementLObj(Field, VariableType, FieldSetType, UserElementNumber, ComponentNumber, Value, &
-         & CMISSFieldParameterSetAddElementLPtrC)
+        CALL CMISSFieldParameterSetAddElementL(Field, VariableType, FieldSetType, UserElementNumber, ComponentNumber, Value, &
+         & CMISSFieldParameterSetAddElementLCPtr)
       ELSE
-        CMISSFieldParameterSetAddElementLPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetAddElementLCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetAddElementLPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetAddElementLCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetAddElementLPtrC
+  END FUNCTION CMISSFieldParameterSetAddElementLCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Adds the given integer value to an node in the given parameter set for field variable component for a field identified by a user number, for C.
-  FUNCTION CMISSFieldParameterSetAddNodeIntgNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
+  FUNCTION CMISSFieldParameterSetAddNodeIntgCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
     & UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeIntgNum")
 
     !Argument variables
@@ -3920,23 +3925,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the node in the field parameter set for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: Value  !<The integer value to add to the node in the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeIntgNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeIntgCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddNodeIntgNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber,&
-    & UserNodeNumber,ComponentNumber,Value,CMISSFieldParameterSetAddNodeIntgNumberC)
+    CALL CMISSFieldParameterSetAddNodeIntg(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber,&
+    & UserNodeNumber,ComponentNumber,Value,CMISSFieldParameterSetAddNodeIntgCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetAddNodeIntgNumberC
+  END FUNCTION CMISSFieldParameterSetAddNodeIntgCNum
 
   !
   !================================================================================================================================
   !
 
   !>Adds the given integer value to an node in the given parameter set for field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetAddNodeIntgPtrC(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeIntgObj")
+  FUNCTION CMISSFieldParameterSetAddNodeIntgCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeIntg")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr  !<C pointer to the field to add the value to the node in the field parameter set.
@@ -3947,26 +3952,26 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the node in the field parameter set for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: Value  !<The integer value to add to the node in the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeIntgPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeIntgCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetAddNodeIntgPtrC =CMISSNoError
+    CMISSFieldParameterSetAddNodeIntgCPtr =CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddNodeIntgObj(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
-        & ComponentNumber, Value, CMISSFieldParameterSetAddNodeIntgPtrC)
+        CALL CMISSFieldParameterSetAddNodeIntg(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
+        & ComponentNumber, Value, CMISSFieldParameterSetAddNodeIntgCPtr)
       ELSE
-        CMISSFieldParameterSetAddNodeIntgPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetAddNodeIntgCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetAddNodeIntgPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetAddNodeIntgCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetAddNodeIntgPtrC
+  END FUNCTION CMISSFieldParameterSetAddNodeIntgCPtr
 
 
 
@@ -3975,8 +3980,8 @@ END FUNCTION CMISSFieldsTypeCreateC
   !
 
   !>Adds the given single precision value to an node in the given parameter set for field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetAddNodeSPNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
-    & UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeSPNumber")
+  FUNCTION CMISSFieldParameterSetAddNodeSPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
+    & UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeSPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to add the value to the node in the field parameter set for, for C.
@@ -3988,23 +3993,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the node in the field parameter set for, for C.
     REAL(C_FLOAT), INTENT(IN) :: Value  !<The single precision value to add to the node in the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeSPNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeSPCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddNodeSPNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
-    & UserNodeNumber,ComponentNumber,Value,CMISSFieldParameterSetAddNodeSPNumberC)
+    CALL CMISSFieldParameterSetAddNodeSP(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
+    & UserNodeNumber,ComponentNumber,Value,CMISSFieldParameterSetAddNodeSPCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetAddNodeSPNumberC
+  END FUNCTION CMISSFieldParameterSetAddNodeSPCNum
 
   !
   !================================================================================================================================
   !
 
   !>Adds the given single precision value to an node in the given parameter set for field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetAddNodeSPPtrC(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeSPObj")
+  FUNCTION CMISSFieldParameterSetAddNodeSPCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeSP")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr  !<C pointer to the field to add the value to the node in the field parameter set.
@@ -4015,34 +4020,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the node in the field parameter set for, for C.
     REAL(C_FLOAT), INTENT(IN) :: Value  !<The single precision value to add to the node in the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeSPPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeSPCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetAddNodeSPPtrC =CMISSNoError
+    CMISSFieldParameterSetAddNodeSPCPtr =CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddNodeSPObj(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
-        & ComponentNumber, Value, CMISSFieldParameterSetAddNodeSPPtrC)
+        CALL CMISSFieldParameterSetAddNodeSP(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
+        & ComponentNumber, Value, CMISSFieldParameterSetAddNodeSPCPtr)
       ELSE
-        CMISSFieldParameterSetAddNodeSPPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetAddNodeSPCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetAddNodeSPPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetAddNodeSPCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetAddNodeSPPtrC
+  END FUNCTION CMISSFieldParameterSetAddNodeSPCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Adds the given double precision value to an node in the given parameter set for field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetAddNodeDPNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
-    & UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeDPNumber")
+  FUNCTION CMISSFieldParameterSetAddNodeDPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
+    & UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeDPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to add the value to the node in the field parameter set for, for C.
@@ -4054,23 +4059,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the node in the field parameter set for, for C.
     REAL(C_DOUBLE), INTENT(IN) :: Value  !<The double precision value to add to the node in the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeDPNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeDPCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddNodeDPNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
-    & UserNodeNumber,ComponentNumber,Value,CMISSFieldParameterSetAddNodeDPNumberC)
+    CALL CMISSFieldParameterSetAddNodeDP(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
+    & UserNodeNumber,ComponentNumber,Value,CMISSFieldParameterSetAddNodeDPCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetAddNodeDPNumberC
+  END FUNCTION CMISSFieldParameterSetAddNodeDPCNum
 
   !
   !================================================================================================================================
   !
 
   !>Adds the given double precision value to an node in the given parameter set for field variable component for a field identified by an object.
-  FUNCTION CMISSFieldParameterSetAddNodeDPPtrC(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeDPObj")
+  FUNCTION CMISSFieldParameterSetAddNodeDPCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeDP")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr  !<C pointer to the field to add the value to the node in the field parameter set.
@@ -4081,34 +4086,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the node in the field parameter set for, for C.
     REAL(C_DOUBLE), INTENT(IN) :: Value  !<The double precision value to add to the node in the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeDPPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeDPCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetAddNodeDPPtrC =CMISSNoError
+    CMISSFieldParameterSetAddNodeDPCPtr =CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddNodeDPObj(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
-        & ComponentNumber, Value, CMISSFieldParameterSetAddNodeDPPtrC)
+        CALL CMISSFieldParameterSetAddNodeDP(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
+        & ComponentNumber, Value, CMISSFieldParameterSetAddNodeDPCPtr)
       ELSE
-        CMISSFieldParameterSetAddNodeDPPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetAddNodeDPCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetAddNodeDPPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetAddNodeDPCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetAddNodeDPPtrC
+  END FUNCTION CMISSFieldParameterSetAddNodeDPCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Adds the given logical value to an node in the given parameter set for field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetAddNodeLNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
-    & UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeLNumber")
+  FUNCTION CMISSFieldParameterSetAddNodeLCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
+    & UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeLNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to add the value to the node in the field parameter set for, for C.
@@ -4120,23 +4125,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the node in the field parameter set for, for C.
     LOGICAL(C_BOOL), INTENT(IN) :: Value  !<The logical value to add to the node in the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeLNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeLCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddNodeLNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
-    & ComponentNumber,Value,CMISSFieldParameterSetAddNodeLNumberC)
+    CALL CMISSFieldParameterSetAddNodeL(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,&
+    & ComponentNumber,Value,CMISSFieldParameterSetAddNodeLCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetAddNodeLNumberC
+  END FUNCTION CMISSFieldParameterSetAddNodeLCNum
 
   !
   !================================================================================================================================
   !
 
   !>Adds the given logical value to an node in the given parameter set for field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetAddNodeLPtrC(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-    & Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeLObj")
+  FUNCTION CMISSFieldParameterSetAddNodeLCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
+    & Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeL")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr  !<C pointer to the field to add the value to the node in the field parameter set.
@@ -4147,34 +4152,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the node in the field parameter set for, for C.
     LOGICAL(C_BOOL), INTENT(IN) :: Value  !<The logical value to add to the node in the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeLPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeLCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetAddNodeLPtrC =CMISSNoError
+    CMISSFieldParameterSetAddNodeLCPtr =CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddNodeLObj(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, ComponentNumber, Value, &
-        & CMISSFieldParameterSetAddNodeLPtrC)
+        CALL CMISSFieldParameterSetAddNodeL(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, ComponentNumber, &
+        & Value, CMISSFieldParameterSetAddNodeLCPtr)
       ELSE
-        CMISSFieldParameterSetAddNodeLPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetAddNodeLCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetAddNodeLPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetAddNodeLCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetAddNodeLPtrC
+  END FUNCTION CMISSFieldParameterSetAddNodeLCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Creates a new parameter set of type set type for a field variable for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetCreateNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType) BIND(C, &
-  & NAME = "CMISSFieldParameterSetCreateNumber")
+  FUNCTION CMISSFieldParameterSetCreateCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType) BIND(C, &
+  & NAME = "CMISSFieldParameterSetCreateNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to create the parameter set on for C.
@@ -4182,55 +4187,55 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to create the parameter set on for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to create, for C. \see OPENCMISS_FieldParameterSetTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetCreateNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetCreateCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetCreateNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & CMISSFieldParameterSetCreateNumberC)
+    CALL CMISSFieldParameterSetCreate(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & CMISSFieldParameterSetCreateCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetCreateNumberC
+  END FUNCTION CMISSFieldParameterSetCreateCNum
 
   !
   !================================================================================================================================
   !
 
   !>Creates a new parameter set of type set type for a field variable for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetCreatePtrC(FieldPtr,VariableType,FieldSetType) BIND(C, NAME = "CMISSFieldParameterSetCreateObj")
+  FUNCTION CMISSFieldParameterSetCreateCPtr(FieldPtr,VariableType,FieldSetType) BIND(C, NAME = "CMISSFieldParameterSetCreate")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to create the parameter set on for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to create the parameter set on for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to create, for C. \see OPENCMISS_FieldParameterSetTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetCreatePtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetCreateCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetCreatePtrC = CMISSNoError
+    CMISSFieldParameterSetCreateCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetCreateObj(Field,VariableType,FieldSetType,CMISSFieldParameterSetCreatePtrC)
+        CALL CMISSFieldParameterSetCreate(Field,VariableType,FieldSetType,CMISSFieldParameterSetCreateCPtr)
       ELSE
-        CMISSFieldParameterSetCreatePtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetCreateCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetCreatePtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetCreateCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetCreatePtrC
+  END FUNCTION CMISSFieldParameterSetCreateCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Destroys the specified parameter set type for a field variable for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetDestroyNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType) BIND(C, NAME= &
-  & "CMISSFieldParameterSetDestroyNumber")
+  FUNCTION CMISSFieldParameterSetDestroyCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType) BIND(C, NAME= &
+  & "CMISSFieldParameterSetDestroyNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to destroy the parameter set for, for C.
@@ -4238,55 +4243,55 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to destroy the parameter set for, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to destroy, for C. \see OPENCMISS_FieldParameterSetTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetDestroyNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetDestroyCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetDestroyNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & CMISSFieldParameterSetDestroyNumberC)
+    CALL CMISSFieldParameterSetDestroy(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & CMISSFieldParameterSetDestroyCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetDestroyNumberC
+  END FUNCTION CMISSFieldParameterSetDestroyCNum
 
   !
   !================================================================================================================================
   !
 
   !>Destroys the specified parameter set type for a field variable for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetDestroyPtrC(FieldPtr,VariableType,FieldSetType) BIND(C, NAME = "CMISSFieldParameterSetDestroyObj")
+  FUNCTION CMISSFieldParameterSetDestroyCPtr(FieldPtr,VariableType,FieldSetType) BIND(C, NAME = "CMISSFieldParameterSetDestroy")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to destroy the parameter set for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to destroy the parameter set for, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to destroy, for C. \see OPENCMISS_FieldParameterSetTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetDestroyPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetDestroyCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetDestroyPtrC = CMISSNoError
+    CMISSFieldParameterSetDestroyCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetDestroyObj(Field,VariableType,FieldSetType,CMISSFieldParameterSetDestroyPtrC)
+        CALL CMISSFieldParameterSetDestroy(Field,VariableType,FieldSetType,CMISSFieldParameterSetDestroyCPtr)
       ELSE
-        CMISSFieldParameterSetDestroyPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetDestroyCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetDestroyPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetDestroyCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetDestroyPtrC
+  END FUNCTION CMISSFieldParameterSetDestroyCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Returns a pointer to the specified field parameter set local integer data array for a field identified by an user number, for C. The pointer must be restored with a call to OPENCMISS::CMISSFieldParameterSetDataRestore call. Note: the values can be used for read operations but a field parameter set update or add calls must be used to change any values.
-  FUNCTION CMISSFieldParameterSetDataGetIntgNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ParametersPtr) &
-  & BIND(C, NAME = "CMISSFieldParameterSetDataGetIntgNumber")
+  FUNCTION CMISSFieldParameterSetDataGetIntgCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ParametersPtr, &
+  & ParametersSize) BIND(C, NAME = "CMISSFieldParameterSetDataGetIntgNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the parameter set data for, for C.
@@ -4294,79 +4299,144 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to get the parameter set data for, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to get for C. \see OPENCMISS_FieldParameterSetTypes
     TYPE(C_PTR), INTENT(OUT) :: ParametersPtr !<C pointer to the parameter set data.
+    INTEGER(C_INT), INTENT(OUT) :: ParametersSize !<Size of parameter set data, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetDataGetIntgNumberC
+    INTEGER(C_INT) :: CMISSFieldParameterSetDataGetIntgCNum
     !Local variables
+    INTEGER(C_INT), POINTER :: Parameters(:)
 
-    CMISSFieldParameterSetDataGetIntgNumberC = CMISSNoError
-    CALL CMISSFieldParameterSetDataGetIntgNumber(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType, ParametersPtr, &
-    & CMISSFieldParameterSetDataGetIntgNumberC)
+    CMISSFieldParameterSetDataGetIntgCNum = CMISSNoError
+    IF(C_ASSOCIATED(ParametersPtr)) THEN
+      CMISSFieldParameterSetDataGetIntgCNum = CMISSPointerNotNULL
+    ELSE
+      CALL CMISSFieldParameterSetDataGetIntg(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType, Parameters, &
+        & CMISSFieldParameterSetDataGetIntgCNum)
+      ParametersSize = Size(Parameters,1)
+      ParametersPtr = C_LOC(Parameters(1)) !Point to first element as fortran pointers to arrays are not interoperable. This assumes that the parameters array is sequential in memory
+    ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetDataGetIntgNumberC
+  END FUNCTION CMISSFieldParameterSetDataGetIntgCNum
 
   !
   !================================================================================================================================
   !
 
   !>Returns a pointer to the specified field parameter set local integer data array for a field identified by an object for C. The pointer must be restored with a call to OPENCMISS::CMISSFieldParameterSetDataRestore call. Note: the values can be used for read operations but a field parameter set update or add calls must be used to change any values.
-  FUNCTION CMISSFieldParameterSetDataGetIntgPtrC(FieldPtr,VariableType,FieldSetType,ParametersPtr) BIND(C, NAME = &
-  & "CMISSFieldParameterSetDataGetIntgObj")
+  FUNCTION CMISSFieldParameterSetDataGetIntgCPtr(FieldPtr,VariableType,FieldSetType,ParametersPtr,ParametersSize) BIND(C, NAME = &
+  & "CMISSFieldParameterSetDataGetIntg")
 
     !Argument variables
-    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr
-    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType
-    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType
-    TYPE(C_PTR), INTENT(OUT) :: ParametersPtr
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the field parameter set data for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to get the parameter set data for, for C. \see OPENCMISS_FieldVariableTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to get, for C. \see OPENCMISS_FieldParameterSetTypes
+    TYPE(C_PTR), INTENT(OUT) :: ParametersPtr !<C pointer to the parameter set data.
+    INTEGER(C_INT), INTENT(OUT) :: ParametersSize !<Size of parameter set data, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetDataGetIntgPtrC
+    INTEGER(C_INT) :: CMISSFieldParameterSetDataGetIntgCPtr
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
+    INTEGER(C_INT), POINTER :: Parameters(:)
 
-    CMISSFieldParameterSetDataGetIntgPtrC = CMISSNoError
-    IF(C_ASSOCIATED(FieldPtr)) THEN
-      CALL C_F_POINTER(FieldPtr, Field)
-      IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetDataGetIntgObj(Field, VariableType, FieldSetType, ParametersPtr, &
-        & CMISSFieldParameterSetDataGetIntgPtrC)
-      ELSE
-        CMISSFieldParameterSetDataGetIntgPtrC = CMISSErrorConvertingPointer
-      ENDIF
+    CMISSFieldParameterSetDataGetIntgCPtr = CMISSNoError
+    IF(C_ASSOCIATED(ParametersPtr)) THEN
+      CMISSFieldParameterSetDataGetIntgCPtr = CMISSPointerNotNULL
     ELSE
-      CMISSFieldParameterSetDataGetIntgPtrC = CMISSPointerIsNULL
+      IF(C_ASSOCIATED(FieldPtr)) THEN
+        CALL C_F_POINTER(FieldPtr, Field)
+        IF(ASSOCIATED(Field)) THEN
+          CALL CMISSFieldParameterSetDataGetIntg(Field, VariableType, FieldSetType, Parameters, &
+            & CMISSFieldParameterSetDataGetIntgCPtr)
+          ParametersSize = Size(Parameters,1)
+          ParametersPtr = C_LOC(Parameters(1)) !Point to first element as fortran pointers to arrays are not interoperable. This assumes that the parameters array is sequential in memory
+          ELSE
+          CMISSFieldParameterSetDataGetIntgCPtr = CMISSErrorConvertingPointer
+        ENDIF
+      ELSE
+        CMISSFieldParameterSetDataGetIntgCPtr = CMISSPointerIsNULL
+      ENDIF
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetDataGetIntgPtrC
+  END FUNCTION CMISSFieldParameterSetDataGetIntgCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Returns a pointer to the specified field parameter set local single precision data array for a field identified by an user number for C. The pointer must be restored with a call to OPENCMISS::CMISSFieldParameterSetDataRestore call. Note: the values can be used for read operations but a field parameter set update or add calls must be used to change any values.
-  FUNCTION CMISSFieldParameterSetDataGetSPNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-  &ParametersPtr) BIND(C, NAME = "CMISSFieldParameterSetDataGetSPNumber")
+  FUNCTION CMISSFieldParameterSetDataGetSPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+  &ParametersPtr,ParametersSize) BIND(C, NAME = "CMISSFieldParameterSetDataGetSPNum")
 
     !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber
-    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber
-    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType
-    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType
-    TYPE(C_PTR), INTENT(OUT) :: ParametersPtr
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the parameter set data for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number for the field to get the parameter set data for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to get the parameter set data for, for C. \see OPENCMISS_FieldVariableTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to get, for C. \see OPENCMISS_FieldParameterSetTypes
+    TYPE(C_PTR), INTENT(OUT) :: ParametersPtr !<C pointer to the parameter set data.
+    INTEGER(C_INT), INTENT(OUT) :: ParametersSize !<Size of parameter set data, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetDataGetSPNumberC
+    INTEGER(C_INT) :: CMISSFieldParameterSetDataGetSPCNum !<Error code.
     !Local variables
+    INTEGER(C_INT), POINTER :: Parameters(:)
 
-    CMISSFieldParameterSetDataGetSPNumberC = CMISSNoError
-    CALL CMISSFieldParameterSetDataGetSPNumber(RegionUserNumber,FieldUserNumber, VariableType, FieldSetType, ParametersPtr, &
-    & CMISSFieldParameterSetDataGetSPNumberC)
+    CMISSFieldParameterSetDataGetSPCNum = CMISSNoError
+    IF(C_ASSOCIATED(ParametersPtr)) THEN
+      CMISSFieldParameterSetDataGetSPCNum = CMISSPointerNotNULL
+    ELSE
+      CALL CMISSFieldParameterSetDataGetSP(RegionUserNumber,FieldUserNumber, VariableType, FieldSetType, Parameters, &
+      & CMISSFieldParameterSetDataGetSPCNum)
+      ParametersSize = Size(Parameters, 1)
+      ParametersPtr = C_LOC(Parameters(1)) !Point to first element as fortran pointers to arrays are not interoperable. This assumes that the parameters array is sequential in memory
+    ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetDataGetSPNumberC
+  END FUNCTION CMISSFieldParameterSetDataGetSPCNum
 
+  !
+  !================================================================================================================================
+  !
+  !>Returns a pointer to the specified field parameter set local single precision data array for a field identified by an object. The pointer must be restored with a call to OPENCMISS::CMISSFieldParameterSetDataRestore call. Note: the values can be used for read operations but a field parameter set update or add calls must be used to change any values.
+
+  FUNCTION CMISSFieldParameterSetDataGetSPCPtr(FieldPtr,VariableType,FieldSetType,ParametersPtr,ParametersSize) BIND(C, NAME = &
+  & "CMISSFieldParameterSetDataGetSP")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the field parameter set data for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to get the parameter set data for, for C. \see OPENCMISS_FieldVariableTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to get, for C. \see OPENCMISS_FieldParameterSetTypes
+    TYPE(C_PTR), INTENT(OUT) :: ParametersPtr !<C pointer to the parameter set data.
+    INTEGER(C_INT), INTENT(OUT) :: ParametersSize !<Size of parameter set data, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSFieldParameterSetDataGetSPCPtr
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+    REAL(C_DOUBLE), POINTER :: Parameters (:)
+
+    CMISSFieldParameterSetDataGetSPCPtr = CMISSNoError
+    IF(C_ASSOCIATED(ParametersPtr)) THEN
+      CMISSFieldParameterSetDataGetSPCPtr = CMISSPointerNotNULL
+    ELSE
+      IF(C_ASSOCIATED(FieldPtr)) THEN
+        CALL C_F_POINTER(FieldPtr,Field)
+        IF(ASSOCIATED(Field)) THEN
+          CALL CMISSFieldParameterSetDataGetSP(Field, VariableType, FieldSetType, Parameters, CMISSFieldParameterSetDataGetSPCPtr)
+          ParametersSize = Size(Parameters, 1)
+          ParametersPtr = C_LOC(Parameters(1)) !Point to first element as fortran pointers to arrays are not interoperable. This assumes that the parameters array is sequential in memory
+        ELSE
+          CMISSFieldParameterSetDataGetSPCPtr = CMISSErrorConvertingPointer
+        ENDIF
+      ELSE
+        CMISSFieldParameterSetDataGetSPCPtr = CMISSPointerIsNULL
+      ENDIF
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSFieldParameterSetDataGetSPCPtr
 
 
 
@@ -4378,8 +4448,8 @@ END FUNCTION CMISSFieldsTypeCreateC
   !
 
   !>Returns from the given parameter set an integer value for the specified constant of a field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetGetConstantIntgNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetConstantIntgNumber")
+  FUNCTION CMISSFieldParameterSetGetConstantIntgCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetConstantIntgNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the constant value from the field parameter set, for C.
@@ -4389,22 +4459,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the constant value from the field parameter set, for C.
     INTEGER(C_INT), INTENT(OUT) :: Value !<The integer value from the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetConstantIntgNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetConstantIntgCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetConstantIntgNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber,Value, &
-    & CMISSFieldParameterSetGetConstantIntgNumberC)
+    CALL CMISSFieldParameterSetGetConstantIntg(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber,Value, &
+      & CMISSFieldParameterSetGetConstantIntgCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetConstantIntgNumberC
+  END FUNCTION CMISSFieldParameterSetGetConstantIntgCNum
 
   !
   !================================================================================================================================
   !
 
   !>Returns from the given parameter set an integer value for the specified constant of a field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetGetConstantIntgPtrC(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value)
+  FUNCTION CMISSFieldParameterSetGetConstantIntgCPtr(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, NAME = &
+    & "CMISSFieldParameterSetGetConstantIntg")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the constant value from the field parameter set, for C.
@@ -4413,34 +4484,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the constant value from the field parameter set, for C.
     INTEGER(C_INT), INTENT(OUT) :: Value !<The integer value from the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetConstantIntgPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetConstantIntgCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetGetConstantIntgPtrC = CMISSNoError
+    CMISSFieldParameterSetGetConstantIntgCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr,Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetConstantIntgObj(Field,VariableType,FieldSetType,ComponentNumber,Value, &
-        & CMISSFieldParameterSetGetConstantIntgPtrC)
+        CALL CMISSFieldParameterSetGetConstantIntg(Field,VariableType,FieldSetType,ComponentNumber,Value, &
+          & CMISSFieldParameterSetGetConstantIntgCPtr)
       ELSE
-        CMISSFieldParameterSetGetConstantIntgPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetGetConstantIntgCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetGetConstantIntgPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetGetConstantIntgCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetConstantIntgPtrC
+  END FUNCTION CMISSFieldParameterSetGetConstantIntgCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Returns from the given parameter set a single precision value for the specified constant of a field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetGetConstantSPNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetConstantSPNumber")
+  FUNCTION CMISSFieldParameterSetGetConstantSPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetConstantSPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the constant value from the field parameter set, for C.
@@ -4450,23 +4521,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the constant value from the field parameter set, for C.
     REAL(C_FLOAT), INTENT(OUT) :: Value !<The single precision value from the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetConstantSPNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetConstantSPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetConstantSPNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber, &
-    & Value,CMISSFieldParameterSetGetConstantSPNumberC)
+    CALL CMISSFieldParameterSetGetConstantSP(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber, &
+      & Value,CMISSFieldParameterSetGetConstantSPCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetConstantSPNumberC
+  END FUNCTION CMISSFieldParameterSetGetConstantSPCNum
 
   !
   !================================================================================================================================
   !
 
   !>Returns from the given parameter set a single precision value for the specified constant of a field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetGetConstantSPPtrC(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, NAME = &
-  & "CMISSFieldParameterSetGetConstantSPObj")
+  FUNCTION CMISSFieldParameterSetGetConstantSPCPtr(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, NAME = &
+    & "CMISSFieldParameterSetGetConstantSP")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the constant value from the field parameter set, for C.
@@ -4475,26 +4546,26 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the constant value from the field parameter set, for C.
     REAL(C_FLOAT), INTENT(OUT) :: Value !<The single precision value from the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetConstantSPPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetConstantSPCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetGetConstantSPPtrC = CMISSNoError
+    CMISSFieldParameterSetGetConstantSPCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetConstantSPObj(Field, VariableType, FieldSetType, ComponentNumber, Value, &
-        & CMISSFieldParameterSetGetConstantSPPtrC)
+        CALL CMISSFieldParameterSetGetConstantSP(Field, VariableType, FieldSetType, ComponentNumber, Value, &
+          & CMISSFieldParameterSetGetConstantSPCPtr)
       ELSE
-        CMISSFieldParameterSetGetConstantSPPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetGetConstantSPCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetGetConstantSPPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetGetConstantSPCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetConstantSPPtrC
+  END FUNCTION CMISSFieldParameterSetGetConstantSPCPtr
 
 
   !
@@ -4502,8 +4573,8 @@ END FUNCTION CMISSFieldsTypeCreateC
   !
 
   !>Returns from the given parameter set a double precision value for the specified constant of a field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetGetConstantDPNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetConstantDPNumber")
+  FUNCTION CMISSFieldParameterSetGetConstantDPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetConstantDPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the constant value from the field parameter set, for C.
@@ -4513,23 +4584,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the constant value from the field parameter set, for C.
     REAL(C_DOUBLE), INTENT(OUT) :: Value !<The double precision value from the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetConstantDPNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetConstantDPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetConstantDPNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber, &
-    & Value,CMISSFieldParameterSetGetConstantDPNumberC)
+    CALL CMISSFieldParameterSetGetConstantDP(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber, &
+      & Value,CMISSFieldParameterSetGetConstantDPCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetConstantDPNumberC
+  END FUNCTION CMISSFieldParameterSetGetConstantDPCNum
 
-    !
+  !
   !================================================================================================================================
   !
 
   !>Returns from the given parameter set a double precision value for the specified constant of a field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetGetConstantDPPtrC(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, NAME = &
-  & "CMISSFieldParameterSetGetConstantDPObj")
+  FUNCTION CMISSFieldParameterSetGetConstantDPCPtr(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, NAME = &
+    & "CMISSFieldParameterSetGetConstantDP")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the constant value from the field parameter set, for C.
@@ -4538,34 +4609,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the constant value from the field parameter set, for C.
     REAL(C_DOUBLE), INTENT(OUT) :: Value !<The double precision value from the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetConstantDPPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetConstantDPCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetGetConstantDPPtrC = CMISSNoError
+    CMISSFieldParameterSetGetConstantDPCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetConstantDPObj(Field, VariableType, FieldSetType, ComponentNumber, Value, &
-        & CMISSFieldParameterSetGetConstantDPPtrC)
+        CALL CMISSFieldParameterSetGetConstantDP(Field, VariableType, FieldSetType, ComponentNumber, Value, &
+          & CMISSFieldParameterSetGetConstantDPCPtr)
       ELSE
-        CMISSFieldParameterSetGetConstantDPPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetGetConstantDPCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetGetConstantDPPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetGetConstantDPCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetConstantDPPtrC
+  END FUNCTION CMISSFieldParameterSetGetConstantDPCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Returns from the given parameter set a logical value for the specified constant of a field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetGetConstantLNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetConstantLNumber")
+  FUNCTION CMISSFieldParameterSetGetConstantLCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetConstantLNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the constant value from the field parameter set, for C.
@@ -4575,23 +4646,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the constant value from the field parameter set, for C.
     LOGICAL(C_BOOL), INTENT(OUT) :: Value !<The logical value from the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetConstantLNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetConstantLCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetConstantLNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber, &
-    & Value,CMISSFieldParameterSetGetConstantLNumberC)
+    CALL CMISSFieldParameterSetGetConstantL(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber, &
+      & Value,CMISSFieldParameterSetGetConstantLCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetConstantLNumberC
+  END FUNCTION CMISSFieldParameterSetGetConstantLCNum
 
   !
   !================================================================================================================================
   !
 
   !>Returns from the given parameter set a logical value for the specified constant of a field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetGetConstantLPtrC(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, NAME = &
-  & "CMISSFieldParameterSetGetConstantLObj")
+  FUNCTION CMISSFieldParameterSetGetConstantLCPtr(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, NAME = &
+    & "CMISSFieldParameterSetGetConstantL")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the constant value from the field parameter set, for C.
@@ -4600,33 +4671,33 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the constant value from the field parameter set, for C.
     LOGICAL(C_BOOL), INTENT(OUT) :: Value !<The logical value from the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetConstantLPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetConstantLCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetGetConstantLPtrC = CMISSNoError
+    CMISSFieldParameterSetGetConstantLCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetConstantLObj(Field, VariableType, FieldSetType, ComponentNumber, Value, &
-        & CMISSFieldParameterSetGetConstantLPtrC)
+        CALL CMISSFieldParameterSetGetConstantL(Field, VariableType, FieldSetType, ComponentNumber, Value, &
+          & CMISSFieldParameterSetGetConstantLCPtr)
       ELSE
-        CMISSFieldParameterSetGetConstantLPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetGetConstantLCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetGetConstantLPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetGetConstantLCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetConstantLPtrC
+  END FUNCTION CMISSFieldParameterSetGetConstantLCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Returns from the given parameter set an integer value for the specified element of a field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetGetElementIntgNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+  FUNCTION CMISSFieldParameterSetGetElementIntgCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
     & UserElementNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetElementIntgNum")
 
     !Argument variables
@@ -4638,23 +4709,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the element value from the field parameter set, for C.
     INTEGER(C_INT), INTENT(OUT) :: Value !<The integer value from the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetElementIntgNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetElementIntgCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetElementIntgNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
-    & ComponentNumber,Value,CMISSFieldParameterSetGetElementIntgNumberC)
+    CALL CMISSFieldParameterSetGetElementIntg(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
+      & ComponentNumber,Value,CMISSFieldParameterSetGetElementIntgCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetElementIntgNumberC
+  END FUNCTION CMISSFieldParameterSetGetElementIntgCNum
 
   !
   !================================================================================================================================
   !
 
   !>Returns from the given parameter set an integer value for the specified element of a field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetGetElementIntgPtrC(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value) &
-  & BIND(C, NAME = "CMISSFieldParameterSetGetElementIntgObj")
+  FUNCTION CMISSFieldParameterSetGetElementIntgCPtr(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value) &
+    & BIND(C, NAME = "CMISSFieldParameterSetGetElementIntg")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the element value from the field parameter set, for C.
@@ -4664,34 +4735,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the element value from the field parameter set, for C.
     INTEGER(C_INT), INTENT(OUT) :: Value !<The integer value from the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetElementIntgPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetElementIntgCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER  :: Field
 
-    CMISSFieldParameterSetGetElementIntgPtrC = CMISSNoError
+    CMISSFieldParameterSetGetElementIntgCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetElementIntgObj(Field, VariableType, FieldSetType,UserElementNumber, ComponentNumber, Value, &
-        & CMISSFieldParameterSetGetElementIntgPtrC)
+        CALL CMISSFieldParameterSetGetElementIntg(Field, VariableType, FieldSetType,UserElementNumber, ComponentNumber, Value, &
+          & CMISSFieldParameterSetGetElementIntgCPtr)
       ELSE
-        CMISSFieldParameterSetGetElementIntgPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetGetElementIntgCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetGetElementIntgPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetGetElementIntgCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetElementIntgPtrC
+  END FUNCTION CMISSFieldParameterSetGetElementIntgCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Returns from the given parameter set a single precision value for the specified element of a field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetGetElementSPNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & UserElementNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetElementSPNumber")
+  FUNCTION CMISSFieldParameterSetGetElementSPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & UserElementNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetElementSPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the element value from the field parameter set, for C.
@@ -4702,23 +4773,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the element value from the field parameter set, for C.
     REAL(C_FLOAT), INTENT(OUT) :: Value !<The single precision value from the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetElementSPNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetElementSPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetElementSPNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
-    & ComponentNumber,Value,CMISSFieldParameterSetGetElementSPNumberC)
+    CALL CMISSFieldParameterSetGetElementSP(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
+      & ComponentNumber,Value,CMISSFieldParameterSetGetElementSPCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetElementSPNumberC
+  END FUNCTION CMISSFieldParameterSetGetElementSPCNum
 
   !
   !================================================================================================================================
   !
 
   !>Returns from the given parameter set a single precision value for the specified element of a field variable component for a field identified by an object.
-  FUNCTION CMISSFieldParameterSetGetElementSPPtrC(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value) &
-  & BIND(C, NAME = "CMISSFieldParameterSetGetElementSPObj")
+  FUNCTION CMISSFieldParameterSetGetElementSPCPtr(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value) &
+    & BIND(C, NAME = "CMISSFieldParameterSetGetElementSP")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the element value from the field parameter set, for C.
@@ -4728,33 +4799,33 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the element value from the field parameter set, for C.
     REAL(C_FLOAT), INTENT(OUT) :: Value !<The single precision value from the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetElementSPPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetElementSPCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER  :: Field
 
-    CMISSFieldParameterSetGetElementSPPtrC = CMISSNoError
+    CMISSFieldParameterSetGetElementSPCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetElementSPObj(Field, VariableType, FieldSetType,UserElementNumber, ComponentNumber, Value, &
-        & CMISSFieldParameterSetGetElementSPPtrC)
+        CALL CMISSFieldParameterSetGetElementSP(Field, VariableType, FieldSetType,UserElementNumber, ComponentNumber, Value, &
+          & CMISSFieldParameterSetGetElementSPCPtr)
       ELSE
-        CMISSFieldParameterSetGetElementSPPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetGetElementSPCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetGetElementSPPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetGetElementSPCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetElementSPPtrC
+  END FUNCTION CMISSFieldParameterSetGetElementSPCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Returns from the given parameter set a double precision value for the specified element of a field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetGetElementDPNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+  FUNCTION CMISSFieldParameterSetGetElementDPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
     & UserElementNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetElementDPNum")
 
     !Argument variables
@@ -4766,23 +4837,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the element value from the field parameter set, for C.
     REAL(C_DOUBLE), INTENT(OUT) :: Value !<The double precision value from the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetElementDPNumber !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetElementDPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetElementDPNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
-    & ComponentNumber,Value,CMISSFieldParameterSetGetElementDPNumber)
+    CALL CMISSFieldParameterSetGetElementDP(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
+      & ComponentNumber,Value,CMISSFieldParameterSetGetElementDPCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetElementDPNumber
+  END FUNCTION CMISSFieldParameterSetGetElementDPCNum
 
   !
   !================================================================================================================================
   !
 
   !>Returns from the given parameter set a double precision value for the specified element of a field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetGetElementDPPtrC(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value) &
-  & BIND(C, NAME = "CMISSFieldParameterSetGetElementDPObj")
+  FUNCTION CMISSFieldParameterSetGetElementDPCPtr(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value) &
+    & BIND(C, NAME = "CMISSFieldParameterSetGetElementDP")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the element value from the field parameter set, for C.
@@ -4792,34 +4863,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the element value from the field parameter set, for C.
     REAL(C_DOUBLE), INTENT(OUT) :: Value !<The double precision value from the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetElementDPPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetElementDPCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER  :: Field
 
-    CMISSFieldParameterSetGetElementDPPtrC = CMISSNoError
+    CMISSFieldParameterSetGetElementDPCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetElementDPObj(Field, VariableType, FieldSetType,UserElementNumber, ComponentNumber, Value, &
-        & CMISSFieldParameterSetGetElementDPPtrC)
+        CALL CMISSFieldParameterSetGetElementDP(Field, VariableType, FieldSetType,UserElementNumber, ComponentNumber, Value, &
+          & CMISSFieldParameterSetGetElementDPCPtr)
       ELSE
-        CMISSFieldParameterSetGetElementDPPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetGetElementDPCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetGetElementDPPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetGetElementDPCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetElementDPPtrC
+  END FUNCTION CMISSFieldParameterSetGetElementDPCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Returns from the given parameter set a logical value for the specified element of a field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetGetElementLNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & UserElementNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetElementLNumber")
+  FUNCTION CMISSFieldParameterSetGetElementLCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & UserElementNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetElementLNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the element value from the field parameter set, for C.
@@ -4830,15 +4901,15 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the element value from the field parameter set, for C.
     LOGICAL(C_BOOL), INTENT(OUT) :: Value !<The logical value from the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetElementLNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetElementLCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetElementLNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
-    &ComponentNumber,Value,CMISSFieldParameterSetGetElementLNumberC)
+    CALL CMISSFieldParameterSetGetElementL(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
+      & ComponentNumber,Value,CMISSFieldParameterSetGetElementLCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetElementLNumberC
+  END FUNCTION CMISSFieldParameterSetGetElementLCNum
 
 
   !
@@ -4846,8 +4917,8 @@ END FUNCTION CMISSFieldsTypeCreateC
   !
 
   !>Returns from the given parameter set a logical value for the specified element of a field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetGetElementLPtrC(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value) &
-  & BIND(C, NAME = "CMISSFieldParameterSetGetElementLObj")
+  FUNCTION CMISSFieldParameterSetGetElementLCPtr(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value) &
+    & BIND(C, NAME = "CMISSFieldParameterSetGetElementL")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the element value from the field parameter set, for C.
@@ -4857,34 +4928,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the element value from the field parameter set, for C.
     LOGICAL(C_BOOL), INTENT(OUT) :: Value !<The logical value from the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetElementLPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetElementLCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER  :: Field
 
-    CMISSFieldParameterSetGetElementLPtrC = CMISSNoError
+    CMISSFieldParameterSetGetElementLCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetElementLObj(Field, VariableType, FieldSetType, UserElementNumber, ComponentNumber, Value,  &
-        & CMISSFieldParameterSetGetElementLPtrC)
+        CALL CMISSFieldParameterSetGetElementL(Field, VariableType, FieldSetType, UserElementNumber, ComponentNumber, Value,  &
+          & CMISSFieldParameterSetGetElementLCPtr)
       ELSE
-        CMISSFieldParameterSetGetElementLPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetGetElementLCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetGetElementLPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetGetElementLCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetElementLPtrC
+  END FUNCTION CMISSFieldParameterSetGetElementLCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Returns from the given parameter set an integer value for the specified node and derivative of a field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetGetNodeIntgNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeIntgNumber")
+  FUNCTION CMISSFieldParameterSetGetNodeIntgCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeIntgNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the nodal value from the field parameter set, for C..
@@ -4896,23 +4967,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set, for C..
     INTEGER(C_INT), INTENT(OUT) :: Value !<The integer value from the field parameter set, for C.
     !Function variables
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeIntgNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeIntgCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetNodeIntgNumber(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, DerivativeNumber, &
-    & UserNodeNumber, ComponentNumber,Value, CMISSFieldParameterSetGetNodeIntgNumberC)
+    CALL CMISSFieldParameterSetGetNodeIntg(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, DerivativeNumber, &
+      & UserNodeNumber, ComponentNumber,Value, CMISSFieldParameterSetGetNodeIntgCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetNodeIntgNumberC
+  END FUNCTION CMISSFieldParameterSetGetNodeIntgCNum
 
   !
   !================================================================================================================================
   !
 
   !>Returns from the given parameter set an integer value for the specified node and derivative of a field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetGetNodeIntgPtrC(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeIntgObj")
+  FUNCTION CMISSFieldParameterSetGetNodeIntgCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeIntg")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the nodal value from the field parameter set, for C.
@@ -4923,34 +4994,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set, for C..
     INTEGER(C_INT), INTENT(OUT) :: Value !<The integer value from the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeIntgPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeIntgCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetGetNodeIntgPtrC = CMISSNoError
+    CMISSFieldParameterSetGetNodeIntgCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetNodeIntgObj(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
-        & ComponentNumber, Value, CMISSFieldParameterSetGetNodeIntgPtrC)
+        CALL CMISSFieldParameterSetGetNodeIntg(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
+          & ComponentNumber, Value, CMISSFieldParameterSetGetNodeIntgCPtr)
       ELSE
-        CMISSFieldParameterSetGetNodeIntgPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetGetNodeIntgCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetGetNodeIntgPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetGetNodeIntgCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetNodeIntgPtrC
+  END FUNCTION CMISSFieldParameterSetGetNodeIntgCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Returns from the given parameter set a single precision value for the specified node and derivative of a field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetGetNodeSPNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeSPNumber")
+  FUNCTION CMISSFieldParameterSetGetNodeSPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeSPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the nodal value from the field parameter set, for C..
@@ -4962,23 +5033,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set, for C..
     REAL(C_FLOAT),INTENT(OUT) :: Value !<The single precision value from the field parameter set, for C.
     !Function variables
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeSPNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeSPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetNodeSPNumber(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, DerivativeNumber, &
-    &UserNodeNumber, ComponentNumber,Value, CMISSFieldParameterSetGetNodeSPNumberC)
+    CALL CMISSFieldParameterSetGetNodeSP(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, DerivativeNumber, &
+      &UserNodeNumber, ComponentNumber,Value, CMISSFieldParameterSetGetNodeSPCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetNodeSPNumberC
+  END FUNCTION CMISSFieldParameterSetGetNodeSPCNum
 
   !
   !================================================================================================================================
   !
 
   !>Returns from the given parameter set a single precision value for the specified node and derivative of a field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetGetNodeSPPtrC(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeSPObj")
+  FUNCTION CMISSFieldParameterSetGetNodeSPCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeSP")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the nodal value from the field parameter set, for C.
@@ -4989,34 +5060,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set, for C..
     REAL(C_FLOAT), INTENT(OUT) :: Value !<The single precision value from the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeSPPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeSPCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetGetNodeSPPtrC = CMISSNoError
+    CMISSFieldParameterSetGetNodeSPCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetNodeSPObj(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
-        & ComponentNumber, Value, CMISSFieldParameterSetGetNodeSPPtrC)
+        CALL CMISSFieldParameterSetGetNodeSP(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
+          & ComponentNumber, Value, CMISSFieldParameterSetGetNodeSPCPtr)
       ELSE
-        CMISSFieldParameterSetGetNodeSPPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetGetNodeSPCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetGetNodeSPPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetGetNodeSPCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetNodeSPPtrC
+  END FUNCTION CMISSFieldParameterSetGetNodeSPCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Returns from the given parameter set a double precision value for the specified node and derivative of a field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetGetNodeDPNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeDPNumber")
+  FUNCTION CMISSFieldParameterSetGetNodeDPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeDPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the nodal value from the field parameter set, for C..
@@ -5028,23 +5099,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set, for C..
     REAL(C_DOUBLE),INTENT(OUT) :: Value !<The double precision value from the field parameter set, for C.
     !Function variables
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeDPNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeDPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetNodeDPNumber(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, DerivativeNumber, &
-    & UserNodeNumber, ComponentNumber,Value, CMISSFieldParameterSetGetNodeDPNumberC)
+    CALL CMISSFieldParameterSetGetNodeDP(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, DerivativeNumber, &
+      & UserNodeNumber, ComponentNumber,Value, CMISSFieldParameterSetGetNodeDPCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetNodeDPNumberC
+  END FUNCTION CMISSFieldParameterSetGetNodeDPCNum
 
   !
   !================================================================================================================================
   !
 
   !>Returns from the given parameter set a double precision value for the specified node and derivative of a field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetGetNodeDPPtrC(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeDPObj")
+  FUNCTION CMISSFieldParameterSetGetNodeDPCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeDP")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the nodal value from the field parameter set, for C.
@@ -5055,34 +5126,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set, for C..
     REAL(C_DOUBLE), INTENT(OUT) :: Value !<The double precision value from the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeDPPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeDPCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetGetNodeDPPtrC = CMISSNoError
+    CMISSFieldParameterSetGetNodeDPCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetNodeDPObj(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
-        & ComponentNumber, Value, CMISSFieldParameterSetGetNodeDPPtrC)
+        CALL CMISSFieldParameterSetGetNodeDP(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
+          & ComponentNumber, Value, CMISSFieldParameterSetGetNodeDPCPtr)
       ELSE
-        CMISSFieldParameterSetGetNodeDPPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetGetNodeDPCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetGetNodeDPPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetGetNodeDPCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetNodeDPPtrC
+  END FUNCTION CMISSFieldParameterSetGetNodeDPCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Returns from the given parameter set a logical value for the specified node and derivative of a field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetGetNodeLNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeLNumber")
+  FUNCTION CMISSFieldParameterSetGetNodeLCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeLNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the nodal value from the field parameter set, for C..
@@ -5094,23 +5165,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set, for C..
     LOGICAL(C_BOOL),INTENT(OUT) :: Value !<The logical value from the field parameter set, for C.
     !Function variables
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeLNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeLCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetNodeLNumber(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, DerivativeNumber, &
-    & UserNodeNumber, ComponentNumber,Value, CMISSFieldParameterSetGetNodeLNumberC)
+    CALL CMISSFieldParameterSetGetNodeL(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, DerivativeNumber, &
+      & UserNodeNumber, ComponentNumber,Value, CMISSFieldParameterSetGetNodeLCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetNodeLNumberC
+  END FUNCTION CMISSFieldParameterSetGetNodeLCNum
 
   !
   !================================================================================================================================
   !
 
   !>Returns from the given parameter set a logical value for the specified node and derivative of a field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetGetNodeLPtrC(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeLObj")
+  FUNCTION CMISSFieldParameterSetGetNodeLCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeL")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the nodal value from the field parameter set, for C.
@@ -5121,34 +5192,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set, for C..
     LOGICAL(C_BOOL), INTENT(OUT) :: Value !<The logical value from the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeLPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeLCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetGetNodeLPtrC = CMISSNoError
+    CMISSFieldParameterSetGetNodeLCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetNodeLObj(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
-        & ComponentNumber, Value, CMISSFieldParameterSetGetNodeLPtrC)
+        CALL CMISSFieldParameterSetGetNodeL(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
+          & ComponentNumber, Value, CMISSFieldParameterSetGetNodeLCPtr)
       ELSE
-        CMISSFieldParameterSetGetNodeLPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetGetNodeLCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetGetNodeLPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetGetNodeLCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetGetNodeLPtrC
+  END FUNCTION CMISSFieldParameterSetGetNodeLCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Updates the given parameter set with the given integer value for the constant of the field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetUpdateConstantIntgNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateConstantIntgNumber")
+  FUNCTION CMISSFieldParameterSetUpdateConstantIntgCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateConstantIntgNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to update the constant value for the field parameter set, for C.
@@ -5158,22 +5229,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the constant value for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: Value !<The integer value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateConstantIntgNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateConstantIntgCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetUpdateConstantIntgNumber(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,&
-    & ComponentNumber,Value,CMISSFieldParameterSetUpdateConstantIntgNumberC)
+    CALL CMISSFieldParameterSetUpdateConstantIntg(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,&
+      & ComponentNumber,Value,CMISSFieldParameterSetUpdateConstantIntgCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateConstantIntgNumberC
+  END FUNCTION CMISSFieldParameterSetUpdateConstantIntgCNum
 
   !
   !================================================================================================================================
   !
 
   !>Updates the given parameter set with the given integer value for the constant of the field variable component for a field identified by an object.
-  FUNCTION CMISSFieldParameterSetUpdateConstantIntgPtrC(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateConstantIntgObj")
+  FUNCTION CMISSFieldParameterSetUpdateConstantIntgCPtr(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, NAME = &
+    & "CMISSFieldParameterSetUpdateConstantIntg")
 
     !Argument variables.
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to update the constant value for the field parameter set.
@@ -5182,34 +5254,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the constant value for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: Value !<The integer value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateConstantIntgPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateConstantIntgCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetUpdateConstantIntgPtrC = CMISSNoError
+    CMISSFieldParameterSetUpdateConstantIntgCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateConstantIntgObj(Field, VariableType,FieldSetType,ComponentNumber,Value,&
-        & CMISSFieldParameterSetUpdateConstantIntgPtrC)
+        CALL CMISSFieldParameterSetUpdateConstantIntg(Field, VariableType,FieldSetType,ComponentNumber,Value,&
+          & CMISSFieldParameterSetUpdateConstantIntgCPtr)
       ELSE
-        CMISSFieldParameterSetUpdateConstantIntgPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetUpdateConstantIntgCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetUpdateConstantIntgPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetUpdateConstantIntgCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateConstantIntgPtrC
+  END FUNCTION CMISSFieldParameterSetUpdateConstantIntgCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Updates the given parameter set with the given single precision value for the constant of the field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetUpdateConstantSPNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateConstantSPNumber")
+  FUNCTION CMISSFieldParameterSetUpdateConstantSPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateConstantSPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to update the constant value for the field parameter set, for C.
@@ -5219,23 +5291,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the constant value for the field parameter set, for C.
     REAL(C_FLOAT), INTENT(IN) :: Value !<The single precision value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateConstantSPNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateConstantSPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetUpdateConstantSPNumber(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,ComponentNumber,&
-    & Value,CMISSFieldParameterSetUpdateConstantSPNumberC)
+    CALL CMISSFieldParameterSetUpdateConstantSP(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,ComponentNumber,&
+      & Value,CMISSFieldParameterSetUpdateConstantSPCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateConstantSPNumberC
+  END FUNCTION CMISSFieldParameterSetUpdateConstantSPCNum
 
   !
   !================================================================================================================================
   !
 
   !>Updates the given parameter set with the given single precision value for the constant of the field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetUpdateConstantSPPtrC(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, &
-  & NAME = "CMISSFieldParameterSetUpdateConstantSPObj")
+  FUNCTION CMISSFieldParameterSetUpdateConstantSPCPtr(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, &
+    & NAME = "CMISSFieldParameterSetUpdateConstantSP")
 
     !Argument variables.
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to update the constant value for the field parameter set.
@@ -5244,34 +5316,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the constant value for the field parameter set, for C.
     REAL(C_FLOAT), INTENT(IN) :: Value !<The single precision value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateConstantSPPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateConstantSPCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetUpdateConstantSPPtrC = CMISSNoError
+    CMISSFieldParameterSetUpdateConstantSPCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateConstantSPObj(Field, VariableType,FieldSetType,ComponentNumber,Value, &
-        & CMISSFieldParameterSetUpdateConstantSPPtrC)
+        CALL CMISSFieldParameterSetUpdateConstantSP(Field, VariableType,FieldSetType,ComponentNumber,Value, &
+          & CMISSFieldParameterSetUpdateConstantSPCPtr)
       ELSE
-        CMISSFieldParameterSetUpdateConstantSPPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetUpdateConstantSPCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetUpdateConstantSPPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetUpdateConstantSPCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateConstantSPPtrC
+  END FUNCTION CMISSFieldParameterSetUpdateConstantSPCPtr
   
   !
   !================================================================================================================================
   !
 
   !>Updates the given parameter set with the given double precision value for the constant of the field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetUpdateConstantDPNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateConstantDPNumber")
+  FUNCTION CMISSFieldParameterSetUpdateConstantDPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateConstantDPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to update the constant value for the field parameter set, for C.
@@ -5281,23 +5353,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the constant value for the field parameter set, for C.
     REAL(C_DOUBLE), INTENT(IN) :: Value !<The double precision value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateConstantDPNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateConstantDPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetUpdateConstantDPNumber(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,&
-    & ComponentNumber,Value,CMISSFieldParameterSetUpdateConstantDPNumberC)
+    CALL CMISSFieldParameterSetUpdateConstantDP(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,&
+      & ComponentNumber,Value,CMISSFieldParameterSetUpdateConstantDPCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateConstantDPNumberC
+  END FUNCTION CMISSFieldParameterSetUpdateConstantDPCNum
 
   !
   !================================================================================================================================
   !
 
   !>Updates the given parameter set with the given double precision value for the constant of the field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetUpdateConstantDPPtrC(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, &
-  & NAME = "CMISSFieldParameterSetUpdateConstantDPObj")
+  FUNCTION CMISSFieldParameterSetUpdateConstantDPCPtr(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, &
+    & NAME = "CMISSFieldParameterSetUpdateConstantDP")
 
     !Argument variables.
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to update the constant value for the field parameter set.
@@ -5306,34 +5378,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the constant value for the field parameter set, for C.
     REAL(C_DOUBLE), INTENT(IN) :: Value !<The double precision value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateConstantDPPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateConstantDPCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetUpdateConstantDPPtrC = CMISSNoError
+    CMISSFieldParameterSetUpdateConstantDPCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateConstantDPObj(Field, VariableType,FieldSetType,ComponentNumber,Value,&
-        & CMISSFieldParameterSetUpdateConstantDPPtrC)
+        CALL CMISSFieldParameterSetUpdateConstantDP(Field, VariableType,FieldSetType,ComponentNumber,Value,&
+          & CMISSFieldParameterSetUpdateConstantDPCPtr)
       ELSE
-        CMISSFieldParameterSetUpdateConstantDPPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetUpdateConstantDPCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetUpdateConstantDPPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetUpdateConstantDPCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateConstantDPPtrC
+  END FUNCTION CMISSFieldParameterSetUpdateConstantDPCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Updates the given parameter set with the given logical value for the constant of the field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetUpdateConstantLNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateConstantLNumber")
+  FUNCTION CMISSFieldParameterSetUpdateConstantLCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateConstantLNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to update the constant value for the field parameter set, for C.
@@ -5343,15 +5415,15 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the constant value for the field parameter set, for C.
     LOGICAL(C_BOOL), INTENT(IN) :: Value !<The logical value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateConstantLNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateConstantLCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetUpdateConstantLNumber(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,ComponentNumber, &
-    & Value,CMISSFieldParameterSetUpdateConstantLNumberC)
+    CALL CMISSFieldParameterSetUpdateConstantL(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,ComponentNumber, &
+      & Value,CMISSFieldParameterSetUpdateConstantLCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateConstantLNumberC
+  END FUNCTION CMISSFieldParameterSetUpdateConstantLCNum
 
 
   !
@@ -5359,8 +5431,8 @@ END FUNCTION CMISSFieldsTypeCreateC
   !
 
   !>Updates the given parameter set with the given logical value for the constant of the field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetUpdateConstantLPtrC(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, NAME = &
-  & "CMISSFieldParameterSetUpdateConstantLObj")
+  FUNCTION CMISSFieldParameterSetUpdateConstantLCPtr(FieldPtr,VariableType,FieldSetType,ComponentNumber,Value) BIND(C, NAME = &
+    & "CMISSFieldParameterSetUpdateConstantL")
 
     !Argument variables.
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to update the constant value for the field parameter set.
@@ -5369,34 +5441,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the constant value for the field parameter set, for C.
     LOGICAL(C_BOOL), INTENT(IN) :: Value !<The logical value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateConstantLPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateConstantLCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetUpdateConstantLPtrC = CMISSNoError
+    CMISSFieldParameterSetUpdateConstantLCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateConstantLObj(Field, VariableType,FieldSetType,ComponentNumber,Value,&
-        & CMISSFieldParameterSetUpdateConstantLPtrC)
+        CALL CMISSFieldParameterSetUpdateConstantL(Field, VariableType,FieldSetType,ComponentNumber,Value,&
+          & CMISSFieldParameterSetUpdateConstantLCPtr)
       ELSE
-        CMISSFieldParameterSetUpdateConstantLPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetUpdateConstantLCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetUpdateConstantLPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetUpdateConstantLCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateConstantLPtrC
+  END FUNCTION CMISSFieldParameterSetUpdateConstantLCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Updates the given parameter set with the given integer value for the element of the field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetUpdateElementIntgNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & UserElementNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateElementIntgNumber")
+  FUNCTION CMISSFieldParameterSetUpdateElementIntgCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & UserElementNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateElementIntgNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to update the element value for the field parameter set, for C.
@@ -5407,23 +5479,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the element value for the field parameter set, for C.
     INTEGER(C_INT), INTENT(IN) :: Value !<The integer value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateElementIntgNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateElementIntgCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetUpdateElementIntgNumber(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,&
-    & UserElementNumber,ComponentNumber,Value,CMISSFieldParameterSetUpdateElementIntgNumberC)
+    CALL CMISSFieldParameterSetUpdateElementIntg(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,&
+      & UserElementNumber,ComponentNumber,Value,CMISSFieldParameterSetUpdateElementIntgCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateElementIntgNumberC
+  END FUNCTION CMISSFieldParameterSetUpdateElementIntgCNum
 
   !
   !================================================================================================================================
   !
 
   !>Updates the given parameter set with the given integer value for the element of the field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetUpdateElementIntgPtrC(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber, &
-    & Value)  BIND(C, NAME = "CMISSFieldParameterSetUpdateElementIntgObj")
+  FUNCTION CMISSFieldParameterSetUpdateElementIntgCPtr(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber, &
+    & Value)  BIND(C, NAME = "CMISSFieldParameterSetUpdateElementIntg")
 
     !Argument variables.
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to update the element value for the field parameter set.
@@ -5433,34 +5505,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the element value for the field parameter set, for C.
     INTEGER(C_INT), INTENT(IN) :: Value !<The integer value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateElementIntgPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateElementIntgCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetUpdateElementIntgPtrC = CMISSNoError
+    CMISSFieldParameterSetUpdateElementIntgCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateElementIntgObj(Field, VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value,&
-        & CMISSFieldParameterSetUpdateElementIntgPtrC)
+        CALL CMISSFieldParameterSetUpdateElementIntg(Field, VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value,&
+          & CMISSFieldParameterSetUpdateElementIntgCPtr)
       ELSE
-        CMISSFieldParameterSetUpdateElementIntgPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetUpdateElementIntgCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetUpdateElementIntgPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetUpdateElementIntgCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateElementIntgPtrC
+  END FUNCTION CMISSFieldParameterSetUpdateElementIntgCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Updates the given parameter set with the given single precision value for the element of the field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetUpdateElementSPNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & UserElementNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateElementSPNumber")
+  FUNCTION CMISSFieldParameterSetUpdateElementSPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & UserElementNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateElementSPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to update the element value for the field parameter set, for C.
@@ -5471,23 +5543,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the element value for the field parameter set, for C.
     REAL(C_FLOAT), INTENT(IN) :: Value !<The single precision value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateElementSPNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateElementSPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetUpdateElementSPNumber(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,UserElementNumber,&
-    & ComponentNumber,Value,CMISSFieldParameterSetUpdateElementSPNumberC)
+    CALL CMISSFieldParameterSetUpdateElementSP(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,UserElementNumber,&
+      & ComponentNumber,Value,CMISSFieldParameterSetUpdateElementSPCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateElementSPNumberC
+  END FUNCTION CMISSFieldParameterSetUpdateElementSPCNum
 
   !
   !================================================================================================================================
   !
 
   !>Updates the given parameter set with the given single precision value for the element of the field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetUpdateElementSPPtrC(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber, &
-    & Value)  BIND(C, NAME = "CMISSFieldParameterSetUpdateElementSPObj")
+  FUNCTION CMISSFieldParameterSetUpdateElementSPCPtr(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber, &
+    & Value)  BIND(C, NAME = "CMISSFieldParameterSetUpdateElementSP")
 
     !Argument variables.
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to update the element value for the field parameter set.
@@ -5497,34 +5569,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the element value for the field parameter set, for C.
     REAL(C_FLOAT), INTENT(IN) :: Value !<The single precision value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateElementSPPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateElementSPCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetUpdateElementSPPtrC = CMISSNoError
+    CMISSFieldParameterSetUpdateElementSPCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateElementSPObj(Field, VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value, &
-        & CMISSFieldParameterSetUpdateElementSPPtrC)
+        CALL CMISSFieldParameterSetUpdateElementSP(Field, VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value, &
+          & CMISSFieldParameterSetUpdateElementSPCPtr)
       ELSE
-        CMISSFieldParameterSetUpdateElementSPPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetUpdateElementSPCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetUpdateElementSPPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetUpdateElementSPCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateElementSPPtrC
+  END FUNCTION CMISSFieldParameterSetUpdateElementSPCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Updates the given parameter set with the given double precision value for the element of the field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetUpdateElementDPNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & UserElementNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateElementDPNumber")
+  FUNCTION CMISSFieldParameterSetUpdateElementDPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & UserElementNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateElementDPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to update the element value for the field parameter set, for C.
@@ -5535,23 +5607,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the element value for the field parameter set, for C.
     REAL(C_DOUBLE), INTENT(IN) :: Value !<The double precision value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateElementDPNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateElementDPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetUpdateElementDPNumber(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,UserElementNumber,&
-    & ComponentNumber,Value,CMISSFieldParameterSetUpdateElementDPNumberC)
+    CALL CMISSFieldParameterSetUpdateElementDP(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,UserElementNumber,&
+      & ComponentNumber,Value,CMISSFieldParameterSetUpdateElementDPCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateElementDPNumberC
+  END FUNCTION CMISSFieldParameterSetUpdateElementDPCNum
 
   !
   !================================================================================================================================
   !
 
   !>Updates the given parameter set with the given double precision value for the element of the field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetUpdateElementDPPtrC(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber, &
-    & Value)  BIND(C, NAME = "CMISSFieldParameterSetUpdateElementDPObj")
+  FUNCTION CMISSFieldParameterSetUpdateElementDPCPtr(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber, &
+    & Value)  BIND(C, NAME = "CMISSFieldParameterSetUpdateElementDP")
 
     !Argument variables.
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to update the element value for the field parameter set.
@@ -5561,34 +5633,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the element value for the field parameter set, for C.
     REAL(C_DOUBLE), INTENT(IN) :: Value !<The double precision value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateElementDPPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateElementDPCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetUpdateElementDPPtrC = CMISSNoError
+    CMISSFieldParameterSetUpdateElementDPCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateElementDPObj(Field, VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value,&
-        & CMISSFieldParameterSetUpdateElementDPPtrC)
+        CALL CMISSFieldParameterSetUpdateElementDP(Field, VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value,&
+          & CMISSFieldParameterSetUpdateElementDPCPtr)
       ELSE
-        CMISSFieldParameterSetUpdateElementDPPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetUpdateElementDPCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetUpdateElementDPPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetUpdateElementDPCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateElementDPPtrC
+  END FUNCTION CMISSFieldParameterSetUpdateElementDPCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Updates the given parameter set with the given logical value for the element of the field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetUpdateElementLNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & UserElementNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateElementLNumber")
+  FUNCTION CMISSFieldParameterSetUpdateElementLCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & UserElementNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateElementLNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to update the element value for the field parameter set, for C.
@@ -5599,23 +5671,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the element value for the field parameter set, for C.
     LOGICAL(C_BOOL), INTENT(IN) :: Value !<The logical value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateElementLNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateElementLCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetUpdateElementLNumber(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,UserElementNumber,&
-    & ComponentNumber,Value,CMISSFieldParameterSetUpdateElementLNumberC)
+    CALL CMISSFieldParameterSetUpdateElementL(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,UserElementNumber,&
+      & ComponentNumber,Value,CMISSFieldParameterSetUpdateElementLCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateElementLNumberC
+  END FUNCTION CMISSFieldParameterSetUpdateElementLCNum
 
   !
   !================================================================================================================================
   !
 
   !>Updates the given parameter set with the given logical value for the element of the field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetUpdateElementLPtrC(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber, &
-    & Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateElementLObj")
+  FUNCTION CMISSFieldParameterSetUpdateElementLCPtr(FieldPtr,VariableType,FieldSetType,UserElementNumber,ComponentNumber, &
+    & Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateElementL")
 
     !Argument variables.
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to update the element value for the field parameter set.
@@ -5625,33 +5697,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the element value for the field parameter set, for C.
     LOGICAL(C_BOOL), INTENT(IN) :: Value !<The logical value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateElementLPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateElementLCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetUpdateElementLPtrC = CMISSNoError
+    CMISSFieldParameterSetUpdateElementLCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateElementLObj(Field, VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value, &
-        & CMISSFieldParameterSetUpdateElementLPtrC)
+        CALL CMISSFieldParameterSetUpdateElementL(Field, VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value, &
+          & CMISSFieldParameterSetUpdateElementLCPtr)
       ELSE
-        CMISSFieldParameterSetUpdateElementLPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetUpdateElementLCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetUpdateElementLPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetUpdateElementLCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateElementLPtrC
+  END FUNCTION CMISSFieldParameterSetUpdateElementLCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Finishes the parameter set update for a field variable for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetUpdateFinishNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType) BIND(C, NAME = "CMISSFieldParameterSetUpdateFinishNumber")
+  FUNCTION CMISSFieldParameterSetUpdateFinishCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType) BIND(C, NAME = &
+    & "CMISSFieldParameterSetUpdateFinishNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to finish the parameter set update for, for C.
@@ -5659,56 +5732,56 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to finish the parameter set update for, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type to finish the update for, for C. \see OPENCMISS_FieldParameterSetTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateFinishNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateFinishCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetUpdateFinishNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & CMISSFieldParameterSetUpdateFinishNumberC)
+    CALL CMISSFieldParameterSetUpdateFinish(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+      & CMISSFieldParameterSetUpdateFinishCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateFinishNumberC
+  END FUNCTION CMISSFieldParameterSetUpdateFinishCNum
 
   !
   !================================================================================================================================
   !
 
   !>Finishes the parameter set update for a field variable for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetUpdateFinishPtrC(FieldPtr,VariableType,FieldSetType) BIND(C, NAME = &
-  & "CMISSFieldParameterSetUpdateFinishObj")
+  FUNCTION CMISSFieldParameterSetUpdateFinishCPtr(FieldPtr,VariableType,FieldSetType) BIND(C, NAME = &
+    & "CMISSFieldParameterSetUpdateFinish")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to finishe the parameter set update for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to finish the parameter set update for, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type to finish the update for, for C. \see OPENCMISS_FieldParameterSetTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateFinishPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateFinishCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetUpdateFinishPtrC = CMISSNoError
+    CMISSFieldParameterSetUpdateFinishCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateFinishObj(Field,VariableType,FieldSetType,CMISSFieldParameterSetUpdateFinishPtrC)
+        CALL CMISSFieldParameterSetUpdateFinish(Field,VariableType,FieldSetType,CMISSFieldParameterSetUpdateFinishCPtr)
       ELSE
-        CMISSFieldParameterSetUpdateFinishPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetUpdateFinishCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetUpdateFinishPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetUpdateFinishCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateFinishPtrC
+  END FUNCTION CMISSFieldParameterSetUpdateFinishCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Updates the given parameter set with the given integer value for the node and derivative of the field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetUpdateNodeIntgNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeIntgNumber")
+  FUNCTION CMISSFieldParameterSetUpdateNodeIntgCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeIntgNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to update the nodal value for the field parameter set, for C.
@@ -5720,15 +5793,15 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: Value !<The integer value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeIntgNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeIntgCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetUpdateNodeIntgNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, DerivativeNumber, &
-    & UserNodeNumber, ComponentNumber, Value, CMISSFieldParameterSetUpdateNodeIntgNumberC)
+    CALL CMISSFieldParameterSetUpdateNodeIntg(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, DerivativeNumber, &
+      & UserNodeNumber, ComponentNumber, Value, CMISSFieldParameterSetUpdateNodeIntgCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateNodeIntgNumberC
+  END FUNCTION CMISSFieldParameterSetUpdateNodeIntgCNum
 
   !
   !================================================================================================================================
@@ -5736,8 +5809,8 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Updates the given parameter set with the given integer value for the node and derivative of the field variable component for a field identified by an object for C.
 
-  FUNCTION CMISSFieldParameterSetUpdateNodeIntgPtrC(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeIntgObj")
+  FUNCTION CMISSFieldParameterSetUpdateNodeIntgCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeIntg")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to finishe the parameter set update for, for C.
@@ -5748,34 +5821,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: Value !<The integer value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeIntgPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeIntgCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetUpdateNodeIntgPtrC = CMISSNoError
+    CMISSFieldParameterSetUpdateNodeIntgCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateNodeIntgObj(Field,VariableType,FieldSetType, DerivativeNumber, UserNodeNumber, &
-        & ComponentNumber,Value,CMISSFieldParameterSetUpdateNodeIntgPtrC)
+        CALL CMISSFieldParameterSetUpdateNodeIntg(Field,VariableType,FieldSetType, DerivativeNumber, UserNodeNumber, &
+          & ComponentNumber,Value,CMISSFieldParameterSetUpdateNodeIntgCPtr)
       ELSE
-        CMISSFieldParameterSetUpdateNodeIntgPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetUpdateNodeIntgCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetUpdateNodeIntgPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetUpdateNodeIntgCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateNodeIntgPtrC
+  END FUNCTION CMISSFieldParameterSetUpdateNodeIntgCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Updates the given parameter set with the given single precision value for the node and derivative of the field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetUpdateNodeSPNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeSPNumber")
+  FUNCTION CMISSFieldParameterSetUpdateNodeSPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeSPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to update the nodal value for the field parameter set, for C.
@@ -5787,15 +5860,15 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set, for C.
     REAL(C_FLOAT), INTENT(IN) :: Value !<The single precision value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeSPNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeSPCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetUpdateNodeSPNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, DerivativeNumber, &
-    & UserNodeNumber, ComponentNumber, Value, CMISSFieldParameterSetUpdateNodeSPNumberC)
+    CALL CMISSFieldParameterSetUpdateNodeSP(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, DerivativeNumber, &
+      & UserNodeNumber, ComponentNumber, Value, CMISSFieldParameterSetUpdateNodeSPCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateNodeSPNumberC
+  END FUNCTION CMISSFieldParameterSetUpdateNodeSPCNum
 
   !
   !================================================================================================================================
@@ -5803,8 +5876,8 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Updates the given parameter set with the given single precision value for the node and derivative of the field variable component for a field identified by an object, for C.
 
-  FUNCTION CMISSFieldParameterSetUpdateNodeSPPtrC(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeSPObj")
+  FUNCTION CMISSFieldParameterSetUpdateNodeSPCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeSP")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to finishe the parameter set update for, for C.
@@ -5815,34 +5888,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set, for C.
     REAL(C_FLOAT), INTENT(IN) :: Value !<The single precision value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeSPPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeSPCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetUpdateNodeSPPtrC = CMISSNoError
+    CMISSFieldParameterSetUpdateNodeSPCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateNodeSPObj(Field,VariableType,FieldSetType, DerivativeNumber, UserNodeNumber, &
-        & ComponentNumber, Value,CMISSFieldParameterSetUpdateNodeSPPtrC)
+        CALL CMISSFieldParameterSetUpdateNodeSP(Field,VariableType,FieldSetType, DerivativeNumber, UserNodeNumber, &
+          & ComponentNumber, Value,CMISSFieldParameterSetUpdateNodeSPCPtr)
       ELSE
-        CMISSFieldParameterSetUpdateNodeSPPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetUpdateNodeSPCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetUpdateNodeSPPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetUpdateNodeSPCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateNodeSPPtrC
+  END FUNCTION CMISSFieldParameterSetUpdateNodeSPCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Updates the given parameter set with the given double precision value for the node and derivative of the field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetUpdateNodeDPNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value)  BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeDPNumber")
+  FUNCTION CMISSFieldParameterSetUpdateNodeDPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value)  BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeDPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to update the nodal value for the field parameter set, for C.
@@ -5854,15 +5927,15 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set, for C.
     REAL(C_DOUBLE), INTENT(IN) :: Value !<The double precision value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeDPNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeDPCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetUpdateNodeDPNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, DerivativeNumber, &
-    & UserNodeNumber, ComponentNumber, Value, CMISSFieldParameterSetUpdateNodeDPNumberC)
+    CALL CMISSFieldParameterSetUpdateNodeDP(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, DerivativeNumber, &
+      & UserNodeNumber, ComponentNumber, Value, CMISSFieldParameterSetUpdateNodeDPCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateNodeDPNumberC
+  END FUNCTION CMISSFieldParameterSetUpdateNodeDPCNum
 
   !
   !================================================================================================================================
@@ -5870,8 +5943,8 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Updates the given parameter set with the given double precision value for the node and derivative of the field variable component for a field identified by an object for C.
 
-  FUNCTION CMISSFieldParameterSetUpdateNodeDPPtrC(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeDPObj")
+  FUNCTION CMISSFieldParameterSetUpdateNodeDPCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeDP")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to finishe the parameter set update for, for C.
@@ -5882,34 +5955,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set, for C.
     REAL(C_DOUBLE), INTENT(IN) :: Value !<The double precision value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeDPPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeDPCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetUpdateNodeDPPtrC = CMISSNoError
+    CMISSFieldParameterSetUpdateNodeDPCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateNodeDPObj(Field,VariableType,FieldSetType, DerivativeNumber, UserNodeNumber, &
-        & ComponentNumber, Value,CMISSFieldParameterSetUpdateNodeDPPtrC)
+        CALL CMISSFieldParameterSetUpdateNodeDP(Field,VariableType,FieldSetType, DerivativeNumber, UserNodeNumber, &
+          & ComponentNumber, Value,CMISSFieldParameterSetUpdateNodeDPCPtr)
       ELSE
-        CMISSFieldParameterSetUpdateNodeDPPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetUpdateNodeDPCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetUpdateNodeDPPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetUpdateNodeDPCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateNodeDPPtrC
+  END FUNCTION CMISSFieldParameterSetUpdateNodeDPCPtr
 
   !
   !================================================================================================================================
   !,
 
   !>Updates the given parameter set with the given logical value for the node and derivative of the field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetUpdateNodeLNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeLNumber")
+  FUNCTION CMISSFieldParameterSetUpdateNodeLCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeLNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to update the nodal value for the field parameter set, for C.
@@ -5921,15 +5994,15 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set, for C.
     LOGICAL(C_BOOL), INTENT(IN) :: Value !<The logical value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeLNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeLCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetUpdateNodeLNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, DerivativeNumber,&
-    & UserNodeNumber, ComponentNumber, Value, CMISSFieldParameterSetUpdateNodeLNumberC)
+    CALL CMISSFieldParameterSetUpdateNodeL(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, DerivativeNumber,&
+      & UserNodeNumber, ComponentNumber, Value, CMISSFieldParameterSetUpdateNodeLCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateNodeLNumberC
+  END FUNCTION CMISSFieldParameterSetUpdateNodeLCNum
 
   !
   !================================================================================================================================
@@ -5937,8 +6010,8 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Updates the given parameter set with the given logical value for the node and derivative of the field variable component for a field identified by an object for C.
 
-  FUNCTION CMISSFieldParameterSetUpdateNodeLPtrC(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeLObj")
+  FUNCTION CMISSFieldParameterSetUpdateNodeLCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeL")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to finishe the parameter set update for, for C.
@@ -5949,34 +6022,34 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set, for C.
     LOGICAL(C_BOOL), INTENT(IN) :: Value !<The logical value to update the field parameter set to, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeLPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeLCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetUpdateNodeLPtrC = CMISSNoError
+    CMISSFieldParameterSetUpdateNodeLCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateNodeLObj(Field,VariableType,FieldSetType, DerivativeNumber, UserNodeNumber, &
-        & ComponentNumber, Value,CMISSFieldParameterSetUpdateNodeLPtrC)
+        CALL CMISSFieldParameterSetUpdateNodeL(Field,VariableType,FieldSetType, DerivativeNumber, UserNodeNumber, &
+          & ComponentNumber, Value,CMISSFieldParameterSetUpdateNodeLCPtr)
       ELSE
-        CMISSFieldParameterSetUpdateNodeLPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetUpdateNodeLCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetUpdateNodeLPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetUpdateNodeLCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateNodeLPtrC
+  END FUNCTION CMISSFieldParameterSetUpdateNodeLCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Starts the parameter set update for a field variable for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetUpdateStartNumberC(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType) BIND(C, &
-  & NAME = "CMISSFieldParameterSetUpdateStartNumber")
+  FUNCTION CMISSFieldParameterSetUpdateStartCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType) BIND(C, &
+    & NAME = "CMISSFieldParameterSetUpdateStartNum")
 
     !Argument variable
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber!<The user number of the region containing the field to start the parameter set update for, for C.
@@ -5984,266 +6057,266 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to start the parameter set update for, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type to start the update for, for C. \see OPENCMISS_FieldParameterSetTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateStartNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateStartCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetUpdateStartNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,&
-    & CMISSFieldParameterSetUpdateStartNumberC)
+    CALL CMISSFieldParameterSetUpdateStart(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,&
+      & CMISSFieldParameterSetUpdateStartCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateStartNumberC
+  END FUNCTION CMISSFieldParameterSetUpdateStartCNum
 
   !
   !================================================================================================================================
   !
 
   !>Starts the parameter set update for a field variable for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetUpdateStartPtrC(FieldPtr,VariableType,FieldSetType) BIND(C, NAME = &
-  & "CMISSFieldParameterSetUpdateStartObj")
+  FUNCTION CMISSFieldParameterSetUpdateStartCPtr(FieldPtr,VariableType,FieldSetType) BIND(C, NAME = &
+    & "CMISSFieldParameterSetUpdateStart")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to start the parameter set update for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to start the parameter set update for, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type to start the update for, for C. \see OPENCMISS_FieldParameterSetTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateStartPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldParameterSetUpdateStartCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldParameterSetUpdateStartPtrC = CMISSNoError
+    CMISSFieldParameterSetUpdateStartCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateStartObj(Field,VariableType,FieldSetType,CMISSFieldParameterSetUpdateStartPtrC)
+        CALL CMISSFieldParameterSetUpdateStart(Field,VariableType,FieldSetType,CMISSFieldParameterSetUpdateStartCPtr)
       ELSE
-        CMISSFieldParameterSetUpdateStartPtrC = CMISSErrorConvertingPointer
+        CMISSFieldParameterSetUpdateStartCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldParameterSetUpdateStartPtrC = CMISSPointerIsNULL
+      CMISSFieldParameterSetUpdateStartCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldParameterSetUpdateStartPtrC
+  END FUNCTION CMISSFieldParameterSetUpdateStartCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Returns the scaling type for a field identified by a user number for C.
-  FUNCTION CMISSFieldScalingTypeGetNumberC(RegionUserNumber,FieldUserNumber,ScalingType) BIND(C, NAME = &
-  & "CMISSFieldScalingTypeGetNumber")
+  FUNCTION CMISSFieldScalingTypeGetCNum(RegionUserNumber,FieldUserNumber,ScalingType) BIND(C, NAME = &
+    & "CMISSFieldScalingTypeGetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the scaling type for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to get the scaling type for, for C.
     INTEGER(C_INT), INTENT(OUT) :: ScalingType !<The field scaling type to get, for C. \see OPENCMISS_FieldScalingTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldScalingTypeGetNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldScalingTypeGetCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldScalingTypeGetNumber(RegionUserNumber,FieldUserNumber,ScalingType,CMISSFieldScalingTypeGetNumberC)
+    CALL CMISSFieldScalingTypeGet(RegionUserNumber,FieldUserNumber,ScalingType,CMISSFieldScalingTypeGetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldScalingTypeGetNumberC
+  END FUNCTION CMISSFieldScalingTypeGetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Returns the scaling type for a field identified by an object for C.
-  FUNCTION CMISSFieldScalingTypeGetPtrC(FieldPtr,ScalingType) BIND(C, NAME = "CMISSFieldScalingTypeGetObj")
+  FUNCTION CMISSFieldScalingTypeGetCPtr(FieldPtr,ScalingType) BIND(C, NAME = "CMISSFieldScalingTypeGet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the scaling type for, for C.
     INTEGER(C_INT), INTENT(OUT) :: ScalingType !<The field scaling type to get, for C. \see OPENCMISS_FieldScalingTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldScalingTypeGetPtrC
+    INTEGER(C_INT) :: CMISSFieldScalingTypeGetCPtr
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldScalingTypeGetPtrC =CMISSNoError
+    CMISSFieldScalingTypeGetCPtr =CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr,Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldScalingTypeGetObj(Field, ScalingType, CMISSFieldScalingTypeGetPtrC)
+        CALL CMISSFieldScalingTypeGet(Field, ScalingType, CMISSFieldScalingTypeGetCPtr)
       ELSE
-        CMISSFieldScalingTypeGetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldScalingTypeGetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldScalingTypeGetPtrC = CMISSPointerIsNULL
+      CMISSFieldScalingTypeGetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldScalingTypeGetPtrC
+  END FUNCTION CMISSFieldScalingTypeGetCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the scaling type for a field identified by a user number for C.
-  FUNCTION CMISSFieldScalingTypeSetNumberC(RegionUserNumber,FieldUserNumber,ScalingType) BIND(C, NAME = &
-  & "CMISSFieldScalingTypeSetNumber")
+  FUNCTION CMISSFieldScalingTypeSetCNum(RegionUserNumber,FieldUserNumber,ScalingType) BIND(C, NAME = &
+    & "CMISSFieldScalingTypeSetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to set the scaling type to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to set the scaling type to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ScalingType !<The field scaling type to set, for C. \see OPENCMISS_FieldScalingTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldScalingTypeSetNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldScalingTypeSetCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldScalingTypeSetNumber(RegionUserNumber,FieldUserNumber,ScalingType,CMISSFieldScalingTypeSetNumberC)
+    CALL CMISSFieldScalingTypeSet(RegionUserNumber,FieldUserNumber,ScalingType,CMISSFieldScalingTypeSetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldScalingTypeSetNumberC
+  END FUNCTION CMISSFieldScalingTypeSetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the scaling type for a field identified by an object for C.
-  FUNCTION CMISSFieldScalingTypeSetPtrC(FieldPtr,ScalingType) BIND(C, NAME = "CMISSFieldScalingTypeSetObj")
+  FUNCTION CMISSFieldScalingTypeSetCPtr(FieldPtr,ScalingType) BIND(C, NAME = "CMISSFieldScalingTypeSet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to set the scaling type to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ScalingType !<The field scaling type to set, for C. \see OPENCMISS_FieldScalingTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldScalingTypeSetPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldScalingTypeSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldScalingTypeSetPtrC = CMISSNoError
+    CMISSFieldScalingTypeSetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldScalingTypeSetObj(Field, ScalingType, CMISSFieldScalingTypeSetPtrC)
+        CALL CMISSFieldScalingTypeSet(Field, ScalingType, CMISSFieldScalingTypeSetCPtr)
       ELSE
-        CMISSFieldScalingTypeSetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldScalingTypeSetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldScalingTypeSetPtrC = CMISSPointerIsNULL
+      CMISSFieldScalingTypeSetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldScalingTypeSetPtrC
+  END FUNCTION CMISSFieldScalingTypeSetCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Returns the field type for a field identified by a user number for C.
-  FUNCTION CMISSFieldTypeGetNumberC(RegionUserNumber,FieldUserNumber,FieldType) BIND(C, NAME = "CMISSFieldTypeGetNumber")
+  FUNCTION CMISSFieldTypeGetCNum(RegionUserNumber,FieldUserNumber,FieldType) BIND(C, NAME = "CMISSFieldTypeGetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the field type for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to get the field type for, for C.
-    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldType !<The field type to get, for C. \see OPENCMISS_FieldTypes
+    INTEGER(C_INT), INTENT(OUT) :: FieldType !<The field type to get, for C. \see OPENCMISS_FieldTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldTypeGetNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldTypeGetCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldTypeGetNumber(RegionUserNumber,FieldUserNumber,FieldType,CMISSFieldTypeGetNumberC)
+    CALL CMISSFieldTypeGet(RegionUserNumber,FieldUserNumber,FieldType,CMISSFieldTypeGetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldTypeGetNumberC
+  END FUNCTION CMISSFieldTypeGetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Returns the type for a field identified by an object for C.
-  FUNCTION CMISSFieldTypeGetPtrC(FieldPtr,FieldType) BIND(C, NAME = "CMISSFieldTypeGetObj")
+  FUNCTION CMISSFieldTypeGetCPtr(FieldPtr,FieldType) BIND(C, NAME = "CMISSFieldTypeGet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the field type for, for C.
-    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldType !<The field type to get, for C. \see OPENCMISS_FieldTypes
+    INTEGER(C_INT), INTENT(OUT) :: FieldType !<The field type to get, for C. \see OPENCMISS_FieldTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldTypeGetPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldTypeGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldTypeGetPtrC = CMISSNoError
+    CMISSFieldTypeGetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldTypeGetObj(Field, FieldType, CMISSFieldTypeGetPtrC)
+        CALL CMISSFieldTypeGet(Field, FieldType, CMISSFieldTypeGetCPtr)
       ELSE
-        CMISSFieldTypeGetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldTypeGetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldTypeGetPtrC = CMISSPointerIsNULL
+      CMISSFieldTypeGetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldTypeGetPtrC
+  END FUNCTION CMISSFieldTypeGetCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the field type for a field identified by a user number for C.
-  FUNCTION CMISSFieldTypeSetNumberC(RegionUserNumber,FieldUserNumber,FieldType) BIND(C, NAME = "CMISSFieldTypeSetNumber")
+  FUNCTION CMISSFieldTypeSetCNum(RegionUserNumber,FieldUserNumber,FieldType) BIND(C, NAME = "CMISSFieldTypeSetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to set the field type to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to set the field type to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldType !<The field type to set, for C. \see OPENCMISS_FieldTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldTypeSetNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldTypeSetCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldTypeSetNumber(RegionUserNumber,FieldUserNumber,FieldType,CMISSFieldTypeSetNumberC)
+    CALL CMISSFieldTypeSet(RegionUserNumber,FieldUserNumber,FieldType,CMISSFieldTypeSetCNum)
 
     RETURN
 
-  END FUNCTION CMISSFieldTypeSetNumberC
+  END FUNCTION CMISSFieldTypeSetCNum
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the type for a field identified by an object for C.
-  FUNCTION CMISSFieldTypeSetPtrC(FieldPtr,FieldType) BIND(C, NAME = "CMISSFieldTypeSetObj")
+  FUNCTION CMISSFieldTypeSetCPtr(FieldPtr,FieldType) BIND(C, NAME = "CMISSFieldTypeSet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to set the field type to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldType !<The field type to set, for C. \see OPENCMISS_FieldTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldTypeSetPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldTypeSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSFieldTypeSetPtrC = CMISSNoError
+    CMISSFieldTypeSetCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldTypeSetObj(Field, FieldType, CMISSFieldTypeSetPtrC)
+        CALL CMISSFieldTypeSet(Field, FieldType, CMISSFieldTypeSetCPtr)
       ELSE
-        CMISSFieldTypeSetPtrC = CMISSErrorConvertingPointer
+        CMISSFieldTypeSetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSFieldTypeSetPtrC = CMISSPointerIsNULL
+      CMISSFieldTypeSetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSFieldTypeSetPtrC
+  END FUNCTION CMISSFieldTypeSetCPtr
 
   !
   !================================================================================================================================
   !
 
   !>Returns the character string label for a field variable for a field identified by a user number.
-  FUNCTION CMISSFieldVariableLabelGetCNumberC(RegionUserNumber,FieldUserNumber,VariableType,LabelSize,Label) BIND(C, &
-  & NAME = "CMISSFieldVariableLabelGetCNumber")
+  FUNCTION CMISSFieldVariableLabelGetCCNum(RegionUserNumber,FieldUserNumber,VariableType,LabelSize,Label) BIND(C, &
+    & NAME = "CMISSFieldVariableLabelGetCNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the label for, for C.
@@ -6252,16 +6325,16 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: LabelSize !<The label size
     CHARACTER(LEN=1, KIND = C_CHAR), INTENT(OUT) :: Label(LabelSize) !<The field variable character string label, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldVariableLabelGetCNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSFieldVariableLabelGetCCNum !<Error Code.
     !Local variable
     CHARACTER(LEN = LabelSize-1) :: FLabel
 
-    CALL CMISSFieldVariableLabelGetCNumber(RegionUserNumber,FieldUserNumber,VariableType,FLabel,CMISSFieldVariableLabelGetCNumberC)
+    CALL CMISSFieldVariableLabelGetCNum(RegionUserNumber,FieldUserNumber,VariableType,FLabel,CMISSFieldVariableLabelGetCCNum)
     CALL CMISSF2CString(FLabel,Label)
 
     RETURN
 
-  END FUNCTION CMISSFieldVariableLabelGetCNumberC
+  END FUNCTION CMISSFieldVariableLabelGetCCNum
 
   !
   !================================================================================================================================
@@ -6305,7 +6378,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Sets/changes the character string label for a field variable for a field identified by a user number for C.
   FUNCTION CMISSFieldVariableLabelSetCNumberC(RegionUserNumber,FieldUserNumber,VariableType,LabelSize,Label) BIND(C, &
-  & NAME ="CMISSFieldVariableLabelSetCNumber")
+    & NAME ="CMISSFieldVariableLabelSetCNumber")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to set the label to, for C.
@@ -6367,7 +6440,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Returns the field variable types for a field identified by a user number for C.
   FUNCTION CMISSFieldVariableTypesGetNumberC(RegionUserNumber,FieldUserNumber,VariableTypes) BIND(C, NAME = &
-  & "CMISSFieldVariableTypesGetNumber")
+    & "CMISSFieldVariableTypesGetNumber")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the field variable types for, for C.
@@ -6420,7 +6493,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Sets/changes the field variable types for a field identified by a user number for C.
   FUNCTION CMISSFieldVariableTypesSetNumberC(RegionUserNumber,FieldUserNumber,VariableTypes) BIND(C, NAME = &
-  & "CMISSFieldVariableTypesSetNumber")
+    & "CMISSFieldVariableTypesSetNumber")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to set the field variable types to, for C.
@@ -6475,7 +6548,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Export element information for fields set identified by an object for C. \todo number method
   FUNCTION CMISSFieldIOElementsExportCCPtrC(FieldsPtr,FileNameSize,FileName,MethodSize,Method) BIND(C, NAME = &
-  & "CMISSFieldIOElementsExportCCObj")
+    & "CMISSFieldIOElementsExportCCObj")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldsPtr !<The fields to export the elements for, for C.
@@ -6514,7 +6587,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Export nodal information for fields set identified by an object for C. \todo number method
   FUNCTION CMISSFieldIONodesExportCCPtrC(FieldsPtr,FileNameSize,FileName,MethodSize,Method) BIND(C, NAME = &
-  &  "CMISSFieldIONodesExportCCObj")
+    &  "CMISSFieldIONodesExportCCObj")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldsPtr !<The fields to export the nodes for, for C.
@@ -6555,7 +6628,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Returns the basis for a generated mesh identified by a user number for C.
   FUNCTION CMISSGeneratedMeshBasisGetNumberC(GeneratedMeshUserNumber,BasisUserNumber) BIND(C, NAME = &
-  & "CMISSGeneratedMeshBasisGetNumber")
+    & "CMISSGeneratedMeshBasisGetNumber")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to get the basis for, for C.
@@ -6617,7 +6690,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Sets/changes the basis for a generated mesh identified by a user number for C.
   FUNCTION CMISSGeneratedMeshBasisSetNumberC(GeneratedMeshUserNumber,BasisUserNumber) BIND(C, NAME = &
-  & "CMISSGeneratedMeshBasisSetNumber")
+    & "CMISSGeneratedMeshBasisSetNumber")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the basis to, for C.
@@ -6679,7 +6752,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Finishes the creation of a generated mesh identified by a user number for C.
   FUNCTION CMISSGeneratedMeshCreateFinishNumberC(GeneratedMeshUserNumber,MeshUserNumber) BIND(C, NAME = &
-  & "CMISSGeneratedMeshCreateFinishNumber")
+    & "CMISSGeneratedMeshCreateFinishNumber")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the basis to, for C.
@@ -6700,7 +6773,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Finishes the creation of a generated mesh identified by an object.
   FUNCTION CMISSGeneratedMeshCreateFinishPtrC(GeneratedMeshPtr,MeshUserNumber,MeshPtr) BIND(C, NAME = &
-  & "CMISSGeneratedMeshCreateFinishObj")
+    & "CMISSGeneratedMeshCreateFinishObj")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: GeneratedMeshPtr!<C pointer to the generated mesh to finish the creation of.
@@ -6743,7 +6816,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Starts the creation of a generated mesh identified by a user number for C.
   FUNCTION CMISSGeneratedMeshCreateStartNumberC(GeneratedMeshUserNumber,RegionUserNumber) BIND(C, NAME = &
-  & "CMISSGeneratedMeshCreateStartNumber")
+    & "CMISSGeneratedMeshCreateStartNumber")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to create, for C.
@@ -6764,7 +6837,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Starts the creation of a generated mesh identified by an object for C.
   FUNCTION CMISSGeneratedMeshCreateStartPtrC(GeneratedMeshUserNumber,RegionPtr,GeneratedMeshPtr) BIND(C, NAME = &
-  & "CMISSGeneratedMeshCreateStartObj")
+    & "CMISSGeneratedMeshCreateStartObj")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to create, for C.
@@ -6812,7 +6885,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to destroy, for C.
     !Function variable
     INTEGER(C_INT) :: CMISSGeneratedMeshDestroyNumberC !<Error Code.
-    !Local variable
+    !Local variableC
 
     CALL CMISSGeneratedMeshDestroyNumber(GeneratedMeshUserNumber,CMISSGeneratedMeshDestroyNumberC)
 
@@ -6850,317 +6923,6 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   END FUNCTION CMISSGeneratedMeshDestroyPtrC
 
-  !
-  !================================================================================================================================
-  !
-
-  !>Returns the extent for a generated mesh identified by a user number.
-  FUNCTION CMISSGeneratedMeshExtentGetNumberC(GeneratedMeshUserNumber,Extent) BIND(C, NAME = "CMISSGeneratedMeshExtentGetNumber")
-
-    !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to get the extent for, for C.
-    REAL(C_DOUBLE), INTENT(OUT) :: Extent(:) !<Extent(i). The extent for the i'th dimension of the generated mesh to get, for C.
-    !Function variable
-    INTEGER(C_INT) :: CMISSGeneratedMeshExtentGetNumberC !<Error Code.
-    !Local variable
-
-    CALL CMISSGeneratedMeshExtentGetNumber(GeneratedMeshUserNumber, Extent,CMISSGeneratedMeshExtentGetNumberC)
-
-    RETURN
-
-  END FUNCTION CMISSGeneratedMeshExtentGetNumberC
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Returns the extent for a generated mesh identified by an object for C.
-  FUNCTION CMISSGeneratedMeshExtentGetPtrC(GeneratedMeshPtr,Extent) BIND(C, NAME = "CMISSGeneratedMeshExtentGetObj")
-
-    !Argument variables
-    TYPE(C_PTR), VALUE, INTENT(IN) :: GeneratedMeshPtr !<C pointer to the generated mesh to get the extent for.
-    REAL(C_DOUBLE), INTENT(OUT) :: Extent(:) !<Extent(i). The extent for the i'th dimension of the generated mesh to get, for C.
-    !Function variable
-    INTEGER(C_INT) :: CMISSGeneratedMeshExtentGetPtrC !<Error Code.
-    !Local variable
-    TYPE(CMISSGeneratedMeshType), POINTER :: GeneratedMesh
-
-    CMISSGeneratedMeshExtentGetPtrC = CMISSNoError
-    IF(C_ASSOCIATED(GeneratedMeshPtr)) THEN
-      CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
-      IF(ASSOCIATED(GeneratedMesh)) THEN
-        CALL CMISSGeneratedMeshExtentGetObj(GeneratedMesh, Extent, CMISSGeneratedMeshExtentGetPtrC)
-      ELSE
-        CMISSGeneratedMeshExtentGetPtrC = CMISSErrorConvertingPointer
-      ENDIF
-    ELSE
-      CMISSGeneratedMeshExtentGetPtrC = CMISSPointerIsNULL
-    ENDIF
-
-    RETURN
-
-  END FUNCTION CMISSGeneratedMeshExtentGetPtrC
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the extent for a generated mesh identified by a user number for C.
-  FUNCTION CMISSGeneratedMeshExtentSetNumberC(GeneratedMeshUserNumber,Extent) BIND(C, NAME = "CMISSGeneratedMeshExtentSetNumber")
-
-    !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the extent to, for C.
-    REAL(C_DOUBLE), INTENT(IN) :: Extent(:) !<Extent(i). On return, the extent for the i'th dimension of the generated mesh to set, for C.
-    !Function variable
-    INTEGER(C_INT) :: CMISSGeneratedMeshExtentSetNumberC !<Error Code.
-    !Local variable
-
-    CALL CMISSGeneratedMeshExtentSetNumber(GeneratedMeshUserNumber, Extent,CMISSGeneratedMeshExtentSetNumberC)
-
-    RETURN
-
-  END FUNCTION CMISSGeneratedMeshExtentSetNumberC
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the extent for a generated mesh identified by an object for C.
-  FUNCTION CMISSGeneratedMeshExtentSetPtrC(GeneratedMeshPtr,Extent) BIND(C, NAME = "CMISSGeneratedMeshExtentSetObj")
-
-    !Argument variables
-    TYPE(C_PTR), VALUE, INTENT(IN) :: GeneratedMeshPtr !<C pointer to the generated mesh to set the extent to.
-    REAL(C_DOUBLE), INTENT(OUT) :: Extent(:) !<Extent(i). The extent for the i'th dimension of the generated mesh to set, for C.
-    !Function variable
-    INTEGER(C_INT) :: CMISSGeneratedMeshExtentSetPtrC !<Error Code.
-    !Local variable
-    TYPE(CMISSGeneratedMeshType), POINTER :: GeneratedMesh
-
-    CMISSGeneratedMeshExtentSetPtrC = CMISSNoError
-    IF(C_ASSOCIATED(GeneratedMeshPtr)) THEN
-      CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
-      IF(ASSOCIATED(GeneratedMesh)) THEN
-        CALL CMISSGeneratedMeshExtentSetObj(GeneratedMesh, Extent, CMISSGeneratedMeshExtentSetPtrC)
-      ELSE
-        CMISSGeneratedMeshExtentSetPtrC = CMISSErrorConvertingPointer
-      ENDIF
-    ELSE
-      CMISSGeneratedMeshExtentSetPtrC = CMISSPointerIsNULL
-    ENDIF
-
-    RETURN
-
-  END FUNCTION CMISSGeneratedMeshExtentSetPtrC
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Returns the number of elements for a generated mesh identified by a user number for C.
-  FUNCTION CMISSGeneratedMeshNumberOfElementsGetNumberC(GeneratedMeshUserNumber,NumberOfElements) BIND(C, NAME = &
-  & "CMISSGeneratedMeshNumberOfElementsGetNumber")
-
-    !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the number of elements for, for C.
-    INTEGER(C_INT), INTENT(OUT) :: NumberOfElements(:) !<NumberOfElements(i). On return, the number of elements in the i'th dimension of the generated mesh, for C.
-    !Function variable
-    INTEGER(C_INT) :: CMISSGeneratedMeshNumberOfElementsGetNumberC !<Error Code.
-    !Local variable
-
-    CALL CMISSGeneratedMeshNumberOfElementsGetNumber(GeneratedMeshUserNumber, NumberOfElements, &
-    & CMISSGeneratedMeshNumberOfElementsGetNumberC)
-
-    RETURN
-
-  END FUNCTION CMISSGeneratedMeshNumberOfElementsGetNumberC
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Returns the number of elements for a generated mesh identified by an object for C.
-  FUNCTION CMISSGeneratedMeshNumberOfElementsGetPtrC(GeneratedMeshPtr,NumberOfElements) BIND(C, NAME = &
-  & "CMISSGeneratedMeshNumberOfElementsGetObj")
-
-    !Argument variables
-    TYPE(C_PTR), VALUE, INTENT(IN) :: GeneratedMeshPtr !<C pointer to the generated mesh to get the number of elements for.
-    INTEGER(C_INT), INTENT(OUT) :: NumberOfElements(:) !<NumberOfElements(i). On return, the number of elements in the i'th dimension of the generated mesh, for C.
-    !Function variable
-    INTEGER(C_INT) :: CMISSGeneratedMeshNumberOfElementsGetPtrC !<Error Code.
-    !Local variable
-    TYPE(CMISSGeneratedMeshType), POINTER :: GeneratedMesh
-
-    CMISSGeneratedMeshNumberOfElementsGetPtrC = CMISSNoError
-    IF(C_ASSOCIATED(GeneratedMeshPtr)) THEN
-      CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
-      IF(ASSOCIATED(GeneratedMesh)) THEN
-        CALL CMISSGeneratedMeshNumberOfElementsGetObj(GeneratedMesh, NumberOfElements, CMISSGeneratedMeshNumberOfElementsGetPtrC)
-      ELSE
-        CMISSGeneratedMeshNumberOfElementsGetPtrC = CMISSErrorConvertingPointer
-      ENDIF
-    ELSE
-      CMISSGeneratedMeshNumberOfElementsGetPtrC = CMISSPointerIsNULL
-    ENDIF
-
-    RETURN
-
-  END FUNCTION CMISSGeneratedMeshNumberOfElementsGetPtrC
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the number of elements for a generated mesh identified by a user number for C.
-  FUNCTION CMISSGeneratedMeshNumberOfElementsSetNumberC(GeneratedMeshUserNumber,NumberOfElements) BIND(C, NAME = &
-  & "CMISSGeneratedMeshNumberOfElementsSetNumber")
-
-    !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the number of elements to, for C.
-    INTEGER(C_INT), INTENT(OUT) :: NumberOfElements(:) !<NumberOfElements(i). On return, the number of elements in the i'th dimension of the generated mesh to set, for C.
-    !Function variable
-    INTEGER(C_INT) :: CMISSGeneratedMeshNumberOfElementsSetNumberC !<Error Code.
-    !Local variable
-
-    CALL CMISSGeneratedMeshNumberOfElementsSetNumber(GeneratedMeshUserNumber, NumberOfElements, &
-    & CMISSGeneratedMeshNumberOfElementsSetNumberC)
-
-    RETURN
-
-  END FUNCTION CMISSGeneratedMeshNumberOfElementsSetNumberC
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the number of elements for a generated mesh identified by an object for C.
-  FUNCTION CMISSGeneratedMeshNumberOfElementsSetPtrC(GeneratedMeshPtr,NumberOfElements) BIND(C, NAME = &
-  & "CMISSGeneratedMeshNumberOfElementsSetObj")
-
-    !Argument variables
-    TYPE(C_PTR), VALUE, INTENT(IN) :: GeneratedMeshPtr !<C pointer to the generated mesh to set the number of elements to.
-    INTEGER(C_INT), INTENT(OUT) :: NumberOfElements(:) !<NumberOfElements(i). On return, the number of elements in the i'th dimension of the generated mesh to set, for C.
-    !Function variable
-    INTEGER(C_INT) :: CMISSGeneratedMeshNumberOfElementsSetPtrC !<Error Code.
-    !Local variable
-    TYPE(CMISSGeneratedMeshType), POINTER :: GeneratedMesh
-
-    CMISSGeneratedMeshNumberOfElementsSetPtrC = CMISSNoError
-    IF(C_ASSOCIATED(GeneratedMeshPtr)) THEN
-      CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
-      IF(ASSOCIATED(GeneratedMesh)) THEN
-        CALL CMISSGeneratedMeshNumberOfElementsSetObj(GeneratedMesh, NumberOfElements, CMISSGeneratedMeshNumberOfElementsSetPtrC)
-      ELSE
-        CMISSGeneratedMeshNumberOfElementsSetPtrC = CMISSErrorConvertingPointer
-      ENDIF
-    ELSE
-      CMISSGeneratedMeshNumberOfElementsSetPtrC = CMISSPointerIsNULL
-    ENDIF
-
-    RETURN
-
-  END FUNCTION CMISSGeneratedMeshNumberOfElementsSetPtrC
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Returns the origin of a generated mesh identified by a user number for C.
-  FUNCTION CMISSGeneratedMeshOriginGetNumberC(GeneratedMeshUserNumber,Origin) BIND(C, NAME = "CMISSGeneratedMeshOriginGetNumber")
-
-    !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to get the origin for, for C.
-    REAL(C_DOUBLE), INTENT(OUT) :: Origin(:) !<Origin(i). On return, the origin of the i'th dimension of the generated mesh to get for C.
-    !Function variable
-    INTEGER(C_INT) :: CMISSGeneratedMeshOriginGetNumberC !<Error Code.
-    !Local variable
-
-    CALL CMISSGeneratedMeshOriginGetNumber(GeneratedMeshUserNumber, Origin, CMISSGeneratedMeshOriginGetNumberC)
-
-    RETURN
-
-  END FUNCTION CMISSGeneratedMeshOriginGetNumberC
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Returns the origin of a generated mesh identified by an object for C.
-  FUNCTION CMISSGeneratedMeshOriginGetPtrC(GeneratedMeshPtr,Origin) BIND(C, NAME = "CMISSGeneratedMeshOriginGetObj")
-
-    !Argument variables
-    TYPE(C_PTR), VALUE, INTENT(IN) :: GeneratedMeshPtr !<C pointer to the generated mesh to set the number of elements to.
-    REAL(C_DOUBLE), INTENT(OUT) :: Origin(:) !<Origin(i). On return, the origin of the i'th dimension of the generated mesh to get for C.
-    !Function variable
-    INTEGER(C_INT) :: CMISSGeneratedMeshOriginGetPtrC !<Error Code.
-    !Local variable
-    TYPE(CMISSGeneratedMeshType), POINTER :: GeneratedMesh
-
-    CMISSGeneratedMeshOriginGetPtrC = CMISSNoError
-    IF(C_ASSOCIATED(GeneratedMeshPtr)) THEN
-      CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
-      IF(ASSOCIATED(GeneratedMesh)) THEN
-        CALL CMISSGeneratedMeshOriginGetObj(GeneratedMesh, Origin, CMISSGeneratedMeshOriginGetPtrC)
-      ELSE
-        CMISSGeneratedMeshOriginGetPtrC = CMISSErrorConvertingPointer
-      ENDIF
-    ELSE
-      CMISSGeneratedMeshOriginGetPtrC = CMISSPointerIsNULL
-    ENDIF
-
-    RETURN
-
-  END FUNCTION CMISSGeneratedMeshOriginGetPtrC
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the origin of a generated mesh identified by a user number for C.
-  FUNCTION CMISSGeneratedMeshOriginSetNumberC(GeneratedMeshUserNumber,Origin) BIND(C, NAME = "CMISSGeneratedMeshOriginSetNumber")
-
-    !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the origin to, for C.
-    REAL(C_DOUBLE), INTENT(OUT) :: Origin(:) !<Origin(i). On return, the origin of the i'th dimension of the generated mesh to set for C.
-    !Function variable
-    INTEGER(C_INT) :: CMISSGeneratedMeshOriginSetNumberC !<Error Code.
-    !Local variable
-
-    CALL CMISSGeneratedMeshOriginSetNumber(GeneratedMeshUserNumber, Origin, CMISSGeneratedMeshOriginSetNumberC)
-
-    RETURN
-
-  END FUNCTION CMISSGeneratedMeshOriginSetNumberC
-
-    !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the origin of a generated mesh identified by an object for C.
-  FUNCTION CMISSGeneratedMeshOriginSetPtrC(GeneratedMeshPtr,Origin) BIND(C, NAME = "CMISSGeneratedMeshOriginSetObj")
-
-    !Argument variables
-    TYPE(C_PTR), VALUE, INTENT(IN) :: GeneratedMeshPtr !<C pointer to the generated mesh to set the number of elements to.
-    REAL(C_DOUBLE), INTENT(OUT) :: Origin(:) !<Origin(i). On return, the origin of the i'th dimension of the generated mesh to set for C.
-    !Function variable
-    INTEGER(C_INT) :: CMISSGeneratedMeshOriginSetPtrC !<Error Code.
-    !Local variable
-    TYPE(CMISSGeneratedMeshType), POINTER :: GeneratedMesh
-
-    CMISSGeneratedMeshOriginSetPtrC = CMISSNoError
-    IF(C_ASSOCIATED(GeneratedMeshPtr)) THEN
-      CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
-      IF(ASSOCIATED(GeneratedMesh)) THEN
-        CALL CMISSGeneratedMeshOriginSetObj(GeneratedMesh, Origin, CMISSGeneratedMeshOriginSetPtrC)
-      ELSE
-        CMISSGeneratedMeshOriginSetPtrC = CMISSErrorConvertingPointer
-      ENDIF
-    ELSE
-      CMISSGeneratedMeshOriginSetPtrC = CMISSPointerIsNULL
-    ENDIF
-
-    RETURN
-
-  END FUNCTION CMISSGeneratedMeshOriginSetPtrC
 
   !
   !================================================================================================================================
@@ -7168,7 +6930,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Returns the type of a generated mesh identified by a user number for C.
   FUNCTION CMISSGeneratedMeshTypeGetNumberC(GeneratedMeshUserNumber,GeneratedMeshType) BIND(C, NAME = &
-  & "CMISSGeneratedMeshTypeGetNumber")
+    & "CMISSGeneratedMeshTypeGetNumber")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to get the type for, for C.
@@ -7220,7 +6982,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Sets/changes the type of a generated mesh identified by a user number for C.
   FUNCTION CMISSGeneratedMeshTypeSetNumberC(GeneratedMeshUserNumber,GeneratedMeshType) BIND(C, NAME = &
-  & "CMISSGeneratedMeshTypeSetNumber")
+    & "CMISSGeneratedMeshTypeSetNumber")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the type to, for C.
@@ -7272,7 +7034,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Calculates and sets the geometric field parameters for a generated mesh identified by a user number for C.
   FUNCTION CMISSGeneratedMeshGeometricParametersCalculateNumberC(RegionUserNumber,FieldUserNumber,GeneratedMeshUserNumber) &
-  &  BIND(C, NAME = "CMISSGeneratedMeshGeometricParametersCalculateNumber")
+    &  BIND(C, NAME = "CMISSGeneratedMeshGeometricParametersCalculateNumber")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to calculate the geometric parameters for, for C.
@@ -7283,7 +7045,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Local variable
 
     CALL CMISSGeneratedMeshGeometricParametersCalculateNumber(RegionUserNumber,FieldUserNumber,GeneratedMeshUserNumber, &
-    & CMISSGeneratedMeshGeometricParametersCalculateNumberC)
+      & CMISSGeneratedMeshGeometricParametersCalculateNumberC)
 
     RETURN
 
@@ -7295,7 +7057,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Calculates and sets the geometric field parameters for a generated mesh identified by an object for C.
   FUNCTION CMISSGeneratedMeshGeometricParametersCalculatePtrC(FieldPtr,GeneratedMeshPtr)  BIND(C, NAME = &
-  & "CMISSGeneratedMeshGeometricParametersCalculateObj")
+    & "CMISSGeneratedMeshGeometricParametersCalculateObj")
 
     !Argument variables
     TYPE(C_PTR), INTENT(INOUT) :: FieldPtr !<The field to calculate the geometric parameters for, for C.
@@ -7314,7 +7076,7 @@ END FUNCTION CMISSFieldsTypeCreateC
           CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
           IF(ASSOCIATED(GeneratedMesh)) THEN
             CALL CMISSGeneratedMeshGeometricParametersCalculateObj(Field,GeneratedMesh, &
-            & CMISSGeneratedMeshGeometricParametersCalculatePtrC)
+              & CMISSGeneratedMeshGeometricParametersCalculatePtrC)
           ELSE
             CMISSGeneratedMeshGeometricParametersCalculatePtrC = CMISSErrorConvertingPointer
           ENDIF
@@ -7340,7 +7102,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Finishes the creation of a domain decomposition for a decomposition identified by a user number for C.
   FUNCTION CMISSDecompositionCreateFinishNumberC(RegionUserNumber,MeshUserNumber,DecompositionUserNumber) BIND(C, NAME = &
-  & "CMISSDecompositionCreateFinishNumber")
+    & "CMISSDecompositionCreateFinishNumber")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to finish the decomposition for, for C.
@@ -7351,7 +7113,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Local variable
 
     CALL CMISSDecompositionCreateFinishNumber(RegionUserNumber,MeshUserNumber,DecompositionUserNumber, &
-    & CMISSDecompositionCreateFinishNumberC)
+      & CMISSDecompositionCreateFinishNumberC)
 
     RETURN
 
@@ -7393,7 +7155,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Starts the creation of a domain decomposition for a decomposition identified by a user number for C.
   FUNCTION CMISSDecompositionCreateStartNumberC(DecompositionUserNumber,RegionUserNumber,MeshUserNumber)  BIND(C, NAME = &
-  & "CMISSDecompositionCreateStartNumberC")
+    & "CMISSDecompositionCreateStartNumberC")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: DecompositionUserNumber !<The user number of the decomposition to create for C.
@@ -7404,7 +7166,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Local variable
 
     CALL CMISSDecompositionCreateStartNumber(DecompositionUserNumber,RegionUserNumber,MeshUserNumber, &
-    & CMISSDecompositionCreateStartNumberC)
+      & CMISSDecompositionCreateStartNumberC)
 
     RETURN
 
@@ -7416,7 +7178,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Starts the creation of a domain decomposition for a decomposition identified by an object.
   FUNCTION CMISSDecompositionCreateStartPtrC(DecompositionUserNumber,MeshPtr,DecompositionPtr)  BIND(C, NAME = &
-  & "CMISSDecompositionCreateStartObj")
+    & "CMISSDecompositionCreateStartObj")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: DecompositionUserNumber !<The user number of the decomposition to finish for C.
@@ -7459,7 +7221,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Destroys a decomposition identified by a user number for C.
   FUNCTION CMISSDecompositionDestroyNumberC(RegionUserNumber,MeshUserNumber,DecompositionUserNumber)  BIND(C, NAME = &
-  & "CMISSDecompositionDestroyNumber")
+    & "CMISSDecompositionDestroyNumber")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to destroy the decomposition for, for C.
@@ -7511,7 +7273,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Calculates the element domains for a decomposition identified by a user number for C.
   FUNCTION CMISSDecompositionElementDomainCalculateNumberC(RegionUserNumber,MeshUserNumber,DecompositionUserNumber) BIND(C, NAME =&
-  & "CMISSDecompositionElementDomainCalculateNumber")
+    & "CMISSDecompositionElementDomainCalculateNumber")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to calculate the element domains for, for C.
@@ -7522,7 +7284,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Local variable
 
     CALL CMISSDecompositionElementDomainCalculateNumber(RegionUserNumber,MeshUserNumber,DecompositionUserNumber, &
-    & CMISSDecompositionElementDomainCalculateNumberC)
+      & CMISSDecompositionElementDomainCalculateNumberC)
 
     RETURN
 
@@ -7534,7 +7296,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Calculates the element domains for a decomposition identified by an object for C.
   FUNCTION CMISSDecompositionElementDomainCalculatePtrC(DecompositionPtr) BIND(C, NAME = &
-  & "CMISSDecompositionElementDomainCalculateObj")
+    & "CMISSDecompositionElementDomainCalculateObj")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: DecompositionPtr !<C pointer to the decomposition to calculate the element domains.
@@ -7578,7 +7340,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Local variable
 
     CALL CMISSDecompositionElementDomainGetNumber(RegionUserNumber,MeshUserNumber,DecompositionUserNumber,ElementUserNumber,Domain,&
-    & CMISSDecompositionElementDomainGetNumberC)
+      & CMISSDecompositionElementDomainGetNumberC)
 
     RETURN
 
@@ -7590,7 +7352,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Returns the domain for a given element in a decomposition identified by an object.
   FUNCTION CMISSDecompositionElementDomainGetPtrC(DecompositionPtr,ElementUserNumber,Domain)  BIND(C, NAME = &
-  & "CMISSDecompositionElementDomainGetObj")
+    & "CMISSDecompositionElementDomainGetObj")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: DecompositionPtr !<C pointer to the decomposition to get the domain for.
@@ -7636,7 +7398,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Local variable
 
     CALL CMISSDecompositionElementDomainSetNumber(RegionUserNumber,MeshUserNumber,DecompositionUserNumber,ElementUserNumber,Domain,&
-    & CMISSDecompositionElementDomainSetNumberC)
+      & CMISSDecompositionElementDomainSetNumberC)
 
     RETURN
 
@@ -7648,7 +7410,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Sets/changes the domain for a given element in a decomposition identified by an object for C.
   FUNCTION CMISSDecompositionElementDomainSetPtrC(DecompositionPtr,ElementUserNumber,Domain)  BIND(C, NAME = &
-  & "CMISSDecompositionElementDomainSetObj")
+    & "CMISSDecompositionElementDomainSetObj")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: DecompositionPtr !<C pointer to the decomposition to set the domain to.
@@ -7693,7 +7455,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Local variable
 
     CALL CMISSDecompositionMeshComponentGetNumber(RegionUserNumber,MeshUserNumber,DecompositionUserNumber,MeshComponentNumber,&
-    & CMISSDecompositionMeshComponentGetNumberC)
+      & CMISSDecompositionMeshComponentGetNumberC)
 
     RETURN
 
@@ -7705,7 +7467,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Returns the mesh component number used for the decomposition of a mesh for a decomposition identified by an object for C.
   FUNCTION CMISSDecompositionMeshComponentGetPtrC(DecompositionPtr,MeshComponentNumber) BIND(C, NAME = &
-  & "CMISSDecompositionMeshComponentGetObj")
+    & "CMISSDecompositionMeshComponentGetObj")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: DecompositionPtr !<C pointer to the decomposition to get the mesh component for.
@@ -7749,7 +7511,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Local variable
 
     CALL CMISSDecompositionMeshComponentSetNumber(RegionUserNumber,MeshUserNumber,DecompositionUserNumber,MeshComponentNumber,&
-    & CMISSDecompositionMeshComponentSetNumberC)
+      & CMISSDecompositionMeshComponentSetNumberC)
 
     RETURN
 
@@ -7761,7 +7523,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Sets/changes the mesh component number used for the decomposition of a mesh for a decomposition identified by an object for C.
   FUNCTION CMISSDecompositionMeshComponentSetPtrC(DecompositionPtr,MeshComponentNumber) BIND(C, NAME = &
-  & "CMISSDecompositionMeshComponentSetObj")
+    & "CMISSDecompositionMeshComponentSetObj")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: DecompositionPtr !<C pointer to the decomposition to set the mesh component to.
@@ -7805,7 +7567,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Local variable
 
     CALL CMISSDecompositionNumberOfDomainsGetNumber(RegionUserNumber,MeshUserNumber,DecompositionUserNumber,NumberOfDomains,&
-    & CMISSDecompositionNumberOfDomainsGetNumberC)
+      & CMISSDecompositionNumberOfDomainsGetNumberC)
 
     RETURN
 
@@ -7817,7 +7579,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Returns the number of domains for a decomposition identified by an object for C.
   FUNCTION CMISSDecompositionNumberOfDomainsGetPtrC(DecompositionPtr,NumberOfDomains) BIND(C, NAME = &
-  & "CMISSDecompositionNumberOfDomainsGetObj")
+    & "CMISSDecompositionNumberOfDomainsGetObj")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: DecompositionPtr !<C pointer to the decomposition to get the number of domains for.
@@ -7861,7 +7623,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Local variable
 
     CALL CMISSDecompositionNumberOfDomainsSetNumber(RegionUserNumber,MeshUserNumber,DecompositionUserNumber,NumberOfDomains,&
-    & CMISSDecompositionNumberOfDomainsSetNumberC)
+      & CMISSDecompositionNumberOfDomainsSetNumberC)
 
     RETURN
 
@@ -7873,7 +7635,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Sets/changes the number of domains for a decomposition identified by an object for C.
   FUNCTION CMISSDecompositionNumberOfDomainsSetPtrC(DecompositionPtr,NumberOfDomains) BIND(C, NAME = &
-  & "CMISSDecompositionNumberOfDomainsSetObj")
+    & "CMISSDecompositionNumberOfDomainsSetObj")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: DecompositionPtr !<C pointer to the decomposition to set the number of domains to.
@@ -7905,7 +7667,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Returns the type of a decomposition identified by a user number for C.
   FUNCTION CMISSDecompositionTypeGetNumberC(RegionUserNumber,MeshUserNumber,DecompositionUserNumber,DecompositionType) BIND(C, NAME&
-  & = "CMISSDecompositionTypeGetNumber")
+    & = "CMISSDecompositionTypeGetNumber")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to get the decomposition type for, for C.
@@ -7917,7 +7679,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Local variable
 
     CALL CMISSDecompositionTypeGetNumber(RegionUserNumber,MeshUserNumber,DecompositionUserNumber,DecompositionType,&
-    & CMISSDecompositionTypeGetNumberC)
+      & CMISSDecompositionTypeGetNumberC)
 
     RETURN
 
@@ -7960,7 +7722,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Sets/changes the type of a decomposition identified by a user number for C.
   FUNCTION CMISSDecompositionTypeSetNumberC(RegionUserNumber,MeshUserNumber,DecompositionUserNumber,DecompositionType) BIND(C, NAME&
-  & = "CMISSDecompositionTypeSetNumber")
+    & = "CMISSDecompositionTypeSetNumber")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to set the decomposition type to, for C.
@@ -7972,7 +7734,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Local variable
 
     CALL CMISSDecompositionTypeSetNumber(RegionUserNumber,MeshUserNumber,DecompositionUserNumber,DecompositionType,&
-    &CMISSDecompositionTypeSetNumberC)
+      &CMISSDecompositionTypeSetNumberC)
 
     RETURN
 
@@ -8065,7 +7827,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Starts the creation of a mesh for a mesh identified by a user number for C.
   FUNCTION CMISSMeshCreateStartNumberC(MeshUserNumber,RegionUserNumber,NumberOfDimensions) BIND(C, NAME = &
-  &"CMISSMeshCreateStartNumber")
+    &"CMISSMeshCreateStartNumber")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: MeshUserNumber !<The user number of the mesh to start the creation of, for C.
@@ -8180,7 +7942,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Returns the number of components in a mesh identified by a user number for C.
   FUNCTION CMISSMeshNumberOfComponentsGetNumberC(RegionUserNumber,MeshUserNumber,NumberOfComponents) BIND(C, NAME = &
-  &"CMISSMeshNumberOfComponentsGetNumber")
+    &"CMISSMeshNumberOfComponentsGetNumber")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to get the number of components for, for C.
@@ -8191,7 +7953,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Local variable
 
     CALL CMISSMeshNumberOfComponentsGetNumber(RegionUserNumber,MeshUserNumber,NumberOfComponents,&
-    &CMISSMeshNumberOfComponentsGetNumberC)
+      &CMISSMeshNumberOfComponentsGetNumberC)
 
     RETURN
 
@@ -8234,7 +7996,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Sets/changes the number of components in a mesh identified by a user number for C.
   FUNCTION CMISSMeshNumberOfComponentsSetNumberC(RegionUserNumber,MeshUserNumber,NumberOfComponents) BIND(C, NAME =&
-  & "CMISSMeshNumberOfComponentsSetNumber")
+    & "CMISSMeshNumberOfComponentsSetNumber")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to set the number of components to, for C.
@@ -8245,7 +8007,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Local variable
 
     CALL CMISSMeshNumberOfComponentsSetNumber(RegionUserNumber,MeshUserNumber,NumberOfComponents,&
-    &CMISSMeshNumberOfComponentsSetNumberC)
+      &CMISSMeshNumberOfComponentsSetNumberC)
 
     RETURN
 
@@ -8288,7 +8050,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Returns the number of elements in a mesh identified by a user number for C.
   FUNCTION CMISSMeshNumberOfElementsGetNumberC(RegionUserNumber,MeshUserNumber,NumberOfElements) BIND(C, NAME = &
-  &"CMISSMeshNumberOfElementsGetNumber")
+    &"CMISSMeshNumberOfElementsGetNumber")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to get the number of elements for, for C.
@@ -8341,7 +8103,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Sets/changes the number of elements in a mesh identified by a user number for C.
   FUNCTION CMISSMeshNumberOfElementsSetNumberC(RegionUserNumber,MeshUserNumber,NumberOfElements) BIND(C, NAME = &
-  &"CMISSMeshNumberOfElementsSetNumber")
+    &"CMISSMeshNumberOfElementsSetNumber")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to set the number of elements to, for C.
@@ -8394,7 +8156,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Finishes creating elements for a mesh component of a mesh identified by a user number for C.
   FUNCTION CMISSMeshElementsCreateFinishNumberC(RegionUserNumber,MeshUserNumber,MeshComponentNumber) BIND(C, NAME = &
-  &"CMISSMeshElementsCreateFinishNumber")
+    &"CMISSMeshElementsCreateFinishNumber")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to finish creating the elements for, for C.
@@ -8405,7 +8167,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Local variable
 
     CALL CMISSMeshElementsCreateFinishNumber(RegionUserNumber,MeshUserNumber,MeshComponentNumber,&
-    &CMISSMeshElementsCreateFinishNumberC)
+      &CMISSMeshElementsCreateFinishNumberC)
 
     RETURN
 
@@ -8447,7 +8209,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Starts creating elements for a mesh component of a mesh identified by a user number for C.
   FUNCTION CMISSMeshElementsCreateStartNumberC(RegionUserNumber,MeshUserNumber,MeshComponentNumber,BasisUserNumber) BIND(C, NAME = &
-  &"CMISSMeshElementsCreateStartNum")
+    &"CMISSMeshElementsCreateStartNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to start creating the elements for, for C.
@@ -8459,7 +8221,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Local variable
 
     CALL CMISSMeshElementsCreateStartNum(RegionUserNumber,MeshUserNumber,MeshComponentNumber,BasisUserNumber,&
-    &CMISSMeshElementsCreateStartNumberC)
+      &CMISSMeshElementsCreateStartNumberC)
 
     RETURN
 
@@ -8471,7 +8233,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Starts creating elements for a mesh component of a mesh identified by an object for C.
   FUNCTION CMISSMeshElementsCreateStartPtrC(MeshPtr,MeshComponentNumber,BasisPtr,MeshElementsPtr) BIND(C, NAME = &
-  &"CMISSMeshElementsCreateStartObj")
+    &"CMISSMeshElementsCreateStartObj")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: MeshPtr !<C pointer to the mesh to start the creation of elements for.
@@ -8481,7 +8243,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Function variable
     INTEGER(C_INT) :: CMISSMeshElementsCreateStartPtrC !<Error Code.
     !Local variables
-    TYPE(CMISSMeshElementsType), POINTER :: Mesh
+    TYPE(CMISSMeshType), POINTER :: Mesh
     TYPE(CMISSBasisType), POINTER :: Basis
     TYPE(CMISSMeshElementsType), POINTER :: MeshElements
 
@@ -8496,7 +8258,7 @@ END FUNCTION CMISSFieldsTypeCreateC
               CALL C_F_POINTER(MeshElementsPtr, MeshElements)
               IF(ASSOCIATED(MeshElements)) THEN
                 CALL CMISSMeshElementsCreateStartObj(Mesh, MeshComponentNumber, Basis, MeshElements, &
-                & CMISSMeshElementsCreateStartPtrC)
+                  & CMISSMeshElementsCreateStartPtrC)
               ELSE
                 CMISSMeshElementsCreateStartPtrC = CMISSErrorConvertingPointer
               ENDIF
@@ -8526,7 +8288,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Returns the basis for an element in a mesh identified by an user number for C. \todo should the global element number be a user number?
   FUNCTION CMISSMeshElementsBasisGetNumberC(RegionUserNumber,MeshUserNumber,MeshComponentNumber,GlobalElementNumber, &
-    & BasisUserNumber) BIND(C, NAME = "CMISSMeshElementsBasisGetNum")
+      & BasisUserNumber) BIND(C, NAME = "CMISSMeshElementsBasisGetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to get the basis for, for C.
@@ -8539,11 +8301,83 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Local variable
 
     CALL CMISSMeshElementsBasisGetNum(RegionUserNumber,MeshUserNumber,MeshComponentNumber,GlobalElementNumber,BasisUserNumber,&
-    &CMISSMeshElementsBasisGetNumberC)
+      &CMISSMeshElementsBasisGetNumberC)
 
     RETURN
 
   END FUNCTION CMISSMeshElementsBasisGetNumberC
+
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the basis for an element in a mesh identified by an object. \todo should the global element number be a user number?
+  FUNCTION CMISSMeshElementsBasisSetCPtr(MeshElementsPtr,GlobalElementNumber,BasisPtr) BIND(C, NAME = " CMISSMeshElementsBasisSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: MeshElementsPtr !<C pointer to the mesh elements to set, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: GlobalElementNumber !<The global element number to set the basis for, for C.
+    TYPE(C_PTR), INTENT(IN) :: BasisPtr !<C pointer to the basis for the element to set, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSMeshElementsBasisSetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSMeshElementsType), POINTER :: MeshElements
+    TYPE(CMISSBasisType), POINTER :: Basis
+
+    CMISSMeshElementsBasisSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(MeshElementsPtr)) THEN
+      CALL C_F_POINTER(MeshElementsPtr, MeshElements)
+      IF(ASSOCIATED(MeshElements)) THEN
+        IF(C_ASSOCIATED(BasisPtr)) THEN
+          CALL C_F_POINTER(BasisPtr, Basis)
+          IF(ASSOCIATED(Basis)) THEN
+            CALL CMISSMeshElementsBasisSet(MeshElements, GlobalElementNumber, Basis, &
+              & CMISSMeshElementsBasisSetCPtr)
+          ELSE
+            CMISSMeshElementsBasisSetCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSMeshElementsBasisSetCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSMeshElementsBasisSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSMeshElementsBasisSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSMeshElementsBasisSetCPtr
+
+    !
+  !================================================================================================================================
+  !
+
+  !>Returns the element nodes for an element in a mesh identified by an user number. \todo should the global element number be a user number?
+  FUNCTION CMISSMeshElementsNodesGetCNum(RegionUserNumber,MeshUserNumber,MeshComponentNumber,GlobalElementNumber, &
+    & ElementUserNodes) BIND(C, NAME = "CMISSMeshElementsNodesGet")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to get the element nodes for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: MeshUserNumber !<The user number of the mesh to get the element nodes for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: MeshComponentNumber !<The mesh component number of the mesh to get the element nodes for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: GlobalElementNumber !<The global element number to get the element nodes for, for C.
+    INTEGER(C_INT), INTENT(OUT) :: ElementUserNodes !<The user node number number of the i'th element node.
+    !Function variable
+    INTEGER(C_INT) :: CMISSMeshElementsNodesGetCNum !<Error Code.
+    !Local variable
+
+    CALL CMISSMeshElementsBasisGetNum(RegionUserNumber,MeshUserNumber,MeshComponentNumber,GlobalElementNumber,ElementUserNodes, &
+      &CMISSMeshElementsNodesGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSMeshElementsNodesGetCNum
+
+
+
 
 
 
