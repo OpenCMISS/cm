@@ -243,6 +243,11 @@ MODULE EQUATIONS_SET_CONSTANTS
   !>@{  
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_1=1 !<u=ln(4/(x+y+1^2))
   !>@}
+  !> \addtogroup EQUATIONS_SET_CONSTANTS_DiffusionAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:DiffusionAnalyticFunctionTypes
+  !> \brief The analytic function types for a diffusion equation
+  !>@{  
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DIFFUSION_EQUATION_TWO_DIM_1=1 !<u=exp(-kt)*sin(sqrt(k)*(x*cos(phi)+y*sin(phi)))
+  !>@}
   !> \addtogroup EQUATIONS_SET_CONSTANTS_LinearElasticityAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:LinearElasticityAnalyticFunctionTypes
   !> \brief The analytic function types for a Linear Elasticity equation
   !>@{

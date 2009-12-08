@@ -54,6 +54,7 @@ MODULE DIFFUSION_EQUATION_ROUTINES
   USE EQUATIONS_MAPPING_ROUTINES
   USE EQUATIONS_MATRICES_ROUTINES
   USE EQUATIONS_SET_CONSTANTS
+  USE EQUATIONS_SET_ROUTINES
   USE FIELD_ROUTINES
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
@@ -67,8 +68,7 @@ MODULE DIFFUSION_EQUATION_ROUTINES
 
   IMPLICIT NONE
 
-  PRIVATE
-
+  PRIVATE DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS
   !Module parameters
 
   !Module types
@@ -79,7 +79,8 @@ MODULE DIFFUSION_EQUATION_ROUTINES
 
   PUBLIC DIFFUSION_EQUATION_EQUATIONS_SET_SETUP,DIFFUSION_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET, &
     & DIFFUSION_EQUATION_EQUATIONS_SET_SUBTYPE_SET,DIFFUSION_EQUATION_FINITE_ELEMENT_CALCULATE, &
-    & DIFFUSION_EQUATION_PROBLEM_SUBTYPE_SET,DIFFUSION_EQUATION_PROBLEM_SETUP
+    & DIFFUSION_EQUATION_PROBLEM_SUBTYPE_SET,DIFFUSION_EQUATION_PROBLEM_SETUP, &
+    & DIFFUSION_EQUATION_PRE_SOLVE
   
 CONTAINS
 
@@ -89,8 +90,7 @@ CONTAINS
 
 
   !>Calculates the analytic solution and sets the boundary conditions for an analytic problem.
-  !SO FAR THIS IS JUST PASTED IN FROM THE POISSION EQUATION FILE - THE ANALYTIC SOLUTION HERE NEEDS TO BE REPLACED
-  !WITH ONE FOR DIFFUSION
+  !Calculates a two-dimensional unsteady heat equation solution (diffusion coefficient is 1)
   SUBROUTINE DIFFUSION_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -107,7 +107,11 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE
     TYPE(VARYING_STRING) :: LOCAL_ERROR    
-    
+    INTEGER(INTG) :: GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE
+    !THESE ARE TEMPORARY VARIABLES - they need to be replace by constant field values and the current simulation time
+    REAL(DP) :: CURRENT_TIME
+    CURRENT_TIME = 1.0_DP
+
     CALL ENTERS("DIFFUSION_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR,*999)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
@@ -120,10 +124,10 @@ CONTAINS
             NULLIFY(GEOMETRIC_VARIABLE)
             CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
             CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS, &
-              & ERR,ERROR,*999)
-            NULLIFY(BOUNDARY_CONDITIONS)
-            CALL BOUNDARY_CONDITIONS_CREATE_START(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
-            DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
+              & ERR,ERROR,*999)            
+             NULLIFY(BOUNDARY_CONDITIONS)
+             CALL BOUNDARY_CONDITIONS_CREATE_START(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+             DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
               variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
               FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
               IF(ASSOCIATED(FIELD_VARIABLE)) THEN
@@ -144,53 +148,10 @@ CONTAINS
                             ENDDO !dim_idx
                             !Loop over the derivatives
                             DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-                              SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
-                              CASE(EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_1)
-                                !u=ln(4/(x+y+1^2))
-                                SELECT CASE(variable_type)
-                                CASE(FIELD_U_VARIABLE_TYPE)
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
-                                  CASE(NO_GLOBAL_DERIV)
-                                    VALUE=LOG(4.0_DP/((X(1)+X(2)+1.0_DP)**2))
-                                  CASE(GLOBAL_DERIV_S1)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                  CASE(GLOBAL_DERIV_S2)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                  CASE(GLOBAL_DERIV_S1_S2)
-                                    CALL FLAG_ERROR("Not implmented.",ERR,ERROR,*999)
-                                  CASE DEFAULT
-                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  END SELECT
-                                CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                 SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
-                                  CASE(NO_GLOBAL_DERIV)
-                                    VALUE=-2.0_DP*(X(1)+X(2))/(X(1)+X(2)+1.0_DP)
-                                  CASE(GLOBAL_DERIV_S1)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                  CASE(GLOBAL_DERIV_S2)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
-                                  CASE(GLOBAL_DERIV_S1_S2)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                  CASE DEFAULT
-                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  END SELECT
-                                CASE DEFAULT
-                                  LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                                    & " is invalid."
-                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                END SELECT                                
-                              CASE DEFAULT
-                                LOCAL_ERROR="The analytic function type of "// &
-                                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
-                                  & " is invalid."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                              END SELECT
+                              ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
+                              GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx)
+                              CALL DIFFUSION_EQUATION_ANALYTIC_FUNCTIONS(EQUATIONS_SET,VALUE,X,CURRENT_TIME,variable_type, & 
+                                & GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE,ERR,ERROR,*999)
                               local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
                                 & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
@@ -225,9 +186,9 @@ CONTAINS
                 CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
               ENDIF
 
-            ENDDO !variable_idx
-            CALL BOUNDARY_CONDITIONS_CREATE_FINISH(BOUNDARY_CONDITIONS,ERR,ERROR,*999)
-            CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+             ENDDO !variable_idx
+             CALL BOUNDARY_CONDITIONS_CREATE_FINISH(BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+             CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
               & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
           ELSE
             CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
@@ -250,6 +211,87 @@ CONTAINS
   END SUBROUTINE DIFFUSION_EQUATION_ANALYTIC_CALCULATE
 
 
+  !
+  !================================================================================================================================
+  !
+  !>Calculates the various analytic solutions given X and time, can be called from within analytic calculate or elsewhere if needed
+  SUBROUTINE DIFFUSION_EQUATION_ANALYTIC_FUNCTIONS(EQUATIONS_SET,VALUE,X,CURRENT_TIME,VARIABLE_TYPE, & 
+    & GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET 
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    REAL(DP), INTENT(OUT) :: VALUE
+    REAL(DP), INTENT(IN) :: CURRENT_TIME
+    REAL(DP), INTENT(IN), DIMENSION(3) :: X
+    !Local variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    REAL(DP) :: k,phi
+    INTEGER(INTG) :: variable_type,GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+
+    !These are parameters for the analytical solution
+    k = 1.0_DP !this is a time decay constant for the exponential term
+    phi = 0.785398163397_DP !pi/4 - this sets the orientation of the solution relative to the axes
+    
+    CALL ENTERS("DIFFUSION_EQUATION_ANALYTIC_FUNCTIONS",ERR,ERROR,*999)
+
+     SELECT CASE(ANALYTIC_FUNCTION_TYPE)
+     CASE(EQUATIONS_SET_DIFFUSION_EQUATION_TWO_DIM_1)
+       !u=exp(-kt)*sin(sqrt(k)*(x*cos(phi)+y*sin(phi)))
+       SELECT CASE(variable_type)
+       CASE(FIELD_U_VARIABLE_TYPE)
+         SELECT CASE(GLOBAL_DERIV_INDEX)
+         CASE(NO_GLOBAL_DERIV)
+           VALUE=EXP(-k*CURRENT_TIME)*SIN((SQRT(k))*(X(1)*COS(phi)+X(2)*SIN(phi)))!Need to specify time, k and phi!
+         CASE(GLOBAL_DERIV_S1)
+           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+         CASE(GLOBAL_DERIV_S2)
+           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+         CASE(GLOBAL_DERIV_S1_S2)
+           CALL FLAG_ERROR("Not implmented.",ERR,ERROR,*999)
+         CASE DEFAULT
+           LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+            GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+            & " is invalid."
+           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+         END SELECT
+       CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+         SELECT CASE(GLOBAL_DERIV_INDEX)
+         CASE(NO_GLOBAL_DERIV)
+           VALUE=0.0_DP!set to zero currently- actual value for diffusion solution needs adding                                    
+         CASE(GLOBAL_DERIV_S1)
+           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+         CASE(GLOBAL_DERIV_S2)
+           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+         CASE(GLOBAL_DERIV_S1_S2)
+           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+         CASE DEFAULT
+           LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+            GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+            & " is invalid."
+           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+         END SELECT
+       CASE DEFAULT
+         LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+          & " is invalid."
+         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+       END SELECT                                
+     CASE DEFAULT
+       LOCAL_ERROR="The analytic function type of "// &
+        & TRIM(NUMBER_TO_VSTRING(ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+        & " is invalid."
+       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+     END SELECT
+
+    CALL EXITS("DIFFUSION_EQUATION_ANALYTIC_FUNCTIONS")
+    RETURN
+999 CALL ERRORS("DIFFUSION_EQUATION_ANALYTIC_FUNCTIONS",ERR,ERROR)
+    CALL EXITS("DIFFUSION_EQUATION_ANALYTIC_FUNCTIONS")
+    RETURN 1
+  END SUBROUTINE DIFFUSION_EQUATION_ANALYTIC_FUNCTIONS
   !
   !================================================================================================================================
   !
@@ -870,6 +912,29 @@ CONTAINS
                 IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
                   CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
                   SELECT CASE(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE)
+                  CASE(EQUATIONS_SET_DIFFUSION_EQUATION_TWO_DIM_1)
+                    !Check there is no source
+                    IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_NO_SOURCE_DIFFUSION_SUBTYPE) THEN
+                      !Check that domain is 2D
+                      IF(NUMBER_OF_DIMENSIONS/=2) THEN
+                        LOCAL_ERROR="The number of geometric dimensions of "// &
+                          & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+                          & " is invalid. The analytic function type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                          & " requires that there be 2 geometric dimensions."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                      !Create analytic field if required
+                      !Set analtyic function type
+                      EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_DIFFUSION_EQUATION_TWO_DIM_1
+                    ELSE
+                      LOCAL_ERROR="The equations set subtype of "// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+                        & " is invalid. The analytic function type of "// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                        & " requires that the equations set subtype be an no source diffusion equation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
                   CASE DEFAULT
                     LOCAL_ERROR="The specified analytic function type of "// &
                       & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
@@ -1094,6 +1159,228 @@ CONTAINS
   !
   !================================================================================================================================
   !
+
+  !>Sets up the diffusion problem pre-solve.
+  SUBROUTINE DIFFUSION_EQUATION_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    !Local variables
+    LOGICAL :: UPDATE_MATERIALS
+    LOGICAL :: UPDATE_BOUNDARY_CONDITIONS
+
+    UPDATE_MATERIALS = .FALSE.
+    UPDATE_BOUNDARY_CONDITIONS = .TRUE.
+
+    IF( UPDATE_MATERIALS ) THEN
+      !CALL DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_MATERIALS_FIELD(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+    ENDIF
+
+    IF( UPDATE_BOUNDARY_CONDITIONS ) THEN
+      CALL DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("DIFFUSION_EQUATION_PRE_SOLVE")
+    RETURN
+999 CALL ERRORS("DIFFUSION_EQUATION_PRE_SOLVE",ERR,ERROR)
+    CALL EXITS("DIFFUSION_EQUATION_PRE_SOLVE")
+    RETURN 1
+  END SUBROUTINE DIFFUSION_EQUATION_PRE_SOLVE
+      
+  !   
+  !================================================================================================================================
+  !
+  !>Within the diffusion pre-solve, update the boundary conditions
+  SUBROUTINE DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(FIELD_TYPE), POINTER :: MATERIALS_FIELD,DEPENDENT_FIELD,GEOMETRIC_FIELD
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
+    REAL(DP), POINTER :: BOUNDARY_VALUES(:)
+    REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
+    INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_CHECK_VARIABLE
+
+    REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
+    REAL(DP) :: VALUE,X(3) !<The value to add
+!     REAL(DP) :: k_xx, k_yy, k_zz
+    INTEGER(INTG) :: component_idx,deriv_idx,dim_idx,local_ny,node_idx,variable_idx
+    INTEGER(INTG) :: VARIABLE_TYPE !<The field variable type to add \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+    INTEGER(INTG) :: ANALYTIC_FUNCTION_TYPE
+    INTEGER(INTG) :: GLOBAL_DERIV_INDEX
+    INTEGER(INTG) :: FIELD_SET_TYPE !<The field parameter set identifier \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
+    INTEGER(INTG) :: DERIVATIVE_NUMBER !<The node derivative number
+    INTEGER(INTG) :: COMPONENT_NUMBER !<The field variable component number
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_NODES !<The total number of (geometry) nodes
+    INTEGER(INTG) :: LOCAL_NODE_NUMBER
+    INTEGER(INTG) :: EQUATIONS_SET_IDX
+    INTEGER(INTG) :: equations_row_number
+
+    CALL ENTERS("DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+       !write(*,*)'CURRENT_TIME = ',CURRENT_TIME
+       !write(*,*)'TIME_INCREMENT = ',TIME_INCREMENT
+      IF(ASSOCIATED(SOLVER)) THEN
+        IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            CASE(PROBLEM_LINEAR_SOURCE_DIFFUSION_SUBTYPE)
+            !do nothing?! 
+            CASE(PROBLEM_NONLINEAR_SOURCE_DIFFUSION_SUBTYPE)
+            !do nothing?! 
+            CASE(PROBLEM_NO_SOURCE_DIFFUSION_SUBTYPE)
+                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                  EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
+                  IF(ASSOCIATED(EQUATIONS)) THEN
+                    EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+                    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                      IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+                        DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                        IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+                          GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+                          IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN            
+                            CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,&
+                              & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                            NULLIFY(GEOMETRIC_VARIABLE)
+                            CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
+                            CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,& 
+                              & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+                             DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
+                              variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
+                              FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+                              IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                                DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                                  IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE== & 
+                                    & FIELD_NODE_BASED_INTERPOLATION) THEN
+                                    DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+                                    IF(ASSOCIATED(DOMAIN)) THEN
+                                      IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+                                        DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                                        IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                                          !Loop over the local nodes excluding the ghosts.
+                                          DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                                            !!TODO \todo We should interpolate the geometric field here and the node position.
+                                            DO dim_idx=1,NUMBER_OF_DIMENSIONS
+                                              local_ny= & 
+                                          & GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
+                                              X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
+                                            ENDDO !dim_idx
+                                            !Loop over the derivatives
+                                            DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                              ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
+                                              GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx)
+                                              CALL DIFFUSION_EQUATION_ANALYTIC_FUNCTIONS(EQUATIONS_SET,VALUE,X, & 
+                                                & CURRENT_TIME,variable_type,GLOBAL_DERIV_INDEX, &
+                                                & ANALYTIC_FUNCTION_TYPE,ERR,ERROR,*999)
+                                              local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                                & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                                & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
+!                                              IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
+!                                                IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
+                                                  !If we are a boundary node then set the analytic value on the boundary
+!                                                  CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+!                                                    & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+!                                                ENDIF
+!                                              ENDIF
+                                            ENDDO !deriv_idx
+                                          ENDDO !node_idx
+                                        ELSE
+                                          CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                                        ENDIF
+                                      ELSE
+                                        CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                                      ENDIF
+                                    ELSE
+                                      CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                                    ENDIF
+                                  ELSE
+                                    CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                                  ENDIF
+                                ENDDO !component_idx
+                                CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type, &
+                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type, &
+                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
+                              ELSE
+                                CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+                              ENDIF
+
+                             ENDDO !variable_idx
+                             CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,& 
+                              & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+                          ELSE
+                            CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+                          ENDIF            
+                        ELSE
+                          CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                  END IF                
+                ELSE
+                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+                END IF  
+                CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                  & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                  & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+              ! do nothing ???
+            CASE DEFAULT
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                & " is not valid for a diffusion equation type of a classical field problem class."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+    CALL EXITS("DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS")
+    RETURN
+999 CALL ERRORS("DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS",ERR,ERROR)
+    CALL EXITS("DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS")
+    RETURN 1
+  END SUBROUTINE DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS
+      
+  !   
+  !================================================================================================================================
+  !
+
+
+
 
   !>Calculates the element stiffness matrices and RHS for a diffusion equation finite element equations set.
   SUBROUTINE DIFFUSION_EQUATION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
