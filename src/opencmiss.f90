@@ -1209,6 +1209,11 @@ MODULE OPENCMISS
   !>@{  
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonTwoDim1 = EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_1 !<u=ln(4/(x+y+1^2)) \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
   !>@}
+  !> \addtogroup OPENCMISS_PoissonAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Poisson
+  !> \brief The analytic function types for a Poisson equation.
+  !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
+  !>@{  
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDiffusionTwoDim1 = EQUATIONS_SET_DIFFUSION_EQUATION_TWO_DIM_1 !<u=exp(-kt)*sin(sqrt(k)*(x*cos(phi)+y*sin(phi))) \see OPENCMISS_EquationsSetDiffusionAnalyticFunctionTypes,OPENCMISS
   !> \addtogroup OPENCMISS_StokesAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Stokes
   !> \brief The analytic function types for a Stokes equation.
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
@@ -1233,6 +1238,7 @@ MODULE OPENCMISS
   !>@}
   !>@}
   !>@}
+
   
   !Module types
 
@@ -1277,6 +1283,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSEquationsSetLaplaceEquationTwoDim1,CMISSEquationsSetLaplaceEquationTwoDim2, &
     & CMISSEquationsSetLaplaceEquationThreeDim1,CMISSEquationsSetLaplaceEquationThreeDim2
+
+  PUBLIC CMISSEquationsSetDiffusionTwoDim1
 
   PUBLIC CMISSEquationsSetPoissonTwoDim1
 
