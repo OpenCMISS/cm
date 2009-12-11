@@ -947,9 +947,9 @@ END FUNCTION CMISSFieldsTypeCreateC
   FUNCTION CMISSMeshTypeInitialiseC (MeshTypePtr)BIND(C,NAME= "CMISSMeshTypeInitialise")
 
     !Argument variable
-    TYPE(C_PTR), INTENT(INOUT) :: MeshTypePtr
+    TYPE(C_PTR), INTENT(INOUT) :: MeshTypePtr !<C pointer to the CMISSMeshType object to initialise.
     !Function variable
-    INTEGER(C_INT) :: CMISSMeshTypeInitialiseC
+    INTEGER(C_INT) :: CMISSMeshTypeInitialiseC !<Error Code.
     !Local variables
     INTEGER(C_INT) :: Err
     TYPE(CMISSMeshType), POINTER :: MeshType
@@ -1588,7 +1588,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(IN) :: RoutineListSize(1) !<Size of the list of routines for C.
     TYPE(C_PTR), INTENT(IN) :: RoutineListPtr !<C pointer the list of routines to set diagnostics on in.
     !Function variable
-    INTEGER(C_INT) :: CMISSDiagnosticsSetOnC
+    INTEGER(C_INT) :: CMISSDiagnosticsSetOnC !<Error Code.
     !Local variables
     INTEGER(C_INT), POINTER :: LevelList(:)
     CHARACTER(LEN=DiagFilenameSize-1) :: DiagFilename
@@ -1818,7 +1818,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(IN) :: CollapsedXiSize(1) !<The size of the collapsed Xi parameter for C.
     TYPE(C_PTR), VALUE, INTENT(IN) :: CollapsedXiPtr !<CollapsedXi(ni). C pointer to the collapsed Xi parameter for the ni'th Xi direction to set. \see OPENCMISS_XiCollapse
     !Function variable
-    INTEGER(C_INT) :: CMISSBasisCollapsedXiSetCNum   !Argument variables
+    INTEGER(C_INT) :: CMISSBasisCollapsedXiSetCNum !<Error Code.
     !Local variables
     INTEGER(C_INT), POINTER :: CollapsedXi(:)
 
@@ -2485,7 +2485,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNumber !<The user number of the basis to get the quadrature order for, for C.
     INTEGER(C_INT), INTENT(OUT) :: QuadratureOrder !<The order of quadrature in the specified basis, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSBasisQuadratureOrderGetCNum
+    INTEGER(C_INT) :: CMISSBasisQuadratureOrderGetCNum !<Error Code.
     !Local variables
 
     CALL CMISSBasisQuadratureOrderGet(UserNumber, QuadratureOrder, CMISSBasisQuadratureOrderGetCNum)
@@ -2505,7 +2505,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), VALUE, INTENT(IN) :: BasisPtr !<C pointer to the basis to get the quadrature order for, for C.
     INTEGER(C_INT), INTENT(OUT) :: QuadratureOrder !<The order of quadrature in the specified basis, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSBasisQuadratureOrderGetCPtr
+    INTEGER(C_INT) :: CMISSBasisQuadratureOrderGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSBasisType), POINTER :: Basis
 
@@ -2535,7 +2535,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNumber !<The user number of the basis to set the quadrature order to, for C.
     INTEGER(C_INT), INTENT(IN) :: QuadratureOrder !<The order of quadrature in the specified basis to set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSBasisQuadratureOrderSetCNum
+    INTEGER(C_INT) :: CMISSBasisQuadratureOrderSetCNum !<Error Code.
     !Local variables
 
     CALL CMISSBasisQuadratureOrderSet(UserNumber, QuadratureOrder, CMISSBasisQuadratureOrderSetCNum)
@@ -2555,7 +2555,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), VALUE, INTENT(IN) :: BasisPtr !<C pointer to the basis to set the quadrature order to, for C.
     INTEGER(C_INT), INTENT(IN) :: QuadratureOrder !<The order of quadrature in the specified basis to set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSBasisQuadratureOrderSetCPtr
+    INTEGER(C_INT) :: CMISSBasisQuadratureOrderSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSBasisType), POINTER :: Basis
 
@@ -2585,7 +2585,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNumber !<The user number of the basis to get the quadrature type for, for C.
     INTEGER(C_INT), INTENT(OUT) :: QuadratureType !<The type of quadrature in the specified basis to get, for C. \see OPENCMISS_QuadratureTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSBasisQuadratureTypeGetCNum
+    INTEGER(C_INT) :: CMISSBasisQuadratureTypeGetCNum !<Error Code.
     !Local variables
 
     CALL CMISSBasisQuadratureTypeGet(UserNumber, QuadratureType, CMISSBasisQuadratureTypeGetCNum)
@@ -2605,7 +2605,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), VALUE, INTENT(IN) :: BasisPtr !<C pointer to the basis to get the quadrature type for, for C.
     INTEGER(C_INT), INTENT(OUT) :: QuadratureType !<The type of quadrature in the specified basis to get, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSBasisQuadratureTypeGetCPtr
+    INTEGER(C_INT) :: CMISSBasisQuadratureTypeGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSBasisType), POINTER :: Basis
 
@@ -2635,7 +2635,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNumber !<The user number of the basis to set the quadrature type to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: QuadratureType !<The type of quadrature in the specified basis to set, for C. \see OPENCMISS_QuadratureTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSBasisQuadratureTypeSetCNum
+    INTEGER(C_INT) :: CMISSBasisQuadratureTypeSetCNum !<Error Code.
     !Local variables
 
     CALL CMISSBasisQuadratureTypeSet(UserNumber, QuadratureType, CMISSBasisQuadratureTypeSetCNum)
@@ -2655,7 +2655,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), VALUE, INTENT(IN) :: BasisPtr !<C pointer to the basis to set the quadrature type to, for C.
     INTEGER(C_INT), INTENT(OUT) :: QuadratureType !<The type of quadrature in the specified basis to set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSBasisQuadratureTypeSetCPtr
+    INTEGER(C_INT) :: CMISSBasisQuadratureTypeSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSBasisType), POINTER :: Basis
 
@@ -2685,7 +2685,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNumber !<The user number of the basis to get the type for, for C.
     INTEGER(C_INT), INTENT(OUT) :: BasisType !<The type of the specified basis for C. \see OPENCMISS_BasisTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSBasisTypeGetCNum
+    INTEGER(C_INT) :: CMISSBasisTypeGetCNum !<Error Code.
     !Local variables
 
     CALL CMISSBasisTypeGet(UserNumber, BasisType, CMISSBasisTypeGetCNum)
@@ -2705,7 +2705,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), VALUE, INTENT(IN) :: BasisPtr !<C pointer to the basis to get the type for, for C.
     INTEGER(C_INT), INTENT(OUT) :: BasisType !<The type of the specified basis for C. \see OPENCMISS_BasisTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSBasisTypeGetCPtr
+    INTEGER(C_INT) :: CMISSBasisTypeGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSBasisType), POINTER :: BASIS
 
@@ -2735,7 +2735,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNumber !<The user number of the basis to set the type for, for C.
     INTEGER(C_INT), INTENT(OUT) :: BasisType !<The type of the specified basis to set for C. \see OPENCMISS_BasisTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSBasisTypeSetCNum
+    INTEGER(C_INT) :: CMISSBasisTypeSetCNum !<Error Code.
     !Local variables
 
     CALL CMISSBasisTypeSet(UserNumber, BasisType, CMISSBasisTypeSetCNum)
@@ -2755,7 +2755,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), VALUE, INTENT(IN) :: BasisPtr !<C pointer to the basis to set the type for, for C.
     INTEGER(C_INT), INTENT(OUT) :: BasisType !<The type of the specified basis to set for C. \see OPENCMISS_BasisTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSBasisTypeSetCPtr
+    INTEGER(C_INT) :: CMISSBasisTypeSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSBasisType), POINTER :: BASIS
 
@@ -2788,7 +2788,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the equations set to destroy the boundary conditions for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to destroy the boundary conditions for, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSBoundaryConditionsDestroyCNum
+    INTEGER(C_INT) :: CMISSBoundaryConditionsDestroyCNum !<Error Code.
     !Local variables
 
     CALL CMISSBoundaryConditionsDestroy(RegionUserNumber,EquationsSetUserNumber,CMISSBoundaryConditionsDestroyCNum)
@@ -2807,7 +2807,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: BoundaryConditionsPtr!<The boundary conditions to destroy.
     !Function variable
-    INTEGER(C_INT) :: CMISSBoundaryConditionsDestroyCPtr
+    INTEGER(C_INT) :: CMISSBoundaryConditionsDestroyCPtr !<Error Code.
     !Local variables
     TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
 
@@ -2843,7 +2843,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: Condition !<The boundary condition type to set for C. \see OPENCMISS_BoundaryConditions,OPENCMISS
     REAL(C_DOUBLE), VALUE, INTENT(IN) :: Value !<The value of the boundary condition to add for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSBoundaryConditionsAddConstantCNum
+    INTEGER(C_INT) :: CMISSBoundaryConditionsAddConstantCNum !<Error Code.
     !Local variables
 
     CALL CMISSBoundaryConditionsAddConstant(RegionUserNumber,EquationsSetUserNumber,VariableType,ComponentNumber, &
@@ -2868,7 +2868,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: Condition !<The boundary condition type to set for C. \see OPENCMISS_BoundaryConditions,OPENCMISS
     REAL(C_DOUBLE), INTENT(IN) :: Value !<The value of the boundary condition to add for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSBoundaryConditionsAddConstantCPtr
+    INTEGER(C_INT) :: CMISSBoundaryConditionsAddConstantCPtr !<Error Code.
     !Local variables
     TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
 
@@ -2906,7 +2906,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: Condition !<The boundary condition type to set, for C \see OPENCMISS_BoundaryConditions,OPENCMISS
     REAL(C_DOUBLE), INTENT(IN) :: Value !<The value of the boundary condition to set.
     !Function variable
-    INTEGER(C_INT) :: CMISSBoundaryConditionsSetConstantCNum
+    INTEGER(C_INT) :: CMISSBoundaryConditionsSetConstantCNum !<Error Code.
     !Local variables
 
     CALL CMISSBoundaryConditionsSetConstant(RegionUserNumber,EquationsSetUserNumber,VariableType,ComponentNumber, &
@@ -2931,7 +2931,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: Condition !<The boundary condition type to set, for C \see OPENCMISS_BoundaryConditions,OPENCMISS
     REAL(C_DOUBLE), INTENT(IN) :: Value !<The value of the boundary condition to set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSBoundaryConditionsSetConstantCPtr
+    INTEGER(C_INT) :: CMISSBoundaryConditionsSetConstantCPtr !<Error Code.
     !Local variables
     TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
 
@@ -2969,7 +2969,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: Condition !<The boundary condition type to set for C \see OPENCMISS_BoundaryConditions,OPENCMISS
     REAL(C_DOUBLE), INTENT(IN) :: Value !<The value of the boundary condition to add for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSBoundaryConditionsAddElementCNum
+    INTEGER(C_INT) :: CMISSBoundaryConditionsAddElementCNum !<Error Code.
     !Local variables
 
     CALL CMISSBoundaryConditionsAddElement(RegionUserNumber,EquationsSetUserNumber,VariableType,ElementUserNumber, &
@@ -2995,7 +2995,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: Condition !<The boundary condition type to set  for C. \see OPENCMISS_BoundaryConditions,OPENCMISS
     REAL(C_DOUBLE), INTENT(IN) :: Value !<The value of the boundary condition to add for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSBoundaryConditionsAddElementCPtr
+    INTEGER(C_INT) :: CMISSBoundaryConditionsAddElementCPtr !<Error Code.
     !Local variables
     TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
 
@@ -3033,7 +3033,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: Condition !<The boundary condition type to set  for C. \see OPENCMISS_BoundaryConditions,OPENCMISS
     REAL(C_DOUBLE), INTENT(IN) :: Value !<The value of the boundary condition to set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSBoundaryConditionsSetElementCNum
+    INTEGER(C_INT) :: CMISSBoundaryConditionsSetElementCNum !<Error Code.
     !Local variables
 
     CALL CMISSBoundaryConditionsSetElement(RegionUserNumber,EquationsSetUserNumber,VariableType,ElementUserNumber, &
@@ -3059,7 +3059,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: Condition !<The boundary condition type to set, for C \see OPENCMISS_BoundaryConditions,OPENCMISS
     REAL(C_DOUBLE), INTENT(IN) :: Value !<The value of the boundary condition to set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSBoundaryConditionsSetElementCPtr
+    INTEGER(C_INT) :: CMISSBoundaryConditionsSetElementCPtr !<Error Code.
     !Local variables
     TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
 
@@ -3098,7 +3098,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: Condition !<The boundary condition type to set, for C \see OPENCMISS_BoundaryConditions,OPENCMISS
     REAL(C_DOUBLE), INTENT(IN) :: Value !<The value of the boundary condition to add, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSBoundaryConditionsAddNodeCNum
+    INTEGER(C_INT) :: CMISSBoundaryConditionsAddNodeCNum !<Error Code.
     !Local variables
 
     CALL CMISSBoundaryConditionsAddNode(RegionUserNumber,EquationsSetUserNumber,VariableType,DerivativeNumber,NodeUserNumber, &
@@ -3125,7 +3125,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: Condition !<The boundary condition type to set, for C \see OPENCMISS_BoundaryConditions,OPENCMISS
     REAL(C_DOUBLE), INTENT(IN) :: Value !<The value of the boundary condition to add, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSBoundaryConditionsAddNodeCPtr
+    INTEGER(C_INT) :: CMISSBoundaryConditionsAddNodeCPtr !<Error Code.
     !Local variables
     TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
 
@@ -3164,7 +3164,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: Condition !<The boundary condition type to set, for C \see OPENCMISS_BoundaryConditions,OPENCMISS
     REAL(C_DOUBLE), INTENT(IN) :: Value !<The value of the boundary condition to set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSBoundaryConditionsSetNodeCNum
+    INTEGER(C_INT) :: CMISSBoundaryConditionsSetNodeCNum !<Error Code.
     !Local variables
 
     CALL CMISSBoundaryConditionsSetNode(RegionUserNumber,EquationsSetUserNumber,VariableType,DerivativeNumber,NodeUserNumber, &
@@ -3191,7 +3191,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: Condition !<The boundary condition type to set, for C \see OPENCMISS_BoundaryConditions,OPENCMISS
     REAL(C_DOUBLE), INTENT(IN) :: Value !<The value of the boundary condition to set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSBoundaryConditionsSetNodeCPtr
+    INTEGER(C_INT) :: CMISSBoundaryConditionsSetNodeCPtr !<Error Code.
     !Local variables
     TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
 
@@ -3292,7 +3292,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
     !Argument variables
     INTEGER(C_INT), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the control loop for, for C.
-    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1)
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers, for C.
     TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifier to get the control loop for.
     REAL(C_DOUBLE), INTENT(OUT) :: CurrentTime !<The current time of the time control loop, for C.
     REAL(C_DOUBLE), INTENT(OUT) :: TimeIncrement !<The current time increment of the time control loop,  for C.
@@ -3331,7 +3331,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     REAL(C_DOUBLE), INTENT(OUT) :: CurrentTime !<The current time of the time control loop, for C.
     REAL(C_DOUBLE), INTENT(OUT) :: TimeIncrement !<The current time increment of the time control loop, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSControlLoopCurrentTimesGetCPtr
+    INTEGER(C_INT) :: CMISSControlLoopCurrentTimesGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSControlLoopType), POINTER :: ControlLoop
 
@@ -3363,7 +3363,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers for C.
     TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers.
     !Function variable
-    INTEGER(C_INT) :: CMISSControlLoopDestroyCNum
+    INTEGER(C_INT) :: CMISSControlLoopDestroyCNum !<Error Code.
     !Local variables
     INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
 
@@ -3394,7 +3394,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopPtr !<C pointer the control loop to destroy.
     !Function variable
-    INTEGER(C_INT) :: CMISSControlLoopDestroyCPtr
+    INTEGER(C_INT) :: CMISSControlLoopDestroyCPtr !<Error Code.
     !Local variable
     TYPE(CMISSControlLoopType), POINTER :: ControlLoop
 
@@ -3423,7 +3423,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     & ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,ControlLoopPtr) BIND(C, NAME = "CMISSControlLoopGetNum")
 
     !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the control loop for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the control loop for, for C.
     INTEGER(C_INT), INTENT(IN) :: ControlLoopRootIdentifiersSize(1) !<Size of the root control loop identifiers for C.
     TYPE(C_PTR), INTENT(IN) :: ControlLoopRootIdentifiersPtr !<C pointer to the root control loop identifiers.
     INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers for C.
@@ -3467,8 +3467,1465 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   END FUNCTION CMISSControlLoopGetCNum
 
+  !
+  !================================================================================================================================
+  !
 
- !stop
+  !>Destroys a control loop identified by an object for C.
+  FUNCTION CMISSControlLoopGetCPtr(ControlLoopRootPtr,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,ControlLoopPtr) BIND(C, &
+    & NAME = "CMISSControlLoopGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopRootPtr !<C pointer to the root control loop.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers array for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers.
+    TYPE(C_PTR), INTENT(OUT) :: ControlLoopPtr !<C pointer to the specified control loop.
+    !Function variable
+    INTEGER(C_INT) :: CMISSControlLoopGetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSControlLoopType), POINTER :: ControlLoopRoot
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+    TYPE(CMISSControlLoopType), POINTER :: ControlLoop
+
+    CMISSControlLoopGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopRootPtr)) THEN
+      CALL C_F_POINTER(ControlLoopRootPtr, ControlLoopRoot)
+      IF(ASSOCIATED(ControlLoopRoot)) THEN
+        IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+          CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+          IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+            CALL CMISSControlLoopGet(ControlLoopRoot,ControlLoopIdentifiers,ControlLoop, CMISSControlLoopGetCPtr)
+            IF(ASSOCIATED(ControlLoop)) THEN
+              ControlLoopPtr = C_LOC(ControlLoop)
+            ELSE
+              CMISSControlLoopGetCPtr = CMISSPointerIsNULL
+            ENDIF
+          ELSE
+            CMISSControlLoopGetCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSControlLoopGetCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSControlLoopGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the iteration parameters for a fixed control loop identified by user numbers for C.
+  FUNCTION CMISSControlLoopIterationsSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,StartIteration,&
+    &StopIteration,IterationIncrement) BIND(C, NAME = "CMISSControlLoopIterationsSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the iteration parameters for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: StartIteration !<The start iteration of the fixed control loop to set for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: StopIteration !<The stop iteration of the fixed control loop to set for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: IterationIncrement !<The iteration increment of the fixed control loop to set for C.
+    !Funtion variables
+    INTEGER(C_INT) :: CMISSControlLoopIterationsSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSControlLoopIterationsSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSControlLoopIterationsSet(ProblemUserNumber,ControlLoopIdentifiers,StartIteration,&
+          &StopIteration,IterationIncrement, CMISSControlLoopIterationsSetCNum)
+      ELSE
+        CMISSControlLoopIterationsSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopIterationsSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopIterationsSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the iteration parameters for a fixed control loop identified by an object for C.
+  FUNCTION CMISSControlLoopIterationsSetCPtr(ControlLoopPtr,StartIteration,StopIteration,IterationIncrement) BIND(C, NAME = &
+    & "CMISSControlLoopIterationsSet")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(IN) :: ControlLoopPtr !<C pointer to the control loop to set the iteration parameters for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: StartIteration !<The start iteration of the fixed control loop to set, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: StopIteration !<The stop iteration of the fixed control loop to set, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: IterationIncrement !<The iteration increment of the fixed control loop to set, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSControlLoopIterationsSetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSControlLoopType), POINTER :: ControlLoop
+
+    CMISSControlLoopIterationsSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopPtr)) THEN
+      CALL C_F_POINTER(ControlLoopPtr, ControlLoop)
+      IF(ASSOCIATED(ControlLoop)) THEN
+        CALL CMISSControlLoopIterationsSet(ControlLoop,StartIteration,StopIteration,IterationIncrement, &
+          &CMISSControlLoopIterationsSetCPtr)
+      ELSE
+        CMISSControlLoopIterationsSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopIterationsSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopIterationsSetCPtr
+
+   !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the maximum iterations for a while control loop identified by user numbers for C.
+  FUNCTION CMISSControlLoopMaximumIterationsSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & MaximumIterations) BIND(C, NAME = "CMISSControlLoopMaximumIterationsSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the maximum iterations for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers, for C.
+    TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: MaximumIterations !<The maximum iterations of the while control loop to set, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSControlLoopMaximumIterationsSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSControlLoopMaximumIterationsSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSControlLoopMaximumIterationsSet(ProblemUserNumber,ControlLoopIdentifiers,MaximumIterations,&
+          & CMISSControlLoopMaximumIterationsSetCNum)
+      ELSE
+        CMISSControlLoopMaximumIterationsSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopMaximumIterationsSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopMaximumIterationsSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the maximum iterations for a while control loop identified by an object for C.
+  FUNCTION CMISSControlLoopMaximumIterationsSetCPtr(ControlLoopPtr,MaximumIterations) BIND(C, NAME = &
+    & "CMISSControlLoopMaximumIterationsSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopPtr !<C pointer to the control loop to set the maximum iterations for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: MaximumIterations !<The maximum iterations of the while control loop to set, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSControlLoopMaximumIterationsSetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSControlLoopType), POINTER :: ControlLoop
+
+    CMISSControlLoopMaximumIterationsSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopPtr)) THEN
+      CALL C_F_POINTER(ControlLoopPtr, ControlLoop)
+      IF(ASSOCIATED(ControlLoop)) THEN
+        CALL CMISSControlLoopMaximumIterationsSet(ControlLoop, MaximumIterations, CMISSControlLoopMaximumIterationsSetCPtr)
+      ELSE
+        CMISSControlLoopMaximumIterationsSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopMaximumIterationsSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopMaximumIterationsSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the number of sub-control loops for a control loop identified by user numbers, for C.
+  FUNCTION CMISSControlLoopNumberOfSubLoopsGetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & NumberOfSubLoops) BIND(C, NAME = "CMISSControlLoopNumberOfSubLoopsGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the number of sub loops for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers, for C.
+    TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers.
+    INTEGER(C_INT), INTENT(OUT) :: NumberOfSubLoops !<The number of sub loops for the specified control loop, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSControlLoopNumberOfSubLoopsGetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSControlLoopNumberOfSubLoopsGetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSControlLoopNumberOfSubLoopsGet(ProblemUserNumber,ControlLoopIdentifiers,NumberOfSubLoops,&
+          & CMISSControlLoopNumberOfSubLoopsGetCNum)
+      ELSE
+        CMISSControlLoopNumberOfSubLoopsGetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopNumberOfSubLoopsGetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopNumberOfSubLoopsGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the number of sub-control loops for a control loop identified by an object for C.
+  FUNCTION CMISSControlLoopNumberOfSubLoopsGetCPtr(ControlLoopPtr,NumberOfSubLoops) BIND(C, NAME = &
+    & "CMISSControlLoopNumberOfSubLoopsGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopPtr !<C pointer to the control loop to get the number of sub loops for.
+    INTEGER(C_INT), INTENT(OUT) :: NumberOfSubLoops !<The number of sub loops for the specified control loop for C.
+    !Function variables
+    INTEGER(C_INT) :: CMISSControlLoopNumberOfSubLoopsGetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSControlLoopType), POINTER :: ControlLoop
+
+    CMISSControlLoopNumberOfSubLoopsGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopPtr)) THEN
+      CALL C_F_POINTER(ControlLoopPtr, ControlLoop)
+      IF(ASSOCIATED(ControlLoop)) THEN
+        CALL CMISSControlLoopNumberOfSubLoopsGet(ControlLoop, NumberOfSubLoops,CMISSControlLoopNumberOfSubLoopsGetCPtr)
+      ELSE
+        CMISSControlLoopNumberOfSubLoopsGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopNumberOfSubLoopsGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopNumberOfSubLoopsGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the number of sub-control loops for a control loop identified by user numbers for C.
+  FUNCTION CMISSControlLoopNumberOfSubLoopsSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & NumberOfSubLoops) BIND(C, NAME = "CMISSControlLoopNumberOfSubLoopsSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the number of sub loops for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers, for C.
+    TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NumberOfSubLoops !<The number of sub loops for the specified control loop to set, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSControlLoopNumberOfSubLoopsSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSControlLoopNumberOfSubLoopsSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSControlLoopNumberOfSubLoopsSet(ProblemUserNumber,ControlLoopIdentifiers,NumberOfSubLoops,&
+          & CMISSControlLoopNumberOfSubLoopsSetCNum)
+      ELSE
+        CMISSControlLoopNumberOfSubLoopsSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopNumberOfSubLoopsSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopNumberOfSubLoopsSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the number of sub-control loops for a control loop identified by an object for C.
+  FUNCTION CMISSControlLoopNumberOfSubLoopsSetCPtr(ControlLoopPtr,NumberOfSubLoops) BIND(C, NAME = &
+    & "CMISSControlLoopNumberOfSubLoopsSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopPtr !<C pointer to the control loop to set the number of sub loops for.
+    INTEGER(C_INT), INTENT(OUT) :: NumberOfSubLoops !<The number of sub loops for the specified control loop to set for C.
+    !Function variables
+    INTEGER(C_INT) :: CMISSControlLoopNumberOfSubLoopsSetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSControlLoopType), POINTER :: ControlLoop
+
+    CMISSControlLoopNumberOfSubLoopsSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopPtr)) THEN
+      CALL C_F_POINTER(ControlLoopPtr, ControlLoop)
+      IF(ASSOCIATED(ControlLoop)) THEN
+        CALL CMISSControlLoopNumberOfSubLoopsSet(ControlLoop, NumberOfSubLoops,CMISSControlLoopNumberOfSubLoopsSetCPtr)
+      ELSE
+        CMISSControlLoopNumberOfSubLoopsSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopNumberOfSubLoopsSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopNumberOfSubLoopsSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the output parameters for a time control loop identified by user numbers for C.
+  FUNCTION CMISSControlLoopTimeOutputSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & OutputFrequency) BIND(C, NAME = "CMISSControlLoopTimeOutputSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the output parameters for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers, for C.
+    TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: OutputFrequency !<The output frequency modulo to set, for C.
+    !Function variables
+    INTEGER(C_INT) :: CMISSControlLoopTimeOutputSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSControlLoopTimeOutputSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSControlLoopTimeOutputSet(ProblemUserNumber,ControlLoopIdentifiers,OutputFrequency,&
+          & CMISSControlLoopTimeOutputSetCNum)
+      ELSE
+        CMISSControlLoopTimeOutputSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopTimeOutputSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopTimeOutputSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the output parameters for a time control loop identified by an object for C.
+  FUNCTION CMISSControlLoopTimeOutputSetCPtr(ControlLoopPtr,OutputFrequency) BIND(C, NAME = "CMISSControlLoopTimeOutputSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopPtr !<C pointer to the control loop to set the output parameters for.
+    INTEGER(C_INT), VALUE, INTENT(IN) ::  OutputFrequency !<The output frequency modulo to set, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSControlLoopTimeOutputSetCPtr !<Error Code.
+    !Local variable
+    TYPE(CMISSControlLoopType), POINTER :: ControlLoop
+
+    CMISSControlLoopTimeOutputSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopPtr)) THEN
+      CALL C_F_POINTER(ControlLoopPtr, ControlLoop)
+      IF(ASSOCIATED(ControlLoop)) THEN
+        CALL CMISSControlLoopTimeOutputSet(ControlLoop, OutputFrequency,CMISSControlLoopTimeOutputSetCPtr)
+      ELSE
+        CMISSControlLoopTimeOutputSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopTimeOutputSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopTimeOutputSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the time parameters for a time control loop identified by user numbers for C.
+  FUNCTION CMISSControlLoopTimesGetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,StartTime,StopTime,&
+    & TimeIncrement,CurrentTime) BIND(C, NAME = "CMISSControlLoopTimesGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the time parameters for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers, for C.
+    TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers, for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: StartTime !<On return, the start time for the time control loop, for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: StopTime !<On return, the stop time for the time control loop, for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: TimeIncrement !<On return, the time increment for the time control loop, for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: CurrentTime !<On return, the current time for the time control loop, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSControlLoopTimesGetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSControlLoopTimesGetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSControlLoopTimesGet(ProblemUserNumber,ControlLoopIdentifiers,StartTime,StopTime,TimeIncrement,CurrentTime, &
+          & CMISSControlLoopTimesGetCNum)
+      ELSE
+        CMISSControlLoopTimesGetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopTimesGetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopTimesGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the time parameters for a time control loop identified by an object for C.
+  FUNCTION CMISSControlLoopTimesGetCPtr(ControlLoopPtr,StartTime,StopTime,TimeIncrement,CurrentTime) BIND(C, NAME = &
+    & "CMISSControlLoopTimesGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopPtr !<C pointer to the control loop to get the times for.
+    REAL(C_DOUBLE), INTENT(OUT) :: StartTime !<On return, the start time for the time control loop, for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: StopTime !<On return, the stop time for the time control loop, for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: TimeIncrement !<On return, the time increment for the time control loop, for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: CurrentTime !<On return, the current time for the time control loop, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSControlLoopTimesGetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSControlLoopType), POINTER :: ControlLoop
+
+    CMISSControlLoopTimesGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopPtr)) THEN
+      CALL C_F_POINTER(ControlLoopPtr, ControlLoop)
+      IF(ASSOCIATED(ControlLoop)) THEN
+        CALL CMISSControlLoopTimesGet(ControlLoop,StartTime,StopTime,TimeIncrement,CurrentTime,CMISSControlLoopTimesGetCPtr)
+      ELSE
+        CMISSControlLoopTimesGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopTimesGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopTimesGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the time parameters for a time control loop identified by user numbers for C.
+  FUNCTION CMISSControlLoopTimesSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,StartTime,StopTime,&
+    & TimeIncrement) BIND(C, NAME = "CMISSControlLoopTimesSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the time parameters for for.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers, for C.
+    TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers, for C.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: StartTime !<The start time for the time control loop to set for C.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: StopTime !<The stop time for the time control loop to set for C.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: TimeIncrement !<The time increment for the time control loop to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSControlLoopTimesSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSControlLoopTimesSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSControlLoopTimesSet(ProblemUserNumber,ControlLoopIdentifiers,StartTime,StopTime,TimeIncrement, &
+          & CMISSControlLoopTimesSetCNum)
+      ELSE
+        CMISSControlLoopTimesSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopTimesSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopTimesSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the time parameters for a time control loop identified by an object for C.
+  FUNCTION CMISSControlLoopTimesSetCPtr(ControlLoopPtr,StartTime,StopTime,TimeIncrement) BIND(C, NAME = "CMISSControlLoopTimesSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopPtr !<C pointer to the control loop to set the times for.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: StartTime !<The start time for the time control loop to set, for C.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: StopTime !<The stop time for the time control loop to set, for C.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: TimeIncrement !<The time increment for the time control loop to set, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSControlLoopTimesSetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSControlLoopType), POINTER :: ControlLoop
+
+    CMISSControlLoopTimesSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopPtr)) THEN
+      CALL C_F_POINTER(ControlLoopPtr, ControlLoop)
+      IF(ASSOCIATED(ControlLoop)) THEN
+        CALL CMISSControlLoopTimesSet(ControlLoop,StartTime,StopTime,TimeIncrement,CMISSControlLoopTimesSetCPtr)
+      ELSE
+        CMISSControlLoopTimesSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopTimesSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopTimesSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the loop type for a control loop identified by user numbers for C.
+  FUNCTION CMISSControlLoopTypeSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,LoopType) BIND(C, &
+    & NAME = "CMISSControlLoopTypeSetCNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the loop type for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers, for C.
+    TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: LoopType !<The type of control loop to set for C. \see OPENCMISS_ProblemControlLoopTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSControlLoopTypeSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSControlLoopTypeSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSControlLoopTypeSet(ProblemUserNumber,ControlLoopIdentifiers,LoopType,CMISSControlLoopTypeSetCNum)
+      ELSE
+        CMISSControlLoopTypeSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopTypeSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopTypeSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the loop type for a control loop identified by an object for C.
+  FUNCTION CMISSControlLoopTypeSetCPtr(ControlLoopPtr,LoopType) BIND(C, NAME = "CMISSControlLoopTypeSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopPtr !<C pointer to the control loop to set the loop type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: LoopType !<The type of control loop to set for C. \see OPENCMISS_ProblemControlLoopTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSControlLoopTypeSetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSControlLoopType), POINTER :: ControlLoop
+
+    CMISSControlLoopTypeSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopPtr)) THEN
+      CALL C_F_POINTER(ControlLoopPtr, ControlLoop)
+      IF(ASSOCIATED(ControlLoop)) THEN
+        CALL CMISSControlLoopTypeSet(ControlLoop,LoopType,CMISSControlLoopTypeSetCPtr)
+      ELSE
+        CMISSControlLoopTypeSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopTypeSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopTypeSetCPtr
+
+!!==================================================================================================================================
+!!
+!! COORDINATE_ROUTINES
+!!
+!!==================================================================================================================================
+
+  !>Finishes the creation of a coordinate system identified by a user number for C.
+  FUNCTION CMISSCoordinateSystemCreateFinishCNum(CoordinateSystemUserNumber) BIND(C, NAME = "CMISSCoordinateSystemCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to finish creating for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemCreateFinishCNum !<Error code.
+    !Local variables
+
+    CALL CMISSCoordinateSystemCreateFinish(CoordinateSystemUserNumber,CMISSCoordinateSystemCreateFinishCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the creation of a coordinate system identified by an object for C.
+  FUNCTION CMISSCoordinateSystemCreateFinishCPtr(CoordinateSystemPtr) BIND(C, NAME = "CMISSCoordinateSystemCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CoordinateSystemPtr !<C pointer to the coordinate system to finish creating.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemCreateFinishCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCoordinateSystemType), POINTER :: CoordinateSystem
+
+    CMISSCoordinateSystemCreateFinishCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CoordinateSystemPtr)) THEN
+      CALL C_F_POINTER(CoordinateSystemPtr, CoordinateSystem)
+      IF(ASSOCIATED(CoordinateSystem)) THEN
+        CALL CMISSCoordinateSystemCreateFinish(CoordinateSystem, CMISSCoordinateSystemCreateFinishCPtr)
+      ELSE
+        CMISSCoordinateSystemCreateFinishCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCoordinateSystemCreateFinishCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the creation of a coordinate system identified by a user number for C.
+  FUNCTION CMISSCoordinateSystemCreateStartCNum(CoordinateSystemUserNumber) BIND(C, NAME = "CMISSCoordinateSystemCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to start creating, for C.
+    !Function variables
+    INTEGER(C_INT) :: CMISSCoordinateSystemCreateStartCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCoordinateSystemCreateStart(CoordinateSystemUserNumber, CMISSCoordinateSystemCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the creation of a coordinate system identified by an object for C.
+  FUNCTION CMISSCoordinateSystemCreateStartCPtr(CoordinateSystemUserNumber,CoordinateSystemPtr) BIND(C, NAME = &
+    & "CMISSCoordinateSystemCreateStart")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to start creating, for C.
+    TYPE(C_PTR), INTENT(OUT) :: CoordinateSystemPtr !<C pointer to the coordinate system that has been created.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemCreateStartCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCoordinateSystemType), POINTER :: CoordinateSystem
+
+    CMISSCoordinateSystemCreateStartCPtr = CMISSNoError
+    CALL CMISSCoordinateSystemCreateStart(CoordinateSystemUserNumber, CoordinateSystem, CMISSCoordinateSystemCreateStartCPtr)
+    IF(ASSOCIATED(CoordinateSystem)) THEN
+      CoordinateSystemPtr = C_LOC(CoordinateSystem)
+    ELSE
+      CMISSCoordinateSystemCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroys a coordinate system identified by a user number for C.
+  FUNCTION CMISSCoordinateSystemDestroyCNum(CoordinateSystemUserNumber) BIND(C, NAME = "CMISSCoordinateSystemDestroyNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to destroy, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemDestroyCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCoordinateSystemDestroy(CoordinateSystemUserNumber, CMISSCoordinateSystemDestroyCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemDestroyCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroys a coordinate system identified by an object for C.
+  FUNCTION CMISSCoordinateSystemDestroyCPtr(CoordinateSystemPtr) BIND(C, NAME = "CMISSCoordinateSystemDestroy")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: CoordinateSystemPtr !<C pointer to the coordinate system to destroy.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemDestroyCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCoordinateSystemType), POINTER :: CoordinateSystem
+
+    CMISSCoordinateSystemDestroyCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CoordinateSystemPtr)) THEN
+      CALL C_F_POINTER(CoordinateSystemPtr,CoordinateSystem)
+      IF(ASSOCIATED(CoordinateSystem)) THEN
+        CALL CMISSCoordinateSystemDestroy(CoordinateSystem, CMISSCoordinateSystemDestroyCPtr)
+        CoordinateSystemPtr= C_LOC(CoordinateSystem)
+      ELSE
+        CMISSCoordinateSystemDestroyCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCoordinateSystemDestroyCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemDestroyCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the dimension of a coordinate system identified by a user number for C.
+  FUNCTION CMISSCoordinateSystemDimensionGetCNum(CoordinateSystemUserNumber,CoordinateSystemDimension) BIND(C, NAME = &
+    & "CMISSCoordinateSystemDimensionGetCNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to get the dimension for, for C.
+    INTEGER(C_INT), INTENT(OUT) :: CoordinateSystemDimension !<The dimension of the coordinate system, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemDimensionGetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCoordinateSystemDimensionGet(CoordinateSystemUserNumber, CoordinateSystemDimension, &
+      & CMISSCoordinateSystemDimensionGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemDimensionGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the dimension of a coordinate system identified by an object for C.
+  FUNCTION CMISSCoordinateSystemDimensionGetCPtr(CoordinateSystemPtr,CoordinateSystemDimension) BIND(C, NAME = &
+    & "CMISSCoordinateSystemDimensionGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CoordinateSystemPtr!<C pointer to the coordinate system to get the dimension for.
+    INTEGER(C_INT), INTENT(OUT) :: CoordinateSystemDimension !<The dimension of the coordinate system, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemDimensionGetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCoordinateSystemType), POINTER :: CoordinateSystem
+
+    CMISSCoordinateSystemDimensionGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CoordinateSystemPtr)) THEN
+      CALL C_F_POINTER(CoordinateSystemPtr, CoordinateSystem)
+      IF(ASSOCIATED(CoordinateSystem)) THEN
+        CALL CMISSCoordinateSystemDimensionGet(CoordinateSystem, CoordinateSystemDimension, CMISSCoordinateSystemDimensionGetCPtr)
+      ELSE
+        CMISSCoordinateSystemDimensionGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCoordinateSystemDimensionGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemDimensionGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the dimension of a coordinate system identified by a user number for C.
+  FUNCTION CMISSCoordinateSystemDimensionSetCNum(CoordinateSystemUserNumber,CoordinateSystemDimension) BIND(C, NAME = &
+    & "CMISSCoordinateSystemDimensionSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to set the dimension for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CoordinateSystemDimension !<The dimension of the coordinate system to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemDimensionSetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCoordinateSystemDimensionSet(CoordinateSystemUserNumber, CoordinateSystemDimension, &
+      & CMISSCoordinateSystemDimensionSetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemDimensionSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the dimension of a coordinate system identified by an object, for C.
+  FUNCTION CMISSCoordinateSystemDimensionSetCPtr(CoordinateSystemPtr,CoordinateSystemDimension) BIND(C, NAME = &
+    & "CMISSCoordinateSystemDimensionSetCPtr")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN)  :: CoordinateSystemPtr !<C pointer to the coordinate system to set the dimension for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CoordinateSystemDimension !<The dimension of the coordinate system to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemDimensionSetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCoordinateSystemType), POINTER :: CoordinateSystem
+
+    CMISSCoordinateSystemDimensionSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CoordinateSystemPtr)) THEN
+      CALL C_F_POINTER(CoordinateSystemPtr, CoordinateSystem)
+      IF(ASSOCIATED(CoordinateSystem)) THEN
+        CALL CMISSCoordinateSystemDimensionSet(CoordinateSystem, CoordinateSystemDimension, CMISSCoordinateSystemDimensionSetCPtr)
+      ELSE
+        CMISSCoordinateSystemDimensionSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCoordinateSystemDimensionSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemDimensionSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the focus of a coordinate system identified by a user number for C.
+  FUNCTION CMISSCoordinateSystemFocusGetCNum(CoordinateSystemUserNumber,Focus) BIND(C, NAME = "CMISSCoordinateSystemFocusGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to get the focus for, for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Focus !<The focus of the coordinate system, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemFocusGetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCoordinateSystemFocusGet(CoordinateSystemUserNumber,Focus,CMISSCoordinateSystemFocusGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemFocusGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the focus of a coordinate system identified by an object for C.
+  FUNCTION CMISSCoordinateSystemFocusGetCPtr(CoordinateSystemPtr,Focus) BIND(C, NAME = "CMISSCoordinateSystemFocusGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CoordinateSystemPtr!<C pointer to the coordinate system to get the focus for.
+    REAL(C_DOUBLE), INTENT(OUT) :: Focus !<The focus of the coordinate system for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemFocusGetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSCoordinateSystemType), POINTER :: CoordinateSystem
+
+    CMISSCoordinateSystemFocusGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CoordinateSystemPtr)) THEN
+      CALL C_F_POINTER(CoordinateSystemPtr, CoordinateSystem)
+      IF(ASSOCIATED(CoordinateSystem)) THEN
+        CALL CMISSCoordinateSystemFocusGet(CoordinateSystem, Focus, CMISSCoordinateSystemFocusGetCPtr)
+      ELSE
+        CMISSCoordinateSystemFocusGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCoordinateSystemFocusGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemFocusGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the focus of a coordinate system identified by a user number for C.
+  FUNCTION CMISSCoordinateSystemFocusSetCNum(CoordinateSystemUserNumber,Focus) BIND(C, NAME = "CMISSCoordinateSystemFocusSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to set the focus for, for C.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: Focus !<The focus of the coordinate system to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemFocusSetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCoordinateSystemFocusSet(CoordinateSystemUserNumber,Focus,CMISSCoordinateSystemFocusSetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemFocusSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the focus of a coordinate system identified by an object for C.
+  FUNCTION CMISSCoordinateSystemFocusSetCPtr(CoordinateSystemPtr,Focus) BIND(C, NAME = "CMISSCoordinateSystemFocusSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CoordinateSystemPtr!<C pointer the coordinate system to set the focus for.
+    REAL(C_DOUBLE), INTENT(IN) :: Focus !<The focus of the coordinate system to set, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemFocusSetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCoordinateSystemType), POINTER :: CoordinateSystem
+
+    CMISSCoordinateSystemFocusSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CoordinateSystemPtr)) THEN
+      CALL C_F_POINTER(CoordinateSystemPtr, CoordinateSystem)
+      IF(ASSOCIATED(CoordinateSystem)) THEN
+        CALL CMISSCoordinateSystemFocusSet(CoordinateSystem, Focus, CMISSCoordinateSystemFocusSetCPtr)
+      ELSE
+        CMISSCoordinateSystemFocusSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCoordinateSystemFocusSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemFocusSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the radial interpolation type of a coordinate system identified by a user number for C.
+  FUNCTION CMISSCoordinateSystemRadialInterpolationGetCNum(CoordinateSystemUserNumber,RadialInterpolationType) BIND(C, NAME = &
+    & "CMISSCoordinateSystemRadialInterpolationGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to get the radial interpolation for, for C.
+    INTEGER(C_INT), INTENT(OUT) :: RadialInterpolationType !<The radial interpolation type of the coordinate system for C. \see OPENCMISS_CoordinateRadialInterpolations
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemRadialInterpolationGetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCoordinateSystemRadialInterpolationGet(CoordinateSystemUserNumber,RadialInterpolationType, &
+      & CMISSCoordinateSystemRadialInterpolationGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemRadialInterpolationGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the radial interpolation type of a coordinate system identified by an object for C.
+  FUNCTION CMISSCoordinateSystemRadialInterpolationGetCPtr(CoordinateSystemPtr,RadialInterpolationType) BIND(C, NAME = &
+    & "CMISSCoordinateSystemRadialInterpolationGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CoordinateSystemPtr !<The coordinate system to get the radial interpolation type for, for C.
+    INTEGER(C_INT), INTENT(OUT) :: RadialInterpolationType !<The radial interpolation type of the coordinate system for C. \see OPENCMISS_CoordinateRadialInterpolations
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemRadialInterpolationGetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCoordinateSystemType), POINTER :: CoordinateSystem
+
+    CMISSCoordinateSystemRadialInterpolationGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CoordinateSystemPtr)) THEN
+      CALL C_F_POINTER(CoordinateSystemPtr, CoordinateSystem)
+      IF(ASSOCIATED(CoordinateSystem)) THEN
+        CALL CMISSCoordinateSystemRadialInterpolationGet(CoordinateSystem, RadialInterpolationType, &
+          & CMISSCoordinateSystemRadialInterpolationGetCPtr)
+      ELSE
+        CMISSCoordinateSystemRadialInterpolationGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCoordinateSystemRadialInterpolationGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemRadialInterpolationGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the radial interpolation type of a coordinate system identified by a user number for C.
+  FUNCTION CMISSCoordinateSystemRadialInterpolationSetCNum(CoordinateSystemUserNumber,RadialInterpolationType) BIND(C, NAME = &
+    & "CMISSCoordinateSystemRadialInterpolationSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to set the radial interpolation for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RadialInterpolationType !<The radial interpolation type of the coordinate system to set, for C. \see OPENCMISS_CoordinateRadialInterpolations
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemRadialInterpolationSetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCoordinateSystemRadialInterpolationSet(CoordinateSystemUserNumber, RadialInterpolationType, &
+      & CMISSCoordinateSystemRadialInterpolationSetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemRadialInterpolationSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the radial interpolation type of a coordinate system identified by an object for C.
+  FUNCTION CMISSCoordinateSystemRadialInterpolationSetCPtr(CoordinateSystemPtr,RadialInterpolationType) BIND(C, NAME = &
+    & "CMISSCoordinateSystemRadialInterpolationSetCPtr")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CoordinateSystemPtr !<C pointer to the coordinate system to set the radial interpolation type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RadialInterpolationType !<The radial interpolation type of the coordinate system to set for C. \see OPENCMISS_CoordinateRadialInterpolations
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemRadialInterpolationSetCPtr !<Error Code.
+    !Local variable
+    TYPE(CMISSCoordinateSystemType), POINTER  :: CoordinateSystem
+
+    CMISSCoordinateSystemRadialInterpolationSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CoordinateSystemPtr)) THEN
+      CALL C_F_POINTER(CoordinateSystemPtr, CoordinateSystem)
+      IF(ASSOCIATED(CoordinateSystem)) THEN
+        CALL CMISSCoordinateSystemRadialInterpolationSet(CoordinateSystem, RadialInterpolationType, &
+          & CMISSCoordinateSystemRadialInterpolationSetCPtr)
+      ELSE
+        CMISSCoordinateSystemRadialInterpolationSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCoordinateSystemRadialInterpolationSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemRadialInterpolationSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the type of a coordinate system identified by a user number for C.
+  FUNCTION CMISSCoordinateSystemTypeGetCNum(CoordinateSystemUserNumber,CoordinateSystemType) BIND(C, NAME = &
+    & "CMISSCoordinateSystemTypeGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to get the type for, for C.
+    INTEGER(C_INT), INTENT(OUT) :: CoordinateSystemType !<The type of the coordinate system for C. \see OPENCMISS_CoordinateSystemTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemTypeGetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCoordinateSystemTypeGet(CoordinateSystemUserNumber, CoordinateSystemType, CMISSCoordinateSystemTypeGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemTypeGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the type of a coordinate system identified by an object for C.
+  FUNCTION CMISSCoordinateSystemTypeGetCPtr(CoordinateSystemPtr,CoordinateSystemType) BIND(C, NAME = &
+    & "CMISSCoordinateSystemTypeGetCPtr")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CoordinateSystemPtr !<C pointer to the coordinate system to get the type for.
+    INTEGER(C_INT), INTENT(OUT) :: CoordinateSystemType !<The type of the coordinate system for C. \see OPENCMISS_CoordinateSystemTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemTypeGetCPtr !<Error Code.
+    !Local variable
+    TYPE(CMISSCoordinateSystemType), POINTER :: CoordinateSystem
+
+    CMISSCoordinateSystemTypeGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CoordinateSystemPtr)) THEN
+      CALL C_F_POINTER(CoordinateSystemPtr, CoordinateSystem)
+      IF(ASSOCIATED(CoordinateSystem)) THEN
+        CALL CMISSCoordinateSystemTypeGet(CoordinateSystem, CoordinateSystemType, &
+          & CMISSCoordinateSystemTypeGetCPtr)
+      ELSE
+        CMISSCoordinateSystemTypeGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCoordinateSystemTypeGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemTypeGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of a coordinate system identified by a user number for C.
+  FUNCTION CMISSCoordinateSystemTypeSetCNum(CoordinateSystemUserNumber,CoordinateSystemType) BIND(C, NAME = &
+    & "CMISSCoordinateSystemTypeSetCNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to set the type for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CoordinateSystemType !<The type of the coordinate system to set for C. \see OPENCMISS_CoordinateSystemTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemTypeSetCNum !<Error code.
+    !Local variables
+
+    CALL CMISSCoordinateSystemTypeSet(CoordinateSystemUserNumber, CoordinateSystemType, CMISSCoordinateSystemTypeSetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemTypeSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of a coordinate system identified by an object for C.
+  FUNCTION CMISSCoordinateSystemTypeSetCPtr(CoordinateSystemPtr,CoordinateSystemType) BIND(C, NAME = "CMISSCoordinateSystemTypeSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CoordinateSystemPtr !<C pointer to the coordinate system to set the type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CoordinateSystemType !<The type of the coordinate system to set for C. \see OPENCMISS_CoordinateSystemTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemTypeSetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCoordinateSystemType), POINTER :: CoordinateSystem
+
+    CMISSCoordinateSystemTypeSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CoordinateSystemPtr)) THEN
+      CALL C_F_POINTER(CoordinateSystemPtr, CoordinateSystem)
+      IF(ASSOCIATED(CoordinateSystem)) THEN
+        CALL CMISSCoordinateSystemTypeSet(CoordinateSystem, CoordinateSystemType, &
+          & CMISSCoordinateSystemTypeSetCPtr)
+      ELSE
+        CMISSCoordinateSystemTypeSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCoordinateSystemTypeSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemTypeSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the origin of a coordinate system identified by a user number for C.
+  FUNCTION CMISSCoordinateSystemOriginGetCNum(CoordinateSystemUserNumber,OriginSize, OriginPtr)
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to get the origin for.
+    INTEGER(C_INT), INTENT(OUT) :: OriginSize(1) !<Size of the origin of the coordinate system for C.
+    TYPE(C_PTR), INTENT(OUT) :: OriginPtr !<C pointer to the origin of the coordinate system.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemOriginGetCNum !<Error Code.
+    !Local variables
+    REAL(C_DOUBLE), POINTER :: Origin(:)
+
+    CMISSCoordinateSystemOriginGetCNum = CMISSNoError
+    CALL CMISSCoordinateSystemOriginGet(CoordinateSystemUserNumber, Origin, CMISSCoordinateSystemOriginGetCNum)
+    IF(ASSOCIATED(Origin)) THEN
+      OriginSize = Size(Origin)
+      OriginPtr = C_LOC(Origin(1))
+    ELSE
+      CMISSCoordinateSystemOriginGetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemOriginGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the origin of a coordinate system identified by an object for C.
+  FUNCTION CMISSCoordinateSystemOriginGetCPtr(CoordinateSystemPtr,OriginSize, OriginPtr) BIND(C, NAME = &
+    & "CMISSCoordinateSystemOriginGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CoordinateSystemPtr !<C pointer to the coordinate system to get the origin for.
+    INTEGER(C_INT), INTENT(OUT) :: OriginSize(1) !<Size of the origin of the coordinate system for C.
+    TYPE(C_PTR), INTENT(OUT) :: OriginPtr !<C pointer to the origin of the coordinate system.
+    !Function variables
+    INTEGER(C_INT) :: CMISSCoordinateSystemOriginGetCPtr !<Error code.
+    !Function variables
+    TYPE(CMISSCoordinateSystemType), POINTER :: CoordinateSystem
+    REAL(C_DOUBLE), POINTER :: Origin(:)
+
+    CMISSCoordinateSystemOriginGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CoordinateSystemPtr)) THEN
+      CALL C_F_POINTER(CoordinateSystemPtr, CoordinateSystem)
+      IF(ASSOCIATED(CoordinateSystem)) THEN
+        CALL CMISSCoordinateSystemOriginGet(CoordinateSystem, Origin, CMISSCoordinateSystemOriginGetCPtr)
+        IF(ASSOCIATED(Origin)) THEN
+          OriginSize = Size(Origin)
+          OriginPtr = C_LOC(Origin(1))
+        ELSE
+          CMISSCoordinateSystemOriginGetCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSCoordinateSystemOriginGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCoordinateSystemOriginGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemOriginGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the origin of a coordinate system identified by a user number for C.
+  FUNCTION CMISSCoordinateSystemOriginSetCNum(CoordinateSystemUserNumber,OriginSize,OriginPtr) BIND(C, NAME = &
+    & "CMISSCoordinateSystemOriginSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to set the origin for, for C.
+    INTEGER(C_INT), INTENT(IN) :: OriginSize(1) !<Size of the origin of the coordinate system to set for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: OriginPtr!<C pointer to the origin of the coordinate system to set.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemOriginSetCNum !<Error Code.
+    !Local variables
+    REAL(C_DOUBLE), POINTER :: Origin(:)
+
+    CMISSCoordinateSystemOriginSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(OriginPtr)) THEN
+      CALL C_F_POINTER(OriginPtr,Origin,OriginSize)
+      IF(ASSOCIATED(Origin)) THEN
+        CALL CMISSCoordinateSystemOriginSet(CoordinateSystemUserNumber, Origin, CMISSCoordinateSystemOriginSetCNum)
+      ELSE
+      CMISSCoordinateSystemOriginSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCoordinateSystemOriginSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemOriginSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the origin of a coordinate system identified by an object for C.
+  FUNCTION CMISSCoordinateSystemOriginSetCPtr(CoordinateSystemPtr,OriginSize,OriginPtr) BIND(C, NAME = &
+    & "CMISSCoordinateSystemOriginSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CoordinateSystemPtr !<C pointer to the coordinate system to set the origin for.
+    INTEGER(C_INT), INTENT(IN) :: OriginSize(1) !<Size of the origin of the coordinate system to set for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: OriginPtr !<C pointer to the origin of the coordinate system to set.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemOriginSetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCoordinateSystemType), POINTER :: CoordinateSystem
+    REAL(C_DOUBLE), POINTER :: Origin(:)
+
+    CMISSCoordinateSystemOriginSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CoordinateSystemPtr)) THEN
+      CALL C_F_POINTER(CoordinateSystemPtr, CoordinateSystem)
+      IF(ASSOCIATED(CoordinateSystem)) THEN
+        IF(C_ASSOCIATED(OriginPtr)) THEN
+          CALL C_F_POINTER(OriginPtr, Origin, OriginSize)
+          IF(ASSOCIATED(Origin)) THEN
+            CALL CMISSCoordinateSystemOriginSet(CoordinateSystem, Origin, CMISSCoordinateSystemOriginSetCPtr)
+          ELSE
+            CMISSCoordinateSystemOriginSetCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSCoordinateSystemOriginSetCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSCoordinateSystemOriginSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCoordinateSystemOriginSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemOriginSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the orientation of a coordinate system identified by a user number, for C.
+  FUNCTION CMISSCoordinateSystemOrientationGetCNum(CoordinateSystemUserNumber,OrientationSize,OrientationPtr) BIND(C, NAME = &
+    & "CMISSCoordinateSystemOrientationGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to get the orientation for, for C.
+    INTEGER(C_INT), INTENT(OUT) :: OrientationSize(1,1) !<Size of the orientation of the coordinate system, for C.
+    TYPE(C_PTR), INTENT(OUT) :: OrientationPtr !<C pointer to the orientation of the coordinate system.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemOrientationGetCNum !<Error Code.
+    !Local variable
+    REAL(C_DOUBLE), POINTER :: Orientation(:,:)
+
+    CMISSCoordinateSystemOrientationGetCNum = CMISSNoError
+    CALL CMISSCoordinateSystemOrientationGet(CoordinateSystemUserNumber, Orientation, CMISSCoordinateSystemOrientationGetCNum)
+    IF(ASSOCIATED(Orientation)) THEN
+      OrientationSize = Size(Orientation)
+      OrientationPtr = C_LOC(Orientation(1,1))
+    ELSE
+      CMISSCoordinateSystemOrientationGetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemOrientationGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the orientation of a coordinate system identified by an object for C.
+  FUNCTION CMISSCoordinateSystemOrientationGetCPtr(CoordinateSystemPtr,OrientationSize, OrientationPtr) BIND(C, NAME = &
+    & "CMISSCoordinateSystemOrientationGetCPtr")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CoordinateSystemPtr !<The coordinate system to get the orientation for, for C.
+    INTEGER(C_INT), INTENT(OUT) :: OrientationSize(1,1) !<Size of the orientation of the coordinate system, for C.
+    TYPE(C_PTR), INTENT(OUT) :: OrientationPtr !<C pointer to  the orientation of the coordinate system.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemOrientationGetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCoordinateSystemType), POINTER :: CoordinateSystem
+    REAL(C_DOUBLE), POINTER :: Orientation(:,:)
+
+    CMISSCoordinateSystemOrientationGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CoordinateSystemPtr)) THEN
+      CALL C_F_POINTER(CoordinateSystemPtr, CoordinateSystem)
+      IF(ASSOCIATED(CoordinateSystem)) THEN
+        CALL CMISSCoordinateSystemOrientationGet(CoordinateSystem, Orientation, CMISSCoordinateSystemOrientationGetCPtr)
+        IF(ASSOCIATED(Orientation)) THEN
+          OrientationSize = Size(Orientation)
+          OrientationPtr = C_LOC(Orientation(1,1))
+        ELSE
+          CMISSCoordinateSystemOrientationGetCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSCoordinateSystemOrientationGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCoordinateSystemOrientationGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemOrientationGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the orientation of a coordinate system identified by a user number for C.
+  FUNCTION CMISSCoordinateSystemOrientationSetCNum(CoordinateSystemUserNumber,OrientationSize,OrientationPtr) BIND(C, NAME = &
+    & "CMISSCoordinateSystemOrientationSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to set the orientation to, for C.
+    INTEGER(C_INT), INTENT(OUT) :: OrientationSize(1,1) !<Size of the orientation of the coordinate system, for C.
+    TYPE(C_PTR), INTENT(OUT) :: OrientationPtr !<C pointer to the orientation of the coordinate system to set.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemOrientationSetCNum !<Error Code.
+    !Local variable
+    REAL(C_DOUBLE), POINTER :: Orientation(:,:)
+
+    CMISSCoordinateSystemOrientationSetCNum = CMISSNoError
+    CALL CMISSCoordinateSystemOrientationSet(CoordinateSystemUserNumber, Orientation, CMISSCoordinateSystemOrientationSetCNum)
+    IF(ASSOCIATED(Orientation)) THEN
+      OrientationSize = Size(Orientation)
+      OrientationPtr = C_LOC(Orientation(1,1))
+    ELSE
+      CMISSCoordinateSystemOrientationSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemOrientationSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the orientation of a coordinate system identified by an object for C.
+  FUNCTION CMISSCoordinateSystemOrientationSetCPtr(CoordinateSystemPtr,OrientationSize, OrientationPtr) BIND(C, NAME = &
+    & "CMISSCoordinateSystemOrientationSetCPtr")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CoordinateSystemPtr !<The coordinate system to set the orientation to, for C.
+    INTEGER(C_INT), INTENT(OUT) :: OrientationSize(1,1) !<Size of the orientation of the coordinate system, for C.
+    TYPE(C_PTR), INTENT(OUT) :: OrientationPtr !<C pointer to  the orientation of the coordinate system to set.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCoordinateSystemOrientationSetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCoordinateSystemType), POINTER :: CoordinateSystem
+    REAL(C_DOUBLE), POINTER :: Orientation(:,:)
+
+    CMISSCoordinateSystemOrientationSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CoordinateSystemPtr)) THEN
+      CALL C_F_POINTER(CoordinateSystemPtr, CoordinateSystem)
+      IF(ASSOCIATED(CoordinateSystem)) THEN
+        CALL CMISSCoordinateSystemOrientationSet(CoordinateSystem, Orientation, CMISSCoordinateSystemOrientationSetCPtr)
+        IF(ASSOCIATED(Orientation)) THEN
+          OrientationSize = Size(Orientation)
+          OrientationPtr = C_LOC(Orientation(1,1))
+        ELSE
+          CMISSCoordinateSystemOrientationSetCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSCoordinateSystemOrientationSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCoordinateSystemOrientationSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCoordinateSystemOrientationSetCPtr
+
+     !stop
+
 
 
   !
@@ -3497,7 +4954,7 @@ END FUNCTION CMISSFieldsTypeCreateC
   
     !Argument variables
     !Function variable
-    INTEGER(C_INT) :: CMISSFinaliseC
+    INTEGER(C_INT) :: CMISSFinaliseC !<Error Code.
     !Local variables
 
     CALL CMISSFinalise(CMISSFinaliseC)
@@ -3517,7 +4974,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(OUT) :: WorldCoordinateSystemUserNumber
     INTEGER(C_INT), INTENT(OUT) :: WorldRegionUserNumber
     !Function variable
-    INTEGER(C_INT) :: CMISSInitialiseCNum
+    INTEGER(C_INT) :: CMISSInitialiseCNum !<Error Code.
     !Local variables
   
     CALL CMISSInitialise(WorldCoordinateSystemUserNumber,WorldRegionUserNumber,CMISSInitialiseCNum)
@@ -3537,7 +4994,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), INTENT(INOUT) :: WorldCoordinateSystemPtr
     TYPE(C_PTR), INTENT(INOUT) :: WorldRegionPtr
     !Function variable
-    INTEGER(C_INT) :: CMISSInitialiseCPtr
+    INTEGER(C_INT) :: CMISSInitialiseCPtr !<Error Code.
     !Local variables
     TYPE(CMISSCoordinateSystemType), POINTER :: WorldCoordinateSystem
     TYPE(CMISSRegionType), POINTER :: WorldRegion
@@ -4327,7 +5784,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for the field to get the DOF Order type for, for C \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), INTENT(OUT) :: DOFOrderType !<The field variable DOF Order type to get, for C. \see OPENCMISS_FieldDOFOrderTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldDOFOrderTypeGetCPtr
+    INTEGER(C_INT) :: CMISSFieldDOFOrderTypeGetCPtr !<Error Code.
  !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
@@ -5162,12 +6619,12 @@ END FUNCTION CMISSFieldsTypeCreateC
   & BIND(C, NAME = "CMISSFieldNumberOfComponentsGetNum")
 
     !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber
-    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber
-    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType
-    INTEGER(C_INT), INTENT(OUT) :: NumberOfComponents
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the number of components for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to get the number of components for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to get the number of components for, for C. \see OPENCMISS_FieldVariableTypes
+    INTEGER(C_INT), INTENT(OUT) :: NumberOfComponents !<The number of components in the field variable for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldNumberOfComponentsGetCNum
+    INTEGER(C_INT) :: CMISSFieldNumberOfComponentsGetCNum !<Error Code.
     !Local variables
 
     CALL CMISSFieldnumberOfComponentsGet(RegionUserNumber, FieldUserNumber, VariableType, NumberOfComponents, &
@@ -5353,10 +6810,10 @@ END FUNCTION CMISSFieldsTypeCreateC
   FUNCTION CMISSFieldNumberOfVariablesSetCPtr(FieldPtr,NumberOfVariables) BIND(C, NAME = "CMISSFieldNumberOfVariablesSet")
 
     !Argument variables
-    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr
-    INTEGER(C_INT), VALUE, INTENT(IN) :: NumberOfVariables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to set the number of variables to.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NumberOfVariables !<The number of variables to set to the field, for C.
     !Function variables
-    INTEGER(C_INT) :: CMISSFieldNumberOfVariablesSetCPtr
+    INTEGER(C_INT) :: CMISSFieldNumberOfVariablesSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
@@ -5418,7 +6875,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to add the constant to the field parameter set for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: Value  !<The integer value to add to the field parameter set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetAddConstantIntgCPtr
+    INTEGER(C_INT) :: CMISSFieldParameterSetAddConstantIntgCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
 
@@ -6278,7 +7735,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(OUT) :: ParametersSize !<Size of parameter set data, for C.
     TYPE(C_PTR), INTENT(OUT) :: ParametersPtr !<C pointer to the parameter set data.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetDataGetIntgCNum
+    INTEGER(C_INT) :: CMISSFieldParameterSetDataGetIntgCNum !<Error Code.
     !Local variables
     INTEGER(C_INT), POINTER :: Parameters(:)
 
@@ -6311,7 +7768,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(OUT) :: ParametersSize !<Size of parameter set data, for C.
     TYPE(C_PTR), INTENT(OUT) :: ParametersPtr !<C pointer to the parameter set data.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetDataGetIntgCPtr
+    INTEGER(C_INT) :: CMISSFieldParameterSetDataGetIntgCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
     INTEGER(C_INT), POINTER :: Parameters(:)
@@ -6388,7 +7845,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(OUT) :: ParametersSize !<Size of parameter set data, for C.
     TYPE(C_PTR), INTENT(OUT) :: ParametersPtr !<C pointer to the parameter set data.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetDataGetSPCPtr
+    INTEGER(C_INT) :: CMISSFieldParameterSetDataGetSPCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
     REAL(C_FLOAT), POINTER :: Parameters (:)
@@ -6464,7 +7921,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(OUT) :: ParametersSize !<Size of parameter set data, for C.
     TYPE(C_PTR), INTENT(OUT) :: ParametersPtr !<C pointer to the parameter set data.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetDataGetDPCPtr
+    INTEGER(C_INT) :: CMISSFieldParameterSetDataGetDPCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
     REAL(C_DOUBLE), POINTER :: Parameters (:)
@@ -6540,7 +7997,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(OUT) :: ParametersSize !<Size of parameter set data, for C.
     TYPE(C_PTR), INTENT(OUT) :: ParametersPtr !<C pointer to the parameter set data.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetDataGetLCPtr
+    INTEGER(C_INT) :: CMISSFieldParameterSetDataGetLCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
     INTEGER(C_INT), POINTER :: Parameters (:)
@@ -6584,7 +8041,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(OUT) :: ParametersSize !<Size of parameter set data, for C.
     TYPE(C_PTR), INTENT(OUT) :: ParametersPtr !<C pointer to the parameter set data.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetDataRestoreIntgCNum
+    INTEGER(C_INT) :: CMISSFieldParameterSetDataRestoreIntgCNum !<Error Code.
     !Local variables
     INTEGER(C_INT), POINTER :: Parameters(:)
 
@@ -6617,7 +8074,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(OUT) :: ParametersSize !<Size of parameter set data, for C.
     TYPE(C_PTR), INTENT(OUT) :: ParametersPtr !<C pointer to the parameter set data to restore.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetDataRestoreIntgCPtr
+    INTEGER(C_INT) :: CMISSFieldParameterSetDataRestoreIntgCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
     INTEGER(C_INT), POINTER :: Parameters (:)
@@ -6661,7 +8118,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(OUT) :: ParametersSize !<Size of parameter set data, for C.
     TYPE(C_PTR), INTENT(OUT) :: ParametersPtr !<C pointer to the parameter set data.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetDataRestoreSPCNum
+    INTEGER(C_INT) :: CMISSFieldParameterSetDataRestoreSPCNum !<Error Code.
     !Local variables
     REAL(C_FLOAT), POINTER :: Parameters(:)
 
@@ -6695,7 +8152,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(OUT) :: ParametersSize !<Size of parameter set data, for C.
     TYPE(C_PTR), INTENT(OUT) :: ParametersPtr !<C pointer to the parameter set data to restore.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetDataRestoreSPCPtr
+    INTEGER(C_INT) :: CMISSFieldParameterSetDataRestoreSPCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
     REAL(C_FLOAT), POINTER :: Parameters (:)
@@ -6739,7 +8196,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(OUT) :: ParametersSize !<Size of parameter set data, for C.
     TYPE(C_PTR), INTENT(OUT) :: ParametersPtr !<C pointer to the parameter set data.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetDataRestoreDPCNum
+    INTEGER(C_INT) :: CMISSFieldParameterSetDataRestoreDPCNum !<Error Code.
     !Local variables
     REAL(C_DOUBLE), POINTER :: Parameters(:)
 
@@ -6772,7 +8229,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(OUT) :: ParametersSize !<Size of parameter set data, for C.
     TYPE(C_PTR), INTENT(OUT) :: ParametersPtr !<C pointer to the parameter set data to restore.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetDataRestoreDPCPtr
+    INTEGER(C_INT) :: CMISSFieldParameterSetDataRestoreDPCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
     REAL(C_DOUBLE), POINTER :: Parameters (:)
@@ -6816,7 +8273,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(OUT) :: ParametersSize !<Size of parameter set data, for C.
     TYPE(C_PTR), INTENT(OUT) :: ParametersPtr !<C pointer to the parameter set data.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetDataRestoreLCNum
+    INTEGER(C_INT) :: CMISSFieldParameterSetDataRestoreLCNum !<Error Code.
     !Local variables
     INTEGER(C_INT), POINTER :: Parameters(:)
 
@@ -6849,7 +8306,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(OUT) :: ParametersSize !<Size of parameter set data, for C.
     TYPE(C_PTR), INTENT(OUT) :: ParametersPtr !<C pointer to the parameter set data to restore.
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldParameterSetDataRestoreLCPtr
+    INTEGER(C_INT) :: CMISSFieldParameterSetDataRestoreLCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
     REAL(C_DOUBLE), POINTER :: Parameters(:)
@@ -8600,7 +10057,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the scaling type for, for C.
     INTEGER(C_INT), INTENT(OUT) :: ScalingType !<The field scaling type to get, for C. \see OPENCMISS_FieldScalingTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSFieldScalingTypeGetCPtr
+    INTEGER(C_INT) :: CMISSFieldScalingTypeGetCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
@@ -11087,7 +12544,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ElementGlobalNumber !<The global element number to get the element user number for, for C.
     INTEGER(C_INT), INTENT(OUT) :: ElementUserNumber !<The element user number, for C.
     !Function variables
-    INTEGER(C_INT) :: CMISSMeshElementsUserNumberGetCNum
+    INTEGER(C_INT) :: CMISSMeshElementsUserNumberGetCNum !<Error Code.
     !Local variables
 
     CALL CMISSMeshElementsUserNumberGet(RegionUserNumber,MeshUserNumber,MeshComponentNumber,ElementGlobalNumber,ElementUserNumber, &
@@ -11110,7 +12567,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ElementGlobalNumber !<The global element number to get the element user number for, for C.
     INTEGER(C_INT), INTENT(OUT) :: ElementUserNumber !<The element user number, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSMeshElementsUserNumberGetCPtr
+    INTEGER(C_INT) :: CMISSMeshElementsUserNumberGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSMeshElementsType), POINTER :: MeshElements
 
@@ -11145,7 +12602,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ElementGlobalNumber !<The global element number to set the element user number to, for C.
     INTEGER(C_INT), INTENT(IN) :: ElementUserNumber !<The element user number to set, for C.
     !Function variables
-    INTEGER(C_INT) :: CMISSMeshElementsUserNumberSetCNum
+    INTEGER(C_INT) :: CMISSMeshElementsUserNumberSetCNum !<Error Code.
     !Local variables
 
     CALL CMISSMeshElementsUserNumberSet(RegionUserNumber,MeshUserNumber,MeshComponentNumber,ElementGlobalNumber,ElementUserNumber, &
@@ -11168,7 +12625,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: ElementGlobalNumber !<The global element number to set the element user number to, for C.
     INTEGER(C_INT), INTENT(IN) :: ElementUserNumber !<The element user number to set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSMeshElementsUserNumberSetCPtr
+    INTEGER(C_INT) :: CMISSMeshElementsUserNumberSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSMeshElementsType), POINTER :: MeshElements
 
@@ -11250,7 +12707,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the nodes to start the creation of, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: NumberOfNodes !<The number of nodes to create, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSNodesCreateStartCNum
+    INTEGER(C_INT) :: CMISSNodesCreateStartCNum !<Error Code.
     !Local variable
 
     CALL CMISSNodesCreateStart(RegionUserNumber, NumberOfNodes, CMISSNodesCreateStartCNum)
@@ -12202,9 +13659,9 @@ END FUNCTION CMISSFieldsTypeCreateC
   FUNCTION CMISSProblemSolverEquationsCreateStartCPtr(ProblemPtr) BIND(C, NAME = "CMISSProblemSolverEquationsCreateStart")
 
     !Argument variable
-    TYPE(C_PTR), VALUE, INTENT(IN) :: ProblemPtr
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ProblemPtr !<C pointer to the problem to start the creation of solver equations for.
     !Function variable
-    INTEGER(C_INT) :: CMISSProblemSolverEquationsCreateStartCPtr
+    INTEGER(C_INT) :: CMISSProblemSolverEquationsCreateStartCPtr !<Error Code.
     !Local variable
     TYPE(CMISSProblemType), POINTER :: Problem
 
@@ -12234,7 +13691,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Argument variable
     INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to destroy the solver equations for, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSProblemSolverEquationsDestroyCNum
+    INTEGER(C_INT) :: CMISSProblemSolverEquationsDestroyCNum !<Error Code.
     !Local variable
 
     CALL CMISSProblemSolverEquationsDestroy(ProblemUserNumber, CMISSProblemSolverEquationsDestroyCNum)
@@ -12251,9 +13708,9 @@ END FUNCTION CMISSFieldsTypeCreateC
   FUNCTION CMISSProblemSolverEquationsDestroyCPtr(ProblemPtr) BIND(C, NAME = "CMISSProblemSolverEquationsDestroy")
 
     !Argument variable
-    TYPE(C_PTR), VALUE, INTENT(IN) :: ProblemPtr
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ProblemPtr !<C pointer to the problem to destroy the solver equations for.
     !Function variable
-    INTEGER(C_INT) :: CMISSProblemSolverEquationsDestroyCPtr
+    INTEGER(C_INT) :: CMISSProblemSolverEquationsDestroyCPtr !<Error Code.
     !Local variables
     TYPE(CMISSProblemType), POINTER :: Problem
 
@@ -12387,7 +13844,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to finish the creation of solvers for, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSProblemSolversCreateFinishCNum
+    INTEGER(C_INT) :: CMISSProblemSolversCreateFinishCNum !<Error Code.
     !Local variable
 
     CALL CMISSProblemSolversCreateFinish(ProblemUserNumber, CMISSProblemSolversCreateFinishCNum)
@@ -12647,7 +14104,7 @@ END FUNCTION CMISSFieldsTypeCreateC
   !>Finishes the process of creating a region identified by a pointer for C.
   FUNCTION CMISSRegionCreateFinishCPtr(RegionPtr) BIND(C,NAME="CMISSRegionCreateFinish")
 
-    !Argument variablesCMISSAnalyticAnalysisOutputNumber
+    !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: RegionPtr
     !Function variable
     INTEGER(C_INT) :: CMISSRegionCreateFinishCPtr !<Error Code.
@@ -12680,7 +14137,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber
     !Function variable
-    INTEGER(C_INT) :: CMISSRegionCreateFinishCNum
+    INTEGER(C_INT) :: CMISSRegionCreateFinishCNum !<Error Code.
     !Local variables
 
     CALL CMISSRegionCreateFinish(RegionUserNumber,CMISSRegionCreateFinishCNum)
@@ -12701,7 +14158,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), VALUE, INTENT(IN) :: ParentRegionPtr
     TYPE(C_PTR), VALUE, INTENT(IN) :: RegionPtr
     !Function variable
-    INTEGER(C_INT) :: CMISSRegionCreateStartCPtr
+    INTEGER(C_INT) :: CMISSRegionCreateStartCPtr !<Error Code.
     !Local variables
     TYPE(CMISSRegionType), POINTER :: Region,ParentRegion
 
@@ -12741,7 +14198,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber
     INTEGER(C_INT), VALUE, INTENT(IN) :: ParentRegionUserNumber
     !Function variable
-    INTEGER(C_INT) :: CMISSRegionCreateStartCNum
+    INTEGER(C_INT) :: CMISSRegionCreateStartCNum !<Error Code.
     !Local variables
 
     CALL CMISSRegionCreateStart(RegionUserNumber,ParentRegionUserNumber,CMISSRegionCreateStartCNum)
@@ -12762,7 +14219,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: LabelSize
     CHARACTER(LEN=1,KIND=C_CHAR), INTENT(OUT) :: Label(LabelSize)
     !Function variable
-    INTEGER(C_INT) :: CMISSRegionLabelGetCPtr
+    INTEGER(C_INT) :: CMISSRegionLabelGetCPtr !<Error Code.
     !Local variables
     CHARACTER(LEN=LabelSize-1) :: FLabel
     TYPE(CMISSRegionType), POINTER :: Region    
@@ -12796,7 +14253,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: LabelSize
     CHARACTER(LEN=1,KIND=C_CHAR), INTENT(OUT) :: Label(LabelSize)
     !Function variable
-    INTEGER(C_INT) :: CMISSRegionLabelGetCNum
+    INTEGER(C_INT) :: CMISSRegionLabelGetCNum !<Error Code.
     !Local variables
     CHARACTER(LEN=LabelSize-1) :: FLabel
  
@@ -12819,7 +14276,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: LabelSize
     CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: Label(LabelSize)
     !Function variable
-    INTEGER(C_INT) :: CMISSRegionLabelSetCPtr
+    INTEGER(C_INT) :: CMISSRegionLabelSetCPtr !<Error Code.
     !Local variables
     CHARACTER(LEN=LabelSize-1) :: FLabel
     TYPE(CMISSRegionType), POINTER :: Region    
@@ -12853,7 +14310,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: LabelSize
     CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: Label(LabelSize)
     !Function variable
-    INTEGER(C_INT) :: CMISSRegionLabelSetCNum
+    INTEGER(C_INT) :: CMISSRegionLabelSetCNum !<Error Code.
     !Local variables
     CHARACTER(LEN=LabelSize-1) :: FLabel
  
