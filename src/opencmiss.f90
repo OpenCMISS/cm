@@ -54,6 +54,7 @@ MODULE OPENCMISS
   USE BASIS_ROUTINES
   USE BOUNDARY_CONDITIONS_ROUTINES
   USE CMISS
+  USE COMP_ENVIRONMENT
   USE CONSTANTS
   USE CONTROL_LOOP_ROUTINES
   USE COORDINATE_ROUTINES
@@ -629,6 +630,24 @@ MODULE OPENCMISS
   PUBLIC CMISSBoundaryConditionsAddNode,CMISSBoundaryConditionsSetNode
 
   PUBLIC CMISSEquationsSetBoundaryConditionsGet
+
+!!==================================================================================================================================
+!!
+!! COMP_ENVIRONMENT
+!!
+!!==================================================================================================================================
+
+  !Module parameters
+
+  !Module types
+
+  !Module variables
+
+  !Interfaces
+
+  !> Gets the number/rank of the computational nodes.
+  PUBLIC CMISSComputationalNodeNumberGetNumber
+  PUBLIC CMISSComputationalNodesNumberGetNumber
 
 !!==================================================================================================================================
 !!
@@ -2506,6 +2525,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSMeshElementsUserNumberSetObj
   END INTERFACE !CMISSMeshElementsUserNumberSet
 
+    !>Returns the domain for a given element in a decomposition of a mesh.
+  INTERFACE CMISSDecompositionNodeDomainGet
+    MODULE PROCEDURE CMISSDecompositionNodeDomainGetNumber
+    MODULE PROCEDURE CMISSDecompositionNodeDomainGetObj
+  END INTERFACE !CMISSDecompositionElementDomainGet
+
   PUBLIC CMISSDecompositionAllType,CMISSDecompositionCalculatedType,CMISSDecompositionUserDefinedType
 
   PUBLIC CMISSDecompositionCreateFinish,CMISSDecompositionCreateStart
@@ -2538,6 +2563,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSMeshElementsUserNumberGet,CMISSMeshElementsUserNumberSet
   
+  PUBLIC CMISSDecompositionNodeDomainGet
+
 !!==================================================================================================================================
 !!
 !! NODE_ROUTINES
@@ -5832,6 +5859,7 @@ CONTAINS
     
   END SUBROUTINE CMISSBasisQuadratureOrderGetObj
 
+
   !
   !================================================================================================================================
   !
@@ -6795,6 +6823,52 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSEquationsSetBoundaryConditionsGetObj
+
+!!==================================================================================================================================
+!!
+!! COMP_ENVIRONMENT
+!!
+!!==================================================================================================================================
+
+  SUBROUTINE CMISSComputationalNodeNumberGetNumber(NodeNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(OUT) :: NodeNumber !<The Number of Nodes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    
+    CALL ENTERS("CMISSComputationalNodeNumberGetNumber",ERR,ERROR,*999)
+
+    NodeNumber = COMPUTATIONAL_NODE_NUMBER_GET(Err,ERROR)
+
+    CALL EXITS("CMISSComputationalNodeNumberGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSComputationalNodeNumberGetNumber",Err,ERROR)
+    CALL EXITS("CMISSComputationalNodeNumberGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSComputationalNodeNumberGetNumber
+
+  SUBROUTINE CMISSComputationalNodesNumberGetNumber(NodesNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(OUT) :: NodesNumber !<The Number of Nodes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    
+    CALL ENTERS("CMISSComputationalNodesNumberGetNumber",ERR,ERROR,*999)
+
+    NodesNumber = COMPUTATIONAL_NODES_NUMBER_GET(Err,ERROR)
+
+    CALL EXITS("CMISSComputationalNodesNumberGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSComputationalNodesNumberGetNumber",Err,ERROR)
+    CALL EXITS("CMISSComputationalNodesNumberGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSComputationalNodesNumberGetNumber
 
 !!==================================================================================================================================
 !!
@@ -20993,6 +21067,93 @@ CONTAINS
   !  
   !================================================================================================================================
   !  
+
+  !>Returns the domain for a given node in a decomposition identified by a user number.
+  SUBROUTINE CMISSDecompositionNodeDomainGetNumber(RegionUserNumber,MeshUserNumber,DecompositionUserNumber, &
+    & NodeUserNumber,MeshComponentNumber,Domain,Err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to get the node domain for.
+    INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<The user number of the mesh to get the node domain for.
+    INTEGER(INTG), INTENT(IN) :: DecompositionUserNumber !<The user number of the decomposition to get the node domain for.
+    INTEGER(INTG), INTENT(IN) :: NodeUserNumber !<The user number of the node to get the domain for.
+    INTEGER(INTG), INTENT(IN) :: MeshComponentNumber !<The user number of the mesh component to get the domain for.
+    INTEGER(INTG), INTENT(OUT) :: Domain !<On return, the computational domain of the node.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    TYPE(MESH_TYPE), POINTER :: MESH
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDecompositionNodeDomainGetNumber",Err,ERROR,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(MESH)
+    NULLIFY(DECOMPOSITION)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL MESH_USER_NUMBER_FIND(MeshUserNumber,REGION,MESH,Err,ERROR,*999)
+      IF(ASSOCIATED(MESH)) THEN
+        CALL DECOMPOSITION_USER_NUMBER_FIND(DecompositionUserNumber,MESH,DECOMPOSITION,Err,ERROR,*999)
+        IF(ASSOCIATED(DECOMPOSITION)) THEN
+          CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,NodeUserNumber,MeshComponentNumber,Domain,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="A decomposition with an user number of "//TRIM(NUMBER_TO_VSTRING(DecompositionUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDecompositionNodeDomainGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSDecompositionNodeDomainGetNumber",Err,ERROR)
+    CALL EXITS("CMISSDecompositionNodeDomainGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSDecompositionNodeDomainGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the domain for a given node in a decomposition identified by an object.
+  SUBROUTINE CMISSDecompositionNodeDomainGetObj(Decomposition,NodeUserNumber,MeshComponentNumber,Domain,Err)
+
+    !Argument variables
+    TYPE(CMISSDecompositionType), INTENT(IN) :: Decomposition !<The decomposition to get the domain for.
+    INTEGER(INTG), INTENT(IN) :: NodeUserNumber !<The user number of the node to get the domain for.
+    INTEGER(INTG), INTENT(IN) :: MeshComponentNumber !<The user number of the mesh component to get the domain for.
+    INTEGER(INTG), INTENT(OUT) :: Domain !<On return, the computational domain of the node.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDecompositionNodeDomainGetObj",Err,ERROR,*999)
+
+    CALL DECOMPOSITION_NODE_DOMAIN_GET(Decomposition%DECOMPOSITION,NodeUserNumber,MeshComponentNumber,Domain,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDecompositionNodeDomainGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDecompositionNodeDomainGetObj",Err,ERROR)
+    CALL EXITS("CMISSDecompositionNodeDomainGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSDecompositionNodeDomainGetObj
+
+  !
+  !================================================================================================================================
+  !
   
   !>Finishes the creation of a mesh for a mesh identified by a user number.
   SUBROUTINE CMISSMeshCreateFinishNumber(RegionUserNumber,MeshUserNumber,Err)
