@@ -276,14 +276,14 @@ MODULE OPENCMISS
   END INTERFACE !CMISSAnalyticAnalysisOutput
 
   !>Get the absolute value of the node.
-  INTERFACE CMISSAnalyticAnalysisNodeAbsoluteErrorGet
-    MODULE PROCEDURE CMISSAnalyticAnalysisNodeAbsoluteErrorGetNumber
-    MODULE PROCEDURE CMISSAnalyticAnalysisNodeAbsoluteErrorGetObj
-  END INTERFACE !CMISSAnalyticAnalysisNodeAbsoluteErrorGet
+  INTERFACE CMISSAnalyticAnalysisAbsoluteErrorGetNode
+    MODULE PROCEDURE CMISSAnalyticAnalysisAbsoluteErrorGetNodeNumber
+    MODULE PROCEDURE CMISSAnalyticAnalysisAbsoluteErrorGetNodeObj
+  END INTERFACE !CMISSAnalyticAnalysisAbsoluteErrorGetNode
   
   PUBLIC CMISSAnalyticAnalysisOutput
 
-  PUBLIC CMISSAnalyticAnalysisNodeAbsoluteErrorGet
+  PUBLIC CMISSAnalyticAnalysisAbsoluteErrorGetNode
  
 !!==================================================================================================================================
 !!
@@ -4818,8 +4818,8 @@ CONTAINS
   ! 
 
   !>Get absolute error value for the node in a field specified by a user number compared to the analytic value.
-  SUBROUTINE CMISSAnalyticAnalysisNodeAbsoluteErrorGetNumber(RegionUserNumber,FieldUserNumber,DerivativeNumber,NodeNumber, &
-    & ComponentNumber,VariableNumber,Value,Err)
+  SUBROUTINE CMISSAnalyticAnalysisAbsoluteErrorGetNodeNumber(RegionUserNumber,FieldUserNumber,VariableType,DerivativeNumber, & 
+    & NodeNumber,ComponentNumber,Value,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
@@ -4827,7 +4827,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<derivative number
     INTEGER(INTG), INTENT(IN) :: NodeNumber !<node number
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
-    INTEGER(INTG), INTENT(IN) :: VariableNumber !<variable number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
     REAL(DP), INTENT(OUT) :: VALUE !<On return, the absolute error
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
@@ -4835,7 +4835,7 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSAnalyticAnalysisNodeAbsoluteErrorGetNumber",Err,ERROR,*999)
+    CALL ENTERS("CMISSAnalyticAnalysisAbsoluteErrorGetNodeNumber",Err,ERROR,*999)
     
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -4843,7 +4843,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL ANALYTIC_ANALYSIS_NODE_ABSOLUTE_ERROR_GET(FIELD,DerivativeNumber,NodeNumber,ComponentNumber,VariableNumber,Value,ERR, &
+        CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_NODE(FIELD,VariableType,DerivativeNumber,NodeNumber,ComponentNumber,Value,ERR, &
           & ERROR,*999)
       ELSE
         LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
@@ -4855,21 +4855,21 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
     
-    CALL EXITS("CMISSAnalyticAnalysisNodeAbsoluteErrorGetNumber")
+    CALL EXITS("CMISSAnalyticAnalysisAbsoluteErrorGetNodeNumber")
     RETURN
-999 CALL ERRORS("CMISSAnalyticAnalysisNodeAbsoluteErrorGetNumber",Err,ERROR)
-    CALL EXITS("CMISSAnalyticAnalysisNodeAbsoluteErrorGetNumber")    
+999 CALL ERRORS("CMISSAnalyticAnalysisAbsoluteErrorGetNodeNumber",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisAbsoluteErrorGetNodeNumber")    
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSAnalyticAnalysisNodeAbsoluteErrorGetNumber
+  END SUBROUTINE CMISSAnalyticAnalysisAbsoluteErrorGetNodeNumber
 
   !
   !================================================================================================================================
   !  
 
   !>Get absolute error value for the node in a field identified by an object compared to the analytic value.
-  SUBROUTINE CMISSAnalyticAnalysisNodeAbsoluteErrorGetObj(Field,DerivativeNumber,NodeNumber,ComponentNumber,VariableNumber,Value, &
+  SUBROUTINE CMISSAnalyticAnalysisAbsoluteErrorGetNodeObj(Field,VariableType,DerivativeNumber,NodeNumber,ComponentNumber,Value, &
     & Err)
   
     !Argument variables
@@ -4877,25 +4877,25 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<derivative number
     INTEGER(INTG), INTENT(IN) :: NodeNumber !<node number
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
-    INTEGER(INTG), INTENT(IN) :: VariableNumber !<variable number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
     REAL(DP), INTENT(OUT) :: VALUE !<On return, the absolute error
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSAnalyticAnalysisNodeAbsoluteErrorGetObj",Err,ERROR,*999)
+    CALL ENTERS("CMISSAnalyticAnalysisAbsoluteErrorGetNodeObj",Err,ERROR,*999)
     
-    CALL ANALYTIC_ANALYSIS_NODE_ABSOLUTE_ERROR_GET(Field%FIELD,DerivativeNumber,NodeNumber,ComponentNumber,VariableNumber,Value, &
+    CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_NODE(Field%FIELD,VariableType,DerivativeNumber,NodeNumber,ComponentNumber,Value, &
       & ERR,ERROR,*999)
 
-    CALL EXITS("CMISSAnalyticAnalysisNodeAbsoluteErrorGetObj")
+    CALL EXITS("CMISSAnalyticAnalysisAbsoluteErrorGetNodeObj")
 
     RETURN
-999 CALL ERRORS("CMISSAnalyticAnalysisNodeAbsoluteErrorGetObj",Err,ERROR)
-    CALL EXITS("CMISSAnalyticAnalysisNodeAbsoluteErrorGetObj")    
+999 CALL ERRORS("CMISSAnalyticAnalysisAbsoluteErrorGetNodeObj",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisAbsoluteErrorGetNodeObj")    
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSAnalyticAnalysisNodeAbsoluteErrorGetObj
+  END SUBROUTINE CMISSAnalyticAnalysisAbsoluteErrorGetNodeObj
 
 
 !!==================================================================================================================================
