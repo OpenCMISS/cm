@@ -145,6 +145,10 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_LINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE=3
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_QUADRATIC_SOURCE_ADVECTION_DIFFUSION_SUBTYPE=4
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_EXPONENTIAL_SOURCE_ADVECTION_DIFFUSION_SUBTYPE=5
+    !Subtypes for steady-state advection-diffusion equation 
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NO_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE=6
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_CONSTANT_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE=7
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_LINEAR_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE=8
   !Bioelectrics class
   !  Monodomain equation
   !  Bidomain equation
@@ -253,6 +257,11 @@ MODULE EQUATIONS_SET_CONSTANTS
   !> \brief The analytic function types for a diffusion equation
   !>@{  
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DIFFUSION_EQUATION_TWO_DIM_1=1 !<u=exp(-kt)*sin(sqrt(k)*(x*cos(phi)+y*sin(phi)))
+  !>@}
+  !> \addtogroup EQUATIONS_SET_CONSTANTS_AdvectionDiffusionAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:AdvectionDiffusionAnalyticFunctionTypes
+  !> \brief The analytic function types for an advection-diffusion equation
+  !>@{  
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_ADVECTION_DIFFUSION_EQUATION_TWO_DIM_1=1 !<u(x,y)=tanh(1 - alpha.(x.tan(Phi) - y)),this is a steady-state solution
   !>@}
   !> \addtogroup EQUATIONS_SET_CONSTANTS_LinearElasticityAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:LinearElasticityAnalyticFunctionTypes
   !> \brief The analytic function types for a Linear Elasticity equation
