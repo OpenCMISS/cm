@@ -93,6 +93,84 @@ MODULE OPENCMISS_C
 
 CONTAINS
 
+!!==================================================================================================================================
+!!
+!! CMISS_ROUTINES
+!!
+!!==================================================================================================================================
+
+  !>Finalises CMISS for C.
+  FUNCTION CMISSFinaliseC() BIND(C,NAME="CMISSFinalise")
+
+    !Argument variables
+    !Function variable
+    INTEGER(C_INT) :: CMISSFinaliseC !<Error Code.
+    !Local variables
+
+    CALL CMISSFinalise(CMISSFinaliseC)
+
+    RETURN
+
+  END FUNCTION CMISSFinaliseC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises CMISS for C returning a user number to the world coordinate system and region.
+  FUNCTION CMISSInitialiseCNum(WorldCoordinateSystemUserNumber,WorldRegionUserNumber) BIND(C,NAME="CMISSInitialiseNum")
+
+    !Argument variables
+    INTEGER(C_INT), INTENT(OUT) :: WorldCoordinateSystemUserNumber
+    INTEGER(C_INT), INTENT(OUT) :: WorldRegionUserNumber
+    !Function variable
+    INTEGER(C_INT) :: CMISSInitialiseCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSInitialise(WorldCoordinateSystemUserNumber,WorldRegionUserNumber,CMISSInitialiseCNum)
+
+    RETURN
+
+    END FUNCTION CMISSInitialiseCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises CMISS for C returning pointers to the world coordinate system and region.
+  FUNCTION CMISSInitialiseCPtr(WorldCoordinateSystemPtr,WorldRegionPtr) BIND(C,NAME="CMISSInitialise")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: WorldCoordinateSystemPtr
+    TYPE(C_PTR), INTENT(INOUT) :: WorldRegionPtr
+    !Function variable
+    INTEGER(C_INT) :: CMISSInitialiseCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCoordinateSystemType), POINTER :: WorldCoordinateSystem
+    TYPE(CMISSRegionType), POINTER :: WorldRegion
+
+    CMISSInitialiseCPtr=CMISSCoordinateSystemTypeInitialiseC(WorldCoordinateSystemPtr)
+    IF(CMISSInitialiseCPtr==CMISSNoError) THEN
+      CMISSInitialiseCPtr=CMISSRegionTypeInitialiseC(WorldRegionPtr)
+      IF(CMISSInitialiseCPtr==CMISSNoError) THEN
+        CALL C_F_POINTER(WorldCoordinateSystemPtr,WorldCoordinateSystem)
+        IF(ASSOCIATED(WorldCoordinateSystem)) THEN
+          CALL C_F_POINTER(WorldRegionPtr,WorldRegion)
+          IF(ASSOCIATED(WorldRegion)) THEN
+            CALL CMISSInitialise(WorldCoordinateSystem,WorldRegion,CMISSInitialiseCPtr)
+          ELSE
+            CMISSInitialiseCPtr=CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSInitialiseCPtr=CMISSErrorConvertingPointer
+        ENDIF
+      ENDIF
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSInitialiseCPtr
+
   !
   !================================================================================================================================
   !
@@ -4924,6 +5002,1770 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   END FUNCTION CMISSCoordinateSystemOrientationSetCPtr
 
+!!==================================================================================================================================
+!!
+!! EQUATIONS_ROUTINES
+!!
+!!==================================================================================================================================
+
+  !>Destroys equations for equations identified by a user number, for C.
+  FUNCTION CMISSEquationsDestroyCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C, NAME = "CMISSEquationsDestroyNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations to destroy, for C.
+    INTEGER(C_INT), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to destroy the equations for, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsDestroyCNum
+    !Local variables
+
+    CALL CMISSEquationsDestroy(RegionUserNumber,EquationsSetUserNumber,CMISSEquationsDestroyCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsDestroyCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroy equations for equations identified by an object.
+  FUNCTION CMISSEquationsDestroyCPtr(EquationsPtr) BIND(C, NAME = "CMISSEquationsDestroy")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: EquationsPtr !<C pointer to the equations to destroy.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsDestroyCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSEquationsType), POINTER :: Equations
+
+    CMISSEquationsDestroyCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsPtr)) THEN
+      CALL C_F_POINTER(EquationsPtr, Equations)
+      IF(ASSOCIATED(Equations)) THEN
+        CALL CMISSEquationsDestroy(Equations, CMISSEquationsDestroyCPtr)
+      ELSE
+        CMISSEquationsDestroyCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsDestroyCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsDestroyCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the linearity type for equations identified by a user number for C.
+  FUNCTION CMISSEquationsLinearityTypeGetCNum(RegionUserNumber,EquationsSetUserNumber,LinearityType) BIND(C, NAME = &
+    & "CMISSEquationsLinearityTypeGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations to get the linearity type for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to get the linearity type for, for C.
+    INTEGER(C_INT), INTENT(OUT) :: LinearityType !<Thelinearity type of the equations, for C. \see OPENCMISS_EquationsLinearityTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsLinearityTypeGetCNum
+    !Local variables
+
+    CALL CMISSEquationsLinearityTypeGet(RegionUserNumber, EquationsSetUserNumber, LinearityType, CMISSEquationsLinearityTypeGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsLinearityTypeGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the linearity type for equations identified by an object for C.
+  FUNCTION CMISSEquationsLinearityTypeGetCPtr(EquationsPtr,LinearityType) BIND(C, NAME = "CMISSEquationsLinearityTypeGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: EquationsPtr !<The equations to get the linearity type for.
+    INTEGER(C_INT), INTENT(OUT) :: LinearityType !<On return, the linearity type of the equations \see OPENCMISS_EquationsLinearityTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsLinearityTypeGetCPtr
+    !Local variable
+    TYPE(CMISSEquationsType), POINTER :: Equations
+
+    CMISSEquationsLinearityTypeGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsPtr)) THEN
+      CALL C_F_POINTER(EquationsPtr, Equations)
+      IF(ASSOCIATED(Equations)) THEN
+        CALL CMISSEquationsLinearityTypeGet(Equations,LinearityType,CMISSEquationsLinearityTypeGetCPtr)
+      ELSE
+        CMISSEquationsLinearityTypeGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsLinearityTypeGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsLinearityTypeGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the lumping type for equations identified by a user number for C.
+  FUNCTION CMISSEquationsLumpingTypeGetCNum(RegionUserNumber,EquationsSetUserNumber,LumpingType) BIND(C, NAME = &
+    & "CMISSEquationsLumpingTypeGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations to get the lumping type for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to get the lumping type for, for C.
+    INTEGER(C_INT), INTENT(OUT) :: LumpingType !<On return, the lumping type of the equations for C. \see OPENCMISS_EquationsLumpingTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsLumpingTypeGetCNum
+    !Local variables
+
+    CALL CMISSEquationsLumpingTypeGet(RegionUserNumber,EquationsSetUserNumber,LumpingType, CMISSEquationsLumpingTypeGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsLumpingTypeGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the lumping type for equations identified by an object for C.
+  FUNCTION CMISSEquationsLumpingTypeGetCPtr(EquationsPtr,LumpingType) BIND(C, NAME = "CMISSEquationsLumpingTypeGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: EquationsPtr !<C pointer to the equations to get the lumping type for.
+    INTEGER(C_INT), INTENT(OUT) :: LumpingType !<On return, the lumping type of the equations for C. \see OPENCMISS_EquationsLumpingTypes
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsLumpingTypeGetCPtr
+    !Local variables
+    TYPE(CMISSEquationsType), POINTER :: Equations
+
+    CMISSEquationsLumpingTypeGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsPtr)) THEN
+      CALL C_F_POINTER(EquationsPtr, Equations)
+      IF(ASSOCIATED(Equations)) THEN
+        CALL CMISSEquationsLumpingTypeGet(Equations, LumpingType, CMISSEquationsLumpingTypeGetCPtr)
+      ELSE
+        CMISSEquationsLumpingTypeGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsLumpingTypeGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsLumpingTypeGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the lumping type for equations identified by a user number, for C.
+  FUNCTION CMISSEquationsLumpingTypeSetCNum(RegionUserNumber,EquationsSetUserNumber,LumpingType) BIND(C, NAME = &
+    & "CMISSEquationsLumpingTypeSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations to set the lumping type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to set the lumping type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: LumpingType !<The lumping type of the equations to set\see OPENCMISS_EquationsLumpingTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsLumpingTypeSetCNum
+    !Local variables
+
+    CALL CMISSEquationsLumpingTypeSet(RegionUserNumber,EquationsSetUserNumber,LumpingType, CMISSEquationsLumpingTypeSetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsLumpingTypeSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the lumping type for equations identified by an object.
+  FUNCTION CMISSEquationsLumpingTypeSetCPtr(EquationsPtr,LumpingType) BIND(C, NAME = "CMISSEquationsLumpingTypeSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: EquationsPtr !<C pointer to the equations to set the lumping type to.
+    INTEGER(C_INT), INTENT(IN) :: LumpingType !<The lumping type of the equations o set for C. \see OPENCMISS_EquationsLumpingTypes
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsLumpingTypeSetCPtr
+    !Local variables
+    TYPE(CMISSEquationsType), POINTER :: Equations
+
+    CMISSEquationsLumpingTypeSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsPtr)) THEN
+      CALL C_F_POINTER(EquationsPtr, Equations)
+      IF(ASSOCIATED(Equations)) THEN
+        CALL CMISSEquationsLumpingTypeSet(Equations, LumpingType, CMISSEquationsLumpingTypeSetCPtr)
+      ELSE
+        CMISSEquationsLumpingTypeSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsLumpingTypeSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsLumpingTypeSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the output type for equations identified by a user number for C.
+  FUNCTION CMISSEquationsOutputTypeGetCNum(RegionUserNumber,EquationsSetUserNumber,OutputType) BIND(C, NAME = &
+    & "CMISSEquationsOutputTypeGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations to get the lumping type for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to get the lumping type for, for C.
+    INTEGER(C_INT), INTENT(OUT) :: OutputType !<On return, the output type of the equations for C. \see OPENCMISS_EquationsLumpingTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsOutputTypeGetCNum
+    !Local variables
+
+    CALL CMISSEquationsOutputTypeGet(RegionUserNumber,EquationsSetUserNumber,OutputType, CMISSEquationsOutputTypeGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsOutputTypeGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the output type for equations identified by an object, for C.
+  FUNCTION CMISSEquationsOutputTypeGetCPtr(EquationsPtr,OutputType) BIND(C, NAME = "CMISSEquationsOutputTypeGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: EquationsPtr !<C pointer to the equations to get the lumping type for.
+    INTEGER(C_INT), INTENT(OUT) :: OutputType !<On return, the output type of the equations for C. \see OPENCMISS_EquationsLumpingTypes
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsOutputTypeGetCPtr
+    !Local variables
+    TYPE(CMISSEquationsType), POINTER :: Equations
+
+    CMISSEquationsOutputTypeGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsPtr)) THEN
+      CALL C_F_POINTER(EquationsPtr, Equations)
+      IF(ASSOCIATED(Equations)) THEN
+        CALL CMISSEquationsOutputTypeGet(Equations, OutputType, CMISSEquationsOutputTypeGetCPtr)
+      ELSE
+        CMISSEquationsOutputTypeGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsOutputTypeGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsOutputTypeGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the output type for equations identified by a user number, for C.
+  FUNCTION CMISSEquationsOutputTypeSetCNum(RegionUserNumber,EquationsSetUserNumber,OutputType) BIND(C, NAME = &
+    & "CMISSEquationsOutputTypeSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations to set the lumping type to, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to set the lumping type to, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: OutputType !<On return, the output type of the equations to set for C. \see OPENCMISS_EquationsLumpingTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsOutputTypeSetCNum
+    !Local variables
+
+    CALL CMISSEquationsOutputTypeSet(RegionUserNumber,EquationsSetUserNumber,OutputType, CMISSEquationsOutputTypeSetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsOutputTypeSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the output type for equations identified by an object, for C.
+  FUNCTION CMISSEquationsOutputTypeSetCPtr(EquationsPtr,OutputType) BIND(C, NAME = "CMISSEquationsOutputTypeSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: EquationsPtr !<C pointer to the equations to set the lumping type to.
+    INTEGER(C_INT), INTENT(IN) :: OutputType !<The output type of the equations o set for C. \see OPENCMISS_EquationsLumpingTypes
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsOutputTypeSetCPtr
+    !Local variables
+    TYPE(CMISSEquationsType), POINTER :: Equations
+
+    CMISSEquationsOutputTypeSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsPtr)) THEN
+      CALL C_F_POINTER(EquationsPtr, Equations)
+      IF(ASSOCIATED(Equations)) THEN
+        CALL CMISSEquationsOutputTypeSet(Equations, OutputType, CMISSEquationsOutputTypeSetCPtr)
+      ELSE
+        CMISSEquationsOutputTypeSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsOutputTypeSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsOutputTypeSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the sparsity type for equations identified by a user number.
+  FUNCTION CMISSEquationsSparsityTypeGetCNum(RegionUserNumber,EquationsSetUserNumber,SparsityType) BIND(C, NAME = &
+    & "CMISSEquationsSparsityTypeGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations to get the lumping type for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to get the lumping type for, for C.
+    INTEGER(C_INT), INTENT(OUT) :: SparsityType !<On return, the sparsity type of the equations for C. \see OPENCMISS_EquationsLumpingTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSparsityTypeGetCNum
+    !Local variables
+
+    CALL CMISSEquationsSparsityTypeGet(RegionUserNumber,EquationsSetUserNumber,SparsityType, CMISSEquationsSparsityTypeGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSparsityTypeGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the sparsity type for equations identified by an object, for C.
+  FUNCTION CMISSEquationsSparsityTypeGetCPtr(EquationsPtr,SparsityType) BIND(C, NAME = "CMISSEquationsSparsityTypeGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: EquationsPtr !<C pointer to the equations to get the lumping type for.
+    INTEGER(C_INT), INTENT(OUT) :: SparsityType !<On return, the sparsity type of the equations for C. \see OPENCMISS_EquationsLumpingTypes
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsSparsityTypeGetCPtr
+    !Local variables
+    TYPE(CMISSEquationsType), POINTER :: Equations
+
+    CMISSEquationsSparsityTypeGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsPtr)) THEN
+      CALL C_F_POINTER(EquationsPtr, Equations)
+      IF(ASSOCIATED(Equations)) THEN
+        CALL CMISSEquationsSparsityTypeGet(Equations, SparsityType, CMISSEquationsSparsityTypeGetCPtr)
+      ELSE
+        CMISSEquationsSparsityTypeGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSparsityTypeGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSparsityTypeGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the sparsity type for equations identified by a user number, for C.
+  FUNCTION CMISSEquationsSparsityTypeSetCNum(RegionUserNumber,EquationsSetUserNumber,SparsityType) BIND(C, NAME = &
+    & "CMISSEquationsSparsityTypeSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations to set the lumping type to, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to set the lumping type to, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SparsityType !<On return, the sparsity type of the equations to set for C. \see OPENCMISS_EquationsLumpingTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSparsityTypeSetCNum
+    !Local variables
+
+    CALL CMISSEquationsSparsityTypeSet(RegionUserNumber,EquationsSetUserNumber,SparsityType, CMISSEquationsSparsityTypeSetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSparsityTypeSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the sparsity type for equations identified by an object, for C.
+  FUNCTION CMISSEquationsSparsityTypeSetCPtr(EquationsPtr,SparsityType) BIND(C, NAME = "CMISSEquationsSparsityTypeSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: EquationsPtr !<C pointer to the equations to set the lumping type to.
+    INTEGER(C_INT), INTENT(IN) :: SparsityType !<The sparsity type of the equations o set for C. \see OPENCMISS_EquationsLumpingTypes
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsSparsityTypeSetCPtr
+    !Local variables
+    TYPE(CMISSEquationsType), POINTER :: Equations
+
+    CMISSEquationsSparsityTypeSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsPtr)) THEN
+      CALL C_F_POINTER(EquationsPtr, Equations)
+      IF(ASSOCIATED(Equations)) THEN
+        CALL CMISSEquationsSparsityTypeSet(Equations, SparsityType, CMISSEquationsSparsityTypeSetCPtr)
+      ELSE
+        CMISSEquationsSparsityTypeSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSparsityTypeSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSparsityTypeSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the time dependence type for equations identified by a user number, for C.
+  FUNCTION CMISSEquationsTimeDependenceTypeGetCNum(RegionUserNumber,EquationsSetUserNumber,TimeDependenceType) BIND(C, NAME = &
+    & "CMISSEquationsTimeDependenceTypeGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations to get the lumping type to, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to get the lumping type to, for C.
+    INTEGER(C_INT), INTENT(OUT) :: TimeDependenceType !<On return, the time dependence type of the equations to get for C. \see OPENCMISS_EquationsLumpingTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsTimeDependenceTypeGetCNum
+    !Local variables
+
+    CALL CMISSEquationsTimeDependenceTypeGet(RegionUserNumber,EquationsSetUserNumber,TimeDependenceType, &
+      & CMISSEquationsTimeDependenceTypeGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsTimeDependenceTypeGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the time dependence type for equations identified by an object for C.
+  FUNCTION CMISSEquationsTimeDependenceTypeGetCPtr(EquationsPtr,TimeDependenceType) BIND(C, NAME = &
+    & "CMISSEquationsTimeDependenceTypeGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: EquationsPtr !<C pointer to the equations to get the lumping type for.
+    INTEGER(C_INT), INTENT(OUT) :: TimeDependenceType !<On return, the time dependence type of the equations for C. \see OPENCMISS_EquationsLumpingTypes
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsTimeDependenceTypeGetCPtr
+    !Local variables
+    TYPE(CMISSEquationsType), POINTER :: Equations
+
+    CMISSEquationsTimeDependenceTypeGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsPtr)) THEN
+      CALL C_F_POINTER(EquationsPtr, Equations)
+      IF(ASSOCIATED(Equations)) THEN
+        CALL CMISSEquationsTimeDependenceTypeGet(Equations, TimeDependenceType, CMISSEquationsTimeDependenceTypeGetCPtr)
+      ELSE
+        CMISSEquationsTimeDependenceTypeGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsTimeDependenceTypeGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsTimeDependenceTypeGetCPtr
+
+!!==================================================================================================================================
+!!
+!! EQUATIONS_SET_ROUTINES
+!!
+!!==================================================================================================================================
+
+  !>Finish the creation of a analytic solution for an equations set identified by a user number.
+  FUNCTION CMISSEquationsSetAnalyticCreateFinishCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C, NAME = &
+    & "CMISSEquationsSetAnalyticCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to finish for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to finish the creation of for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetAnalyticCreateFinishCNum
+    !Local variable
+
+    CALL CMISSEquationsSetAnalyticCreateFinish(RegionUserNumber,EquationsSetUserNumber, CMISSEquationsSetAnalyticCreateFinishCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetAnalyticCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finish the creation of a analytic solution for an equations set identified by an object.
+  FUNCTION CMISSEquationsSetAnalyticCreateFinishCPtr(EquationsSetPtr) BIND(C, NAME = "CMISSEquationsSetAnalyticCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr  !<C pointer to the equations set to finish.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetAnalyticCreateFinishCPtr
+    !Local variable
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+     CMISSEquationsSetAnalyticCreateFinishCPtr = CMISSNoError
+     IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+       CALL C_F_POINTER(EquationsSetPtr,EquationsSet)
+       IF(ASSOCIATED(EquationsSet)) THEN
+         CALL CMISSEquationsSetAnalyticCreateFinish(EquationsSet,CMISSEquationsSetAnalyticCreateFinishCPtr)
+         IF(ASSOCIATED(EquationsSet)) THEN
+           EquationsSetPtr = C_LOC(EquationsSet)
+         ELSE
+           CMISSEquationsSetAnalyticCreateFinishCPtr = CMISSPointerIsNULL
+         ENDIF
+       ELSE
+         CMISSEquationsSetAnalyticCreateFinishCPtr = CMISSErrorConvertingPointer
+       ENDIF
+     ELSE
+       CMISSEquationsSetAnalyticCreateFinishCPtr = CMISSPointerIsNULL
+     ENDIF
+
+     RETURN
+
+   END FUNCTION CMISSEquationsSetAnalyticCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the creation of a analytic solution for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetAnalyticCreateStartCNum(RegionUserNumber,EquationsSetUserNumber,AnalyticFunctionType, &
+    & AnalyticFieldUserNumber) BIND(C, NAME = "CMISSEquationsSetAnalyticCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to finish for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to finish the creation of for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: AnalyticFunctionType !<The analytic function type to use for C. \see OPENCMISS_EquationsSetAnalyticFunctionTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: AnalyticFieldUserNumber !<The user number of the field for the analytic function for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetAnalyticCreateStartCNum
+    !Local variables
+
+    CALL CMISSEquationsSetAnalyticCreateStart(RegionUserNumber,EquationsSetUserNumber,AnalyticFunctionType, &
+    & AnalyticFieldUserNumber, CMISSEquationsSetAnalyticCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetAnalyticCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the creation of an analytic solution for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetAnalyticCreateStartCPtr(EquationsSetPtr,AnalyticFunctionType,AnalyticFieldUserNumber,AnalyticFieldPtr) &
+    & BIND(C, NAME = "CMISSEquationsSetAnalyticCreateStart")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(OUT) :: EquationsSetPtr !<The equations set to start the analytic creation on.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: AnalyticFunctionType !<The analytic function type to use. \see OPENCMISS_EquationsSetAnalyticFunctionTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: AnalyticFieldUserNumber !<The user number of the field for the analytic function
+    TYPE(C_PTR), INTENT(INOUT) :: AnalyticFieldPtr !<If associated on entry, the user created analytic field which has the same user number as the specified analytic field user number. If not associated on entry, on return, the created analytic field for the equations set.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetAnalyticCreateStartCPtr
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+    TYPE(CMISSFieldType), POINTER :: AnalyticField
+
+    CMISSEquationsSetAnalyticCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(AnalyticFieldPtr)) THEN
+      CALL C_F_POINTER(AnalyticFieldPtr, AnalyticField)
+      IF(ASSOCIATED(AnalyticField)) THEN
+        CALL CMISSEquationsSetAnalyticCreateStart(EquationsSet,AnalyticFunctionType,AnalyticFieldUserNumber,AnalyticField, &
+          & CMISSEquationsSetAnalyticCreateStartCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+          IF(ASSOCIATED(AnalyticField)) THEN
+            AnalyticFieldPtr = C_LOC(AnalyticField)
+          ELSE
+            CMISSEquationsSetAnalyticCreateStartCPtr = CMISSPointerIsNULL
+          ENDIF
+        ELSE
+          CMISSEquationsSetAnalyticCreateStartCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetAnalyticCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetAnalyticCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetAnalyticCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroy the analytic solution for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetAnalyticDestroyCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C, NAME = &
+    & "CMISSEquationsSetAnalyticDestroyNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the equations set to destroy for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to destroy for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetAnalyticDestroyCNum
+    !Local variable
+
+    CALL CMISSEquationsSetAnalyticDestroy(RegionUserNumber,EquationsSetUserNumber,CMISSEquationsSetAnalyticDestroyCNum)
+
+    RETURN
+
+   END FUNCTION CMISSEquationsSetAnalyticDestroyCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroy the analytic solution for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetAnalyticDestroyCPtr(EquationsSetPtr) BIND(C, NAME = "CMISSEquationsSetAnalyticDestroy")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to destroy the analytic for.
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsSetAnalyticDestroyCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSEquationsSetAnalyticDestroyCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        CALL CMISSEquationsSetAnalyticDestroy(EquationsSet, CMISSEquationsSetAnalyticDestroyCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+        ELSE
+          CMISSEquationsSetAnalyticDestroyCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetAnalyticDestroyCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetAnalyticDestroyCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetAnalyticDestroyCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Set boundary conditions for an equation set according to the analytic equations for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetBoundaryConditionsAnalyticCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C, NAME= &
+    & "CMISSEquationsSetBoundaryConditionsAnalyticNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to set the analytic boundary conditions for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to set the analytic boundary conditions for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsAnalyticCNum
+    !Local variables
+
+    CALL CMISSEquationsSetBoundaryConditionsAnalytic(RegionUserNumber,EquationsSetUserNumber, &
+      & CMISSEquationsSetBoundaryConditionsAnalyticCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetBoundaryConditionsAnalyticCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Set boundary conditions for an equation set according to the analytic equations for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetBoundaryConditionsAnalyticCPtr(EquationsSetPtr) BIND(C, NAME = &
+    & "CMISSEquationsSetBoundaryConditionsAnalytic")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to set the analytic boundary conditions for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsAnalyticCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSEquationsSetBoundaryConditionsAnalyticCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        CALL CMISSEquationsSetBoundaryConditionsAnalytic(EquationsSet,CMISSEquationsSetBoundaryConditionsAnalyticCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+        ELSE
+          CMISSEquationsSetBoundaryConditionsAnalyticCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetBoundaryConditionsAnalyticCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetBoundaryConditionsAnalyticCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetBoundaryConditionsAnalyticCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finish the creation of boundary conditions for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetBoundaryConditionsCreateFinishCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C,NAME= &
+    & "CMISSEquationsSetBoundaryConditionsCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the boundary conditions to finish, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to finish the creation of boundary conditions for, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsCreateFinishCNum
+    !Local variables
+
+    CALL CMISSEquationsSetBoundaryConditionsCreateFinish(RegionUserNumber,EquationsSetUserNumber, &
+      & CMISSEquationsSetBoundaryConditionsCreateFinishCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetBoundaryConditionsCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finish the creation of a boundary conditions for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetBoundaryConditionsCreateFinishCPtr(EquationsSetPtr) BIND(C, NAME = &
+    & "CMISSEquationsSetBoundaryConditionsCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to finish the creation of boundary conditions for.
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsCreateFinishCPtr
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSEquationsSetBoundaryConditionsCreateFinishCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        CALL CMISSEquationsSetBoundaryConditionsCreateFinish(EquationsSet,CMISSEquationsSetBoundaryConditionsCreateFinishCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+        ELSE
+          CMISSEquationsSetBoundaryConditionsCreateFinishCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetBoundaryConditionsCreateFinishCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetBoundaryConditionsCreateFinishCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetBoundaryConditionsCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the creation of boundary conditions for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetBoundaryConditionsCreateStartCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C,NAME= &
+    & "CMISSEquationsSetBoundaryConditionsCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the boundary conditions to start, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to start the creation of boundary conditions for, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsCreateStartCNum
+    !Local variables
+
+    CALL CMISSEquationsSetBoundaryConditionsCreateStart(RegionUserNumber,EquationsSetUserNumber, &
+      & CMISSEquationsSetBoundaryConditionsCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetBoundaryConditionsCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the creation of boundary conditions for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetBoundaryConditionsCreateStartCPtr(EquationsSetPtr,BoundaryConditionsPtr) BIND(C, NAME = &
+    & "CMISSEquationsSetBoundaryConditionsCreateStart")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(IN) :: EquationsSetPtr !<C pointer to the equations set to start the creation of boundary conditions on.
+    TYPE(C_PTR), INTENT(INOUT) :: BoundaryConditionsPtr !<C pointer to the created boundary conditions.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsCreateStartCPtr
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+    TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
+
+    CMISSEquationsSetBoundaryConditionsCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr,EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        IF(C_ASSOCIATED(BoundaryConditionsPtr)) THEN
+          CALL C_F_POINTER(BoundaryConditionsPtr, BoundaryConditions)
+          IF(ASSOCIATED(BoundaryConditions)) THEN
+            CALL CMISSEquationsSetBoundaryConditionsCreateStart(EquationsSet,BoundaryConditions, &
+              & CMISSEquationsSetBoundaryConditionsCreateStartCPtr)
+            IF(ASSOCIATED(BoundaryConditions)) THEN
+              BoundaryConditionsPtr = C_LOC(BoundaryConditions)
+            ELSE
+              CMISSEquationsSetBoundaryConditionsCreateStartCPtr = CMISSPointerIsNULL
+            ENDIF
+          ELSE
+            CMISSEquationsSetBoundaryConditionsCreateStartCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSEquationsSetBoundaryConditionsCreateStartCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetBoundaryConditionsCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetBoundaryConditionsCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetBoundaryConditionsCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroy the boundary conditions for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetBoundaryConditionsDestroyCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C,NAME= &
+    & "CMISSEquationsSetBoundaryConditionsDestroyNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the boundary conditions to destroy, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to destroy the boundary conditions for, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsDestroyCNum
+    !Local variables
+
+    CALL CMISSEquationsSetBoundaryConditionsDestroy(RegionUserNumber,EquationsSetUserNumber, &
+      & CMISSEquationsSetBoundaryConditionsDestroyCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetBoundaryConditionsDestroyCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroy the boundary conditions for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetBoundaryConditionsDestroyCPtr(EquationsSetPtr) BIND(C, NAME = &
+    & "CMISSEquationsSetBoundaryConditionsDestroy")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to destroy the boundary conditions for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsDestroyCPtr
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSEquationsSetBoundaryConditionsDestroyCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        CALL CMISSEquationsSetBoundaryConditionsDestroy(EquationsSet, CMISSEquationsSetBoundaryConditionsDestroyCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+        ELSE
+          CMISSEquationsSetBoundaryConditionsDestroyCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetBoundaryConditionsDestroyCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetBoundaryConditionsDestroyCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetBoundaryConditionsDestroyCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finish the creation of an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetCreateFinishCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C,NAME= &
+    & "CMISSEquationsSetCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to finish the creation of, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to finish the creation of, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetCreateFinishCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSEquationsSetCreateFinish(RegionUserNumber,EquationsSetUserNumber, CMISSEquationsSetCreateFinishCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finish the creation of an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetCreateFinishCPtr(EquationsSetPtr) BIND(C, NAME = &
+    & "CMISSEquationsSetCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to finish the creation of.
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsSetCreateFinishCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSEquationsSetCreateFinishCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        CALL CMISSEquationsSetCreateFinish(EquationsSet,CMISSEquationsSetCreateFinishCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+        ELSE
+          CMISSEquationsSetCreateFinishCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetCreateFinishCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetCreateFinishCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the creation of an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetCreateStartCNum(EquationsSetUserNumber,RegionUserNumber,GeomFibreFieldUserNumber) BIND(C, NAME = &
+    & "CMISSEquationsSetCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to be created for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region to start the creation of an equations set on for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: GeomFibreFieldUserNumber !<The user number of the Geometric/Fibre field for the equations set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetCreateStartCNum
+    !Local variable
+
+    CALL CMISSEquationsSetCreateStart(EquationsSetUserNumber,RegionUserNumber,GeomFibreFieldUserNumber, &
+      & CMISSEquationsSetCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the creation of an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetCreateStartCPtr(EquationsSetUserNumber,RegionPtr,GeomFibreFieldPtr,EquationsSetPtr) BIND(C, NAME = &
+    & "CMISSEquationsSetCreateStart")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to be created for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: RegionPtr !<C pointer to the region to create the equations set on.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: GeomFibreFieldPtr !<C pointer to the Geometric/Fibre field for the creation of the equations set.
+    TYPE(C_PTR), INTENT(OUT) :: EquationsSetPtr !<C pointer to the created equations set.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetCreateStartCPtr
+    !Local variables
+    TYPE(CMISSRegionType), POINTER :: Region
+    TYPE(CMISSFieldType), POINTER :: GeomFibreField
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSEquationsSetCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(RegionPtr)) THEN
+      CALL C_F_POINTER(RegionPtr,Region)
+      IF(ASSOCIATED(Region)) THEN
+        IF(C_ASSOCIATED(GeomFibreFieldPtr)) THEN
+          CALL C_F_POINTER(GeomFibreFieldPtr, GeomFibreField)
+          IF(ASSOCIATED(GeomFibreField)) THEN
+            CALL CMISSEquationsSetCreateStart(EquationsSetUserNumber,Region,GeomFibreField,EquationsSet, &
+              & CMISSEquationsSetCreateStartCPtr)
+            IF(ASSOCIATED(EquationsSet)) THEN
+              EquationsSetPtr = C_LOC(EquationsSet)
+            ELSE
+              CMISSEquationsSetCreateStartCPtr = CMISSPointerIsNULL
+            ENDIF
+          ELSE
+            CMISSEquationsSetCreateStartCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSEquationsSetCreateStartCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroy an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetDestroyCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C, NAME = &
+    & "CMISSEquationsSetDestroyNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to destory for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to destroy for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetDestroyCNum
+    !Local variable
+
+    CALL CMISSEquationsSetDestroy(RegionUserNumber,EquationsSetUserNumber, CMISSEquationsSetDestroyCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetDestroyCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroy an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetDestroyCPtr(EquationsSetPtr) BIND(C, NAME = &
+    & "CMISSEquationsSetDestroy")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to destroy.
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsSetDestroyCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSEquationsSetDestroyCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        CALL CMISSEquationsSetDestroy(EquationsSet,CMISSEquationsSetDestroyCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+        ELSE
+          CMISSEquationsSetDestroyCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetDestroyCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetDestroyCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetDestroyCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finish the creation of dependent variables for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetDependentCreateFinishCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C, NAME = &
+    & "CMISSEquationsSetDependentCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to finish the creation of dependent variables for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to finish the creation of dependent variables for for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetDependentCreateFinishCNum
+    !Local variable
+
+    CALL CMISSEquationsSetDependentCreateFinish(RegionUserNumber,EquationsSetUserNumber,CMISSEquationsSetDependentCreateFinishCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetDependentCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finish the creation of dependent variables for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetDependentCreateFinishCPtr(EquationsSetPtr) BIND(C, NAME = &
+    & "CMISSEquationsSetDependentCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to finish the creation of.
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsSetDependentCreateFinishCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSEquationsSetDependentCreateFinishCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        CALL CMISSEquationsSetDependentCreateFinish(EquationsSet,CMISSEquationsSetDependentCreateFinishCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+        ELSE
+          CMISSEquationsSetDependentCreateFinishCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetDependentCreateFinishCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetDependentCreateFinishCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetDependentCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the creation of dependent variables for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetDependentCreateStartCNum(RegionUserNumber,EquationsSetUserNumber,DependentFieldUserNumber) BIND(C, &
+    & NAME = "CMISSEquationsSetDependentCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to start the creation of dependent variables for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to start the creation of dependent variables for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: DependentFieldUserNumber !<The user number of the dependent field, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetDependentCreateStartCNum
+    !Local variables
+
+    CALL CMISSEquationsSetDependentCreateStart(RegionUserNumber,EquationsSetUserNumber,DependentFieldUserNumber, &
+      & CMISSEquationsSetDependentCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetDependentCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the creation of dependent variables for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetDependentCreateStartCPtr(EquationsSetPtr,DependentFieldUserNumber,DependentFieldPtr) BIND(C, NAME = &
+    & "CMISSEquationsSetDependentCreateStart")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(OUT) :: EquationsSetPtr !<C pointer to the equations set to start the creation of dependent variables on.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: DependentFieldUserNumber !<The user number of the dependent field for C.
+    TYPE(C_PTR), INTENT(INOUT) :: DependentFieldPtr !<C pointer to the user created dependent field which has the same user number as the specified dependent field user number.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetDependentCreateStartCPtr
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+    TYPE(CMISSFieldType), POINTER :: DependentField
+
+    CMISSEquationsSetDependentCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(DependentFieldPtr)) THEN
+      CALL C_F_POINTER(DependentFieldPtr, DependentField)
+      IF(ASSOCIATED(DependentField)) THEN
+        CALL CMISSEquationsSetDependentCreateStart(EquationsSet,DependentFieldUserNumber,DependentField, &
+          & CMISSEquationsSetDependentCreateStartCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+          IF(ASSOCIATED(DependentField)) THEN
+            DependentFieldPtr = C_LOC(DependentField)
+          ELSE
+            CMISSEquationsSetDependentCreateStartCPtr = CMISSPointerIsNULL
+          ENDIF
+        ELSE
+          CMISSEquationsSetDependentCreateStartCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetDependentCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetDependentCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetDependentCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroy the dependent variables for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetDependentDestroyCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C, &
+    & NAME = "CMISSEquationsSetDependentDestroyNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to destroy the dependent variables for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to destroy the dependent variables for, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetDependentDestroyCNum
+    !Local variables
+
+    CALL CMISSEquationsSetDependentDestroy(RegionUserNumber,EquationsSetUserNumber,CMISSEquationsSetDependentDestroyCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetDependentDestroyCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroy the dependent variables for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetDependentDestroyCPtr(EquationsSetPtr) BIND(C, NAME = &
+    & "CMISSEquationsSetDependentDestroy")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to destroy.
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsSetDependentDestroyCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSEquationsSetDependentDestroyCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        CALL CMISSEquationsSetDependentDestroy(EquationsSet,CMISSEquationsSetDependentDestroyCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+        ELSE
+          CMISSEquationsSetDependentDestroyCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetDependentDestroyCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetDependentDestroyCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetDependentDestroyCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finish the creation of equations for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetEquationsCreateFinishCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C, &
+    & NAME = "CMISSEquationsSetEquationsCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to finish the creation of equations for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to finish the creation of equations for, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetEquationsCreateFinishCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSEquationsSetEquationsCreateFinish(RegionUserNumber,EquationsSetUserNumber,CMISSEquationsSetEquationsCreateFinishCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetEquationsCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finish the creation of equations for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetEquationsCreateFinishCPtr(EquationsSetPtr) BIND(C, NAME = "CMISSEquationsSetEquationsCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to finish the creation of equations for.
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsSetEquationsCreateFinishCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSEquationsSetEquationsCreateFinishCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        CALL CMISSEquationsSetEquationsCreateFinish(EquationsSet,CMISSEquationsSetEquationsCreateFinishCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+        ELSE
+          CMISSEquationsSetEquationsCreateFinishCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetEquationsCreateFinishCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetEquationsCreateFinishCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetEquationsCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the creation of equations for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetEquationsCreateStartCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C, &
+    & NAME = "CMISSEquationsSetEquationsCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to start the creation of equations for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to start the creation of equations for, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetEquationsCreateStartCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSEquationsSetEquationsCreateStart(RegionUserNumber,EquationsSetUserNumber,CMISSEquationsSetEquationsCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetEquationsCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the creation of equations for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetEquationsCreateStartCPtr(EquationsSetPtr,EquationsPtr) BIND(C, NAME = &
+    & "CMISSEquationsSetEquationsCreateStart")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(OUT) :: EquationsSetPtr !<C pointer to the equations set to finish the creation of equations for.
+    TYPE(C_PTR), INTENT(INOUT) :: EquationsPtr !<C pointer to the created equations.
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsSetEquationsCreateStartCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+    TYPE(CMISSEquationsType), POINTER :: Equations
+
+    CMISSEquationsSetEquationsCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        IF(C_ASSOCIATED(EquationsPtr)) THEN
+          CALL C_F_POINTER(EquationsPtr, Equations)
+          IF(ASSOCIATED(Equations)) THEN
+            CALL CMISSEquationsSetEquationsCreateStart(EquationsSet,Equations,CMISSEquationsSetEquationsCreateStartCPtr)
+            IF(ASSOCIATED(Equations)) THEN
+              EquationsPtr = C_LOC(Equations)
+            ELSE
+              CMISSEquationsSetEquationsCreateStartCPtr = CMISSPointerIsNULL
+            ENDIF
+          ELSE
+            CMISSEquationsSetEquationsCreateStartCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSEquationsSetEquationsCreateStartCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetEquationsCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetEquationsCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetEquationsCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroy the equations for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetEquationsDestroyCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C, NAME = &
+    & "CMISSEquationsSetEquationsDestroyNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to destroy the equations for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to destroy the equations for, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetEquationsDestroyCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSEquationsSetEquationsDestroy(RegionUserNumber,EquationsSetUserNumber,CMISSEquationsSetEquationsDestroyCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetEquationsDestroyCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroy the equations for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetEquationsDestroyCPtr(EquationsSetPtr)  BIND(C, NAME = "CMISSEquationsSetEquationsDestroy")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer the equations set to destroy the equations for.
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsSetEquationsDestroyCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSEquationsSetEquationsDestroyCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        CALL CMISSEquationsSetEquationsDestroy(EquationsSet,CMISSEquationsSetEquationsDestroyCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+        ELSE
+          CMISSEquationsSetEquationsDestroyCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetEquationsDestroyCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetEquationsDestroyCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetEquationsDestroyCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finish the creation of independent variables for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetIndependentCreateFinishCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C, NAME = &
+    & "CMISSEquationsSetIndependentCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to finish the creation of independent variables for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to finish the creation of independent variables for, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetIndependentCreateFinishCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSEquationsSetIndependentCreateFinish(RegionUserNumber,EquationsSetUserNumber, &
+      & CMISSEquationsSetIndependentCreateFinishCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetIndependentCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finish the creation of independent variables for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetIndependentCreateFinishCPtr(EquationsSetPtr) BIND(C, NAME = &
+    & "CMISSEquationsSetIndependentCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to finish the creation of independent variables for.
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsSetIndependentCreateFinishCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSEquationsSetIndependentCreateFinishCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        CALL CMISSEquationsSetIndependentCreateFinish(EquationsSet,CMISSEquationsSetIndependentCreateFinishCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+        ELSE
+          CMISSEquationsSetIndependentCreateFinishCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetIndependentCreateFinishCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetIndependentCreateFinishCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetIndependentCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the creation of independent variables for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetIndependentCreateStartCNum(RegionUserNumber,EquationsSetUserNumber,IndependentFieldUserNumber) &
+    & BIND(C, NAME = "CMISSEquationsSetIndependentCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to start the creation of independent variables for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to start the creation of independent variables for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: IndependentFieldUserNumber !<The user number of the independent field.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetIndependentCreateStartCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSEquationsSetIndependentCreateStart(RegionUserNumber,EquationsSetUserNumber,IndependentFieldUserNumber, &
+      & CMISSEquationsSetIndependentCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetIndependentCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the creation of independent variables for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetIndependentCreateStartCPtr(EquationsSetPtr,IndependentFieldUserNumber,IndependentFieldPtr) BIND(C, &
+    & NAME = "CMISSEquationsSetIndependentCreateStart")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(OUT) :: EquationsSetPtr !<C pointer to the equations set to start the creation of independent variables on.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: IndependentFieldUserNumber !<The user number of the dependent field for C.
+    TYPE(C_PTR), INTENT(INOUT) :: IndependentFieldPtr !<If associated, C pointer to the user created independent field which has the same user number as the specified independent field user number. If not associated on entry, on return, C pointer to the created independent field for the equations set.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetIndependentCreateStartCPtr
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+    TYPE(CMISSFieldType), POINTER :: IndependentField
+
+    CMISSEquationsSetIndependentCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(IndependentFieldPtr)) THEN
+      CALL C_F_POINTER(IndependentFieldPtr, IndependentField)
+      IF(ASSOCIATED(IndependentField)) THEN
+        CALL CMISSEquationsSetIndependentCreateStart(EquationsSet,IndependentFieldUserNumber,IndependentField, &
+          & CMISSEquationsSetIndependentCreateStartCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+          IF(ASSOCIATED(IndependentField)) THEN
+            IndependentFieldPtr = C_LOC(IndependentField)
+          ELSE
+            CMISSEquationsSetIndependentCreateStartCPtr = CMISSPointerIsNULL
+          ENDIF
+        ELSE
+          CMISSEquationsSetIndependentCreateStartCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetIndependentCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetIndependentCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetIndependentCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroy the independent variables for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetIndependentDestroyCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C, NAME = &
+    & "CMISSEquationsSetIndependentDestroyNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to destroy the independent variables for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to destroy the independent variables for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetIndependentDestroyCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSEquationsSetIndependentDestroy(RegionUserNumber,EquationsSetUserNumber, &
+      & CMISSEquationsSetIndependentDestroyCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetIndependentDestroyCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroy the independent variables for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetIndependentDestroyCPtr(EquationsSetPtr) BIND(C, NAME = "CMISSEquationsSetIndependentDestroy")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to destroy the independent variables for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetIndependentDestroyCPtr
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSEquationsSetIndependentDestroyCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        CALL CMISSEquationsSetIndependentDestroy(EquationsSet, CMISSEquationsSetIndependentDestroyCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+        ELSE
+          CMISSEquationsSetIndependentDestroyCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetIndependentDestroyCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetIndependentDestroyCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetIndependentDestroyCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finish the creation of materials for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetMaterialsCreateFinishCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C, NAME = &
+    & "CMISSEquationsSetMaterialsCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to finish the creation of materials for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to finish the creation of materials for, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetMaterialsCreateFinishCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSEquationsSetMaterialsCreateFinish(RegionUserNumber,EquationsSetUserNumber,CMISSEquationsSetMaterialsCreateFinishCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetMaterialsCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finish the creation of materials for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetMaterialsCreateFinishCPtr(EquationsSetPtr)BIND(C, NAME = "CMISSEquationsSetMaterialsCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to finish the creation of materials for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetMaterialsCreateFinishCPtr
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSEquationsSetMaterialsCreateFinishCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        CALL CMISSEquationsSetMaterialsCreateFinish(EquationsSet, CMISSEquationsSetMaterialsCreateFinishCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+        ELSE
+          CMISSEquationsSetMaterialsCreateFinishCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetMaterialsCreateFinishCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetMaterialsCreateFinishCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetMaterialsCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the creation of materials for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetMaterialsCreateStartCNum(RegionUserNumber,EquationsSetUserNumber,MaterialsFieldUserNumber) BIND(C, &
+    & NAME = "CMISSEquationsSetMaterialsCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to start the creation of materials for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to start the creation of materials for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: MaterialsFieldUserNumber !<The user number of the materials field.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetMaterialsCreateStartCNum
+    !Local variable
+
+    CALL CMISSEquationsSetMaterialsCreateStart(RegionUserNumber,EquationsSetUserNumber,MaterialsFieldUserNumber, &
+      & CMISSEquationsSetMaterialsCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetMaterialsCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the creation of materials for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetMaterialsCreateStartCPtr(EquationsSetPtr,MaterialsFieldUserNumber,MaterialsFieldPtr) BIND(C, NAME = &
+    & " CMISSEquationsSetMaterialsCreateStart")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(OUT) :: EquationsSetPtr !<C pointer the equations set to start the creation of materials on.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: MaterialsFieldUserNumber !<The user number of the materials field.
+    TYPE(C_PTR), INTENT(INOUT) :: MaterialsFieldPtr !<If associated on entry, the user created materials field which has the same user number as the specified materials field user number. If not associated on entry, on return, the created materials field for the equations set.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetMaterialsCreateStartCPtr
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+    TYPE(CMISSFieldType), POINTER :: MaterialsField
+
+    CMISSEquationsSetMaterialsCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(MaterialsFieldPtr)) THEN
+      CALL C_F_POINTER(MaterialsFieldPtr, MaterialsField)
+      IF(ASSOCIATED(MaterialsField)) THEN
+        CALL CMISSEquationsSetMaterialsCreateStart(EquationsSet,MaterialsFieldUserNumber,MaterialsField, &
+          & CMISSEquationsSetMaterialsCreateStartCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+          IF(ASSOCIATED(MaterialsField)) THEN
+            MaterialsFieldPtr = C_LOC(MaterialsField)
+          ELSE
+            CMISSEquationsSetMaterialsCreateStartCPtr = CMISSPointerIsNULL
+          ENDIF
+        ELSE
+          CMISSEquationsSetMaterialsCreateStartCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetMaterialsCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetMaterialsCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetMaterialsCreateStartCPtr
+
+
      !stop
 
 
@@ -4943,83 +6785,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
 
 
-!!==================================================================================================================================
-!!
-!! CMISS_ROUTINES
-!!
-!!==================================================================================================================================
 
-  !>Finalises CMISS for C.
-  FUNCTION CMISSFinaliseC() BIND(C,NAME="CMISSFinalise")
-  
-    !Argument variables
-    !Function variable
-    INTEGER(C_INT) :: CMISSFinaliseC !<Error Code.
-    !Local variables
-
-    CALL CMISSFinalise(CMISSFinaliseC)
-
-    RETURN
-    
-  END FUNCTION CMISSFinaliseC
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Initialises CMISS for C returning a user number to the world coordinate system and region.
-  FUNCTION CMISSInitialiseCNum(WorldCoordinateSystemUserNumber,WorldRegionUserNumber) BIND(C,NAME="CMISSInitialiseNum")
-  
-    !Argument variables
-    INTEGER(C_INT), INTENT(OUT) :: WorldCoordinateSystemUserNumber
-    INTEGER(C_INT), INTENT(OUT) :: WorldRegionUserNumber
-    !Function variable
-    INTEGER(C_INT) :: CMISSInitialiseCNum !<Error Code.
-    !Local variables
-  
-    CALL CMISSInitialise(WorldCoordinateSystemUserNumber,WorldRegionUserNumber,CMISSInitialiseCNum)
-
-    RETURN
-    
-    END FUNCTION CMISSInitialiseCNum
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Initialises CMISS for C returning pointers to the world coordinate system and region.
-  FUNCTION CMISSInitialiseCPtr(WorldCoordinateSystemPtr,WorldRegionPtr) BIND(C,NAME="CMISSInitialise")
-  
-    !Argument variables
-    TYPE(C_PTR), INTENT(INOUT) :: WorldCoordinateSystemPtr
-    TYPE(C_PTR), INTENT(INOUT) :: WorldRegionPtr
-    !Function variable
-    INTEGER(C_INT) :: CMISSInitialiseCPtr !<Error Code.
-    !Local variables
-    TYPE(CMISSCoordinateSystemType), POINTER :: WorldCoordinateSystem
-    TYPE(CMISSRegionType), POINTER :: WorldRegion
-
-    CMISSInitialiseCPtr=CMISSCoordinateSystemTypeInitialiseC(WorldCoordinateSystemPtr)
-    IF(CMISSInitialiseCPtr==CMISSNoError) THEN
-      CMISSInitialiseCPtr=CMISSRegionTypeInitialiseC(WorldRegionPtr)
-      IF(CMISSInitialiseCPtr==CMISSNoError) THEN
-        CALL C_F_POINTER(WorldCoordinateSystemPtr,WorldCoordinateSystem)
-        IF(ASSOCIATED(WorldCoordinateSystem)) THEN
-          CALL C_F_POINTER(WorldRegionPtr,WorldRegion)
-          IF(ASSOCIATED(WorldRegion)) THEN        
-            CALL CMISSInitialise(WorldCoordinateSystem,WorldRegion,CMISSInitialiseCPtr)
-          ELSE
-            CMISSInitialiseCPtr=CMISSErrorConvertingPointer
-          ENDIF
-        ELSE
-          CMISSInitialiseCPtr=CMISSErrorConvertingPointer
-        ENDIF
-      ENDIF
-    ENDIF
-
-    RETURN
-    
-  END FUNCTION CMISSInitialiseCPtr
 
 !!==================================================================================================================================
 !!
