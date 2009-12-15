@@ -1332,6 +1332,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSEquationsSetDiffusionTwoDim1
 
+  PUBLIC CMISSEquationsSetAdvectionDiffusionTwoDim1
+
   PUBLIC CMISSEquationsSetPoissonTwoDim1
 
   PUBLIC CMISSEquationsSetStokesTwoDim1,CMISSEquationsSetStokesTwoDim2,CMISSEquationsSetStokesTwoDim3
