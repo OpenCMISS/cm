@@ -2702,7 +2702,7 @@ CONTAINS
     INTEGER(INTG) :: component_idx,deriv_idx,dim_idx,local_ny,node_idx,NUMBER_OF_DIMENSIONS,variable_idx,variable_type,I,J,K
     INTEGER(INTG) :: number_of_nodes_xi(3),element_idx,en_idx,BOUND_COUNT
     REAL(DP) :: VALUE,X(3),MU_PARAM,L,XI_COORDINATES(3)
-    REAL(DP) :: BOUNDARY_TOLERANCE, BOUNDARY_X(3,2)
+    REAL(DP) :: BOUNDARY_TOLERANCE, BOUNDARY_X(3,2), T_COORDINATES(20,3)
     REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
@@ -2713,6 +2713,9 @@ CONTAINS
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS
     TYPE(VARYING_STRING) :: LOCAL_ERROR    
 
+    !Temp variables
+    INTEGER(INTG) :: number_of_element_nodes,temp_local_ny,temp_node_number,velocity_DOF_check,temp_local_node_number    
+
     CALL ENTERS("STOKES_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR,*999)
  
     BOUND_COUNT=0
@@ -2721,6 +2724,14 @@ CONTAINS
     XI_COORDINATES(3)=0.0_DP
     BOUNDARY_TOLERANCE=0.000000001_DP
     BOUNDARY_X=0.0_DP
+    T_COORDINATES=0.0_DP
+
+    number_of_element_nodes=0
+    temp_local_node_number=0
+    temp_local_ny=0
+    temp_node_number=0
+    velocity_DOF_check=0
+
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
@@ -2789,40 +2800,112 @@ CONTAINS
                               number_of_nodes_xi(3)=1
                             ENDIF
 
-                            DO K=1,number_of_nodes_xi(3)
-                              DO J=1,number_of_nodes_xi(2)
-                                DO I=1,number_of_nodes_xi(1)
-                                  en_idx=en_idx+1
-                                  IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
-                                  XI_COORDINATES(1)=XI_COORDINATES(1)+(1.0_DP/(number_of_nodes_xi(1)-1))
-                                ENDDO
-                                  IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
-                                  XI_COORDINATES(1)=0.0_DP
-                                  XI_COORDINATES(2)=XI_COORDINATES(2)+(1.0_DP/(number_of_nodes_xi(2)-1))
-                              ENDDO
-                              IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
-                              XI_COORDINATES(1)=0.0_DP
-                              XI_COORDINATES(2)=0.0_DP
-                              IF(number_of_nodes_xi(3)/=1) THEN
-                                XI_COORDINATES(3)=XI_COORDINATES(3)+(1.0_DP/(number_of_nodes_xi(3)-1))
-                              ENDIF
-                            ENDDO
+                            IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.AND.NUMBER_OF_DIMENSIONS==2 .OR. &
+                              & DOMAIN%topology%elements%maximum_number_of_element_parameters==9.OR. &
+                              & DOMAIN%topology%elements%maximum_number_of_element_parameters==16.OR. &
+                              & DOMAIN%topology%elements%maximum_number_of_element_parameters==8.OR. &
+                              & DOMAIN%topology%elements%maximum_number_of_element_parameters==27.OR. &
+                              & DOMAIN%topology%elements%maximum_number_of_element_parameters==64) THEN
 
-                            CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,INTERPOLATED_POINT,ERR,ERROR,*999)
+                              DO K=1,number_of_nodes_xi(3)
+                                DO J=1,number_of_nodes_xi(2)
+                                  DO I=1,number_of_nodes_xi(1)
+                                    en_idx=en_idx+1
+                                    IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
+                                    XI_COORDINATES(1)=XI_COORDINATES(1)+(1.0_DP/(number_of_nodes_xi(1)-1))
+                                  ENDDO
+                                    IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
+                                    XI_COORDINATES(1)=0.0_DP
+                                    XI_COORDINATES(2)=XI_COORDINATES(2)+(1.0_DP/(number_of_nodes_xi(2)-1))
+                                ENDDO
+                                IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
+                                XI_COORDINATES(1)=0.0_DP
+                                XI_COORDINATES(2)=0.0_DP
+                                IF(number_of_nodes_xi(3)/=1) THEN
+                                  XI_COORDINATES(3)=XI_COORDINATES(3)+(1.0_DP/(number_of_nodes_xi(3)-1))
+                                ENDIF
+                              ENDDO
+                              CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,INTERPOLATED_POINT,ERR,ERROR,*999)
+                            ELSE
+                              IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3) THEN
+                                T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
+                                T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
+                                T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
+                              ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==6) THEN
+                                T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
+                                T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
+                                T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
+                                T_COORDINATES(4,1:2)=(/0.5_DP,0.5_DP/)
+                                T_COORDINATES(5,1:2)=(/1.0_DP,0.5_DP/)
+                                T_COORDINATES(6,1:2)=(/0.5_DP,1.0_DP/)
+                              ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==10.AND. & 
+                                & NUMBER_OF_DIMENSIONS==2) THEN
+                                T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
+                                T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
+                                T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
+                                T_COORDINATES(4,1:2)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                                T_COORDINATES(5,1:2)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
+                                T_COORDINATES(6,1:2)=(/1.0_DP,1.0_DP/3.0_DP/)
+                                T_COORDINATES(7,1:2)=(/1.0_DP,2.0_DP/3.0_DP/)
+                                T_COORDINATES(8,1:2)=(/2.0_DP/3.0_DP,1.0_DP/)
+                                T_COORDINATES(9,1:2)=(/1.0_DP/3.0_DP,1.0_DP/)
+                                T_COORDINATES(10,1:2)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                              ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4) THEN
+                                T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
+                                T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
+                                T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
+                                T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
+                              ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==10.AND. & 
+                                & NUMBER_OF_DIMENSIONS==3) THEN
+                                T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
+                                T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
+                                T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
+                                T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
+                                T_COORDINATES(5,1:3)=(/0.5_DP,0.5_DP,1.0_DP/)
+                                T_COORDINATES(6,1:3)=(/0.5_DP,1.0_DP,0.5_DP/)
+                                T_COORDINATES(7,1:3)=(/0.5_DP,1.0_DP,1.0_DP/)
+                                T_COORDINATES(8,1:3)=(/1.0_DP,0.5_DP,0.5_DP/)
+                                T_COORDINATES(9,1:3)=(/1.0_DP,1.0_DP,0.5_DP/)
+                                T_COORDINATES(10,1:3)=(/1.0_DP,0.5_DP,1.0_DP/)
+                              ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==20) THEN
+                                T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
+                                T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
+                                T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
+                                T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
+                                T_COORDINATES(5,1:3)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
+                                T_COORDINATES(6,1:3)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP,1.0_DP/)
+                                T_COORDINATES(7,1:3)=(/1.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
+                                T_COORDINATES(8,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/3.0_DP/)
+                                T_COORDINATES(9,1:3)=(/1.0_DP/3.0_DP,1.0_DP,1.0_DP/)
+                                T_COORDINATES(10,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/)
+                                T_COORDINATES(11,1:3)=(/1.0_DP,1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                                T_COORDINATES(12,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
+                                T_COORDINATES(13,1:3)=(/1.0_DP,1.0_DP,1.0_DP/3.0_DP/)
+                                T_COORDINATES(14,1:3)=(/1.0_DP,1.0_DP,2.0_DP/3.0_DP/)
+                                T_COORDINATES(15,1:3)=(/1.0_DP,1.0_DP/3.0_DP,1.0_DP/)
+                                T_COORDINATES(16,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/)
+                                T_COORDINATES(17,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                                T_COORDINATES(18,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
+                                T_COORDINATES(19,1:3)=(/2.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
+                                T_COORDINATES(20,1:3)=(/1.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                              ENDIF
+
+                              DO K=1,DOMAIN%topology%elements%maximum_number_of_element_parameters
+                                IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(K)==node_idx) EXIT
+                              ENDDO
+
+                              IF(NUMBER_OF_DIMENSIONS==2) THEN
+                                CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,T_COORDINATES(K,1:2),INTERPOLATED_POINT,ERR,ERROR,*999)
+                              ELSE IF(NUMBER_OF_DIMENSIONS==3) THEN
+                                CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,T_COORDINATES(K,1:3),INTERPOLATED_POINT,ERR,ERROR,*999)
+                              ENDIF 
+                            ENDIF
 
                             X=0.0_DP
                             DO dim_idx=1,NUMBER_OF_DIMENSIONS
                               X(dim_idx)=INTERPOLATED_POINT%VALUES(dim_idx,1)
                             ENDDO !dim_idx
 
-
-!HACK FOR TET
-
-                            !!TODO \todo We should interpolate the geometric field here and the node position.
-                            DO dim_idx=1,NUMBER_OF_DIMENSIONS
-                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
-                              X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
-                            ENDDO !dim_idx
 
                             !Loop over the derivatives
                             DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
@@ -2834,6 +2917,19 @@ CONTAINS
                                     CASE(FIELD_U_VARIABLE_TYPE)
                                       SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                         CASE(NO_GLOBAL_DERIV)
+! ! !                                           IF(component_idx==1) THEN
+! ! !                                             !calculate u
+! ! !                                             VALUE=X(1)/L
+! ! !                                           ELSE IF(component_idx==2) THEN
+! ! !                                             !calculate v
+! ! !                                             VALUE=-X(2)/L
+! ! !                                           ELSE IF(component_idx==3) THEN
+! ! !                                             !calculate p
+! ! !                                             VALUE=0.0_DP
+! ! !                                           ELSE
+! ! !                                             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+! ! !                                           ENDIF
+
                                           IF(component_idx==1) THEN
                                             !calculate u
                                             VALUE=X(2)**2/L**2
@@ -3088,7 +3184,6 @@ CONTAINS
 
                               CASE(EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_2)
                                 IF(NUMBER_OF_DIMENSIONS==3.AND.FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
-!HIER MUSS ICH HALT EINE FORMEL EINFUEGEN FUER 2DM STOKES
 !EXPONENTIAL
                                   SELECT CASE(variable_type)
                                     CASE(FIELD_U_VARIABLE_TYPE)
@@ -3277,6 +3372,26 @@ CONTAINS
                                       CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
                                         & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
                                     BOUND_COUNT=BOUND_COUNT+1
+!Apply boundary conditions check for pressure nodes
+                                    ELSE IF(component_idx>NUMBER_OF_DIMENSIONS) THEN
+                                      IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3.OR. &
+                                        & DOMAIN%topology%elements%maximum_number_of_element_parameters==6.OR. &
+                                        & DOMAIN%topology%elements%maximum_number_of_element_parameters==10) THEN
+
+                                      IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
+                                        & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.OR. &
+                                        & X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND.&
+                                        & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.OR. &
+                                        & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND.&
+                                        & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.OR. &
+                                        & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND.&
+                                        & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE) &
+                                        & THEN
+                                          CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+                                            & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                          BOUND_COUNT=BOUND_COUNT+1
+                                      ENDIF
+                                      ENDIF
                                     ENDIF
                                   ELSE
                                     IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
@@ -3295,6 +3410,40 @@ CONTAINS
                                       CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
                                         & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
                                     BOUND_COUNT=BOUND_COUNT+1
+!Apply boundary conditions check for pressure nodes
+                                    ELSE IF(component_idx>NUMBER_OF_DIMENSIONS) THEN
+                                      IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.OR. &
+                                        & DOMAIN%topology%elements%maximum_number_of_element_parameters==10.OR. &
+                                        & DOMAIN%topology%elements%maximum_number_of_element_parameters==20) THEN
+                                      IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
+                                       & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.AND. &
+                                       & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
+                                       & X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
+                                       & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.AND. &
+                                       & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE.OR. &
+                                       & X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
+                                       & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.AND. &
+                                       & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
+                                       & X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
+                                       & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.AND. &
+                                       & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE.OR. &
+                                       & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND. &
+                                       & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.AND. &
+                                       & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
+                                       & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND. &
+                                       & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.AND. &
+                                       & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE.OR. &
+                                       & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND. &
+                                       & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.AND. &
+                                       & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
+                                       & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND. &
+                                       & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.AND. &
+                                       & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE) THEN
+                                         CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+                                           & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                         BOUND_COUNT=BOUND_COUNT+1
+                                      ENDIF
+                                      ENDIF
                                     ENDIF
                                   ELSE
                                     IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
@@ -3318,7 +3467,7 @@ CONTAINS
                   ELSE
                     CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
                   ENDIF
-! WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT             
+WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT             
                 ENDDO !component_idx
                 CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
                   & ERR,ERROR,*999)

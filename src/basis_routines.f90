@@ -891,7 +891,7 @@ CONTAINS
       CASE(BASIS_SIMPLEX_TYPE)
         !Create the area coordinates from the xi coordinates
         XIL(1:SIZE(XI,1))=1.0_DP-XI
-        XIL(SIZE(XI,1)+1)=SUM(XI)-1.0_DP
+        XIL(SIZE(XI,1)+1)=SUM(XI)-(SIZE(XI,1)-1.0_DP)
         ns=0
         DO nn=1,BASIS%NUMBER_OF_NODES
           ns=ns+1

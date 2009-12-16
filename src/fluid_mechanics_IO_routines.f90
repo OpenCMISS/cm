@@ -412,7 +412,11 @@ CONTAINS
       !chrm, 20.08.09:
       ! ... but the above call does not work for 2D.
       !Thus, for 2D, we hard-wire it to 'quad':
-      lagrange_simplex=1
+      IF(MaxNodesPerElement==4.OR.MaxNodesPerElement==9.OR.MaxNodesPerElement==16) THEN
+        lagrange_simplex=1
+      ELSE IF(MaxNodesPerElement==3.OR.MaxNodesPerElement==6.OR.MaxNodesPerElement==10) THEN
+        lagrange_simplex=2
+      ENDIF
     END IF
 
     NumberOfFieldComponent(1)=NumberOfDimensions
@@ -595,16 +599,30 @@ CONTAINS
     WRITE(5,*) 'Group name: OpenCMISS'
  
     IF(lagrange_simplex==2) THEN
-      WRITE(5,*) 'Shape.  Dimension=',TRIM(NMs(NumberOfDimensions)),', simplex(2;3)*simplex*simplex'
-      IF(MaxNodesPerElement==3) THEN
-        WRITE(5,*) '#Scale factor sets= 1'
-        WRITE(5,*) ' l.simplex(2)*l.simplex, #Scale factors= ', NodesPerElement(1)
-      ELSE IF(MaxNodesPerElement==4) THEN
-        WRITE(5,*) '#Scale factor sets= 1'
-        WRITE(5,*) ' l.simplex(2;3)*l.simplex*l.simplex, #Scale factors= ', NodesPerElement(1)
-      ELSE IF (MaxNodesPerElement== 10 ) THEN
-        WRITE(5,*) '#Scale factor sets= 1'
-        WRITE(5,*) ' q.simplex(2;3)*q.simplex*q.simplex, #Scale factors= ', NodesPerElement(1)
+      IF(NumberOfDimensions==2) THEN
+        WRITE(5,*) 'Shape.  Dimension=',TRIM(NMs(NumberOfDimensions)),', simplex(2)*simplex'
+        IF(MaxNodesPerElement==3) THEN
+          WRITE(5,*) '#Scale factor sets= 1'
+          WRITE(5,*) ' l.simplex(2)*l.simplex, #Scale factors= ', NodesPerElement(1)
+        ELSE IF(MaxNodesPerElement==6) THEN
+          WRITE(5,*) '#Scale factor sets= 1'
+          WRITE(5,*) ' l.simplex(2)*l.simplex, #Scale factors= ', NodesPerElement(1)
+        ELSE IF (MaxNodesPerElement== 10 ) THEN
+          WRITE(5,*) '#Scale factor sets= 1'
+          WRITE(5,*) ' q.simplex(2)*q.simplex, #Scale factors= ', NodesPerElement(1)
+        ENDIF
+      ELSE IF(NumberOfDimensions==3) THEN
+        WRITE(5,*) 'Shape.  Dimension=',TRIM(NMs(NumberOfDimensions)),', simplex(2;3)*simplex*simplex'
+        IF(MaxNodesPerElement==4) THEN
+          WRITE(5,*) '#Scale factor sets= 1'
+          WRITE(5,*) ' l.simplex(2;3)*l.simplex*l.simplex, #Scale factors= ', NodesPerElement(1)
+        ELSE IF (MaxNodesPerElement== 10 ) THEN
+          WRITE(5,*) '#Scale factor sets= 1'
+          WRITE(5,*) ' q.simplex(2;3)*q.simplex*q.simplex, #Scale factors= ', NodesPerElement(1)
+        ELSE IF(MaxNodesPerElement==20) THEN
+          WRITE(5,*) '#Scale factor sets= 1'
+          WRITE(5,*) ' q.simplex(2;3)*q.simplex*q.simplex, #Scale factors= ', NodesPerElement(1)
+        ENDIF      
       ELSE
         WRITE(5,*) '#Scale factor sets= 0'
       END IF
@@ -652,6 +670,13 @@ CONTAINS
                 WRITE(5,*)'   x.   q.Lagrange*q.Lagrange, no modify, standard node based.'
               ELSE IF(MaxNodesPerElement==16)  THEN
                 WRITE(5,*)'   x.   c.Lagrange*c.Lagrange, no modify, standard node based.'
+
+              ELSE IF(MaxNodesPerElement==3)  THEN
+                WRITE(5,*)'   x.  l.simplex(2)*l.simplex, no modify, standard node based.'
+              ELSE IF(MaxNodesPerElement==6)  THEN
+                WRITE(5,*)'   x.  q.simplex(2)*q.simplex, no modify, standard node based.'
+              ELSE IF(MaxNodesPerElement==10)  THEN
+                WRITE(5,*)'   x.  c.simplex(2)*c.simplex, no modify, standard node based.'
               END IF 
             ELSE IF(J==2) THEN
               IF(MaxNodesPerElement==4) THEN
@@ -660,6 +685,12 @@ CONTAINS
                 WRITE(5,*)'   y.   q.Lagrange*q.Lagrange, no modify, standard node based.'
               ELSE IF(MaxNodesPerElement==16)  THEN
                 WRITE(5,*)'   y.   c.Lagrange*c.Lagrange, no modify, standard node based.'
+              ELSE IF(MaxNodesPerElement==3)  THEN
+                WRITE(5,*)'   y.  l.simplex(2)*l.simplex, no modify, standard node based.'
+              ELSE IF(MaxNodesPerElement==6)  THEN
+                WRITE(5,*)'   y.  q.simplex(2)*q.simplex, no modify, standard node based.'
+              ELSE IF(MaxNodesPerElement==10)  THEN
+                WRITE(5,*)'   y.  c.simplex(2)*c.simplex, no modify, standard node based.'
               END IF
             ELSE IF(J==3) THEN
               IF(MaxNodesPerElement==4) THEN
@@ -668,16 +699,28 @@ CONTAINS
                 WRITE(5,*)'   z.   q.Lagrange*q.Lagrange, no modify, standard node based.'
               ELSE IF(MaxNodesPerElement==16)  THEN
                 WRITE(5,*)'   z.   c.Lagrange*c.Lagrange, no modify, standard node based.'
+              ELSE IF(MaxNodesPerElement==3)  THEN
+                WRITE(5,*)'   z.  l.simplex(2)*l.simplex, no modify, standard node based.'
+              ELSE IF(MaxNodesPerElement==6)  THEN
+                WRITE(5,*)'   z.  q.simplex(2)*q.simplex, no modify, standard node based.'
+              ELSE IF(MaxNodesPerElement==10)  THEN
+                WRITE(5,*)'   z.  c.simplex(2)*c.simplex, no modify, standard node based.'
               END IF
             END IF
           ELSE
-            IF(MaxNodesPerElement==4) THEN
-              WRITE(5,*)'   ',TRIM(NMs(J)),'.   l.Lagrange*l.Lagrange, no modify, standard node based.'
-            ELSE IF(MaxNodesPerElement==9)  THEN
-              WRITE(5,*)'   ',TRIM(NMs(J)),'.   q.Lagrange*q.Lagrange, no modify, standard node based.'
-            ELSE IF(MaxNodesPerElement==16)  THEN
-              WRITE(5,*)'   ',TRIM(NMs(J)),'.   c.Lagrange*c.Lagrange, no modify, standard node based.'
-            END IF
+              IF(MaxNodesPerElement==4) THEN
+                WRITE(5,*)'   ',TRIM(NMs(J)),'.   l.Lagrange*l.Lagrange, no modify, standard node based.'
+              ELSE IF(MaxNodesPerElement==9)  THEN
+                WRITE(5,*)'   ',TRIM(NMs(J)),'.   q.Lagrange*q.Lagrange, no modify, standard node based.'
+              ELSE IF(MaxNodesPerElement==16)  THEN
+                WRITE(5,*)'   ',TRIM(NMs(J)),'.   c.Lagrange*c.Lagrange, no modify, standard node based.'
+              ELSE IF(MaxNodesPerElement==3)  THEN
+                WRITE(5,*)'   ',TRIM(NMs(J)),'.  l.simplex(2)*l.simplex, no modify, standard node based.'
+              ELSE IF(MaxNodesPerElement==6)  THEN
+                WRITE(5,*)'   ',TRIM(NMs(J)),'.  q.simplex(2)*q.simplex, no modify, standard node based.'
+              ELSE IF(MaxNodesPerElement==10)  THEN
+                WRITE(5,*)'   ',TRIM(NMs(J)),'.  c.simplex(2)*c.simplex, no modify, standard node based.'
+              END IF
           END IF
         ELSE IF(NumberOfDimensions==3) THEN
           IF(I==1)THEN
@@ -725,19 +768,19 @@ CONTAINS
               END IF
             END IF
           ELSE
-            IF(MaxNodesPerElement==8) THEN
-              WRITE(5,*)'   ',TRIM(NMs(J)),'.   l.Lagrange*l.Lagrange*l.Lagrange, no modify, standard node based.'
-            ELSE IF(MaxNodesPerElement==27)  THEN
-              WRITE(5,*)'   ',TRIM(NMs(J)),'.   q.Lagrange*q.Lagrange*q.Lagrange, no modify, standard node based.'
-            ELSE IF(MaxNodesPerElement==64)  THEN
-              WRITE(5,*)'   ',TRIM(NMs(J)),'.   c.Lagrange*c.Lagrange*c.Lagrange, no modify, standard node based.'
-            ELSE IF(MaxNodesPerElement==4)  THEN
-              WRITE(5,*)'   ',TRIM(NMs(J)),'.  l.simplex(2;3)*l.simplex*l.simplex, no modify, standard node based.'
-            ELSE IF(MaxNodesPerElement==10)  THEN
-              WRITE(5,*)'   ',TRIM(NMs(J)),'.  q.simplex(2;3)*q.simplex*q.simplex, no modify, standard node based.'
-            ELSE IF(MaxNodesPerElement==20)  THEN
-              WRITE(5,*)'   ',TRIM(NMs(J)),'.  c.simplex(2;3)*c.simplex*c.simplex, no modify, standard node based.'
-            END IF
+              IF(MaxNodesPerElement==8) THEN
+                WRITE(5,*)'   ',TRIM(NMs(J)),'.   l.Lagrange*l.Lagrange*l.Lagrange, no modify, standard node based.'
+              ELSE IF(MaxNodesPerElement==27)  THEN
+                WRITE(5,*)'   ',TRIM(NMs(J)),'.   q.Lagrange*q.Lagrange*q.Lagrange, no modify, standard node based.'
+              ELSE IF(MaxNodesPerElement==64)  THEN
+                WRITE(5,*)'   ',TRIM(NMs(J)),'.   c.Lagrange*c.Lagrange*c.Lagrange, no modify, standard node based.'
+              ELSE IF(MaxNodesPerElement==4)  THEN
+                WRITE(5,*)'   ',TRIM(NMs(J)),'.  l.simplex(2;3)*l.simplex*l.simplex, no modify, standard node based.'
+              ELSE IF(MaxNodesPerElement==10)  THEN
+                WRITE(5,*)'   ',TRIM(NMs(J)),'.  q.simplex(2;3)*q.simplex*q.simplex, no modify, standard node based.'
+              ELSE IF(MaxNodesPerElement==20)  THEN
+                WRITE(5,*)'   ',TRIM(NMs(J)),'.  c.simplex(2;3)*c.simplex*c.simplex, no modify, standard node based.'
+              END IF
           END IF
         END IF
 
@@ -756,7 +799,12 @@ CONTAINS
 
       DO K = 1,NumberOfElements
         IF(NumberOfDimensions==2)THEN
-          SimplexOutputHelp=ElementNodes(K,1:NodesPerElement(1))
+          SimplexOutputHelp(1)=ElementNodes(K,1)
+          SimplexOutputHelp(2)=ElementNodes(K,4)
+          SimplexOutputHelp(3)=ElementNodes(K,2)
+          SimplexOutputHelp(4)=ElementNodes(K,6)
+          SimplexOutputHelp(5)=ElementNodes(K,5)
+          SimplexOutputHelp(6)=ElementNodes(K,3)
         ELSE IF(NumberOfDimensions==3) THEN
           SimplexOutputHelp(1)=ElementNodes(K,1)
           SimplexOutputHelp(2)=ElementNodes(K,5)
