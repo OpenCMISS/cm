@@ -6667,7 +6667,7 @@ END FUNCTION CMISSFieldsTypeCreateC
   !
 
   !>Finish the creation of materials for an equations set identified by an object for C.
-  FUNCTION CMISSEquationsSetMaterialsCreateFinishCPtr(EquationsSetPtr)BIND(C, NAME = "CMISSEquationsSetMaterialsCreateFinish")
+  FUNCTION CMISSEquationsSetMaterialsCreateFinishCPtr(EquationsSetPtr) BIND(C, NAME = "CMISSEquationsSetMaterialsCreateFinish")
 
     !Argument variables
     TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to finish the creation of materials for.
@@ -6765,27 +6765,486 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   END FUNCTION CMISSEquationsSetMaterialsCreateStartCPtr
 
+  !
+  !================================================================================================================================
+  !
 
-     !stop
+  !>Destroy the materials for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetMaterialsDestroyCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C, &
+    & NAME = "CMISSEquationsSetMaterialsDestroyNum")
 
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to destroy materials for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to destroy the materials for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetMaterialsDestroyCNum !<Error Code.
+    !Local variable
 
+    CALL CMISSEquationsSetMaterialsDestroy(RegionUserNumber,EquationsSetUserNumber,CMISSEquationsSetMaterialsDestroyCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetMaterialsDestroyCNum
 
   !
   !================================================================================================================================
   !
 
-  !***********************************************************************************************************
-  !***********************************************************************************************************
-  !***********************************************************************************************************
-  !***********************************************************************************************************
-  !***********************************************************************************************************
-  !***********************************************************************************************************
-  !***********************************************************************************************************
+  !>Destroy the materials for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetMaterialsDestroyCPtr(EquationsSetPtr) BIND(C, NAME = "CMISSEquationsSetMaterialsDestroy")
 
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to destroy the materials for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetMaterialsDestroyCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
 
+    CMISSEquationsSetMaterialsDestroyCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        CALL CMISSEquationsSetMaterialsDestroy(EquationsSet, CMISSEquationsSetMaterialsDestroyCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+        ELSE
+          CMISSEquationsSetMaterialsDestroyCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetMaterialsDestroyCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetMaterialsDestroyCPtr = CMISSPointerIsNULL
+    ENDIF
 
+    RETURN
 
+  END FUNCTION CMISSEquationsSetMaterialsDestroyCPtr
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the solution metVALUEhod for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetSolutionMethodGetCNum(RegionUserNumber,EquationsSetUserNumber,SolutionMethod) BIND(C, NAME = &
+    & "CMISSEquationsSetSolutionMethodGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to get the solution method for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to get the solution method for, for C.
+    INTEGER(C_INT), INTENT(OUT) :: SolutionMethod !<The solution method for C. \see OPENCMISS_EquationsSetSolutionMethods
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsSetSolutionMethodGetCNum
+    !Local variables
+
+    CALL CMISSEquationsSetSolutionMethodGet(RegionUserNumber, EquationsSetUserNumber, SolutionMethod, &
+      & CMISSEquationsSetSolutionMethodGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetSolutionMethodGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the solution method for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetSolutionMethodGetCPtr(EquationsSetPtr,SolutionMethod) BIND(C, NAME  = &
+    & "CMISSEquationsSetSolutionMethodGet")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to get the solution method for.
+    INTEGER(C_INT), INTENT(OUT) :: SolutionMethod !<The solution method for C. \see OPENCMISS_EquationsSetSolutionMethods
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsSetSolutionMethodGetCPtr
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSEquationsSetSolutionMethodGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        CALL CMISSEquationsSetSolutionMethodGet(EquationsSet,SolutionMethod,CMISSEquationsSetSolutionMethodGetCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+        ELSE
+          CMISSEquationsSetSolutionMethodGetCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetSolutionMethodGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetSolutionMethodGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetSolutionMethodGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the solution method for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetSolutionMethodSetCNum(RegionUserNumber,EquationsSetUserNumber,SolutionMethod) BIND(C, NAME = &
+    & "CMISSEquationsSetSolutionMethodSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to set the solution method to, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to set the solution method to, for C.
+    INTEGER(C_INT), INTENT(IN) :: SolutionMethod !<The solution method to set for C. \see OPENCMISS_EquationsSetSolutionMethods
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsSetSolutionMethodSetCNum
+    !Local variables
+
+    CALL CMISSEquationsSetSolutionMethodSet(RegionUserNumber, EquationsSetUserNumber, SolutionMethod, &
+      & CMISSEquationsSetSolutionMethodSetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetSolutionMethodSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the solution method for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetSolutionMethodSetCPtr(EquationsSetPtr,SolutionMethod) BIND(C, NAME  = &
+    & "CMISSEquationsSetSolutionMethodSet")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to set the solution method to.
+    INTEGER(C_INT), INTENT(IN) :: SolutionMethod !<The solution method to set for C. \see OPENCMISS_EquationsSetSolutionMethods
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsSetSolutionMethodSetCPtr
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSEquationsSetSolutionMethodSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        CALL CMISSEquationsSetSolutionMethodSet(EquationsSet,SolutionMethod,CMISSEquationsSetSolutionMethodSetCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+        ELSE
+          CMISSEquationsSetSolutionMethodSetCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetSolutionMethodSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetSolutionMethodSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetSolutionMethodSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finish the creation of a source for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetSourceCreateFinishCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C, NAME = &
+    & "CMISSEquationsSetSourceCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to finish the creation of a source for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to finish the creation of a source for, for C.
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsSetSourceCreateFinishCNum
+    !Local variables
+
+    CALL CMISSEquationsSetSourceCreateFinish(RegionUserNumber, EquationsSetUserNumber,CMISSEquationsSetSourceCreateFinishCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetSourceCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finish the creation of a source for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetSourceCreateFinishCPtr(EquationsSetPtr) BIND(C, NAME = "CMISSEquationsSetSourceCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to finish the creation of a source for.
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsSetSourceCreateFinishCPtr
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSEquationsSetSourceCreateFinishCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        CALL CMISSEquationsSetSourceCreateFinish(EquationsSet,CMISSEquationsSetSourceCreateFinishCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+        ELSE
+          CMISSEquationsSetSourceCreateFinishCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetSourceCreateFinishCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetSourceCreateFinishCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetSourceCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the creation of a source for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetSourceCreateStartCNum(RegionUserNumber,EquationsSetUserNumber,SourceFieldUserNumber) BIND(C, NAME = &
+    & "CMISSEquationsSetSourceCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to start the creation of a source for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to start the creation of a source for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SourceFieldUserNumber !<The user number of the source field.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetSourceCreateStartCNum
+    !Local variables
+
+    CALL CMISSEquationsSetSourceCreateStart(RegionUserNumber,EquationsSetUserNumber,SourceFieldUserNumber, &
+      & CMISSEquationsSetSourceCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetSourceCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the creation of a source for an equations set identified by an object.
+  FUNCTION CMISSEquationsSetSourceCreateStartCPtr(EquationsSetPtr,SourceFieldUserNumber,SourceFieldPtr) BIND(C, NAME = &
+    & " CMISSEquationsSetSourceCreateStart")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(OUT) :: EquationsSetPtr !<C pointer to the equations set to start the creation of a source on.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SourceFieldUserNumber !<The user number of the source field for C.
+    TYPE(C_PTR), INTENT(INOUT) :: SourceFieldPtr !<If associated on entry, the user created source field which has the same user number as the specified source field user number. If not associated on entry, on return, the created source field for the equations set.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetSourceCreateStartCPtr
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+    TYPE(CMISSFieldType), POINTER :: SourceField
+
+    CMISSEquationsSetSourceCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SourceFieldPtr)) THEN
+      CALL C_F_POINTER(SourceFieldPtr, SourceField)
+      IF(ASSOCIATED(SourceField)) THEN
+        CALL CMISSEquationsSetSourceCreateStart(EquationsSet,SourceFieldUserNumber,SourceField, &
+          & CMISSEquationsSetSourceCreateStartCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+          IF(ASSOCIATED(SourceField)) THEN
+            SourceFieldPtr = C_LOC(SourceField)
+          ELSE
+            CMISSEquationsSetSourceCreateStartCPtr = CMISSPointerIsNULL
+          ENDIF
+        ELSE
+          CMISSEquationsSetSourceCreateStartCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetSourceCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetSourceCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetSourceCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroy the source for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetSourceDestroyCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C, NAME = &
+    & "CMISSEquationsSetSourceDestroyNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to destroy the source for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to destroy the source for, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetSourceDestroyCNum
+    !Local variables
+
+    CALL CMISSEquationsSetSourceDestroy(RegionUserNumber,EquationsSetUserNumber,CMISSEquationsSetSourceDestroyCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetSourceDestroyCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroy the source for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetSourceDestroyCPtr(EquationsSetPtr) BIND(C, NAME = "CMISSEquationsSetSourceDestroy")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to destroy the source for.
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsSetSourceDestroyCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSEquationsSetSourceDestroyCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        CALL CMISSEquationsSetSourceDestroy(EquationsSet,CMISSEquationsSetSourceDestroyCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+        ELSE
+          CMISSEquationsSetSourceDestroyCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetSourceDestroyCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetSourceDestroyCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetSourceDestroyCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the equations set specification i.e., equations set class, type and subtype for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetSpecificationGetCNum(RegionUserNumber,EquationsSetUserNumber,EquationsSetClass, &
+    & EquationsSetType,EquationsSetSubtype) BIND(C, NAME = "CMISSEquationsSetSpecificationGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to get the specification for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to get the specification for.
+    INTEGER(C_INT), INTENT(OUT) :: EquationsSetClass !<On return, the equations set class. \see OPENCMISS_EquationsSetClasses
+    INTEGER(C_INT), INTENT(OUT) :: EquationsSetType !<On return, the equations set type. \see OPENCMISS_EquationsSetTypes
+    INTEGER(C_INT), INTENT(OUT) :: EquationsSetSubtype !<On return, the equations set subtype. \see OPENCMISS_EquationsSetSubtypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetSpecificationGetCNum
+    !Local variables
+
+    CALL CMISSEquationsSetSpecificationGet(RegionUserNumber,EquationsSetUserNumber,EquationsSetClass,EquationsSetType, &
+      & EquationsSetSubType,CMISSEquationsSetSpecificationGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetSpecificationGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the equations set specification i.e., equations set class, type and subtype for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetSpecificationGetCPtr(EquationsSetPtr,EquationsSetClass,EquationsSetType,EquationsSetSubtype) BIND(C, &
+    & NAME = "CMISSEquationsSetSpecificationGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: EquationsSetPtr !<C pointer to the equations set to get the specification for.
+    INTEGER(C_INT), INTENT(OUT) :: EquationsSetClass !<On return, the equations set class for C. \see OPENCMISS_EquationsSetClasses
+    INTEGER(C_INT), INTENT(OUT) :: EquationsSetType !<On return, the equations set type for C. \see OPENCMISS_EquationsSetTypes
+    INTEGER(C_INT), INTENT(OUT) :: EquationsSetSubtype !<On return, the equations set subtype for C. \see OPENCMISS_EquationsSetSubtypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetSpecificationGetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSEquationsSetSpecificationGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        CALL CMISSEquationsSetSpecificationGet(EquationsSet,EquationsSetClass,EquationsSetType,EquationsSetSubtype, &
+          & CMISSEquationsSetSpecificationGetCPtr)
+      ELSE
+        CMISSEquationsSetSpecificationGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetSpecificationGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetSpecificationGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the equations set specification i.e., equations set class, type and subtype for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetSpecificationSetCNum(RegionUserNumber,EquationsSetUserNumber,EquationsSetClass, &
+    & EquationsSetType,EquationsSetSubtype) BIND(C, NAME = "CMISSEquationsSetSpecificationSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to set the specification to, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to set the specification to, for C.
+    INTEGER(C_INT), INTENT(OUT) :: EquationsSetClass !<On return, the equations set class to set for C. \see OPENCMISS_EquationsSetClasses
+    INTEGER(C_INT), INTENT(OUT) :: EquationsSetType !<On return, the equations set type to set for C. \see OPENCMISS_EquationsSetTypes
+    INTEGER(C_INT), INTENT(OUT) :: EquationsSetSubtype !<On return, the equations set subtype to set for C. \see OPENCMISS_EquationsSetSubtypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetSpecificationSetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSEquationsSetSpecificationSet(RegionUserNumber,EquationsSetUserNumber,EquationsSetClass,EquationsSetType, &
+      & EquationsSetSubType,CMISSEquationsSetSpecificationSetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetSpecificationSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the equations set specification i.e., equations set class, type and subtype for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetSpecificationSetCPtr(EquationsSetPtr,EquationsSetClass,EquationsSetType,EquationsSetSubtype) BIND(C, &
+    & NAME = "CMISSEquationsSetSpecificationSet")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to get the specification for.
+    INTEGER(C_INT), INTENT(OUT) :: EquationsSetClass !<On return, the equations set class for C. \see OPENCMISS_EquationsSetClasses
+    INTEGER(C_INT), INTENT(OUT) :: EquationsSetType !<On return, the equations set type for C. \see OPENCMISS_EquationsSetTypes
+    INTEGER(C_INT), INTENT(OUT) :: EquationsSetSubtype !<On return, the equations set subtype for C. \see OPENCMISS_EquationsSetSubtypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetSpecificationSetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSEquationsSetSpecificationSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        CALL CMISSEquationsSetSpecificationSet(EquationsSet,EquationsSetClass,EquationsSetType,EquationsSetSubtype,&
+          & CMISSEquationsSetSpecificationSetCPtr)
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+        ELSE
+          CMISSEquationsSetSpecificationSetCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetSpecificationSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetSpecificationSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetSpecificationSetCPtr
 
 !!==================================================================================================================================
 !!
@@ -12567,7 +13026,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSGeneratedMeshCreateStartCPtr !<Error Code.
     !Local variables
     TYPE(CMISSGeneratedMeshType), POINTER :: GeneratedMesh
-    TYPE(CMISSregionType), POINTER :: Region
+    TYPE(CMISSRegionType), POINTER :: Region
 
     CMISSGeneratedMeshCreateStartCPtr = CMISSNoError
     IF(C_ASSOCIATED(GeneratedMeshPtr)) THEN
@@ -12643,7 +13102,445 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   END FUNCTION CMISSGeneratedMeshDestroyCPtr
 
-!missing code
+ !
+  !================================================================================================================================
+  !
+
+  !>Returns the extent for a generated mesh identified by a user number for C.
+  FUNCTION CMISSGeneratedMeshExtentGetCNum(GeneratedMeshUserNumber,ExtentSize,ExtentPtr) BIND(C, NAME = &
+    & "CMISSGeneratedMeshExtentGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to get the extent for.
+    INTEGER(C_INT), INTENT(OUT) :: ExtentSize !<The size of the extent for C.
+    TYPE(C_PTR), INTENT(OUT) :: ExtentPtr !<C pointer to the extent for the i'th dimension of the generated mesh.
+    !Function variable
+    INTEGER(C_INT) :: CMISSGeneratedMeshExtentGetCNum !Error Code
+    !LOcal variable
+    REAL(C_DOUBLE), POINTER :: Extent(:)
+
+    CMISSGeneratedMeshExtentGetCNum = CMISSNoError
+    CALL CMISSGeneratedMeshExtentGet(GeneratedMeshUserNumber, Extent, CMISSGeneratedMeshExtentGetCNum)
+    IF(ASSOCIATED(Extent)) THEN
+      ExtentSize = Size(Extent)
+      ExtentPtr = C_LOC(Extent(1))
+    ELSE
+      CMISSGeneratedMeshExtentGetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSGeneratedMeshExtentGetCNum
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the extent for a generated mesh identified by an object for C.
+  FUNCTION CMISSGeneratedMeshExtentGetCPtr(GeneratedMeshPtr,ExtentSize,ExtentPtr) BIND(C, NAME = "CMISSGeneratedMeshExtentGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: GeneratedMeshPtr !<C pointer to the generated mesh to get the extent for.
+    INTEGER(C_INT), INTENT(OUT) :: ExtentSize !<The size of the extent for C.
+    TYPE(C_PTR), INTENT(OUT) :: ExtentPtr!<C pointer to the extent for the i'th dimension of the generated mesh.
+    !Function variables
+    INTEGER(C_INT) :: CMISSGeneratedMeshExtentGetCPtr
+    !Local variables
+    TYPE(CMISSGeneratedMeshType), POINTER :: GeneratedMesh
+    REAL(C_DOUBLE), POINTER :: Extent(:)
+
+
+    CMISSGeneratedMeshExtentGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(GeneratedMeshPtr)) THEN
+      CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
+      IF(ASSOCIATED(GeneratedMesh)) THEN
+        CALL CMISSGeneratedMeshExtentGet(GeneratedMesh, Extent, CMISSGeneratedMeshExtentGetCPtr)
+        IF(ASSOCIATED(Extent)) THEN
+          ExtentSize = Size(Extent)
+          ExtentPtr = C_LOC(Extent(1))
+        ELSE
+          CMISSGeneratedMeshExtentGetCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSGeneratedMeshExtentGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSGeneratedMeshExtentGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSGeneratedMeshExtentGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the extent for a generated mesh identified by a user number for C.
+  FUNCTION CMISSGeneratedMeshExtentSetCNum(GeneratedMeshUserNumber,ExtentSize,ExtentPtr) BIND(C, NAME = &
+    & "CMISSGeneratedMeshExtentSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the extent for.
+    INTEGER(C_INT), INTENT(IN) :: ExtentSize(1) !<The size of the extent to set for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ExtentPtr !<C pointer to the extent for the i'th dimension of the generated mesh to set.
+    !Function variable
+    INTEGER(C_INT) :: CMISSGeneratedMeshExtentSetCNum !Error Code
+    !LOcal variable
+    REAL(C_DOUBLE), POINTER :: Extent(:)
+
+    CMISSGeneratedMeshExtentSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ExtentPtr)) THEN
+      CALL C_F_POINTER(ExtentPtr, Extent, ExtentSize)
+      IF(ASSOCIATED(Extent)) THEN
+        CALL CMISSGeneratedMeshExtentSet(GeneratedMeshUserNumber, Extent, CMISSGeneratedMeshExtentSetCNum)
+      ELSE
+        CMISSGeneratedMeshExtentSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSGeneratedMeshExtentSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSGeneratedMeshExtentSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the extent for a generated mesh identified by an object for C.
+  FUNCTION CMISSGeneratedMeshExtentSetCPtr(GeneratedMeshPtr,ExtentSize,ExtentPtr) BIND(C, NAME = "CMISSGeneratedMeshExtentSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: GeneratedMeshPtr !<C pointer to the generated mesh to set the extent for.
+    INTEGER(C_INT), INTENT(IN) :: ExtentSize(1) !<The size of the extent to set for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ExtentPtr!<C pointer to the extent for the i'th dimension of the generated mesh to set.
+    !Function variables
+    INTEGER(C_INT) :: CMISSGeneratedMeshExtentSetCPtr
+    !Local variables
+    TYPE(CMISSGeneratedMeshType), POINTER :: GeneratedMesh
+    REAL(C_DOUBLE), POINTER :: Extent(:)
+
+
+    CMISSGeneratedMeshExtentSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(GeneratedMeshPtr)) THEN
+      CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
+      IF(ASSOCIATED(GeneratedMesh)) THEN
+        IF(C_ASSOCIATED(ExtentPtr)) THEN
+          CALL C_F_POINTER(ExtentPtr,Extent,ExtentSize)
+          IF(ASSOCIATED(Extent)) THEN
+            CALL CMISSGeneratedMeshExtentSet(GeneratedMesh, Extent, CMISSGeneratedMeshExtentSetCPtr)
+          ELSE
+            CMISSGeneratedMeshExtentSetCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSGeneratedMeshExtentSetCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSGeneratedMeshExtentSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSGeneratedMeshExtentSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSGeneratedMeshExtentSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the number of elements for a generated mesh identified by a user number for C.
+  FUNCTION CMISSGeneratedMeshNumberOfElementsGetCNum(GeneratedMeshUserNumber,NumberOfElementsSize,NumberOfElementsPtr) BIND(C, &
+    & NAME = "CMISSGeneratedMeshNumberOfElementsGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to get the number of elements for, for C.
+    INTEGER(C_INT), INTENT(OUT) :: NumberOfElementsSize !<The size of the number of elements for C.
+    TYPE(C_PTR), INTENT(OUT) :: NumberOfElementsPtr !<C pointer to the number of elements in the i'th dimension of the generated mesh.
+    !Function variable
+    INTEGER(C_INT) :: CMISSGeneratedMeshNumberOfElementsGetCNum !Error Code
+    !LOcal variable
+    INTEGER(C_INT) , POINTER :: NumberOfElements(:)
+
+    CMISSGeneratedMeshNumberOfElementsGetCNum = CMISSNoError
+    CALL CMISSGeneratedMeshNumberOfElementsGet(GeneratedMeshUserNumber, NumberOfElements, CMISSGeneratedMeshNumberOfElementsGetCNum)
+    IF(ASSOCIATED(NumberOfElements)) THEN
+      NumberOfElementsSize = Size(NumberOfElements)
+      NumberOfElementsPtr = C_LOC(NumberOfElements(1))
+    ELSE
+      CMISSGeneratedMeshNumberOfElementsGetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSGeneratedMeshNumberOfElementsGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the number of elements for a generated mesh identified by an object for C.
+  FUNCTION CMISSGeneratedMeshNumberOfElementsGetCPtr(GeneratedMeshPtr,NumberOfElementsSize,NumberOfElementsPtr)BIND(C, &
+    & NAME = "CMISSGeneratedMeshNumberOfElementsGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: GeneratedMeshPtr !<C pointer to the generated mesh to get the number of elements for.
+    INTEGER(C_INT), INTENT(OUT) :: NumberOfElementsSize !<The size of the number of elements for C.
+    TYPE(C_PTR), INTENT(OUT) :: NumberOfElementsPtr!<C pointer to the number of elements in the i'th dimension of the generated mesh.
+    !Function variables
+    INTEGER(C_INT) :: CMISSGeneratedMeshNumberOfElementsGetCPtr
+    !Local variables
+    TYPE(CMISSGeneratedMeshType), POINTER :: GeneratedMesh
+    INTEGER(C_INT), POINTER :: NumberOfElements(:)
+
+
+    CMISSGeneratedMeshNumberOfElementsGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(GeneratedMeshPtr)) THEN
+      CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
+      IF(ASSOCIATED(GeneratedMesh)) THEN
+        CALL CMISSGeneratedMeshNumberOfElementsGet(GeneratedMesh, NumberOfElements, CMISSGeneratedMeshNumberOfElementsGetCPtr)
+        IF(ASSOCIATED(NumberOfElements)) THEN
+          NumberOfElementsSize = Size(NumberOfElements)
+          NumberOfElementsPtr = C_LOC(NumberOfElements(1))
+        ELSE
+          CMISSGeneratedMeshNumberOfElementsGetCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSGeneratedMeshNumberOfElementsGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSGeneratedMeshNumberOfElementsGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSGeneratedMeshNumberOfElementsGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the number of elements for a generated mesh identified by a user number for C.
+  FUNCTION CMISSGeneratedMeshNumberOfElementsSetCNum(GeneratedMeshUserNumber,NumberOfElementsSize,NumberOfElementsPtr)  BIND(C, &
+    & NAME = "CMISSGeneratedMeshNumberOfElementsSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the number of elements for, for C.
+    INTEGER(C_INT), INTENT(IN) :: NumberOfElementsSize(1) !<The size of the number of elements to set for C.
+    TYPE(C_PTR), INTENT(IN) :: NumberOfElementsPtr !<C pointer to the number of elements in the i'th dimension of the generated mesh to set.
+    !Function variable
+    INTEGER(C_INT) :: CMISSGeneratedMeshNumberOfElementsSetCNum !Error Code
+    !LOcal variable
+    INTEGER(C_INT) , POINTER :: NumberOfElements(:)
+
+    CMISSGeneratedMeshNumberOfElementsSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(NumberOfElementsPtr)) THEN
+      CALL C_F_POINTER(NumberOfElementsPtr, NumberOfElements,NumberOfElementsSize)
+      IF(ASSOCIATED(NumberOfElements)) THEN
+        CALL CMISSGeneratedMeshNumberOfElementsSet(GeneratedMeshUserNumber, NumberOfElements, &
+          & CMISSGeneratedMeshNumberOfElementsSetCNum)
+      ELSE
+        CMISSGeneratedMeshNumberOfElementsSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSGeneratedMeshNumberOfElementsSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSGeneratedMeshNumberOfElementsSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the number of elements for a generated mesh identified by an object.
+  FUNCTION CMISSGeneratedMeshNumberOfElementsSetCPtr(GeneratedMeshPtr,NumberOfElementsSize,NumberOfElementsPtr)BIND(C, &
+    & NAME = "CMISSGeneratedMeshNumberOfElementsSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: GeneratedMeshPtr !<C pointer to the generated mesh to set the number of elements for.
+    INTEGER(C_INT), INTENT(IN) :: NumberOfElementsSize(1) !<The size of the number of elements to set for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: NumberOfElementsPtr!<C pointer to the number of elements in the i'th dimension of the generated mesh to set.
+    !Function variables
+    INTEGER(C_INT) :: CMISSGeneratedMeshNumberOfElementsSetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSGeneratedMeshType), POINTER :: GeneratedMesh
+    INTEGER(C_INT), POINTER :: NumberOfElements(:)
+
+
+    CMISSGeneratedMeshNumberOfElementsSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(GeneratedMeshPtr)) THEN
+      CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
+      IF(ASSOCIATED(GeneratedMesh)) THEN
+        IF(C_ASSOCIATED(NumberOfElementsPtr)) THEN
+          CALL C_F_POINTER(NumberOfElementsPtr,NumberOfElements,NumberOfElementsSize)
+          IF(ASSOCIATED(NumberOfElements)) THEN
+            CALL CMISSGeneratedMeshNumberOfElementsSet(GeneratedMesh, NumberOfElements, CMISSGeneratedMeshNumberOfElementsSetCPtr)
+          ELSE
+            CMISSGeneratedMeshNumberOfElementsSetCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSGeneratedMeshNumberOfElementsSetCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSGeneratedMeshNumberOfElementsSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSGeneratedMeshNumberOfElementsSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSGeneratedMeshNumberOfElementsSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the origin of a generated mesh identified by a user number for C.
+  FUNCTION CMISSGeneratedMeshOriginGetCNum(GeneratedMeshUserNumber,OriginSize,OriginPtr)BIND(C,NAME = &
+    & "CMISSGeneratedMeshOriginGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to get the origin for, for C.
+    INTEGER(C_INT), INTENT(OUT) :: OriginSize !<The size of the origin to get for C.
+    TYPE(C_PTR), INTENT(OUT) :: OriginPtr !<C pointer to the origin of the i'th dimension of the generated mesh.
+    !Function variable
+    INTEGER(C_INT) :: CMISSGeneratedMeshOriginGetCNum !Error Code
+    !LOcal variable
+    REAL(C_DOUBLE) , POINTER :: Origin(:)
+
+    CMISSGeneratedMeshOriginGetCNum = CMISSNoError
+    CALL CMISSGeneratedMeshOriginGet(GeneratedMeshUserNumber, Origin, CMISSGeneratedMeshOriginGetCNum)
+    IF(ASSOCIATED(Origin)) THEN
+      OriginSize = Size(Origin)
+      OriginPtr = C_LOC(Origin(1))
+    ELSE
+      CMISSGeneratedMeshOriginGetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSGeneratedMeshOriginGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the origin of a generated mesh identified by an object for C.
+  FUNCTION CMISSGeneratedMeshOriginGetCPtr(GeneratedMeshPtr,OriginSize,OriginPtr)BIND(C, NAME = "CMISSGeneratedMeshOriginGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: GeneratedMeshPtr !<C pointer to the generated mesh to get the number of elements for.
+    INTEGER(C_INT), INTENT(OUT) :: OriginSize !<The size of the number of elements for C.
+    TYPE(C_PTR), INTENT(OUT) :: OriginPtr!<C pointer to the number of elements in the i'th dimension of the generated mesh.
+    !Function variables
+    INTEGER(C_INT) :: CMISSGeneratedMeshOriginGetCPtr
+    !Local variables
+    TYPE(CMISSGeneratedMeshType), POINTER :: GeneratedMesh
+    REAL(C_DOUBLE), POINTER :: Origin(:)
+
+
+    CMISSGeneratedMeshOriginGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(GeneratedMeshPtr)) THEN
+      CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
+      IF(ASSOCIATED(GeneratedMesh)) THEN
+        CALL CMISSGeneratedMeshOriginGet(GeneratedMesh, Origin, CMISSGeneratedMeshOriginGetCPtr)
+        IF(ASSOCIATED(Origin)) THEN
+          OriginSize = Size(Origin)
+          OriginPtr = C_LOC(Origin(1))
+        ELSE
+          CMISSGeneratedMeshOriginGetCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSGeneratedMeshOriginGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSGeneratedMeshOriginGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSGeneratedMeshOriginGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the origin of a generated mesh identified by a user number for C.
+  FUNCTION CMISSGeneratedMeshOriginSetCNum(GeneratedMeshUserNumber,OriginSize,OriginPtr) BIND(C,NAME = &
+    & "CMISSGeneratedMeshOriginSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the origin for, for C.
+    INTEGER(C_INT), INTENT(IN) :: OriginSize(1) !<The size of the origin to set for C.
+    TYPE(C_PTR), INTENT(IN) :: OriginPtr !<C pointer to the origin of the i'th dimension of the generated mesh to set.
+    !Function variable
+    INTEGER(C_INT) :: CMISSGeneratedMeshOriginSetCNum !Error Code
+    !LOcal variable
+    REAL(C_DOUBLE) , POINTER :: Origin(:)
+
+    CMISSGeneratedMeshOriginSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(OriginPtr)) THEN
+      CALL C_F_POINTER(OriginPtr, Origin, OriginSize)
+      IF(ASSOCIATED(Origin)) THEN
+        CALL CMISSGeneratedMeshOriginSet(GeneratedMeshUserNumber, Origin, CMISSGeneratedMeshOriginSetCNum)
+      ELSE
+        CMISSGeneratedMeshOriginSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSGeneratedMeshOriginSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSGeneratedMeshOriginSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the origin of a generated mesh identified by an object for C.
+  FUNCTION CMISSGeneratedMeshOriginSetCPtr(GeneratedMeshPtr,OriginSize,OriginPtr)BIND(C, NAME = "CMISSGeneratedMeshOriginSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: GeneratedMeshPtr !<C pointer to the generated mesh to set the number of elements for.
+    INTEGER(C_INT), INTENT(IN) :: OriginSize(1) !<The size of the number of elements to set for C.
+    TYPE(C_PTR), INTENT(IN) :: OriginPtr!<C pointer to the number of elements in the i'th dimension of the generated mesh to set.
+    !Function variables
+    INTEGER(C_INT) :: CMISSGeneratedMeshOriginSetCPtr
+    !Local variables
+    TYPE(CMISSGeneratedMeshType), POINTER :: GeneratedMesh
+    REAL(C_DOUBLE), POINTER :: Origin(:)
+
+
+    CMISSGeneratedMeshOriginSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(GeneratedMeshPtr)) THEN
+      CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
+      IF(ASSOCIATED(GeneratedMesh)) THEN
+        IF(C_ASSOCIATED(OriginPtr)) THEN
+          CALL C_F_POINTER(OriginPtr,Origin,OriginSize)
+          IF(ASSOCIATED(Origin)) THEN
+            CALL CMISSGeneratedMeshOriginSet(GeneratedMesh, Origin, CMISSGeneratedMeshOriginSetCPtr)
+          ELSE
+            CMISSGeneratedMeshOriginSetCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSGeneratedMeshOriginSetCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSGeneratedMeshOriginSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSGeneratedMeshOriginSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSGeneratedMeshOriginSetCPtr
 
   !
   !================================================================================================================================
@@ -15867,31 +16764,121 @@ END FUNCTION CMISSFieldsTypeCreateC
 !!
 !!==================================================================================================================================
 
-  !>Finishes the process of creating a region identified by a pointer for C.
-  FUNCTION CMISSRegionCreateFinishCPtr(RegionPtr) BIND(C,NAME="CMISSRegionCreateFinish")
+  !>Returns the coordinate system for a region identified by an user number for C.
+  FUNCTION CMISSRegionCoordinateSystemGetCNum(RegionUserNumber,CoordinateSystemUserNumber) BIND(C,NAME= &
+    & "CMISSRegionCoordinateSystemGetNum")
 
     !Argument variables
-    TYPE(C_PTR), VALUE, INTENT(IN) :: RegionPtr
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region to get the coordinate system for, for C.
+    INTEGER(C_INT), INTENT(OUT) :: CoordinateSystemUserNumber !<On return, the coordinate system user number, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSRegionCreateFinishCPtr !<Error Code.
+    INTEGER(C_INT) :: CMISSRegionCoordinateSystemGetCNum !<Error code.
+    !Local variables
+
+    CALL CMISSRegionCoordinateSystemGet(RegionUserNumber,CoordinateSystemUserNumber, CMISSRegionCoordinateSystemGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSRegionCoordinateSystemGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the coordinate system for a region identified by an object for C.
+  FUNCTION CMISSRegionCoordinateSystemGetCPtr(RegionPtr,CoordinateSystemPtr) BIND(C,NAME="CMISSRegionCoordinateSystemGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: RegionPtr !<C pointer to the region to get the coordinate system for.
+    TYPE(C_PTR), INTENT(OUT) :: CoordinateSystemPtr !<On return, C pointer to the regions coordinate system.
+    !Function variable
+    INTEGER(C_INT) :: CMISSRegionCoordinateSystemGetCPtr !<Error code
     !Local variables
     TYPE(CMISSRegionType), POINTER :: Region
+    TYPE(CMISSCoordinateSystemType), POINTER :: CoordinateSystem
 
-    CMISSRegionCreateFinishCPtr=CMISSNoError
+    CMISSRegionCoordinateSystemGetCPtr = CMISSNoError
     IF(C_ASSOCIATED(RegionPtr)) THEN
-      CALL C_F_POINTER(RegionPtr,Region)
-      IF(ASSOCIATED(Region)) THEN        
-        CALL CMISSRegionCreateFinish(Region,CMISSRegionCreateFinishCPtr)
+      CALL C_F_POINTER(RegionPtr, Region)
+      IF(ASSOCIATED(Region)) THEN
+        CALL CMISSRegionCoordinateSystemGet(Region, CoordinateSystem,CMISSRegionCoordinateSystemGetCPtr)
+        IF(ASSOCIATED(CoordinateSystem)) THEN
+          CoordinateSystemPtr = C_LOC(CoordinateSystem)
+        ELSE
+          CMISSRegionCoordinateSystemGetCPtr = CMISSPointerIsNULL
+        ENDIF
       ELSE
-        CMISSRegionCreateFinishCPtr=CMISSErrorConvertingPointer
+        CMISSRegionCoordinateSystemGetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSRegionCreateFinishCPtr=CMISSPointerIsNULL
+      CMISSRegionCoordinateSystemGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSRegionCoordinateSystemGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the coordinate system for a region identified by an user number for C.
+  FUNCTION CMISSRegionCoordinateSystemSetCNum(RegionUserNumber,CoordinateSystemUserNumber) BIND(C,NAME= &
+    & "CMISSRegionCoordinateSystemSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region to set the coordinate system for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSRegionCoordinateSystemSetCNum !<Error code.
+    !Local variables
+
+    CALL CMISSRegionCoordinateSystemSet(RegionUserNumber,CoordinateSystemUserNumber,CMISSRegionCoordinateSystemSetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSRegionCoordinateSystemSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the coordinate system for a region identified by an object for C.
+  FUNCTION CMISSRegionCoordinateSystemSetCPtr(RegionPtr,CoordinateSystemPtr) BIND(C,NAME="CMISSRegionCoordinateSystemSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: RegionPtr !<C pointer to the region to set the coordinate system for.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CoordinateSystemPtr !<C pointer to the coordinate system to set.
+    !Function variable
+    INTEGER(C_INT) :: CMISSRegionCoordinateSystemSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSRegionType), POINTER :: Region
+    TYPE(CMISSCoordinateSystemType), POINTER :: CoordinateSystem
+
+    CMISSRegionCoordinateSystemSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(RegionPtr)) THEN
+      CALL C_F_POINTER(RegionPtr, Region)
+      IF(ASSOCIATED(Region)) THEN
+        IF(C_ASSOCIATED(CoordinateSystemPtr)) THEN
+          CALL C_F_POINTER(CoordinateSystemPtr, CoordinateSystem)
+          IF(ASSOCIATED(CoordinateSystem)) THEN
+            CALL CMISSRegionCoordinateSystemSet(Region, CoordinateSystem,CMISSRegionCoordinateSystemSetCPtr)
+          ELSE
+            CMISSRegionCoordinateSystemSetCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSRegionCoordinateSystemSetCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSRegionCoordinateSystemSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSRegionCoordinateSystemSetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
     
-  END FUNCTION CMISSRegionCreateFinishCPtr
+  END FUNCTION CMISSRegionCoordinateSystemSetCPtr
 
   !
   !================================================================================================================================
@@ -15915,10 +16902,60 @@ END FUNCTION CMISSFieldsTypeCreateC
   !
   !================================================================================================================================
   !
-  
+
+  !>Finishes the process of creating a region identified by a pointer for C.
+  FUNCTION CMISSRegionCreateFinishCPtr(RegionPtr) BIND(C,NAME="CMISSRegionCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: RegionPtr
+    !Function variable
+    INTEGER(C_INT) :: CMISSRegionCreateFinishCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSRegionType), POINTER :: Region
+
+    CMISSRegionCreateFinishCPtr=CMISSNoError
+    IF(C_ASSOCIATED(RegionPtr)) THEN
+      CALL C_F_POINTER(RegionPtr,Region)
+      IF(ASSOCIATED(Region)) THEN
+        CALL CMISSRegionCreateFinish(Region,CMISSRegionCreateFinishCPtr)
+      ELSE
+        CMISSRegionCreateFinishCPtr=CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSRegionCreateFinishCPtr=CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSRegionCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the process of creating a region identified by an user number for C.
+  FUNCTION CMISSRegionCreateStartCNum(RegionUserNumber,ParentRegionUserNumber) BIND(C,NAME="CMISSRegionCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ParentRegionUserNumber
+    !Function variable
+    INTEGER(C_INT) :: CMISSRegionCreateStartCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSRegionCreateStart(RegionUserNumber,ParentRegionUserNumber,CMISSRegionCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSRegionCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
   !>Starts the process of creating a region identified by a pointer for C.
   FUNCTION CMISSRegionCreateStartCPtr(RegionUserNumber,ParentRegionPtr,RegionPtr) BIND(C,NAME="CMISSRegionCreateStart")
-  
+
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber
     TYPE(C_PTR), VALUE, INTENT(IN) :: ParentRegionPtr
@@ -15957,21 +16994,78 @@ END FUNCTION CMISSFieldsTypeCreateC
   !================================================================================================================================
   !
 
-  !>Starts the process of creating a region identified by an user number for C.
-  FUNCTION CMISSRegionCreateStartCNum(RegionUserNumber,ParentRegionUserNumber) BIND(C,NAME="CMISSRegionCreateStartNum")
+  !>Destroys a region identified by an user number for C.
+  FUNCTION CMISSRegionDestroyCNum(RegionUserNumber) BIND(C, NAME = "CMISSRegionDestroyNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region to destroy for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSRegionDestroyCNum !<Error code.
+    !Local variables
+
+    CALL CMISSRegionDestroy(RegionUserNumber,CMISSRegionDestroyCNum)
+
+    RETURN
+
+  END FUNCTION CMISSRegionDestroyCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroys a region identified by an object for C.
+  FUNCTION CMISSRegionDestroyCPtr(RegionPtr) BIND(C, NAME = "CMISSRegionDestroy")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: RegionPtr !<C pointer to the region to destroy.
+    !Function variable
+    INTEGER(C_INT) :: CMISSRegionDestroyCPtr !<Error code.
+    !Local variable
+    TYPE(CMISSRegionType), POINTER :: Region
+
+    CMISSRegionDestroyCPtr = CMISSNoError
+    IF(C_ASSOCIATED(RegionPtr)) THEN
+      CALL C_F_POINTER(RegionPtr, Region)
+      IF(ASSOCIATED(Region)) THEN
+        CALL CMISSRegionDestroy(Region,CMISSRegionDestroyCPtr)
+        IF(ASSOCIATED(Region)) THEN
+          RegionPtr = C_LOC(Region)
+        ELSE
+          CMISSRegionDestroyCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSRegionDestroyCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSRegionDestroyCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSRegionDestroyCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the character string label for a region identified by an user number for C.
+  FUNCTION CMISSRegionLabelGetCNum(RegionUserNumber,LabelSize,Label) BIND(C,NAME="CMISSRegionLabelGetNum")
   
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber
-    INTEGER(C_INT), VALUE, INTENT(IN) :: ParentRegionUserNumber
+    INTEGER(C_INT), VALUE, INTENT(IN) :: LabelSize
+    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(OUT) :: Label(LabelSize)
     !Function variable
-    INTEGER(C_INT) :: CMISSRegionCreateStartCNum !<Error Code.
+    INTEGER(C_INT) :: CMISSRegionLabelGetCNum !<Error Code.
     !Local variables
+    CHARACTER(LEN=LabelSize-1) :: FLabel
 
-    CALL CMISSRegionCreateStart(RegionUserNumber,ParentRegionUserNumber,CMISSRegionCreateStartCNum)
+    CALL CMISSRegionLabelGet(RegionUserNumber,FLabel,CMISSRegionLabelGetCNum)
+    CALL CMISSF2CString(Flabel,Label)
 
     RETURN
     
-  END FUNCTION CMISSRegionCreateStartCNum
+  END FUNCTION CMISSRegionLabelGetCNum
 
   !
   !================================================================================================================================
@@ -16011,25 +17105,24 @@ END FUNCTION CMISSFieldsTypeCreateC
   !================================================================================================================================
   !
 
-  !>Returns the character string label for a region identified by an user number for C.
-  FUNCTION CMISSRegionLabelGetCNum(RegionUserNumber,LabelSize,Label) BIND(C,NAME="CMISSRegionLabelGetNum")
+  !>Sets/changes the label for a region identified by an user number for C.
+  FUNCTION CMISSRegionLabelSetCNum(RegionUserNumber,LabelSize,Label) BIND(C,NAME="CMISSRegionLabelSetNum")
   
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber
     INTEGER(C_INT), VALUE, INTENT(IN) :: LabelSize
-    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(OUT) :: Label(LabelSize)
+    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: Label(LabelSize)
     !Function variable
-    INTEGER(C_INT) :: CMISSRegionLabelGetCNum !<Error Code.
+    INTEGER(C_INT) :: CMISSRegionLabelSetCNum !<Error Code.
     !Local variables
     CHARACTER(LEN=LabelSize-1) :: FLabel
  
-    CALL CMISSRegionLabelGet(RegionUserNumber,FLabel,CMISSRegionLabelGetCNum)
-    CALL CMISSF2CString(Flabel,Label)
- 
+    CALL CMISSC2FString(Label,Flabel)
+    CALL CMISSRegionLabelSet(RegionUserNumber,FLabel,CMISSRegionLabelSetCNum)
+
     RETURN
     
-  END FUNCTION CMISSRegionLabelGetCNum
-
+  END FUNCTION CMISSRegionLabelSetCNum
   !
   !================================================================================================================================
   !
@@ -16064,31 +17157,3012 @@ END FUNCTION CMISSFieldsTypeCreateC
     
   END FUNCTION CMISSRegionLabelSetCPtr
 
+!!==================================================================================================================================
+!!
+!! SOLVER_ROUTINES
+!!
+!!==================================================================================================================================
+
+  !>Returns the solve type for an Euler differential-algebraic equation solver identified by an user number.
+  FUNCTION CMISSSolverDAEEulerSolverTypeGetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,SolverIndex,&
+    & DAEEulerSolverType) BIND(C, NAME ="CMISSSolverDAEEulerSolverTypeGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to get the DAE Euler solver type for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers variable for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to get the DAE Euler solver type for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to get the DAE Euler solver type for, for C.
+    INTEGER(C_INT), INTENT(OUT) :: DAEEulerSolverType !<On return, the DAE Euler solver type for C. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
+    !Function variable
+    INTEGER(C_INT) ::CMISSSolverDAEEulerSolverTypeGetCNum !<Error code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverDAEEulerSolverTypeGet(ProblemUserNumber,ControlLoopIdentifiersPtr,SolverIndex, DAEEulerSolverType, &
+          & CMISSSolverDAEEulerSolverTypeGetCNum)
+      ELSE
+        CMISSSolverDAEEulerSolverTypeGetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDAEEulerSolverTypeGetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDAEEulerSolverTypeGetCNum
+
   !
   !================================================================================================================================
   !
 
-  !>Sets/changes the label for a region identified by an user number for C.
-  FUNCTION CMISSRegionLabelSetCNum(RegionUserNumber,LabelSize,Label) BIND(C,NAME="CMISSRegionLabelSetNum")
+  !>Returns the solve type for an Euler differential-algebraic equation solver identified by an object for C.
+  FUNCTION CMISSSolverDAEEulerSolverTypeGetCPtr(SolverPtr,DAEEulerSolverType) BIND(C, NAME = "CMISSSolverDAEEulerSolverTypeGet")
+
+    !Argument variable
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<The solver to get the DAE Euler solver type for.
+    INTEGER(C_INT), INTENT(OUT) :: DAEEulerSolverType !<On return, the DAE Euler solver type. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverDAEEulerSolverTypeGetCPtr !<Error code.
+    !Local variable
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverDAEEulerSolverTypeGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr, Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverDAEEulerSolverTypeGet(Solver,DAEEUlerSolverType,CMISSSolverDAEEulerSolverTypeGetCPtr)
+      ELSE
+        CMISSSolverDAEEulerSolverTypeGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDAEEulerSolverTypeGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDAEEulerSolverTypeGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the solve type for an Euler differential-algebraic equation solver identified by an user number for C.
+  FUNCTION CMISSSolverDAEEulerSolverTypeSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,&
+    & SolverIndex,DAEEulerSolverType)  BIND(C, NAME ="CMISSSolverDAEEulerSolverTypeSetNum")
   
     !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber
-    INTEGER(C_INT), VALUE, INTENT(IN) :: LabelSize
-    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: Label(LabelSize)
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the DAE Euler solver type for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers variable to set to for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the DAE Euler solver type for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the DAE Euler solver type for, for C.
+    INTEGER(C_INT), INTENT(IN) :: DAEEulerSolverType !<The DAE Euler solver type to set for C. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
     !Function variable
-    INTEGER(C_INT) :: CMISSRegionLabelSetCNum !<Error Code.
+    INTEGER(C_INT) ::CMISSSolverDAEEulerSolverTypeSetCNum !<Error Code.
     !Local variables
-    CHARACTER(LEN=LabelSize-1) :: FLabel
- 
-    CALL CMISSC2FString(Label,Flabel)
-    CALL CMISSRegionLabelSet(RegionUserNumber,FLabel,CMISSRegionLabelSetCNum)
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverDAEEulerSolverTypeSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, DAEEulerSolverType, &
+          & CMISSSolverDAEEulerSolverTypeSetCNum)
+      ELSE
+        CMISSSolverDAEEulerSolverTypeSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDAEEulerSolverTypeSetCNum = CMISSPointerIsNULL
+    ENDIF
     
     RETURN
     
-  END FUNCTION CMISSRegionLabelSetCNum
+  END FUNCTION CMISSSolverDAEEulerSolverTypeSetCNum
 
   !
   !================================================================================================================================
   !
+
+  !>Sets/changes the solve type for an Euler differential-algebraic equation solver identified by an object for C.
+  FUNCTION CMISSSolverDAEEulerSolverTypeSetCPtr(SolverPtr,DAEEulerSolverType) BIND(C, NAME = "CMISSSolverDAEEulerSolverTypeSet")
+
+    !Argument variable
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the solver to set the DAE Euler solver type for.
+    INTEGER(C_INT), INTENT(IN) :: DAEEulerSolverType !<The DAE Euler solver type to set for C. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverDAEEulerSolverTypeSetCPtr !<Error code.
+    !Local variable
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverDAEEulerSolverTypeSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr, Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverDAEEulerSolverTypeSet(Solver,DAEEUlerSolverType,CMISSSolverDAEEulerSolverTypeSetCPtr)
+      ELSE
+        CMISSSolverDAEEulerSolverTypeSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDAEEulerSolverTypeSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDAEEulerSolverTypeSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the solve type for an differential-algebraic equation solver identified by an user number.
+  FUNCTION CMISSSolverDAESolverTypeGetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,SolverIndex, &
+    & DAESolverType) BIND(C, NAME = "CMISSSolverDAESolverTypeGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to get the DAE solver type for.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifier for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to get the DAE solver type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to get the DAE solver type for
+    INTEGER(C_INT), INTENT(OUT) :: DAESolverType !<On return, the DAE solver type. \see OPENCMISS_DAESolverTypes,OPENCMISS
+    !Function variable
+    INTEGER(C_INT) ::CMISSSolverDAESolverTypeGetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverDAESolverTypeGet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, DAESolverType, &
+          & CMISSSolverDAESolverTypeGetCNum)
+      ELSE
+        CMISSSolverDAESolverTypeGetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDAESolverTypeGetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDAESolverTypeGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the solve type for an differential-algebraic equation solver identified by an object for C.
+  FUNCTION CMISSSolverDAESolverTypeGetCPtr(SolverPtr,DAESolverType) BIND(C, NAME = "CMISSSolverDAESolverTypeGet")
+
+    !Argument variable
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the solver to get the DAE Euler solver type for.
+    INTEGER(C_INT), INTENT(OUT) :: DAESolverType !<The DAE Euler solver type to get for C. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverDAESolverTypeGetCPtr !<Error code.
+    !Local variable
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverDAESolverTypeGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr, Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverDAESolverTypeGet(Solver,DAESolverType,CMISSSolverDAESolverTypeGetCPtr)
+      ELSE
+        CMISSSolverDAESolverTypeGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDAESolverTypeGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDAESolverTypeGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the solve type for an differential-algebraic equation solver identified by an user number.
+  FUNCTION CMISSSolverDAESolverTypeSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,SolverIndex, &
+    & DAESolverType) BIND(C, NAME = "CMISSSolverDAESolverTypeSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the DAE solver type to for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifier to set to for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the DAE solver type to.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the DAE solver type for, for C.
+    INTEGER(C_INT), INTENT(IN) :: DAESolverType !<On return, the DAE solver type for C. \see OPENCMISS_DAESolverTypes,OPENCMISS
+    !Function variable
+    INTEGER(C_INT) ::CMISSSolverDAESolverTypeSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverDAESolverTypeSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, DAESolverType, &
+          & CMISSSolverDAESolverTypeSetCNum)
+      ELSE
+        CMISSSolverDAESolverTypeSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDAESolverTypeSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDAESolverTypeSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the solve type for an differential-algebraic equation solver identified by an object for C.
+  FUNCTION CMISSSolverDAESolverTypeSetCPtr(SolverPtr,DAESolverType) BIND(C, NAME = "CMISSSolverDAESolverTypeSet")
+
+    !Argument variable
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the solver to set the DAE Euler solver type for.
+    INTEGER(C_INT), INTENT(OUT) :: DAESolverType !<The DAE Euler solver type to set for C. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverDAESolverTypeSetCPtr !<Error code.
+    !Local variable
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverDAESolverTypeSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr, Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverDAESolverTypeSet(Solver,DAESolverType,CMISSSolverDAESolverTypeSetCPtr)
+      ELSE
+        CMISSSolverDAESolverTypeSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDAESolverTypeSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDAESolverTypeSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the times for an differential-algebraic equation solver identified by an user number.
+  FUNCTION CMISSSolverDAETimesSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,SolverIndex,StartTime,&
+    & EndTime,InitialStep) BIND(C,NAME = "CMISSSolverDAETimesSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the DAE times for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers for C
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the DAE times for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the DAE times for, for C.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: StartTime !<The start time for the differential-algebraic solver for C.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: EndTime !<The end time for the differential-algebraic solver for C.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: InitialStep !<The (initial) time step for the differential-algebraic solver for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverDAETimesSetCNum !<Error code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverDAETimesSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverDAETimesSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,StartTime,EndTime,InitialStep, &
+          & CMISSSolverDAETimesSetCNum)
+      ELSE
+        CMISSSolverDAETimesSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDAETimesSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDAETimesSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the times for an differential-algebraic equation solver identified by an object for C.
+  FUNCTION CMISSSolverDAETimesSetCPtr(SolverPtr,StartTime,EndTime,InitialStep) BIND(C, NAME = "CMISSSolverDAETimesSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the solver to set the DAE times for.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: StartTime !<The start time for the differential-algebraic solver.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: EndTime !<The end time for the differential-algebraic solver.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: InitialStep !<The (initial) time step for the differential-algebraic solver.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverDAETimesSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverDAETimesSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr, Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverDAETimesSet(Solver, StartTime, EndTime, InitialStep, CMISSSolverDAETimesSetCPtr)
+      ELSE
+        CMISSSolverDAETimesSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDAETimesSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDAETimesSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the degree of the polynomial used to interpolate time for a dynamic solver identified by an user number.
+  FUNCTION CMISSSolverDynamicDegreeGetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,SolverIndex, &
+    & Degree) BIND(C, NAME = "CMISSSolverDynamicDegreeGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to get the dynamic degree for.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers array for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr!<C pointer to the i'th control loop identifier to get the dynamic degree for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to get the dynamic degree for, for C.
+    INTEGER(C_INT), INTENT(OUT) :: Degree !<On return, the dynamic degree for C. \see OPENCMISS_DynamicDegreeTypes,OPENCMISS
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverDynamicDegreeGetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverDynamicDegreeGetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverDynamicDegreeGet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,Degree, &
+          & CMISSSolverDynamicDegreeGetCNum)
+      ELSE
+        CMISSSolverDynamicDegreeGetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDynamicDegreeGetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDynamicDegreeGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the degree of the polynomial used to interpolate time for a dynamic solver identified by an object for C.
+  FUNCTION CMISSSolverDynamicDegreeGetCPtr(SolverPtr,Degree) BIND(C, NAME = "CMISSSolverDynamicDegreeGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the solver to get the dynamic degree for.
+    INTEGER(C_INT), INTENT(OUT) :: Degree !<On return, the dynamic degree for C. \see OPENCMISS_DynamicDegreeTypes,OPENCMISS
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverDynamicDegreeGetCPtr !<Error code.
+    !Local variable
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverDynamicDegreeGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr, Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverDynamicDegreeGet(Solver,Degree,CMISSSolverDynamicDegreeGetCPtr)
+      ELSE
+        CMISSSolverDynamicDegreeGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDynamicDegreeGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDynamicDegreeGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the degree of the polynomial used to interpolate time for a dynamic solver identified by an user number.
+  FUNCTION CMISSSolverDynamicDegreeSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,SolverIndex,&
+    & Degree) BIND(C, NAME = "CMISSSolverDynamicDegreeSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the dynamic degree for.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers array to set to for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr!<C pointer to the i'th control loop identifier to set the dynamic degree for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the dynamic degree for, for C.
+    INTEGER(C_INT), INTENT(IN) :: Degree !<On return, the dynamic degree to set for C. \see OPENCMISS_DynamicDegreeTypes,OPENCMISS
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverDynamicDegreeSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverDynamicDegreeSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverDynamicDegreeSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,Degree, &
+          & CMISSSolverDynamicDegreeSetCNum)
+      ELSE
+        CMISSSolverDynamicDegreeSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDynamicDegreeSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDynamicDegreeSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the degree of the polynomial used to interpolate time for a dynamic solver identified by an object for C.
+  FUNCTION CMISSSolverDynamicDegreeSetCPtr(SolverPtr,Degree) BIND(C, NAME = "CMISSSolverDynamicDegreeSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the solver to set the dynamic degree to.
+    INTEGER(C_INT), INTENT(IN) :: Degree !<On return, the dynamic degree to setfor C. \see OPENCMISS_DynamicDegreeTypes,OPENCMISS
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverDynamicDegreeSetCPtr !<Error code.
+    !Local variable
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverDynamicDegreeSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr, Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverDynamicDegreeSet(Solver,Degree,CMISSSolverDynamicDegreeSetCPtr)
+      ELSE
+        CMISSSolverDynamicDegreeSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDynamicDegreeSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDynamicDegreeSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the linearity type for a dynamic solver identified by an user number for C.
+  FUNCTION CMISSSolverDynamicLinearityTypeGetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex,LinearityType) BIND(C, NAME = "CMISSSolverDynamicLinearityTypeGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to get the dynamic linearity type for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers array for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to get the dynamic linearity type for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to get the dynamic linearity type for, for C.
+    INTEGER(C_INT), INTENT(OUT) :: LinearityType !<On return, the dynamic linearity type for C. \see OPENCMISS_DynamicLinearityTypes,OPENCMISS
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverDynamicLinearityTypeGetCNum !<Error code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverDynamicLinearityTypeGetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverDynamicLinearityTypeGet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,LinearityType, &
+          & CMISSSolverDynamicLinearityTypeGetCNum)
+      ELSE
+        CMISSSolverDynamicLinearityTypeGetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDynamicLinearityTypeGetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDynamicLinearityTypeGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the linearity type for a dynamic solver identified by an object for C.
+  FUNCTION CMISSSolverDynamicLinearityTypeGetCPtr(SolverPtr,LinearityType) BIND(C, NAME = "CMISSSolverDynamicLinearityTypeGet")
+
+    !Argument variable
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the solver to get the dynamic linearity type for.
+    INTEGER(C_INT), INTENT(OUT) :: LinearityType !<On return, the dynamic linearity type for C. \see OPENCMISS_DynamicLinearityTypes,OPENCMISS
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverDynamicLinearityTypeGetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverDynamicLinearityTypeGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr, Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverDynamicLinearityTypeGet(Solver,LinearityType,CMISSSolverDynamicLinearityTypeGetCPtr)
+      ELSE
+        CMISSSolverDynamicLinearityTypeGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDynamicLinearityTypeGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDynamicLinearityTypeGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the nonlinear solver associated with a nonlinear dynamic solver identified by an user number for C.
+  FUNCTION CMISSSolverDynamicNonlinearSolverGetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex, NonlinearSolverIndex) BIND(C, NAME = "CMISSSolverDynamicNonlinearSolverGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to get the dynamic nonlinear solver for.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifier array for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to get the dynamic nonlinear solver for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to get the dynamic nonlinear solver for.
+    INTEGER(C_INT), INTENT(OUT) :: NonlinearSolverIndex !<On return, the dynamic nonlinear solver index.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverDynamicNonlinearSolverGetCNum !<Error code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverDynamicNonlinearSolverGetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverDynamicNonlinearSolverGet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,NonlinearSolverIndex, &
+          & CMISSSolverDynamicNonlinearSolverGetCNum)
+      ELSE
+        CMISSSolverDynamicNonlinearSolverGetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDynamicNonlinearSolverGetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDynamicNonlinearSolverGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the nonlinear solver associated with a nonlinear dynamic solver identified by an object for C.
+  FUNCTION CMISSSolverDynamicNonlinearSolverGetCPtr(SolverPtr,NonlinearSolverPtr) BIND(C, NAME =  &
+    & "CMISSSolverDynamicNonlinearSolverGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the solver to get the dynamic nonlinear solver for.
+    TYPE(C_PTR), INTENT(INOUT) :: NonlinearSolverPtr  !<On return, C pointer to the dynamic nonlinear solver.
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverDynamicNonlinearSolverGetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+    TYPE(CMISSSolverType), POINTER :: NonlinearSolver
+
+    CMISSSolverDynamicNonlinearSolverGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr, Solver)
+      IF(ASSOCIATED(Solver)) THEN
+          IF(C_ASSOCIATED(NonlinearSolverPtr)) THEN
+            CALL C_F_POINTER(NonlinearSolverPtr, NonlinearSolver)
+            IF(ASSOCIATED(NonlinearSolver)) THEN
+              CALL CMISSSolverDynamicNonlinearSolverGet(Solver,NonlinearSolver,CMISSSolverDynamicNonlinearSolverGetCPtr)
+              IF(ASSOCIATED(NonlinearSolver)) THEN
+                NonlinearSolverPtr = C_LOC(NonlinearSolver)
+              ELSE
+                CMISSSolverDynamicNonlinearSolverGetCPtr = CMISSPointerIsNULL
+              ENDIF
+            ELSE
+              CMISSSolverDynamicNonlinearSolverGetCPtr = CMISSErrorConvertingPointer
+            ENDIF
+          ELSE
+            CMISSSolverDynamicNonlinearSolverGetCPtr = CMISSPointerIsNULL
+          ENDIF
+      ELSE
+        CMISSSolverDynamicNonlinearSolverGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDynamicNonlinearSolverGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDynamicNonlinearSolverGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the linear solver associated with a linear dynamic solver identified by an user number for C.
+  FUNCTION CMISSSolverDynamicLinearSolverGetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex,LinearSolverIndex) BIND(C, NAME = "CMISSSolverDynamicLinearSolverGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to get the dynamic linear solver for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to get for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to get the dynamic linear solver for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to get the dynamic linear solver for, for C.
+    INTEGER(C_INT), INTENT(OUT) :: LinearSolverIndex !<On return, the dynamic linear solver index for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverDynamicLinearSolverGetCNum !<Error code.
+    !Local variable
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverDynamicLinearSolverGetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverDynamicLinearSolverGet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,LinearSolverIndex, &
+          & CMISSSolverDynamicLinearSolverGetCNum)
+      ELSE
+        CMISSSolverDynamicLinearSolverGetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDynamicLinearSolverGetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDynamicLinearSolverGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the linear solver associated with a linear dynamic solver identified by an object for C.
+  FUNCTION CMISSSolverDynamicLinearSolverGetCPtr(SolverPtr,LinearSolverPtr) BIND(C, NAME = "CMISSSolverDynamicLinearSolverGet")
+
+    !Argument variable
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the solver to get the dynamic linearity type for.
+    TYPE(C_PTR), INTENT(INOUT) :: LinearSolverPtr !<On return, C pointer to the dynamic linear solver.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverDynamicLinearSolverGetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+    TYPE(CMISSSolverType), POINTER :: LinearSolver
+
+    CMISSSolverDynamicLinearSolverGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr, Solver)
+      IF(ASSOCIATED(Solver)) THEN
+          IF(C_ASSOCIATED(LinearSolverPtr)) THEN
+            CALL C_F_POINTER(LinearSolverPtr, LinearSolver)
+            IF(ASSOCIATED(LinearSolver)) THEN
+              CALL CMISSSolverDynamicLinearSolverGet(Solver,LinearSolver,CMISSSolverDynamicLinearSolverGetCPtr)
+              IF(ASSOCIATED(LinearSolver)) THEN
+                LinearSolverPtr = C_LOC(LinearSolver)
+              ELSE
+                CMISSSolverDynamicLinearSolverGetCPtr = CMISSPointerIsNULL
+              ENDIF
+            ELSE
+              CMISSSolverDynamicLinearSolverGetCPtr = CMISSErrorConvertingPointer
+            ENDIF
+          ELSE
+            CMISSSolverDynamicLinearSolverGetCPtr = CMISSPointerIsNULL
+          ENDIF
+      ELSE
+        CMISSSolverDynamicLinearSolverGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDynamicLinearSolverGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDynamicLinearSolverGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the scheme for a dynamic solver identified by an user number for C.
+  FUNCTION CMISSSolverDynamicSchemeSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,SolverIndex, &
+    & Scheme) BIND(C, NAME = "CMISSSolverDynamicSchemeSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the scheme for.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to get for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the scheme for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the scheme for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: Scheme !<The dynamic scheme to set. \see OPENCMISS_DynamicSchemeTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverDynamicSchemeSetCNum !<Error code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverDynamicSchemeSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverDynamicSchemeSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,Scheme, &
+          & CMISSSolverDynamicSchemeSetCNum)
+      ELSE
+        CMISSSolverDynamicSchemeSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDynamicSchemeSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDynamicSchemeSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the scheme for a dynamic solver identified by an object for C.
+  FUNCTION CMISSSolverDynamicSchemeSetCPtr(SolverPtr,Scheme) BIND(C, NAME = "CMISSSolverDynamicSchemeSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the solver to set the scheme for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: Scheme !<The dynamic scheme to set. \see OPENCMISS_DynamicSchemeTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverDynamicSchemeSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverDynamicSchemeSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr, Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverDynamicSchemeSet(Solver,Scheme,CMISSSolverDynamicSchemeSetCPtr)
+      ELSE
+        CMISSSolverDynamicSchemeSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDynamicSchemeSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDynamicSchemeSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the theta for a dynamic solver identified by an user number.
+  FUNCTION CMISSSolverDynamicThetaSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,SolverIndex, &
+    & ThetasSize,ThetasPtr) BIND(C, NAME = "CMISSSolverDynamicThetaSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the theta for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to get for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the theta for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the theta for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ThetasSize(1) !<The size of the dynamic theta to set for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ThetasPtr !<C pointer to the i'th dynamic theta to set.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverDynamicThetaSetCNum
+    !Local variable
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+    REAL(C_DOUBLE), POINTER :: Thetas(:)
+
+    CMISSSolverDynamicThetaSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        IF(C_ASSOCIATED(ThetasPtr)) THEN
+          CALL C_F_POINTER(ThetasPtr,Thetas,ThetasSize)
+          IF(ASSOCIATED(Thetas)) THEN
+            CALL CMISSSolverDynamicThetaSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,Thetas, &
+              & CMISSSolverDynamicThetaSetCNum)
+          ELSE
+            CMISSSolverDynamicThetaSetCNum = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSSolverDynamicThetaSetCNum = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSSolverDynamicThetaSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDynamicThetaSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDynamicThetaSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the theta for a dynamic solver identified by an object for C.
+  FUNCTION CMISSSolverDynamicThetaSetCPtr(SolverPtr,ThetasSize, ThetasPtr) BIND(C, NAME = "CMISSSolverDynamicThetaSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the solver to set the theta for.
+    INTEGER(C_INT), INTENT(IN) :: ThetasSize(1) !<The size of the dynamic theta to set for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ThetasPtr !<C pointer to the i'th dynamic theta to set.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverDynamicThetaSetCPtr
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+    REAL(C_DOUBLE), POINTER :: Thetas(:)
+
+    CMISSSolverDynamicThetaSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr, Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        IF(C_ASSOCIATED(ThetasPtr)) THEN
+          CALL C_F_POINTER(ThetasPtr,Thetas,ThetasSize)
+          IF(ASSOCIATED(Thetas)) THEN
+            CALL CMISSSolverDynamicThetaSet(Solver,Thetas,CMISSSolverDynamicThetaSetCPtr)
+          ELSE
+            CMISSSolverDynamicThetaSetCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSSolverDynamicThetaSetCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSSolverDynamicThetaSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDynamicThetaSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDynamicThetaSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the times for a dynamic solver identified by an user number for C.
+  FUNCTION CMISSSolverDynamicTimesSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,SolverIndex, &
+    & CurrentTime,TimeIncrement) BIND(C, NAME = "CMISSSolverDynamicTimesSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the times for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the times for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the times for, for C.
+    REAL(C_DOUBLE), INTENT(IN) :: CurrentTime !<The current time to set for C.
+    REAL(C_DOUBLE), INTENT(IN) :: TimeIncrement !<The time increment to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverDynamicTimesSetCNum
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverDynamicTimesSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverDynamicTimesSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,CurrentTime,TimeIncrement, &
+          & CMISSSolverDynamicTimesSetCNum)
+      ELSE
+        CMISSSolverDynamicTimesSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDynamicTimesSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDynamicTimesSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the times for a dynamic solver identified by an object for C.
+  FUNCTION CMISSSolverDynamicTimesSetCPtr(SolverPtr,CurrentTime,TimeIncrement) BIND(C, NAME = "CMISSSolverDynamicTimesSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the solver to set the times for.
+    REAL(C_DOUBLE), INTENT(IN) :: CurrentTime !<The current time to set for C.
+    REAL(C_DOUBLE), INTENT(IN) :: TimeIncrement !<The time increment to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverDynamicTimesSetCPtr
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverDynamicTimesSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr, Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverDynamicTimesSet(Solver,CurrentTime,TimeIncrement,CMISSSolverDynamicTimesSetCPtr)
+      ELSE
+        CMISSSolverDynamicTimesSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverDynamicTimesSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverDynamicTimesSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the library type for a solver identified by an user number for C.
+  FUNCTION CMISSSolverLibraryTypeGetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,SolverIndex, &
+    & LibraryType) BIND(C, NAME = "CMISSSolverLibraryTypeGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to get the library type for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to get for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to get the library type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to get the library type for, for C.
+    INTEGER(C_INT), INTENT(OUT) :: LibraryType !<On return, the library type for the solver for C. \see OPENCMISS_SolverLibraries
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverLibraryTypeGetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverLibraryTypeGetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverLibraryTypeGet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,LibraryType, &
+          & CMISSSolverLibraryTypeGetCNum)
+      ELSE
+        CMISSSolverLibraryTypeGetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverLibraryTypeGetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverLibraryTypeGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the library type for a solver identified by an object for C.
+  FUNCTION CMISSSolverLibraryTypeGetCPtr(SolverPtr,LibraryType) BIND(C, NAME = "CMISSSolverLibraryTypeGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the solver to get the library type for.
+    INTEGER(C_INT), INTENT(OUT) :: LibraryType !<On return, the library type for the solver for C. \see OPENCMISS_SolverLibraries
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverLibraryTypeGetCPtr
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+   CMISSSolverLibraryTypeGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverLibraryTypeGet(Solver,LibraryType,CMISSSolverLibraryTypeGetCPtr)
+      ELSE
+        CMISSSolverLibraryTypeGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverLibraryTypeGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverLibraryTypeGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the library type for a solver identified by an user number for C.
+  FUNCTION CMISSSolverLibraryTypeSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,SolverIndex, &
+    & LibraryType) BIND(C, NAME = "CMISSSolverLibraryTypeSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the library type for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the library type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the library type for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: LibraryType !<The library type for the solver to set for C. \see OPENCMISS_SolverLibraries
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverLibraryTypeSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverLibraryTypeSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverLibraryTypeSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,LibraryType, &
+          & CMISSSolverLibraryTypeSetCNum)
+      ELSE
+        CMISSSolverLibraryTypeSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverLibraryTypeSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverLibraryTypeSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the library type for a solver identified by an object, for C.
+  FUNCTION CMISSSolverLibraryTypeSetCPtr(SolverPtr,LibraryType) BIND(C, NAME = "CMISSSolverLibraryTypeSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the solver to set the library type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: LibraryType !<The library type for the solver to set for C. \see OPENCMISS_SolverLibraries
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverLibraryTypeSetCPtr
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverLibraryTypeSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverLibraryTypeSet(Solver, LibraryType, CMISSSolverLibraryTypeSetCPtr)
+      ELSE
+        CMISSSolverLibraryTypeSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverLibraryTypeSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverLibraryTypeSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of direct linear solver for a solver identified by an user number for C.
+  FUNCTION CMISSSolverLinearDirectTypeSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,SolverIndex,&
+    & DirectSolverType) BIND(C, NAME = "CMISSSolverLinearDirectTypeSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the direct linear solver to set the direct type for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the direct type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the direct type for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: DirectSolverType !<The type of the direct linear solver to set for C. \see OPENCMISS_DirectLinearSolverTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverLinearDirectTypeSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverLinearDirectTypeSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverLinearDirectTypeSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,DirectSolverType, &
+          & CMISSSolverLinearDirectTypeSetCNum)
+      ELSE
+        CMISSSolverLinearDirectTypeSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverLinearDirectTypeSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverLinearDirectTypeSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of direct linear solver for a solver identified by an object for C.
+  FUNCTION CMISSSolverLinearDirectSetCPtr(SolverPtr,DirectSolverType) BIND(C,NAME="CMISSSolverLinearDirectSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the solver to set the library type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: DirectSolverType !<The type of the direct linear solver to set for C. \see OPENCMISS_DirectLinearSolverTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverLinearDirectSetCPtr
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverLinearDirectSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverLinearDirectSet(Solver, DirectSolverType, CMISSSolverLinearDirectSetCPtr)
+      ELSE
+        CMISSSolverLinearDirectSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverLinearDirectSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverLinearDirectSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the maximum absolute tolerance for an iterative linear solver identified by an user number for C.
+  FUNCTION CMISSSolverLinearIterativeAbsoluteToleranceSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize, &
+    & ControlLoopIdentifiersPtr,SolverIndex, AbsoluteTolerance) BIND(C, NAME = "CMISSSolverLinearIterativeAbsoluteToleranceSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the iterative linear solver to set the absolute tolerance for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the absolute tolerance for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the absolute tolerance for, for C.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: AbsoluteTolerance !<The absolute tolerance for the iterative linear solver to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverLinearIterativeAbsoluteToleranceSetCNum
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the absolute tolerance for.
+
+    CMISSSolverLinearIterativeAbsoluteToleranceSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverLinearIterativeAbsoluteToleranceSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,AbsoluteTolerance,&
+          & CMISSSolverLinearIterativeAbsoluteToleranceSetCNum)
+      ELSE
+        CMISSSolverLinearIterativeAbsoluteToleranceSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverLinearIterativeAbsoluteToleranceSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverLinearIterativeAbsoluteToleranceSetCNum
+
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the maximum absolute tolerance for an iterative linear solver identified by an object for C.
+  FUNCTION CMISSSolverLinearIterativeAbsoluteToleranceSetCPtr(SolverPtr,AbsoluteTolerance) BIND(C, NAME = &
+    & "CMISSSolverLinearIterativeAbsoluteToleranceSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer the iterative linear solver to set the absolute tolerance for.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: AbsoluteTolerance !<The absolute tolerance for the iterative linear solver to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverLinearIterativeAbsoluteToleranceSetCPtr
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverLinearIterativeAbsoluteToleranceSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverLinearIterativeAbsoluteToleranceSet(Solver, AbsoluteTolerance, &
+          & CMISSSolverLinearIterativeAbsoluteToleranceSetCPtr)
+      ELSE
+        CMISSSolverLinearIterativeAbsoluteToleranceSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverLinearIterativeAbsoluteToleranceSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverLinearIterativeAbsoluteToleranceSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the maximum divergence tolerance for an iterative linear solver identified by an user number for C.
+  FUNCTION CMISSSolverLinearIterativeDivergenceToleranceSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize, &
+    & ControlLoopIdentifiersPtr,SolverIndex,DivergenceTolerance)  BIND(C, NAME = &
+    & "CMISSSolverLinearIterativeDivergenceToleranceSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the iterative linear solver to set the absolute tolerance for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the absolute tolerance for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the absolute tolerance for, for C.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: DivergenceTolerance !<The divergence tolerance for the iterative linear solver to set, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverLinearIterativeDivergenceToleranceSetCNum
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the absolute tolerance for.
+
+    CMISSSolverLinearIterativeDivergenceToleranceSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverLinearIterativeDivergenceToleranceSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,&
+          & DivergenceTolerance,CMISSSolverLinearIterativeDivergenceToleranceSetCNum)
+      ELSE
+        CMISSSolverLinearIterativeDivergenceToleranceSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverLinearIterativeDivergenceToleranceSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverLinearIterativeDivergenceToleranceSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the maximum divergence tolerance for an iterative linear solver identified by an object for C.
+  FUNCTION CMISSSolverLinearIterativeDivergenceToleranceSetCPtr(SolverPtr,DivergenceTolerance) BIND(C, NAME = &
+    & "CMISSSolverLinearIterativeDivergenceToleranceSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the iterative linear solver to set the divergence tolerance for.
+    REAL(C_DOUBLE), INTENT(IN) :: DivergenceTolerance !<The divergence tolerance for the iterative linear solver to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverLinearIterativeDivergenceToleranceSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverLinearIterativeDivergenceToleranceSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverLinearIterativeDivergenceToleranceSet(Solver, DivergenceTolerance, &
+          & CMISSSolverLinearIterativeDivergenceToleranceSetCPtr)
+      ELSE
+        CMISSSolverLinearIterativeDivergenceToleranceSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverLinearIterativeDivergenceToleranceSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverLinearIterativeDivergenceToleranceSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the GMRES restart value for a GMRES iterative linear solver identified by an user number for C.
+  FUNCTION CMISSSolverLinearIterativeGMRESRestartSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex, GMRESRestart) BIND(C, NAME = "CMISSSolverLinearIterativeGMRESRestartSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the GMRES iterative linear solver to set the restart value for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set he restart value for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the restart value for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: GMRESRestart !<The GMRES restart value to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverLinearIterativeGMRESRestartSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverLinearIterativeGMRESRestartSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverLinearIterativeGMRESRestartSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,&
+          & GMRESRestart,CMISSSolverLinearIterativeGMRESRestartSetCNum)
+      ELSE
+        CMISSSolverLinearIterativeGMRESRestartSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverLinearIterativeGMRESRestartSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverLinearIterativeGMRESRestartSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the GMRES restart value for a GMRES iterative linear solver identified by an object for C.
+  FUNCTION CMISSSolverLinearIterativeGMRESRestartSetCPtr(SolverPtr,GMRESRestart) BIND(C, NAME = &
+    & "CMISSSolverLinearIterativeGMRESRestartSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the GMRES iterative linear solver to set the restart value for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: GMRESRestart !<The GMRES restart value to set for C.
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverLinearIterativeGMRESRestartSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverLinearIterativeGMRESRestartSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverLinearIterativeGMRESRestartSet(Solver, GMRESRestart, &
+          & CMISSSolverLinearIterativeGMRESRestartSetCPtr)
+      ELSE
+        CMISSSolverLinearIterativeGMRESRestartSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverLinearIterativeGMRESRestartSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverLinearIterativeGMRESRestartSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the maximum number of iterations for an iterative linear solver identified by an user number for C.
+  FUNCTION CMISSSolverLinearIterativeMaximumIterationsSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,&
+    & ControlLoopIdentifiersPtr,SolverIndex,MaximumIterations) BIND(C, NAME = "CMISSSolverLinearIterativeMaximumIterationsSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the iterative linear solver to set the maximum iterations for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the maximum iterations for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the maximum iterations for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: MaximumIterations !<The maximum iterations to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverLinearIterativeMaximumIterationsSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverLinearIterativeMaximumIterationsSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverLinearIterativeMaximumIterationsSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,&
+          & MaximumIterations,CMISSSolverLinearIterativeMaximumIterationsSetCNum)
+      ELSE
+        CMISSSolverLinearIterativeMaximumIterationsSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverLinearIterativeMaximumIterationsSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverLinearIterativeMaximumIterationsSetCNum
+
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the maximum number of iterations for an iterative linear solver identified by an object for C.
+  FUNCTION CMISSSolverLinearIterativeMaximumIterationsSetCPtr(SolverPtr,MaximumIterations) BIND(C, NAME = &
+    & "CMISSSolverLinearIterativeMaximumIterationsSet")
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the iterative linear solver to set the maximum iterations for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: MaximumIterations !<The maximum iterations to set for C.
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverLinearIterativeMaximumIterationsSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverLinearIterativeMaximumIterationsSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverLinearIterativeMaximumIterationsSet(Solver, MaximumIterations, &
+          & CMISSSolverLinearIterativeMaximumIterationsSetCPtr)
+      ELSE
+        CMISSSolverLinearIterativeMaximumIterationsSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverLinearIterativeMaximumIterationsSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverLinearIterativeMaximumIterationsSetCPtr
+
+   !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the preconditioner type for an iterative linear solver identified by an user number.
+  FUNCTION CMISSSolverLinearIterativePreconditionerTypeSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize, &
+    & ControlLoopIdentifiersPtr,SolverIndex,PreconditionerType) BIND(C, NAME = "CMISSSolverLinearIterativePreconditionerTypeSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the iterative linear solver to set the preconditioner type for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the preconditioner type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the preconditioner type for, for C.
+    INTEGER(C_INT), INTENT(IN) :: PreconditionerType !<The preconditioner type to set for C. \see OPENCMISS_IterativePreconditionerTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverLinearIterativePreconditionerTypeSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverLinearIterativePreconditionerTypeSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverLinearIterativePreconditionerTypeSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,&
+          & PreconditionerType,CMISSSolverLinearIterativePreconditionerTypeSetCNum)
+      ELSE
+        CMISSSolverLinearIterativePreconditionerTypeSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverLinearIterativePreconditionerTypeSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverLinearIterativePreconditionerTypeSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the preconditioner type for an iterative linear solver identified by an object.
+  FUNCTION CMISSSolverLinearIterativePreconditionerTypeSetCPtr(SolverPtr,PreconditionerType) BIND(C, NAME = &
+    & "CMISSSolverLinearIterativePreconditionerTypeSetCPtr")
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the iterative linear solver to set the preconditioner type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: PreconditionerType !<The preconditioner type to set for C. \see OPENCMISS_IterativePreconditionerTypes
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverLinearIterativePreconditionerTypeSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverLinearIterativePreconditionerTypeSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverLinearIterativePreconditionerTypeSet(Solver, PreconditionerType, &
+          & CMISSSolverLinearIterativePreconditionerTypeSetCPtr)
+      ELSE
+        CMISSSolverLinearIterativePreconditionerTypeSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverLinearIterativePreconditionerTypeSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverLinearIterativePreconditionerTypeSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the maximum relative tolerance for an iterative linear solver identified by an user number for C.
+  FUNCTION CMISSSolverLinearIterativeRelativeToleranceSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize, &
+    & ControlLoopIdentifiersPtr,SolverIndex,RelativeTolerance) BIND(C, NAME = "CMISSSolverLinearIterativeRelativeToleranceSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the iterative linear solver to set the relative tolerance for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the relative tolerance for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the relative tolerance for, for C.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: RelativeTolerance !<The relative tolerance for the iterative linear solver to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverLinearIterativeRelativeToleranceSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverLinearIterativeRelativeToleranceSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverLinearIterativeRelativeToleranceSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,&
+          & RelativeTolerance,CMISSSolverLinearIterativeRelativeToleranceSetCNum)
+      ELSE
+        CMISSSolverLinearIterativeRelativeToleranceSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverLinearIterativeRelativeToleranceSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverLinearIterativeRelativeToleranceSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the maximum relative tolerance for an iterative linear solver identified by an object for C.
+  FUNCTION CMISSSolverLinearIterativeRelativeToleranceSetCPtr(SolverPtr,RelativeTolerance) BIND(C, NAME = &
+    & "CMISSSolverLinearIterativeRelativeToleranceSet")
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the iterative linear solver to set the relative tolerance for.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: RelativeTolerance !<The relative tolerance for the iterative linear solver to set for C.
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverLinearIterativeRelativeToleranceSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverLinearIterativeRelativeToleranceSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverLinearIterativeRelativeToleranceSet(Solver, RelativeTolerance, &
+          & CMISSSolverLinearIterativeRelativeToleranceSetCPtr)
+      ELSE
+        CMISSSolverLinearIterativeRelativeToleranceSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverLinearIterativeRelativeToleranceSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverLinearIterativeRelativeToleranceSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type for an iterative linear solver identified by an user number for C.
+  FUNCTION CMISSSolverLinearIterativeTypeSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex,IterativeSolverType) BIND(C, NAME = "CMISSSolverLinearIterativeTypeSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the iterative linear solver to set the iterative solver type for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the iterative solver type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the iterative solver type for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: IterativeSolverType !<The iterative solver type to set for C. \see OPENCMISS_IterativeLinearSolverTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverLinearIterativeTypeSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverLinearIterativeTypeSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverLinearIterativeTypeSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,&
+          & IterativeSolverType,CMISSSolverLinearIterativeTypeSetCNum)
+      ELSE
+        CMISSSolverLinearIterativeTypeSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverLinearIterativeTypeSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverLinearIterativeTypeSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type for an iterative linear solver identified by an object for C.
+  FUNCTION CMISSSolverLinearIterativeTypeSetCPtr(SolverPtr,IterativeSolverType) BIND(C, NAME = &
+    & "CMISSSolverLinearIterativeTypeSet")
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the iterative linear solver to set the iterative solver for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: IterativeSolverType !<The iterative solver type to set for C. \see OPENCMISS_IterativeLinearSolverTypes
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverLinearIterativeTypeSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverLinearIterativeTypeSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverLinearIterativeTypeSet(Solver, IterativeSolverType, CMISSSolverLinearIterativeTypeSetCPtr)
+      ELSE
+        CMISSSolverLinearIterativeTypeSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverLinearIterativeTypeSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverLinearIterativeTypeSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type for a linear solver identified by an user number for C.
+  FUNCTION CMISSSolverLinearTypeSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex,LinearSolverType) BIND(C, NAME = "CMISSSolverLinearTypeSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the iterative linear solver to set the linear solver for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the linear solver for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the linear solver for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: LinearSolverType !<The linear solver type to set for C. \see OPENCMISS_LinearSolverTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverLinearTypeSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverLinearTypeSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverLinearTypeSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,LinearSolverType, &
+          & CMISSSolverLinearTypeSetCNum)
+      ELSE
+        CMISSSolverLinearTypeSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverLinearTypeSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverLinearTypeSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type for a linear solver identified by an object for C.
+  FUNCTION CMISSSolverLinearTypeSetCPtr(SolverPtr,LinearSolverType) BIND(C, NAME = "CMISSSolverLinearTypeSet")
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the linear solver to set the iterative solver for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: LinearSolverType !<The linear solver type to set for C. \see OPENCMISS_LinearSolverTypes
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverLinearTypeSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverLinearTypeSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverLinearTypeSet(Solver, LinearSolverType, CMISSSolverLinearTypeSetCPtr)
+      ELSE
+        CMISSSolverLinearTypeSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverLinearTypeSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverLinearTypeSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the absolute tolerance for a Newton solver identified by an user number for C.
+  FUNCTION CMISSSolverNewtonAbsoluteToleranceSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex,AbsoluteTolerance) BIND(C, NAME = "CMISSSolverNewtonAbsoluteToleranceSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton solver to set the absolute tolerance for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the absolute tolerance for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the absolute tolerance for, for C.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: AbsoluteTolerance !<The absolute tolerance for the Newton solver to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverNewtonAbsoluteToleranceSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverNewtonAbsoluteToleranceSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverNewtonAbsoluteToleranceSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,AbsoluteTolerance, &
+          & CMISSSolverNewtonAbsoluteToleranceSetCNum)
+      ELSE
+        CMISSSolverNewtonAbsoluteToleranceSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonAbsoluteToleranceSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonAbsoluteToleranceSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the absolute tolerance for a Newton solver identified by an object for C.
+  FUNCTION CMISSSolverNewtonAbsoluteToleranceSetCPtr(SolverPtr,AbsoluteTolerance) BIND(C, NAME = &
+    & "CMISSSolverNewtonAbsoluteToleranceSet")
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the Newton solver to set the iterative solver for.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: AbsoluteTolerance !<The absolute tolerance for the Newton solver to set for C.
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverNewtonAbsoluteToleranceSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverNewtonAbsoluteToleranceSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverNewtonAbsoluteToleranceSet(Solver, AbsoluteTolerance, CMISSSolverNewtonAbsoluteToleranceSetCPtr)
+      ELSE
+        CMISSSolverNewtonAbsoluteToleranceSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonAbsoluteToleranceSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonAbsoluteToleranceSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the Jacobian calculation type for a Newton solver identified by an user number.
+  FUNCTION CMISSSolverNewtonJacobianCalculationTypeSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex,JacobianCalculationType) BIND(C, NAME = "CMISSSolverNewtonJacobianCalculationTypeSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton solver to set the Jacobian calculation type for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the Jacobian calculation type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the Jacobian calculation type for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: JacobianCalculationType !<The Jacobian calculation type for the Newton solver to set for C. \see OPENCMISS_JacobianCalculationTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverNewtonJacobianCalculationTypeSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverNewtonJacobianCalculationTypeSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverNewtonJacobianCalculationTypeSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+          & JacobianCalculationType,CMISSSolverNewtonJacobianCalculationTypeSetCNum)
+      ELSE
+        CMISSSolverNewtonJacobianCalculationTypeSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonJacobianCalculationTypeSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonJacobianCalculationTypeSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the Jacobian calculation type for a Newton solver identified by an object for C.
+  FUNCTION CMISSSolverNewtonJacobianCalculationTypeSetCPtr(SolverPtr,JacobianCalculationType) BIND(C, NAME = &
+    & "CMISSSolverNewtonJacobianCalculationTypeSet")
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the Newton solver to set the Jacobian calculation type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: JacobianCalculationType !<The Jacobian calculation type for the Newton solver to set for C. \see OPENCMISS_JacobianCalculationTypes
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverNewtonJacobianCalculationTypeSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverNewtonJacobianCalculationTypeSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverNewtonJacobianCalculationTypeSet(Solver, JacobianCalculationType, &
+          &  CMISSSolverNewtonJacobianCalculationTypeSetCPtr)
+      ELSE
+        CMISSSolverNewtonJacobianCalculationTypeSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonJacobianCalculationTypeSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonJacobianCalculationTypeSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the linear solver associated with a Newton solver identified by an user number for C
+  FUNCTION CMISSSolverNewtonLinearSolverGetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex,LinearSolverIndex) BIND(C, NAME = "CMISSSolverNewtonLinearSolverGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton linear solver to get the Newton linear solver for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to get for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to get the Newton linear solver for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to get the Newton linear solver for, for C.
+    INTEGER(C_INT), INTENT(OUT) :: LinearSolverIndex !<On return, the Newton linear solver index for C
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverNewtonLinearSolverGetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverNewtonLinearSolverGetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverNewtonLinearSolverGet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+          & LinearSolverIndex,CMISSSolverNewtonLinearSolverGetCNum)
+      ELSE
+        CMISSSolverNewtonLinearSolverGetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonLinearSolverGetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonLinearSolverGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the linear solver associated with a Newton solver identified by an object for C.
+  FUNCTION CMISSSolverNewtonLinearSolverGetCPtr(SolverPtr,LinearSolverPtr) BIND(C, NAME ="CMISSSolverNewtonLinearSolverGet")
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the Newton line search solver to set the Jacobian calculation type for.
+    TYPE(C_PTR), INTENT(INOUT) :: LinearSolverPtr !<On return, C pointer to the Newton linear solver.
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverNewtonLinearSolverGetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+    TYPE(CMISSSolverType), POINTER :: LinearSolver
+
+    CMISSSolverNewtonLinearSolverGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        IF(C_ASSOCIATED(LinearSolverPtr)) THEN
+          CALL C_F_POINTER(LinearSolverPtr,LinearSolver)
+          IF(ASSOCIATED(LinearSolver)) THEN
+            CALL CMISSSolverNewtonLinearSolverGet(Solver, LinearSolver, CMISSSolverNewtonLinearSolverGetCPtr)
+            IF(ASSOCIATED(LinearSolver)) THEN
+              LinearSolverPtr = C_LOC(LinearSolver)
+            ELSE
+              CMISSSolverNewtonLinearSolverGetCPtr = CMISSPointerIsNULL
+            ENDIF
+          ELSE
+            CMISSSolverNewtonLinearSolverGetCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSSolverNewtonLinearSolverGetCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSSolverNewtonLinearSolverGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonLinearSolverGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonLinearSolverGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the line search alpha for a Newton line search solver identified by an user number for C.
+  FUNCTION CMISSSolverNewtonLineSearchAlphaSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex,Alpha) BIND(C, NAME = "CMISSSolverNewtonLineSearchAlphaSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton line search solver to set the alpha for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the alpha for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the alpha for, for C.
+    REAL(C_DOUBLE), INTENT(IN) :: Alpha !<The alpha for the Newton line search solver to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverNewtonLineSearchAlphaSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverNewtonLineSearchAlphaSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverNewtonLineSearchAlphaSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+          & Alpha,CMISSSolverNewtonLineSearchAlphaSetCNum)
+      ELSE
+        CMISSSolverNewtonLineSearchAlphaSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonLineSearchAlphaSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonLineSearchAlphaSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the line search alpha for a Newton line search solver identified by an object.
+  FUNCTION CMISSSolverNewtonLineSearchAlphaSetCPtr(SolverPtr,Alpha) BIND(C, NAME ="CMISSSolverNewtonLineSearchAlphaSet")
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the Newton line search solver to set the Jacobian calculation type for.
+    REAL(C_DOUBLE), INTENT(IN) :: Alpha !<The alpha for the Newton line search solver to set for C.
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverNewtonLineSearchAlphaSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverNewtonLineSearchAlphaSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverNewtonLineSearchAlphaSet(Solver,Alpha,CMISSSolverNewtonLineSearchAlphaSetCPtr)
+      ELSE
+        CMISSSolverNewtonLineSearchAlphaSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonLineSearchAlphaSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonLineSearchAlphaSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the line search maximum step for a Newton line search solver identified by an user number for C.
+  FUNCTION CMISSSolverNewtonLineSearchMaxStepSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,&
+    & SolverIndex,MaxStep) BIND(C, NAME = "CMISSSolverNewtonLineSearchMaxStepSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton line search solver to set the maximum step for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the maximum step for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the maximum step for, for C.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: MaxStep !<The maximum step for the Newton line search solver to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverNewtonLineSearchMaxStepSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverNewtonLineSearchMaxStepSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverNewtonLineSearchMaxStepSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+          & MaxStep,CMISSSolverNewtonLineSearchMaxStepSetCNum)
+      ELSE
+        CMISSSolverNewtonLineSearchMaxStepSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonLineSearchMaxStepSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonLineSearchMaxStepSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the line search maximum step for a Newton line search solver identified by an object for C.
+  FUNCTION CMISSSolverNewtonLineSearchMaxStepSetCPtr(SolverPtr,MaxStep) BIND(C, NAME ="CMISSSolverNewtonLineSearchMaxStepSet")
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the Newton line search solver to set the maximum step for.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: MaxStep !<The maximum step for the Newton line search solver to set for C.
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverNewtonLineSearchMaxStepSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverNewtonLineSearchMaxStepSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverNewtonLineSearchMaxStepSet(Solver,MaxStep,CMISSSolverNewtonLineSearchMaxStepSetCPtr)
+      ELSE
+        CMISSSolverNewtonLineSearchMaxStepSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonLineSearchMaxStepSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonLineSearchMaxStepSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the line search step tolerance for a Newton line search solver identified by an user number for C.
+  FUNCTION CMISSSolverNewtonLineSearchStepTolSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex,StepTol) BIND(C, NAME = "CMISSSolverNewtonLineSearchStepTolSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton line search solver to set the step tolerance for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the step tolerance for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the step tolerance for, for C.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: StepTol !<The step tolerance for the Newton line search solver to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverNewtonLineSearchStepTolSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverNewtonLineSearchStepTolSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverNewtonLineSearchStepTolSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+          & StepTol,CMISSSolverNewtonLineSearchStepTolSetCNum)
+      ELSE
+        CMISSSolverNewtonLineSearchStepTolSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonLineSearchStepTolSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonLineSearchStepTolSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the line search step tolerance for a Newton line search solver identified by an object for C.
+  FUNCTION CMISSSolverNewtonLineSearchStepTolSetCPtr(SolverPtr,StepTol) BIND(C, NAME ="CMISSSolverNewtonLineSearchStepTolSet")
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the Newton line search solver to set the step tolerance for.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: StepTol !<The step tolerance for the Newton line search solver to set for C.
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverNewtonLineSearchStepTolSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverNewtonLineSearchStepTolSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverNewtonLineSearchStepTolSet(Solver,StepTol,CMISSSolverNewtonLineSearchStepTolSetCPtr)
+      ELSE
+        CMISSSolverNewtonLineSearchStepTolSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonLineSearchStepTolSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonLineSearchStepTolSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of line search for a Newton line search solver identified by an user number for C.
+  FUNCTION CMISSSolverNewtonLineSearchTypeSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex,LineSearchType) BIND(C, NAME = "CMISSSolverNewtonLineSearchTypeSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton line search solver to set the line search type for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the line search type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the line search type for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: LineSearchType !<The type of line search for the Newton line search solver to set for C. \see OPENCMISS_NewtonLineSearchTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverNewtonLineSearchTypeSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverNewtonLineSearchTypeSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverNewtonLineSearchTypeSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+          & LineSearchType,CMISSSolverNewtonLineSearchTypeSetCNum)
+      ELSE
+        CMISSSolverNewtonLineSearchTypeSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonLineSearchTypeSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonLineSearchTypeSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of line search for a Newton line search solver identified by an object for C.
+  FUNCTION CMISSSolverNewtonLineSearchTypeSetCPtr(SolverPtr,LineSearchType) BIND(C, NAME ="CMISSSolverNewtonLineSearchTypeSet")
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the Newton line search solver to set the line search type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: LineSearchType !<The type of line search for the Newton line search solver to set for C. \see OPENCMISS_NewtonLineSearchTypes
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverNewtonLineSearchTypeSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverNewtonLineSearchTypeSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverNewtonLineSearchTypeSet(Solver,LineSearchType,CMISSSolverNewtonLineSearchTypeSetCPtr)
+      ELSE
+        CMISSSolverNewtonLineSearchTypeSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonLineSearchTypeSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonLineSearchTypeSetCPtr
+
+  !  &
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the maximum number of function evaluations for a Newton solver identified by an user number for C.
+  FUNCTION CMISSSolverNewtonMaximumFunctionEvaluationsSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize, &
+    & ControlLoopIdentifiersPtr,SolverIndex, MaximumFunctionEvaluations) BIND(C, NAME =  &
+      & "CMISSSolverNewtonMaximumFunctionEvaluationsSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton solver to set the maximum function evaluations for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the maximum function evaluations for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the line search type for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: MaximumFunctionEvaluations !<The maximum number of function evaluations for the Newton solver to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverNewtonMaximumFunctionEvaluationsSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverNewtonMaximumFunctionEvaluationsSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverNewtonMaximumFunctionEvaluationsSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+          & MaximumFunctionEvaluations,CMISSSolverNewtonMaximumFunctionEvaluationsSetCNum)
+      ELSE
+        CMISSSolverNewtonMaximumFunctionEvaluationsSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonMaximumFunctionEvaluationsSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonMaximumFunctionEvaluationsSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the maximum number of function evaluations for a Newton solver identified by an object for C.
+  FUNCTION CMISSSolverNewtonMaximumFunctionEvaluationsSetCPtr(SolverPtr,MaximumFunctionEvaluations) BIND(C, NAME = &
+    & "CMISSSolverNewtonMaximumFunctionEvaluationsSet")
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the Newton solver to set the maximum number of function evaluations for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: MaximumFunctionEvaluations !<The maximum number of function evaluations for the Newton solver to set for C.
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverNewtonMaximumFunctionEvaluationsSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverNewtonMaximumFunctionEvaluationsSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverNewtonMaximumFunctionEvaluationsSet(Solver,MaximumFunctionEvaluations, &
+          & CMISSSolverNewtonMaximumFunctionEvaluationsSetCPtr)
+      ELSE
+        CMISSSolverNewtonMaximumFunctionEvaluationsSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonMaximumFunctionEvaluationsSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonMaximumFunctionEvaluationsSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the maximum number of iterations for a Newton solver identified by an user number.
+  FUNCTION CMISSSolverNewtonMaximumIterationsSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex,MaximumIterations) BIND(C, NAME = "CMISSSolverNewtonMaximumIterationsSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton solver to set the maximum number of iterations for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the maximum number of iterations for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the line search type for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: MaximumIterations !<The maximum number of iterations for the Newton solver to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverNewtonMaximumIterationsSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverNewtonMaximumIterationsSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverNewtonMaximumIterationsSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+          & MaximumIterations,CMISSSolverNewtonMaximumIterationsSetCNum)
+      ELSE
+        CMISSSolverNewtonMaximumIterationsSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonMaximumIterationsSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonMaximumIterationsSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the maximum number of iterations for a Newton solver identified by an object for C.
+  FUNCTION CMISSSolverNewtonMaximumIterationsSetCPtr(SolverPtr,MaximumIterations) BIND(C, NAME = &
+    & "CMISSSolverNewtonMaximumIterationsSet")
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the Newton solver to set the maximum number of iterations for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: MaximumIterations !<The maximum number of iterations for the Newton solver to set for C.
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverNewtonMaximumIterationsSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverNewtonMaximumIterationsSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverNewtonMaximumIterationsSet(Solver,MaximumIterations,CMISSSolverNewtonMaximumIterationsSetCPtr)
+      ELSE
+        CMISSSolverNewtonMaximumIterationsSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonMaximumIterationsSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonMaximumIterationsSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the relative tolerance for a Newton solver identified by an user number.
+  FUNCTION CMISSSolverNewtonRelativeToleranceSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex,RelativeTolerance) BIND(C, NAME = "CMISSSolverNewtonRelativeToleranceSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton solver to set the relative tolerance for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the relative tolerance for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the relative tolerance for, for C.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: RelativeTolerance !<The relative tolerance for the Newton solver to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverNewtonRelativeToleranceSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverNewtonRelativeToleranceSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverNewtonRelativeToleranceSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+          & RelativeTolerance,CMISSSolverNewtonRelativeToleranceSetCNum)
+      ELSE
+        CMISSSolverNewtonRelativeToleranceSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonRelativeToleranceSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonRelativeToleranceSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the relative tolerance for a Newton solver identified by an object for C.
+  FUNCTION CMISSSolverNewtonRelativeToleranceSetCPtr(SolverPtr,RelativeTolerance) BIND(C, NAME = &
+    & "CMISSSolverNewtonRelativeToleranceSet")
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the Newton solver to set the relative tolerance for.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: RelativeTolerance !<The relative tolerance for the Newton solver to set for C.
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverNewtonRelativeToleranceSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverNewtonRelativeToleranceSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverNewtonRelativeToleranceSet(Solver,RelativeTolerance,CMISSSolverNewtonRelativeToleranceSetCPtr)
+      ELSE
+        CMISSSolverNewtonRelativeToleranceSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonRelativeToleranceSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonRelativeToleranceSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the solution tolerance for a Newton solver identified by an user number.
+  FUNCTION CMISSSolverNewtonSolutionToleranceSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex,SolutionTolerance) BIND(C, NAME = "CMISSSolverNewtonSolutionToleranceSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton solver to set the solution tolerance for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the solution tolerance for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the solution tolerance for, for C.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: SolutionTolerance !<The absolute tolerance for the Newton solver to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverNewtonSolutionToleranceSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverNewtonSolutionToleranceSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverNewtonSolutionToleranceSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+          & SolutionTolerance,CMISSSolverNewtonSolutionToleranceSetCNum)
+      ELSE
+        CMISSSolverNewtonSolutionToleranceSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonSolutionToleranceSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonSolutionToleranceSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the solution tolerance for a Newton solver identified by an object for C.
+  FUNCTION CMISSSolverNewtonSolutionToleranceSetCPtr(SolverPtr,SolutionTolerance) BIND(C, NAME = &
+    & "CMISSSolverNewtonSolutionToleranceSet")
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the iNewton solver to set the solution tolerance for.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: SolutionTolerance !<The solution tolerance for the Newton solver to set for C.
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverNewtonSolutionToleranceSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverNewtonSolutionToleranceSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverNewtonSolutionToleranceSet(Solver,SolutionTolerance,CMISSSolverNewtonSolutionToleranceSetCPtr)
+      ELSE
+        CMISSSolverNewtonSolutionToleranceSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonSolutionToleranceSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonSolutionToleranceSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the delta0 for a Newton trust region solver identified by an user number for C.
+  FUNCTION CMISSSolverNewtonTrustRegionDelta0SetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex,Delta0) BIND(C, NAME = "CMISSSolverNewtonTrustRegionDelta0SetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton trust region solver to set the delta0 for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the delta0 for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the delta0 for, for C.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: Delta0 !<The delta0 for the Newton trust region solver to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverNewtonTrustRegionDelta0SetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverNewtonTrustRegionDelta0SetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverNewtonTrustRegionDelta0Set(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+          & Delta0,CMISSSolverNewtonTrustRegionDelta0SetCNum)
+      ELSE
+        CMISSSolverNewtonTrustRegionDelta0SetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonTrustRegionDelta0SetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonTrustRegionDelta0SetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the delta0 for a Newton trust region solver identified by an object.
+  FUNCTION CMISSSolverNewtonTrustRegionDelta0SetCPtr(SolverPtr,Delta0) BIND(C, NAME = &
+    & "CMISSSolverNewtonTrustRegionDelta0Set")
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the Newton trust region solver to set the delta0 for.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: Delta0 !<The delta0 for the Newton trust region solver to set for C.
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverNewtonTrustRegionDelta0SetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverNewtonTrustRegionDelta0SetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverNewtonTrustRegionDelta0Set(Solver,Delta0,CMISSSolverNewtonTrustRegionDelta0SetCPtr)
+      ELSE
+        CMISSSolverNewtonTrustRegionDelta0SetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonTrustRegionDelta0SetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonTrustRegionDelta0SetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the tolerance for a Newton trust region solver identified by an user number.
+  FUNCTION CMISSSolverNewtonTrustRegionToleranceSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex,Tolerance) BIND(C, NAME = "CMISSSolverNewtonTrustRegionToleranceSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton trust region solver to set the tolerance for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the tolerance for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the tolerance for, for C.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: Tolerance !<The tolerance for the Newton trust region solver to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverNewtonTrustRegionToleranceSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverNewtonTrustRegionToleranceSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverNewtonTrustRegionToleranceSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+          & Tolerance,CMISSSolverNewtonTrustRegionToleranceSetCNum)
+      ELSE
+        CMISSSolverNewtonTrustRegionToleranceSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonTrustRegionToleranceSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonTrustRegionToleranceSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the tolerance for a Newton trust region solver identified by an object for C.
+  FUNCTION CMISSSolverNewtonTrustRegionToleranceSetCPtr(SolverPtr,Tolerance) BIND(C, NAME = &
+    & "CMISSSolverNewtonTrustRegionToleranceSet")
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the Newton trust region solver to set the tolerance for.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: Tolerance !<The tolerance for the Newton trust region solver to set for C.
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverNewtonTrustRegionToleranceSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverNewtonTrustRegionToleranceSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverNewtonTrustRegionToleranceSet(Solver,Tolerance,CMISSSolverNewtonTrustRegionToleranceSetCPtr)
+      ELSE
+        CMISSSolverNewtonTrustRegionToleranceSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonTrustRegionToleranceSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonTrustRegionToleranceSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of a Newton solver identified by an user number for C.
+  FUNCTION CMISSSolverNewtonTypeSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex,NewtonSolveType) BIND(C, NAME = "CMISSSolverNewtonTypeSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the Newton solver to set the type for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the type for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NewtonSolveType !<The type of the Newton solver to set for C. \see OPENCMISS_NewtonSolverTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverNewtonTypeSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverNewtonTypeSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverNewtonTypeSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,NewtonSolveType,&
+          & CMISSSolverNewtonTypeSetCNum)
+      ELSE
+        CMISSSolverNewtonTypeSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonTypeSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonTypeSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of a Newton solver identified by an object for C.
+  FUNCTION CMISSSolverNewtonTypeSetCPtr(SolverPtr,NewtonSolveType) BIND(C, NAME = "CMISSSolverNewtonTypeSet")
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the Newton solver to set the type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NewtonSolveType !<The type of the Newton solver to set for C. \see OPENCMISS_NewtonSolverTypes
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverNewtonTypeSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverNewtonTypeSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverNewtonTypeSet(Solver,NewtonSolveType,CMISSSolverNewtonTypeSetCPtr)
+      ELSE
+        CMISSSolverNewtonTypeSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNewtonTypeSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNewtonTypeSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of a nonlinear solver identified by an user number for C.
+  FUNCTION CMISSSolverNonlinearTypeSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex,NonlinearSolveType) BIND(C, NAME = "CMISSSolverNonlinearTypeSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the nonlinear solver to set the type for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the type for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NonlinearSolveType !<The type of the nonlinear solver to set for C. \see OPENCMISS_NonlinearSolverTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverNonlinearTypeSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverNonlinearTypeSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverNonlinearTypeSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,NonlinearSolveType,&
+          & CMISSSolverNonlinearTypeSetCNum)
+      ELSE
+        CMISSSolverNonlinearTypeSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNonlinearTypeSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNonlinearTypeSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of a nonlinear solver identified by an object for C.
+  FUNCTION CMISSSolverNonlinearTypeSetCPtr(SolverPtr,NonlinearSolveType) BIND(C, NAME = "CMISSSolverNonlinearTypeSet")
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the nonlinear solver to set the type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NonlinearSolveType !<The type of the nonlinear solver to set for C. \see OPENCMISS_NonlinearSolverTypes
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverNonlinearTypeSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverNonlinearTypeSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverNonlinearTypeSet(Solver,NonlinearSolveType,CMISSSolverNonlinearTypeSetCPtr)
+      ELSE
+        CMISSSolverNonlinearTypeSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverNonlinearTypeSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverNonlinearTypeSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of output for a solver identified by an user number for C.
+  FUNCTION CMISSSolverOutputTypeSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex,OutputType) BIND(C, NAME = "CMISSSolverOutputTypeSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the nonlinear solver to set the type for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers to set for, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the type for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: OutputType !<The type of solver output to set for C. \see OPENCMISS_SolverOutputTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverOutputTypeSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverOutputTypeSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverOutputTypeSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,OutputType,&
+          & CMISSSolverOutputTypeSetCNum)
+      ELSE
+        CMISSSolverOutputTypeSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverOutputTypeSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverOutputTypeSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the output type for a solver identified by an object for C.
+  FUNCTION CMISSSolverOutputTypeSetCPtr(SolverPtr,OutputType) BIND(C, NAME = "CMISSSolverOutputTypeSet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the solver to set the output type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: OutputType !<The type of solver output to set for C. \see OPENCMISS_SolverOutputTypes
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverOutputTypeSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+
+    CMISSSolverOutputTypeSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        CALL CMISSSolverOutputTypeSet(Solver,OutputType,CMISSSolverOutputTypeSetCPtr)
+      ELSE
+        CMISSSolverOutputTypeSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverOutputTypeSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverOutputTypeSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the solver equations for a solver identified by an user number.
+  FUNCTION CMISSSolverSolverEquationsGetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex,SolverEquationsPtr) BIND(C, NAME = "CMISSSolverSolverEquationsGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to get the solver equations for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to get the solver equations for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to get the solver equations for, for C.
+    TYPE(C_PTR), INTENT(INOUT) :: SolverEquationsPtr !<On return, C pointer to the solver equations for the solver.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverSolverEquationsGetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+    TYPE(CMISSSolverEquationsType), POINTER :: SolverEquations
+
+    CMISSSolverSolverEquationsGetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        IF(C_ASSOCIATED(SolverEquationsPtr)) THEN
+          CALL C_F_POINTER(SolverEquationsPtr, SolverEquations)
+          IF(ASSOCIATED(SolverEquations)) THEN
+            CALL CMISSSolverSolverEquationsGet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,SolverEquations,&
+              & CMISSSolverSolverEquationsGetCNum)
+            IF(ASSOCIATED(SolverEquations)) THEN
+              SolverEquationsPtr = C_LOC(SolverEquations)
+            ELSE
+              CMISSSolverSolverEquationsGetCNum = CMISSPointerIsNULL
+            ENDIF
+          ELSE
+            CMISSSolverSolverEquationsGetCNum = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSSolverSolverEquationsGetCNum = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSSolverSolverEquationsGetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverSolverEquationsGetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverSolverEquationsGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the solver equations for a solver identified by an object for C.
+  FUNCTION CMISSSolverSolverEquationsGetCPtr(SolverPtr,SolverEquationsPtr) BIND(C, NAME = "CMISSSolverSolverEquationsGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the solver to set the output type for.
+    TYPE(C_PTR), INTENT(INOUT) :: SolverEquationsPtr !<On return, C pointer to the solver equations for the solver.
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverSolverEquationsGetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+    TYPE(CMISSSolverEquationsType), POINTER :: SolverEquations
+
+    CMISSSolverSolverEquationsGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        IF(C_ASSOCIATED(SolverEquationsPtr)) THEN
+          CALL C_F_POINTER(SolverEquationsPtr, SolverEquations)
+          IF(ASSOCIATED(SolverEquations)) THEN
+            CALL CMISSSolverSolverEquationsGet(Solver,SolverEquations,CMISSSolverSolverEquationsGetCPtr)
+            IF(ASSOCIATED(SolverEquations)) THEN
+              SolverEquationsPtr = C_LOC(SolverEquations)
+            ELSE
+              CMISSSolverSolverEquationsGetCPtr = CMISSPointerIsNULL
+            ENDIF
+          ELSE
+            CMISSSolverSolverEquationsGetCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSSolverSolverEquationsGetCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSSolverSolverEquationsGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverSolverEquationsGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverSolverEquationsGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Adds equations sets to solver equations identified by an user number.
+  FUNCTION CMISSSolverEquationsEquationsSetAddCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex,RegionUserNumber,EquationsSetUserNumber,EquationsSetIndex) BIND(C, NAME = &
+      & "CMISSSolverEquationsEquationsSetAddNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to add the equations set for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to add the equations set for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to add the equations set for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region with the equations set to add for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to add for C.
+    INTEGER(C_INT), INTENT(OUT) :: EquationsSetIndex !<On return, the index of the added equations set in the solver equations for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverEquationsEquationsSetAddCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverEquationsEquationsSetAddCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverEquationsEquationsSetAdd(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,RegionUserNumber,&
+          & EquationsSetUserNumber,EquationsSetIndex,CMISSSolverEquationsEquationsSetAddCNum)
+      ELSE
+        CMISSSolverEquationsEquationsSetAddCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverEquationsEquationsSetAddCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverEquationsEquationsSetAddCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Adds equations sets to solver equations identified by an object for C.
+  FUNCTION CMISSSolverEquationsEquationsSetAddCPtr(SolverEquationsPtr,EquationsSetPtr,EquationsSetIndex) BIND(C, NAME = &
+    & "CMISSSolverEquationsEquationsSetAdd")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverEquationsPtr !<C pointer to the solver equations to add the equations set for.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: EquationsSetPtr !<C pointer to the equations set to add.
+    INTEGER(C_INT), INTENT(OUT) :: EquationsSetIndex !<On return, the index of the added equations set in the solver equations, for C.
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverEquationsEquationsSetAddCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverEquationsType), POINTER :: SolverEquations
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSSolverEquationsEquationsSetAddCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverEquationsPtr)) THEN
+      CALL C_F_POINTER(SolverEquationsPtr,SolverEquations)
+      IF(ASSOCIATED(SolverEquations)) THEN
+        IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+          CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+          IF(ASSOCIATED(EquationsSet)) THEN
+            CALL CMISSSolverEquationsEquationsSetAdd(SolverEquations,EquationsSet,EquationsSetIndex, &
+              & CMISSSolverEquationsEquationsSetAddCPtr)
+          ELSE
+            CMISSSolverEquationsEquationsSetAddCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSSolverEquationsEquationsSetAddCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSSolverEquationsEquationsSetAddCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverEquationsEquationsSetAddCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverEquationsEquationsSetAddCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the sparsity type for solver equations identified by an user number, for C.
+  FUNCTION CMISSSolverEquationsSparsityTypeSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex,SparsityType) BIND(C, NAME = "CMISSSolverEquationsSparsityTypeSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the sparsity type for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to set the sparsity type for.
+    INTEGER(C_INT), INTENT(IN) :: SolverIndex !<The solver index to set the sparsity type for, for C.
+    INTEGER(C_INT), INTENT(IN) :: SparsityType !<The sparsity type to set for C. \see OPENCMISS_SolverEquationsSparsityTypes
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverEquationsSparsityTypeSetCNum !<Error code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverEquationsSparsityTypeSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverEquationsSparsityTypeSet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,SparsityType, &
+          & CMISSSolverEquationsSparsityTypeSetCNum)
+      ELSE
+        CMISSSolverEquationsSparsityTypeSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverEquationsSparsityTypeSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverEquationsSparsityTypeSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the sparsity type for solver equations identified by an object for C.
+  FUNCTION CMISSSolverEquationsSparsityTypeSetCPtr(SolverEquationsPtr,SparsityType) BIND(C, NAME =  &
+    & "CMISSSolverEquationsSparsityTypeSet")
+
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverEquationsPtr !<C pointer to the solver equations to set the sparsity type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SparsityType !<The sparsity type to set for C. \see OPENCMISS_SolverEquationsSparsityTypes
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverEquationsSparsityTypeSetCPtr
+    !Local variables
+    TYPE(CMISSSolverEquationsType), POINTER :: SolverEquations
+
+    CMISSSolverEquationsSparsityTypeSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverEquationsPtr)) THEN
+      CALL C_F_POINTER(SolverEquationsPtr,SolverEquations)
+      IF(ASSOCIATED(SolverEquations)) THEN
+        CALL CMISSSolverEquationsSparsityTypeSet(SolverEquations,SparsityType,CMISSSolverEquationsSparsityTypeSetCPtr)
+      ELSE
+        CMISSSolverEquationsSparsityTypeSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverEquationsSparsityTypeSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverEquationsSparsityTypeSetCPtr
+  !
+  !================================================================================================================================
+  !
+
 
 END MODULE OPENCMISS_C
