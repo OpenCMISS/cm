@@ -2264,6 +2264,7 @@ CONTAINS
           CALL FLAG_ERROR("Gauss Laguerre quadrature type not implemented",ERR,ERROR,*999)
         CASE(BASIS_GUASS_HERMITE_QUADRATURE)
           CALL FLAG_ERROR("Gauss Hermite quadrature type not implemented",ERR,ERROR,*999)
+
         CASE(BASIS_GAUSS_SIMPLEX_QUADRATURE)
           !Allocate one scheme and add it to the list of schemes
           ALLOCATE(NEW_SCHEME,STAT=ERR)
@@ -2821,7 +2822,7 @@ CONTAINS
       ELSE
         IF(ASSOCIATED(BASIS%QUADRATURE%BASIS)) THEN
           IF(BASIS%TYPE==BASIS_SIMPLEX_TYPE) THEN !Relax this i.e., use this to set gauss points in each direction for LHTP's???
-            IF(ORDER>1.AND.ORDER<5) THEN
+            IF(ORDER>1.AND.ORDER<=5) THEN
               BASIS%QUADRATURE%GAUSS_ORDER=ORDER
             ELSE
               LOCAL_ERROR="An order value of "//TRIM(NUMBER_TO_VSTRING(ORDER,"*",ERR,ERROR))// &
@@ -4786,7 +4787,6 @@ CONTAINS
   !>Reference: Liu, Yen and Vinokur, Marcel. "Exact Integrations of Polynomials and Symmetric Quadrature Formulas
   !> over Arbitrary Polyhedral Grids", Journal of Computational Physics, 140:122-147 (1998).
   !>
-  !> \todo Fix the Gauss points for 5th order tetrahedra. There should be 19 of them.
   SUBROUTINE GAUSS_SIMPLEX(ORDER,NUMBER_OF_VERTICES,N,X,W,ERR,ERROR,*)
 
     !Argument variables
@@ -5363,14 +5363,13 @@ CONTAINS
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         CASE(5)
-          !!!CHECK WHY NOT 19 gpts
-
           N=14
           IF(SIZE(X,2)>=N) THEN
             IF(SIZE(W,1)>=N) THEN
-              ACOS_ARG=67.0_DP*SQRT(79.0_DP)/24964.0_DP+TWOPI
+              ACOS_ARG=67.0_DP*SQRT(79.0_DP)/24964.0_DP
               !!todo CHECK THIS!!!
-              LAMBDA=4.0_DP/27.0_DP*(4.0_DP*SQRT(79.0_DP)*COS((ACOS(ACOS_ARG)/3.0_DP)+71.0_DP))
+              LAMBDA=4.0_DP/27.0_DP*(4.0_DP*SQRT(79.0_DP)*COS(((ACOS(ACOS_ARG)+TWOPI)/3.0_DP))+71.0_DP)
+
               ALPHA_1=(SQRT(9.0_DP*LAMBDA*LAMBDA-248.0_DP*LAMBDA+1680.0_DP)+28.0_DP-3.0_DP*LAMBDA)/ &
                 & (112.0_DP-10.0_DP*LAMBDA)
               ALPHA_2=(-1.0_DP*SQRT(9.0_DP*LAMBDA*LAMBDA-248.0_DP*LAMBDA+1680.0_DP)+28.0_DP-3.0_DP*LAMBDA)/ &
@@ -6058,7 +6057,7 @@ CONTAINS
       CASE(3)
         SIMPLEX_CUBIC_EVALUATE_DP=3.0_DP/2.0_DP*(6.0_DP*XL-1) !3/2.(6L-1)
       CASE(4)
-        SIMPLEX_CUBIC_EVALUATE_DP=XL*XL-9.0_DP*XL+1.0_DP !L^2-9L+1
+        SIMPLEX_CUBIC_EVALUATE_DP=13.5_DP*XL*XL-9.0_DP*XL+1.0_DP !27/2.L^2-9L+1
       CASE DEFAULT
         CALL FLAG_ERROR("Invalid node index.",ERR,ERROR,*999)
       END SELECT
