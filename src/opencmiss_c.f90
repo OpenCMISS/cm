@@ -73,6 +73,8 @@ MODULE OPENCMISS_C
 
   !Interfaces
 
+  PUBLIC CMISSFinaliseC,CMISSInitialiseCNum,CMISSInitialiseCPtr
+
   PUBLIC CMISSBasisTypeFinaliseC, CMISSBasisTypeInitialiseC
 
   PUBLIC CMISSBoundaryConditionsTypeFinaliseC, CMISSBoundaryConditionsTypeInitialiseC
@@ -87,9 +89,645 @@ MODULE OPENCMISS_C
 
   PUBLIC CMISSEquationsSetTypeFinaliseC, CMISSEquationsSetTypeInitialiseC
 
+  PUBLIC CMISSFieldTypeFinaliseC, CMISSFieldTypeInitialiseC
+
+  PUBLIC CMISSFieldsTypeCreateC, CMISSFieldsTypeFinaliseC, CMISSFieldsTypeInitialiseC
+
+  PUBLIC CMISSGeneratedMeshTypeFinaliseC, CMISSGeneratedMeshTypeInitialiseC
+
+  PUBLIC CMISSHistoryTypeFinaliseC, CMISSHistoryTypeInitialiseC
+
+  PUBLIC CMISSMeshTypeFinaliseC, CMISSMeshTypeInitialiseC
+
+  PUBLIC CMISSMeshElementsTypeFinaliseC, CMISSMeshElementsTypeInitialiseC
+
+  PUBLIC CMISSNodesTypeFinaliseC, CMISSNodesTypeInitialiseC
+
+  PUBLIC CMISSProblemTypeFinaliseC, CMISSProblemTypeInitialiseC
+
+  PUBLIC CMISSQuadratureTypeFinaliseC, CMISSQuadratureTypeInitialiseC
+
   PUBLIC CMISSRegionTypeFinaliseC, CMISSRegionTypeInitialiseC
-  
-  PUBLIC CMISSFinaliseC,CMISSInitialiseCNum,CMISSInitialiseCPtr
+
+  PUBLIC CMISSSolverTypeFinaliseC, CMISSSolverTypeInitialiseC
+
+  PUBLIC CMISSSolverEquationsTypeFinaliseC, CMISSSolverEquationsTypeInitialiseC
+
+!!==================================================================================================================================
+!!
+!! ANALYTIC_ANALYSIS_ROUTINES
+!!
+!!==================================================================================================================================
+
+ PUBLIC CMISSAnalyticAnalysisOutputCNum, CMISSAnalyticAnalysisOutputCPtr
+
+ PUBLIC CMISSAnalyticAnalysisNodeAbsoluteErrorGetCNum, CMISSAnalyticAnalysisNodeAbsoluteErrorGetCPtr
+
+!!==================================================================================================================================
+!!
+!! BASE_ROUTINES
+!!
+!!==================================================================================================================================
+
+ PUBLIC CMISSDiagnosticsSetOffC, CMISSDiagnosticsSetOnC
+
+ PUBLIC CMISSOutputSetOffC, CMISSOutputSetOnC
+
+ PUBLIC CMISSTimingSetOffC, CMISSTimingSetOnC
+
+ PUBLIC CMISSTimingSummaryOutputC
+
+!!==================================================================================================================================
+!!
+!! BASIS_ROUTINES
+!!
+!!==================================================================================================================================
+
+ PUBLIC CMISSBasisCollapsedXiGetCNum, CMISSBasisCollapsedXiGetCPtr
+
+ PUBLIC CMISSBasisCollapsedXiSetCNum, CMISSBasisCollapsedXiSetCPtr
+
+ PUBLIC CMISSBasisCreateFinishCNum, CMISSBasisCreateFinishCPtr
+
+ PUBLIC CMISSBasisCreateStartCNum, CMISSBasisCreateStartCPtr
+
+ PUBLIC CMISSBasisDestroyCNum, CMISSBasisDestroyCPtr
+
+ PUBLIC CMISSBasisInterpolationXiGetCNum, CMISSBasisInterpolationXiGetCPtr
+
+ PUBLIC CMISSBasisInterpolationXiSetCNum, CMISSBasisInterpolationXiSetCPtr
+
+ PUBLIC CMISSBasisNumberOfLocalNodesGetCNum, CMISSBasisNumberOfLocalNodesGetCPtr
+
+ PUBLIC CMISSBasisNumberOfXiGetCNum, CMISSBasisNumberOfXiGetCPtr
+
+ PUBLIC CMISSBasisNumberOfXiSetCNum, CMISSBasisNumberOfXiSetCPtr
+
+ PUBLIC CMISSBasisQuadratureNumberOfGaussXiGetCNum,CMISSBasisQuadratureNumberOfGaussXiGetCPtr
+
+ PUBLIC CMISSBasisQuadratureNumberOfGaussXiSetCNum,CMISSBasisQuadratureNumberOfGaussXiSetCPtr
+
+ PUBLIC CMISSBasisQuadratureOrderGetCNum, CMISSBasisQuadratureOrderGetCPtr
+
+ PUBLIC CMISSBasisQuadratureOrderSetCNum, CMISSBasisQuadratureOrderSetCPtr
+
+ PUBLIC CMISSBasisQuadratureTypeGetCNum, CMISSBasisQuadratureTypeGetCPtr
+
+ PUBLIC CMISSBasisQuadratureTypeSetCNum, CMISSBasisQuadratureTypeSetCPtr
+
+ PUBLIC CMISSBasisTypeGetCNum, CMISSBasisTypeGetCPtr
+
+ PUBLIC CMISSBasisTypeSetCNum, CMISSBasisTypeSetCPtr
+
+!!==================================================================================================================================
+!!
+!! BOUNDARY_CONDITIONS_ROUTINES
+!!
+!!==================================================================================================================================
+
+ PUBLIC CMISSBoundaryConditionsDestroyCNum,CMISSBoundaryConditionsDestroyCPtr
+
+ PUBLIC CMISSBoundaryConditionsAddConstantCNum,CMISSBoundaryConditionsAddConstantCPtr
+
+ PUBLIC CMISSBoundaryConditionsSetConstantCNum, CMISSBoundaryConditionsSetConstantCPtr
+
+ PUBLIC CMISSBoundaryConditionsAddElementCNum, CMISSBoundaryConditionsAddElementCPtr
+
+ PUBLIC CMISSBoundaryConditionsSetElementCNum, CMISSBoundaryConditionsSetElementCPtr
+
+ PUBLIC CMISSBoundaryConditionsAddNodeCNum, CMISSBoundaryConditionsAddNodeCPtr
+
+ PUBLIC CMISSBoundaryConditionsSetNodeCNum, CMISSBoundaryConditionsSetNodeCPtr
+
+ PUBLIC CMISSEquationsSetBoundaryConditionsGetCNum, CMISSEquationsSetBoundaryConditionsGetCPtr
+
+!!==================================================================================================================================
+!!
+!! COMP_ENVIRONMENT
+!!
+!!==================================================================================================================================
+
+  PUBLIC CMISSComputationalNodeNumberGetCNum, CMISSComputationalNodesNumberGetCNum
+
+!!==================================================================================================================================
+!!
+!! CONTROL_LOOP_ROUTINES
+!!
+!!==================================================================================================================================
+
+ PUBLIC CMISSControlLoopCurrentTimesGetCNum,CMISSControlLoopCurrentTimesGetCPtr
+
+ PUBLIC CMISSControlLoopDestroyCNum, CMISSControlLoopDestroyCPtr
+
+ PUBLIC CMISSControlLoopGetCNum, CMISSControlLoopGetCPtr
+
+ PUBLIC CMISSControlLoopIterationsSetCNum, CMISSControlLoopIterationsSetCPtr
+
+ PUBLIC CMISSControlLoopMaximumIterationsSetCNum, CMISSControlLoopMaximumIterationsSetCPtr
+
+ PUBLIC CMISSControlLoopNumberOfSubLoopsGetCNum, CMISSControlLoopNumberOfSubLoopsGetCPtr
+
+ PUBLIC CMISSControlLoopNumberOfSubLoopsSetCNum, CMISSControlLoopNumberOfSubLoopsSetCPtr
+
+ PUBLIC CMISSControlLoopTimeOutputSetCNum, CMISSControlLoopTimeOutputSetCPtr
+
+ PUBLIC CMISSControlLoopTimesGetCNum, CMISSControlLoopTimesGetCPtr
+
+ PUBLIC CMISSControlLoopTimesSetCNum, CMISSControlLoopTimesSetCPtr
+
+ PUBLIC CMISSControlLoopTypeSetCNum, CMISSControlLoopTypeSetCPtr
+
+!!==================================================================================================================================
+!!
+!! COORDINATE_SYSTEM_ROUTINES
+!!
+!!==================================================================================================================================
+
+ PUBLIC CMISSCoordinateSystemCreateFinishCNum, CMISSCoordinateSystemCreateFinishCPtr
+
+ PUBLIC CMISSCoordinateSystemCreateStartCNum, CMISSCoordinateSystemCreateStartCPtr
+
+ PUBLIC CMISSCoordinateSystemDestroyCNum, CMISSCoordinateSystemDestroyCPtr
+
+ PUBLIC CMISSCoordinateSystemDimensionGetCNum, CMISSCoordinateSystemDimensionGetCPtr
+
+ PUBLIC CMISSCoordinateSystemDimensionSetCNum, CMISSCoordinateSystemDimensionSetCPtr
+
+ PUBLIC CMISSCoordinateSystemFocusGetCNum, CMISSCoordinateSystemFocusGetCPtr
+
+ PUBLIC CMISSCoordinateSystemFocusSetCNum, CMISSCoordinateSystemFocusSetCPtr
+
+ PUBLIC CMISSCoordinateSystemRadialInterpolationGetCNum,CMISSCoordinateSystemRadialInterpolationGetCPtr
+
+ PUBLIC CMISSCoordinateSystemRadialInterpolationSetCNum,CMISSCoordinateSystemRadialInterpolationSetCPtr
+
+ PUBLIC CMISSCoordinateSystemTypeGetCNum, CMISSCoordinateSystemTypeGetCPtr
+
+ PUBLIC CMISSCoordinateSystemTypeSetCNum, CMISSCoordinateSystemTypeSetCPtr
+
+ PUBLIC CMISSCoordinateSystemOriginGetCNum, CMISSCoordinateSystemOriginGetCPtr
+
+ PUBLIC CMISSCoordinateSystemOriginSetCNum, CMISSCoordinateSystemOriginSetCPtr
+
+ PUBLIC CMISSCoordinateSystemOrientationGetCNum, CMISSCoordinateSystemOrientationGetCPtr
+
+ PUBLIC CMISSCoordinateSystemOrientationSetCNum, CMISSCoordinateSystemOrientationSetCPtr
+
+!!==================================================================================================================================
+!!
+!! EQUATIONS_ROUTINES
+!!
+!!==================================================================================================================================
+
+ PUBLIC CMISSEquationsDestroyCNum, CMISSEquationsDestroyCPtr
+
+ PUBLIC CMISSEquationsLinearityTypeGetCNum, CMISSEquationsLinearityTypeGetCPtr
+
+ PUBLIC CMISSEquationsLumpingTypeGetCNum, CMISSEquationsLumpingTypeGetCPtr
+
+ PUBLIC CMISSEquationsLumpingTypeSetCNum, CMISSEquationsLumpingTypeSetCPtr
+
+ PUBLIC CMISSEquationsOutputTypeGetCNum, CMISSEquationsOutputTypeGetCPtr
+
+ PUBLIC CMISSEquationsOutputTypeSetCNum, CMISSEquationsOutputTypeSetCPtr
+
+ PUBLIC CMISSEquationsSparsityTypeGetCNum, CMISSEquationsSparsityTypeGetCPtr
+
+ PUBLIC CMISSEquationsSparsityTypeSetCNum, CMISSEquationsSparsityTypeSetCPtr
+
+ PUBLIC CMISSEquationsTimeDependenceTypeGetCNum, CMISSEquationsTimeDependenceTypeGetCPtr
+
+!!==================================================================================================================================
+!!
+!! EQUATIONS_SET_ROUTINES
+!!
+!!==================================================================================================================================
+
+ PUBLIC CMISSEquationsSetAnalyticCreateFinishCNum, CMISSEquationsSetAnalyticCreateFinishCPtr
+
+ PUBLIC CMISSEquationsSetAnalyticCreateStartCNum, CMISSEquationsSetAnalyticCreateStartCPtr
+
+ PUBLIC CMISSEquationsSetAnalyticDestroyCNum, CMISSEquationsSetAnalyticDestroyCPtr
+
+ PUBLIC CMISSEquationsSetBoundaryConditionsAnalyticCNum, CMISSEquationsSetBoundaryConditionsAnalyticCPtr
+
+ PUBLIC CMISSEquationsSetBoundaryConditionsCreateFinishCNum, CMISSEquationsSetBoundaryConditionsCreateFinishCPtr
+
+ PUBLIC CMISSEquationsSetBoundaryConditionsCreateStartCNum, CMISSEquationsSetBoundaryConditionsCreateStartCPtr
+
+ PUBLIC CMISSEquationsSetBoundaryConditionsDestroyCNum, CMISSEquationsSetBoundaryConditionsDestroyCPtr
+
+ PUBLIC CMISSEquationsSetCreateFinishCNum, CMISSEquationsSetCreateFinishCPtr
+
+ PUBLIC CMISSEquationsSetCreateStartCNum, CMISSEquationsSetCreateStartCPtr
+
+ PUBLIC CMISSEquationsSetDestroyCNum, CMISSEquationsSetDestroyCPtr
+
+ PUBLIC CMISSEquationsSetDependentCreateFinishCNum, CMISSEquationsSetDependentCreateFinishCPtr
+
+ PUBLIC CMISSEquationsSetDependentCreateStartCNum, CMISSEquationsSetDependentCreateStartCPtr
+
+ PUBLIC CMISSEquationsSetDependentDestroyCNum, CMISSEquationsSetDependentDestroyCPtr
+
+ PUBLIC CMISSEquationsSetEquationsCreateFinishCNum, CMISSEquationsSetEquationsCreateFinishCPtr
+
+ PUBLIC CMISSEquationsSetEquationsCreateStartCNum, CMISSEquationsSetEquationsCreateStartCPtr
+
+ PUBLIC CMISSEquationsSetEquationsDestroyCNum, CMISSEquationsSetEquationsDestroyCPtr
+
+ PUBLIC CMISSEquationsSetIndependentCreateFinishCNum, CMISSEquationsSetIndependentCreateFinishCPtr
+
+ PUBLIC CMISSEquationsSetIndependentCreateStartCNum, CMISSEquationsSetIndependentCreateStartCPtr
+
+ PUBLIC CMISSEquationsSetIndependentDestroyCNum, CMISSEquationsSetIndependentDestroyCPtr
+
+ PUBLIC CMISSEquationsSetMaterialsCreateFinishCNum, CMISSEquationsSetMaterialsCreateFinishCPtr
+
+ PUBLIC CMISSEquationsSetMaterialsCreateStartCNum, CMISSEquationsSetMaterialsCreateStartCPtr
+
+ PUBLIC CMISSEquationsSetMaterialsDestroyCNum, CMISSEquationsSetMaterialsDestroyCPtr
+
+ PUBLIC CMISSEquationsSetSolutionMethodGetCNum, CMISSEquationsSetSolutionMethodGetCPtr
+
+ PUBLIC CMISSEquationsSetSolutionMethodSetCNum, CMISSEquationsSetSolutionMethodSetCPtr
+
+ PUBLIC CMISSEquationsSetSourceCreateFinishCNum, CMISSEquationsSetSourceCreateFinishCPtr
+
+ PUBLIC CMISSEquationsSetSourceDestroyCNum, CMISSEquationsSetSourceDestroyCPtr
+
+ PUBLIC CMISSEquationsSetSpecificationGetCNum, CMISSEquationsSetSpecificationGetCPtr
+
+ PUBLIC CMISSEquationsSetSpecificationSetCNum, CMISSEquationsSetSpecificationSetCPtr
+
+!!==================================================================================================================================
+!!
+!! FIELD_ROUTINES
+!!
+!!==================================================================================================================================
+
+ PUBLIC CMISSFieldComponentInterpolationGetCNum, CMISSFieldComponentInterpolationGetCPtr
+
+ PUBLIC CMISSFieldComponentInterpolationSetCNum, CMISSFieldComponentInterpolationSetCPtr
+
+ PUBLIC CMISSFieldComponentLabelGetCNum, CMISSFieldComponentLabelGetCPtr
+
+ PUBLIC CMISSFieldComponentLabelSetCNum, CMISSFieldComponentLabelSetCPtr
+
+ PUBLIC CMISSFieldComponentMeshComponentGetCNum, CMISSFieldComponentMeshComponentGetCPtr
+
+ PUBLIC CMISSFieldComponentMeshComponentSetCNum, CMISSFieldComponentMeshComponentSetCPtr
+
+ PUBLIC CMISSFieldComponentValuesInitialiseIntgCNum, CMISSFieldComponentValuesInitialiseIntgCPtr
+
+ PUBLIC CMISSFieldComponentValuesInitialiseSPCNum,CMISSFieldComponentValuesInitialiseSPCPtr
+
+ PUBLIC CMISSFieldComponentValuesInitialiseDPCNum,CMISSFieldComponentValuesInitialiseDPCPtr
+
+ PUBLIC CMISSFieldComponentValuesInitialiseLCNum,CMISSFieldComponentValuesInitialiseLCPtr
+
+ PUBLIC CMISSFieldDataTypeGetCNum, CMISSFieldDataTypeGetCPtr
+
+ PUBLIC CMISSFieldDataTypeSetCNum, CMISSFieldDataTypeSetCPtr
+
+ PUBLIC CMISSFieldDOFOrderTypeGetCNum, CMISSFieldDOFOrderTypeGetCPtr
+
+ PUBLIC CMISSFieldDOFOrderTypeSetCNum, CMISSFieldDOFOrderTypeSetCPtr
+
+ PUBLIC CMISSFieldCreateFinishCNum, CMISSFieldCreateFinishCPtr
+
+ PUBLIC CMISSFieldCreateStartCNum, CMISSFieldCreateStartCPtr
+
+ PUBLIC CMISSFieldDependentTypeGetCNum, CMISSFieldDependentTypeGetCPtr
+
+ PUBLIC CMISSFieldDestroyCNum, CMISSFieldDestroyCPtr
+
+ PUBLIC CMISSFieldDimensionGetCNum, CMISSFieldDimensionGetCPtr
+
+ PUBLIC CMISSFieldDimensionSetCNum, CMISSFieldDimensionSetCPtr
+
+ PUBLIC CMISSFieldGeometricFieldGetCNum, CMISSFieldGeometricFieldGetCPtr
+
+ PUBLIC CMISSFieldGeometricFieldSetCNum, CMISSFieldGeometricFieldSetCPtr
+
+ PUBLIC CMISSFieldLabelGetCNum, CMISSFieldLabelGetCPtr
+
+ PUBLIC CMISSFieldMeshDecompositionGetCNum, CMISSFieldMeshDecompositionGetCPtr
+
+ PUBLIC CMISSFieldMeshDecompositionSetCNum, CMISSFieldMeshDecompositionSetCPtr
+
+ PUBLIC CMISSFieldNumberOfComponentsGetCNum, CMISSFieldNumberOfComponentsGetCPtr
+
+ PUBLIC CMISSFieldNumberOfComponentsSetCNum, CMISSFieldNumberOfComponentsSetCPtr
+
+ PUBLIC CMISSFieldNumberOfVariablesGetCNum, CMISSFieldNumberOfVariablesGetCPtr
+
+ PUBLIC CMISSFieldNumberOfVariablesSetCNum, CMISSFieldNumberOfVariablesSetCPtr
+
+ PUBLIC CMISSFieldParameterSetAddConstantIntgCNum, CMISSFieldParameterSetAddConstantIntgCPtr
+
+ PUBLIC CMISSFieldParameterSetAddConstantSPCNum, CMISSFieldParameterSetAddConstantSPCPtr
+
+ PUBLIC CMISSFieldParameterSetAddConstantDPCNum, CMISSFieldParameterSetAddConstantDPCPtr
+
+ PUBLIC CMISSFieldParameterSetAddConstantLCNum, CMISSFieldParameterSetAddConstantLCPtr
+
+ PUBLIC CMISSFieldParameterSetAddElementIntgCNum, CMISSFieldParameterSetAddElementIntgCPtr
+
+ PUBLIC CMISSFieldParameterSetAddElementSPCNum, CMISSFieldParameterSetAddElementSPCPtr
+
+ PUBLIC CMISSFieldParameterSetAddElementDPCNum, CMISSFieldParameterSetAddElementDPCPtr
+
+ PUBLIC CMISSFieldParameterSetAddElementLCNum, CMISSFieldParameterSetAddElementLCPtr
+
+ PUBLIC CMISSFieldParameterSetAddNodeIntgCNum, CMISSFieldParameterSetAddNodeIntgCPtr
+
+ PUBLIC CMISSFieldParameterSetAddNodeSPCNum, CMISSFieldParameterSetAddNodeSPCPtr
+
+ PUBLIC CMISSFieldParameterSetAddNodeDPCNum, CMISSFieldParameterSetAddNodeDPCPtr
+
+ PUBLIC CMISSFieldParameterSetAddNodeLCNum, CMISSFieldParameterSetAddNodeLCPtr
+
+ PUBLIC CMISSFieldParameterSetCreateCNum, CMISSFieldParameterSetCreateCPtr
+
+ PUBLIC CMISSFieldParameterSetDestroyCNum, CMISSFieldParameterSetDestroyCPtr
+
+ PUBLIC CMISSFieldParameterSetDataGetIntgCNum, CMISSFieldParameterSetDataGetIntgCPtr
+
+ PUBLIC CMISSFieldParameterSetDataGetSPCNum, CMISSFieldParameterSetDataGetSPCPtr
+
+ PUBLIC CMISSFieldParameterSetDataGetDPCNum, CMISSFieldParameterSetDataGetDPCPtr
+
+ PUBLIC CMISSFieldParameterSetDataGetLCNum, CMISSFieldParameterSetDataGetLCPtr
+
+ PUBLIC CMISSFieldParameterSetDataRestoreIntgCNum, CMISSFieldParameterSetDataRestoreIntgCPtr
+
+ PUBLIC CMISSFieldParameterSetDataRestoreSPCNum, CMISSFieldParameterSetDataRestoreSPCPtr
+
+ PUBLIC CMISSFieldParameterSetDataRestoreDPCNum, CMISSFieldParameterSetDataRestoreDPCPtr
+
+ PUBLIC CMISSFieldParameterSetDataRestoreLCNum, CMISSFieldParameterSetDataRestoreLCPtr
+
+ PUBLIC CMISSFieldParameterSetGetConstantIntgCNum, CMISSFieldParameterSetGetConstantIntgCPtr
+
+ PUBLIC CMISSFieldParameterSetGetConstantSPCNum, CMISSFieldParameterSetGetConstantSPCPtr
+
+ PUBLIC CMISSFieldParameterSetGetConstantDPCNum, CMISSFieldParameterSetGetConstantDPCPtr
+
+ PUBLIC CMISSFieldParameterSetGetConstantLCNum, CMISSFieldParameterSetGetConstantLCPtr
+
+ PUBLIC CMISSFieldParameterSetGetElementIntgCNum, CMISSFieldParameterSetGetElementIntgCPtr
+
+ PUBLIC CMISSFieldParameterSetGetElementSPCNum, CMISSFieldParameterSetGetElementSPCPtr
+
+ PUBLIC CMISSFieldParameterSetGetElementDPCNum, CMISSFieldParameterSetGetElementDPCPtr
+
+ PUBLIC CMISSFieldParameterSetGetElementLCNum, CMISSFieldParameterSetGetElementLCPtr
+
+ PUBLIC CMISSFieldParameterSetGetNodeIntgCNum, CMISSFieldParameterSetGetNodeIntgCPtr
+
+ PUBLIC CMISSFieldParameterSetGetNodeSPCNum, CMISSFieldParameterSetGetNodeSPCPtr
+
+ PUBLIC CMISSFieldParameterSetGetNodeDPCNum, CMISSFieldParameterSetGetNodeDPCPtr
+
+ PUBLIC CMISSFieldParameterSetGetNodeLCNum, CMISSFieldParameterSetGetNodeLCPtr
+
+ PUBLIC CMISSFieldParameterSetUpdateConstantIntgCNum, CMISSFieldParameterSetUpdateConstantIntgCPtr
+
+ PUBLIC CMISSFieldParameterSetUpdateConstantSPCNum, CMISSFieldParameterSetUpdateConstantSPCPtr
+
+ PUBLIC CMISSFieldParameterSetUpdateConstantDPCNum, CMISSFieldParameterSetUpdateConstantDPCPtr
+
+ PUBLIC CMISSFieldParameterSetUpdateConstantLCNum, CMISSFieldParameterSetUpdateConstantLCPtr
+
+ PUBLIC CMISSFieldParameterSetUpdateElementIntgCNum, CMISSFieldParameterSetUpdateElementIntgCPtr
+
+ PUBLIC CMISSFieldParameterSetUpdateElementSPCNum, CMISSFieldParameterSetUpdateElementSPCPtr
+
+ PUBLIC CMISSFieldParameterSetUpdateElementDPCNum, CMISSFieldParameterSetUpdateElementDPCPtr
+
+ PUBLIC CMISSFieldParameterSetUpdateElementLCNum, CMISSFieldParameterSetUpdateElementLCPtr
+
+ PUBLIC CMISSFieldParameterSetUpdateFinishCNum, CMISSFieldParameterSetUpdateFinishCPtr
+
+ PUBLIC CMISSFieldParameterSetUpdateNodeIntgCNum, CMISSFieldParameterSetUpdateNodeIntgCPtr
+
+ PUBLIC CMISSFieldParameterSetUpdateNodeSPCNum, CMISSFieldParameterSetUpdateNodeSPCPtr
+
+ PUBLIC CMISSFieldParameterSetUpdateNodeDPCNum, CMISSFieldParameterSetUpdateNodeDPCPtr
+
+ PUBLIC CMISSFieldParameterSetUpdateNodeLCNum, CMISSFieldParameterSetUpdateNodeLCPtr
+
+ PUBLIC CMISSFieldParameterSetUpdateStartCNum, CMISSFieldParameterSetUpdateStartCPtr
+
+ PUBLIC CMISSFieldScalingTypeGetCNum, CMISSFieldScalingTypeGetCPtr
+
+ PUBLIC CMISSFieldScalingTypeSetCNum, CMISSFieldScalingTypeSetCPtr
+
+ PUBLIC CMISSFieldTypeGetCNum, CMISSFieldTypeGetCPtr
+
+ PUBLIC CMISSFieldTypeSetCNum, CMISSFieldTypeSetCPtr
+
+ PUBLIC CMISSFieldVariableLabelGetCCNum, CMISSFieldVariableLabelGetCCPtr
+
+ PUBLIC CMISSFieldVariableLabelSetCCNum, CMISSFieldVariableLabelSetCCPtr
+
+!!==================================================================================================================================
+!!
+!! FIELD_IO_ROUTINES
+!!
+!!==================================================================================================================================
+
+ PUBLIC CMISSFieldIOElementsExportCCPtr
+
+ PUBLIC CMISSFieldIONodesExportCCPtr
+
+!!==================================================================================================================================
+!!
+!! GENERATED_MESH_ROUTINES
+!!
+!!==================================================================================================================================
+
+ PUBLIC CMISSGeneratedMeshBasisGetCNum, CMISSGeneratedMeshBasisGetCPtr
+
+ PUBLIC CMISSGeneratedMeshBasisSetCNum, CMISSGeneratedMeshBasisSetCPtr
+
+ PUBLIC CMISSGeneratedMeshCreateFinishCNum, CMISSGeneratedMeshCreateFinishCPtr
+
+ PUBLIC CMISSGeneratedMeshCreateStartCNum, CMISSGeneratedMeshCreateStartCPtr
+
+ PUBLIC CMISSGeneratedMeshDestroyCNum, CMISSGeneratedMeshDestroyCPtr
+
+ PUBLIC CMISSGeneratedMeshExtentGetCNum, CMISSGeneratedMeshExtentGetCPtr
+
+ PUBLIC CMISSGeneratedMeshExtentSetCNum, CMISSGeneratedMeshExtentSetCPtr
+
+ PUBLIC CMISSGeneratedMeshNumberOfElementsGetCNum, CMISSGeneratedMeshNumberOfElementsGetCPtr
+
+ PUBLIC CMISSGeneratedMeshNumberOfElementsSetCNum, CMISSGeneratedMeshNumberOfElementsSetCPtr
+
+ PUBLIC CMISSGeneratedMeshOriginGetCNum, CMISSGeneratedMeshOriginGetCPtr
+
+ PUBLIC CMISSGeneratedMeshOriginSetCNum, CMISSGeneratedMeshOriginSetCPtr
+
+ PUBLIC CMISSGeneratedMeshTypeGetCNum, CMISSGeneratedMeshTypeGetCPtr
+
+ PUBLIC CMISSGeneratedMeshTypeSetCNum, CMISSGeneratedMeshTypeSetCPtr
+
+ PUBLIC CMISSGeneratedMeshGeometricParametersCalculateCNum, CMISSGeneratedMeshGeometricParametersCalculateCPtr
+
+!!==================================================================================================================================
+!!
+!! MESH_ROUTINES
+!!
+!!==================================================================================================================================
+
+ PUBLIC CMISSDecompositionCreateFinishCNum, CMISSDecompositionCreateFinishCPtr
+
+ PUBLIC CMISSDecompositionCreateStartCNum, CMISSDecompositionCreateStartCPtr
+
+ PUBLIC CMISSDecompositionElementDomainCalculateCNum, CMISSDecompositionElementDomainCalculateCPtr
+
+ PUBLIC CMISSDecompositionElementDomainGetCNum, CMISSDecompositionElementDomainGetCPtr
+
+ PUBLIC CMISSDecompositionElementDomainSetCNum, CMISSDecompositionElementDomainSetCPtr
+
+ PUBLIC CMISSDecompositionMeshComponentGetCNum, CMISSDecompositionMeshComponentGetCPtr
+
+ PUBLIC CMISSDecompositionMeshComponentSetCNum, CMISSDecompositionMeshComponentSetCPtr
+
+ PUBLIC CMISSDecompositionNumberOfDomainsGetCNum, CMISSDecompositionNumberOfDomainsGetCPtr
+
+ PUBLIC CMISSDecompositionNumberOfDomainsSetCNum, CMISSDecompositionNumberOfDomainsSetCPtr
+
+ PUBLIC CMISSDecompositionTypeGetCNum, CMISSDecompositionTypeGetCPtr
+
+ PUBLIC CMISSDecompositionTypeSetCNum, CMISSDecompositionTypeSetCPtr
+
+ PUBLIC CMISSMeshCreateFinishCNum, CMISSMeshCreateFinishCPtr
+
+ PUBLIC CMISSMeshCreateStartCNum, CMISSMeshCreateStartCPtr
+
+ PUBLIC CMISSMeshDestroyCNum, CMISSMeshDestroyCPtr
+
+ PUBLIC CMISSMeshNumberOfComponentsGetCNum, CMISSMeshNumberOfComponentsGetCPtr
+
+ PUBLIC CMISSMeshNumberOfComponentsSetCNum, CMISSMeshNumberOfComponentsSetCPtr
+
+ PUBLIC CMISSMeshNumberOfElementsGetCNum, CMISSMeshNumberOfElementsGetCPtr
+
+ PUBLIC CMISSMeshNumberOfElementsSetCNum, CMISSMeshNumberOfElementsSetCPtr
+
+ PUBLIC CMISSMeshElementsCreateFinishCNum, CMISSMeshElementsCreateFinishCPtr
+
+ PUBLIC CMISSMeshElementsCreateStartCNum, CMISSMeshElementsCreateStartCPtr
+
+ PUBLIC CMISSMeshElementsBasisGetCNum, CMISSMeshElementsBasisGetCPtr
+
+ PUBLIC CMISSMeshElementsBasisSetCNum, CMISSMeshElementsBasisSetCPtr
+
+ PUBLIC CMISSMeshElementsNodesGetCNum, CMISSMeshElementsNodesGetCPtr
+
+ PUBLIC CMISSMeshElementsNodesSetCNum, CMISSMeshElementsNodesSetCPtr
+
+ PUBLIC CMISSMeshElementsUserNumberGetCNum, CMISSMeshElementsUserNumberGetCPtr
+
+ PUBLIC CMISSMeshElementsUserNumberSetCNum, CMISSMeshElementsUserNumberSetCPtr
+
+!!==================================================================================================================================
+!!
+!! NODES_ROUTINES
+!!
+!!==================================================================================================================================
+
+
+ PUBLIC CMISSNodesCreateFinishCNum, CMISSNodesCreateFinishCPtr
+
+ PUBLIC CMISSNodesCreateStartCNum, CMISSNodesCreateStartCPtr
+
+ PUBLIC CMISSNodesDestroyCNum, CMISSNodesDestroyCPtr
+
+ PUBLIC CMISSNodesLabelGetCCNum, CMISSNodesLabelGetCCPtr
+
+ PUBLIC CMISSNodesLabelSetCCNum, CMISSNodesLabelSetCCPtr
+
+ PUBLIC CMISSNodesUserNumberGetCNum, CMISSNodesUserNumberGetCPtr
+
+ PUBLIC CMISSNodesUserNumberSetCNum, CMISSNodesUserNumberSetCPtr
+
+!!==================================================================================================================================
+!!
+!! PROBLEM_ROUTINES
+!!
+!!==================================================================================================================================
+
+ PUBLIC CMISSProblemCreateFinishCNum, CMISSProblemCreateFinishCPtr
+
+ PUBLIC CMISSProblemCreateStartCNum, CMISSProblemCreateStartCPtr
+
+ PUBLIC CMISSProblemDestroyCNum, CMISSProblemDestroyCPtr
+
+ PUBLIC CMISSProblemControlLoopCreateFinishCNum, CMISSProblemControlLoopCreateFinishCPtr
+
+ PUBLIC CMISSProblemControlLoopCreateStartCNum, CMISSProblemControlLoopCreateStartCPtr
+
+ PUBLIC CMISSProblemControlLoopDestroyCNum, CMISSProblemControlLoopDestroyCPtr
+
+ PUBLIC CMISSProblemControlLoopGetCNum, CMISSProblemControlLoopGetCPtr
+
+ PUBLIC CMISSProblemSolveCNum, CMISSProblemSolveCPtr
+
+ PUBLIC CMISSProblemSolverGetCNum, CMISSProblemSolverGetCPtr
+
+ PUBLIC CMISSProblemSolverEquationsCreateFinishCNum, CMISSProblemSolverEquationsCreateFinishCPtr
+
+ PUBLIC CMISSProblemSolverEquationsCreateStartCNum, CMISSProblemSolverEquationsCreateStartCPtr
+
+ PUBLIC CMISSProblemSolverEquationsDestroyCNum, CMISSProblemSolverEquationsDestroyCPtr
+
+ PUBLIC CMISSProblemSolverEquationsGetCNum, CMISSProblemSolverEquationsGetCPtr
+
+ PUBLIC CMISSProblemSolversCreateFinishCNum, CMISSProblemSolversCreateFinishCPtr
+
+ PUBLIC CMISSProblemSolversCreateStartCNum, CMISSProblemSolversCreateStartCPtr
+
+ PUBLIC CMISSProblemSolversDestroyCNum, CMISSProblemSolversDestroyCPtr
+
+ PUBLIC CMISSProblemSpecificationGetCNum, CMISSProblemSpecificationGetCPtr
+
+ PUBLIC CMISSProblemSpecificationSetCNum, CMISSProblemSpecificationSetCPtr
+
+!!==================================================================================================================================
+!!
+!! REGION_ROUTINES
+!!
+!!==================================================================================================================================
+
+ PUBLIC CMISSRegionCoordinateSystemGetCNum, CMISSRegionCoordinateSystemGetCPtr
+
+ PUBLIC CMISSRegionCoordinateSystemSetCNum, CMISSRegionCoordinateSystemSetCPtr
+
+ PUBLIC CMISSRegionCreateFinishCNum, CMISSRegionCreateFinishCPtr
+
+ PUBLIC CMISSRegionCreateStartCNum, CMISSRegionCreateStartCPtr
+
+ PUBLIC CMISSRegionDestroyCNum, CMISSRegionDestroyCPtr
+
+ PUBLIC CMISSRegionLabelGetCNum, CMISSRegionLabelGetCPtr
+
+ PUBLIC CMISSRegionLabelSetCNum, CMISSRegionLabelSetCPtr
+
+!!==================================================================================================================================
+!!
+!! SOLVER_ROUTINES
+!!
+!!==================================================================================================================================
+
+ PUBLIC CMISSSolverDAEEulerSolverTypeGetCNum, CMISSSolverDAEEulerSolverTypeGetCPtr
+
+ PUBLIC CMISSSolverDAEEulerSolverTypeSetCNum, CMISSSolverDAEEulerSolverTypeSetCPtr
+
+
+ !stop
 
 CONTAINS
 
@@ -121,8 +759,8 @@ CONTAINS
   FUNCTION CMISSInitialiseCNum(WorldCoordinateSystemUserNumber,WorldRegionUserNumber) BIND(C,NAME="CMISSInitialiseNum")
 
     !Argument variables
-    INTEGER(C_INT), INTENT(OUT) :: WorldCoordinateSystemUserNumber
-    INTEGER(C_INT), INTENT(OUT) :: WorldRegionUserNumber
+    INTEGER(C_INT), INTENT(OUT) :: WorldCoordinateSystemUserNumber!<On return, the world coordinate system user number for C.
+    INTEGER(C_INT), INTENT(OUT) :: WorldRegionUserNumber !<On return, the user number of the world region for C.
     !Function variable
     INTEGER(C_INT) :: CMISSInitialiseCNum !<Error Code.
     !Local variables
@@ -141,8 +779,8 @@ CONTAINS
   FUNCTION CMISSInitialiseCPtr(WorldCoordinateSystemPtr,WorldRegionPtr) BIND(C,NAME="CMISSInitialise")
 
     !Argument variables
-    TYPE(C_PTR), INTENT(INOUT) :: WorldCoordinateSystemPtr
-    TYPE(C_PTR), INTENT(INOUT) :: WorldRegionPtr
+    TYPE(C_PTR), INTENT(INOUT) :: WorldCoordinateSystemPtr !<On return, C pointer to the world coordinate.
+    TYPE(C_PTR), INTENT(INOUT) :: WorldRegionPtr !<On return, C pointer to the world region.
     !Function variable
     INTEGER(C_INT) :: CMISSInitialiseCPtr !<Error Code.
     !Local variables
@@ -158,6 +796,7 @@ CONTAINS
           CALL C_F_POINTER(WorldRegionPtr,WorldRegion)
           IF(ASSOCIATED(WorldRegion)) THEN
             CALL CMISSInitialise(WorldCoordinateSystem,WorldRegion,CMISSInitialiseCPtr)
+
           ELSE
             CMISSInitialiseCPtr=CMISSErrorConvertingPointer
           ENDIF
@@ -499,7 +1138,7 @@ CONTAINS
     !Argument variables
     TYPE(C_PTR), INTENT(INOUT) :: DecompositionTypePtr !<C pointer to the CMISSDecompositionType object to be finalised.
     !Function variable
-    INTEGER(C_INT) :: CMISSDecompositionTypeFinaliseC !Error Code.
+    INTEGER(C_INT) :: CMISSDecompositionTypeFinaliseC !<Error Code.
     !Local Variables
     TYPE(CMISSDecompositionType), POINTER :: DecompositionType
 
@@ -1511,8 +2150,8 @@ END FUNCTION CMISSFieldsTypeCreateC
 !!==================================================================================================================================
 
   !>Output the analytic error analysis for a field specified by a user number compared to the analytic values parameter set for C.
-  FUNCTION CMISSAnalyticAnalysisOutputNumberC(RegionUserNumber, FieldUserNumber, FileNameSize, FileName) BIND(C, NAME = &
-  & "CMISSAnalyticAnalysisOutputNumber")
+  FUNCTION CMISSAnalyticAnalysisOutputCNum(RegionUserNumber, FieldUserNumber, FileNameSize, FileName) BIND(C, NAME = &
+  & "CMISSAnalyticAnalysisOutputNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to
@@ -1520,50 +2159,50 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: FileNameSize !<The file name size, for C.
     CHARACTER(LEN=1, KIND=C_CHAR), INTENT(IN) :: FileName(FileNameSize) !<If not empty, the filename to output the analytic analysis to, for C. If empty, the analysis will be output to the standard output.
     !Function variable
-    INTEGER(C_INT) :: CMISSAnalyticAnalysisOutputNumberC !<Error Code.
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisOutputCNum !<Error Code.
     !Local variables
     CHARACTER(LEN=FileNameSize-1) :: FFileName
 
     CALL CMISSC2FString(FileName, FFileName)
-    CALL CMISSAnalyticAnalysisOutputNumber(RegionUserNumber, FieldUserNumber, FFilename, CMISSAnalyticAnalysisOutputNumberC)
+    CALL CMISSAnalyticAnalysisOutput(RegionUserNumber, FieldUserNumber, FFilename, CMISSAnalyticAnalysisOutputCNum)
 
     RETURN
 
-  END FUNCTION CMISSAnalyticAnalysisOutputNumberC
+  END FUNCTION CMISSAnalyticAnalysisOutputCNum
 
   !
   !================================================================================================================================
   !
 
   !>Output the analytic error analysis for a field identified by an object compared to the analytic values parameter set for C.
-  FUNCTION CMISSAnalyticAnalysisOutputPtrC(FieldPtr,FileNameSize, FileName) BIND(C, NAME = "CMISSAnalyticAnalysisOutputObj")
+  FUNCTION CMISSAnalyticAnalysisOutputCPtr(FieldPtr,FileNameSize, FileName) BIND(C, NAME = "CMISSAnalyticAnalysisOutput")
 
     !Argument variables
     TYPE(C_PTR), INTENT(IN) :: FieldPtr !<The dependent field to calculate the analytic error analysis for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FileNameSize !<The file name size, for C.
     CHARACTER(LEN=1, KIND=C_CHAR), INTENT(IN) :: FileName(FileNameSize) !<If not empty, the filename to output the analytic analysis to, for C. If empty, the analysis will be output to the standard output.
     !Function variable
-    INTEGER(C_INT) :: CMISSAnalyticAnalysisOutputPtrC !<Error Code.
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisOutputCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
     CHARACTER(LEN = FileNameSize-1) :: FFileName
 
-    CMISSAnalyticAnalysisOutputPtrC = CMISSNoError
+    CMISSAnalyticAnalysisOutputCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER (FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
         CALL CMISSC2FString(Filename, FFileName)
-        CALL CMISSAnalyticAnalysisOutputObj(Field, FFileName, CMISSAnalyticAnalysisOutputPtrC)
+        CALL CMISSAnalyticAnalysisOutput(Field, FFileName, CMISSAnalyticAnalysisOutputCPtr)
       ELSE
-        CMISSAnalyticAnalysisOutputPtrC=CMISSErrorConvertingPointer
+        CMISSAnalyticAnalysisOutputCPtr=CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSAnalyticAnalysisOutputPtrC=CMISSPointerIsNULL
+      CMISSAnalyticAnalysisOutputCPtr=CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSAnalyticAnalysisOutputPtrC
+  END FUNCTION CMISSAnalyticAnalysisOutputCPtr
 
   !
   !================================================================================================================================
@@ -1828,7 +2467,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(OUT) :: CollapsedXiSize !<The size of the collapsed Xi parameter, for C.
     TYPE(C_PTR), INTENT(OUT) :: CollapsedXiPtr !<CollapsedXi(ni). C pointer to the collapsed Xi parameter for the ni'th Xi direction. \see OPENCMISS_XiCollapse
     !Function variable
-    INTEGER(C_INT) :: CMISSBasisCollapsedXiGetCNum !<Error code.
+    INTEGER(C_INT) :: CMISSBasisCollapsedXiGetCNum !<Error Code.
     !Local variable
     INTEGER(C_INT), POINTER :: CollapsedXi (:)
 
@@ -3357,6 +3996,42 @@ END FUNCTION CMISSFieldsTypeCreateC
     RETURN
 
   END FUNCTION CMISSEquationsSetBoundaryConditionsGetCPtr
+
+!!==================================================================================================================================
+!!
+!! COMP_ENVIRONMENT
+!!
+!!==================================================================================================================================
+
+  FUNCTION CMISSComputationalNodeNumberGetCNum(NodeNumber) BIND(C, NAME = "CMISSComputationalNodeNumberGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), INTENT(OUT) :: NodeNumber !<The Number of Nodes for C
+    !Function variable
+    INTEGER(C_INT) :: CMISSComputationalNodeNumberGetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSComputationalNodeNumberGet(NodeNumber, CMISSComputationalNodeNumberGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSComputationalNodeNumberGetCNum
+
+
+  FUNCTION CMISSComputationalNodesNumberGetCNum(NodesNumber) BIND(C, NAME = "CMISSComputationalNodesNumberGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), INTENT(OUT) :: NodesNumber !<The Number of Nodes for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSComputationalNodesNumberGetCNum !<Error Code.
+    !Local variable
+
+    CALL CMISSComputationalNodesNumberGet(NodesNumber, CMISSComputationalNodesNumberGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSComputationalNodesNumberGetCNum
+
 
 !!==================================================================================================================================
 !!
@@ -5067,7 +5742,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to get the linearity type for, for C.
     INTEGER(C_INT), INTENT(OUT) :: LinearityType !<Thelinearity type of the equations, for C. \see OPENCMISS_EquationsLinearityTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsLinearityTypeGetCNum
+    INTEGER(C_INT) :: CMISSEquationsLinearityTypeGetCNum !<Error Code.
     !Local variables
 
     CALL CMISSEquationsLinearityTypeGet(RegionUserNumber, EquationsSetUserNumber, LinearityType, CMISSEquationsLinearityTypeGetCNum)
@@ -5087,7 +5762,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), VALUE, INTENT(IN) :: EquationsPtr !<The equations to get the linearity type for.
     INTEGER(C_INT), INTENT(OUT) :: LinearityType !<On return, the linearity type of the equations \see OPENCMISS_EquationsLinearityTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsLinearityTypeGetCPtr
+    INTEGER(C_INT) :: CMISSEquationsLinearityTypeGetCPtr !<Error Code.
     !Local variable
     TYPE(CMISSEquationsType), POINTER :: Equations
 
@@ -5120,7 +5795,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to get the lumping type for, for C.
     INTEGER(C_INT), INTENT(OUT) :: LumpingType !<On return, the lumping type of the equations for C. \see OPENCMISS_EquationsLumpingTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsLumpingTypeGetCNum
+    INTEGER(C_INT) :: CMISSEquationsLumpingTypeGetCNum !<Error Code.
     !Local variables
 
     CALL CMISSEquationsLumpingTypeGet(RegionUserNumber,EquationsSetUserNumber,LumpingType, CMISSEquationsLumpingTypeGetCNum)
@@ -5140,7 +5815,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), VALUE, INTENT(IN) :: EquationsPtr !<C pointer to the equations to get the lumping type for.
     INTEGER(C_INT), INTENT(OUT) :: LumpingType !<On return, the lumping type of the equations for C. \see OPENCMISS_EquationsLumpingTypes
     !Function variables
-    INTEGER(C_INT) :: CMISSEquationsLumpingTypeGetCPtr
+    INTEGER(C_INT) :: CMISSEquationsLumpingTypeGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSEquationsType), POINTER :: Equations
 
@@ -5173,7 +5848,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to set the lumping type for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: LumpingType !<The lumping type of the equations to set\see OPENCMISS_EquationsLumpingTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsLumpingTypeSetCNum
+    INTEGER(C_INT) :: CMISSEquationsLumpingTypeSetCNum !<Error Code.
     !Local variables
 
     CALL CMISSEquationsLumpingTypeSet(RegionUserNumber,EquationsSetUserNumber,LumpingType, CMISSEquationsLumpingTypeSetCNum)
@@ -5193,7 +5868,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), VALUE, INTENT(IN) :: EquationsPtr !<C pointer to the equations to set the lumping type to.
     INTEGER(C_INT), INTENT(IN) :: LumpingType !<The lumping type of the equations o set for C. \see OPENCMISS_EquationsLumpingTypes
     !Function variables
-    INTEGER(C_INT) :: CMISSEquationsLumpingTypeSetCPtr
+    INTEGER(C_INT) :: CMISSEquationsLumpingTypeSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSEquationsType), POINTER :: Equations
 
@@ -5226,7 +5901,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to get the lumping type for, for C.
     INTEGER(C_INT), INTENT(OUT) :: OutputType !<On return, the output type of the equations for C. \see OPENCMISS_EquationsLumpingTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsOutputTypeGetCNum
+    INTEGER(C_INT) :: CMISSEquationsOutputTypeGetCNum !<Error Code.
     !Local variables
 
     CALL CMISSEquationsOutputTypeGet(RegionUserNumber,EquationsSetUserNumber,OutputType, CMISSEquationsOutputTypeGetCNum)
@@ -5246,7 +5921,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), VALUE, INTENT(IN) :: EquationsPtr !<C pointer to the equations to get the lumping type for.
     INTEGER(C_INT), INTENT(OUT) :: OutputType !<On return, the output type of the equations for C. \see OPENCMISS_EquationsLumpingTypes
     !Function variables
-    INTEGER(C_INT) :: CMISSEquationsOutputTypeGetCPtr
+    INTEGER(C_INT) :: CMISSEquationsOutputTypeGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSEquationsType), POINTER :: Equations
 
@@ -5279,7 +5954,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to set the lumping type to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: OutputType !<On return, the output type of the equations to set for C. \see OPENCMISS_EquationsLumpingTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsOutputTypeSetCNum
+    INTEGER(C_INT) :: CMISSEquationsOutputTypeSetCNum !<Error Code.
     !Local variables
 
     CALL CMISSEquationsOutputTypeSet(RegionUserNumber,EquationsSetUserNumber,OutputType, CMISSEquationsOutputTypeSetCNum)
@@ -5299,7 +5974,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), VALUE, INTENT(IN) :: EquationsPtr !<C pointer to the equations to set the lumping type to.
     INTEGER(C_INT), INTENT(IN) :: OutputType !<The output type of the equations o set for C. \see OPENCMISS_EquationsLumpingTypes
     !Function variables
-    INTEGER(C_INT) :: CMISSEquationsOutputTypeSetCPtr
+    INTEGER(C_INT) :: CMISSEquationsOutputTypeSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSEquationsType), POINTER :: Equations
 
@@ -5332,7 +6007,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to get the lumping type for, for C.
     INTEGER(C_INT), INTENT(OUT) :: SparsityType !<On return, the sparsity type of the equations for C. \see OPENCMISS_EquationsLumpingTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSparsityTypeGetCNum
+    INTEGER(C_INT) :: CMISSEquationsSparsityTypeGetCNum !<Error Code.
     !Local variables
 
     CALL CMISSEquationsSparsityTypeGet(RegionUserNumber,EquationsSetUserNumber,SparsityType, CMISSEquationsSparsityTypeGetCNum)
@@ -5352,7 +6027,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), VALUE, INTENT(IN) :: EquationsPtr !<C pointer to the equations to get the lumping type for.
     INTEGER(C_INT), INTENT(OUT) :: SparsityType !<On return, the sparsity type of the equations for C. \see OPENCMISS_EquationsLumpingTypes
     !Function variables
-    INTEGER(C_INT) :: CMISSEquationsSparsityTypeGetCPtr
+    INTEGER(C_INT) :: CMISSEquationsSparsityTypeGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSEquationsType), POINTER :: Equations
 
@@ -5385,7 +6060,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to set the lumping type to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: SparsityType !<On return, the sparsity type of the equations to set for C. \see OPENCMISS_EquationsLumpingTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSparsityTypeSetCNum
+    INTEGER(C_INT) :: CMISSEquationsSparsityTypeSetCNum !<Error Code.
     !Local variables
 
     CALL CMISSEquationsSparsityTypeSet(RegionUserNumber,EquationsSetUserNumber,SparsityType, CMISSEquationsSparsityTypeSetCNum)
@@ -5405,7 +6080,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), VALUE, INTENT(IN) :: EquationsPtr !<C pointer to the equations to set the lumping type to.
     INTEGER(C_INT), INTENT(IN) :: SparsityType !<The sparsity type of the equations o set for C. \see OPENCMISS_EquationsLumpingTypes
     !Function variables
-    INTEGER(C_INT) :: CMISSEquationsSparsityTypeSetCPtr
+    INTEGER(C_INT) :: CMISSEquationsSparsityTypeSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSEquationsType), POINTER :: Equations
 
@@ -5438,7 +6113,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to get the lumping type to, for C.
     INTEGER(C_INT), INTENT(OUT) :: TimeDependenceType !<On return, the time dependence type of the equations to get for C. \see OPENCMISS_EquationsLumpingTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsTimeDependenceTypeGetCNum
+    INTEGER(C_INT) :: CMISSEquationsTimeDependenceTypeGetCNum !<Error Code.
     !Local variables
 
     CALL CMISSEquationsTimeDependenceTypeGet(RegionUserNumber,EquationsSetUserNumber,TimeDependenceType, &
@@ -5460,7 +6135,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), VALUE, INTENT(IN) :: EquationsPtr !<C pointer to the equations to get the lumping type for.
     INTEGER(C_INT), INTENT(OUT) :: TimeDependenceType !<On return, the time dependence type of the equations for C. \see OPENCMISS_EquationsLumpingTypes
     !Function variables
-    INTEGER(C_INT) :: CMISSEquationsTimeDependenceTypeGetCPtr
+    INTEGER(C_INT) :: CMISSEquationsTimeDependenceTypeGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSEquationsType), POINTER :: Equations
 
@@ -5494,7 +6169,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to finish for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to finish the creation of for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetAnalyticCreateFinishCNum
+    INTEGER(C_INT) :: CMISSEquationsSetAnalyticCreateFinishCNum !<Error Code.
     !Local variable
 
     CALL CMISSEquationsSetAnalyticCreateFinish(RegionUserNumber,EquationsSetUserNumber, CMISSEquationsSetAnalyticCreateFinishCNum)
@@ -5513,7 +6188,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Argument variables
     TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr  !<C pointer to the equations set to finish.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetAnalyticCreateFinishCPtr
+    INTEGER(C_INT) :: CMISSEquationsSetAnalyticCreateFinishCPtr !<Error Code.
     !Local variable
     TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
 
@@ -5552,7 +6227,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: AnalyticFunctionType !<The analytic function type to use for C. \see OPENCMISS_EquationsSetAnalyticFunctionTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: AnalyticFieldUserNumber !<The user number of the field for the analytic function for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetAnalyticCreateStartCNum
+    INTEGER(C_INT) :: CMISSEquationsSetAnalyticCreateStartCNum !<Error Code.
     !Local variables
 
     CALL CMISSEquationsSetAnalyticCreateStart(RegionUserNumber,EquationsSetUserNumber,AnalyticFunctionType, &
@@ -5576,7 +6251,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: AnalyticFieldUserNumber !<The user number of the field for the analytic function
     TYPE(C_PTR), INTENT(INOUT) :: AnalyticFieldPtr !<If associated on entry, the user created analytic field which has the same user number as the specified analytic field user number. If not associated on entry, on return, the created analytic field for the equations set.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetAnalyticCreateStartCPtr
+    INTEGER(C_INT) :: CMISSEquationsSetAnalyticCreateStartCPtr !<Error Code.
     !Local variables
     TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
     TYPE(CMISSFieldType), POINTER :: AnalyticField
@@ -5620,7 +6295,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the equations set to destroy for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to destroy for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetAnalyticDestroyCNum
+    INTEGER(C_INT) :: CMISSEquationsSetAnalyticDestroyCNum !<Error Code.
     !Local variable
 
     CALL CMISSEquationsSetAnalyticDestroy(RegionUserNumber,EquationsSetUserNumber,CMISSEquationsSetAnalyticDestroyCNum)
@@ -5676,7 +6351,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to set the analytic boundary conditions for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to set the analytic boundary conditions for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsAnalyticCNum
+    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsAnalyticCNum !<Error Code.
     !Local variables
 
     CALL CMISSEquationsSetBoundaryConditionsAnalytic(RegionUserNumber,EquationsSetUserNumber, &
@@ -5734,7 +6409,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the boundary conditions to finish, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to finish the creation of boundary conditions for, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsCreateFinishCNum
+    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsCreateFinishCNum !<Error Code.
     !Local variables
 
     CALL CMISSEquationsSetBoundaryConditionsCreateFinish(RegionUserNumber,EquationsSetUserNumber, &
@@ -5755,7 +6430,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Argument variables
     TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to finish the creation of boundary conditions for.
     !Function variables
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsCreateFinishCPtr
+    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsCreateFinishCPtr !<Error Code.
     !Local variables
     TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
 
@@ -5792,7 +6467,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the boundary conditions to start, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to start the creation of boundary conditions for, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsCreateStartCNum
+    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsCreateStartCNum !<Error Code.
     !Local variables
 
     CALL CMISSEquationsSetBoundaryConditionsCreateStart(RegionUserNumber,EquationsSetUserNumber, &
@@ -5814,7 +6489,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), INTENT(IN) :: EquationsSetPtr !<C pointer to the equations set to start the creation of boundary conditions on.
     TYPE(C_PTR), INTENT(INOUT) :: BoundaryConditionsPtr !<C pointer to the created boundary conditions.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsCreateStartCPtr
+    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsCreateStartCPtr !<Error Code.
     !Local variables
     TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
     TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
@@ -5862,7 +6537,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the boundary conditions to destroy, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to destroy the boundary conditions for, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsDestroyCNum
+    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsDestroyCNum !<Error Code.
     !Local variables
 
     CALL CMISSEquationsSetBoundaryConditionsDestroy(RegionUserNumber,EquationsSetUserNumber, &
@@ -5883,7 +6558,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Argument variables
     TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to destroy the boundary conditions for.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsDestroyCPtr
+    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsDestroyCPtr !<Error Code.
     !Local variables
     TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
 
@@ -5978,7 +6653,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region to start the creation of an equations set on for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeomFibreFieldUserNumber !<The user number of the Geometric/Fibre field for the equations set for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetCreateStartCNum
+    INTEGER(C_INT) :: CMISSEquationsSetCreateStartCNum !<Error Code.
     !Local variable
 
     CALL CMISSEquationsSetCreateStart(EquationsSetUserNumber,RegionUserNumber,GeomFibreFieldUserNumber, &
@@ -6002,7 +6677,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), VALUE, INTENT(IN) :: GeomFibreFieldPtr !<C pointer to the Geometric/Fibre field for the creation of the equations set.
     TYPE(C_PTR), INTENT(OUT) :: EquationsSetPtr !<C pointer to the created equations set.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetCreateStartCPtr
+    INTEGER(C_INT) :: CMISSEquationsSetCreateStartCPtr !<Error Code.
     !Local variables
     TYPE(CMISSRegionType), POINTER :: Region
     TYPE(CMISSFieldType), POINTER :: GeomFibreField
@@ -6051,7 +6726,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to destory for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to destroy for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetDestroyCNum
+    INTEGER(C_INT) :: CMISSEquationsSetDestroyCNum !<Error Code.
     !Local variable
 
     CALL CMISSEquationsSetDestroy(RegionUserNumber,EquationsSetUserNumber, CMISSEquationsSetDestroyCNum)
@@ -6108,7 +6783,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to finish the creation of dependent variables for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to finish the creation of dependent variables for for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetDependentCreateFinishCNum
+    INTEGER(C_INT) :: CMISSEquationsSetDependentCreateFinishCNum !<Error Code.
     !Local variable
 
     CALL CMISSEquationsSetDependentCreateFinish(RegionUserNumber,EquationsSetUserNumber,CMISSEquationsSetDependentCreateFinishCNum)
@@ -6166,7 +6841,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to start the creation of dependent variables for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DependentFieldUserNumber !<The user number of the dependent field, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetDependentCreateStartCNum
+    INTEGER(C_INT) :: CMISSEquationsSetDependentCreateStartCNum !<Error Code.
     !Local variables
 
     CALL CMISSEquationsSetDependentCreateStart(RegionUserNumber,EquationsSetUserNumber,DependentFieldUserNumber, &
@@ -6189,7 +6864,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: DependentFieldUserNumber !<The user number of the dependent field for C.
     TYPE(C_PTR), INTENT(INOUT) :: DependentFieldPtr !<C pointer to the user created dependent field which has the same user number as the specified dependent field user number.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetDependentCreateStartCPtr
+    INTEGER(C_INT) :: CMISSEquationsSetDependentCreateStartCPtr !<Error Code.
     !Local variables
     TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
     TYPE(CMISSFieldType), POINTER :: DependentField
@@ -6233,7 +6908,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to destroy the dependent variables for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to destroy the dependent variables for, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetDependentDestroyCNum
+    INTEGER(C_INT) :: CMISSEquationsSetDependentDestroyCNum !<Error Code.
     !Local variables
 
     CALL CMISSEquationsSetDependentDestroy(RegionUserNumber,EquationsSetUserNumber,CMISSEquationsSetDependentDestroyCNum)
@@ -6552,7 +7227,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: IndependentFieldUserNumber !<The user number of the dependent field for C.
     TYPE(C_PTR), INTENT(INOUT) :: IndependentFieldPtr !<If associated, C pointer to the user created independent field which has the same user number as the specified independent field user number. If not associated on entry, on return, C pointer to the created independent field for the equations set.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetIndependentCreateStartCPtr
+    INTEGER(C_INT) :: CMISSEquationsSetIndependentCreateStartCPtr !<Error Code.
     !Local variables
     TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
     TYPE(CMISSFieldType), POINTER :: IndependentField
@@ -6616,7 +7291,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Argument variables
     TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to destroy the independent variables for.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetIndependentDestroyCPtr
+    INTEGER(C_INT) :: CMISSEquationsSetIndependentDestroyCPtr !<Error Code.
     !Local variables
     TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
 
@@ -6672,7 +7347,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Argument variables
     TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to finish the creation of materials for.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetMaterialsCreateFinishCPtr
+    INTEGER(C_INT) :: CMISSEquationsSetMaterialsCreateFinishCPtr !<Error Code.
     !Local variables
     TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
 
@@ -6710,7 +7385,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to start the creation of materials for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: MaterialsFieldUserNumber !<The user number of the materials field.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetMaterialsCreateStartCNum
+    INTEGER(C_INT) :: CMISSEquationsSetMaterialsCreateStartCNum !<Error Code.
     !Local variable
 
     CALL CMISSEquationsSetMaterialsCreateStart(RegionUserNumber,EquationsSetUserNumber,MaterialsFieldUserNumber, &
@@ -6733,7 +7408,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: MaterialsFieldUserNumber !<The user number of the materials field.
     TYPE(C_PTR), INTENT(INOUT) :: MaterialsFieldPtr !<If associated on entry, the user created materials field which has the same user number as the specified materials field user number. If not associated on entry, on return, the created materials field for the equations set.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetMaterialsCreateStartCPtr
+    INTEGER(C_INT) :: CMISSEquationsSetMaterialsCreateStartCPtr !<Error Code.
     !Local variables
     TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
     TYPE(CMISSFieldType), POINTER :: MaterialsField
@@ -6834,7 +7509,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to get the solution method for, for C.
     INTEGER(C_INT), INTENT(OUT) :: SolutionMethod !<The solution method for C. \see OPENCMISS_EquationsSetSolutionMethods
     !Function variables
-    INTEGER(C_INT) :: CMISSEquationsSetSolutionMethodGetCNum
+    INTEGER(C_INT) :: CMISSEquationsSetSolutionMethodGetCNum !<Error Code.
     !Local variables
 
     CALL CMISSEquationsSetSolutionMethodGet(RegionUserNumber, EquationsSetUserNumber, SolutionMethod, &
@@ -6856,7 +7531,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to get the solution method for.
     INTEGER(C_INT), INTENT(OUT) :: SolutionMethod !<The solution method for C. \see OPENCMISS_EquationsSetSolutionMethods
     !Function variables
-    INTEGER(C_INT) :: CMISSEquationsSetSolutionMethodGetCPtr
+    INTEGER(C_INT) :: CMISSEquationsSetSolutionMethodGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
 
@@ -6894,7 +7569,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to set the solution method to, for C.
     INTEGER(C_INT), INTENT(IN) :: SolutionMethod !<The solution method to set for C. \see OPENCMISS_EquationsSetSolutionMethods
     !Function variables
-    INTEGER(C_INT) :: CMISSEquationsSetSolutionMethodSetCNum
+    INTEGER(C_INT) :: CMISSEquationsSetSolutionMethodSetCNum !<Error Code.
     !Local variables
 
     CALL CMISSEquationsSetSolutionMethodSet(RegionUserNumber, EquationsSetUserNumber, SolutionMethod, &
@@ -6916,7 +7591,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to set the solution method to.
     INTEGER(C_INT), INTENT(IN) :: SolutionMethod !<The solution method to set for C. \see OPENCMISS_EquationsSetSolutionMethods
     !Function variables
-    INTEGER(C_INT) :: CMISSEquationsSetSolutionMethodSetCPtr
+    INTEGER(C_INT) :: CMISSEquationsSetSolutionMethodSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
 
@@ -6953,7 +7628,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to finish the creation of a source for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to finish the creation of a source for, for C.
     !Function variables
-    INTEGER(C_INT) :: CMISSEquationsSetSourceCreateFinishCNum
+    INTEGER(C_INT) :: CMISSEquationsSetSourceCreateFinishCNum !<Error Code.
     !Local variables
 
     CALL CMISSEquationsSetSourceCreateFinish(RegionUserNumber, EquationsSetUserNumber,CMISSEquationsSetSourceCreateFinishCNum)
@@ -6972,7 +7647,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Argument variables
     TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to finish the creation of a source for.
     !Function variables
-    INTEGER(C_INT) :: CMISSEquationsSetSourceCreateFinishCPtr
+    INTEGER(C_INT) :: CMISSEquationsSetSourceCreateFinishCPtr !<Error Code.
     !Local variables
     TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
 
@@ -7010,7 +7685,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to start the creation of a source for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: SourceFieldUserNumber !<The user number of the source field.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetSourceCreateStartCNum
+    INTEGER(C_INT) :: CMISSEquationsSetSourceCreateStartCNum !<Error Code.
     !Local variables
 
     CALL CMISSEquationsSetSourceCreateStart(RegionUserNumber,EquationsSetUserNumber,SourceFieldUserNumber, &
@@ -7033,7 +7708,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: SourceFieldUserNumber !<The user number of the source field for C.
     TYPE(C_PTR), INTENT(INOUT) :: SourceFieldPtr !<If associated on entry, the user created source field which has the same user number as the specified source field user number. If not associated on entry, on return, the created source field for the equations set.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetSourceCreateStartCPtr
+    INTEGER(C_INT) :: CMISSEquationsSetSourceCreateStartCPtr !<Error Code.
     !Local variables
     TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
     TYPE(CMISSFieldType), POINTER :: SourceField
@@ -7077,7 +7752,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to destroy the source for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to destroy the source for, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetSourceDestroyCNum
+    INTEGER(C_INT) :: CMISSEquationsSetSourceDestroyCNum !<Error Code.
     !Local variables
 
     CALL CMISSEquationsSetSourceDestroy(RegionUserNumber,EquationsSetUserNumber,CMISSEquationsSetSourceDestroyCNum)
@@ -7136,7 +7811,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(OUT) :: EquationsSetType !<On return, the equations set type. \see OPENCMISS_EquationsSetTypes
     INTEGER(C_INT), INTENT(OUT) :: EquationsSetSubtype !<On return, the equations set subtype. \see OPENCMISS_EquationsSetSubtypes
     !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetSpecificationGetCNum
+    INTEGER(C_INT) :: CMISSEquationsSetSpecificationGetCNum !<Error Code.
     !Local variables
 
     CALL CMISSEquationsSetSpecificationGet(RegionUserNumber,EquationsSetUserNumber,EquationsSetClass,EquationsSetType, &
@@ -13115,7 +13790,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(OUT) :: ExtentSize !<The size of the extent for C.
     TYPE(C_PTR), INTENT(OUT) :: ExtentPtr !<C pointer to the extent for the i'th dimension of the generated mesh.
     !Function variable
-    INTEGER(C_INT) :: CMISSGeneratedMeshExtentGetCNum !Error Code
+    INTEGER(C_INT) :: CMISSGeneratedMeshExtentGetCNum !<Error Code
     !LOcal variable
     REAL(C_DOUBLE), POINTER :: Extent(:)
 
@@ -13143,7 +13818,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(OUT) :: ExtentSize !<The size of the extent for C.
     TYPE(C_PTR), INTENT(OUT) :: ExtentPtr!<C pointer to the extent for the i'th dimension of the generated mesh.
     !Function variables
-    INTEGER(C_INT) :: CMISSGeneratedMeshExtentGetCPtr
+    INTEGER(C_INT) :: CMISSGeneratedMeshExtentGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSGeneratedMeshType), POINTER :: GeneratedMesh
     REAL(C_DOUBLE), POINTER :: Extent(:)
@@ -13184,7 +13859,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(IN) :: ExtentSize(1) !<The size of the extent to set for C.
     TYPE(C_PTR), VALUE, INTENT(IN) :: ExtentPtr !<C pointer to the extent for the i'th dimension of the generated mesh to set.
     !Function variable
-    INTEGER(C_INT) :: CMISSGeneratedMeshExtentSetCNum !Error Code
+    INTEGER(C_INT) :: CMISSGeneratedMeshExtentSetCNum !<Error Code
     !LOcal variable
     REAL(C_DOUBLE), POINTER :: Extent(:)
 
@@ -13216,7 +13891,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(IN) :: ExtentSize(1) !<The size of the extent to set for C.
     TYPE(C_PTR), VALUE, INTENT(IN) :: ExtentPtr!<C pointer to the extent for the i'th dimension of the generated mesh to set.
     !Function variables
-    INTEGER(C_INT) :: CMISSGeneratedMeshExtentSetCPtr
+    INTEGER(C_INT) :: CMISSGeneratedMeshExtentSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSGeneratedMeshType), POINTER :: GeneratedMesh
     REAL(C_DOUBLE), POINTER :: Extent(:)
@@ -13260,7 +13935,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(OUT) :: NumberOfElementsSize !<The size of the number of elements for C.
     TYPE(C_PTR), INTENT(OUT) :: NumberOfElementsPtr !<C pointer to the number of elements in the i'th dimension of the generated mesh.
     !Function variable
-    INTEGER(C_INT) :: CMISSGeneratedMeshNumberOfElementsGetCNum !Error Code
+    INTEGER(C_INT) :: CMISSGeneratedMeshNumberOfElementsGetCNum !<Error Code
     !LOcal variable
     INTEGER(C_INT) , POINTER :: NumberOfElements(:)
 
@@ -13290,7 +13965,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(OUT) :: NumberOfElementsSize !<The size of the number of elements for C.
     TYPE(C_PTR), INTENT(OUT) :: NumberOfElementsPtr!<C pointer to the number of elements in the i'th dimension of the generated mesh.
     !Function variables
-    INTEGER(C_INT) :: CMISSGeneratedMeshNumberOfElementsGetCPtr
+    INTEGER(C_INT) :: CMISSGeneratedMeshNumberOfElementsGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSGeneratedMeshType), POINTER :: GeneratedMesh
     INTEGER(C_INT), POINTER :: NumberOfElements(:)
@@ -13331,7 +14006,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(IN) :: NumberOfElementsSize(1) !<The size of the number of elements to set for C.
     TYPE(C_PTR), INTENT(IN) :: NumberOfElementsPtr !<C pointer to the number of elements in the i'th dimension of the generated mesh to set.
     !Function variable
-    INTEGER(C_INT) :: CMISSGeneratedMeshNumberOfElementsSetCNum !Error Code
+    INTEGER(C_INT) :: CMISSGeneratedMeshNumberOfElementsSetCNum !<Error Code
     !LOcal variable
     INTEGER(C_INT) , POINTER :: NumberOfElements(:)
 
@@ -13409,7 +14084,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(OUT) :: OriginSize !<The size of the origin to get for C.
     TYPE(C_PTR), INTENT(OUT) :: OriginPtr !<C pointer to the origin of the i'th dimension of the generated mesh.
     !Function variable
-    INTEGER(C_INT) :: CMISSGeneratedMeshOriginGetCNum !Error Code
+    INTEGER(C_INT) :: CMISSGeneratedMeshOriginGetCNum !<Error Code
     !LOcal variable
     REAL(C_DOUBLE) , POINTER :: Origin(:)
 
@@ -13438,7 +14113,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(OUT) :: OriginSize !<The size of the number of elements for C.
     TYPE(C_PTR), INTENT(OUT) :: OriginPtr!<C pointer to the number of elements in the i'th dimension of the generated mesh.
     !Function variables
-    INTEGER(C_INT) :: CMISSGeneratedMeshOriginGetCPtr
+    INTEGER(C_INT) :: CMISSGeneratedMeshOriginGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSGeneratedMeshType), POINTER :: GeneratedMesh
     REAL(C_DOUBLE), POINTER :: Origin(:)
@@ -13479,7 +14154,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(IN) :: OriginSize(1) !<The size of the origin to set for C.
     TYPE(C_PTR), INTENT(IN) :: OriginPtr !<C pointer to the origin of the i'th dimension of the generated mesh to set.
     !Function variable
-    INTEGER(C_INT) :: CMISSGeneratedMeshOriginSetCNum !Error Code
+    INTEGER(C_INT) :: CMISSGeneratedMeshOriginSetCNum !<Error Code
     !LOcal variable
     REAL(C_DOUBLE) , POINTER :: Origin(:)
 
@@ -13511,7 +14186,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(IN) :: OriginSize(1) !<The size of the number of elements to set for C.
     TYPE(C_PTR), INTENT(IN) :: OriginPtr!<C pointer to the number of elements in the i'th dimension of the generated mesh to set.
     !Function variables
-    INTEGER(C_INT) :: CMISSGeneratedMeshOriginSetCPtr
+    INTEGER(C_INT) :: CMISSGeneratedMeshOriginSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSGeneratedMeshType), POINTER :: GeneratedMesh
     REAL(C_DOUBLE), POINTER :: Origin(:)
@@ -17943,7 +18618,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(IN) :: ThetasSize(1) !<The size of the dynamic theta to set for C.
     TYPE(C_PTR), VALUE, INTENT(IN) :: ThetasPtr !<C pointer to the i'th dynamic theta to set.
     !Function variable
-    INTEGER(C_INT) :: CMISSSolverDynamicThetaSetCNum
+    INTEGER(C_INT) :: CMISSSolverDynamicThetaSetCNum !<Error Code.
     !Local variable
     INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
     REAL(C_DOUBLE), POINTER :: Thetas(:)
@@ -17986,7 +18661,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), INTENT(IN) :: ThetasSize(1) !<The size of the dynamic theta to set for C.
     TYPE(C_PTR), VALUE, INTENT(IN) :: ThetasPtr !<C pointer to the i'th dynamic theta to set.
     !Function variable
-    INTEGER(C_INT) :: CMISSSolverDynamicThetaSetCPtr
+    INTEGER(C_INT) :: CMISSSolverDynamicThetaSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSSolverType), POINTER :: Solver
     REAL(C_DOUBLE), POINTER :: Thetas(:)
@@ -18032,7 +18707,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     REAL(C_DOUBLE), INTENT(IN) :: CurrentTime !<The current time to set for C.
     REAL(C_DOUBLE), INTENT(IN) :: TimeIncrement !<The time increment to set for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSSolverDynamicTimesSetCNum
+    INTEGER(C_INT) :: CMISSSolverDynamicTimesSetCNum !<Error Code.
     !Local variables
     INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
 
@@ -18065,7 +18740,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     REAL(C_DOUBLE), INTENT(IN) :: CurrentTime !<The current time to set for C.
     REAL(C_DOUBLE), INTENT(IN) :: TimeIncrement !<The time increment to set for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSSolverDynamicTimesSetCPtr
+    INTEGER(C_INT) :: CMISSSolverDynamicTimesSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSSolverType), POINTER :: Solver
 
@@ -18132,7 +18807,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the solver to get the library type for.
     INTEGER(C_INT), INTENT(OUT) :: LibraryType !<On return, the library type for the solver for C. \see OPENCMISS_SolverLibraries
     !Function variable
-    INTEGER(C_INT) :: CMISSSolverLibraryTypeGetCPtr
+    INTEGER(C_INT) :: CMISSSolverLibraryTypeGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSSolverType), POINTER :: Solver
 
@@ -18199,7 +18874,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the solver to set the library type for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: LibraryType !<The library type for the solver to set for C. \see OPENCMISS_SolverLibraries
     !Function variable
-    INTEGER(C_INT) :: CMISSSolverLibraryTypeSetCPtr
+    INTEGER(C_INT) :: CMISSSolverLibraryTypeSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSSolverType), POINTER :: Solver
 
@@ -18266,7 +18941,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the solver to set the library type for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DirectSolverType !<The type of the direct linear solver to set for C. \see OPENCMISS_DirectLinearSolverTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSSolverLinearDirectSetCPtr
+    INTEGER(C_INT) :: CMISSSolverLinearDirectSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSSolverType), POINTER :: Solver
 
@@ -18301,9 +18976,9 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the absolute tolerance for, for C.
     REAL(C_DOUBLE), VALUE, INTENT(IN) :: AbsoluteTolerance !<The absolute tolerance for the iterative linear solver to set for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSSolverLinearIterativeAbsoluteToleranceSetCNum
+    INTEGER(C_INT) :: CMISSSolverLinearIterativeAbsoluteToleranceSetCNum !<Error Code.
     !Local variables
-    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the absolute tolerance for.
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
 
     CMISSSolverLinearIterativeAbsoluteToleranceSetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
@@ -18333,7 +19008,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer the iterative linear solver to set the absolute tolerance for.
     REAL(C_DOUBLE), VALUE, INTENT(IN) :: AbsoluteTolerance !<The absolute tolerance for the iterative linear solver to set for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSSolverLinearIterativeAbsoluteToleranceSetCPtr
+    INTEGER(C_INT) :: CMISSSolverLinearIterativeAbsoluteToleranceSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSSolverType), POINTER :: Solver
 
@@ -18370,9 +19045,9 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to set the absolute tolerance for, for C.
     REAL(C_DOUBLE), VALUE, INTENT(IN) :: DivergenceTolerance !<The divergence tolerance for the iterative linear solver to set, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSSolverLinearIterativeDivergenceToleranceSetCNum
+    INTEGER(C_INT) :: CMISSSolverLinearIterativeDivergenceToleranceSetCNum !<Error Code.
     !Local variables
-    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the absolute tolerance for.
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
 
     CMISSSolverLinearIterativeDivergenceToleranceSetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
@@ -20141,7 +20816,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     TYPE(C_PTR), VALUE, INTENT(IN) :: SolverEquationsPtr !<C pointer to the solver equations to set the sparsity type for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: SparsityType !<The sparsity type to set for C. \see OPENCMISS_SolverEquationsSparsityTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSSolverEquationsSparsityTypeSetCPtr
+    INTEGER(C_INT) :: CMISSSolverEquationsSparsityTypeSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSSolverEquationsType), POINTER :: SolverEquations
 
