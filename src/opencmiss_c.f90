@@ -724,7 +724,7 @@ MODULE OPENCMISS_C
 
  PUBLIC CMISSSolverDAEEulerSolverTypeGetCNum, CMISSSolverDAEEulerSolverTypeGetCPtr
 
- PUBLIC CMISSSolverDAEEulerSolverTypeSetCNum, CMISSSolverDAEEulerSolverTypeSetCPt
+ PUBLIC CMISSSolverDAEEulerSolverTypeSetCNum, CMISSSolverDAEEulerSolverTypeSetCPtr
 
 CONTAINS
 
