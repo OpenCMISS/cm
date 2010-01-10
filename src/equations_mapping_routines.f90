@@ -983,7 +983,7 @@ CONTAINS
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations mapping is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Equations mapping is not associated.",ERR,ERROR,*999)
     ENDIF
        
     CALL EXITS("EQUATIONS_MAPPING_CREATE_FINISH")
@@ -1012,14 +1012,14 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS)) THEN
       IF(EQUATIONS%EQUATIONS_FINISHED) THEN
         IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-          CALL FLAG_ERROR("Equations mapping is already assocaited",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Equations mapping is already assocaited.",ERR,ERROR,*999)
         ELSE
           NULLIFY(EQUATIONS_MAPPING)
           CALL EQUATIONS_MAPPING_INITIALISE(EQUATIONS,ERR,ERROR,*999)
           EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Equations has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Equations has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
@@ -1083,7 +1083,7 @@ CONTAINS
 
     IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
       IF(ASSOCIATED(EQUATIONS_MAPPING%CREATE_VALUES_CACHE)) THEN
-        CALL FLAG_ERROR("Equations mapping create values cache is already associated",ERR,ERROR,*998)
+        CALL FLAG_ERROR("Equations mapping create values cache is already associated.",ERR,ERROR,*998)
       ELSE
         EQUATIONS=>EQUATIONS_MAPPING%EQUATIONS
         IF(ASSOCIATED(EQUATIONS)) THEN
@@ -1093,7 +1093,7 @@ CONTAINS
             IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
               !Allocate and initialise the create values cache
               ALLOCATE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE,STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations mapping create values cache",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations mapping create values cache.",ERR,ERROR,*999)
               EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES=0
               EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE=0
               EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_STIFFNESS_MATRIX_NUMBER=0
@@ -1232,7 +1232,8 @@ CONTAINS
               IF(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES>0) THEN
                 ALLOCATE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS(EQUATIONS_MAPPING% &
                   & CREATE_VALUES_CACHE%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations mapping create values cache dynamic matrix coefficients", &
+                IF(ERR/=0) &
+                  & CALL FLAG_ERROR("Could not allocate equations mapping create values cache dynamic matrix coefficients.", &
                   & ERR,ERROR,*999)
                 EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS=1.0_DP !Equations matrices are added by default
               ENDIF
@@ -1241,11 +1242,11 @@ CONTAINS
                 ALLOCATE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(EQUATIONS_MAPPING% &
                   & CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES),STAT=ERR)
                 IF(ERR/=0) CALL  & 
-                  & FLAG_ERROR("Could not allocate equations mapping create values cache linear matrix variable types", &
+                  & FLAG_ERROR("Could not allocate equations mapping create values cache linear matrix variable types.", &
                   & ERR,ERROR,*999)
                 ALLOCATE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%LINEAR_MATRIX_COEFFICIENTS(EQUATIONS_MAPPING% &
                   & CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations mapping create values cache linear matrix coefficients", &
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations mapping create values cache linear matrix coefficients.", &
                   & ERR,ERROR,*999)
                 !Set up the matrices variable types
                 EQUATIONS_MAPPING%CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES=0
@@ -1282,7 +1283,7 @@ CONTAINS
             CALL FLAG_ERROR("The equations equations set is not associated.",ERR,ERROR,*998)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The equations mapping equations is not associated",ERR,ERROR,*998)
+          CALL FLAG_ERROR("The equations mapping equations is not associated.",ERR,ERROR,*998)
         ENDIF
       ENDIF
     ELSE
@@ -1315,7 +1316,7 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
       CALL EQUATIONS_MAPPING_FINALISE(EQUATIONS_MAPPING,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Equations mapping is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Equations mapping is not associated.",ERR,ERROR,*999)
     ENDIF
         
     CALL EXITS("EQUATIONS_MAPPING_DESTROY")
@@ -1467,11 +1468,11 @@ CONTAINS
               ENDIF
               IF(NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES>0) THEN
                 ALLOCATE(OLD_DYNAMIC_MATRIX_COEFFICIENTS(CREATE_VALUES_CACHE%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old dynamic matrix coefficients",ERR,ERROR,*999)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old dynamic matrix coefficients.",ERR,ERROR,*999)
                 OLD_DYNAMIC_MATRIX_COEFFICIENTS=CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS
                 DEALLOCATE(CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS)
                 ALLOCATE(CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS(NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dynamic matrix coefficients",ERR,ERROR,*999)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dynamic matrix coefficients.",ERR,ERROR,*999)
                 IF(NEW_DYNAMIC_STIFFNESS_MATRIX_NUMBER/=0) THEN
                   IF(CREATE_VALUES_CACHE%DYNAMIC_STIFFNESS_MATRIX_NUMBER==0) THEN
                     CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS(NEW_DYNAMIC_STIFFNESS_MATRIX_NUMBER)=1.0_DP
@@ -1525,11 +1526,11 @@ CONTAINS
               ENDIF
               IF(NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES>0) THEN
                 ALLOCATE(OLD_DYNAMIC_MATRIX_COEFFICIENTS(CREATE_VALUES_CACHE%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old dynamic matrix coefficients",ERR,ERROR,*999)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old dynamic matrix coefficients.",ERR,ERROR,*999)
                 OLD_DYNAMIC_MATRIX_COEFFICIENTS=CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS
                 DEALLOCATE(CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS)
                 ALLOCATE(CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS(NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dynamic matrix coefficients",ERR,ERROR,*999)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dynamic matrix coefficients.",ERR,ERROR,*999)
                 IF(NEW_DYNAMIC_STIFFNESS_MATRIX_NUMBER/=0) THEN
                   IF(CREATE_VALUES_CACHE%DYNAMIC_STIFFNESS_MATRIX_NUMBER==0) THEN
                     CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS(NEW_DYNAMIC_STIFFNESS_MATRIX_NUMBER)=1.0_DP

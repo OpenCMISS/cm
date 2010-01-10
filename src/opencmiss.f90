@@ -675,7 +675,6 @@ MODULE OPENCMISS
   !Temporary boundary flags (to be removed when general boundary object becomes available!)
   PUBLIC CMISSBoundaryConditionFixedWall,CMISSBoundaryConditionInletWall,CMISSBoundaryConditionMovedWall
 
-
   PUBLIC CMISSBoundaryConditionsDestroy
 
   PUBLIC CMISSBoundaryConditionsAddConstant,CMISSBoundaryConditionsSetConstant
@@ -700,9 +699,9 @@ MODULE OPENCMISS
 
   !Interfaces
 
-  !> Gets the number/rank of the computational nodes.
-  PUBLIC CMISSComputationalNodeNumberGetNumber
-  PUBLIC CMISSComputationalNodesNumberGetNumber
+  PUBLIC CMISSComputationalNodeNumberGet
+  
+  PUBLIC CMISSComputationalNumberOfNodesGet
 
 !!==================================================================================================================================
 !!
@@ -7552,45 +7551,51 @@ CONTAINS
 !!
 !!==================================================================================================================================
 
-  SUBROUTINE CMISSComputationalNodeNumberGetNumber(NodeNumber,Err)
+  !>Returns the computational node number of the running process.
+  SUBROUTINE CMISSComputationalNodeNumberGet(NodeNumber,Err)
   
     !Argument variables
-    INTEGER(INTG), INTENT(OUT) :: NodeNumber !<The Number of Nodes
+    INTEGER(INTG), INTENT(OUT) :: NodeNumber !<On return, the computational node number.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     
-    CALL ENTERS("CMISSComputationalNodeNumberGetNumber",ERR,ERROR,*999)
+    CALL ENTERS("CMISSComputationalNodeNumberGet",ERR,ERROR,*999)
 
     NodeNumber = COMPUTATIONAL_NODE_NUMBER_GET(Err,ERROR)
 
-    CALL EXITS("CMISSComputationalNodeNumberGetNumber")
+    CALL EXITS("CMISSComputationalNodeNumberGet")
     RETURN
-999 CALL ERRORS("CMISSComputationalNodeNumberGetNumber",Err,ERROR)
-    CALL EXITS("CMISSComputationalNodeNumberGetNumber")
+999 CALL ERRORS("CMISSComputationalNodeNumberGet",Err,ERROR)
+    CALL EXITS("CMISSComputationalNodeNumberGet")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSComputationalNodeNumberGetNumber
+  END SUBROUTINE CMISSComputationalNodeNumberGet
+  
+  !
+  !================================================================================================================================
+  !
 
-  SUBROUTINE CMISSComputationalNodesNumberGetNumber(NodesNumber,Err)
+  !>Returns the number of computational nodes for the running process.
+  SUBROUTINE CMISSComputationalNumberOfNodesGet(NumberOfNodes,Err)
   
     !Argument variables
-    INTEGER(INTG), INTENT(OUT) :: NodesNumber !<The Number of Nodes
+    INTEGER(INTG), INTENT(OUT) :: NumberOfNodes !<On return, the number of computational nodes.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     
-    CALL ENTERS("CMISSComputationalNodesNumberGetNumber",ERR,ERROR,*999)
+    CALL ENTERS("CMISSComputationalNumberOfNodesGet",ERR,ERROR,*999)
 
-    NodesNumber = COMPUTATIONAL_NODES_NUMBER_GET(Err,ERROR)
+    NumberOfNodes = COMPUTATIONAL_NODES_NUMBER_GET(Err,ERROR)
 
-    CALL EXITS("CMISSComputationalNodesNumberGetNumber")
+    CALL EXITS("CMISSComputationalNumberOfNodesGet")
     RETURN
-999 CALL ERRORS("CMISSComputationalNodesNumberGetNumber",Err,ERROR)
-    CALL EXITS("CMISSComputationalNodesNumberGetNumber")
+999 CALL ERRORS("CMISSComputationalNumberOfNodesGet",Err,ERROR)
+    CALL EXITS("CMISSComputationalNumberOfNodesGet")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSComputationalNodesNumberGetNumber
+  END SUBROUTINE CMISSComputationalNumberOfNodesGet
 
 !!==================================================================================================================================
 !!
@@ -21849,7 +21854,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the domain for a given node in a decomposition identified by an object.
+  !>Returns the domain for a given node in a decomposition identified by an object. \todo Maybe swap Node and MeshComponent?
   SUBROUTINE CMISSDecompositionNodeDomainGetObj(Decomposition,NodeUserNumber,MeshComponentNumber,Domain,Err)
 
     !Argument variables

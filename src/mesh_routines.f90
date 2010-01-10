@@ -128,6 +128,7 @@ MODULE MESH_ROUTINES
   PUBLIC DECOMPOSITION_USER_NUMBER_FIND
   
   PUBLIC DECOMPOSITION_NODE_DOMAIN_GET
+  
 CONTAINS
 
   !
@@ -158,7 +159,7 @@ CONTAINS
       CALL DECOMPOSITION_TOPOLOGY_CALCULATE(DECOMPOSITION%TOPOLOGY,ERR,ERROR,*999)
       DECOMPOSITION%DECOMPOSITION_FINISHED=.TRUE.
     ELSE
-      CALL FLAG_ERROR("Decomposition is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Decomposition is not associated.",ERR,ERROR,*999)
     ENDIF
     
     IF(DIAGNOSTICS1) THEN
@@ -218,11 +219,11 @@ CONTAINS
           CALL DECOMPOSITION_USER_NUMBER_FIND(USER_NUMBER,MESH,DECOMPOSITION,ERR,ERROR,*999)
           IF(ASSOCIATED(DECOMPOSITION)) THEN
             LOCAL_ERROR="Decomposition number "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))// &
-              & " has already been created on mesh number "//TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))
+              & " has already been created on mesh number "//TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             ALLOCATE(NEW_DECOMPOSITION,STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new decomposition",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new decomposition.",ERR,ERROR,*999)
             !Set default decomposition properties
             NEW_DECOMPOSITION%GLOBAL_NUMBER=MESH%DECOMPOSITIONS%NUMBER_OF_DECOMPOSITIONS+1
             NEW_DECOMPOSITION%USER_NUMBER=USER_NUMBER
@@ -234,7 +235,7 @@ CONTAINS
             NEW_DECOMPOSITION%DECOMPOSITION_TYPE=DECOMPOSITION_ALL_TYPE
             NEW_DECOMPOSITION%NUMBER_OF_DOMAINS=1          
             ALLOCATE(NEW_DECOMPOSITION%ELEMENT_DOMAIN(MESH%NUMBER_OF_ELEMENTS),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new decomposition element domain",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new decomposition element domain.",ERR,ERROR,*999)
             NEW_DECOMPOSITION%ELEMENT_DOMAIN=0          
             !Nullify the domain
             NULLIFY(NEW_DECOMPOSITION%DOMAIN)
@@ -242,7 +243,7 @@ CONTAINS
             NULLIFY(NEW_DECOMPOSITION%TOPOLOGY)
             !Add new decomposition into list of decompositions on the mesh
             ALLOCATE(NEW_DECOMPOSITIONS(MESH%DECOMPOSITIONS%NUMBER_OF_DECOMPOSITIONS+1),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new decompositions",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new decompositions.",ERR,ERROR,*999)
             DO decomposition_no=1,MESH%DECOMPOSITIONS%NUMBER_OF_DECOMPOSITIONS
               NEW_DECOMPOSITIONS(decomposition_no)%PTR=>MESH%DECOMPOSITIONS%DECOMPOSITIONS(decomposition_no)%PTR
             ENDDO !decomposition_no
@@ -254,7 +255,7 @@ CONTAINS
           ENDIF
         ELSE
           LOCAL_ERROR="The decompositions on mesh number "//TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))// &
-            & " are not associated"
+            & " are not associated."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -325,7 +326,7 @@ CONTAINS
           !Remove the decomposition from the list of decompositions
           IF(MESH%DECOMPOSITIONS%NUMBER_OF_DECOMPOSITIONS>1) THEN
             ALLOCATE(NEW_DECOMPOSITIONS(MESH%DECOMPOSITIONS%NUMBER_OF_DECOMPOSITIONS-1),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new decompositions",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new decompositions.",ERR,ERROR,*999)
             DO decomposition_idx=1,MESH%DECOMPOSITIONS%NUMBER_OF_DECOMPOSITIONS
               IF(decomposition_idx<decomposition_position) THEN
                 NEW_DECOMPOSITIONS(decomposition_idx)%PTR=>MESH%DECOMPOSITIONS%DECOMPOSITIONS(decomposition_idx)%PTR
@@ -345,16 +346,16 @@ CONTAINS
           
         ELSE
           LOCAL_ERROR="Decomposition number "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))// &
-            & " has not been created on mesh number "//TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))
+            & " has not been created on mesh number "//TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
         LOCAL_ERROR="The decompositions on mesh number "//TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))// &
-          & " are not associated"
+          & " are not associated."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Mesh is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Mesh is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DECOMPOSITION_DESTROY_NUMBER")
@@ -421,7 +422,7 @@ CONTAINS
         CALL FLAG_ERROR("Decomposition decompositions is not associated.",ERR,ERROR,*999)
        ENDIF
     ELSE
-      CALL FLAG_ERROR("Decompositions is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Decompositions is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DECOMPOSITION_DESTROY")
@@ -489,11 +490,11 @@ CONTAINS
               ELEMENT_STOP=0
               MAX_NUMBER_ELEMENTS_PER_NODE=-1
               ALLOCATE(RECEIVE_COUNTS(0:number_computational_nodes-1),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate recieve counts",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate recieve counts.",ERR,ERROR,*999)
               ALLOCATE(DISPLACEMENTS(0:number_computational_nodes-1),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate displacements",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate displacements.",ERR,ERROR,*999)
               ALLOCATE(ELEMENT_DISTANCE(0:number_computational_nodes),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element distance",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element distance.",ERR,ERROR,*999)
               ELEMENT_DISTANCE(0)=0
               DO no_computational_node=0,number_computational_nodes-1
                 ELEMENT_START=ELEMENT_STOP+1
@@ -524,11 +525,11 @@ CONTAINS
               ENDDO !no_computational_node
               
               ALLOCATE(ELEMENT_PTR(0:MY_NUMBER_OF_ELEMENTS),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element pointer list",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element pointer list.",ERR,ERROR,*999)
               ALLOCATE(ELEMENT_INDICIES(0:number_elem_indicies-1),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element indicies list",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element indicies list.",ERR,ERROR,*999)
               ALLOCATE(TPWGTS(1:DECOMPOSITION%NUMBER_OF_DOMAINS),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate tpwgts",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate tpwgts.",ERR,ERROR,*999)
               elem_index=0
               elem_count=0
               ELEMENT_PTR(0)=0
@@ -579,7 +580,7 @@ CONTAINS
           CASE(DECOMPOSITION_USER_DEFINED_TYPE)
             !Do nothing. Decomposition checked below.          
           CASE DEFAULT
-            CALL FLAG_ERROR("Invalid domain decomposition type",ERR,ERROR,*999)            
+            CALL FLAG_ERROR("Invalid domain decomposition type.",ERR,ERROR,*999)            
           END SELECT
 
           !Check decomposition and check that each domain has an element in it.
@@ -608,13 +609,13 @@ CONTAINS
           DEALLOCATE(ELEMENT_COUNT)
           
         ELSE
-          CALL FLAG_ERROR("Decomposition mesh topology is not associated",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Decomposition mesh topology is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Decomposition mesh is not associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Decomposition is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Decomposition is not associated.",ERR,ERROR,*999)
     ENDIF
     
     IF(DIAGNOSTICS1) THEN
@@ -693,26 +694,26 @@ CONTAINS
                 ELSE
                   LOCAL_ERROR="Global element number found "//TRIM(NUMBER_TO_VSTRING(GLOBAL_ELEMENT_NUMBER,"*",ERR,ERROR))// &
                     & " is invalid. The limits are 1 to "// &
-                    & TRIM(NUMBER_TO_VSTRING(MESH_TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS,"*",ERR,ERROR))
+                    & TRIM(NUMBER_TO_VSTRING(MESH_TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS,"*",ERR,ERROR))//"."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Decomposition mesh element corresponding to user number not found",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Decomposition mesh element corresponding to user number not found.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Decomposition mesh elements are not associated",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Decomposition mesh elements are not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Decomposition mesh topology is not associated",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Decomposition mesh topology is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Decomposition mesh is not associated",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Decomposition has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Decomposition has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Decomposition is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Decomposition is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DECOMPOSITION_ELEMENT_DOMAIN_GET")
@@ -747,7 +748,7 @@ CONTAINS
     
     IF(ASSOCIATED(DECOMPOSITION)) THEN
       IF(DECOMPOSITION%DECOMPOSITION_FINISHED) THEN
-        CALL FLAG_ERROR("Decomposition has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Decomposition has been finished.",ERR,ERROR,*999)
       ELSE
         MESH=>DECOMPOSITION%MESH
         IF(ASSOCIATED(MESH)) THEN
@@ -760,24 +761,24 @@ CONTAINS
                 DECOMPOSITION%ELEMENT_DOMAIN(GLOBAL_ELEMENT_NUMBER)=DOMAIN_NUMBER
               ELSE
                 LOCAL_ERROR="Domain number "//TRIM(NUMBER_TO_VSTRING(DOMAIN_NUMBER,"*",ERR,ERROR))// &
-                  & " is invalid. The limits are 0 to "//TRIM(NUMBER_TO_VSTRING(number_computational_nodes,"*",ERR,ERROR))
+                  & " is invalid. The limits are 0 to "//TRIM(NUMBER_TO_VSTRING(number_computational_nodes,"*",ERR,ERROR))//"."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ELSE
               LOCAL_ERROR="Global element number "//TRIM(NUMBER_TO_VSTRING(GLOBAL_ELEMENT_NUMBER,"*",ERR,ERROR))// &
                 & " is invalid. The limits are 1 to "// &
-                & TRIM(NUMBER_TO_VSTRING(MESH_TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS,"*",ERR,ERROR))
+                & TRIM(NUMBER_TO_VSTRING(MESH_TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS,"*",ERR,ERROR))//"."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Decomposition mesh topology is not associated",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Decomposition mesh topology is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Decomposition mesh is not associated",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Decomposition is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Decomposition is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DECOMPOSITION_ELEMENT_DOMAIN_SET")
@@ -810,13 +811,13 @@ CONTAINS
         IF(ASSOCIATED(DECOMPOSITION%MESH)) THEN
           MESH_COMPONENT_NUMBER=DECOMPOSITION%MESH_COMPONENT_NUMBER
         ELSE
-          CALL FLAG_ERROR("Decomposition mesh is not associated",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Decomposition has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Decomposition has been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Decomposition is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Decomposition is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DECOMPOSITION_MESH_COMPONENT_NUMBER_GET")
@@ -846,7 +847,7 @@ CONTAINS
 
     IF(ASSOCIATED(DECOMPOSITION)) THEN     
       IF(DECOMPOSITION%DECOMPOSITION_FINISHED) THEN
-        CALL FLAG_ERROR("Decomposition has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Decomposition has been finished.",ERR,ERROR,*999)
       ELSE
         IF(ASSOCIATED(DECOMPOSITION%MESH)) THEN
           IF(MESH_COMPONENT_NUMBER>0.AND.MESH_COMPONENT_NUMBER<=DECOMPOSITION%MESH%NUMBER_OF_COMPONENTS) THEN
@@ -854,15 +855,15 @@ CONTAINS
           ELSE
             LOCAL_ERROR="The speficied mesh component number of "//TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT_NUMBER,"*",ERR,ERROR))// &
               & "is invalid. The component number must be between 1 and "// &
-              & TRIM(NUMBER_TO_VSTRING(DECOMPOSITION%MESH%NUMBER_OF_COMPONENTS,"*",ERR,ERROR))
+              & TRIM(NUMBER_TO_VSTRING(DECOMPOSITION%MESH%NUMBER_OF_COMPONENTS,"*",ERR,ERROR))//"."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Decomposition mesh is not associated",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Decomposition is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Decomposition is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DECOMPOSITION_MESH_COMPONENT_NUMBER_SET")
@@ -892,12 +893,12 @@ CONTAINS
 
     IF(ASSOCIATED(DECOMPOSITION)) THEN
       IF(DECOMPOSITION%DECOMPOSITION_FINISHED) THEN
-        CALL FLAG_ERROR("Decomposition has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Decomposition has been finished.",ERR,ERROR,*999)
       ELSE
         NUMBER_OF_DOMAINS=DECOMPOSITION%NUMBER_OF_DOMAINS
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Decomposition is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Decomposition is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DECOMPOSITION_NUMBER_OF_DOMAINS_GET")
@@ -928,14 +929,14 @@ CONTAINS
 
     IF(ASSOCIATED(DECOMPOSITION)) THEN
       IF(DECOMPOSITION%DECOMPOSITION_FINISHED) THEN
-        CALL FLAG_ERROR("Decomposition has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Decomposition has been finished.",ERR,ERROR,*999)
       ELSE
         SELECT CASE(DECOMPOSITION%DECOMPOSITION_TYPE)
         CASE(DECOMPOSITION_ALL_TYPE)
           IF(NUMBER_OF_DOMAINS==1) THEN
             DECOMPOSITION%NUMBER_OF_DOMAINS=1
           ELSE
-            CALL FLAG_ERROR("Can only have one domain for all decomposition type",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Can only have one domain for all decomposition type.",ERR,ERROR,*999)
           ENDIF
         CASE(DECOMPOSITION_CALCULATED_TYPE)
           IF(NUMBER_OF_DOMAINS>=1) THEN
@@ -956,20 +957,20 @@ CONTAINS
             ELSE
               LOCAL_ERROR="The number of domains ("//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DOMAINS,"*",ERR,ERROR))// &
                 & ") must be <= the number of global elements ("// &
-                & TRIM(NUMBER_TO_VSTRING(DECOMPOSITION%MESH%NUMBER_OF_ELEMENTS,"*",ERR,ERROR))//") in the mesh"
+                & TRIM(NUMBER_TO_VSTRING(DECOMPOSITION%MESH%NUMBER_OF_ELEMENTS,"*",ERR,ERROR))//") in the mesh."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-             CALL FLAG_ERROR("Number of domains must be >= 1",ERR,ERROR,*999)
+             CALL FLAG_ERROR("Number of domains must be >= 1.",ERR,ERROR,*999)
            ENDIF
          CASE DEFAULT
           LOCAL_ERROR="Decomposition type "//TRIM(NUMBER_TO_VSTRING(DECOMPOSITION%DECOMPOSITION_TYPE,"*",ERR,ERROR))// &
-            & " is not valid"
+            & " is not valid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Decomposition is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Decomposition is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DECOMPOSITION_NUMBER_OF_DOMAINS_SET")
@@ -1002,7 +1003,7 @@ CONTAINS
       !Calculate the face topology
       !CALL DECOMPOSITION_TOPOLOGY_FACES_CALCULATE(TOPOLOGY,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Topology is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Topology is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DECOMPOSITION_TOPOLOGY_CALCULATE")
@@ -1247,10 +1248,10 @@ CONTAINS
                     !Set the surrounding elements for this element
                     ALLOCATE(DECOMPOSITION_ELEMENTS%ELEMENTS(ne)%NUMBER_OF_ADJACENT_ELEMENTS( &
                       & -BASIS%NUMBER_OF_XI:BASIS%NUMBER_OF_XI),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of surrounding elements",ERR,ERROR,*999)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of surrounding elements.",ERR,ERROR,*999)
                     ALLOCATE(DECOMPOSITION_ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(MAX_NUMBER_SURROUNDING, &
                       & -BASIS%NUMBER_OF_XI:BASIS%NUMBER_OF_XI),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate surrounding elements",ERR,ERROR,*999)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate surrounding elements.",ERR,ERROR,*999)
                     DO ni=-BASIS%NUMBER_OF_XI,BASIS%NUMBER_OF_XI
                       CALL LIST_DETACH_AND_DESTROY(ADJACENT_ELEMENTS_LIST(ni)%PTR,DECOMPOSITION_ELEMENTS%ELEMENTS(ne)% &
                         & NUMBER_OF_ADJACENT_ELEMENTS(ni),ADJACENT_ELEMENTS,ERR,ERROR,*999)
@@ -1261,25 +1262,25 @@ CONTAINS
                     ENDDO !ni            
                   ENDDO !ne           
                 ELSE
-                  CALL FLAG_ERROR("Domain topology elements is not associated",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Domain topology elements is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Domain topology nodes is not associated",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Topology decomposition domain topology is not associated",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Topology decomposition domain topology is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Topology decomposition domain is not associated",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Topology decomposition domain is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Topology elements is not associated",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Topology elements is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Topology decomposition is not associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Topology decomposition is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Topology is not allocated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Topology is not allocated.",ERR,ERROR,*999)
     ENDIF
 
     IF(DIAGNOSTICS1) THEN
@@ -1362,7 +1363,7 @@ CONTAINS
                         IF(ASSOCIATED(MESH_ELEMENTS)) THEN
                           !Allocate the element topology arrays
                           ALLOCATE(DECOMPOSITION_ELEMENTS%ELEMENTS(DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS),STAT=ERR)
-                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate decomposition elements elements",ERR,ERROR,*999)
+                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate decomposition elements elements.",ERR,ERROR,*999)
                           DECOMPOSITION_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS=DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
                           DO ne=1,DECOMPOSITION_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
                             CALL DECOMPOSITION_TOPOLOGY_ELEMENT_INITIALISE(DECOMPOSITION_ELEMENTS%ELEMENTS(ne),ERR,ERROR,*999)
@@ -1377,37 +1378,37 @@ CONTAINS
                           !CALL DECOMPOSITION_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENTS_CALCULATE(TOPOLOGY,ERR,ERROR,*999)
                           CALL DECOMP_TOPOLOGY_ELEM_ADJACENT_ELEM_CALCULATE(TOPOLOGY,ERR,ERROR,*999)
                         ELSE
-                          CALL FLAG_ERROR("Mesh elements is not associated",ERR,ERROR,*999)
+                          CALL FLAG_ERROR("Mesh elements is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Mesh topology is not associated",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Mesh topology is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Decomposition mesh is not associated",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Domain mappings elements is not associated",ERR,ERROR,*999)
+                    CALL FLAG_ERROR("Domain mappings elements is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Domain mappings is not associated",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Domain topology elements is not associated",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Domain topology elements is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Topology decomposition domain topology is not associated",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Topology decomposition domain topology is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Topology decomposition domain is not associated",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Topology decomposition domain is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Topology decomposition is not associated",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Topology decomposition is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Topology elements is not associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Topology elements is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Topology is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Topology is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DECOMPOSITION_TOPOLOGY_ELEMENTS_CALCULATE")
@@ -1442,7 +1443,7 @@ CONTAINS
         DEALLOCATE(TOPOLOGY%ELEMENTS)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Topology is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Topology is not associated.",ERR,ERROR,*999)
     ENDIF
  
     CALL EXITS("DECOMPOSITION_TOPOLOGY_ELEMENTS_FINALISE")
@@ -1469,16 +1470,16 @@ CONTAINS
 
     IF(ASSOCIATED(TOPOLOGY)) THEN
       IF(ASSOCIATED(TOPOLOGY%ELEMENTS)) THEN
-        CALL FLAG_ERROR("Decomposition already has topology elements associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Decomposition already has topology elements associated.",ERR,ERROR,*999)
       ELSE
         ALLOCATE(TOPOLOGY%ELEMENTS,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate topology elements",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate topology elements.",ERR,ERROR,*999)
         TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS=0
         TOPOLOGY%ELEMENTS%DECOMPOSITION=>TOPOLOGY%DECOMPOSITION
         NULLIFY(TOPOLOGY%ELEMENTS%ELEMENTS)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Topology is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Topology is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DECOMPOSITION_TOPOLOGY_ELEMENTS_INITIALISE")
@@ -1508,7 +1509,7 @@ CONTAINS
       CALL DECOMPOSITION_TOPOLOGY_LINES_FINALISE(DECOMPOSITION%TOPOLOGY,ERR,ERROR,*999)
       DEALLOCATE(DECOMPOSITION%TOPOLOGY)
     ELSE
-      CALL FLAG_ERROR("Decomposition is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Decomposition is not associated.",ERR,ERROR,*999)
     ENDIF
  
     CALL EXITS("DECOMPOSITION_TOPOLOGY_FINALISE")
@@ -1536,11 +1537,11 @@ CONTAINS
 
     IF(ASSOCIATED(DECOMPOSITION)) THEN
       IF(ASSOCIATED(DECOMPOSITION%TOPOLOGY)) THEN
-        CALL FLAG_ERROR("Decomposition already has topology associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Decomposition already has topology associated.",ERR,ERROR,*999)
       ELSE
         !Allocate decomposition topology
         ALLOCATE(DECOMPOSITION%TOPOLOGY,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Decomposition topology could not be allocated",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FLAG_ERROR("Decomposition topology could not be allocated.",ERR,ERROR,*999)
         DECOMPOSITION%TOPOLOGY%DECOMPOSITION=>DECOMPOSITION
         NULLIFY(DECOMPOSITION%TOPOLOGY%ELEMENTS)
         NULLIFY(DECOMPOSITION%TOPOLOGY%LINES)
@@ -1549,7 +1550,7 @@ CONTAINS
         CALL DECOMPOSITION_TOPOLOGY_LINES_INITIALISE(DECOMPOSITION%TOPOLOGY,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Decomposition is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Decomposition is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DECOMPOSITION_TOPOLOGY_INITIALISE")
@@ -1685,14 +1686,14 @@ CONTAINS
                       APPROX_DIMENSION=REAL(DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS,DP)**(1.0_DP/3.0_DP)
                       MAX_NUMBER_OF_LINES=NINT(11.0_DP*APPROX_DIMENSION*APPROX_DIMENSION*(APPROX_DIMENSION+1),INTG)
                     CASE DEFAULT
-                      CALL FLAG_ERROR("Invalid number of dimensions for a topology domain",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Invalid number of dimensions for a topology domain.",ERR,ERROR,*999)
                     END SELECT
                     DOMAIN_LINES=>DOMAIN_TOPOLOGY%LINES
                     IF(ASSOCIATED(DOMAIN_LINES)) THEN
                       ALLOCATE(TEMP_LINES(4,MAX_NUMBER_OF_LINES),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary lines array",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary lines array.",ERR,ERROR,*999)
                       ALLOCATE(NODES_NUMBER_OF_LINES(DOMAIN_NODES%TOTAL_NUMBER_OF_NODES),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nodes number of lines array",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nodes number of lines array.",ERR,ERROR,*999)
                       NODES_NUMBER_OF_LINES=0
                       NUMBER_OF_LINES=0
                       TEMP_LINES=0
@@ -1702,7 +1703,7 @@ CONTAINS
                         DECOMPOSITION_ELEMENT=>DECOMPOSITION_ELEMENTS%ELEMENTS(ne)
                         BASIS=>DOMAIN_ELEMENT%BASIS
                         ALLOCATE(DECOMPOSITION_ELEMENT%ELEMENT_LINES(BASIS%NUMBER_OF_LOCAL_LINES),STAT=ERR)
-                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element element lines",ERR,ERROR,*999)
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element element lines.",ERR,ERROR,*999)
                         !Loop over the local lines of the element
                         DO nae=1,BASIS%NUMBER_OF_LOCAL_LINES
                           !Calculate the topology node numbers that make up the line
@@ -1739,7 +1740,7 @@ CONTAINS
                               !We are at maximum. Reallocate the LINES array to be 20% bigger and try again.
                               NEW_MAX_NUMBER_OF_LINES=NINT(1.20_DP*REAL(MAX_NUMBER_OF_LINES,DP),INTG)
                               ALLOCATE(NEW_TEMP_LINES(4,NEW_MAX_NUMBER_OF_LINES),STAT=ERR)
-                              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new number of lines",ERR,ERROR,*999)
+                              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new number of lines.",ERR,ERROR,*999)
                               NEW_TEMP_LINES(:,1:NUMBER_OF_LINES)=TEMP_LINES(:,1:NUMBER_OF_LINES)
                               NEW_TEMP_LINES(:,NUMBER_OF_LINES+1:NEW_MAX_NUMBER_OF_LINES)=0
                               DEALLOCATE(TEMP_LINES)
@@ -1760,15 +1761,15 @@ CONTAINS
                       !Allocate the line arrays and set them from the LINES and NODE_LINES arrays
                       DO np=1,DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
                         ALLOCATE(DOMAIN_NODES%NODES(np)%NODE_LINES(NODES_NUMBER_OF_LINES(np)),STAT=ERR)
-                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node lines array",ERR,ERROR,*999)
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node lines array.",ERR,ERROR,*999)
                         DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_LINES=0
                       ENDDO !np
                       DEALLOCATE(NODES_NUMBER_OF_LINES)
                       ALLOCATE(DECOMPOSITION_LINES%LINES(NUMBER_OF_LINES),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate decomposition topology lines",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate decomposition topology lines.",ERR,ERROR,*999)
                       DECOMPOSITION_LINES%NUMBER_OF_LINES=NUMBER_OF_LINES
                       ALLOCATE(DOMAIN_LINES%LINES(NUMBER_OF_LINES),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain topology lines",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain topology lines.",ERR,ERROR,*999)
                       DOMAIN_LINES%NUMBER_OF_LINES=NUMBER_OF_LINES
                       DO nl=1,DOMAIN_LINES%NUMBER_OF_LINES
                         CALL DECOMPOSITION_TOPOLOGY_LINE_INITIALISE(DECOMPOSITION_LINES%LINES(nl),ERR,ERROR,*999)
@@ -1796,10 +1797,10 @@ CONTAINS
                             DECOMPOSITION_LINE%XI_DIRECTION=BASIS%LOCAL_LINE_XI_DIRECTION(nae)
                             DOMAIN_LINE%BASIS=>BASIS%LINE_BASES(DECOMPOSITION_LINE%XI_DIRECTION)%PTR
                             ALLOCATE(DOMAIN_LINE%NODES_IN_LINE(BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(nae)),STAT=ERR)
-                            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate line nodes in line",ERR,ERROR,*999)
+                            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate line nodes in line.",ERR,ERROR,*999)
                             ALLOCATE(DOMAIN_LINE%DERIVATIVES_IN_LINE(DOMAIN_LINE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
                               & BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(nae)),STAT=ERR)
-                            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate line derivatives in line",ERR,ERROR,*999)
+                            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate line derivatives in line.",ERR,ERROR,*999)
                             DOMAIN_LINE%NODES_IN_LINE=TEMP_LINES(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(nae),LINE_NUMBER)
                             DO nnl=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(nae)
                               DOMAIN_LINE%DERIVATIVES_IN_LINE(1,nnl)=NO_GLOBAL_DERIV
@@ -1822,10 +1823,10 @@ CONTAINS
                         !Allocate the elements surrounding the line
                         ALLOCATE(DECOMPOSITION_LINE%SURROUNDING_ELEMENTS(DECOMPOSITION_LINE%NUMBER_OF_SURROUNDING_ELEMENTS), &
                           & STAT=ERR)
-                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate line surrounding elements",ERR,ERROR,*999)
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate line surrounding elements.",ERR,ERROR,*999)
                         ALLOCATE(DECOMPOSITION_LINE%ELEMENT_LINES(DECOMPOSITION_LINE%NUMBER_OF_SURROUNDING_ELEMENTS), &
                           & STAT=ERR)
-                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate line element lines",ERR,ERROR,*999)
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate line element lines.",ERR,ERROR,*999)
                         DECOMPOSITION_LINE%NUMBER_OF_SURROUNDING_ELEMENTS=0
                         DECOMPOSITION_LINE%ADJACENT_LINES=0
                         !Loop over the nodes at each end of the line
@@ -1892,19 +1893,19 @@ CONTAINS
                         ENDDO !nae
                       ENDDO !ne
                     ELSE
-                      CALL FLAG_ERROR("Domain topology lines is not associated",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Domain topology lines is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Domain topology elements is not associated",ERR,ERROR,*999)
+                    CALL FLAG_ERROR("Domain topology elements is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Domain topology nodes is not associated",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Topology decomposition domain topology is not associated",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Topology decomposition domain topology is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Topology decomposition domain is not associated",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Topology decomposition domain is not associated.",ERR,ERROR,*999)
             ENDIF
             !Now loop over the other mesh components in the decomposition and calculate the domain lines
             MESH=>DECOMPOSITION%MESH
@@ -1922,10 +1923,10 @@ CONTAINS
                           DOMAIN_LINES=>DOMAIN_TOPOLOGY%LINES                      
                           IF(ASSOCIATED(DOMAIN_LINES)) THEN
                             ALLOCATE(DOMAIN_LINES%LINES(DECOMPOSITION_LINES%NUMBER_OF_LINES),STAT=ERR)
-                            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain lines lines",ERR,ERROR,*999)
+                            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain lines lines.",ERR,ERROR,*999)
                             DOMAIN_LINES%NUMBER_OF_LINES=DECOMPOSITION_LINES%NUMBER_OF_LINES
                             ALLOCATE(NODES_NUMBER_OF_LINES(DOMAIN_NODES%TOTAL_NUMBER_OF_NODES),STAT=ERR)
-                            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nodes number of lines array",ERR,ERROR,*999)
+                            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nodes number of lines array.",ERR,ERROR,*999)
                             NODES_NUMBER_OF_LINES=0
                             !Loop over the lines in the topology
                             DO nl=1,DECOMPOSITION_LINES%NUMBER_OF_LINES
@@ -1940,10 +1941,10 @@ CONTAINS
                                 BASIS=>DOMAIN_ELEMENT%BASIS
                                 DOMAIN_LINE%BASIS=>BASIS%LINE_BASES(DECOMPOSITION_LINE%XI_DIRECTION)%PTR
                                 ALLOCATE(DOMAIN_LINE%NODES_IN_LINE(BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(nae)),STAT=ERR)
-                                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nodes in line",ERR,ERROR,*999)
+                                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nodes in line.",ERR,ERROR,*999)
                                 ALLOCATE(DOMAIN_LINE%DERIVATIVES_IN_LINE(DOMAIN_LINE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
                                   & BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(nae)),STAT=ERR)
-                                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivatives in line",ERR,ERROR,*999)
+                                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivatives in line.",ERR,ERROR,*999)
                                 DO nnl=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(nae)
                                   nn=BASIS%NODE_NUMBERS_IN_LOCAL_LINE(nnl,nae)
                                   np=DOMAIN_ELEMENT%ELEMENT_NODES(nn)
@@ -1961,7 +1962,7 @@ CONTAINS
                             ENDDO !nl
                             DO np=1,DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
                               ALLOCATE(DOMAIN_NODES%NODES(np)%NODE_LINES(NODES_NUMBER_OF_LINES(np)),STAT=ERR)
-                              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node lines",ERR,ERROR,*999)
+                              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node lines.",ERR,ERROR,*999)
                               DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_LINES=0
                             ENDDO !np
                             DEALLOCATE(NODES_NUMBER_OF_LINES)
@@ -1976,16 +1977,16 @@ CONTAINS
                               ENDDO !nnl
                             ENDDO !nl
                           ELSE
-                            CALL FLAG_ERROR("Domain lines is not associated",ERR,ERROR,*999)
+                            CALL FLAG_ERROR("Domain lines is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Domain elements is not associated",ERR,ERROR,*999)
+                          CALL FLAG_ERROR("Domain elements is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Domain nodes is not associated",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Domain nodes is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Domain topology is not associated",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
                     CALL FLAG_ERROR("Decomposition mesh is not associated",ERR,ERROR,*999)
@@ -1993,19 +1994,19 @@ CONTAINS
                 ENDIF
               ENDDO !component_idx
             ELSE
-              CALL FLAG_ERROR("Decomposition mesh is not associated",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
             ENDIF                        
           ELSE
-            CALL FLAG_ERROR("Topology decomposition is not associated",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Topology decomposition is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Topology decomposition elements is not associated",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Topology decomposition elements is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Topology lines is not associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Topology lines is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Topology is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Topology is not associated.",ERR,ERROR,*999)
     ENDIF
     
     IF(DIAGNOSTICS1) THEN
@@ -2086,7 +2087,7 @@ CONTAINS
         DEALLOCATE(TOPOLOGY%LINES)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Topology is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Topology is not associated.",ERR,ERROR,*999)
     ENDIF
  
     CALL EXITS("DECOMPOSITION_TOPOLOGY_LINES_FINALISE")
@@ -2113,15 +2114,15 @@ CONTAINS
 
     IF(ASSOCIATED(TOPOLOGY)) THEN
       IF(ASSOCIATED(TOPOLOGY%LINES)) THEN
-        CALL FLAG_ERROR("Decomposition already has topology lines associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Decomposition already has topology lines associated.",ERR,ERROR,*999)
       ELSE
         ALLOCATE(TOPOLOGY%LINES,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate topology lines",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate topology lines.",ERR,ERROR,*999)
         TOPOLOGY%LINES%NUMBER_OF_LINES=0
         TOPOLOGY%LINES%DECOMPOSITION=>TOPOLOGY%DECOMPOSITION
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Topology is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Topology is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DECOMPOSITION_TOPOLOGY_LINES_INITIALISE")
@@ -2151,10 +2152,10 @@ CONTAINS
       IF(DECOMPOSITION%DECOMPOSITION_FINISHED) THEN
         TYPE=DECOMPOSITION%DECOMPOSITION_TYPE
       ELSE
-        CALL FLAG_ERROR("Decomposition has not finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Decomposition has not finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Decomposition is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Decomposition is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DECOMPOSITION_TYPE_GET")
@@ -2183,7 +2184,7 @@ CONTAINS
 
     IF(ASSOCIATED(DECOMPOSITION)) THEN
       IF(DECOMPOSITION%DECOMPOSITION_FINISHED) THEN
-        CALL FLAG_ERROR("Decomposition has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Decomposition has been finished.",ERR,ERROR,*999)
       ELSE
         SELECT CASE(TYPE)
         CASE(DECOMPOSITION_ALL_TYPE)
@@ -2194,12 +2195,12 @@ CONTAINS
         CASE(DECOMPOSITION_USER_DEFINED_TYPE)
           DECOMPOSITION%DECOMPOSITION_TYPE=DECOMPOSITION_USER_DEFINED_TYPE
         CASE DEFAULT
-          LOCAL_ERROR="Decomposition type "//TRIM(NUMBER_TO_VSTRING(TYPE,"*",ERR,ERROR))//" is not valid"
+          LOCAL_ERROR="Decomposition type "//TRIM(NUMBER_TO_VSTRING(TYPE,"*",ERR,ERROR))//" is not valid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Decomposition is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Decomposition is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DECOMPOSITION_TYPE_SET")
@@ -2241,11 +2242,11 @@ CONTAINS
         ENDDO
       ELSE
         LOCAL_ERROR="The decompositions on mesh number "//TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))// &
-          & " are not associated"
+          & " are not associated."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Mesh is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Mesh is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DECOMPOSITION_USER_NUMBER_FIND")
@@ -2305,16 +2306,16 @@ CONTAINS
 
     IF(ASSOCIATED(MESH)) THEN
       IF(ASSOCIATED(MESH%DECOMPOSITIONS)) THEN
-        CALL FLAG_ERROR("Mesh already has decompositions associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Mesh already has decompositions associated.",ERR,ERROR,*999)
       ELSE
         ALLOCATE(MESH%DECOMPOSITIONS,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Mesh decompositions could not be allocated",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FLAG_ERROR("Mesh decompositions could not be allocated.",ERR,ERROR,*999)
         MESH%DECOMPOSITIONS%NUMBER_OF_DECOMPOSITIONS=0
         NULLIFY(MESH%DECOMPOSITIONS%DECOMPOSITIONS)
         MESH%DECOMPOSITIONS%MESH=>MESH
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Mesh is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Mesh is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DECOMPOSITIONS_INITIALISE")
@@ -2354,7 +2355,7 @@ CONTAINS
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Decomposition is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Decomposition is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DOMAIN_FINALISE")
@@ -2383,13 +2384,13 @@ CONTAINS
     IF(ASSOCIATED(DECOMPOSITION)) THEN
       IF(ASSOCIATED(DECOMPOSITION%MESH)) THEN
         IF(ASSOCIATED(DECOMPOSITION%DOMAIN)) THEN
-          CALL FLAG_ERROR("Decomposition already has a domain associated",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Decomposition already has a domain associated.",ERR,ERROR,*999)
         ELSE
           ALLOCATE(DECOMPOSITION%DOMAIN(DECOMPOSITION%MESH%NUMBER_OF_COMPONENTS),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Decomposition domain could not be allocated",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FLAG_ERROR("Decomposition domain could not be allocated.",ERR,ERROR,*999)
           DO component_idx=1,DECOMPOSITION%MESH%NUMBER_OF_COMPONENTS
             ALLOCATE(DECOMPOSITION%DOMAIN(component_idx)%PTR,STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Decomposition domain component could not be allocated",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FLAG_ERROR("Decomposition domain component could not be allocated.",ERR,ERROR,*999)
             DECOMPOSITION%DOMAIN(component_idx)%PTR%DECOMPOSITION=>DECOMPOSITION
             DECOMPOSITION%DOMAIN(component_idx)%PTR%MESH=>DECOMPOSITION%MESH
             DECOMPOSITION%DOMAIN(component_idx)%PTR%MESH_COMPONENT_NUMBER=component_idx
@@ -2407,10 +2408,10 @@ CONTAINS
           ENDDO !component_idx
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Decomposition mesh is not associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Decomposition is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Decomposition is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DOMAIN_INITIALISE")
@@ -2441,7 +2442,7 @@ CONTAINS
         DEALLOCATE(DOMAIN_MAPPINGS%DOFS)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Domain mapping is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Domain mapping is not associated.",ERR,ERROR,*999)
     ENDIF
  
     CALL EXITS("DOMAIN_MAPPINGS_DOFS_FINALISE")
@@ -2469,15 +2470,15 @@ CONTAINS
 
     IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
       IF(ASSOCIATED(DOMAIN_MAPPINGS%DOFS)) THEN
-        CALL FLAG_ERROR("Domain dofs mappings are already associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Domain dofs mappings are already associated.",ERR,ERROR,*999)
       ELSE
         ALLOCATE(DOMAIN_MAPPINGS%DOFS,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain mappings dofs",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain mappings dofs.",ERR,ERROR,*999)
         CALL DOMAIN_MAPPINGS_MAPPING_INITIALISE(DOMAIN_MAPPINGS%DOFS,DOMAIN_MAPPINGS%DOMAIN%DECOMPOSITION%NUMBER_OF_DOMAINS, &
           & ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Domain mapping is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Domain mapping is not associated.",ERR,ERROR,*999)
     ENDIF
  
     CALL EXITS("DOMAIN_MAPPINGS_DOFS_INITIALISE")
@@ -2531,14 +2532,14 @@ CONTAINS
               
               !Calculate the local and global numbers and set up the mappings
               ALLOCATE(ELEMENTS_MAPPING%GLOBAL_TO_LOCAL_MAP(MESH%NUMBER_OF_ELEMENTS),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element mapping global to local map",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element mapping global to local map.",ERR,ERROR,*999)
               ELEMENTS_MAPPING%NUMBER_OF_GLOBAL=MESH%TOPOLOGY(component_idx)%PTR%ELEMENTS%NUMBER_OF_ELEMENTS
               !Loop over the global elements and calculate local numbers
               ALLOCATE(LOCAL_ELEMENT_NUMBERS(0:DECOMPOSITION%NUMBER_OF_DOMAINS-1),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local element numbers",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local element numbers.",ERR,ERROR,*999)
               LOCAL_ELEMENT_NUMBERS=0
               ALLOCATE(ADJACENT_ELEMENTS_LIST(0:DECOMPOSITION%NUMBER_OF_DOMAINS-1),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate adjacent elements list",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate adjacent elements list.",ERR,ERROR,*999)
               DO domain_idx=0,DECOMPOSITION%NUMBER_OF_DOMAINS-1
                 NULLIFY(ADJACENT_ELEMENTS_LIST(domain_idx)%PTR)
                 CALL LIST_CREATE_START(ADJACENT_ELEMENTS_LIST(domain_idx)%PTR,ERR,ERROR,*999)
@@ -2575,11 +2576,11 @@ CONTAINS
                 DEALLOCATE(DOMAINS)
                 CALL DOMAIN_MAPPINGS_MAPPING_GLOBAL_INITIALISE(ELEMENTS_MAPPING%GLOBAL_TO_LOCAL_MAP(ne),ERR,ERROR,*999)
                 ALLOCATE(ELEMENTS_MAPPING%GLOBAL_TO_LOCAL_MAP(ne)%LOCAL_NUMBER(NUMBER_OF_DOMAINS),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element global to local map local number",ERR,ERROR,*999)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element global to local map local number.",ERR,ERROR,*999)
                 ALLOCATE(ELEMENTS_MAPPING%GLOBAL_TO_LOCAL_MAP(ne)%DOMAIN_NUMBER(NUMBER_OF_DOMAINS),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element global to local map domain number",ERR,ERROR,*999)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element global to local map domain number.",ERR,ERROR,*999)
                 ALLOCATE(ELEMENTS_MAPPING%GLOBAL_TO_LOCAL_MAP(ne)%LOCAL_TYPE(NUMBER_OF_DOMAINS),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element global to local map local type",ERR,ERROR,*999)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element global to local map local type.",ERR,ERROR,*999)
                 ELEMENTS_MAPPING%GLOBAL_TO_LOCAL_MAP(ne)%NUMBER_OF_DOMAINS=1
                 ELEMENTS_MAPPING%GLOBAL_TO_LOCAL_MAP(ne)%LOCAL_NUMBER(1)=LOCAL_ELEMENT_NUMBERS(domain_no)
                 ELEMENTS_MAPPING%GLOBAL_TO_LOCAL_MAP(ne)%DOMAIN_NUMBER(1)=DECOMPOSITION%ELEMENT_DOMAIN(ne) 
@@ -2620,19 +2621,19 @@ CONTAINS
               CALL DOMAIN_MAPPINGS_LOCAL_FROM_GLOBAL_CALCULATE(ELEMENTS_MAPPING,ERR,ERROR,*999)
                             
             ELSE
-              CALL FLAG_ERROR("Domain mesh is not associated",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Domain mesh is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Domain decomposition is not associated",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Domain decomposition is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Domain mappings elements is not associated",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Domain mappings elements is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Domain mappings is not associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Domain is not associated",ERR,ERROR,*998)
+      CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*998)
     ENDIF
     
     IF(DIAGNOSTICS1) THEN
@@ -2734,7 +2735,7 @@ CONTAINS
       CALL DOMAIN_MAPPINGS_DOFS_FINALISE(DOMAIN%MAPPINGS,ERR,ERROR,*999)
       DEALLOCATE(DOMAIN%MAPPINGS)
     ELSE
-      CALL FLAG_ERROR("Domain is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
     ENDIF
  
     CALL EXITS("DOMAIN_MAPPINGS_FINALISE")
@@ -2766,7 +2767,7 @@ CONTAINS
         DEALLOCATE(DOMAIN_MAPPINGS%ELEMENTS)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Domain mapping is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Domain mapping is not associated.",ERR,ERROR,*999)
     ENDIF
  
     CALL EXITS("DOMAIN_MAPPINGS_ELEMENTS_FINALISE")
@@ -2794,15 +2795,15 @@ CONTAINS
 
     IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
       IF(ASSOCIATED(DOMAIN_MAPPINGS%ELEMENTS)) THEN
-        CALL FLAG_ERROR("Domain elements mappings are already associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Domain elements mappings are already associated.",ERR,ERROR,*999)
       ELSE
         ALLOCATE(DOMAIN_MAPPINGS%ELEMENTS,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain mappings elements",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain mappings elements.",ERR,ERROR,*999)
         CALL DOMAIN_MAPPINGS_MAPPING_INITIALISE(DOMAIN_MAPPINGS%ELEMENTS,DOMAIN_MAPPINGS%DOMAIN%DECOMPOSITION%NUMBER_OF_DOMAINS, &
           & ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Domain mapping is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Domain mapping is not associated.",ERR,ERROR,*999)
     ENDIF
  
     CALL EXITS("DOMAIN_MAPPINGS_ELEMENTS_INITIALISE")
@@ -2830,10 +2831,10 @@ CONTAINS
 
     IF(ASSOCIATED(DOMAIN)) THEN
       IF(ASSOCIATED(DOMAIN%MAPPINGS)) THEN
-        CALL FLAG_ERROR("Domain already has mappings associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Domain already has mappings associated.",ERR,ERROR,*999)
       ELSE
         ALLOCATE(DOMAIN%MAPPINGS,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain mappings",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain mappings.",ERR,ERROR,*999)
         DOMAIN%MAPPINGS%DOMAIN=>DOMAIN
         NULLIFY(DOMAIN%MAPPINGS%ELEMENTS)
         NULLIFY(DOMAIN%MAPPINGS%NODES)
@@ -2846,7 +2847,7 @@ CONTAINS
         CALL DOMAIN_MAPPINGS_NODES_DOFS_CALCULATE(DOMAIN,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Domain is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DOMAIN_MAPPINGS_INITIALISE")
@@ -2913,19 +2914,19 @@ CONTAINS
                   
                   !Calculate the local and global numbers and set up the mappings
                   ALLOCATE(NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(MESH_TOPOLOGY%NODES%NUMBER_OF_NODES),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node mapping global to local map",ERR,ERROR,*999)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node mapping global to local map.",ERR,ERROR,*999)
                   NODES_MAPPING%NUMBER_OF_GLOBAL=MESH_TOPOLOGY%NODES%NUMBER_OF_NODES
                   ALLOCATE(LOCAL_NODE_NUMBERS(0:DECOMPOSITION%NUMBER_OF_DOMAINS-1),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local node numbers",ERR,ERROR,*999)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local node numbers.",ERR,ERROR,*999)
                   LOCAL_NODE_NUMBERS=0
                   ALLOCATE(DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(MESH_TOPOLOGY%DOFS%NUMBER_OF_DOFS),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dofs mapping global to local map",ERR,ERROR,*999)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dofs mapping global to local map.",ERR,ERROR,*999)
                   DOFS_MAPPING%NUMBER_OF_GLOBAL=MESH_TOPOLOGY%DOFS%NUMBER_OF_DOFS
                   ALLOCATE(LOCAL_DOF_NUMBERS(0:DECOMPOSITION%NUMBER_OF_DOMAINS-1),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local dof numbers",ERR,ERROR,*999)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local dof numbers.",ERR,ERROR,*999)
                   LOCAL_DOF_NUMBERS=0
                   ALLOCATE(GHOST_NODES_LIST(0:DECOMPOSITION%NUMBER_OF_DOMAINS-1),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ghost nodes list",ERR,ERROR,*999)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ghost nodes list.",ERR,ERROR,*999)
                   DO domain_idx=0,DECOMPOSITION%NUMBER_OF_DOMAINS-1
                     NULLIFY(GHOST_NODES_LIST(domain_idx)%PTR)
                     CALL LIST_CREATE_START(GHOST_NODES_LIST(domain_idx)%PTR,ERR,ERROR,*999)
@@ -2935,10 +2936,10 @@ CONTAINS
                     CALL LIST_CREATE_FINISH(GHOST_NODES_LIST(domain_idx)%PTR,ERR,ERROR,*999)
                   ENDDO !domain_idx
                   ALLOCATE(NUMBER_INTERNAL_NODES(0:DECOMPOSITION%NUMBER_OF_DOMAINS-1),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of internal nodes",ERR,ERROR,*999)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of internal nodes.",ERR,ERROR,*999)
                   NUMBER_INTERNAL_NODES=0
                   ALLOCATE(NUMBER_BOUNDARY_NODES(0:DECOMPOSITION%NUMBER_OF_DOMAINS-1),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of boundary nodes",ERR,ERROR,*999)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of boundary nodes.",ERR,ERROR,*999)
                   NUMBER_BOUNDARY_NODES=0
 
                   !For the first pass just determine the internal and boundary nodes
@@ -2980,19 +2981,19 @@ CONTAINS
                       ENDDO !domain_idx
                     ENDIF
                     ALLOCATE(NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%LOCAL_NUMBER(MAX_NUMBER_DOMAINS),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node global to local map local number",ERR,ERROR,*999)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node global to local map local number.",ERR,ERROR,*999)
                     ALLOCATE(NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%DOMAIN_NUMBER(MAX_NUMBER_DOMAINS),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node global to local map domain number",ERR,ERROR,*999)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node global to local map domain number.",ERR,ERROR,*999)
                     ALLOCATE(NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%LOCAL_TYPE(MAX_NUMBER_DOMAINS),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node global to local map local type",ERR,ERROR,*999)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node global to local map local type.",ERR,ERROR,*999)
                     DO nk=1,MESH_TOPOLOGY%NODES%NODES(np)%NUMBER_OF_DERIVATIVES
                       ny=MESH_TOPOLOGY%NODES%NODES(np)%DOF_INDEX(nk)
                       ALLOCATE(DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(MAX_NUMBER_DOMAINS),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof global to local map local number",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof global to local map local number.",ERR,ERROR,*999)
                       ALLOCATE(DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(MAX_NUMBER_DOMAINS),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof global to local map domain number",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof global to local map domain number.",ERR,ERROR,*999)
                       ALLOCATE(DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(MAX_NUMBER_DOMAINS),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof global to local map local type",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof global to local map local type.",ERR,ERROR,*999)
                     ENDDO !nk
                     IF(NUMBER_OF_DOMAINS==1) THEN
                       !Node is an internal node
@@ -3165,25 +3166,25 @@ CONTAINS
                   CALL DOMAIN_MAPPINGS_LOCAL_FROM_GLOBAL_CALCULATE(DOFS_MAPPING,ERR,ERROR,*999)
                   
                 ELSE
-                  CALL FLAG_ERROR("Domain mesh is not associated",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Domain mesh is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Domain decomposition is not associated",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Domain decomposition is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Domain mappings elements is not associated",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Domain mappings elements is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Domain mappings dofs is not associated",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Domain mappings dofs is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Domain mappings nodes is not associated",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Domain mappings nodes is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Domain mappings is not associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Domain is not associated",ERR,ERROR,*998)
+      CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*998)
     ENDIF
     
     IF(DIAGNOSTICS1) THEN
@@ -3359,7 +3360,7 @@ CONTAINS
         DEALLOCATE(DOMAIN_MAPPINGS%NODES)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Domain mapping is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Domain mapping is not associated.",ERR,ERROR,*999)
     ENDIF
  
     CALL EXITS("DOMAIN_MAPPINGS_NODES_FINALISE")
@@ -3387,15 +3388,15 @@ CONTAINS
 
     IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
       IF(ASSOCIATED(DOMAIN_MAPPINGS%NODES)) THEN
-        CALL FLAG_ERROR("Domain nodes mappings are already associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Domain nodes mappings are already associated.",ERR,ERROR,*999)
       ELSE
         ALLOCATE(DOMAIN_MAPPINGS%NODES,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain mappings nodes",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain mappings nodes.",ERR,ERROR,*999)
         CALL DOMAIN_MAPPINGS_MAPPING_INITIALISE(DOMAIN_MAPPINGS%NODES,DOMAIN_MAPPINGS%DOMAIN%DECOMPOSITION%NUMBER_OF_DOMAINS, &
           & ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Domain mapping is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Domain mapping is not associated.",ERR,ERROR,*999)
     ENDIF
  
     CALL EXITS("DOMAIN_MAPPINGS_NODES_INITIALISE")
@@ -3431,7 +3432,7 @@ CONTAINS
           IF(BASIS%NUMBER_OF_ELEMENT_PARAMETERS>TOPOLOGY%ELEMENTS%MAXIMUM_NUMBER_OF_ELEMENT_PARAMETERS) &
             & TOPOLOGY%ELEMENTS%MAXIMUM_NUMBER_OF_ELEMENT_PARAMETERS=BASIS%NUMBER_OF_ELEMENT_PARAMETERS
         ELSE
-          CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Basis is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDDO !ne
       TOPOLOGY%NODES%MAXIMUM_NUMBER_OF_DERIVATIVES=-1
@@ -3442,7 +3443,7 @@ CONTAINS
       !Calculate the elements surrounding the nodes in the domain topology
       CALL DOMAIN_TOPOLOGY_NODES_SURROUNDING_ELEMENTS_CALCULATE(TOPOLOGY,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Topology is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Topology is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("DOMAIN_TOPOLOGY_CALCULATE")

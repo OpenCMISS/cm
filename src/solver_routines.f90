@@ -7820,12 +7820,6 @@ CONTAINS
                           !Update the solver matrix values
                           CALL DISTRIBUTED_MATRIX_UPDATE_START(SOLVER_DISTRIBUTED_MATRIX,ERR,ERROR,*999)
 
-
-                          NULLIFY(CHECK_DATA3)
-                            CALL DISTRIBUTED_MATRIX_DATA_GET(SOLVER_MATRIX%MATRIX,CHECK_DATA3,ERR,ERROR,*999)
-
-
-
                           IF(ASSOCIATED(PREVIOUS_SOLVER_DISTRIBUTED_MATRIX)) THEN
                             CALL DISTRIBUTED_MATRIX_UPDATE_FINISH(PREVIOUS_SOLVER_DISTRIBUTED_MATRIX,ERR,ERROR,*999)
                           ENDIF

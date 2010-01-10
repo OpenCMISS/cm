@@ -671,7 +671,8 @@ MODULE TYPES
   TYPE DOMAIN_MAPPING_TYPE
     INTEGER(INTG) :: NUMBER_OF_LOCAL !<The number of local numbers in the domain excluding ghost numbers
     INTEGER(INTG) :: TOTAL_NUMBER_OF_LOCAL !<The total number of local numbers in the domain including ghost numbers.
-    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_DOMAIN_LOCAL(:) !<NUMBER_OF_DOMAIN_LOCAL(domain_no). The total number of locals for domain_no'th domain. NOTE: the domain_no goes from 0 to the number of domains-1.
+    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_DOMAIN_LOCAL(:) !<NUMBER_OF_DOMAIN_LOCAL(domain_no). The number of locals for domain_no'th domain. NOTE: the domain_no goes from 0 to the number of domains-1.
+    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_DOMAIN_GHOST(:) !<NUMBER_OF_DOMAIN_GHOST(domain_no). The total number of ghosts for domain_no'th domain. NOTE: the domain_no goes from 0 to the number of domains-1.
     INTEGER(INTG) :: NUMBER_OF_GLOBAL !<The number of global numbers for this mapping.
     INTEGER(INTG) :: NUMBER_OF_DOMAINS !<The number of domains in this mapping.
     INTEGER(INTG) :: NUMBER_OF_INTERNAL !<The number of internal numbers in this mapping.
@@ -1889,7 +1890,9 @@ MODULE TYPES
   
   !>Contains information about the mappings from a solver matrix to the equations in an equations set
   TYPE SOLVER_COL_TO_EQUATIONS_SET_MAP_TYPE
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations in the equations set that these columns map to.
+    LOGICAL :: HAVE_DYNAMIC !<Is .TRUE. if there are any dynamic equations in the map.
+    LOGICAL :: HAVE_STATIC !<Is .TRUE. if there are any static equations in the map.
     TYPE(SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAP_TYPE), ALLOCATABLE :: SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS(:) !<SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS(col_idx). The mappings from the col_idx'th column of the solver matrix to the dynamic equations in the equations set.
     TYPE(SOLVER_COL_TO_STATIC_EQUATIONS_MAP_TYPE), ALLOCATABLE :: SOLVER_COL_TO_STATIC_EQUATIONS_MAPS(:) !<SOLVER_COL_TO_STATIC_EQUATIONS_MAPS(col_idx). The mappings from the col_idx'th column of the solver matrix to the static equations in the equations set.
   END TYPE SOLVER_COL_TO_EQUATIONS_SET_MAP_TYPE
