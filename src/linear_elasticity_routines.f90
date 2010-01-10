@@ -97,8 +97,8 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx,deriv_idx,dim_idx,local_ny,node_idx,NUMBER_OF_DIMENSIONS,variable_idx,variable_type
-    INTEGER(INTG) :: BC_X_FORCE_counter,BC_X_counter,BC_Y_counter
-    REAL(DP) :: ANALYTIC_VALUE,BC_VALUE,X(3),GEOMETRIC_TOL,FORCE_X,FORCE_Y,FORCE_Y_AREA,LENGTH,WIDTH,HEIGHT,E_X,v_X
+    INTEGER(INTG) :: BC_X_FORCE_counter,BC_X_counter,BC_Y_counter,BC_X_Nodes,BC_Z_Nodes
+    REAL(DP) :: ANALYTIC_VALUE,BC_VALUE,X(3),GEOMETRIC_TOL,FORCE_X,FORCE_Y,FORCE_Y_AREA,LENGTH,WIDTH,HEIGHT,E_X,v_X,FORCE_X_AREA
     REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
     LOGICAL :: SET_BC
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
@@ -125,6 +125,8 @@ CONTAINS
             !
             ! IDENTIFY BOUNDARY CONDITION NODES
             !
+            BC_X_Nodes = 0
+            BC_Z_Nodes = 0
             BC_X_counter = 0
             BC_Y_counter = 0
             BC_X_FORCE_counter = 0
@@ -182,9 +184,7 @@ CONTAINS
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                                     SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                     CASE(NO_GLOBAL_DERIV)
-!                                      IF (ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) THEN
-!                                        BC_X_counter = BC_X_counter + 1
-!                                      ENDIF
+                                      !pass
                                     END SELECT
                                   END SELECT
                                 CASE(2) !v component
@@ -194,9 +194,9 @@ CONTAINS
                                     CASE(NO_GLOBAL_DERIV)
                                       IF (ABS(X(2)-0.0_DP) < GEOMETRIC_TOL) THEN
                                         BC_Y_counter = BC_Y_counter + 1
+                                      ENDIF
                                       IF (ABS(X(2)-0.0_DP) < GEOMETRIC_TOL) THEN
                                         BC_X_counter = BC_X_counter + 1
-                                      ENDIF
                                       ENDIF
                                     END SELECT
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
@@ -210,7 +210,11 @@ CONTAINS
                               !
                               ! THREE DIMENSIONAL LINEAR ELASTICITY
                               !
+
                               CASE(EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_THREE_DIM_1)
+                                LENGTH = 20.0_DP
+                                WIDTH=20.0_DP
+                                HEIGHT=5.0_DP
                                 SELECT CASE(component_idx)
                                 CASE(1) !u component
                                   SELECT CASE(variable_type)
@@ -222,9 +226,7 @@ CONTAINS
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                     CASE(NO_GLOBAL_DERIV)
-                                      IF (ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) THEN
-                                        BC_X_FORCE_counter = BC_X_FORCE_counter + 1 
-                                      ENDIF
+                                      !pass
                                     END SELECT
                                   END SELECT
                                 CASE(2) !v component
@@ -237,7 +239,14 @@ CONTAINS
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                     CASE(NO_GLOBAL_DERIV)
-                                      !pass
+                                      IF (ABS(X(2)-WIDTH) < GEOMETRIC_TOL) THEN
+                                        IF (ABS(X(1)-LENGTH) < GEOMETRIC_TOL) THEN
+                                          BC_Z_Nodes = BC_Z_Nodes + 1
+                                        ENDIF
+                                        IF (ABS(X(3)-HEIGHT) < GEOMETRIC_TOL) THEN
+                                          BC_X_Nodes = BC_X_Nodes + 1 
+                                        ENDIF
+                                      ENDIF
                                     END SELECT
                                   END SELECT
                                 CASE(3) !w component
@@ -312,16 +321,18 @@ CONTAINS
                               ! ONE DIMENSIONAL LINEAR ELASTICITY
                               !
                               CASE(EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_ONE_DIM_1)
-                                FORCE_X=25.0_DP
-                                LENGTH = 100.0_DP
-                                WIDTH=25.0_DP
-                                HEIGHT=25.0_DP
+                                FORCE_X=50.0_DP
+                                LENGTH = 20.0_DP
+                                WIDTH=20.0_DP
+                                HEIGHT=5.0_DP
+                                FORCE_X_AREA = WIDTH*HEIGHT
+                                E_X = 10E3_DP
                                 SELECT CASE(variable_type)
                                 !!TODO set material parameters from material field
                                 CASE(FIELD_U_VARIABLE_TYPE)
                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                   CASE(NO_GLOBAL_DERIV)
-                                    ANALYTIC_VALUE=X(1)*FORCE_X/(10E3_DP*25.0_DP*25.0_DP)
+                                    ANALYTIC_VALUE=(X(1)*(FORCE_X/FORCE_X_AREA))/E_X
                                     IF (ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) THEN
                                       SET_BC = .TRUE.
                                       BC_VALUE=0.0_DP
@@ -342,7 +353,7 @@ CONTAINS
                                     ELSE
                                       ANALYTIC_VALUE=0.0_DP
                                     ENDIF
-                                    IF (ABS(X(1)-100.0_DP) < GEOMETRIC_TOL) THEN
+                                    IF (ABS(X(1)-LENGTH) < GEOMETRIC_TOL) THEN
                                       SET_BC = .TRUE.
                                       BC_VALUE=FORCE_X
                                     ENDIF
@@ -442,28 +453,21 @@ CONTAINS
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                     CASE(NO_GLOBAL_DERIV)
-                                      IF (ABS(X(2)-0.0_DP) < GEOMETRIC_TOL) THEN
-                                        ANALYTIC_VALUE=-FORCE_Y/BC_X_counter
-                                      ELSE
-                                        ANALYTIC_VALUE=0.0_DP
-                                      ENDIF
-                                      IF (ABS(X(2)-WIDTH) < GEOMETRIC_TOL) THEN
-                                        IF ((ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) .OR. (ABS(X(1)-LENGTH) < GEOMETRIC_TOL)) THEN
-                                          SET_BC = .TRUE.
+                                      ANALYTIC_VALUE=0.0_DP
+                                      !If node located on a line edge of mesh
+                                      IF (ABS(X(2)-WIDTH) < GEOMETRIC_TOL) THEN !Apply Force BC
+                                        SET_BC = .TRUE.
+                                        IF ((ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) .OR. (ABS(X(1)-LENGTH) < GEOMETRIC_TOL)) THEN !lies on a corner of the mesh
                                           BC_VALUE=FORCE_Y/(BC_X_counter-1.0_DP)*0.5_DP
-                                        ELSE
-                                          SET_BC = .TRUE.
+                                        ELSE !does not lie on a corner of the mesh
                                           BC_VALUE=FORCE_Y/(BC_X_counter-1.0_DP)
                                         ENDIF
-                                      ENDIF
-                                      IF (ABS(X(2)-0.0_DP) < GEOMETRIC_TOL) THEN
-                                        IF ((ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) .OR. (ABS(X(1)-LENGTH) < GEOMETRIC_TOL)) THEN
+                                      ELSEIF (ABS(X(2)-0) < GEOMETRIC_TOL) THEN !Provide Analytic reaction force, node located on fixed displacment edge
+                                        IF ((ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) .OR. (ABS(X(1)-LENGTH) < GEOMETRIC_TOL)) THEN !lies on a corner of the mesh
                                           ANALYTIC_VALUE=-FORCE_Y/(BC_X_counter-1.0_DP)*0.5_DP
-                                        ELSE
+                                        ELSE !does not lie on a corner of the mesh
                                           ANALYTIC_VALUE=-FORCE_Y/(BC_X_counter-1.0_DP)
                                         ENDIF
-                                      ELSE
-                                        ANALYTIC_VALUE=0.0_DP
                                       ENDIF
                                     CASE(GLOBAL_DERIV_S1)
                                       ANALYTIC_VALUE=0.0_DP
@@ -491,18 +495,21 @@ CONTAINS
                               ! THREE DIMENSIONAL LINEAR ELASTICITY
                               !
                               CASE(EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_THREE_DIM_1)
-                                FORCE_X=25.0_DP/2.0_DP
-                                LENGTH = 100.0_DP
-                                WIDTH=25.0_DP/2.0_DP
-                                HEIGHT=25.0_DP/2.0_DP
+                                LENGTH = 20.0_DP
+                                WIDTH=20.0_DP
+                                HEIGHT=5.0_DP
+                                FORCE_Y=50.0_DP
+                                FORCE_Y_AREA=WIDTH*HEIGHT
+                                E_X = 10.0E3_DP
+                                v_X = 0.3_DP
                                 SELECT CASE(component_idx)
                                 CASE(1) !u component
-                                !u=Sigmax*x/E
+                                !u=
                                   SELECT CASE(variable_type)
                                   CASE(FIELD_U_VARIABLE_TYPE)
                                     SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                     CASE(NO_GLOBAL_DERIV)
-                                      ANALYTIC_VALUE=X(1)*25.0_DP/(625.0_DP*30E6_DP)
+                                      ANALYTIC_VALUE=(-v_X*X(1)*(FORCE_Y/FORCE_Y_AREA))/E_X
                                       IF (ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) THEN
                                         SET_BC = .TRUE.
                                         BC_VALUE=0.0_DP
@@ -530,15 +537,7 @@ CONTAINS
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                                     SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                     CASE(NO_GLOBAL_DERIV)
-                                      IF (ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) THEN
-                                        ANALYTIC_VALUE=-25.0_DP/BC_X_FORCE_counter
-                                      ELSE
-                                        ANALYTIC_VALUE=0.0_DP
-                                      ENDIF
-                                      IF (ABS(X(1)-100.0_DP) < GEOMETRIC_TOL) THEN
-                                        SET_BC = .TRUE.
-                                        BC_VALUE=25.0_DP/BC_X_FORCE_counter
-                                      ENDIF
+                                      ANALYTIC_VALUE=0.0_DP
                                     CASE(GLOBAL_DERIV_S1)
                                       ANALYTIC_VALUE=0.0_DP
                                     CASE(GLOBAL_DERIV_S2)
@@ -565,12 +564,12 @@ CONTAINS
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT                                
                                 CASE(2) !v component
-                                !v=Sigmax*x/E
+                                !v=
                                   SELECT CASE(variable_type)
                                   CASE(FIELD_U_VARIABLE_TYPE)
                                     SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                     CASE(NO_GLOBAL_DERIV)
-                                      ANALYTIC_VALUE=-X(2)*0.25_DP*25.0_DP/(625.0_DP*30E6_DP)
+                                      ANALYTIC_VALUE=(X(2)*(FORCE_Y/FORCE_Y_AREA))/E_X
                                       IF (ABS(X(2)-0.0_DP) < GEOMETRIC_TOL) THEN
                                         SET_BC = .TRUE.
                                         BC_VALUE=0.0_DP
@@ -599,6 +598,32 @@ CONTAINS
                                     SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                     CASE(NO_GLOBAL_DERIV)
                                       ANALYTIC_VALUE=0.0_DP
+                                      IF (ABS(X(2)-WIDTH) < GEOMETRIC_TOL) THEN !Apply Force BC
+                                        SET_BC = .TRUE.
+                                        IF (((ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) .AND. (ABS(X(3)-0.0_DP) < GEOMETRIC_TOL)) .OR. &
+                                          & ((ABS(X(1)-LENGTH) < GEOMETRIC_TOL) .AND. (ABS(X(3)-0.0_DP) < GEOMETRIC_TOL)) .OR. &
+                                          & ((ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) .AND. (ABS(X(3)-HEIGHT) < GEOMETRIC_TOL)) .OR. &
+                                          & ((ABS(X(1)-LENGTH) < GEOMETRIC_TOL) .AND. (ABS(X(3)-HEIGHT) < GEOMETRIC_TOL))) THEN !lies on a corner of the mesh
+                                            BC_VALUE=FORCE_Y/((BC_X_Nodes-1.0_DP)*(BC_Z_Nodes-1.0_DP))*0.25_DP
+                                        ELSEIF ((ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) .OR. (ABS(X(1)-LENGTH) < GEOMETRIC_TOL) .OR. &
+                                          & (ABS(X(3)-0.0_DP) < GEOMETRIC_TOL) .OR. (ABS(X(3)-HEIGHT) < GEOMETRIC_TOL)) THEN !lies on an edge of the mesh
+                                          BC_VALUE=FORCE_Y/((BC_X_Nodes-1.0_DP)*(BC_Z_Nodes-1.0_DP))*0.5_DP
+                                        ELSE !lies on xi2=1 face
+                                          BC_VALUE=FORCE_Y/((BC_X_Nodes-1.0_DP)*(BC_Z_Nodes-1.0_DP))
+                                        ENDIF
+                                      ELSEIF (ABS(X(2)-0.0_DP) < GEOMETRIC_TOL) THEN !Provide Analytic reaction force, node located on fixed displacment edge
+                                        IF (((ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) .AND. (ABS(X(3)-0.0_DP) < GEOMETRIC_TOL)) .OR. &
+                                          & ((ABS(X(1)-LENGTH) < GEOMETRIC_TOL) .AND. (ABS(X(3)-0.0_DP) < GEOMETRIC_TOL)) .OR. &
+                                          & ((ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) .AND. (ABS(X(3)-HEIGHT) < GEOMETRIC_TOL)) .OR. &
+                                          & ((ABS(X(1)-LENGTH) < GEOMETRIC_TOL) .AND. (ABS(X(3)-HEIGHT) < GEOMETRIC_TOL))) THEN !lies on a corner of the mesh
+                                            ANALYTIC_VALUE=-FORCE_Y/((BC_X_Nodes-1.0_DP)*(BC_Z_Nodes-1.0_DP))*0.25_DP
+                                        ELSEIF ((ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) .OR. (ABS(X(1)-LENGTH) < GEOMETRIC_TOL) .OR. &
+                                          & (ABS(X(3)-0.0_DP) < GEOMETRIC_TOL) .OR. (ABS(X(3)-HEIGHT) < GEOMETRIC_TOL)) THEN !lies on an edge of the mesh
+                                          ANALYTIC_VALUE=-FORCE_Y/((BC_X_Nodes-1.0_DP)*(BC_Z_Nodes-1.0_DP))*0.5_DP
+                                        ELSE !lies on xi2=1 face
+                                          ANALYTIC_VALUE=-FORCE_Y/((BC_X_Nodes-1.0_DP)*(BC_Z_Nodes-1.0_DP))
+                                        ENDIF
+                                      ENDIF
                                     CASE(GLOBAL_DERIV_S1)
                                       ANALYTIC_VALUE=0.0_DP
                                     CASE(GLOBAL_DERIV_S2)
@@ -623,14 +648,14 @@ CONTAINS
                                     LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
                                       & " is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  END SELECT                                
+                                  END SELECT
                                 CASE(3) !w component
-                                !w=Sigmax*x/E
+                                !w=
                                   SELECT CASE(variable_type)
                                   CASE(FIELD_U_VARIABLE_TYPE)
                                     SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                     CASE(NO_GLOBAL_DERIV)
-                                      ANALYTIC_VALUE=-X(3)*0.25_DP*25.0_DP/(625.0_DP*30E6_DP)
+                                      ANALYTIC_VALUE=(-v_X*X(3)*(FORCE_Y/FORCE_Y_AREA))/E_X
                                       IF (ABS(X(3)-0.0_DP) < GEOMETRIC_TOL) THEN
                                         SET_BC = .TRUE.
                                         BC_VALUE=0.0_DP
@@ -966,12 +991,13 @@ CONTAINS
             ENDDO !ng
             !If Plane Stress/Strain problem multiply equation matrix by thickness
             IF(EQUATIONS_SET%SUBTYPE == EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRESS_SUBTYPE .OR. &
-              & EQUATIONS_SET%SUBTYPE == EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRAIN_SUBTYPE) THEN
+              & EQUATIONS_SET%SUBTYPE == EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRAIN_SUBTYPE .OR. & 
+              & EQUATIONS_SET%SUBTYPE == EQUATIONS_SET_ONE_DIMENSIONAL_SUBTYPE) THEN
               DO mhs=1,TOTAL_DEPENDENT_BASIS_EP
                 DO nhs=mhs,TOTAL_DEPENDENT_BASIS_EP
                   !!TODO::Bring 2D plane stress/strain element thickness in through a field - element constant when it can be exported by field i/o. Currently brought in through material field (Temporary)
                   EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)* &
-                    & MATERIALS_INTERP_POINT%values(3,1)
+                    & MATERIALS_INTERP_POINT%values(1,1)
                 ENDDO !nhs
               ENDDO !mhs
             ENDIF
@@ -1090,8 +1116,8 @@ CONTAINS
       ELASTICITY_TENSOR(6,6)=C66
     CASE(EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRESS_SUBTYPE)
       !Plane Stress Isotropic Elasticity Tensor
-      E1 = MATERIALS_INTERPOLATED_POINT%values(1,1)
-      v12 = MATERIALS_INTERPOLATED_POINT%values(2,1)
+      E1 = MATERIALS_INTERPOLATED_POINT%values(2,1)
+      v12 = MATERIALS_INTERPOLATED_POINT%values(3,1)
       v21 = v12
       gama = 1.0_DP/(1.0_DP-v12*v21)
       C11 = E1*gama
@@ -1106,9 +1132,9 @@ CONTAINS
       ELASTICITY_TENSOR(6,6)=C66
     CASE(EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRAIN_SUBTYPE)
       !Plane Strain Isotropic Linear Elasticity Tensor
-      E1 = MATERIALS_INTERPOLATED_POINT%values(1,1)
+      E1 = MATERIALS_INTERPOLATED_POINT%values(2,1)
       E2 = E1
-      v12 = MATERIALS_INTERPOLATED_POINT%values(2,1)
+      v12 = MATERIALS_INTERPOLATED_POINT%values(3,1)
       v21 = v12
       gama = 1.0_DP/(1.0_DP-v12-v21)
       C11 = E1*gama*(1.0_DP-v12)/(1.0_DP+v12)
@@ -1123,7 +1149,7 @@ CONTAINS
       ELASTICITY_TENSOR(6,6)=C66
     CASE(EQUATIONS_SET_ONE_DIMENSIONAL_SUBTYPE)
       !Plane Strain Isotropic Linear Elasticity Tensor
-      E1 = MATERIALS_INTERPOLATED_POINT%values(1,1)
+      E1 = MATERIALS_INTERPOLATED_POINT%values(2,1)
       C11 = E1
       ELASTICITY_TENSOR(1,1)=C11
     CASE(EQUATIONS_SET_PLATE_SUBTYPE)
