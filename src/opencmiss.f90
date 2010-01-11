@@ -1336,8 +1336,10 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{  
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityEquationOneDim1 = EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_ONE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityEquationTwoDim1 = EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_TWO_DIM_PLANE_STRESS_1 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityEquationThreeDim1 = EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_THREE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityEquationTwoDim1 = & 
+    & EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_TWO_DIM_PLANE_STRESS_1 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityEquationThreeDim1 = & 
+    & EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_THREE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
   !>@}
   !>@}
   !>@}
