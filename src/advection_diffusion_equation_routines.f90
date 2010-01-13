@@ -89,8 +89,8 @@ CONTAINS
 
 
   !>Calculates the analytic solution and sets the boundary conditions for an analytic problem.
-  !SO FAR THIS IS JUST PASTED IN FROM THE POISSION EQUATION FILE - THE ANALYTIC SOLUTION HERE NEEDS TO BE REPLACED
-  !WITH ONE FOR DIFFUSION
+  !>For the advection-diffusion analytic example it is required that the advective velocity
+  !>and the source field are set to a particular analytic value, which is performed within this subroutine.
   SUBROUTINE ADVECTION_DIFFUSION_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -99,22 +99,25 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx,deriv_idx,dim_idx,local_ny,node_idx,NUMBER_OF_DIMENSIONS,variable_idx,variable_type
-    REAL(DP) :: VALUE,X(3)
+    REAL(DP) :: VALUE,X(3),VALUE_SOURCE,VALUE_INDEPENDENT
     REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,INDEPENDENT_FIELD,SOURCE_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE
     TYPE(VARYING_STRING) :: LOCAL_ERROR    
-    REAL(DP) :: alpha, phi
+    REAL(DP) :: alpha, phi, Peclet,tanphi
 
 
     CALL ENTERS("ADVECTION_DIFFUSION_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR,*999)
     
     alpha = 1.0_DP
-    phi = 1.0_DP
-     
+    phi = 0.707_DP
+    tanphi = TAN(phi)
+    Peclet= 2000.0_DP
+    
+    !>Set the analytic boundary conditions 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
         DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
@@ -154,11 +157,11 @@ CONTAINS
                                 !This is a steady-state solution of advection-diffusion equation
                                 !Velocity field takes form v(x,y)=(sin(6y),cos(6x))
                                 !Solution is u(x,y)=tanh(1 - alpha.(x.tan(Phi) - y))
-                                SELECT CASE(variable_type)
+                               SELECT CASE(variable_type)
                                 CASE(FIELD_U_VARIABLE_TYPE)
                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                   CASE(NO_GLOBAL_DERIV)
-                                    VALUE=TANH(1-alpha*(X(1)*TAN(phi)-X(2)))
+                                    VALUE=TANH(1.0-alpha*(X(1)*tanphi-X(2)))
                                   CASE(GLOBAL_DERIV_S1)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S2)
@@ -249,6 +252,191 @@ CONTAINS
       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
     
+    !>Set the independent field (i.e. the advective velocity) to a specified analytical function, to be used in conjunction with
+    !>an 
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+        INDEPENDENT_FIELD=>EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD
+        IF(ASSOCIATED(INDEPENDENT_FIELD)) THEN
+          GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+          IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN            
+            CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+            NULLIFY(GEOMETRIC_VARIABLE)
+            CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
+            CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS, &
+              & ERR,ERROR,*999)
+            DO variable_idx=1,INDEPENDENT_FIELD%NUMBER_OF_VARIABLES
+              variable_type=INDEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
+              FIELD_VARIABLE=>INDEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+              IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+!                CALL FIELD_PARAMETER_SET_CREATE(INDEPENDENT_FIELD,variable_type,FIELD_INITIAL_VALUES_SET_TYPE,ERR,ERROR,*999)
+                DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                  IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
+                    DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+                    IF(ASSOCIATED(DOMAIN)) THEN
+                      IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+                        DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                        IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                          !Loop over the local nodes excluding the ghosts.
+                          DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                            !!TODO \todo We should interpolate the geometric field here and the node position.
+                            DO dim_idx=1,NUMBER_OF_DIMENSIONS
+                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
+                              X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
+                            ENDDO !dim_idx
+                            !Loop over the derivatives
+                            DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                              SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
+                              CASE(EQUATIONS_SET_ADVECTION_DIFFUSION_EQUATION_TWO_DIM_1)
+
+                                !Velocity field takes form v(x,y)=(sin(6y),cos(6x))
+                                IF(component_idx==1) THEN
+                                  VALUE_INDEPENDENT=SIN(6*X(1))
+                                      WRITE(*,'(A)') "Setting u velocity of advective field."
+                                      WRITE(6,*) VALUE_INDEPENDENT
+                                ELSE
+                                  VALUE_INDEPENDENT=COS(6*X(2))           
+                                      WRITE(*,'(A)') "Setting v velocity of advective field."
+                                ENDIF
+                              CASE DEFAULT
+                                LOCAL_ERROR="The analytic function type of "// &
+                                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                                  & " is invalid."
+                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              END SELECT
+                              local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                & FIELD_VALUES_SET_TYPE,local_ny,VALUE_INDEPENDENT,ERR,ERROR,*999)
+                            ENDDO !deriv_idx
+                          ENDDO !node_idx
+                        ELSE
+                          CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                  ENDIF
+                ENDDO !component_idx
+                CALL FIELD_PARAMETER_SET_UPDATE_START(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  & ERR,ERROR,*999)
+                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  & ERR,ERROR,*999)
+              ELSE
+                CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+              ENDIF
+
+            ENDDO !variable_idx
+            CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+          ELSE
+            CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+          ENDIF            
+        ELSE
+          CALL FLAG_ERROR("Equations set independent field is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    !>Set the source field to a specified analytical function
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+        SOURCE_FIELD=>EQUATIONS_SET%SOURCE%SOURCE_FIELD
+        IF(ASSOCIATED(SOURCE_FIELD)) THEN
+          GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+          IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN            
+            CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+            NULLIFY(GEOMETRIC_VARIABLE)
+            CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
+            CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS, &
+              & ERR,ERROR,*999)
+            DO variable_idx=1,SOURCE_FIELD%NUMBER_OF_VARIABLES
+              variable_type=SOURCE_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
+              FIELD_VARIABLE=>SOURCE_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+              IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+!                CALL FIELD_PARAMETER_SET_CREATE(SOURCE_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
+                DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                  IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
+                    DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+                    IF(ASSOCIATED(DOMAIN)) THEN
+                      IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+                        DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                        IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                          !Loop over the local nodes excluding the ghosts.
+                          DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                            !!TODO \todo We should interpolate the geometric field here and the node position.
+                            DO dim_idx=1,NUMBER_OF_DIMENSIONS
+                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
+                              X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
+                            ENDDO !dim_idx
+                            !Loop over the derivatives
+                            DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                              SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
+                              CASE(EQUATIONS_SET_ADVECTION_DIFFUSION_EQUATION_TWO_DIM_1)
+                               VALUE_SOURCE= 2.0*TANH(-0.1E1+alpha*(tanphi*X(1)-X(2)))*(1.0-(TANH(-0.1E1+alpha*( &
+                                  & tanphi*X(1)-X(2)))**2))*alpha*alpha*tanphi*tanphi+2.0*TANH(-0.1E1+alpha*(tanphi*X(1)-X(2)) &
+                                  & )*(1.0-(TANH(-0.1E1+alpha*(tanphi*X(1)-X(2)))**2))*alpha*alpha-Peclet*(-SIN(6.0*X(2) &
+                                  & )*(1.0-(TANH(-0.1E1+alpha*(tanphi*X(1)-X(2)))**2))*alpha*tanphi+COS(6.0*X(1))*(1.0- &
+                                  & (TANH(-0.1E1+alpha*(tanphi*X(1)-X(2)))**2))*alpha)
+                                  WRITE(*,'(A)') "Setting the source field."
+                                CASE DEFAULT
+                                LOCAL_ERROR="The analytic function type of "// &
+                                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                                  & " is invalid."
+                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              END SELECT
+                              local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                & FIELD_VALUES_SET_TYPE,local_ny,VALUE_SOURCE,ERR,ERROR,*999)
+                            ENDDO !deriv_idx
+                          ENDDO !node_idx
+                        ELSE
+                          CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                  ENDIF
+                ENDDO !component_idx
+                CALL FIELD_PARAMETER_SET_UPDATE_START(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  & ERR,ERROR,*999)
+                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  & ERR,ERROR,*999)
+              ELSE
+                CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+              ENDIF
+
+            ENDDO !variable_idx
+            CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+          ELSE
+            CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+          ENDIF            
+        ELSE
+          CALL FLAG_ERROR("Equations set source field is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+
     CALL EXITS("ADVECTION_DIFFUSION_EQUATION_ANALYTIC_CALCULATE")
     RETURN
 999 CALL ERRORS("ADVECTION_DIFFUSION_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR)
