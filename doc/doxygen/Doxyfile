@@ -38,7 +38,7 @@ PROJECT_NUMBER         = 0.3
 # If a relative path is entered, it will be relative to the location 
 # where doxygen was started. If left blank the current directory will be used.
 
-OUTPUT_DIRECTORY       = 
+OUTPUT_DIRECTORY       = Programmer
 
 # If the CREATE_SUBDIRS tag is set to YES, then doxygen will create 
 # 4096 sub-directories (in 2 levels) under the output directory of each output 
@@ -105,7 +105,7 @@ INLINE_INHERITED_MEMB  = NO
 # path before files name in the file list and in the header files. If set 
 # to NO the shortest path that makes the file name unique will be used.
 
-FULL_PATH_NAMES        = YES
+FULL_PATH_NAMES        = NO
 
 # If the FULL_PATH_NAMES tag is set to YES then the STRIP_FROM_PATH tag 
 # can be used to strip a user-defined part of the path. Stripping is 
@@ -771,7 +771,7 @@ GENERATE_HTML          = YES
 # If a relative path is entered the value of OUTPUT_DIRECTORY will be 
 # put in front of it. If left blank `html' will be used as the default path.
 
-HTML_OUTPUT            = html
+HTML_OUTPUT            =
 
 # The HTML_FILE_EXTENSION tag can be used to specify the file extension for 
 # each generated HTML page (for example: .htm,.php,.asp). If it is left blank 
@@ -1519,7 +1519,7 @@ DOT_CLEANUP            = YES
 # The SEARCHENGINE tag specifies whether or not a search engine should be 
 # used. If set to NO the values of all tags below this one will be ignored.
 
-SEARCHENGINE           = YES
+SEARCHENGINE           = NO
 
 ALIASES                = linux_intel_latest="0"
 ALIASES                += linux_gnu_latest="0" 

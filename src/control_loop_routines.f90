@@ -1025,6 +1025,7 @@ CONTAINS
         CONTROL_LOOP%TIME_LOOP%START_TIME=0.0_DP
         CONTROL_LOOP%TIME_LOOP%STOP_TIME=1.0_DP
         CONTROL_LOOP%TIME_LOOP%TIME_INCREMENT=0.01_DP        
+        CONTROL_LOOP%TIME_LOOP%OUTPUT_NUMBER=1
       ENDIF
     ELSE
       CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*998)
@@ -1165,12 +1166,11 @@ CONTAINS
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to set the times for
-    INTEGER(INTG) :: OUTPUT_FREQUENCY
+    INTEGER(INTG) :: OUTPUT_FREQUENCY !<The output frequency modulo to set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables    
     TYPE(CONTROL_LOOP_TIME_TYPE), POINTER :: TIME_LOOP
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CONTROL_LOOP_TIME_OUTPUT_SET",ERR,ERROR,*999)
 

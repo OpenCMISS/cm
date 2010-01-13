@@ -4,7 +4,7 @@
 \input{../latex/defns} %define pagesetup and std. packages etc.
 \input{../latex/abbreviations} %define packages etc.
 
-\usepackage{../latex/mybook} %define book style
+\usepackage{mybook} %define book style
 
 \usepackage{times} %use the times font
 \makeindex
@@ -26,12 +26,15 @@
 
 \pagenumbering{arabic}
 
-\include{Introduction/Introduction} %input from Introduction/Introduction.tex
-\include{Theory/Theory}             %input from Theory/Theory.tex
+\include{Introduction/Introduction}           %input from Introduction/Introduction.tex
+\include{Theory/Theory}                       %input from Theory/Theory.tex
+\include{EquationSets/EquationSets}           %input from EquationSets/EquationSets.tex
+\include{AnalyticSolutions/AnalyticSolutions} %input from AnalyticSolutions/AnalyticSolutions.tex
+\include{Solvers/Solvers}                     %input from Solvers/Solvers.tex
 
-\include{References/References}     %input from References/References.tex
+\include{References/References}               %input from References/References.tex
 
-\include{Index/Index}               %input from Index/Index.tex
+\include{Index/Index}                         %input from Index/Index.tex
 
 \end{document}   
 

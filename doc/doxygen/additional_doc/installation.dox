@@ -1,17 +1,20 @@
 /*!
 \page installation Obtaining the Code and Setting up the Development Environment
 \section obtain_code_and_libraries Obtaining the Code and Libraries
-To obtain the openCMISS source you need to check it out from the subversion repository. 
-There are two parts to openCMISS to obtain - openCMISS itself and the various libraries it needs.
-In your root openCMISS directory, make the opencmiss and opemcmissextras directories.
+To obtain the OpenCMISS source you need to check it out from the subversion repository. 
+There are two parts to OpenCMISS to obtain - OpenCMISS itself and the various libraries it needs.
+In your root OpenCMISS directory, make the opencmiss and opencmissextras directories. Within the opencmiss and opencmissextras directories there are two parts - cm and cellml.
 \subsection obtain_the_code Obtain the Code
-The openCMISS repository is at https://opencmiss.svn.sourceforge.net/svnroot/opencmiss/cm
-To check out the main trunk of openCMISS issue the following command in the opencmiss directory:
+The OpenCMISS cm repository is at https://opencmiss.svn.sourceforge.net/svnroot/opencmiss/cm
+To check out the main trunk of OpenCMISS issue the following command in the opencmiss directory:
 \code svn co https://opencmiss.svn.sourceforge.net/svnroot/opencmiss/cm/trunk cm \endcode
 If you are not familar with subversion, have a look at http://svnbook.red-bean.com.
+The OpenCMISS cellml repository is at https://opencmiss.svn.sourceforge.net/svnroot/opencmiss/cellml
+To check out the main trunk of OpenCMISS issue the following command in the opencmiss directory:
+\code svn co https://opencmiss.svn.sourceforge.net/svnroot/opencmiss/cellml/trunk cellml \endcode
 \subsection obtain_the_libraries Obtain the Libraries
-The openCMISS libraries repository is at https://svn.physiomeproject.org/svn/opencmissextras/cm/
-To check out the main trunk of the various libraries required with openCMISS issue the following command in the opencmissextras directory:
+The OpenCMISS libraries cm repository is at https://svn.physiomeproject.org/svn/opencmissextras/cm/
+To check out the main trunk of the various cm libraries required with OpenCMISS issue the following command in the opencmissextras directory:
 \code svn co https://svn.physiomeproject.org/svn/opencmissextras/cm/trunk/external/architecture cm/external/architecture \endcode
 where architecture is the appropriate architecture for the machine. Possible architectures are:
 - i386-win32
@@ -24,7 +27,10 @@ where architecture is the appropriate architecture for the machine. Possible arc
 - rs6000-32-aix
 - rs6000-32-aix-debug
 .
-For Auckland users, you may find libraries on hpc. Go to \\bioengsmb\cmiss\opencmissextras\cm (Windows) or /hpc/cmiss/opencmissextras/cm and copy the necessary files. 
+To check out the main trunk of the various cellml libraries required with OpenCMISS issue the following command in the opencmissextras directory:
+\code svn co https://svn.physiomeproject.org/svn/opencmissextras/cellml/trunk/architecture cellml/architecture \endcode
+where architecture is the appropriate architecture for the machine. 
+-For Auckland users, you may find libraries on hpc. Go to \\bioengsmb\cmiss\opencmissextras\cm (Windows) or /hpc/cmiss/opencmissextras/cm and copy the necessary files. 
 The folder structure is the same as svn repository. 
 \subsection makefile_structure Makefile Structure
 The top level makefile will eventually build a library. 
@@ -37,9 +43,9 @@ Doxygen can be included .
 \section project_setup Project Setup
 \subsection project_setup_aix On AIX 5.3 (HPC)
 \subsubsection project_setup_hpc_environment Set environment
-Set environment variable to point to openCMISS
+Set environment variable to point to OpenCMISS
 \code setenv OPENCMISS_ROOT <path to your opencmiss folder>\endcode or \code export OPENCMISS_ROOT=<path to your opencmiss folder>\endcode
-Set environment variable to point to openCMISS-extras
+Set environment variable to point to OpenCMISS-extras
 \code setenv OPENCMISSEXTRAS_ROOT <path to your opencmissextras folder>\endcode or \code export OPENCMISSEXTRAS_ROOT=<path to your opencmissextras folder>\endcode
 \subsubsection project_setup_hpc_mpi Set MPI
 Create a file called hostfile.list in your home directory.
@@ -55,7 +61,7 @@ This should result in a binary that you can run in the bin/rs6000-32-aix folder.
 \subsubsection project_setup_linux_environment Set environment
 Set environment variable to point to opencmiss
 \code setenv OPENCMISS_ROOT <path to your opencmiss folder> \endcode or \code export OPENCMISS_ROOT=<path to your opencmiss folder> \endcode
-Set environment variable to point to openCMISS-extras
+Set environment variable to point to OpenCMISS-extras
 \code setenv OPENCMISSEXTRAS_ROOT <path to your opencmissextras folder> \endcode or \code export OPENCMISSEXTRAS_ROOT=<path to your opencmissextras folder> \endcode
 It is also helpful to add the following
 \code setenv PATH ${OPENCMISSEXTRAS_ROOT}/cm/external/${archname}/bin:${PATH}
@@ -144,7 +150,7 @@ Run the downloaded .msi file. Follow all instructions and install "For everybody
 Once you have installed MPICH2 you can turn User Account Control back on. Follow the instructions above and in 4. tick the "Use User Account Control ...".
 NOTE: as from MPICH2 version 1.0.7 the library names have changed. libmpich2 has now become libmpi!
 \subsubsection project_setup_windows_vs2008_compile Compile
-For each example, go into the VisualopenCMISS_08 folder. Double click the VisualopenCMISS project solution file to lauch Visual Studio.
+For each example, go into the VisualOpenCMISS_08 folder. Double click the VisualOpenCMISS project solution file to lauch Visual Studio.
 
 \section libraries_build Libraries Build (Optional)
 \subsection libraries_build_petsc Compiling PETSc

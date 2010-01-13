@@ -1,3 +1,4 @@
+#if 1==0
 /* \file
  * $Id$
  * \author Caton Little
@@ -40,6 +41,7 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  */
+#endif
 
 #ifndef FIELD_EXPORT_CONSTANTS_H
 #define FIELD_EXPORT_CONSTANTS_H
@@ -52,6 +54,7 @@
 #define FIELD_EXPORT_ERROR_FILE_WRITE				10005
 #define FIELD_EXPORT_ERROR_UNKNOWN_INTERPOLATION	10006
 #define FIELD_EXPORT_ERROR_UNKNOWN_LABEL_TYPE		10007
+#define FIELD_EXPORT_ERROR_HDF5_ERROR       		10100
 
 #define EXPORT_TYPE_CLOSED 0
 #define EXPORT_TYPE_FILE   1

@@ -93,7 +93,7 @@ MODULE TYPES
   ! Quadrature types
   !
 
-  !>Contains information for a particular quadrature scheme. \todo Also evaluate the product of the basis functions at gauss points for speed???
+  !>Contains information for a particular quadrature scheme. \see OPENCMISS::CMISSQuadratureSchemeType \todo Also evaluate the product of the basis functions at gauss points for speed???
   TYPE QUADRATURE_SCHEME_TYPE
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the quadrature scheme in the list of quadrature schemes for a particular quadrature.
     TYPE(QUADRATURE_TYPE), POINTER :: QUADRATURE !<The pointer back to the quadrature for a particular quadrature scheme
@@ -108,7 +108,7 @@ MODULE TYPES
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: PTR !<A pointer to the quadrature scheme
   END TYPE QUADRATURE_SCHEME_PTR_TYPE
 
-  !>Contains information on the quadrature to be used for integrating a basis.
+  !>Contains information on the quadrature to be used for integrating a basis. \see OPENCMISS::CMISSQuadratureType
   TYPE QUADRATURE_TYPE
     INTEGER(INTG) :: TYPE !<The type of the quadrature \see BASIS_ROUTINES_QuadratureTypes
     TYPE(BASIS_TYPE), POINTER :: BASIS !<The pointer back to the basis
@@ -145,8 +145,8 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: INTERPOLATION_TYPE(:) !<INTERPOLATION_TYPE(ni). The interpolation type in the nic'th Xi coordinate direction. Old CMISS name IBT(1,ni,nb) \see BASIS_ROUTINES_InterpolationTypes
     INTEGER(INTG), ALLOCATABLE :: INTERPOLATION_ORDER(:)!<INTERPOLATION_ORDER(ni). The interpolation order in the nic'th Xi coordinate direction. Old CMISS name IBT(2,ni,nb) \see BASIS_ROUTINES_InterpolationOrder 
     !Degenerate information
-    LOGICAL :: DEGENERATE !<Is .TRUE. if the basis is a degenerate basis (i.e., has collpased nodes), .FALSE. if not.
-    INTEGER(INTG), ALLOCATABLE :: COLLAPSED_XI(:) !<COLLAPSED_XI(ni). The collpased state of the ni'th direction. COLLAPSED_XI can be either XI_COLLAPSED, COLLAPSED_AT_XI0, COLLAPSED_AT_XI1 or NOT_COLLAPSED dependending on whether or not the ni'th direction is collapsed, has a perpendicular Xi collapsed at the xi=0 end of the ni'th direction, has a perpendicular xi collapsed at the xi=1 of the ni'th direction or is not collapsed. NOTE: in old cmiss the value IBT(1,ni) = 5 or 6 was set for the ni that was collapsed. The perpendicular line/face was then stored in IBT(3,ni). For this the quadratic1 and quadratic2 type interpolation types are set on the perpendicular xi direction and the ni direction that is collapsed will have COLLAPSED_XI(ni) set to XI_COLLAPSED. BE CAREFUL WITH THIS WHEN TRANSLATING OLD CMISS CODE. Old CMISS name IBT(1,ni) ???? \see BASIS_ROUTINES_XiCollapse
+    LOGICAL :: DEGENERATE !<Is .TRUE. if the basis is a degenerate basis (i.e., has collapsed nodes), .FALSE. if not.
+    INTEGER(INTG), ALLOCATABLE :: COLLAPSED_XI(:) !<COLLAPSED_XI(ni). The collapsed state of the ni'th direction. COLLAPSED_XI can be either XI_COLLAPSED, COLLAPSED_AT_XI0, COLLAPSED_AT_XI1 or NOT_COLLAPSED depending on whether or not the ni'th direction is collapsed, has a perpendicular Xi collapsed at the xi=0 end of the ni'th direction, has a perpendicular xi collapsed at the xi=1 of the ni'th direction or is not collapsed. NOTE: in old cmiss the value IBT(1,ni) = 5 or 6 was set for the ni that was collapsed. The perpendicular line/face was then stored in IBT(3,ni). For this the quadratic1 and quadratic2 type interpolation types are set on the perpendicular xi direction and the ni direction that is collapsed will have COLLAPSED_XI(ni) set to XI_COLLAPSED. BE CAREFUL WITH THIS WHEN TRANSLATING OLD CMISS CODE. Old CMISS name IBT(1,ni) ???? \see BASIS_ROUTINES_XiCollapse
     INTEGER(INTG) :: NUMBER_OF_COLLAPSED_XI !<The number of xi directions in the basis that are collapsed.
     LOGICAL, ALLOCATABLE :: NODE_AT_COLLAPSE(:) !<NODE_AT_COLLAPSE(nn). Is .TRUE. if the nn'th node of the basis is at a collapse, .FALSE. if not.
     !Quadrature
@@ -160,7 +160,7 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_DERIVATIVES(:) !<NUMBER_OF_DERIVATIVES(nn). The number of derivatives at the nn'th node in the basis. Old CMISS name NKT(nn,nbf).
     INTEGER(INTG), ALLOCATABLE :: NODE_POSITION_INDEX(:,:) !<NODE_POSITION_INDEX(nn,nic). The index of the node position for the nn'th local node in the nic'th coordinate. For Lagrange-Hermite tensor product basis functions: The number of coordinates equals the number of xi directions. Thus if NODE_POSITION_INDEX(nn,:)=1,2,2 then local node nn is the first node in the ni(c)=1 direction, the second node in the ni(c)=2 direction and the second node in the ni(c)=3 direction; For simplex basis functions: The number of coordinates equals the number of xi directions plus one. The index specifies the inverse distance away from the corner/end of that area coordinate. Thus if an element has quadratic interpolation the index will range from 3 (closest to the corner/end of the element that the area coordinate has the value 1) to 1 (closest to the corners/end of the element that the area coordinate has the value 0). If M is the order of the element then in NODE_POSITION_INDEX(nn,:)=1,1,M then that node is apex for the third area coordinate. In general the index values will add up to M+number of xi directions+1 (i.e., subtract one from the indicies to get the standard simplex coordinates. Old CMISS name INP(nn,ni,nb). \see TYPES::BASIS_TYPE::NODE_POSITION_INDEX_INV.
     INTEGER(INTG), ALLOCATABLE :: NODE_POSITION_INDEX_INV(:,:,:,:) !<NODE_POSITION_INDEX_INV(nnc1,nnc2,nnc3,nnc4). The inverse of the node position index for the basis. The NODE_POSITION_INDEX_INV gives the local node number for the node that has node position indices of nnc1 in the 1st ni(c) direction, nnc2 in the 2nd ni(c) direction, nnc3 in the 3rd ni(c) direction and nnc4 in the 4th ni(c) direction. NOTE: that if the basis has less than 4 ni(c) direction the position index is 1. Old CMISS name NNB(inp1,inp2,inp3,nbf). \see TYPES::BASIS_TYPE::NODE_POSITION_INDEX.
-    INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_ORDER_INDEX(:,:,:) !<DERIVATIVE_ORDER_INDEX(nk,nn,0:ni,nbf). The index of the derivative order for the nk'th derivative of the nn'th node in the ni'th direction of the basis. The derivative index is NO_PART_DERIV for zeroth order, FIRST_PART_DERIV for the first order and SECOND_PART_DERIV for the second order derivative. Thus a DERIVATIVE_ORDER_INDEX(nk,nn,1..) of {NO_PART_DERIV,FIRST_PART_DERIV,NO_PART_DERIV} indicates that the nk'th derivative of the nn'th node of the basis is the first derivative with respect to the s2 direction. Old CMISS name IDO(nk,nn,1:ni,nbf). \see TYPES::BASIS_TYPE::DERIVATIVE_ORDER_INDEX_INV,CONSTANTS_PartialDerivativeConstants
+    INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_ORDER_INDEX(:,:,:) !<DERIVATIVE_ORDER_INDEX(nk,nn,0:ni). The index of the derivative order for the nk'th derivative of the nn'th node in the ni'th direction of the basis. The derivative index is NO_PART_DERIV for zeroth order, FIRST_PART_DERIV for the first order and SECOND_PART_DERIV for the second order derivative. Thus a DERIVATIVE_ORDER_INDEX(nk,nn,1..) of {NO_PART_DERIV,FIRST_PART_DERIV,NO_PART_DERIV} indicates that the nk'th derivative of the nn'th node of the basis is the first derivative with respect to the s2 direction. Old CMISS name IDO(nk,nn,1:ni,nbf). \see TYPES::BASIS_TYPE::DERIVATIVE_ORDER_INDEX_INV,CONSTANTS_PartialDerivativeConstants
     INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_ORDER_INDEX_INV(:,:,:,:) !<DERIVATIVE_ORDER_INDEX_INV(nu1,nu2,nu3,nn). The inverse of the derivative order index for the nn'th local node of the basis. DERIVATIVE_ORDER_INDEX_INV gives the derivative number for the nu1 partial derivative in the 1st xi direction, the nu2 partial derivative in the 2nd xi direction and the nu3 partial derivative in the 3rd xi direction. NOTE: local node nn does not carry any derivatives of the requested partial derivative type then DERIVATIVE_ORDER_INDEX_INV will return 0. If the basis has less than 3 xi directions then the nu index is 1. \see TYPES::BASIS_TYPE::DERIVATIVE_ORDER_INDEX
     INTEGER(INTG), ALLOCATABLE :: PARTIAL_DERIVATIVE_INDEX(:,:) !<PARTIAL_DERIVATIVE_INDEX(nk,nn). Gives the partial derivative number (nu) of the nk'th derivative of the nn'th local node for the basis. Old CMISS name IDO(nk,nn,0,nbf).
     INTEGER(INTG), ALLOCATABLE :: ELEMENT_PARAMETER_INDEX(:,:) !<ELEMENT_PARAMETER_INDEX(nk,nn). Gives the element parameter number (ns) of the nk'th derivative of the nn'th local node for the basis. Old CMISS name NSB(nk,nn,nbf).
@@ -171,7 +171,11 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS_IN_LOCAL_LINE(:,:) !<NODE_NUMBERS_IN_LOCAL_LINE(nnl,nae). The local node numbers (nn) for the nnl'th line node in the nae'th local line for the basis. Old CMISS name NNL(1..,nae,nb).
     INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_NUMBERS_IN_LOCAL_LINE(:,:) !<DERIVATIVES_NUMBERS_IN_LOCAL_LINE(nnl,nae). The derivative numbers (nk) for the nnl'th line node in the nae'th local line for the basis.
     !Face information
-!!TODO:
+    INTEGER(INTG) :: NUMBER_OF_LOCAL_FACES !<The number of local faces in the basis.
+    INTEGER(INTG), ALLOCATABLE :: LOCAL_FACE_XI_DIRECTION(:) !<LOCAL_FACE_XI_DIRECTION(nae). The Xi direction of the nae'th local face for the basis.
+    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_NODES_IN_LOCAL_FACE(:) !<NUMBER_OF_NODES_IN_LOCAL_FACE(nae). The the number of nodes in the nae'th local face for the basis. Old CMISS name NNL(0,nae,nb).
+    INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS_IN_LOCAL_FACE(:,:) !<NODE_NUMBERS_IN_LOCAL_FACE(nnl,nae). The local node numbers (nn) for the nnl'th face node in the nae'th local face for the basis. Old CMISS name NNL(1..,nae,nb).
+    INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_NUMBERS_IN_LOCAL_FACE(:,:) !<DERIVATIVES_NUMBERS_IN_LOCAL_FACE(nnl,nae). The derivative numbers (nk) for the nnl'th face node in the nae'th local face for the basis.
     !Sub-basis information
     TYPE(BASIS_PTR_TYPE), POINTER :: LINE_BASES(:) !<LINE_BASES(nae). The pointer to the basis for the nae'th line for the basis.
     TYPE(BASIS_PTR_TYPE), POINTER :: FACE_BASES(:) !<FACE_BASES(naf). The pointer to the basis for the naf'th face for the basis.
@@ -204,6 +208,11 @@ MODULE TYPES
     REAL(DP) :: ORIENTATION(3,3) !<ORIENTATION(nj,mj). he orientation matrix for the orientation of the coordinate system wrt to the global coordinate system. NOTE: maybe this should be wrt to the parent regions coordinate system - this would then go into the REGION type.
   END TYPE COORDINATE_SYSTEM_TYPE
 
+  !>A buffer type to allow for an array of pointers to a COORDINATE_SYSTEM_TYPE.
+  TYPE COORDINATE_SYSTEM_PTR_TYPE
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: PTR !<A pointer to the coordinate system
+  END TYPE COORDINATE_SYSTEM_PTR_TYPE
+  
   !
   !================================================================================================================================
   !
@@ -217,7 +226,7 @@ MODULE TYPES
     TYPE(VARYING_STRING) :: LABEL !<A string label for the node
   END TYPE NODE_TYPE
 
-  !>Contains information on the nodes defined on a region.
+  !>Contains information on the nodes defined on a region. \see OPENCMISS::CMISSNodesType
   TYPE NODES_TYPE
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the nodes.
     LOGICAL :: NODES_FINISHED !<Is .TRUE. if the nodes have finished being created, .FALSE. if not.
@@ -296,7 +305,7 @@ MODULE TYPES
     TYPE(MESH_TOPOLOGY_TYPE), POINTER :: PTR !<The pointer to the mesh topology.
   END TYPE MESH_TOPOLOGY_PTR_TYPE
 
-  !>Contains information on a mesh defined on a region.
+  !>Contains information on a mesh defined on a region. \see OPENCMISS::CMISSMeshType
   TYPE MESH_TYPE
     INTEGER(INTG) :: USER_NUMBER !<The user number of the mesh. The user number must be unique.
     INTEGER(INTG) :: GLOBAL_NUMBER !<The corresponding global number for the mesh.
@@ -345,7 +354,18 @@ MODULE TYPES
     TYPE(BASIS_TYPE), POINTER :: BASIS !<The pointer to the basis used in the regular mesh.
   END TYPE GENERATED_MESH_REGULAR_TYPE
 
-  !>Contains information on a generated mesh
+  !>Contains information of a generated cylinder mesh
+  !>Allows only a 3D cylinder mesh with xi directions (r,theta,z)
+  TYPE GENERATED_MESH_CYLINDER_TYPE
+    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh.
+    REAL(DP), ALLOCATABLE :: ORIGIN(:) !<ORIGIN(nj). The position of the origin (centre) of lower face of cylinder mesh.
+    REAL(DP), ALLOCATABLE :: CYLINDER_EXTENT(:) !<CYLINDER_EXTENT(nj). The size of inner & outer radii and height of cylinder.
+    INTEGER(INTG) :: MESH_DIMENSION !<The dimension/number of Xi directions of the cylinder mesh.
+    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ELEMENTS_XI(:) !<NUMBER_OF_ELEMENTS(ni). The number of elements in radial, circumferential and axial directions
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<The pointer to the basis used in the regular mesh.
+  END TYPE GENERATED_MESH_CYLINDER_TYPE
+
+  !>Contains information on a generated mesh. \see OPENCMISS::CMISSGeneratedMeshType
   TYPE GENERATED_MESH_TYPE
     INTEGER(INTG) :: USER_NUMBER
     INTEGER(INTG) :: GLOBAL_NUMBER
@@ -353,6 +373,7 @@ MODULE TYPES
     TYPE(REGION_TYPE), POINTER :: REGION
     INTEGER(INTG) :: GENERATED_TYPE
     TYPE(GENERATED_MESH_REGULAR_TYPE), POINTER :: REGULAR_MESH
+    TYPE(GENERATED_MESH_CYLINDER_TYPE), POINTER :: CYLINDER_MESH
     TYPE(MESH_TYPE), POINTER :: MESH
   END TYPE GENERATED_MESH_TYPE
   
@@ -444,7 +465,8 @@ MODULE TYPES
   !>Contains the topology information for a local node of a domain.
   TYPE DOMAIN_NODE_TYPE
     INTEGER(INTG) :: LOCAL_NUMBER !<The local node number in the domain.
-    INTEGER(INTG) :: GLOBAL_NUMBER !<The corresponding global node number in the mesh of the local node number in the domain.
+    INTEGER(INTG) :: MESH_NUMBER !<The corresponding global node number in the mesh of the local node number in the domain i.e., the mesh node number.
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The corresponding global number for the node i.e., the node number in the list of nodes for the region.
     INTEGER(INTG) :: USER_NUMBER !<The corresponding user number for the node.
     INTEGER(INTG) :: NUMBER_OF_DERIVATIVES !<The number of global derivatives at the node for the domain. Old CMISS name NKT(nj,np)
     INTEGER(INTG), ALLOCATABLE :: GLOBAL_DERIVATIVE_INDEX(:) !<GLOBAL_DERIVATIVE_INDEX(nk). The global derivative index of the nk'th global derivative for the node.
@@ -454,6 +476,8 @@ MODULE TYPES
     INTEGER(INTG), POINTER :: SURROUNDING_ELEMENTS(:) !<SURROUNDING_ELEMENTS(nep). The local element number of the nep'th element that is surrounding the node. Old CMISS name NENP(np,nep,0:nr). \todo Change this to allocatable.
     INTEGER(INTG) :: NUMBER_OF_NODE_LINES !<The number of lines surrounding the node in the domain.
     INTEGER(INTG), ALLOCATABLE :: NODE_LINES(:) !<NODE_LINES(nlp). The local line number of the nlp'th line that is surrounding the node.
+    INTEGER(INTG) :: NUMBER_OF_NODE_FACES !<The number of faces surrounding the node in the domain.
+    INTEGER(INTG), ALLOCATABLE :: NODE_FACES(:) !<NODE_FACES(nlp). The local face number of the nlp'th face that is surrounding the node.
     LOGICAL :: BOUNDARY_NODE !<Is .TRUE. if the node is on the boundary of the mesh for the domain, .FALSE. if not.
   END TYPE DOMAIN_NODE_TYPE
 
@@ -647,7 +671,8 @@ MODULE TYPES
   TYPE DOMAIN_MAPPING_TYPE
     INTEGER(INTG) :: NUMBER_OF_LOCAL !<The number of local numbers in the domain excluding ghost numbers
     INTEGER(INTG) :: TOTAL_NUMBER_OF_LOCAL !<The total number of local numbers in the domain including ghost numbers.
-    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_DOMAIN_LOCAL(:) !<NUMBER_OF_DOMAIN_LOCAL(domain_no). The total number of locals for domain_no'th domain. NOTE: the domain_no goes from 0 to the number of domains-1.
+    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_DOMAIN_LOCAL(:) !<NUMBER_OF_DOMAIN_LOCAL(domain_no). The number of locals for domain_no'th domain. NOTE: the domain_no goes from 0 to the number of domains-1.
+    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_DOMAIN_GHOST(:) !<NUMBER_OF_DOMAIN_GHOST(domain_no). The total number of ghosts for domain_no'th domain. NOTE: the domain_no goes from 0 to the number of domains-1.
     INTEGER(INTG) :: NUMBER_OF_GLOBAL !<The number of global numbers for this mapping.
     INTEGER(INTG) :: NUMBER_OF_DOMAINS !<The number of domains in this mapping.
     INTEGER(INTG) :: NUMBER_OF_INTERNAL !<The number of internal numbers in this mapping.
@@ -717,6 +742,24 @@ MODULE TYPES
     TYPE(DECOMPOSITION_LINE_TYPE), ALLOCATABLE :: LINES(:) !<LINES(nl). The pointer to the array of topology information for the lines of this decomposition. LINES(nl) contains the topological information for the nl'th local line of the decomposition.
   END TYPE DECOMPOSITION_LINES_TYPE
 
+  !>Contains the information for a face in a decomposition.
+  TYPE DECOMPOSITION_FACE_TYPE
+    INTEGER(INTG) :: NUMBER !<The face number in the decomposition.
+    INTEGER(INTG) :: XI_DIRECTION !<The Xi direction of the face, the direction of the normal to the face
+    INTEGER(INTG) :: NUMBER_OF_SURROUNDING_ELEMENTS !<The number of elements that surround (use) this face.
+    INTEGER(INTG), ALLOCATABLE :: SURROUNDING_ELEMENTS(:) !<SURROUNDING_ELEMENTS(nel). The local element number of the nel'th element that surrounds (uses) this face. 
+    INTEGER(INTG), ALLOCATABLE :: ELEMENT_FACES(:) !<ELEMENT_FACES(nel). The local arc number of the nel'th element that surrounds (uses) this face.
+!    INTEGER(INTG) :: ADJACENT_FACES(0:1) !<ADJACENT_FACES(0:1). The face number of adjacent faces. ADJACENT_FACES(0) is the face number adjacent in the -xi direction. ADJACENT_FACES(1) is the face number adjacent in the +xi direction. Old CMISS name NPL(2..3,0,nl).
+    LOGICAL :: BOUNDARY_FACE !<Is .TRUE. if the face is on the boundary of the mesh for the domain, .FALSE. if not.
+  END TYPE DECOMPOSITION_FACE_TYPE
+
+  !>Contains the topology information for the faces of a decomposition.
+  TYPE DECOMPOSITION_FACES_TYPE
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<The pointer to the decomposition for this faces topology information.
+    INTEGER(INTG) :: NUMBER_OF_FACES !<The number of faces in this decomposition topology.
+    TYPE(DECOMPOSITION_FACE_TYPE), ALLOCATABLE :: FACES(:) !<FACES(nl). The pointer to the array of topology information for the faces of this decomposition. FACES(nl) contains the topological information for the nl'th local face of the decomposition.
+  END TYPE DECOMPOSITION_FACES_TYPE
+
   !>Contains the information for an element in a decomposition.
   TYPE DECOMPOSITION_ELEMENT_TYPE
     INTEGER(INTG) :: LOCAL_NUMBER !<The local element number in the decomposition.
@@ -725,6 +768,7 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ADJACENT_ELEMENTS(:) !<NUMBER_OF_ADJACENT_ELEMENTS(-ni:ni). The number of elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent element before the element in the ni'th direction and +ni gives the adjacent element after the element in the ni'th direction. The ni=0 index should be 1 for the current element. Old CMISS name NXI(-ni:ni,0:nei,ne).
     INTEGER(INTG), ALLOCATABLE :: ADJACENT_ELEMENTS(:,:) !<ADJACENT_ELEMENTS(nei,-ni:ni). The local element numbers of the elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent elements before the element in the ni'th direction and +ni gives the adjacent elements after the element in the ni'th direction. The ni=0 index should give the current element number. Old CMISS name NXI(-ni:ni,0:nei,ne).
     INTEGER(INTG), ALLOCATABLE :: ELEMENT_LINES(:) !<ELEMENT_LINES(nae). The local decomposition line number corresponding to the nae'th local line of the element. Old CMISS name NLL(nae,ne). 
+    INTEGER(INTG), ALLOCATABLE :: ELEMENT_FACES(:) !<ELEMENT_FACES(nae). The local decomposition face number corresponding to the nae'th local face of the element. Old CMISS name NLL(nae,ne). 
     LOGICAL :: BOUNDARY_ELEMENT !<Is .TRUE. if the element is on the boundary of the mesh for the domain, .FALSE. if not.
   END TYPE DECOMPOSITION_ELEMENT_TYPE
 
@@ -740,9 +784,10 @@ MODULE TYPES
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<The pointer to the decomposition for this topology information.
     TYPE(DECOMPOSITION_ELEMENTS_TYPE), POINTER :: ELEMENTS !<The pointer to the topology information for the elements of this decomposition.
     TYPE(DECOMPOSITION_LINES_TYPE), POINTER :: LINES !<The pointer to the topology information for the lines of this decomposition.
+    TYPE(DECOMPOSITION_FACES_TYPE), POINTER :: FACES !<The pointer to the topology information for the faces of this decomposition.
   END TYPE DECOMPOSITION_TOPOLOGY_TYPE
 
-  !>Contains information on the domain decomposition.
+  !>Contains information on the mesh decomposition. \see OPENCMISS::CMISSDecompositionType
   TYPE DECOMPOSITION_TYPE
     INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the domain decomposition. The user number must be unique.
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the domain decomposition in the list of domain decompositions for a particular mesh.
@@ -907,7 +952,7 @@ MODULE TYPES
     TYPE(VARYING_STRING) :: VARIABLE_LABEL !<The lable for the variable
     TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field for this field variable.
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region for this field variable.
-    INTEGER(INTG) :: DIMENSION !<The dimension of the field. \see FIELD_ROUTINES_DimensionTypes
+    INTEGER(INTG) :: DIMENSION !<The dimension of the field variable. \see FIELD_ROUTINES_DimensionTypes
     INTEGER(INTG) :: DATA_TYPE !<The data type of the field variable.  \see FIELD_ROUTINES_DataTypes,FIELD_ROUTINES
     INTEGER(INTG) :: DOF_ORDER_TYPE !<The order of the DOF's in the field variable \see FIELD_ROUTINES_DOFOrderTypes,FIELD_ROUTINES
     INTEGER(INTG) :: MAX_NUMBER_OF_INTERPOLATION_PARAMETERS !<The maximum number of interpolation parameters in an element for a field variable. 
@@ -955,7 +1000,7 @@ MODULE TYPES
     LOGICAL, ALLOCATABLE :: MESH_COMPONENT_NUMBER_LOCKED(:,:) !<MESH_COMPONENT_NUMBER_LOCKED(component_idx,variable_type_idx). Is .TRUE. if the mesh component number of the component_idx'th component of the variable_type_idx'th varible type has been locked, .FALSE. if not.
   END TYPE FIELD_CREATE_VALUES_CACHE_TYPE
 
-  !>Contains information for a field defined on a region.
+  !>Contains information for a field defined on a region. \see OPENCMISS::CMISSFieldType
   TYPE FIELD_TYPE
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the field in the list of fields for a region.
     INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the field. The user number must be unique.
@@ -1269,24 +1314,28 @@ MODULE TYPES
     TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<A pointer to the geometric field for the equations.
     TYPE(FIELD_TYPE), POINTER :: FIBRE_FIELD !<A pointer to the fibre field for the equations (if one is defined).
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD !<A pointer to the dependent field for the equations 
+    TYPE(FIELD_TYPE), POINTER :: INDEPENDENT_FIELD !<A pointer to the independent field for the equations 
     TYPE(FIELD_TYPE), POINTER :: MATERIALS_FIELD !<A pointer to the material field for the equations (if one is defined).
     TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD !<A pointer to the source field for the equations (if one is defined).
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: GEOMETRIC_INTERP_PARAMETERS !<A pointer to the geometric interpolation parameters for the equations.
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: FIBRE_INTERP_PARAMETERS !<A pointer to the fibre interpolation parameters for the equations (if a fibre field is defined). 
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: DEPENDENT_INTERP_PARAMETERS !<A pointer to the dependent interpolation parameters for the equations. 
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INDEPENDENT_INTERP_PARAMETERS !<A pointer to the independent interpolation parameters for the equations. 
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: MATERIALS_INTERP_PARAMETERS !<A pointer to the material interpolation parameters for the equations (if a material field is defined). 
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: SOURCE_INTERP_PARAMETERS !<A pointer to the source interpolation parameters for the equations (if a source field is defined). 
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: GEOMETRIC_INTERP_POINT !<A pointer to the geometric interpolated point information for the equations. 
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: FIBRE_INTERP_POINT !<A pointer to the fibre interpolated point information for the equations (if a fibre field is defined). 
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: DEPENDENT_INTERP_POINT !<A pointer to the dependent interpolated point information for the equations. 
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INDEPENDENT_INTERP_POINT !<A pointer to the independent interpolated point information for the equations. 
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: MATERIALS_INTERP_POINT !<A pointer to the material interpolated point information for the equations (if a material field is defined). 
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: SOURCE_INTERP_POINT !<A pointer to the source interpolated point information for the equations (if a source field is defined).
     TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: DEPENDENT_INTERP_POINT_METRICS !<A pointer to the dependent interpolated point metrics information 
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: INDEPENDENT_INTERP_POINT_METRICS !<A pointer to the independent interpolated point metrics information 
     TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: GEOMETRIC_INTERP_POINT_METRICS !<A pointer to the geometric interpolated point metrics information 
     TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: FIBRE_INTERP_POINT_METRICS !<A pointer to the fibre interpolated point metrics information 
   END TYPE EQUATIONS_INTERPOLATION_TYPE
 
-  !>Contains information about the equations in an equations set.
+  !>Contains information about the equations in an equations set. \see OPENCMISS::CMISSEquationsType
   TYPE EQUATIONS_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations_set
     LOGICAL :: EQUATIONS_FINISHED !<Is .TRUE. if the equations have finished being created, .FALSE. if not.
@@ -1321,7 +1370,7 @@ MODULE TYPES
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: PTR !<A pointer to the boundary conditions variable
   END TYPE BOUNDARY_CONDITIONS_VARIABLE_PTR_TYPE
   
-  !>Contains information on the boundary conditions for the equations set.
+  !>Contains information on the boundary conditions for the equations set. \see OPENCMISS::CMISSBoundaryConditionsType
   TYPE BOUNDARY_CONDITIONS_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
     LOGICAL :: BOUNDARY_CONDITIONS_FINISHED !<Is .TRUE. if the boundary conditions for the equations set has finished being created, .FALSE. if not.
@@ -1367,6 +1416,14 @@ MODULE TYPES
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD !<A pointer to the dependent field for the equations set.
   END TYPE EQUATIONS_SET_DEPENDENT_TYPE
 
+  !>Contains information on the independent variables for the equations set.
+  TYPE EQUATIONS_SET_INDEPENDENT_TYPE
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
+    LOGICAL :: INDEPENDENT_FINISHED !<Is .TRUE. if the independent variables for the equations set has finished being created, .FALSE. if not.
+    LOGICAL :: INDEPENDENT_FIELD_AUTO_CREATED !<Is .TRUE. if the independent field has been auto created, .FALSE. if not.
+    TYPE(FIELD_TYPE), POINTER :: INDEPENDENT_FIELD !<A pointer to the independent field for the equations set.
+  END TYPE EQUATIONS_SET_INDEPENDENT_TYPE
+
   !>Contains information on the source for the equations set.
   TYPE EQUATIONS_SET_SOURCE_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
@@ -1384,7 +1441,7 @@ MODULE TYPES
     TYPE(FIELD_TYPE), POINTER :: ANALYTIC_FIELD !<A pointer to the analytic field for the equations set if one is defined. If no source is defined the pointer is NULL.
   END TYPE EQUATIONS_SET_ANALYTIC_TYPE
 
-  !>Contains information on an equations set.
+  !>Contains information on an equations set. \see OPENCMISS::CMISSEquationsSetType
   TYPE EQUATIONS_SET_TYPE
     INTEGER(INTG) :: USER_NUMBER !<The user identifying number of the equations set
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global index of the equations set in the region.
@@ -1402,6 +1459,7 @@ MODULE TYPES
     TYPE(EQUATIONS_SET_MATERIALS_TYPE), POINTER :: MATERIALS !<A pointer to the materials information for the equations set.
     TYPE(EQUATIONS_SET_SOURCE_TYPE), POINTER :: SOURCE !<A pointer to the source information for the equations set.
     TYPE(EQUATIONS_SET_DEPENDENT_TYPE) :: DEPENDENT !<The depedent variable information for the equations set.
+    TYPE(EQUATIONS_SET_INDEPENDENT_TYPE), POINTER :: INDEPENDENT !<A pointer to the indepedent field information for the equations set.
     TYPE(EQUATIONS_SET_ANALYTIC_TYPE), POINTER :: ANALYTIC !<A pointer to the analytic setup information for the equations set.
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !A pointer to the equations information for the equations set
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<A pointer to the boundary condition information for the equations set.
@@ -1465,7 +1523,7 @@ MODULE TYPES
   ! Solver equations types
   !
 
-  !>Contains information about the solver equations for a solver
+  !>Contains information about the solver equations for a solver. \see OPENCMISS::CMISSSolverEquationsType
   TYPE SOLVER_EQUATIONS_TYPE
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
     LOGICAL :: SOLVER_EQUATIONS_FINISHED !<Is .TRUE. if the solver equations have finished being created, .FALSE. if not.
@@ -1497,16 +1555,26 @@ MODULE TYPES
     INTEGER(INTG) :: SCHEME !<The dyanamic solver scheme \see SOLVER_ROUTINES_DynamicSchemeTypes,SOLVER_ROUTINES
     REAL(DP), ALLOCATABLE :: THETA(:) !<THETA(degree_idx). The theta value for the degree_idx'th polynomial in the dynamic solver
     LOGICAL :: EXPLICIT !<Is .TRUE. if the dynamic scheme is an explicit scheme, .FALSE. if not.
+    LOGICAL :: ALE !<Is .TRUE. if the dynamic scheme is an ALE scheme, .FALSE. if not.
     REAL(DP) :: CURRENT_TIME !<The current time value for the dynamic solver.
     REAL(DP) :: TIME_INCREMENT !<The time increment for the dynamic solver to solver for.
     TYPE(SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linked linear solver
+    TYPE(SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer to the linked nonlinear solver
   END TYPE DYNAMIC_SOLVER_TYPE
   
   !>Contains information for an eigenproblem solver
   TYPE EIGENPROBLEM_SOLVER_TYPE
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the eigenproblem solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG) :: SOLVER_MATRICES_LIBRARY !<The library type for the eigenproblem solver matrices \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
   END TYPE EIGENPROBLEM_SOLVER_TYPE
+  
+  !>Contains information for an optimiser solver
+  TYPE OPTIMISER_SOLVER_TYPE
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the optimiser solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG) :: SOLVER_MATRICES_LIBRARY !<The library type for the optimiser solver matrices \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
+  END TYPE OPTIMISER_SOLVER_TYPE
 
   !>Contains information for an forward Euler differential-algebraic equation solver
   TYPE FORWARD_EULER_DAE_SOLVER_TYPE
@@ -1585,8 +1653,10 @@ MODULE TYPES
   !>Contains information for a direct linear solver
   TYPE LINEAR_DIRECT_SOLVER_TYPE
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linear solver
-    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the linear solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the linear direct solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG) :: SOLVER_MATRICES_LIBRARY !<The library type for the linear direct solver matrices \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
     INTEGER(INTG) :: DIRECT_SOLVER_TYPE !<The type of direct linear solver
+    TYPE(PETSC_PC_TYPE) :: PC !<The PETSc preconditioner object
     TYPE(PETSC_KSP_TYPE) :: KSP !<The PETSc solver object
   END TYPE LINEAR_DIRECT_SOLVER_TYPE
 
@@ -1594,6 +1664,7 @@ MODULE TYPES
   TYPE LINEAR_ITERATIVE_SOLVER_TYPE
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linear solver
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the linear solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG) :: SOLVER_MATRICES_LIBRARY !<The library type for the linear iterative solver matrices \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
     INTEGER(INTG) :: ITERATIVE_SOLVER_TYPE !<The type of iterative solver \see SOLVER_ROUTINES_IterativeLinearSolverTypes,SOLVER_ROUTINES
     INTEGER(INTG) :: ITERATIVE_PRECONDITIONER_TYPE !<The type of iterative preconditioner \see SOLVER_ROUTINES_IterativePreconditionerTypes,SOLVER_ROUTINES
     INTEGER(INTG) :: SOLUTION_INITIALISE_TYPE !<The type of solution vector initialisation \see SOLVER_ROUTINES_SolutionInitialiseTypes,SOLVER_ROUTINES
@@ -1618,7 +1689,8 @@ MODULE TYPES
   !>Contains information for a Newton line search nonlinear solver
   TYPE NEWTON_LINESEARCH_SOLVER_TYPE
     TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER !<A pointer to the Newton solver
-    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the nonlinear solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the Newton linesearch solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG) :: SOLVER_MATRICES_LIBRARY !<The library type for the Newton linesearch solver matrices \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
     INTEGER(INTG) :: LINESEARCH_TYPE !<The line search type \see SOLVER_ROUTINES_NonlinearLineSearchTypes,SOLVER_ROUTINES
     REAL(DP) :: LINESEARCH_ALPHA !<The line search alpha
     REAL(DP) :: LINESEARCH_MAXSTEP !<The line search maximum step
@@ -1632,6 +1704,7 @@ MODULE TYPES
   TYPE NEWTON_TRUSTREGION_SOLVER_TYPE
     TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER !<A pointer to the Newton solver 
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the nonlinear solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG) :: SOLVER_MATRICES_LIBRARY !<The library type for the Newton trustregion solver matrices \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
     REAL(DP) :: TRUSTREGION_TOLERANCE !<The trust region tolerance
     REAL(DP) :: TRUSTREGION_DELTA0 !<The trust region delta0
     TYPE(PETSC_SNES_TYPE) :: SNES !<The PETSc nonlinear solver object
@@ -1662,9 +1735,10 @@ MODULE TYPES
     TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER !<A pointer to the Newton solver information
   END TYPE NONLINEAR_SOLVER_TYPE
   
-  !>Contains information on the type of solver to be used
+  !>Contains information on the type of solver to be used. \see OPENCMISS::CMISSSolverType
   TYPE SOLVER_TYPE
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS !<A pointer to the control loop solvers
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the solver in the list of solvers
     TYPE(SOLVER_TYPE), POINTER :: LINKING_SOLVER !<A pointer to any solver that is linking to this solver
     TYPE(SOLVER_TYPE), POINTER :: LINKED_SOLVER !<A pointer to any linked solver
     LOGICAL :: SOLVER_FINISHED !<Is .TRUE. if the solver has finished being created, .FALSE. if not.
@@ -1677,6 +1751,7 @@ MODULE TYPES
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER !<A pointer to the dynamic solver information
     TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer to the differential-algebraic equation solver information
     TYPE(EIGENPROBLEM_SOLVER_TYPE), POINTER :: EIGENPROBLEM_SOLVER !<A pointer to the eigenproblem solver information
+    TYPE(OPTIMISER_SOLVER_TYPE), POINTER :: OPTIMISER_SOLVER !<A pointer to the optimiser solver information
 
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver equations
 
@@ -1816,7 +1891,9 @@ MODULE TYPES
   
   !>Contains information about the mappings from a solver matrix to the equations in an equations set
   TYPE SOLVER_COL_TO_EQUATIONS_SET_MAP_TYPE
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations in the equations set that these columns map to.
+    LOGICAL :: HAVE_DYNAMIC !<Is .TRUE. if there are any dynamic equations in the map.
+    LOGICAL :: HAVE_STATIC !<Is .TRUE. if there are any static equations in the map.
     TYPE(SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAP_TYPE), ALLOCATABLE :: SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS(:) !<SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS(col_idx). The mappings from the col_idx'th column of the solver matrix to the dynamic equations in the equations set.
     TYPE(SOLVER_COL_TO_STATIC_EQUATIONS_MAP_TYPE), ALLOCATABLE :: SOLVER_COL_TO_STATIC_EQUATIONS_MAPS(:) !<SOLVER_COL_TO_STATIC_EQUATIONS_MAPS(col_idx). The mappings from the col_idx'th column of the solver matrix to the static equations in the equations set.
   END TYPE SOLVER_COL_TO_EQUATIONS_SET_MAP_TYPE
@@ -1876,6 +1953,7 @@ MODULE TYPES
   ! History types
   !
 
+  !>Contains information about a history file for a control loop. \see OPENCMISS::CMISSHistoryType
   TYPE HISTORY_TYPE
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop for the history file
     LOGICAL :: HISTORY_FINISHED !<Is .TRUE. if the history file has finished being created, .FALSE. if not.
@@ -1925,12 +2003,12 @@ MODULE TYPES
     LOGICAL :: CONTINUE_LOOP
   END TYPE CONTROL_LOOP_WHILE_TYPE
 
-  !>A buffer type to allow for an array of pointers to a CONTROL_TYPE \see TYPES:CONTROL_TYPE
+  !>A buffer type to allow for an array of pointers to a CONTROL_LOOP_TYPE \see TYPES::CONTROL_LOOP_TYPE
   TYPE CONTROL_LOOP_PTR_TYPE
     TYPE(CONTROL_LOOP_TYPE), POINTER :: PTR !<The pointer to the control loop
   END TYPE CONTROL_LOOP_PTR_TYPE
 
-  !>Contains information on a control loop
+  !>Contains information on a control loop. \see OPENCMISS::CMISSControlLoopType
   TYPE CONTROL_LOOP_TYPE
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer back to the problem for the control loop
     TYPE(CONTROL_LOOP_TYPE), POINTER :: PARENT_LOOP !<A pointer back to the parent control loop if this is a sub loop
@@ -1958,7 +2036,7 @@ MODULE TYPES
     INTEGER(INTG) :: ACTION_TYPE !<The action type \see PROBLEM_CONSTANTS_SetupActionTypes,CONSTANTS_ROUTINES
   END TYPE PROBLEM_SETUP_TYPE
   
-  !>Contains information for a problem.
+  !>Contains information for a problem. \see OPENCMISS::CMISSProblemType
   TYPE PROBLEM_TYPE
     INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the problem. The user number must be unique.
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the problem in the list of problems.
@@ -1993,7 +2071,7 @@ MODULE TYPES
     TYPE(REGION_TYPE), POINTER :: PTR !<The pointer to the region.
   END TYPE REGION_PTR_TYPE
      
-  !>Contains information for a region.
+  !>Contains information for a region. \see OPENCMISS::CMISSRegionType
   TYPE REGION_TYPE 
     INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the region. The user number must be unique.
     LOGICAL :: REGION_FINISHED !<Is .TRUE. if the region has finished being created, .FALSE. if not.

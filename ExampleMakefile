@@ -26,7 +26,7 @@
 # License for the specific language governing rights and limitations
 # under the License.
 #
-# The Original Code is openCMISS
+# The Original Code is OpenCMISS
 #
 # The Initial Developer of the Original Code is University of Auckland,
 # Auckland, New Zealand and University of Oxford, Oxford, United
@@ -57,18 +57,24 @@ else
   EXTERNAL_ROOT := ${OPENCMISSEXTRAS_ROOT}/cm/external
 endif
 
-ifndef OPENCMISS_CELLML_ROOT
-  OPENCMISS_CELLML_ROOT := ${OPENCMISS_ROOT}/cellml
+ifndef GLOBAL_ROOT
+  $(error GLOBAL_ROOT is not setup)
+else
+  include $(GLOBAL_ROOT)/utils/Makefile.inc
+  GLOBAL_CELLML_ROOT := $(GLOBAL_ROOT)/../cellml
 endif
 
-include $(GLOBAL_ROOT)/utils/Makefile.inc
-
-include $(OPENCMISS_CELLML_ROOT)/Makefile.inc
-
 #----------------------------------------------------------------------------------------------------------------------------------
+ifndef LIBRARY_VERSION
+  LIBRARY_VERSION := old
+endif
 
 ifndef MPI
   MPI := mpich2
+endif
+
+ifndef USECELLMLL
+  USECELLML := false
 endif
 
 ifeq ($(MPI),mpich2)
@@ -117,11 +123,33 @@ EXAMPLE_ROOT = $(GLOBAL_ROOT)/examples/$(EXAMPLE_PATH)$(EXAMPLE_NAME)
 BASE_EXE_NAME = $(BASE_EXAMPLE_NAME)
 MAIN_SOURCE_DIR = $(GLOBAL_ROOT)/src
 EXAMPLE_SOURCE_DIR = $(EXAMPLE_ROOT)/src
-OBJECT_DIR := $(EXAMPLE_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)
+ifeq ($(LIBRARY_VERSION),new)
+  OBJECT_DIR := $(EXAMPLE_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+else
+  OBJECT_DIR := $(EXAMPLE_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)
+endif
 MODULE_DIR := $(OBJECT_DIR)
-EXE_DIR := $(EXAMPLE_ROOT)/bin/$(BIN_ARCH_DIR)
-EXE_NAME := $(BASE_EXE_NAME)$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)
+ifeq ($(LIBRARY_VERSION),new)
+  EXE_DIR := $(EXAMPLE_ROOT)/bin/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
+  EXE_NAME := $(BASE_EXE_NAME)$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+else
+  EXE_DIR := $(EXAMPLE_ROOT)/bin/$(BIN_ARCH_DIR)
+  EXE_NAME := $(BASE_EXE_NAME)$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)
+endif
 EXECUTABLE := $(EXE_DIR)/$(EXE_NAME)
+ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  ifeq ($(LIBRARY_VERSION),new)
+    EXTERNAL_DIR := $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+  else
+    EXTERNAL_DIR := $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)
+  endif
+else
+  ifeq ($(OPERATING_SYSTEM),aix)# AIX
+    EXTERNAL_DIR := $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+  else# windows
+    EXTERNAL_DIR := $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+  endif
+endif
 
 C_INCLUDE_DIRS := $(MAIN_SOURCE_DIR) \
   $(EXAMPLE_SOURCE_DIR) 
@@ -199,11 +227,12 @@ ifeq ($(OPERATING_SYSTEM),linux)
   OPTCF_FLGS =# Use separate flags for fortran and c
   olist_args = $1
 
+  #Default Compilers. Note that if COMPILER is not set then the default is intel (see OPENCMISS_ROOT/cm/utils/make.inc)
+  #if icc/ifort not found then falls back to the gnu compilers below
   CC = gcc
   FC = gfortran
 
   ifeq ($(COMPILER),intel)
-
     #Use Intel compilers if available (icc -V sends output to STDERR and exits with error).
     ifneq (,$(shell icc -V 2>&1 | grep -i intel))
       CC = icc
@@ -211,8 +240,18 @@ ifeq ($(OPERATING_SYSTEM),linux)
     ifneq (,$(shell ifort -V 2>&1 | grep -i intel))
       FC = ifort
     endif
-
-  endif	
+  else
+    ifeq ($(COMPILER),gnu) #Default
+      #pass
+    else
+      ifeq ($(COMPILER),ibm)
+        FC = xlf90_r
+        CC = xlc_r
+      else
+        $(error invalid COMPILER specification)
+      endif
+    endif
+  endif
 
   # Set the flags for the various different CC compilers
   ifeq ($(CC),gcc)# gcc
@@ -483,34 +522,21 @@ TAO_LIB_PATH =#
 TAO_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   ifeq ($(DEBUG),false)
-    ifeq ($(MPI),mpich2)
-      TAO_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/linux-gnu-c-opt/ )
-    else
-      TAO_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/lib/linux-gnu-c-opt/ )
-    endif
+    TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/linux-gnu-c-opt/ )
   else
-    ifeq ($(MPI),mpich2)
-      TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/linux-gnu-c-debug/ )
-    else
-      TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/lib/linux-gnu-c-debug/ )
-    endif
+    TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/linux-gnu-c-debug/ )
   endif
-  ifeq ($(MPI),mpich2)
-    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/ )
-    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  else
-    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/ )
-    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  endif
+  TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+  TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     ifeq ($(DEBUG),false)
-      TAO_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/aix-5.3.0.0-c-opt/ )
+      TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/aix-5.3.0.0-c-opt/ )
     else
-      TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/aix-5.3.0.0-c-debug/ )
+      TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/aix-5.3.0.0-c-debug/ )
     endif
-    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/ )
-    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/include/ )
+    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
   else# windows
     TAO_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     TAO_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -518,53 +544,42 @@ else
 endif
 
 #PETSc
-PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscdm -lpetscksp -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++
+PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++
 PETSC_LIB_PATH =#
 PETSC_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   ifeq ($(DEBUG),false)
-    ifeq ($(MPI),mpich2)
-      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/linux-gnu-c-opt/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/bmake/linux-gnu-c-opt/ )
-    else
-      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/lib/linux-gnu-c-opt/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/bmake/linux-gnu-c-opt/ )
-    endif
+    PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/linux-gnu-c-opt/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/bmake/linux-gnu-c-opt/ )
   else
-    ifeq ($(MPI),mpich2)
-      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/linux-gnu-c-debug/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/bmake/linux-gnu-c-debug/ )
-    else
-      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/lib/linux-gnu-c-debug/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/bmake/linux-gnu-c-debug/ )
-    endif
+    PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/linux-gnu-c-debug/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/bmake/linux-gnu-c-debug/ )
   endif
   ifeq ($(ABI),64)
-    PETSC_LIB_PATH +=  $(addprefix -L, /usr/X11R6/lib64/ )
-    PETSC_LIB_PATH +=  $(addprefix -L, /usr/lib64/ )
+    PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib64/ )
+    PETSC_LIB_PATH += $(addprefix -L, /usr/lib64/ )
+    PETSC_LIB_PATH += $(addprefix -L, /usr/lib64/openmotif/ )
+    PETSC_LIB_PATH +=  $(addprefix -L, /usr/lib64/openmotif/ )
   else
-    PETSC_LIB_PATH +=  $(addprefix -L, /usr/X11R6/lib/ )
-    PETSC_LIB_PATH +=  $(addprefix -L, /usr/lib/ )
+    PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib/ )
+    PETSC_LIB_PATH += $(addprefix -L, /usr/lib/ )
+    PETSC_LIB_PATH += $(addprefix -L, /usr/lib/openmotif/ )
+    PETSC_LIB_PATH +=  $(addprefix -L, /usr/lib/openmotif/ )
   endif
-  ifeq ($(MPI),mpich2)
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  else
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  endif
+  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     ifeq ($(DEBUG),false)
-      PETSC_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/aix-5.3.0.0-c-opt/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/bmake/aix-5.3.0.0-c-opt/ )
+      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/aix-5.3.0.0-c-opt/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/bmake/aix-5.3.0.0-c-opt/ )
     else
-      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/aix-5.3.0.0-c-debug/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/bmake/aix-5.3.0.0-c-debug/ )
+      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/aix-5.3.0.0-c-debug/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/bmake/aix-5.3.0.0-c-debug/ )
     endif
-    PETSC_LIB_PATH +=  $(addprefix -L, /usr/X11R6/lib/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/include/ )
+    PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
   else# windows
     PETSC_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     PETSC_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -576,23 +591,14 @@ SUNDIALS_LIBRARIES = -lsundials_cvode -lsundials_nvecparallel -lsundials_nvecser
 SUNDIALS_LIB_PATH =#
 SUNDIALS_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  ifeq ($(MPI),mpich2)
-    SUNDIALS_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
-  else
-    SUNDIALS_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
-  endif
-  ifeq ($(MPI),mpich2)
-    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/ )
-    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  else
-    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/ )
-    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  endif
+  SUNDIALS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
+  SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+  SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    SUNDIALS_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib )
-    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/ )
-    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/include/ )
+    SUNDIALS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib )
+    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
   else# windows
     SUNDIALS_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     SUNDIALS_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -604,23 +610,14 @@ HYPRE_LIBRARIES = -lHYPRE
 HYPRE_LIB_PATH =#
 HYPRE_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  ifeq ($(MPI),mpich2)
-    HYPRE_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
-  else
-    HYPRE_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
-  endif
-  ifeq ($(MPI),mpich2)
-    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/ )
-    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  else
-    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/ )
-    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  endif
+  HYPRE_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
+  HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+  HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    HYPRE_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib )
-    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/ )
-    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/include/ )
+    HYPRE_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib )
+    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
   else# windows
     HYPRE_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     HYPRE_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -632,23 +629,14 @@ MUMPS_LIBRARIES = -ldmumps -lmumps_common -lpord
 MUMPS_LIB_PATH =#
 MUMPS_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  ifeq ($(MPI),mpich2)
-    MUMPS_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
-  else
-    MUMPS_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
-  endif
-  ifeq ($(MPI),mpich2)
-    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/ )
-    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  else
-    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/ )
-    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  endif
+  MUMPS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
+  MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+  MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    MUMPS_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib )
-    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/ )
-    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/include/ )
+    MUMPS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib )
+    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
   else# windows
     MUMPS_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     MUMPS_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -660,23 +648,14 @@ SCALAPACK_LIBRARIES = -lscalapack
 SCALAPACK_LIB_PATH =#
 SCALAPACK_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  ifeq ($(MPI),mpich2)
-    SCALAPACK_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
-  else
-    SCALAPACK_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
-  endif
-  ifeq ($(MPI),mpich2)
-    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/ )
-    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  else
-    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/ )
-    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  endif
+  SCALAPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
+  SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+  SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    SCALAPACK_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib )
-    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/ )
-    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/include/ )
+    SCALAPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib )
+    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
   else# windows
     SCALAPACK_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     SCALAPACK_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -688,23 +667,14 @@ BLACS_LIBRARIES = -lblacs -lblacsC -lblacsF77 -lblacs -lblacsC -lblacsF77
 BLACS_LIB_PATH =#
 BLACS_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  ifeq ($(MPI),mpich2)
-    BLACS_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
-  else
-    BLACS_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
-  endif
-  ifeq ($(MPI),mpich2)
-    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/ )
-    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  else
-    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/ )
-    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(COMPILER_SUFFIX)/include/ )
-  endif
+  BLACS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
+  BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+  BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    BLACS_LIB_PATH +=  $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib )
-    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/ )
-    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/include/ )
+    BLACS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib )
+    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
+    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
   else# windows
     BLACS_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     BLACS_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -716,12 +686,28 @@ PARMETIS_LIBRARIES = -lparmetis -lmetis
 PARMETIS_LIB_PATH =#
 PARMETIS_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
+  PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/lib/ )
+    PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
   else# windows
     PARMETIS_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
+  endif
+endif
+
+#CELLML
+CELLML_LIBRARIES =#
+CELLML_LIB_PATH =#
+ifeq ($(USECELLML),true)
+  CELLML_LIBRARIES += -loccellml
+  ifeq ($(OPERATING_SYSTEM),linux)# Linux
+    CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/lib/ )
+  else
+    ifeq ($(OPERATING_SYSTEM),aix)# AIX
+         CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/lib/ )
+    else# windows
+         CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/lib/ )
+    endif
   endif
 endif
 
@@ -736,7 +722,7 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
       MPI_LIBRARIES += -lmpe_f2cmpi -llmpe -lmpe
     endif
     MPI_LIBRARIES += -lmpich -lpthread -lrt
-    MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
+    MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
   else
     ifeq ($(MPI),intel)
       ifeq ($(MPIPROF),true)
@@ -753,9 +739,9 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
         MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib/ )
       endif
     else
-      MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
+      MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/lib/ )
       MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -lnsl -lutil
-      MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)/lib/ )
+      MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
     endif
   endif
 else
@@ -782,13 +768,14 @@ else
   endif
 endif
 
-#####EXTERNAL_LIBRARIES =  $(strip $(PARMETIS_LIBRARIES) $(PETSC_LIBRARIES) $(MPI_LIBRARIES) $(BLAS_LIBRARIES))
-#####EXTERNAL_LIB_PATH = -L/home/andre/openCMISS/opencmiss/cellml/libraries $(strip $(PARMETIS_LIB_PATH) $(PETSC_LIB_PATH) $(MPI_LIB_PATH) $(BLAS_LIB_PATH))
-#####EXTERNAL_INCLUDE_PATH = $(strip $(PARMETIS_INCLUDE_PATH) $(PETSC_INCLUDE_PATH) $(MPI_INCLUDE_PATH) $(BLAS_INCLUDE_PATH))
+EXTERNAL_LIBRARIES = $(strip $(TAO_LIBRARIES) $(PETSC_LIBRARIES) $(SUNDIALS_LIBRARIES) $(HYPRE_LIBRARIES) $(MUMPS_LIBRARIES) $(SCALAPACK_LIBRARIES) $(BLACS_LIBRARIES) $(PARMETIS_LIBRARIES) $(MPI_LIBRARIES) $(BLAS_LIBRARIES))
+EXTERNAL_LIB_PATH = $(strip $(TAO_LIB_PATH) $(PETSC_LIB_PATH) $(SUNDIALS_LIB_PATH) $(HYPRE_LIB_PATH) $(MUMPS_LIB_PATH) $(SCALAPACK_LIB_PATH) $(BLACS_LIB_PATH) $(PARMETIS_LIB_PATH) $(MPI_LIB_PATH) $(BLAS_LIB_PATH))
+EXTERNAL_INCLUDE_PATH = $(strip $(TAO_INCLUDE_PATH) $(PETSC_INCLUDE_PATH) $(SUNDIALS_INCLUDE_PATH) $(HYPRE_INCLUDE_PATH) $(MUMPS_INCLUDE_PATH) $(SCALAPCK_INCLUDE_PATH) $(BLACS_INCLUDE_PATH) $(PARMETIS_INCLUDE_PATH) $(MPI_INCLUDE_PATH) $(BLAS_INCLUDE_PATH))
 
-EXTERNAL_LIBRARIES = $(strip $(CELLML_LIBRARIES) $(TAO_LIBRARIES) $(PETSC_LIBRARIES) $(SUNDIALS_LIBRARIES) $(HYPRE_LIBRARIES) $(MUMPS_LIBRARIES) $(SCALAPACK_LIBRARIES) $(BLACS_LIBRARIES) $(PARMETIS_LIBRARIES) $(MPI_LIBRARIES) $(BLAS_LIBRARIES))
-EXTERNAL_LIB_PATH = $(strip $(CELLML_LIB_PATH) $(TAO_LIB_PATH) $(PETSC_LIB_PATH) $(SUNDIALS_LIB_PATH) $(HYPRE_LIB_PATH) $(MUMPS_LIB_PATH) $(SCALAPACK_LIB_PATH) $(BLACS_LIB_PATH) $(PARMETIS_LIB_PATH) $(MPI_LIB_PATH) $(BLAS_LIB_PATH))
-EXTERNAL_INCLUDE_PATH = $(strip $(CELLML_INCLUDE_PATH) $(TAO_INCLUDE_PATH) $(PETSC_INCLUDE_PATH) $(SUNDIALS_INCLUDE_PATH) $(HYPRE_INCLUDE_PATH) $(MUMPS_INCLUDE_PATH) $(SCALAPCK_INCLUDE_PATH) $(BLACS_INCLUDE_PATH) $(PARMETIS_INCLUDE_PATH) $(MPI_INCLUDE_PATH) $(BLAS_INCLUDE_PATH))
+ifeq ($(USECELLML),true)
+  EXTERNAL_LIBRARIES += $(CELLML_LIBRARIES)
+  EXTERNAL_LIB_PATH += $(CELLML_LIB_PATH)
+endif
 
 CPPFLAGS += $(EXTERNAL_INCLUDE_PATH)
 FPPFLAGS += $(EXTERNAL_INCLUDE_PATH)
@@ -813,8 +800,8 @@ $(OBJECT_DIR)/%.o : $(MAIN_SOURCE_DIR)/%.c
 $(OBJECT_DIR)/%.o : $(EXAMPLE_SOURCE_DIR)/%.c
 	( cd $(OBJECT_DIR) ; $(CC) -o $@ $(CFLAGS) $(CPPFLAGS) -c $< )
 
-
 OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
+	$(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/analytic_analysis_routines.o \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
@@ -851,6 +838,7 @@ OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/fluid_mechanics_routines.o \
 	$(OBJECT_DIR)/fluid_mechanics_IO_routines.o \
 	$(OBJECT_DIR)/FieldExport.o \
+	$(OBJECT_DIR)/Galerkin_projection_routines.o \
 	$(OBJECT_DIR)/generated_mesh_routines.o \
 	$(OBJECT_DIR)/Helmholtz_equations_routines.o \
 	$(OBJECT_DIR)/history_routines.o \
@@ -870,6 +858,7 @@ OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/problem_routines.o \
 	$(OBJECT_DIR)/region_routines.o \
 	$(OBJECT_DIR)/Stokes_equations_routines.o \
+	$(OBJECT_DIR)/solid_mechanics_IO_routines.o \
 	$(OBJECT_DIR)/solver_routines.o \
 	$(OBJECT_DIR)/solver_mapping_routines.o \
 	$(OBJECT_DIR)/solver_matrices_routines.o \
@@ -879,7 +868,6 @@ OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/timer_f.o \
 	$(OBJECT_DIR)/trees.o \
 	$(OBJECT_DIR)/types.o 
-
 
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   MACHINE_OBJECTS = $(OBJECT_DIR)/machine_constants_linux.o
@@ -905,7 +893,6 @@ $(OBJECT_DIR) :
 $(EXE_DIR) :
 	mkdir -p $@; 
 
-
 $(EXECUTABLE) : $(OBJECTS) 
 	$(EXE_LINK) -o $@ $(OBJECTS) $(ELFLAGS) $(EXTERNAL_LIBRARIES)
 
@@ -924,6 +911,29 @@ ifeq ($(OPERATING_SYSTEM),aix)
    $(OBJECT_DIR)/timer_c.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
 
 endif
+
+$(OBJECT_DIR)/advection_diffusion_equation_routines.o	:	$(MAIN_SOURCE_DIR)/advection_diffusion_equation_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/boundary_condition_routines.o \
+	$(OBJECT_DIR)/constants.o \
+	$(OBJECT_DIR)/control_loop_routines.o \
+	$(OBJECT_DIR)/distributed_matrix_vector.o \
+	$(OBJECT_DIR)/domain_mappings.o \
+	$(OBJECT_DIR)/equations_routines.o \
+	$(OBJECT_DIR)/equations_mapping_routines.o \
+	$(OBJECT_DIR)/equations_matrices_routines.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/matrix_vector.o \
+	$(OBJECT_DIR)/problem_constants.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/solver_routines.o \
+	$(OBJECT_DIR)/timer_f.o \
+	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/analytic_analysis_routines.o  : $(MAIN_SOURCE_DIR)/analytic_analysis_routines.f90 \
 	$(OBJECT_DIR)/basis_routines.o \
@@ -1004,9 +1014,11 @@ $(OBJECT_DIR)/boundary_condition_routines.o  : $(MAIN_SOURCE_DIR)/boundary_condi
 	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/classical_field_routines.o	:	$(MAIN_SOURCE_DIR)/classical_field_routines.f90 \
+	$(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/diffusion_equation_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/Galerkin_projection_routines.o \
 	$(OBJECT_DIR)/Helmholtz_equations_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -1102,6 +1114,7 @@ $(OBJECT_DIR)/Darcy_equations_routines.o	:	$(MAIN_SOURCE_DIR)/Darcy_equations_ro
 	$(OBJECT_DIR)/equations_matrices_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/fluid_mechanics_IO_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o	\
@@ -1244,7 +1257,6 @@ $(OBJECT_DIR)/equations_set_routines.o	:	$(MAIN_SOURCE_DIR)/equations_set_routin
 $(OBJECT_DIR)/field_routines.o	:	$(MAIN_SOURCE_DIR)/field_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/cmiss_cellml.o \
 	$(OBJECT_DIR)/computational_environment.o \
 	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
@@ -1318,6 +1330,8 @@ $(OBJECT_DIR)/fluid_mechanics_routines.o	:	$(MAIN_SOURCE_DIR)/fluid_mechanics_ro
 $(OBJECT_DIR)/fluid_mechanics_IO_routines.o	:	$(MAIN_SOURCE_DIR)/fluid_mechanics_IO_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/field_routines.o\
+	$(OBJECT_DIR)/input_output.o\
+	$(OBJECT_DIR)/kinds.o\
 	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/FieldExport.o	:	$(MAIN_SOURCE_DIR)/FieldExport.c \
@@ -1329,10 +1343,35 @@ $(OBJECT_DIR)/input_output.o	:	$(MAIN_SOURCE_DIR)/input_output.f90 \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/strings.o
 
+$(OBJECT_DIR)/Galerkin_projection_routines.o	:	$(MAIN_SOURCE_DIR)/Galerkin_projection_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/boundary_condition_routines.o \
+	$(OBJECT_DIR)/constants.o \
+	$(OBJECT_DIR)/control_loop_routines.o \
+	$(OBJECT_DIR)/Darcy_equations_routines.o \
+	$(OBJECT_DIR)/distributed_matrix_vector.o \
+	$(OBJECT_DIR)/domain_mappings.o \
+	$(OBJECT_DIR)/equations_routines.o \
+	$(OBJECT_DIR)/equations_mapping_routines.o \
+	$(OBJECT_DIR)/equations_matrices_routines.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/matrix_vector.o \
+	$(OBJECT_DIR)/problem_constants.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/solver_routines.o \
+	$(OBJECT_DIR)/timer_f.o \
+	$(OBJECT_DIR)/types.o
+
 $(OBJECT_DIR)/generated_mesh_routines.o	:	$(MAIN_SOURCE_DIR)/generated_mesh_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
 	$(OBJECT_DIR)/coordinate_routines.o \
+  $(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
@@ -1359,6 +1398,7 @@ $(OBJECT_DIR)/Helmholtz_equations_routines.o	:	$(MAIN_SOURCE_DIR)/Helmholtz_equa
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/matrix_vector.o \
+	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/problem_constants.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/solver_routines.o \
@@ -1394,6 +1434,7 @@ $(OBJECT_DIR)/Laplace_equations_routines.o	:	$(MAIN_SOURCE_DIR)/Laplace_equation
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/matrix_vector.o \
+	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/problem_constants.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/solver_routines.o \
@@ -1568,6 +1609,17 @@ $(OBJECT_DIR)/region_routines.o	:	$(MAIN_SOURCE_DIR)/region_routines.f90 \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 
+$(OBJECT_DIR)/solid_mechanics_IO_routines.o : $(MAIN_SOURCE_DIR)/solid_mechanics_IO_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/boundary_condition_routines.o \
+	$(OBJECT_DIR)/domain_mappings.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/mesh_routines.o \
+	$(OBJECT_DIR)/types.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/strings.o
+
 $(OBJECT_DIR)/solver_routines.o	:	$(MAIN_SOURCE_DIR)/solver_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/cmiss_petsc.o \
@@ -1677,7 +1729,6 @@ $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o	:	$(EXAMPLE_SOURCE_DIR)/$(BASE_EXAMPLE_NAME
 	$(OBJECT_DIR)/basis_routines.o \
 	$(OBJECT_DIR)/boundary_condition_routines.o \
 	$(OBJECT_DIR)/cmiss.o \
-	$(OBJECT_DIR)/cmiss_cellml.o \
 	$(OBJECT_DIR)/cmiss_mpi.o \
 	$(OBJECT_DIR)/computational_environment.o \
 	$(OBJECT_DIR)/constants.o \
@@ -1703,9 +1754,6 @@ $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o	:	$(EXAMPLE_SOURCE_DIR)/$(BASE_EXAMPLE_NAME
 	$(OBJECT_DIR)/test_framework_routines.o \
 	$(OBJECT_DIR)/timer_f.o \
 	$(OBJECT_DIR)/types.o 
-
-
-
 
 # ----------------------------------------------------------------------------
 #
@@ -1743,12 +1791,12 @@ all64: debug64 opt64
 # TODO only for linux 64bit for now.
 test:
 # Test for 2x2 mesh using bilinear lagrange basis 
-	python $(CURDIR)/testscript.py $(CURDIR)/bin/$(LIB_ARCH_DIR)/$(BASE_EXAMPLE_NAME)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)
+	python $(CURDIR)/testscript.py $(CURDIR)/bin/$(LIB_ARCH_DIR)/$(BASE_EXAMPLE_NAME)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
 
 #-----------------------------------------------------------------------------
 
 help:
-	@echo "			Compile a version of openCMISS"
+	@echo "			Compile a version of OpenCMISS"
 	@echo "			=============================="
 	@echo
 	@echo "Examples of usage:   "
@@ -1765,7 +1813,8 @@ help:
 	@echo "	PROF=(true|)"
 	@echo "	MPIPROF=(true|)"
 	@echo "	ABI=(32|64)"
-	@echo "	COMPILER=(intel|gnu)"
+	@echo "	COMPILER=(intel|gnu|ibm)"
+	@echo "	LIBRARY_VERSION=(old|new)"
 	@echo 
 	@echo "Available targets:                            "
 	@echo

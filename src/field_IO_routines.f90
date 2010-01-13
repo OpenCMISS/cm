@@ -63,6 +63,7 @@ MODULE FIELD_IO_ROUTINES
   USE MPI
   USE CMISS_MPI
   USE INPUT_OUTPUT
+  USE DISTRIBUTED_MATRIX_VECTOR
 
   IMPLICIT NONE
 
@@ -189,13 +190,13 @@ MODULE FIELD_IO_ROUTINES
       INTEGER(C_INT) :: FieldExport_FieldCount
     END FUNCTION FieldExport_FieldCount
 
-    FUNCTION FieldExport_CoordinateVariable( handle, variableNumber, coordinateSystem, componentCount ) &
+    FUNCTION FieldExport_CoordinateVariable( handle, variableNumber, coordinateSystemType, componentCount ) &
       & BIND(C,NAME="FieldExport_CoordinateVariable")
       USE TYPES
       USE ISO_C_BINDING
       INTEGER(C_INT), VALUE :: handle
       INTEGER(C_INT), VALUE :: variableNumber
-      TYPE(COORDINATE_SYSTEM_TYPE), VALUE :: coordinateSystem
+      INTEGER(C_INT), VALUE :: coordinateSystemType
       INTEGER(C_INT), VALUE :: componentCount
       INTEGER(C_INT) :: FieldExport_CoordinateVariable
     END FUNCTION FieldExport_CoordinateVariable
@@ -212,13 +213,13 @@ MODULE FIELD_IO_ROUTINES
       INTEGER(C_INT) :: FieldExport_Variable
     END FUNCTION FieldExport_Variable
 
-    FUNCTION FieldExport_CoordinateComponent( handle, coordinateSystem, componentNumber, isNodal, &
+    FUNCTION FieldExport_CoordinateComponent( handle, coordinateSystemType, componentNumber, isNodal, &
       & numberOfXi, interpolationXi ) &
       & BIND(C,NAME="FieldExport_CoordinateComponent")
       USE TYPES
       USE ISO_C_BINDING
       INTEGER(C_INT), VALUE :: handle
-      TYPE(COORDINATE_SYSTEM_TYPE), VALUE :: coordinateSystem
+      INTEGER(C_INT), VALUE :: coordinateSystemType
       INTEGER(C_INT), VALUE :: componentNumber
       INTEGER(C_INT), VALUE :: isNodal
       INTEGER(C_INT), VALUE :: numberOfXi
@@ -247,7 +248,8 @@ MODULE FIELD_IO_ROUTINES
       INTEGER(C_INT) :: FieldExport_ElementGridSize
     END FUNCTION FieldExport_ElementGridSize
 
-    FUNCTION FieldExport_NodeScaleIndexes( handle, nodeCount, derivativeCount, elementDerivatives, firstScaleIndex ) &
+    FUNCTION FieldExport_NodeScaleIndexes( handle, nodeCount, derivativeCount, elementDerivatives, nodeIndexes, &
+      & firstScaleIndex ) &
       & BIND(C,NAME="FieldExport_NodeScaleIndexes")
       USE TYPES
       USE ISO_C_BINDING
@@ -255,6 +257,7 @@ MODULE FIELD_IO_ROUTINES
       INTEGER(C_INT), VALUE :: nodeCount
       TYPE(C_PTR), VALUE :: derivativeCount
       TYPE(C_PTR), VALUE :: elementDerivatives
+      TYPE(C_PTR), VALUE :: nodeIndexes
       INTEGER(C_INT), VALUE :: firstScaleIndex
       INTEGER(C_INT) :: FieldExport_NodeScaleIndexes
     END FUNCTION FieldExport_NodeScaleIndexes
@@ -301,20 +304,12 @@ MODULE FIELD_IO_ROUTINES
       INTEGER(C_INT) :: FieldExport_ElementGridValues
     END FUNCTION FieldExport_ElementGridValues
 
-    FUNCTION FieldExport_NodeNumber( handle, nodeNumber ) &
-      & BIND(C,NAME="FieldExport_NodeNumber")
-      USE TYPES
-      USE ISO_C_BINDING
-      INTEGER(C_INT), VALUE :: handle
-      INTEGER(C_INT), VALUE :: nodeNumber
-      INTEGER(C_INT) :: FieldExport_NodeNumber
-    END FUNCTION FieldExport_NodeNumber
-
-    FUNCTION FieldExport_NodeValues( handle, valueCount, nodeValues ) &
+    FUNCTION FieldExport_NodeValues( handle, nodeNumber, valueCount, nodeValues ) &
       & BIND(C,NAME="FieldExport_NodeValues")
       USE TYPES
       USE ISO_C_BINDING
       INTEGER(C_INT), VALUE :: handle
+      INTEGER(C_INT), VALUE :: nodeNumber
       INTEGER(C_INT), VALUE :: valueCount
       TYPE(C_PTR), VALUE :: nodeValues
       INTEGER(C_INT) :: FieldExport_NodeValues
@@ -328,13 +323,13 @@ MODULE FIELD_IO_ROUTINES
       INTEGER(C_INT) :: FieldExport_CloseSession
     END FUNCTION FieldExport_CloseSession
 
-    FUNCTION FieldExport_CoordinateDerivativeIndices( handle, componentNumber, coordinateSystem, numberOfDerivatives,  &
+    FUNCTION FieldExport_CoordinateDerivativeIndices( handle, componentNumber, coordinateSystemType, numberOfDerivatives,  &
       & derivatives, valueIndex ) BIND(C,NAME="FieldExport_CoordinateDerivativeIndices")
       USE TYPES
       USE ISO_C_BINDING
       INTEGER(C_INT), VALUE :: handle
       INTEGER(C_INT), VALUE :: componentNumber
-      TYPE(COORDINATE_SYSTEM_TYPE), VALUE :: coordinateSystem
+      INTEGER(C_INT), VALUE :: coordinateSystemType
       INTEGER(C_INT), VALUE :: numberOfDerivatives
       TYPE(C_PTR), VALUE :: derivatives
       INTEGER(C_INT), VALUE :: valueIndex
@@ -368,6 +363,7 @@ MODULE FIELD_IO_ROUTINES
 
   INTERFACE GROW_ARRAY
     MODULE PROCEDURE GROW_ARRAY_INT
+    MODULE PROCEDURE GROW_ARRAY_REAL
     MODULE PROCEDURE GROW_ARRAY_COMPONENTS
   END INTERFACE !GROW_ARRAY
 
@@ -381,7 +377,7 @@ MODULE FIELD_IO_ROUTINES
     MODULE PROCEDURE CHECKED_DEALLOCATE_BASIS
   END INTERFACE !CHECKED_DEALLOCATE
 
-  PUBLIC :: FIELD_IO_FILEDS_IMPORT, FIELD_IO_NODES_EXPORT, FIELD_IO_ELEMENTS_EXPORT
+  PUBLIC :: FIELD_IO_FIELDS_IMPORT, FIELD_IO_NODES_EXPORT, FIELD_IO_ELEMENTS_EXPORT
 
 
 CONTAINS
@@ -558,7 +554,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     
-    CALL ENTERS("REALLOCATE",ERR,ERROR,*999)
+    CALL ENTERS("REALLOCATE_2D",ERR,ERROR,*999)
 
     IF( ALLOCATED( array ) ) THEN
       DEALLOCATE( array )
@@ -569,18 +565,19 @@ CONTAINS
     
     array(:,:) = 0
 
-    CALL EXITS("REALLOCATE")
+    CALL EXITS("REALLOCATE_2D")
     RETURN
-999 CALL ERRORS("REALLOCATE",ERR,ERROR)
-    CALL EXITS("REALLOCATE")
+999 CALL ERRORS("REALLOCATE_2D",ERR,ERROR)
+    CALL EXITS("REALLOCATE_2D")
   END SUBROUTINE REALLOCATE_2D
 
   !
   !================================================================================================================================
   !
 
-  SUBROUTINE GROW_ARRAY_INT( array, errorMessage, ERR, ERROR, * )
+  SUBROUTINE GROW_ARRAY_INT( array, delta, errorMessage, ERR, ERROR, * )
     INTEGER(INTG), ALLOCATABLE, INTENT(INOUT) :: array(:)
+    INTEGER(INTG), INTENT(IN) :: delta
     CHARACTER(LEN=*), INTENT(IN) :: errorMessage
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -591,7 +588,7 @@ CONTAINS
     CALL ENTERS("GROW_ARRAY_INT",ERR,ERROR,*999)
 
     IF( .NOT.ALLOCATED( array ) ) THEN
-      CALL REALLOCATE( array, 1, errorMessage, ERR, ERROR, *999 )
+      CALL REALLOCATE( array, delta, errorMessage, ERR, ERROR, *999 )
       RETURN
     ENDIF
     
@@ -601,7 +598,7 @@ CONTAINS
     
     tempArray(:) = array(:)
     
-    CALL REALLOCATE( array, oldSize + 1, errorMessage, ERR, ERROR, *999 )
+    CALL REALLOCATE( array, oldSize + delta, errorMessage, ERR, ERROR, *999 )
     
     array(1:oldSize) = tempArray(:)
 
@@ -617,8 +614,48 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE GROW_ARRAY_COMPONENTS( array, errorMessage, ERR, ERROR, * )
+  SUBROUTINE GROW_ARRAY_REAL( array, delta, errorMessage, ERR, ERROR, * )
+    REAL(C_DOUBLE), ALLOCATABLE, INTENT(INOUT) :: array(:)
+    INTEGER(INTG), INTENT(IN) :: delta
+    CHARACTER(LEN=*), INTENT(IN) :: errorMessage
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    
+    REAL(C_DOUBLE), ALLOCATABLE :: tempArray(:)
+    INTEGER(INTG) :: oldSize
+    
+    CALL ENTERS("GROW_ARRAY_REAL",ERR,ERROR,*999)
+
+    IF( .NOT.ALLOCATED( array ) ) THEN
+      CALL REALLOCATE( array, delta, errorMessage, ERR, ERROR, *999 )
+      RETURN
+    ENDIF
+    
+    oldSize = SIZE( array )
+    
+    CALL REALLOCATE( tempArray, oldSize, errorMessage, ERR, ERROR, *999 )
+    
+    tempArray(:) = array(:)
+    
+    CALL REALLOCATE( array, oldSize + delta, errorMessage, ERR, ERROR, *999 )
+    
+    array(1:oldSize) = tempArray(:)
+
+    DEALLOCATE( tempArray )
+
+    CALL EXITS("GROW_ARRAY_REAL")
+    RETURN
+999 CALL ERRORS("GROW_ARRAY_REAL",ERR,ERROR)
+    CALL EXITS("GROW_ARRAY_REAL")
+  END SUBROUTINE GROW_ARRAY_REAL
+  
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE GROW_ARRAY_COMPONENTS( array, delta, errorMessage, ERR, ERROR, * )
     TYPE(FIELD_VARIABLE_COMPONENT_PTR_TYPE), ALLOCATABLE, INTENT(INOUT) :: array(:)
+    INTEGER(INTG), INTENT(IN) :: delta
     CHARACTER(LEN=*), INTENT(IN) :: errorMessage
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -629,7 +666,7 @@ CONTAINS
     CALL ENTERS("GROW_ARRAY_COMPONENTS",ERR,ERROR,*999)
 
     IF( .NOT.ALLOCATED( array ) ) THEN
-      CALL REALLOCATE( array, 1, errorMessage, ERR, ERROR, *999 )
+      CALL REALLOCATE( array, delta, errorMessage, ERR, ERROR, *999 )
       RETURN
     ENDIF
     
@@ -639,7 +676,7 @@ CONTAINS
     
     tempArray(:) = array(:)
     
-    CALL REALLOCATE( array, oldSize + 1, errorMessage, ERR, ERROR, *999 )
+    CALL REALLOCATE( array, oldSize + delta, errorMessage, ERR, ERROR, *999 )
     
     array(1:oldSize) = tempArray(:)
 
@@ -1333,7 +1370,7 @@ CONTAINS
     !Set the decomposition to be a general decomposition with the specified number of domains
     CALL DECOMPOSITION_TYPE_SET(DECOMPOSITION,DECOMPOSITION_METHOD,ERR,ERROR,*999)
     CALL DECOMPOSITION_NUMBER_OF_DOMAINS_SET(DECOMPOSITION,NUMBER_OF_DOMAINS,ERR,ERROR,*999)
-    CALL DECOMPOSITION_CREATE_FINISH(MESH,DECOMPOSITION,ERR,ERROR,*999)
+    CALL DECOMPOSITION_CREATE_FINISH(DECOMPOSITION,ERR,ERROR,*999)
 
     CALL EXITS("FIELD_IO_CREATE_DECOMPISTION")
     RETURN
@@ -1347,7 +1384,7 @@ CONTAINS
   !
 
   !>Import fields from files into different computational nodes
-  SUBROUTINE FIELD_IO_FILEDS_IMPORT(NAME, METHOD, REGION, MESH, MESH_USER_NUMBER, DECOMPOSITION, DECOMPOSITION_USER_NUMBER, &
+  SUBROUTINE FIELD_IO_FIELDS_IMPORT(NAME, METHOD, REGION, MESH, MESH_USER_NUMBER, DECOMPOSITION, DECOMPOSITION_USER_NUMBER, &
     &DECOMPOSITION_METHOD, FIELD_VALUES_SET_TYPE, FIELD_SCALING_TYPE, ERR, ERROR, *)
     !Argument variables
     TYPE(VARYING_STRING), INTENT(IN) :: NAME !<name of input
@@ -1372,7 +1409,8 @@ CONTAINS
     !INTEGER(INTG), ALLOCATABLE :: USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(:)
     INTEGER(INTG), ALLOCATABLE :: MESH_COMPONENTS_OF_FIELD_COMPONENTS(:)
     INTEGER(INTG), ALLOCATABLE :: COMPONENTS_IN_FIELDS(:)
-    CALL ENTERS("FIELD_IO_FILEDS_IMPORT",ERR,ERROR,*999)
+
+    CALL ENTERS("FIELD_IO_FIELDS_IMPORT",ERR,ERROR,*999)
 
     !Get the number of computational nodes
     computational_node_numbers=COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)
@@ -1408,11 +1446,11 @@ CONTAINS
     CALL CHECKED_DEALLOCATE( COMPONENTS_IN_FIELDS )
     !IF(ALLOCATED(LIST_FIELD_TYPE)) DEALLOCATE(LIST_FIELD_TYPE)
 
-    CALL EXITS("FIELD_IO_FILEDS_IMPORT")
+    CALL EXITS("FIELD_IO_FIELDS_IMPORT")
     RETURN
-999 CALL ERRORS("FIELD_IO_FILEDS_IMPORT",ERR,ERROR)
-    CALL EXITS("FIELD_IO_FILEDS_IMPORT")
-  END SUBROUTINE FIELD_IO_FILEDS_IMPORT
+999 CALL ERRORS("FIELD_IO_FIELDS_IMPORT",ERR,ERROR)
+    CALL EXITS("FIELD_IO_FIELDS_IMPORT")
+  END SUBROUTINE FIELD_IO_FIELDS_IMPORT
 
   !
   !================================================================================================================================
@@ -1946,8 +1984,8 @@ CONTAINS
     DO idx_elem=1,NUMBER_OF_ELEMENTS
        DO idx_comp=1, NUMBER_OF_MESH_COMPONENTS
           IF(idx_elem/=LIST_ELEMENT_NUMBER(idx_elem)) &
-            &CALL MESH_TOPOLOGY_ELEMENTS_USER_NUMBER_SET(idx_elem,LIST_ELEMENT_NUMBER(idx_elem),ELEMENTS_PTR(idx_comp)%PTR, &
-            & ERR,ERROR,*999)
+            & CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_SET(idx_elem,LIST_ELEMENT_NUMBER(idx_elem), &
+            & ELEMENTS_PTR(idx_comp)%PTR,ERR,ERROR,*999)
        ENDDO
     ENDDO
 
@@ -2202,7 +2240,7 @@ CONTAINS
     ENDDO !idx_exelem<NUMBER_OF_EXELEM_FILES
 
     DO idx_comp=1, NUMBER_OF_MESH_COMPONENTS
-       CALL MESH_TOPOLOGY_ELEMENTS_CREATE_FINISH(MESH,idx_comp, ERR,ERROR,*999)
+       CALL MESH_TOPOLOGY_ELEMENTS_CREATE_FINISH(ELEMENTS_PTR(idx_comp)%PTR, ERR,ERROR,*999)
     ENDDO
     CALL MESH_CREATE_FINISH(MESH,ERR,ERROR,*999)
 
@@ -2607,12 +2645,14 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: variable_ptr
     TYPE(DOMAIN_TYPE), POINTER :: componentDomain !The domain mapping to calculate nodal mappings
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: DOMAIN_ELEMENTS ! domain nodes
+    TYPE(DOMAIN_ELEMENT_TYPE), POINTER :: MAX_NODE_ELEMENT
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES ! domain nodes
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(BASIS_PTR_TYPE), ALLOCATABLE :: listScaleBases(:)
+    TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: component
     INTEGER(INTG), ALLOCATABLE :: GROUP_LOCAL_NUMBER(:), GROUP_SCALE_FACTORS(:)
     INTEGER(INTG), ALLOCATABLE :: GROUP_NODE(:), GROUP_VARIABLES(:)
-    INTEGER(C_INT), TARGET :: INTERPOLATION_XI(3),ELEMENT_DERIVATIVES(64*64),NUMBER_OF_DERIVATIVES(64)
+    INTEGER(C_INT), TARGET :: INTERPOLATION_XI(3),ELEMENT_DERIVATIVES(64*64),NUMBER_OF_DERIVATIVES(64), NODE_INDEXES(128)
     INTEGER(INTG) :: nn, mm, NUM_OF_VARIABLES, MAX_NUM_NODES !NUM_OF_NODES
     INTEGER(INTG) :: local_number, isNodal
     INTEGER(INTG) :: num_scl, num_node, comp_idx, scaleIndex, scaleIndex1, var_idx, derivativeIndex !value_idx field_idx global_var_idx comp_idx1 ny2
@@ -2654,6 +2694,7 @@ CONTAINS
        BASIS=>DOMAIN_ELEMENTS%ELEMENTS(local_number)%BASIS
        IF(BASIS%NUMBER_OF_NODES>MAX_NUM_NODES) THEN
           MAX_NODE_COMP_INDEX=comp_idx
+          MAX_NODE_ELEMENT => DOMAIN_ELEMENTS%ELEMENTS(local_number)
           MAX_NUM_NODES=BASIS%NUMBER_OF_NODES
        ENDIF
        IF(.NOT.BASIS%DEGENERATE)  THEN
@@ -2680,14 +2721,14 @@ CONTAINS
     ENDDO !comp_idx
     !!Allocate the memory for group of field components
     CALL REALLOCATE( GROUP_VARIABLES, NUM_OF_VARIABLES, &
-      & "Could not allocate temporaty variable buffer in IO", ERR, ERROR, *999 )
+      & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999 )
 
     !!Allocate the memory for group of maximum number of derivatives
     CALL REALLOCATE( GROUP_SCALE_FACTORS, NUM_OF_SCALING_FACTOR_SETS, &
-      & "Could not allocate temporaty variable buffer in IO", ERR, ERROR, *999 )
+      & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999 )
 
     CALL REALLOCATE( GROUP_NODE, NUM_OF_SCALING_FACTOR_SETS, &
-      & "Could not allocate temporaty variable buffer in IO", ERR, ERROR, *999 )
+      & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999 )
 
     !fill information into the group of fields and variables
     NULLIFY(variable_ptr)
@@ -2760,15 +2801,18 @@ CONTAINS
     var_idx=0
     NULLIFY(variable_ptr)
     DO comp_idx=1,elementalInfoSet%NUMBER_OF_COMPONENTS
+    
+      component => elementalInfoSet%COMPONENTS(comp_idx)%PTR
+    
       !grouping field variables and components together
-      IF(.NOT.ASSOCIATED(variable_ptr,TARGET=elementalInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE)) THEN !different variables
+      IF(.NOT.ASSOCIATED(variable_ptr,TARGET=component%FIELD_VARIABLE)) THEN !different variables
         var_idx=var_idx+1
-        variable_ptr=>elementalInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE
+        variable_ptr=>component%FIELD_VARIABLE
         !write out the field information
 
         IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
           & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
-          ERR = FieldExport_CoordinateVariable( sessionHandle, var_idx, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM, &
+          ERR = FieldExport_CoordinateVariable( sessionHandle, var_idx, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM%TYPE, &
             & GROUP_VARIABLES(var_idx) )
         ELSE
           ERR = FieldExport_Variable( sessionHandle, var_idx, variable_ptr%FIELD%TYPE, variable_ptr%VARIABLE_TYPE, &
@@ -2780,11 +2824,11 @@ CONTAINS
         ENDIF
       ENDIF
 
-      componentDomain=>elementalInfoSet%COMPONENTS(comp_idx)%PTR%DOMAIN
+      componentDomain=>component%DOMAIN
       DOMAIN_ELEMENTS=>componentDomain%TOPOLOGY%ELEMENTS
       BASIS=>DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%BASIS
       
-      IF( elementalInfoSet%COMPONENTS(comp_idx)%PTR%INTERPOLATION_TYPE == FIELD_NODE_BASED_INTERPOLATION ) THEN
+      IF( component%INTERPOLATION_TYPE == FIELD_NODE_BASED_INTERPOLATION ) THEN
         isNodal = 1
       ELSE
         isNodal = 0
@@ -2794,21 +2838,21 @@ CONTAINS
         & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
 !!TEMP
         !ERR = FieldExport_CoordinateComponent( sessionHandle, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM, &
-        !  & elementalInfoSet%COMPONENTS(comp_idx)%PTR%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( basis%INTERPOLATION_XI ) )
+        !  & component%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( basis%INTERPOLATION_XI ) )
 !!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
 !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
           INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)
-          ERR = FieldExport_CoordinateComponent( sessionHandle, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM, &
-            & elementalInfoSet%COMPONENTS(comp_idx)%PTR%COMPONENT_NUMBER,isNodal,basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ))
+          ERR = FieldExport_CoordinateComponent( sessionHandle, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM%TYPE, &
+            & component%COMPONENT_NUMBER,isNodal,basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ))
         ELSE
 !!TEMP
         !ERR = FieldExport_Component( sessionHandle, &
-        !  & elementalInfoSet%COMPONENTS(comp_idx)%PTR%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( basis%INTERPOLATION_XI ) )
+        !  & component%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( basis%INTERPOLATION_XI ) )
 !!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
 !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
         INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)
         ERR = FieldExport_Component( sessionHandle, &
-          & elementalInfoSet%COMPONENTS(comp_idx)%PTR%COMPONENT_NUMBER,isNodal,basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ) )
+          & component%COMPONENT_NUMBER,isNodal,basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ) )
       ENDIF
       IF(ERR/=0) THEN
         CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
@@ -2841,8 +2885,28 @@ CONTAINS
               derivativeIndex = derivativeIndex + 1
             ENDDO !mm
           ENDDO !nn
-          ERR = FieldExport_NodeScaleIndexes( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( NUMBER_OF_DERIVATIVES ), &
-            & C_LOC( ELEMENT_DERIVATIVES ), scaleIndex )
+
+          !Find the local-node index in the element's total node list.
+          !TODO This assumes nested subsets of nodes, and will therefore break on, e.g., mixed quad and cubic interpolation
+          DO nn = 1, BASIS%NUMBER_OF_NODES
+            DO mm = 1, MAX_NODE_ELEMENT%BASIS%NUMBER_OF_NODES
+              IF( DOMAIN_ELEMENTS%ELEMENTS( local_number )%ELEMENT_NODES( nn ) == &
+                & MAX_NODE_ELEMENT%ELEMENT_NODES( mm ) ) THEN
+                NODE_INDEXES( nn ) = mm
+                EXIT
+              ENDIF
+            ENDDO !mm
+          ENDDO !nn
+
+
+          IF( variable_ptr%FIELD%SCALINGS%SCALING_TYPE == FIELD_NO_SCALING ) THEN
+            !Overloading the scaleIndex parameter is something of a hack.
+            ERR = FieldExport_NodeScaleIndexes( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( NUMBER_OF_DERIVATIVES ), &
+              & C_LOC( ELEMENT_DERIVATIVES ), C_LOC( NODE_INDEXES ), -1 )
+          ELSE
+            ERR = FieldExport_NodeScaleIndexes( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( NUMBER_OF_DERIVATIVES ), &
+              & C_LOC( ELEMENT_DERIVATIVES ), C_LOC( NODE_INDEXES ), scaleIndex )
+          ENDIF
         ELSE
           CALL FLAG_ERROR("exporting degenerated nodes has not been implemented",ERR,ERROR,*999)
         ENDIF
@@ -2892,6 +2956,8 @@ CONTAINS
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: domainElementMapping
     TYPE(BASIS_TYPE), POINTER :: basis
     REAL(C_DOUBLE), ALLOCATABLE, TARGET :: scaleBuffer(:)
+    REAL(DP), POINTER :: SCALE_FACTORS(:)
+
 
     CALL ENTERS("FIELD_IO_EXPORT_ELEMENT_SCALE_FACTORS",ERR,ERROR,*999)
  
@@ -2900,6 +2966,7 @@ CONTAINS
     DO componentIndex = 1, components%NUMBER_OF_COMPONENTS
       component => components%COMPONENTS( componentIndex )%PTR
       !finding the local numbering through the global to local mapping
+      
       domainElementMapping=>component%DOMAIN%MAPPINGS%ELEMENTS
       !get the domain index for this variable component according to my own computional node number
 
@@ -2920,8 +2987,11 @@ CONTAINS
         CALL REALLOCATE( scaleBuffer, SUM( basis%NUMBER_OF_DERIVATIVES(1:basis%NUMBER_OF_NODES ) ), &
           & "Could not allocate scale buffer in IO", ERR, ERROR, *999 )
 
-        !CALL DISTRIBUTED_VECTOR_DATA_GET(components%COMPONENTS(componentIndex)%PTR%FIELD%SCALINGS%SCALINGS(components%COMPONENTS(componentIndex)%PTR% &
-        !&SCALING_INDEX)%SCALE_FACTORS,SCALE_FACTORS,ERR,ERROR,*999)
+        IF( component%FIELD_VARIABLE%FIELD%SCALINGS%SCALING_TYPE /= FIELD_NO_SCALING ) THEN
+          CALL DISTRIBUTED_VECTOR_DATA_GET(component%FIELD_VARIABLE%FIELD%SCALINGS%SCALINGS(component% &
+            & SCALING_INDEX)%SCALE_FACTORS,SCALE_FACTORS,ERR,ERROR,*999)
+        ENDIF
+
         IF( .NOT.basis%DEGENERATE ) THEN
           DO nodeIndex = 1, basis%NUMBER_OF_NODES
             nodeNumber = domainElements%ELEMENTS( localNumber )%ELEMENT_NODES( nodeIndex )
@@ -2929,12 +2999,18 @@ CONTAINS
               nk = domainElements%ELEMENTS( localNumber )%ELEMENT_DERIVATIVES( derivativeIndex, nodeIndex )
               ny2 = domainNodes%NODES( nodeNumber )%DOF_INDEX( nk )
               scaleFactorCount = scaleFactorCount + 1
-              scaleBuffer( scaleFactorCount ) = 1 !SCALE_FACTORS(ny2) MUSTDO FIX THIS
+              IF( component%FIELD_VARIABLE%FIELD%SCALINGS%SCALING_TYPE /= FIELD_NO_SCALING ) THEN
+                scaleBuffer( scaleFactorCount ) = SCALE_FACTORS(ny2)
+              ELSE
+                scaleBuffer( scaleFactorCount ) = 1
+              ENDIF
             ENDDO !derivativeIndex
           ENDDO !nodeIndex
         ELSE
           CALL FLAG_ERROR("exporting degenerated nodes has not been implemented",ERR,ERROR,*999)
         ENDIF
+        
+        NULLIFY( SCALE_FACTORS )
 
         ERR = FieldExport_ElementNodeScales( sessionHandle, firstScaleSet, scaleFactorCount, C_LOC( scaleBuffer ) )
         
@@ -3062,30 +3138,9 @@ CONTAINS
         CALL FLAG_ERROR( "Cannot write element index to file", ERR, ERROR,*999 )
       ENDIF
 
-      BASIS=>element%BASIS
-
-!!TEMP
-      !ERR = FieldExport_ElementNodeIndices( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( element%USER_ELEMENT_NODES ) )
-!!Copy user element nodes to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
-!!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
-      USER_ELEMENT_NODES(1:BASIS%NUMBER_OF_NODES)=element%USER_ELEMENT_NODES(1:BASIS%NUMBER_OF_NODES)
-      ERR = FieldExport_ElementNodeIndices( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( USER_ELEMENT_NODES ) )
-      IF(ERR/=0) THEN
-        CALL FLAG_ERROR( "Cannot write node indices to file", ERR, ERROR,*999 )
-      ENDIF
-
-      CALL FIELD_IO_EXPORT_ELEMENT_SCALE_FACTORS( sessionHandle, components, &
-        & LIST_COMP_SCALE, global_number, my_computational_node_number, ERR, ERROR, *999 )
-
       isFirstValueSet = 1
       DO comp_idx = 1, components%NUMBER_OF_COMPONENTS
         component => components%COMPONENTS(comp_idx)%PTR
-
-!CPL
-        CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Field    :",component%FIELD_VARIABLE%FIELD%GLOBAL_NUMBER, ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  var    :",component%FIELD_VARIABLE%variable_number, ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE," comp    :",component%component_number, ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"inter    :",component%INTERPOLATION_TYPE, ERR,ERROR,*999)
 
         !finding the local numbering through the global to local mapping
         DOMAIN_MAPPING_ELEMENTS=>component%DOMAIN%MAPPINGS%ELEMENTS
@@ -3119,10 +3174,25 @@ CONTAINS
         ENDIF
 
         IF(ERR/=0) THEN
-          CALL FLAG_ERROR( "Cannot write group name to nodes file", ERR, ERROR,*999 )
+          CALL FLAG_ERROR( "Cannot write grid points to nodes file", ERR, ERROR,*999 )
         ENDIF
       ENDDO
 
+
+      BASIS=>element%BASIS
+
+!!TEMP
+      !ERR = FieldExport_ElementNodeIndices( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( element%USER_ELEMENT_NODES ) )
+!!Copy user element nodes to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
+!!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
+      USER_ELEMENT_NODES(1:BASIS%NUMBER_OF_NODES)=element%USER_ELEMENT_NODES(1:BASIS%NUMBER_OF_NODES)
+      ERR = FieldExport_ElementNodeIndices( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( USER_ELEMENT_NODES ) )
+      IF(ERR/=0) THEN
+        CALL FLAG_ERROR( "Cannot write node indices to file", ERR, ERROR,*999 )
+      ENDIF
+
+      CALL FIELD_IO_EXPORT_ELEMENT_SCALE_FACTORS( sessionHandle, components, &
+        & LIST_COMP_SCALE, global_number, my_computational_node_number, ERR, ERROR, *999 )
         
     ENDDO !elem_idx
 
@@ -3418,7 +3488,7 @@ CONTAINS
             !have one more global node
             !i hate the codes here, but i have to save the memory
             IF(foundNewElement) THEN
-              CALL GROW_ARRAY( ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER, &
+              CALL GROW_ARRAY( ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER, 1, &
                 & "Could not allocate temporary buffer in IO", ERR, ERROR, *999 )
               ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(ELEMENTAL_INFO_SET% &
                 & NUMBER_OF_ENTRIES+1) = DOMAIN_ELEMENTS_MAPPING%LOCAL_TO_GLOBAL_MAP(np)
@@ -3462,7 +3532,7 @@ CONTAINS
             ENDDO
 
             !allocate variable component memory
-            CALL GROW_ARRAY( ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS, &
+            CALL GROW_ARRAY( ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS, 1, &
               & "Could not allocate component buffer in IO", ERR, ERROR, *999 )
             ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS( &
               & ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS+1 &
@@ -3607,10 +3677,10 @@ CONTAINS
 
     !local variables
     INTEGER(INTG) :: component_idx
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING_NODES !The domain mapping to calculate nodal mappings
     INTEGER(INTG) :: local_number1, local_number2, tmp1
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES1, DOMAIN_NODES2
     INTEGER(INTG), ALLOCATABLE:: array1(:), array2(:)
+    LOGICAL :: FOUND
 
     CALL ENTERS("FIELD_IO_COMPARE_INFO_SET_DERIVATIVES",ERR,ERROR,*999)
     
@@ -3618,51 +3688,61 @@ CONTAINS
 
     !We have a potential match. Do a deeper inspection
     DO component_idx=1, SET1%NUMBER_OF_COMPONENTS
+      
+      DOMAIN_NODES1=>SET1%COMPONENTS(component_idx)%PTR%DOMAIN%TOPOLOGY%NODES        
+      FOUND=.FALSE.
+      DO local_number1=1,DOMAIN_NODES1%NUMBER_OF_NODES
+        IF( DOMAIN_NODES1%NODES(local_number1)%GLOBAL_NUMBER == global_number1 ) THEN
+          FOUND = .TRUE.
+          EXIT
+        ENDIF
+      ENDDO !local_number
+      
+      IF( .NOT. FOUND ) THEN
+        doesMatch = .FALSE.
+        EXIT !out of loop-component_idx=1,SET1%NUMBER_OF_COMPONENTS
+      ENDIF
 
-      !finding the local numbering for the NODAL_INFO_SET(nn1)
-      DOMAIN_MAPPING_NODES=> SET1%COMPONENTS(component_idx)%PTR%DOMAIN%MAPPINGS%NODES
-         !get the domain index for this variable component according to my own computional node number
-         !local number of nn1'th node in the damain assoicated with component(component_idx)
-         local_number1 = FindMyLocalDomainNumber( DOMAIN_MAPPING_NODES%GLOBAL_TO_LOCAL_MAP( global_number1 ), &
-           & my_computational_node_number )
-         DOMAIN_NODES1=>SET1%COMPONENTS(component_idx)%PTR%DOMAIN%TOPOLOGY%NODES
+      DOMAIN_NODES2=>SET2%COMPONENTS(component_idx)%PTR%DOMAIN%TOPOLOGY%NODES        
+      FOUND=.FALSE.
+      DO local_number2=1,DOMAIN_NODES2%NUMBER_OF_NODES
+        IF( DOMAIN_NODES2%NODES(local_number2)%GLOBAL_NUMBER == global_number2 ) THEN
+          FOUND = .TRUE.
+          EXIT
+        ENDIF
+      ENDDO !local_number
+      
+      IF( .NOT. FOUND ) THEN
+        doesMatch = .FALSE.
+        EXIT !out of loop-component_idx=1,SET1%NUMBER_OF_COMPONENTS
+      ENDIF
 
-         !finding the local numbering for the NODAL_INFO_SET(nn2)
-         DOMAIN_MAPPING_NODES=>SET2%COMPONENTS(component_idx)%PTR%DOMAIN%MAPPINGS%NODES
-         !get the domain index for this variable component according to my own computional node number
-         !local number of nn2'th node in the damain assoicated with component(component_idx)
-         local_number2 = FindMyLocalDomainNumber( DOMAIN_MAPPING_NODES%GLOBAL_TO_LOCAL_MAP( global_number2 ), &
-           & my_computational_node_number )
-         DOMAIN_NODES2=>SET2%COMPONENTS(component_idx)%PTR%DOMAIN%TOPOLOGY%NODES
-
-         !checking whether they have the same number of partiabl derivative
-         IF(DOMAIN_NODES1%NODES(local_number1)%NUMBER_OF_DERIVATIVES&
-            &==DOMAIN_NODES2%NODES(local_number2)%NUMBER_OF_DERIVATIVES) THEN
-           ALLOCATE(array1(DOMAIN_NODES1%NODES(local_number1)%NUMBER_OF_DERIVATIVES),STAT=ERR)
-           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty buffer in IO sorting",ERR,ERROR,*999)
-           ALLOCATE(array2(DOMAIN_NODES1%NODES(local_number2)%NUMBER_OF_DERIVATIVES),STAT=ERR)
-           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty buffer in IO sorting",ERR,ERROR,*999)
-           array1(1:DOMAIN_NODES1%NODES(local_number1)%NUMBER_OF_DERIVATIVES)=0
-           array2(1:DOMAIN_NODES1%NODES(local_number2)%NUMBER_OF_DERIVATIVES)=0
-           array1(1:DOMAIN_NODES1%NODES(local_number1)%NUMBER_OF_DERIVATIVES)=&
-             &DOMAIN_NODES1%NODES(local_number1)%PARTIAL_DERIVATIVE_INDEX(:)
-           array2(1:DOMAIN_NODES1%NODES(local_number2)%NUMBER_OF_DERIVATIVES)=&
-             &DOMAIN_NODES1%NODES(local_number2)%PARTIAL_DERIVATIVE_INDEX(:)
-           CALL LIST_SORT(array1,ERR,ERROR,*999)
-           CALL LIST_SORT(array2,ERR,ERROR,*999)
-           tmp1=SUM(array1-array2)
-           DEALLOCATE(array1)
-           DEALLOCATE(array2)
-           IF(tmp1/=0) THEN
-             doesMatch = .FALSE.
-             EXIT !out of loop-component_idx=1,SET1%NUMBER_OF_COMPONENTS
-           ENDIF
-         ELSE
-           doesMatch = .FALSE.
-           EXIT !out of loop-component_idx=1,SET1%NUMBER_OF_COMPONENTS
-         ENDIF
-       ENDDO !component_idx
-
+      IF(DOMAIN_NODES1%NODES(local_number1)%NUMBER_OF_DERIVATIVES&
+        &==DOMAIN_NODES2%NODES(local_number2)%NUMBER_OF_DERIVATIVES) THEN
+        ALLOCATE(array1(DOMAIN_NODES1%NODES(local_number1)%NUMBER_OF_DERIVATIVES),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary buffer in IO sorting",ERR,ERROR,*999)
+      
+        ALLOCATE(array2(DOMAIN_NODES1%NODES(local_number2)%NUMBER_OF_DERIVATIVES),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary buffer in IO sorting",ERR,ERROR,*999)
+      
+        array1(1:DOMAIN_NODES1%NODES(local_number1)%NUMBER_OF_DERIVATIVES)=0
+        array2(1:DOMAIN_NODES1%NODES(local_number2)%NUMBER_OF_DERIVATIVES)=0
+        array1(1:DOMAIN_NODES1%NODES(local_number1)%NUMBER_OF_DERIVATIVES)=&
+          &DOMAIN_NODES1%NODES(local_number1)%PARTIAL_DERIVATIVE_INDEX(:)
+        array2(1:DOMAIN_NODES1%NODES(local_number2)%NUMBER_OF_DERIVATIVES)=&
+          &DOMAIN_NODES1%NODES(local_number2)%PARTIAL_DERIVATIVE_INDEX(:)
+        CALL LIST_SORT(array1,ERR,ERROR,*999)
+        CALL LIST_SORT(array2,ERR,ERROR,*999)
+        tmp1=SUM(array1-array2)
+        DEALLOCATE(array1)
+        DEALLOCATE(array2)
+        IF(tmp1/=0) THEN
+          doesMatch = .FALSE.
+          EXIT !out of loop-component_idx=1,SET1%NUMBER_OF_COMPONENTS
+        ENDIF
+      ENDIF
+    ENDDO !component_idx
+      
     CALL EXITS("FIELD_IO_COMPARE_INFO_SET_DERIVATIVES")
     RETURN
 999 CALL ERRORS("FIELD_IO_COMPARE_INFO_SET_DERIVATIVES",ERR,ERROR)
@@ -4166,13 +4246,13 @@ CONTAINS
   !  ENDDO !comp_idx
   !  !Allocate the memory for group of field variables
   !  ALLOCATE(GROUP_FIELDS(NUM_OF_FIELDS),STAT=ERR)
-  !  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty field buffer in IO",ERR,ERROR,*999)
+  !  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary field buffer in IO",ERR,ERROR,*999)
   !  !Allocate the memory for group of field components
   !  ALLOCATE(GROUP_VARIABLES(NUM_OF_VARIABLES),STAT=ERR)
-  !  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty variable buffer in IO",ERR,ERROR,*999)
+  !  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary variable buffer in IO",ERR,ERROR,*999)
   !  !Allocate the memory for group of maximum number of derivatives
   !  ALLOCATE(GROUP_DERIVATIVES(MAX_NUM_OF_NODAL_DERIVATIVES),STAT=ERR)
-  !  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty derivatives buffer in IO",ERR,ERROR,*999)
+  !  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary derivatives buffer in IO",ERR,ERROR,*999)
   !
   !  !fill information into the group of fields and variables
   !  NUM_OF_FIELDS=0
@@ -4308,25 +4388,26 @@ CONTAINS
 
   !>Write the header of a group nodes using FORTRAIN
   SUBROUTINE FIELD_IO_EXPORT_NODAL_GROUP_HEADER_FORTRAN(fieldInfoSet, global_number, MAX_NUM_OF_NODAL_DERIVATIVES, &
-  &my_computational_node_number, sessionHandle, ERR,ERROR, *)
+  &my_computational_node_number, sessionHandle, paddingInfo, ERR,ERROR, *)
     !Argument variables
     TYPE(FIELD_IO_COMPONENT_INFO_SET), INTENT(IN) :: fieldInfoSet
     INTEGER(INTG), INTENT(IN) :: global_number
     INTEGER(INTG), INTENT(INOUT) :: MAX_NUM_OF_NODAL_DERIVATIVES !<MAX_NUM_OF_NODAL_DERIVATIVES
     INTEGER(INTG), INTENT(IN) :: my_computational_node_number !<local process number
     INTEGER(INTG), INTENT(IN) :: sessionHandle
+    INTEGER(INTG), ALLOCATABLE, INTENT(INOUT) :: paddingInfo(:)
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(FIELD_TYPE), POINTER :: field_ptr
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: variable_ptr
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING_NODES !The domain mapping to calculate nodal mappings
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES ! domain nodes
-    TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: component
+    TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: component, fieldComponent
     INTEGER(INTG), ALLOCATABLE, TARGET :: GROUP_FIELDS(:), GROUP_VARIABLES(:), GROUP_DERIVATIVES(:)
     INTEGER(INTG) :: NUM_OF_FIELDS, NUM_OF_VARIABLES, NUM_OF_NODAL_DEV
     INTEGER(INTG) :: local_number
     INTEGER(INTG) :: field_idx, comp_idx, comp_idx1, value_idx, var_idx, global_var_idx !dev_idx,
+    LOGICAL :: FOUND
 
     CALL ENTERS("FIELD_IO_EXPORT_NODAL_GROUP_HEADER_FORTRAN",ERR,ERROR,*999)
 
@@ -4358,25 +4439,33 @@ CONTAINS
           variable_ptr=>fieldInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE
        ENDIF
 
-      !finding the local numbering through the global to local mapping
-       DOMAIN_MAPPING_NODES=>fieldInfoSet%&
-           &COMPONENTS(comp_idx)%PTR%DOMAIN%MAPPINGS%NODES
-       !get the domain index for this variable component according to my own computional node number
-       local_number = FindMyLocalDomainNumber( DOMAIN_MAPPING_NODES%GLOBAL_TO_LOCAL_MAP(global_number),  &
-         & my_computational_node_number )
-       !use local domain information find the out the maximum number of derivatives
+       !find the local numbering
        DOMAIN_NODES=>fieldInfoSet%COMPONENTS(comp_idx)%PTR%DOMAIN%TOPOLOGY%NODES
+       FOUND=.FALSE.
+       DO local_number=1,DOMAIN_NODES%NUMBER_OF_NODES
+         IF( DOMAIN_NODES%NODES(local_number)%GLOBAL_NUMBER == global_number ) THEN
+           FOUND = .TRUE.
+           EXIT
+         ENDIF
+       ENDDO !local_number
+
+       IF( .NOT. FOUND ) THEN
+         !Something's gone horribly wrong
+         CYCLE
+       ENDIF
+
        MAX_NUM_OF_NODAL_DERIVATIVES=MAX(DOMAIN_NODES%NODES(local_number)%NUMBER_OF_DERIVATIVES,MAX_NUM_OF_NODAL_DERIVATIVES)
     ENDDO !comp_idx
+    
     !Allocate the memory for group of field variables
     ALLOCATE(GROUP_FIELDS(NUM_OF_FIELDS),STAT=ERR)
-    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty field buffer in IO",ERR,ERROR,*999)
+    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary field buffer in IO",ERR,ERROR,*999)
     !Allocate the memory for group of field components
     ALLOCATE(GROUP_VARIABLES(NUM_OF_VARIABLES),STAT=ERR)
-    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty variable buffer in IO",ERR,ERROR,*999)
+    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary variable buffer in IO",ERR,ERROR,*999)
     !Allocate the memory for group of maximum number of derivatives
     ALLOCATE(GROUP_DERIVATIVES(MAX_NUM_OF_NODAL_DERIVATIVES),STAT=ERR)
-    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporaty derivatives buffer in IO",ERR,ERROR,*999)
+    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary derivatives buffer in IO",ERR,ERROR,*999)
 
     !fill information into the group of fields and variables
     NUM_OF_FIELDS=0
@@ -4413,6 +4502,8 @@ CONTAINS
     comp_idx1=1
     global_var_idx=0
 
+    CALL REALLOCATE( paddingInfo, fieldInfoSet%NUMBER_OF_COMPONENTS + 1, "Cannot allocate padding info", ERR, ERROR, *999 )
+
     ERR = FieldExport_FieldCount( sessionHandle, SUM(GROUP_FIELDS(1:NUM_OF_FIELDS) ) )
     IF(ERR/=0) THEN
       CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
@@ -4427,30 +4518,58 @@ CONTAINS
 
           IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
             & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
-            ERR = FieldExport_CoordinateVariable( sessionHandle, global_var_idx, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM, &
-              & GROUP_VARIABLES(global_var_idx) )
+            ERR = FieldExport_CoordinateVariable( sessionHandle, global_var_idx, &
+              & variable_ptr%FIELD%REGION%COORDINATE_SYSTEM%TYPE, variable_ptr%NUMBER_OF_COMPONENTS )
           ELSE
             ERR = FieldExport_Variable( sessionHandle, global_var_idx, variable_ptr%FIELD%TYPE, variable_ptr%VARIABLE_TYPE, &
-              & GROUP_VARIABLES(global_var_idx) )
+              & variable_ptr%NUMBER_OF_COMPONENTS )
           ENDIF
           IF( ERR /= 0 ) THEN
             CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
           ENDIF
 
-          DO comp_idx=1, GROUP_VARIABLES(global_var_idx)
+          DO comp_idx=1, variable_ptr%NUMBER_OF_COMPONENTS
              !write out the component information
              
-             component => fieldInfoSet%COMPONENTS(comp_idx1)%PTR
+             fieldComponent => variable_ptr%COMPONENTS(comp_idx)
+
+             IF( comp_idx1 <= fieldInfoSet%NUMBER_OF_COMPONENTS ) THEN
+               !It's possible to run out of node-local components before we've examined all field components.
+               component => fieldInfoSet%COMPONENTS(comp_idx1)%PTR
+             ENDIF
              
-             !finding the local numbering through the global to local mapping
-             DOMAIN_MAPPING_NODES=>component%DOMAIN%MAPPINGS%NODES
+             !The field component is not present at this node. Add a dummy value.
+             IF(.NOT.ASSOCIATED(component,TARGET=fieldComponent)) THEN
+               paddingInfo(comp_idx1) = paddingInfo(comp_idx1) + 1
+               GROUP_DERIVATIVES(1:1) = NO_PART_DERIV
+               IF( fieldComponent%FIELD_VARIABLE%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
+                 & fieldComponent%FIELD_VARIABLE%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
+                 ERR = FieldExport_CoordinateDerivativeIndices( sessionHandle, fieldComponent%COMPONENT_NUMBER, &
+                   & variable_ptr%FIELD%REGION%COORDINATE_SYSTEM%TYPE, 1, C_LOC(GROUP_DERIVATIVES), value_idx )
+               ELSE
+                 ERR = FieldExport_DerivativeIndices( sessionHandle, fieldComponent%COMPONENT_NUMBER, variable_ptr%FIELD%TYPE, &
+                   & variable_ptr%VARIABLE_TYPE, 1, C_LOC(GROUP_DERIVATIVES), value_idx )
+               ENDIF
+               
+               value_idx = value_idx + 1
 
-             !get the domain index for this variable component according to my own computional node number
-             local_number = FindMyLocalDomainNumber( DOMAIN_MAPPING_NODES%GLOBAL_TO_LOCAL_MAP(global_number), &
-               & my_computational_node_number )
-
+               CYCLE
+             ENDIF
+             
              !use local domain information find the out the maximum number of derivatives
              DOMAIN_NODES=>component%DOMAIN%TOPOLOGY%NODES
+
+             FOUND=.FALSE.
+             DO local_number=1,DOMAIN_NODES%NUMBER_OF_NODES
+               IF( DOMAIN_NODES%NODES(local_number)%GLOBAL_NUMBER == global_number ) THEN
+                 FOUND = .TRUE.
+                 EXIT
+               ENDIF
+             ENDDO !local_number
+             
+             IF( .NOT. FOUND ) THEN
+               CYCLE
+             ENDIF
 
              !get the nodal partial derivatives
              NUM_OF_NODAL_DEV=DOMAIN_NODES%NODES(local_number)%NUMBER_OF_DERIVATIVES
@@ -4461,12 +4580,11 @@ CONTAINS
              IF( component%FIELD_VARIABLE%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
                & component%FIELD_VARIABLE%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
                ERR = FieldExport_CoordinateDerivativeIndices( sessionHandle, component%COMPONENT_NUMBER, &
-                 & variable_ptr%FIELD%REGION%COORDINATE_SYSTEM,NUM_OF_NODAL_DEV, C_LOC(GROUP_DERIVATIVES), value_idx )
+                 & variable_ptr%FIELD%REGION%COORDINATE_SYSTEM%TYPE, NUM_OF_NODAL_DEV, C_LOC(GROUP_DERIVATIVES), value_idx )
              ELSE
                ERR = FieldExport_DerivativeIndices( sessionHandle, component%COMPONENT_NUMBER, variable_ptr%FIELD%TYPE, &
                  & variable_ptr%VARIABLE_TYPE,NUM_OF_NODAL_DEV, C_LOC(GROUP_DERIVATIVES), value_idx )
              ENDIF
-
 
              !increase the component index
              comp_idx1=comp_idx1+1
@@ -4503,14 +4621,19 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: FILE_NAME !the prefix name of file.
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING_NODES !The domain mapping to calculate nodal mappings
+    TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: COMPONENT !the prefix name of file.
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES ! domain nodes
-    INTEGER(INTG) :: local_number, global_number, sessionHandle
-    INTEGER(INTG), ALLOCATABLE :: GROUP_DERIVATIVES(:)
-    INTEGER(INTG) :: nn, comp_idx,  dev_idx, NUM_OF_NODAL_DEV, MAX_NUM_OF_NODAL_DERIVATIVES
-    REAL(C_DOUBLE), ALLOCATABLE, TARGET :: NODAL_BUFFER(:)
+    INTEGER(INTG) :: local_number, global_number, sessionHandle, paddingCount, DERIVATIVE_INDEXES(PART_DERIV_S4_S4_S4)
+    INTEGER(INTG), ALLOCATABLE :: paddingInfo(:)
+    INTEGER(INTG) :: nn, comp_idx,  dev_idx, NUM_OF_NODAL_DEV, MAX_NUM_OF_NODAL_DERIVATIVES, total_nodal_values
+    LOGICAL :: FOUND
+    REAL(C_DOUBLE), ALLOCATABLE, TARGET :: NODAL_BUFFER(:), TOTAL_NODAL_BUFFER(:)
     REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
-
+    REAL(DP) :: padding(1)
+    
+    padding(1) = 1.23456789
+    
+    
     CALL ENTERS("FIELD_IO_EXPORT_NODES_INTO_LOCAL_FILE",ERR,ERROR,*999)
 
     !get my own computianal node number--be careful the rank of process in the MPI pool
@@ -4520,101 +4643,150 @@ CONTAINS
     MAX_NUM_OF_NODAL_DERIVATIVES=0
 
     IF(.NOT.ALLOCATED(NODAL_INFO_SET%COMPONENT_INFO_SET)) THEN
-       CALL FLAG_ERROR("the nodal information set in input is invalid",ERR,ERROR,*999)
+      CALL FLAG_ERROR("the nodal information set in input is invalid",ERR,ERROR,*999)
     ENDIF
 
     IF(.NOT.ALLOCATED(NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER)) THEN
-       CALL FLAG_ERROR("the nodal information set is not associated with any numbering list",ERR,ERROR,*999)
+      CALL FLAG_ERROR("the nodal global information set is not associated with any numbering list",ERR,ERROR,*999)
     ENDIF
 
     IF(NODAL_INFO_SET%NUMBER_OF_ENTRIES==0) THEN
-       CALL FLAG_ERROR("the nodal information set does not contain any nodes",ERR,ERROR,*999)
+      CALL FLAG_ERROR("the nodal information set does not contain any nodes",ERR,ERROR,*999)
     ENDIF
 
     IF(NODAL_INFO_SET%COMPONENT_INFO_SET(1)%PTR%SAME_HEADER) THEN
-       CALL FLAG_ERROR("the first header flag of nodal information set should be false",ERR,ERROR,*999)
+      CALL FLAG_ERROR("the first header flag of nodal information set should be false",ERR,ERROR,*999)
     ENDIF
 
     ERR = FieldExport_OpenSession( EXPORT_TYPE_FILE, char(FILE_NAME)//C_NULL_CHAR, sessionHandle )
     IF(ERR/=0) THEN
-        CALL FLAG_ERROR( "Cannot open file export session", ERR, ERROR,*999 )
+      CALL FLAG_ERROR( "Cannot open file export session", ERR, ERROR,*999 )
     ENDIF
 
     ERR = FieldExport_Group( sessionHandle, char(NODAL_INFO_SET%FIELDS%REGION%LABEL)//C_NULL_CHAR )
     IF(ERR/=0) THEN
-        CALL FLAG_ERROR( "Cannot write group name to nodes file", ERR, ERROR,*999 )
+      CALL FLAG_ERROR( "Cannot write group name to nodes file", ERR, ERROR,*999 )
     ENDIF
 
     DO nn=1, NODAL_INFO_SET%NUMBER_OF_ENTRIES
+      global_number=NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn)
 
-       !tmp_components=>NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%COMPONENTS
-       global_number=NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn)
-
-       !check whether need to write out the nodal information header
-       IF(.NOT.NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%SAME_HEADER) THEN
+      IF(.NOT.NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%SAME_HEADER) THEN
         !write out the nodal header
 
-          CALL FIELD_IO_EXPORT_NODAL_GROUP_HEADER_FORTRAN(NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR, &
-            & global_number, MAX_NUM_OF_NODAL_DERIVATIVES, my_computational_node_number, sessionHandle, ERR,ERROR,*999)
-           !value_idx=value_idx-1 !the len of NODAL_BUFFER
-          !checking: whether need to allocate temporary memory for Io writing
-          IF(ALLOCATED(NODAL_BUFFER)) THEN
-             IF(SIZE(NODAL_BUFFER)<MAX_NUM_OF_NODAL_DERIVATIVES) THEN
-                CALL REALLOCATE( NODAL_BUFFER, MAX_NUM_OF_NODAL_DERIVATIVES, &
-                  & "Could not allocate temporaty nodal buffer in IO writing", ERR, ERROR, *999 )
-                CALL REALLOCATE( GROUP_DERIVATIVES, MAX_NUM_OF_NODAL_DERIVATIVES, &
-                  & "Could not allocate temporaty derivative buffer in IO writing", ERR, ERROR, *999 )
-             ENDIF
-          ELSE
-             CALL REALLOCATE( NODAL_BUFFER, MAX_NUM_OF_NODAL_DERIVATIVES, &
-               & "Could not allocate temporaty nodal buffer in IO writing", ERR, ERROR, *999 )
-             CALL REALLOCATE( GROUP_DERIVATIVES, MAX_NUM_OF_NODAL_DERIVATIVES, &
-               & "Could not allocate temporaty derivative buffer in IO writing", ERR, ERROR, *999 )
+        CALL FIELD_IO_EXPORT_NODAL_GROUP_HEADER_FORTRAN(NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR, &
+          & global_number, MAX_NUM_OF_NODAL_DERIVATIVES, my_computational_node_number, sessionHandle, &
+          & paddingInfo, ERR,ERROR,*999)
+        !value_idx=value_idx-1 !the len of NODAL_BUFFER
+        !checking: whether need to allocate temporary memory for Io writing
+        IF(ALLOCATED(NODAL_BUFFER)) THEN
+          IF(SIZE(NODAL_BUFFER)<MAX_NUM_OF_NODAL_DERIVATIVES) THEN
+            CALL REALLOCATE( NODAL_BUFFER, MAX_NUM_OF_NODAL_DERIVATIVES, &
+              & "Could not allocate temporary nodal buffer in IO writing", ERR, ERROR, *999 )
           ENDIF
-       ENDIF !NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%SAME_HEADER==.FALSE.
+        ELSE
+          CALL REALLOCATE( NODAL_BUFFER, MAX_NUM_OF_NODAL_DERIVATIVES, &
+            & "Could not allocate temporary nodal buffer in IO writing", ERR, ERROR, *999 )
+        ENDIF
+      ENDIF !NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%SAME_HEADER==.FALSE.
 
-       !write out the components' values of this node in this domain
-       DO comp_idx=1,NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS
-
-         !finding the local numbering through the global to local mapping
-          DOMAIN_MAPPING_NODES=>NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(comp_idx)%PTR%DOMAIN%MAPPINGS%NODES
-          !get the domain index for this variable component according to my own computional node number
-          local_number = FindMyLocalDomainNumber( DOMAIN_MAPPING_NODES%GLOBAL_TO_LOCAL_MAP(global_number), &
-            & my_computational_node_number )
-          !use local domain information find the out the maximum number of derivatives
-          DOMAIN_NODES=>NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(comp_idx)%PTR%DOMAIN%TOPOLOGY%NODES
-
-          !write out the user numbering of node if comp_idx ==1
-          IF(comp_idx==1) THEN
-            ERR = FieldExport_NodeNumber( sessionHandle, DOMAIN_NODES%NODES(local_number)%USER_NUMBER )
-            IF(ERR/=0) THEN
-              CALL FLAG_ERROR( "Cannot write group name to nodes file", ERR, ERROR,*999 )
-            ENDIF
+      !write out the components' values of this node in this domain
+      total_nodal_values = 0
+      CALL CHECKED_DEALLOCATE( TOTAL_NODAL_BUFFER )
+      DO comp_idx=1,NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS         
+        COMPONENT => NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(comp_idx)%PTR
+        DOMAIN_NODES=>COMPONENT%DOMAIN%TOPOLOGY%NODES
+        FOUND=.FALSE.
+        DO local_number=1,DOMAIN_NODES%NUMBER_OF_NODES
+          IF( DOMAIN_NODES%NODES(local_number)%GLOBAL_NUMBER == global_number ) THEN
+            FOUND = .TRUE.
+            EXIT
           ENDIF
+        ENDDO !local_number
 
-          !get the nodal partial derivatives
-          NUM_OF_NODAL_DEV=DOMAIN_NODES%NODES(local_number)%NUMBER_OF_DERIVATIVES
-          GROUP_DERIVATIVES(1:NUM_OF_NODAL_DEV)=DOMAIN_NODES%NODES(local_number)%PARTIAL_DERIVATIVE_INDEX(:)
-          !sort  the partial derivatives
-          CALL LIST_SORT(GROUP_DERIVATIVES(1:NUM_OF_NODAL_DEV),ERR,ERROR,*999)
-          DO dev_idx=1, NUM_OF_NODAL_DEV
-             NULLIFY(GEOMETRIC_PARAMETERS)
-             CALL FIELD_PARAMETER_SET_DATA_GET(NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(comp_idx)%PTR% &
-               & FIELD_VARIABLE%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+        IF(.NOT. FOUND) THEN
+          CYCLE
+        ENDIF
 
-             NODAL_BUFFER(dev_idx)=GEOMETRIC_PARAMETERS(NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(comp_idx)%PTR%&
-               &PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(GROUP_DERIVATIVES(dev_idx),local_number))
-          ENDDO
-    
-          ERR = FieldExport_NodeValues( sessionHandle, NUM_OF_NODAL_DEV, C_LOC(NODAL_BUFFER) )
+        DO paddingCount = 1, paddingInfo( comp_idx )
+          NUM_OF_NODAL_DEV = 1
+          NODAL_BUFFER(1) = padding(1)
+
+          CALL GROW_ARRAY( TOTAL_NODAL_BUFFER, NUM_OF_NODAL_DEV, "Insufficient memory during I/O", ERR, ERROR, *999 )
+          TOTAL_NODAL_BUFFER(total_nodal_values+1:total_nodal_values+NUM_OF_NODAL_DEV) = NODAL_BUFFER(1:NUM_OF_NODAL_DEV)
+          total_nodal_values = total_nodal_values + NUM_OF_NODAL_DEV
+
+          ERR = FieldExport_NodeValues( sessionHandle, DOMAIN_NODES%NODES(local_number)%USER_NUMBER, NUM_OF_NODAL_DEV, &
+            & C_LOC(NODAL_BUFFER) )
           IF(ERR/=0) THEN
             CALL FLAG_ERROR( "Cannot write group name to nodes file", ERR, ERROR,*999 )
           ENDIF
+        ENDDO !paddingCount
 
-       ENDDO !comp_idx
+        NULLIFY(GEOMETRIC_PARAMETERS)
+        CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,FIELD_U_VARIABLE_TYPE, &
+          & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+
+        !get the nodal partial derivatives
+        NUM_OF_NODAL_DEV=DOMAIN_NODES%NODES(local_number)%NUMBER_OF_DERIVATIVES
+
+        !Record the dof-index of each derivative (if it is present)      
+        DERIVATIVE_INDEXES = -1
+        DO dev_idx=1, NUM_OF_NODAL_DEV
+          DERIVATIVE_INDEXES( DOMAIN_NODES%NODES(local_number)%PARTIAL_DERIVATIVE_INDEX(dev_idx) ) = dev_idx
+        ENDDO
+
+        !Output the dofs, sorted according to derivative index    
+        NUM_OF_NODAL_DEV = 0
+        DO dev_idx=1, SIZE(DERIVATIVE_INDEXES)
+          IF( DERIVATIVE_INDEXES( dev_idx ) == -1 ) THEN
+            CYCLE
+          ENDIF
+
+          NUM_OF_NODAL_DEV = NUM_OF_NODAL_DEV + 1
+
+          NODAL_BUFFER( NUM_OF_NODAL_DEV ) = GEOMETRIC_PARAMETERS( COMPONENT%PARAM_TO_DOF_MAP% &
+            & NODE_PARAM2DOF_MAP( DERIVATIVE_INDEXES( dev_idx ), local_number ) )
+        ENDDO !dev_idx
+
+        CALL GROW_ARRAY( TOTAL_NODAL_BUFFER, NUM_OF_NODAL_DEV, "Insufficient memory during I/O", ERR, ERROR, *999 )
+        TOTAL_NODAL_BUFFER(total_nodal_values+1:total_nodal_values+NUM_OF_NODAL_DEV) = NODAL_BUFFER(1:NUM_OF_NODAL_DEV)
+        total_nodal_values = total_nodal_values + NUM_OF_NODAL_DEV
+
+        !TEMPORARY
+        ERR = FieldExport_NodeValues( sessionHandle, DOMAIN_NODES%NODES(local_number)%USER_NUMBER, NUM_OF_NODAL_DEV, &
+          & C_LOC(NODAL_BUFFER) )
+        IF(ERR/=0) THEN
+          CALL FLAG_ERROR( "Cannot write group name to nodes file", ERR, ERROR,*999 )
+        ENDIF
+      ENDDO !comp_idx
+
+      !Note that paddingInfo's size is one more than the component count
+      DO paddingCount = 1, paddingInfo( NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS + 1 )
+        NUM_OF_NODAL_DEV = 1
+        NODAL_BUFFER(1) = padding(1)
+
+        CALL GROW_ARRAY( TOTAL_NODAL_BUFFER, NUM_OF_NODAL_DEV, "Insufficient memory during I/O", ERR, ERROR, *999 )
+        TOTAL_NODAL_BUFFER(total_nodal_values+1:total_nodal_values+NUM_OF_NODAL_DEV) = NODAL_BUFFER(1:NUM_OF_NODAL_DEV)
+        total_nodal_values = total_nodal_values + NUM_OF_NODAL_DEV
+
+        ERR = FieldExport_NodeValues( sessionHandle, DOMAIN_NODES%NODES(local_number)%USER_NUMBER, NUM_OF_NODAL_DEV, &
+          & C_LOC(NODAL_BUFFER) )
+        IF(ERR/=0) THEN
+          CALL FLAG_ERROR( "Cannot write group name to nodes file", ERR, ERROR,*999 )
+        ENDIF
+      ENDDO !paddingCount
+
+      !REINSTATE FOR HDF5 BLOCK DATA WRITES
+      !       ERR = FieldExport_NodeValues( sessionHandle, DOMAIN_NODES%NODES(local_number)%USER_NUMBER, &
+      !         & total_nodal_values, C_LOC(TOTAL_NODAL_BUFFER) )
+      !       IF(ERR/=0) THEN
+      !         CALL FLAG_ERROR( "Cannot write group name to nodes file", ERR, ERROR,*999 )
+      !       ENDIF
+
 
     ENDDO !nn
-    
+
     ERR = FieldExport_CloseSession( sessionHandle )
     IF(ERR/=0) THEN
       CALL FLAG_ERROR( "Cannot write group name to nodes file", ERR, ERROR,*999 )
@@ -4622,7 +4794,7 @@ CONTAINS
 
     !release the temporary memory
     CALL CHECKED_DEALLOCATE( NODAL_BUFFER )
-    CALL CHECKED_DEALLOCATE( GROUP_DERIVATIVES )
+    CALL CHECKED_DEALLOCATE( TOTAL_NODAL_BUFFER )
     IF(ASSOCIATED(GEOMETRIC_PARAMETERS)) NULLIFY(GEOMETRIC_PARAMETERS)
 
     CALL EXITS("FIELD_IO_EXPORT_NODES_INTO_LOCAL_FILE")
@@ -4949,10 +5121,11 @@ CONTAINS
   !!
 
   !>Collect nodal information from each MPI process
-  SUBROUTINE FIELD_IO_NODAL_INFO_SET_ATTACH_LOCAL_PROCESS(NODAL_INFO_SET, FIELDS, ERR,ERROR,*)
+  SUBROUTINE FIELD_IO_NODAL_INFO_SET_ATTACH_LOCAL_PROCESS(NODAL_INFO_SET, FIELDS, my_computational_node_number, ERR,ERROR,*)
     !Argument variables
     TYPE(FIELD_IO_INFO_SET), INTENT(INOUT):: NODAL_INFO_SET !<nodal information in this process
     TYPE(FIELDS_TYPE), POINTER ::FIELDS !<the field object
+    INTEGER(INTG), INTENT(IN):: my_computational_node_number !<my_computational_node_number
     INTEGER(INTG), INTENT(OUT):: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 
@@ -5041,9 +5214,8 @@ CONTAINS
             ENDDO !nn=1
             
             IF( foundNewNode ) THEN
-              !TODO This code re-allocates new memory once per node. Reduce memory-thrashing by adding
-              !memory in chunks.
-              CALL GROW_ARRAY( NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER, "Could not allocate buffer in IO", ERR, ERROR, *999 )
+              !TODO This code re-allocates new memory once per node. Reduce memory-thrashing by adding memory in chunks.
+              CALL GROW_ARRAY( NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER, 1, "Could not allocate buffer in IO", ERR, ERROR, *999 )
               NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(NODAL_INFO_SET%NUMBER_OF_ENTRIES+1)= DOMAIN_NODES%NODES(np)%GLOBAL_NUMBER
               NODAL_INFO_SET%NUMBER_OF_ENTRIES=NODAL_INFO_SET%NUMBER_OF_ENTRIES+1
             ENDIF
@@ -5086,16 +5258,16 @@ CONTAINS
           DO np = 1, DOMAIN_NODES%NUMBER_OF_NODES
             DO nn = 1, NODAL_INFO_SET%NUMBER_OF_ENTRIES
               IF( NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER( nn ) == DOMAIN_NODES%NODES( np )%GLOBAL_NUMBER ) THEN
-                 EXIT
+                !allocate variable component memory
+                CALL GROW_ARRAY( NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS, 1, &
+                  & "Could not allocate temporary buffer in IO", ERR, ERROR, *999 )
+                NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR &
+                  & %NUMBER_OF_COMPONENTS+1)%PTR=>FIELD_VARIABLE%COMPONENTS( component_idx )
+                NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS = &
+                  & NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS+1                  
+                EXIT
               ENDIF
             ENDDO
-            !allocate variable component memory
-            CALL GROW_ARRAY( NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS, &
-              & "Could not allocate temporary buffer in IO", ERR, ERROR, *999 )
-            NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR &
-              & %NUMBER_OF_COMPONENTS+1)%PTR=>FIELD_VARIABLE%COMPONENTS( component_idx )
-            NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS = &
-              & NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS+1
           ENDDO !np
         ENDDO !component_idx
       ENDDO !var_idx
@@ -5153,11 +5325,11 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Export nodal information \see{FIELD_IO::FIELD_IO_NODES_EXPORT}.
+  !>Export nodal information \see{FIELD_IO::FIELD_IO_NODES_EXPORT}. \see OPENCMISS::CMISSFieldIOElementsExportObj.
   SUBROUTINE FIELD_IO_NODES_EXPORT(FIELDS, FILE_NAME, METHOD, ERR,ERROR,*)
     !Argument variables
     TYPE(FIELDS_TYPE), POINTER :: FIELDS !<the field object
-    TYPE(VARYING_STRING), INTENT(INOUT) :: FILE_NAME !<file name
+    TYPE(VARYING_STRING), INTENT(IN) :: FILE_NAME !<file name
     TYPE(VARYING_STRING), INTENT(IN):: METHOD
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -5176,7 +5348,7 @@ CONTAINS
     IF(ERR/=0) GOTO 999
     IF(METHOD=="FORTRAN") THEN
        CALL FIELD_IO_INFO_SET_INITIALISE(NODAL_INFO_SET, ERR,ERROR,*999)
-       CALL FIELD_IO_NODAL_INFO_SET_ATTACH_LOCAL_PROCESS(NODAL_INFO_SET, FIELDS, ERR,ERROR,*999)
+       CALL FIELD_IO_NODAL_INFO_SET_ATTACH_LOCAL_PROCESS(NODAL_INFO_SET, FIELDS, my_computational_node_number, ERR,ERROR,*999)
        CALL FIELD_IO_NODAL_INFO_SET_SORT(NODAL_INFO_SET, my_computational_node_number, ERR,ERROR,*999)
        CALL FIELD_IO_EXPORT_NODES_INTO_LOCAL_FILE(NODAL_INFO_SET, FILE_NAME, my_computational_node_number, &
             & ERR, ERROR, *999)
@@ -5193,11 +5365,12 @@ CONTAINS
     CALL EXITS("FIELD_IO_NODES_EXPORT")
     RETURN 1
   END SUBROUTINE FIELD_IO_NODES_EXPORT
+
   !
   !================================================================================================================================
   !
 
-  !>Export elemental information into multiple files \see{FIELD_IO::FIELD_IO_ELEMENTS_EXPORT}.
+  !>Export elemental information into multiple files \see{FIELD_IO::FIELD_IO_ELEMENTS_EXPORT} \see OPENCMISS::CMISSFieldIONodesExportObj.
   SUBROUTINE FIELD_IO_ELEMENTS_EXPORT(FIELDS, FILE_NAME, METHOD,ERR,ERROR,*)
   !checking the input data for IO and initialize the nodal information set
   !the following items will be checked: the region (the same?), all the pointer(valid?)
@@ -5207,7 +5380,7 @@ CONTAINS
 
     !Argument variables
     TYPE(FIELDS_TYPE), POINTER :: FIELDS !<the field object
-    TYPE(VARYING_STRING), INTENT(INOUT) :: FILE_NAME !<file name
+    TYPE(VARYING_STRING), INTENT(IN) :: FILE_NAME !<file name
     TYPE(VARYING_STRING), INTENT(IN):: METHOD !< method used for IO
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string

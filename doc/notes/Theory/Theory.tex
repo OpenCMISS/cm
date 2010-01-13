@@ -4,46 +4,41 @@
 
 \section{Equation set types}
 
-\subsection{Static-linear Equations}
+\subsection{Static Equations}
 
-\subsection{Static-nonlinear Equations}
+The general form for static equations is
 
-\subsection{Transient-linear Equations}
+\subsection{Transient Equations}
 
-\subsection{Transient-nonlinear Equations}
-
-The general form for transient non-linear equations is
-
+The general form for transient equations is
 \begin{equation}
-  \matr{M}\ddot{\vect{u}}+\matr{C}\dot{\vect{u}}+\matr{K}\vect{u}+\fnof{\vect{g}}{\vect{u}}+\vect{f}=\vect{0}
+  \matr{M}\fnof{\ddot{\vect{u}}}{t}+\matr{C}\fnof{\dot{\vect{u}}}{t}+\matr{K}\fnof{\vect{u}}{t}+
+  \fnof{\vect{g}}{\fnof{\vect{u}}{t}}+\fnof{\vect{f}}{t}=\vect{0}
   \label{eqn:generaltransientnonlinear}
 \end{equation}
+where $\fnof{\vect{u}}{t}$ is the unknown ``displacement vector'', $\matr{M}$
+is the mass matrix, $\matr{C}$ is the damping matrix, $\matr{K}$ is the
+stiffness matrix, $\fnof{\vect{g}}{\fnof{\vect{u}}{t}}$ a non-linear vector
+function and $\fnof{\vect{f}}{t}$ the forcing vector.
 
-where $\matr{M}$ is the mass matrix, $\matr{C}$ is the damping matrix,
-$\matr{K}$ is the damping matrix, $\fnof{\vect{g}}{\vect{u}}$ a non-linear vector function and $\vect{f}$ the
-forcing vector.
-
-From \cite{zienkiewicz:2006_1} we now expand the unknown vector $\vect{u}$ in terms of a polynomial of degree
+From \cite{zienkiewicz:2006_1} we now expand the unknown vector $\fnof{\vect{u}}{t}$ in terms of a polynomial of degree
 $p$. With the known values of $\vect{u}_{n}$, $\dot{\vect{u}}_{n}$,
 $\ddot{\vect{u}}_{n}$ up to $\symover{p-1}{\vect{u}}_{n}$ at the beginning of
 the time step $\Delta t$ we can write the polynomial expansion as
-
 \begin{equation}
-  \vect{u}\approx\hat{\vect{u}}=\vect{u}_{n}+\tau\dot{\vect{u}}_{n}+\frac{1}{2!}\tau^{2}\ddot{\vect{u}}_{n}+\cdots+
-  \dfrac{1}{\factorial{p-1}}\tau^{p-1}\symover{p-1}{\vect{u}}_{n}+\dfrac{1}{p!}\tau^{p}\vect{\alpha}^{p}_{n}
+  \fnof{\vect{u}}{t_{n}+\tau}\approx\fnof{\tilde{\vect{u}}}{t_{n}+\tau}=\vect{u}_{n}+\tau\dot{\vect{u}}_{n}+
+  \frac{1}{2!}\tau^{2}\ddot{\vect{u}}_{n}+\cdots+\dfrac{1}{\factorial{p-1}}\tau^{p-1}\symover{p-1}{\vect{u}}_{n}+
+  \dfrac{1}{p!}\tau^{p}\vect{\alpha}^{p}_{n}
   \label{eqn:timepolyexpansion}
 \end{equation}
-
 where the only unknown is the the vector $\vect{\alpha}^{p}_{n}$,
-
 \begin{equation}
   \vect{\alpha}^{p}_{n}\approx\symover{p}{\vect{u}}\equiv\dnby{p}{\vect{u}}{t}
 \end{equation}
 
 A recurrance relationship can be established by substituting
 \eqnref{eqn:timepolyexpansion} into \eqnref{eqn:generaltransientnonlinear} and
-taking a weighted residual approx
-
+taking a weighted residual approach \ie
 \begin{multline}
   \dintl{0}{\Delta
     t}\fnof{W}{\tau}\left[\matr{M}\pbrac{\ddot{\vect{u}}_{n}+\tau\dddot{\vect{u}}_{n}+\cdots+
@@ -53,23 +48,40 @@ taking a weighted residual approx
   +\matr{K}\pbrac{\vect{u}_{n}+\tau\dot{\vect{u}}_{n}+\cdots+
     \dfrac{1}{p!}\tau^{p}\vect{\alpha}^{p}_{n}} \\
   +\left.\fnof{\vect{g}}{\vect{u}_{n}+\tau\dot{\vect{u}}_{n}+\cdots+
-    \dfrac{1}{p!}\tau^{p}\vect{\alpha}^{p}_{n}}+\vect{f}\right] dt = \vect{0}
+    \dfrac{1}{p!}\tau^{p}\vect{\alpha}^{p}_{n}}+\fnof{\vect{f}}{t_{n}+\tau}\right] d\tau = \vect{0}
+\end{multline}
+where $\fnof{W}{\tau}$ is some weight function, $\tau=t-t_{n}$ and $\Delta
+t=t_{n+1}-t_{n}$. Dividing by $\gint{0}{\Delta t}{\fnof{W}{\tau}}{\tau}$ we obtain
+\begin{multline}
+  \dfrac{\gint{0}{\Delta t}{\fnof{W}{\tau}\matr{M}\pbrac{\ddot{\vect{u}}_{n}+\tau\dddot{\vect{u}}_{n}+\cdots+
+        \dfrac{1}{\factorial{p-2}}\tau^{p-2}\vect{\alpha}^{p}_{n}}}{\tau}}{\gint{0}{\Delta
+      t}{\fnof{W}{\tau}}{\tau}} \\
+  + \dfrac{\gint{0}{\Delta t}{\fnof{W}{\tau}\matr{C}\pbrac{\dot{\vect{u}}_{n}+\tau\ddot{\vect{u}}_{n}+\cdots+
+        \dfrac{1}{\factorial{p-1}}\tau^{p-1}\vect{\alpha}^{p}_{n}}}{\tau}}{\gint{0}{\Delta
+      t}{\fnof{W}{\tau}}{\tau}} \\
+  + \dfrac{\gint{0}{\Delta t}{\fnof{W}{\tau}\matr{K}\pbrac{\vect{u}_{n}+\tau\dot{\vect{u}}_{n}+\cdots+
+        \dfrac{1}{p!}\tau^{p}\vect{\alpha}^{p}_{n}}}{\tau}}{\gint{0}{\Delta
+      t}{\fnof{W}{\tau}}{\tau}} \\
+  + \dfrac{\gint{0}{\Delta t}{\fnof{W}{\tau}\fnof{\vect{g}}{\vect{u}_{n}+\tau\dot{\vect{u}}_{n}+\cdots+
+        \dfrac{1}{p!}\tau^{p}\vect{\alpha}^{p}_{n}}}{\tau}}{\gint{0}{\Delta
+      t}{\fnof{W}{\tau}}{\tau}}  
+  + \dfrac{\gint{0}{\Delta t}{\fnof{W}{\tau}\fnof{\vect{f}}{t_{n}+
+        \tau}}{\tau}}{\gint{0}{\Delta t}{\fnof{W}{\tau}}{\tau}}=\vect{0}
 \end{multline}
 
-now if 
-
+Now if 
 \begin{equation}
   \theta_{k}=\dfrac{\gint{0}{\Delta t}{\fnof{W}{\tau}\tau^{k}}{\tau}}{{\Delta
       t}^{k}\gint{0}{\Delta t}{\fnof{W}{\tau}}{\tau}} \text{  for  } k=0,1,\ldots,p
 \end{equation}
 and
 \begin{equation}
-  \bar{\vect{f}}=\dfrac{\gint{0}{\Delta t}{\fnof{W}{\tau}\vect{f}}{\tau}}{{\Delta
-      t}^{k}\gint{0}{\Delta t}{\fnof{W}{\tau}}{\tau}}
+  \bar{\vect{f}}=\dfrac{\gint{0}{\Delta
+      t}{\fnof{W}{\tau}\fnof{\vect{f}}{t_{n}+\tau}}{\tau}}{
+    \gint{0}{\Delta t}{\fnof{W}{\tau}}{\tau}}
+  \label{eqn:meanweightedloadvector}
 \end{equation}
-
 we can write
-
 \begin{multline}
   \matr{M}\pbrac{\ddot{\bar{\vect{u}}}_{n+1}+\dfrac{\theta_{p-2}{\Delta
         t}^{p-2}}{\factorial{p-2}}\vect{\alpha}^{p}_{n}}+
@@ -77,12 +89,12 @@ we can write
         t}^{p-1}}{\factorial{p-1}}\vect{\alpha}^{p}_{n}}+
   \matr{K}\pbrac{\bar{\vect{u}}_{n+1}+\dfrac{\theta_{p}{\Delta
         t}^{p}}{p!}\vect{\alpha}^{p}_{n}}+ \\
-  \fnof{\vect{g}}{\bar{\vect{u}}_{n+1}+\dfrac{\theta_{p}{\Delta
-        t}^{p}}{p!}\vect{\alpha}^{p}_{n}}+\bar{\vect{f}}=\vect{0}
+  + \dfrac{\gint{0}{\Delta t}{\fnof{W}{\tau}\fnof{\vect{g}}{\vect{u}_{n}+\tau\dot{\vect{u}}_{n}+\cdots+
+        \dfrac{1}{p!}\tau^{p}\vect{\alpha}^{p}_{n}}}{\tau}}{\gint{0}{\Delta
+      t}{\fnof{W}{\tau}}{\tau}}+\bar{\vect{f}}=\vect{0}
+  \label{eqn:dynamic1}
 \end{multline}
-
 where
-
 \begin{equation}
   \begin{split}
     \bar{\vect{u}}_{n+1} &= \gsum{q=0}{p-1}{\dfrac{\theta_{q}{\Delta
@@ -94,37 +106,115 @@ where
   \end{split}
 \end{equation}
 
-Rearranging gives
+We note that as $\fnof{\vect{g}}{\fnof{\vect{u}}{t}}$ is nonlinear we need to
+evaluate an integral of the form
+\begin{equation}
+  \gint{0}{\Delta t}{\fnof{W}{\tau}\fnof{\vect{g}}{\fnof{\vect{u}}{t_{n}+\tau}}}{\tau}
+\end{equation}
 
+To do this we form Taylor's series expansions for
+$\fnof{\vect{g}}{\fnof{\vect{u}}{t}}$ about the point $\fnof{\vect{u}}{t_{n}+\tau}$ \ie
+\begin{equation}
+  \fnof{\vect{g}}{\fnof{\vect{u}}{t_{n}}}=\fnof{\vect{g}}{\fnof{\vect{u}}{t_{n}+\tau}}-
+  \tau\delby{\fnof{\vect{g}}{\fnof{\vect{u}}{t}}}{\vect{u}}\evalat{\delby{\fnof{\vect{u}}{t}}{t}}{t_{n}+\tau}
+  + \orderof{\tau^{2}}
+  \label{eqn:firstTaylorexpansion}
+\end{equation}
+and
+\begin{equation}
+  \fnof{\vect{g}}{\fnof{\vect{u}}{t_{n+1}}}=\fnof{\vect{g}}{\fnof{\vect{u}}{t_{n}+\tau}}+
+  \pbrac{t_{n+1}-t_{n}-\tau}\delby{\fnof{\vect{g}}{\fnof{\vect{u}}{t}}}{\vect{u}}
+  \evalat{\delby{\fnof{\vect{u}}{t}}{t}}{t_{n}+\tau}+ \orderof{\tau^{2}}
+  \label{eqn:secondTaylorexpansion}
+\end{equation}
+
+Now if we add $\dfrac{1}{\tau}$ times \eqnref{eqn:firstTaylorexpansion} and
+$\dfrac{1}{t_{n+1}-t_{n}-\tau}=\dfrac{1}{\Delta t-\tau}$ times
+\eqnref{eqn:secondTaylorexpansion} we obtain
+\begin{equation}
+  \dfrac{\fnof{\vect{g}}{\fnof{\vect{u}}{t_{n}}}}{\tau}+\dfrac{\fnof{\vect{g}}{\fnof{\vect{u}}{t_{n+1}}}}{\Delta
+    t-\tau}=\pbrac{\dfrac{\Delta t}{\tau\pbrac{\Delta t-\tau}}}\fnof{\vect{g}}{\fnof{\vect{u}}{t_{n}+\tau}}+
+  \pbrac{\dfrac{\Delta t}{\tau\pbrac{\Delta t-\tau}}}\orderof{\tau^{2}}
+\end{equation}
+
+Multiplying through by $\dfrac{\tau\pbrac{\Delta t-\tau}}{\Delta t}$ gives
+\begin{equation}
+  \dfrac{\Delta t-\tau}{\Delta t}\fnof{\vect{g}}{\fnof{\vect{u}}{t_{n}}}+
+  \dfrac{\tau}{\Delta t}\fnof{\vect{g}}{\fnof{\vect{u}}{t_{n+1}}}=
+  \fnof{\vect{g}}{\fnof{\vect{u}}{t_{n}+\tau}}+\orderof{\tau^{2}}
+\end{equation}
+
+Therefore
+\begin{equation}
+  \dfrac{\gint{0}{\Delta t}{\fnof{W}{\tau}\fnof{\vect{g}}{\fnof{\vect{u}}{t_{n}+\tau}}}{\tau}}
+  {\gint{0}{\Delta t}{\fnof{W}{\tau}}{\tau}}=\dfrac{\gint{0}{\Delta t}{\fnof{W}{\tau}
+      \pbrac{\dfrac{\Delta t-\tau}{\Delta t}\fnof{\vect{g}}{\fnof{\vect{u}}{t_{n}}}+
+        \dfrac{\tau}{\Delta t}\fnof{\vect{g}}{\fnof{\vect{u}}{t_{n+1}}}+\orderof{\tau^{2}}}}{\tau}}
+  {\gint{0}{\Delta t}{\fnof{W}{\tau}}{\tau}}
+\end{equation}
+
+Now if we recall that
+\begin{equation}
+\theta_{1}=\dfrac{\gint{0}{\Delta t}{\fnof{W}{\tau}\tau}{\tau}}{\Delta t\gint{0}{\Delta t}{\fnof{W}{\tau}}{\tau}}
+\end{equation}
+we can write
+\begin{equation}
+  \dfrac{\gint{0}{\Delta t}{\fnof{W}{\tau}\fnof{\vect{g}}{\fnof{\vect{u}}{t_{n+1}}}}{\tau}}
+  {\gint{0}{\Delta t}{\fnof{W}{\tau}}{\tau}}=\pbrac{1-\theta_{1}}\fnof{\vect{g}}{\fnof{\vect{u}}{t_{n}}}+
+  \theta_{1}\fnof{\vect{g}}{\fnof{\vect{u}}{t_{n+1}}}+\text{Error}
+\end{equation}
+where
+\begin{equation}
+  \text{Error}=\dfrac{\gint{0}{\Delta t}{\fnof{W}{\tau}\orderof{\tau^{2}}}{\tau}}{
+    \gint{0}{\Delta t}{\fnof{W}{\tau}}{\tau}}
+\end{equation}
+
+\Eqnref{eqn:dynamic1} now becomes
+\begin{multline}
+  \matr{M}\pbrac{\ddot{\bar{\vect{u}}}_{n+1}+\dfrac{\theta_{p-2}{\Delta
+        t}^{p-2}}{\factorial{p-2}}\vect{\alpha}^{p}_{n}}+
+  \matr{C}\pbrac{\dot{\bar{\vect{u}}}_{n+1}+\dfrac{\theta_{p-1}{\Delta
+        t}^{p-1}}{\factorial{p-1}}\vect{\alpha}^{p}_{n}}\\
+  +\matr{K}\pbrac{\bar{\vect{u}}_{n+1}+\dfrac{\theta_{p}{\Delta
+        t}^{p}}{p!}\vect{\alpha}^{p}_{n}}+ 
+  \pbrac{1-\theta_{1}}\fnof{\vect{g}}{\vect{u}_{n}}+\theta_{1}\fnof{\vect{g}}{\vect{u}_{n+1}}+\bar{\vect{f}}+
+  \text{Error}=\vect{0}
+  \label{eqn:dynamic2}
+\end{multline}
+as $\fnof{\vect{u}}{t_{n}}=\vect{u}_{n}$ and
+$\fnof{\vect{u}}{t_{n+1}}=\vect{u}_{n+1}=\hat{\vect{u}}_{n+1}+
+\dfrac{{\Delta t}^{p}}{p!}\vect{\alpha}^{p}_{n}$ where $\hat{\vect{u}}_{n+1}$
+is the \emph{predicted displacement} at the new time step and is given by
+\begin{equation}
+  \hat{\vect{u}}_{n+1}=\gsum{q=0}{p-1}{\dfrac{{\Delta
+        t}^{q}}{q!}\symover{q}{\vect{u}}_{n}}
+\end{equation}
+
+Rearranging gives
 \begin{multline}
   \fnof{\vect{\psi}}{\vect{\alpha}^{p}_{n}}=\pbrac{\dfrac{\theta_{p-2}{\Delta
         t}^{p-2}}{\factorial{p-2}}\matr{M}+\dfrac{\theta_{p-1}{\Delta
         t}^{p-1}}{\factorial{p-1}}\matr{C}+\dfrac{\theta_{p}{\Delta
-        t}^{p}}{p!}\matr{K}}\vect{\alpha}^{p}_{n}+ \\
-  \fnof{\vect{g}}{\bar{\vect{u}}_{n+1}+\dfrac{\theta_{p}{\Delta t}^{p}}{p!}\vect{\alpha}^{p}_{n}}+ 
+        t}^{p}}{p!}\matr{K}}\vect{\alpha}^{p}_{n}+\theta_{1}\fnof{\vect{g}}{\hat{\vect{u}}_{n+1}+ 
+    \dfrac{{\Delta t}^{p}}{p!}\vect{\alpha}^{p}_{n}} \\
+  +\pbrac{1-\theta_{1}}\fnof{\vect{g}}{\vect{u}_{n}}+
   \pbrac{\matr{M}\ddot{\bar{\vect{u}}}_{n+1}+\matr{C}\dot{\bar{\vect{u}}}_{n+1}+\matr{K}\bar{\vect{u}}_{n+1}+
     \bar{\vect{f}}}= \vect{0}
   \label{eqn:transient}
 \end{multline}
-
 or 
-
 \begin{equation}
 \fnof{\vect{\psi}}{\vect{\alpha}^{p}_{n}}=\matr{A}\vect{\alpha}^{p}_{n}+
-\fnof{\vect{g}}{\bar{\vect{u}}_{n+1}+ \dfrac{\theta_{p}{\Delta
-      t}^{p}}{p!}\vect{\alpha}^{p}_{n}}+\vect{b}= \vect{0}
+\theta_{1}\fnof{\vect{g}}{\hat{\vect{u}}_{n+1}+ \dfrac{{\Delta
+      t}^{p}}{p!}\vect{\alpha}^{p}_{n}}+\pbrac{1-\theta_{1}}\fnof{\vect{g}}{\vect{u}_{n}}+\vect{b}= \vect{0}
 \end{equation}
-
 where $\matr{A}$ is the \emph{Amplification matrix} given by
-
 \begin{equation}
   \matr{A}=\dfrac{\theta_{p-2}{\Delta t}^{p-2}}{\factorial{p-2}}\matr{M}+
   \dfrac{\theta_{p-1}{\Delta t}^{p-1}}{\factorial{p-1}}\matr{C}+
   \dfrac{\theta_{p}{\Delta t}^{p}}{p!}\matr{K}
 \end{equation}
-
 and $\vect{b}$ is the right hand side vector given by
-
 \begin{equation}
   \vect{b}=\matr{M}\ddot{\bar{\vect{u}}}_{n+1}+\matr{C}\dot{\bar{\vect{u}}}_{n+1}+
   \matr{K}\bar{\vect{u}}_{n+1}+\bar{\vect{f}}
@@ -133,56 +223,54 @@ and $\vect{b}$ is the right hand side vector given by
 If $\fnof{\vect{g}}{\vect{u}}\equiv\vect{0}$ then \eqnref{eqn:transient} is linear in
 $\vect{\alpha}^{p}_{n}$ and $\vect{\alpha}^{p}_{n}$ can be found by solving
 the linear equation
-
 \begin{equation}
-  \vect{\alpha}^{p}_{n} =\inverse{\pbrac{\dfrac{\theta_{p-2}{\Delta t}^{p-2}}{\factorial{p-2}}\matr{M}+
+  \vect{\alpha}^{p}_{n} =-\inverse{\pbrac{\dfrac{\theta_{p-2}{\Delta t}^{p-2}}{\factorial{p-2}}\matr{M}+
       \dfrac{\theta_{p-1}{\Delta t}^{p-1}}{\factorial{p-1}}\matr{C}+
       \dfrac{\theta_{p}{\Delta
           t}^{p}}{p!}\matr{K}}}\pbrac{\matr{M}\ddot{\bar{\vect{u}}}_{n+1}+
     \matr{C}\dot{\bar{\vect{u}}}_{n+1}+\matr{K}\bar{\vect{u}}_{n+1}+\bar{\vect{f}}}
 \end{equation}
-
 or 
-
 \begin{equation}
   \vect{\alpha}^{p}_{n} =-\inverse{\matr{A}}\vect{b}
 \end{equation}
 
-If $\fnof{\vect{g}}{\vect{u}}$ is not $\vect{0}$ then \eqnref{eqn:transient} is nonlinear in $\vect{\alpha}^{p}_{n}$. To solve this
-equation we use Newton's method. i.e.
-
+If $\fnof{\vect{g}}{\vect{u}}$ is not $\equiv\vect{0}$ then
+\eqnref{eqn:transient} is nonlinear in $\vect{\alpha}^{p}_{n}$. To solve this
+equation we use Newton's method \ie
 \begin{equation}
   \begin{split}
     \text{1.  } & \fnof{\matr{J}}{\vect{\alpha}^{p}_{n(i)}}.\delta
     \vect{\alpha}^{p}_{n(i)} = 
     -\fnof{\vect{\psi}}{\vect{\alpha}^{p}_{n(i)}} \\
-    \text{2.  } & \vect{\alpha}^{p}_{n(i+1)}=\vect{\alpha}^{p}_{n(i+1)}+\delta
+    \text{2.  } & \vect{\alpha}^{p}_{n(i+1)}=\vect{\alpha}^{p}_{n(i)}+\delta
     \vect{\alpha}^{p}_{n(i)}
   \end{split}
 \end{equation}
-
 where $\fnof{\matr{J}}{\vect{\alpha}^{p}_{n}}$ is the Jacobian and is given by
-
 \begin{equation}
-  \fnof{\matr{J}}{\vect{\alpha}^{p}_{n}}=\dfrac{\theta_{p-2}{\Delta t}^{p-2}}{\factorial{p-2}}\matr{M}+\dfrac{\theta_{p-1}{\Delta
-      t}^{p-1}}{\factorial{p-1}}\matr{C}+\dfrac{\theta_{p}{\Delta
-      t}^{p}}{p!}\matr{K}+\dfrac{\theta_{p}{\Delta t}^{p}}{p!}
-  \delby{\fnof{\vect{g}}{\vect{\alpha}^{p}_{n}}}{\vect{\alpha}^{p}_{n}}
+  \fnof{\matr{J}}{\vect{\alpha}^{p}_{n}}=\dfrac{\theta_{p-2}{\Delta t}^{p-2}}{\factorial{p-2}}\matr{M}+
+  \dfrac{\theta_{p-1}{\Delta
+      t}^{p-1}}{\factorial{p-1}}\matr{C}+\dfrac{\theta_{p}{\Delta t}^{p}}{p!}\matr{K}+
+  \dfrac{\theta_{1}{\Delta t}^{p}}{p!}
+  \delby{\fnof{\vect{g}}{\hat{\vect{u}}_{n+1}+\dfrac{{\Delta
+          t}^{p}}{p!}
+      \vect{\alpha}^{p}_{n}}}{\vect{\alpha}^{p}_{n}}
 \end{equation}
-
 or
-
 \begin{equation}
-  \fnof{\matr{J}}{\vect{\alpha}^{p}_{n}}=\matr{A}+\dfrac{\theta_{p}{\Delta t}^{p}}{p!}\delby{\fnof{\vect{g}}{\vect{\alpha}^{p}_{n}}}{\vect{\alpha}^{p}_{n}}
+  \fnof{\matr{J}}{\vect{\alpha}^{p}_{n}}=\matr{A}+\dfrac{\theta_{1}{\Delta
+      t}^{p}}{p!}
+  \delby{\fnof{\vect{g}}{\hat{\vect{u}}_{n+1}+\dfrac{{\Delta t}^{2}}{p!}\vect{\alpha}^{p}_{n}}}{\vect{\alpha}^{p}_{n}}
 \end{equation}
 
-Once $\vect{\alpha}^{p}_{n}$ has been obtained the values at the next time
-step can be obtained from
-
+Once $\vect{\alpha}^{p}_{n}$ has been obtained the values at the next time step can be obtained from
 \begin{equation}
   \begin{split}
     \vect{u}_{n+1} &= \vect{u}_{n}+\Delta t
-    \dot{\vect{u}}_{n}+\cdots+\dfrac{{\Delta t}^{p}}{p!}\vect{\alpha}^{p}_{n}=\hat{\vect{u}}_{n+1}+\dfrac{{\Delta t}^{p}}{p!}\vect{\alpha}^{p}_{n}\\
+    \dot{\vect{u}}_{n}+\cdots+\dfrac{{\Delta
+        t}^{p}}{p!}\vect{\alpha}^{p}_{n}=\hat{\vect{u}}_{n+1}+
+    \dfrac{{\Delta t}^{p}}{p!}\vect{\alpha}^{p}_{n}\\
     \dot{\vect{u}}_{n+1} &= \dot{\vect{u}}_{n}+\Delta t
     \ddot{\vect{u}}_{n}+\cdots+\dfrac{{\Delta
         t}^{p-1}}{\factorial{p-1}}\vect{\alpha}^{p}_{n}=\dot{\hat{\vect{u}}}_{n+1}+\dfrac{{\Delta
@@ -192,12 +280,48 @@ step can be obtained from
   \end{split}
 \end{equation}
 
+For algorithms in which the degree of the polynomial, $p$, is higher than the
+order we require the algorithm to be initialised so that the initial velocity
+or acceleration can be computed. The initial velocity or acceleration values
+can be obtained by substituting the initial displacement or initial
+displacement and velocity values into \eqnref{eqn:generaltransientnonlinear},
+rearranging and solving. For example consider an the case of a second degree
+polynomial and a first order system. Substituing the initial displacement
+$\vect{u}_{0}$ into \eqnref{eqn:generaltransientnonlinear} gives
+\begin{equation}
+  \matr{C}\dot{\vect{u}}_{0}+\matr{K}\vect{u}_{0}+\fnof{\vect{g}}{\vect{u}_{0}}+\bar{\vect{f}}_{0}=\vect{0}
+\end{equation}
+and therefore an approximation to the initial velocity can be found from
+\begin{equation}
+  \dot{\vect{u}}_{0}=-\inverse{\matr{C}}\pbrac{\matr{K}\vect{u}_{0}+\fnof{\vect{g}}{\vect{u}_{0}}+\bar{\vect{f}}_{0}}
+\end{equation}
+
+Similarily for a third degree polynomial and a second order system the initial
+acceleration can be found from
+\begin{equation}
+  \ddot{\vect{u}}_{0}=-\inverse{\matr{M}}\pbrac{\matr{C}\dot{\vect{u}}_{0}+\matr{K}\vect{u}_{0}+
+    \fnof{\vect{g}}{\vect{u}_{0}}+\bar{\vect{f}}_{0}}
+\end{equation}
+
+To evaluate the mean weighted load vector, $\bar{\vect{f}}$, we need to
+evaluate the integral in \eqnref{eqn:meanweightedloadvector}. In some cases,
+however, we can make the assumption that the load vector varies linearly
+during the time step. In these cases the mean weighted load vector can be
+computed from
+\begin{equation}
+  \bar{\vect{f}}=\theta_{1}\vect{f}_{n+1}+\pbrac{1-\theta_{1}}\vect{f}_{n}
+\end{equation}
 
 \subsubsection{Special SN11 case, p=1}
 
 For this special case, the mean predicited values are given by
 \begin{equation}
    \bar{\vect{u}}_{n+1} = \vect{u}_{n}
+\end{equation}
+
+The predicted displacement values are given by
+\begin{equation}
+   \hat{\vect{u}}_{n+1} = \vect{u}_{n}
 \end{equation}
 
 The amplification matrix is given by
@@ -212,17 +336,112 @@ The right hand side vector is given by
 
 The nonlinear function is given by
 \begin{equation}
-  \fnof{\vect{\psi}}{\vect{\alpha}^{1}_{n}}=\matr{A}\vect{\alpha}^{1}_{n}+\fnof{\vect{g}}{\bar{\vect{u}}_{n+1}+ \theta_{1}\Delta
-    t\vect{\alpha}^{1}_{n}}+\vect{b}=\vect{0}
+  \fnof{\vect{\psi}}{\vect{\alpha}^{1}_{n}}=\matr{A}\vect{\alpha}^{1}_{n}+\theta_{1}\fnof{\vect{g}}{\hat{\vect{u}}_{n+1}+ 
+    \Delta t\vect{\alpha}^{1}_{n}}+\pbrac{1-\theta_{1}}\fnof{\vect{g}}{\vect{u}_{n}}+\vect{b}=\vect{0}
 \end{equation}
 
 The Jacobian matrix is given by
 \begin{equation}
-  \fnof{\matr{J}}{\vect{\alpha}^{1}_{n}}=\matr{A}+\theta_{1}\Delta t \delby{\fnof{\vect{g}}{\vect{\alpha}^{1}_{n}}}{\vect{\alpha}^{1}_{n}}
+  \fnof{\matr{J}}{\vect{\alpha}^{1}_{n}}=\matr{A}+\theta_{1}\Delta t
+  \delby{\fnof{\vect{g}}{\hat{\vect{u}}_{n+1}+\Delta t\vect{\alpha}^{1}_{n}}}{\vect{\alpha}^{1}_{n}}
 \end{equation}
 
 And the time step update is given by
 \begin{equation}
     \vect{u}_{n+1} = \vect{u}_{n}+\Delta t\vect{\alpha}^{1}_{n}
+\end{equation}
+
+\subsubsection{Special SN21 case, p=2}
+
+For this special case, the mean predicited values are given by
+\begin{equation}
+  \begin{split}
+    \bar{\vect{u}}_{n+1} &= \vect{u}_{n}+\theta_{1}\Delta t\dot{\vect{u}}_{n}\\
+    \dot{\bar{\vect{u}}}_{n+1} &= \dot{\vect{u}}_{n}
+  \end{split}
+\end{equation}
+where
+\begin{equation}
+  \dot{\vect{u}}_{0}=-\inverse{\matr{C}}\pbrac{\matr{K}\vect{u}_{0}+\fnof{\vect{g}}{\vect{u}_{0}}+\bar{\vect{f}}_{0}}
+\end{equation}
+
+The predicted displacement values are given by
+\begin{equation}
+   \hat{\vect{u}}_{n+1} = \vect{u}_{n}+\Delta t\dot{\vect{u}}_{n}
+\end{equation}
+
+The amplification matrix is given by
+\begin{equation}
+  \matr{A}=\theta_{1}\Delta t\matr{C}+\dfrac{\theta_{2}{\Delta t}^{2}}{2}\matr{K}
+\end{equation}
+
+The right hand side vector is given by
+\begin{equation}
+  \vect{b}=\matr{C}\dot{\bar{\vect{u}}}_{n+1}+\matr{K}\bar{\vect{u}}_{n+1}+\bar{\vect{f}}
+\end{equation}
+
+The nonlinear function is given by
+\begin{equation}
+  \fnof{\vect{\psi}}{\vect{\alpha}^{2}_{n}}=\matr{A}\vect{\alpha}^{2}_{n}+\theta_{1}\fnof{\vect{g}}{\hat{\vect{u}}_{n+1}+
+    \dfrac{{\Delta t}^{2}}{2}\vect{\alpha}^{2}_{n}}+\pbrac{1-\theta_{1}}\fnof{\vect{g}}{\vect{u}_{n}}+\vect{b}=\vect{0}
+\end{equation}
+
+The Jacobian matrix is given by
+\begin{equation}
+  \fnof{\matr{J}}{\vect{\alpha}^{2}_{n}}=\matr{A}+\dfrac{\theta_{1}{\Delta t}^{2}}{2}
+  \delby{\fnof{\vect{g}}{\hat{\vect{u}}_{n+1}+\dfrac{{\Delta t}^{2}}{2}\vect{\alpha}^{2}_{n}}}{\vect{\alpha}^{2}_{n}}
+\end{equation}
+
+And the time step update is given by
+\begin{equation}
+  \begin{split}
+    \vect{u}_{n+1} &= \vect{u}_{n}+\Delta t\dot{\vect{u}}_{n} +\dfrac{{\Delta t}^{2}}{2}\vect{\alpha}^{2}_{n} \\
+    \dot{\vect{u}}_{n+1} &= \dot{\vect{u}}_{n}+\Delta t\vect{\alpha}^{2}_{n}
+  \end{split}
+\end{equation}
+
+\subsubsection{Special SN22 case, p=2}
+
+For this special case, the mean predicited values are given by
+\begin{equation}
+  \begin{split}
+    \bar{\vect{u}}_{n+1} &= \vect{u}_{n}+\theta_{1}\Delta t\dot{\vect{u}}_{n}\\
+    \dot{\bar{\vect{u}}}_{n+1} &= \dot{\vect{u}}_{n}
+  \end{split}
+\end{equation}
+
+The predicted displacement values are given by
+\begin{equation}
+   \hat{\vect{u}}_{n+1} = \vect{u}_{n}+\Delta t\dot{\vect{u}}_{n}
+\end{equation}
+
+The amplification matrix is given by
+\begin{equation}
+  \matr{A}=\matr{M}+\theta_{1}\Delta t\matr{C}+\dfrac{\theta_{2}{\Delta t}^{2}}{2}\matr{K}
+\end{equation}
+
+The right hand side vector is given by
+\begin{equation}
+  \vect{b}=\matr{C}\dot{\bar{\vect{u}}}_{n+1}+\matr{K}\bar{\vect{u}}_{n+1}+\bar{\vect{f}}
+\end{equation}
+
+The nonlinear function is given by
+\begin{equation}
+  \fnof{\vect{\psi}}{\vect{\alpha}^{2}_{n}}=\matr{A}\vect{\alpha}^{2}_{n}+\theta_{1}\fnof{\vect{g}}{\hat{\vect{u}}_{n+1}+ 
+    \dfrac{{\Delta t}^{2}}{2}\vect{\alpha}^{2}_{n}}+\pbrac{1-\theta_{1}}\fnof{\vect{g}}{\vect{u}_{n}}+\vect{b}=\vect{0}
+\end{equation}
+
+The Jacobian matrix is given by
+\begin{equation}
+  \fnof{\matr{J}}{\vect{\alpha}^{2}_{n}}=\matr{A}+\dfrac{\theta_{1}{\Delta t}^{2}}{2}
+  \delby{\fnof{\vect{g}}{{\hat{\vect{u}}_{n+1}+\dfrac{{\Delta t}^{2}}{2}\vect{\alpha}^{2}_{n}}}}{\vect{\alpha}^{2}_{n}}
+\end{equation}
+
+And the time step update is given by
+\begin{equation}
+  \begin{split}
+    \vect{u}_{n+1} &= \vect{u}_{n}+\Delta t\dot{\vect{u}}_{n} +\dfrac{{\Delta t}^{2}}{2}\vect{\alpha}^{2}_{n} \\
+    \dot{\vect{u}}_{n+1} &= \dot{\vect{u}}_{n}+\Delta t\vect{\alpha}^{2}_{n} 
+  \end{split}
 \end{equation}
 

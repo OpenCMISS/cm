@@ -148,12 +148,21 @@ MODULE CONSTANTS
   INTEGER(INTG), PARAMETER :: UNKNOWN_OS=255 !<Unknown operating system type \see CONSTANTS_OperatingSystemTypes,CONSTANTS
   !>@}
 
-  !> \addtogroup CONSTANTS_LibraryTypes CONSTANTS::LibraryTypes
+  !> \addtogroup CONSTANTS_LiblraryTypes CONSTANTS::LibraryTypes
   !> \brief Library type identifiers
   !> \see CONSTANTS
   !>@{ 
   INTEGER(INTG), PARAMETER :: LIBRARY_CMISS_TYPE=1 !<CMISS (internal) library type \see CONSTANTS_LibraryTypes,CONSTANTS
   INTEGER(INTG), PARAMETER :: LIBRARY_PETSC_TYPE=2 !<PETSc library type \see CONSTANTS_LibraryTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: LIBRARY_MUMPS_TYPE=3 !<MUMPS library type \see CONSTANTS_LibraryTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: LIBRARY_SUPERLU_TYPE=4 !<SuperLU library type \see CONSTANTS_LibraryTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: LIBRARY_SPOOLES_TYPE=5 !<SPOOLES library type \see CONSTANTS_LibraryTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: LIBRARY_UMFPACK_TYPE=6 !<UMFPack library type \see CONSTANTS_LibraryTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: LIBRARY_LUSOL_TYPE=7 !<LUSOL library type \see CONSTANTS_LibraryTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: LIBRARY_ESSL_TYPE=8 !<ESSL library type \see CONSTANTS_LibraryTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: LIBRARY_LAPACK_TYPE=9 !<LAPACK library type \see CONSTANTS_LibraryTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: LIBRARY_TAO_TYPE=10 !<TAO library type \see CONSTANTS_LibraryTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: LIBRARY_HYPRE_TYPE=11 !<Hypre library type \see CONSTANTS_LibraryTypes,CONSTANTS
   !>@}
 
   !> \addtogroup CONSTANTS_PartialDerivativeConstants CONSTANTS::PartialDerivativeConstants

@@ -68,7 +68,7 @@ MODULE SOLVER_MAPPING_ROUTINES
   !> \brief Equations matrix types
   !> \see EQUATIONS_SET_CONSTANTS
   !>@{
-  INTEGER(INTG), PARAMETER :: SOLVER_MAPPING_EQUATIONS_DYNAMIC_MATRIX=1 !<The equations matrix in the solver mapping is a dynamic equaitons matrix \see SOLVER_MAPPING_EquationsMatrixTypes,SOLVER_MAPPING
+  INTEGER(INTG), PARAMETER :: SOLVER_MAPPING_EQUATIONS_DYNAMIC_MATRIX=1 !<The equations matrix in the solver mapping is a dynamic equations matrix \see SOLVER_MAPPING_EquationsMatrixTypes,SOLVER_MAPPING
   INTEGER(INTG), PARAMETER :: SOLVER_MAPPING_EQUATIONS_LINEAR_MATRIX=2 !<The equations matrix in the solver mapping is a linear equations matrix \see SOLVER_MAPPING_EquationsMatrixTypes,SOLVER_MAPPING
  !>@}
  
@@ -101,10 +101,11 @@ CONTAINS
     INTEGER(INTG) :: column_idx,dof_idx,DEPENDENT_VARIABLE_TYPE,DYNAMIC_EQUATIONS_MATRIX_OFFSET,equations_column, &
       & equations_matrix,equations_matrix_idx,equations_set_idx,global_dof,global_row,jacobian_column,local_dof, &
       & LINEAR_EQUATIONS_MATRIX_OFFSET,local_row,matrix_number,myrank,myrank_local_dof,NUMBER_OF_COLUMNS, &
-      & NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES,NUMBER_OF_LINEAR_EQUATIONS_MATRICES,NUMBER_OF_GLOBAL_SOLVER_COLS, &
-      & LOCAL_SOLVER_DOF_OFFSET,NUMBER_OF_GHOST_SOLVER_DOFS,NUMBER_OF_GLOBAL_SOLVER_ROWS,NUMBER_OF_LOCAL_SOLVER_COLS, &
-      & NUMBER_OF_LOCAL_SOLVER_DOFS,NUMBER_OF_LOCAL_SOLVER_ROWS,NUMBER_OF_VARIABLES,rank,rank_idx,row_idx,SOLVER_DOF, &
-      & solver_matrix_idx,TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS,variable_idx,variable_type,equations_row_number
+      & NUMBER_OF_EQUATIONS_COLUMNS,NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES,NUMBER_OF_LINEAR_EQUATIONS_MATRICES, &
+      & NUMBER_OF_GLOBAL_SOLVER_COLS,LOCAL_SOLVER_DOF_OFFSET,NUMBER_OF_GHOST_SOLVER_DOFS,NUMBER_OF_GLOBAL_SOLVER_ROWS, &
+      & NUMBER_OF_LOCAL_SOLVER_COLS,NUMBER_OF_LOCAL_SOLVER_DOFS,NUMBER_OF_LOCAL_SOLVER_ROWS,NUMBER_OF_VARIABLES, &
+      & rank,rank_idx,row_idx,SOLVER_DOF,solver_matrix_idx,TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS,variable_idx, &
+      & variable_type,equations_row_number
     LOGICAL :: INCLUDE_ROW,MYRANK_DOF,RANK_DOF
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
@@ -318,6 +319,11 @@ CONTAINS
                       & EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM( &
                       & equations_matrix_idx),ERR,ERROR,*999)
                   ENDDO !equations_matrix_idx
+                  IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
+                    !Allocate the equations set to solver maps for Jacobian matrix (jm) indexing
+                    CALL SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_JM_INITIALISE(SOLVER_MAPPING% &
+                      & EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx),ERR,ERROR,*999)
+                  ENDIF
                 ELSE
                   IF(ASSOCIATED(LINEAR_MAPPING)) THEN
                     !Allocate the equations set to solver maps for equations matrix (em) indexing
@@ -719,10 +725,14 @@ CONTAINS
                     & equations_set_idx),ERR,ERROR,*999)
                   !Allocate the solver columns to equations set map arrays
                   IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
+                    SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS( &
+                      & equations_set_idx)%HAVE_DYNAMIC=.TRUE.
                     ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS( &
                       & equations_set_idx)%SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS(NUMBER_OF_COLUMNS),STAT=ERR)
                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver columns to dynamic equations map.",ERR,ERROR,*999)
                   ELSE
+                    SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS( &
+                      & equations_set_idx)%HAVE_STATIC=.TRUE.
                     ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS( &
                       & equations_set_idx)%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS(NUMBER_OF_COLUMNS),STAT=ERR)
                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver columns to static equations map.",ERR,ERROR,*999)
@@ -736,7 +746,7 @@ CONTAINS
                       & solver_matrix_idx)%DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS(NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES),STAT=ERR)
                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations to solver matrix maps sm dynamic equations "// &
                       & "to solver matrix maps.",ERR,ERROR,*999)
-                    !Set up linear arrays
+                    !Set up dynamic arrays
                     SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                       & solver_matrix_idx)%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES=NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES
                     DO equations_matrix_idx=1,NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES
@@ -744,7 +754,7 @@ CONTAINS
                         & solver_matrix_idx)%DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR)
                       ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                         & solver_matrix_idx)%DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR,STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not equations to solver matrix maps.",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations to solver matrix maps.",ERR,ERROR,*999)
                       CALL SOLVER_MAPPING_EQUATIONS_TO_SOLVER_MAPS_INITIALISE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                         & equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)% &
                         & DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR,ERR,ERROR,*999)
@@ -757,6 +767,18 @@ CONTAINS
                         & equations_matrix_idx)%NUMBER_OF_SOLVER_MATRICES=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                         & equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM(equations_matrix_idx)%NUMBER_OF_SOLVER_MATRICES+1
                     ENDDO !equations_matrix_idx                    
+                    !Set up nonlinear arrays
+                    IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
+                      ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
+                        & solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP,STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Jacobian to solver matrix maps.",ERR,ERROR,*999)
+                      CALL SOLVER_MAPPING_JACOBIAN_TO_SOLVER_MAP_INITIALISE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                        & equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP, &
+                        & ERR,ERROR,*999)
+                      SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM% &
+                        & JACOBIAN_TO_SOLVER_MATRIX_MAP=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                        & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP
+                    ENDIF
                   ELSE
                     ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                       & solver_matrix_idx)%LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS(NUMBER_OF_LINEAR_EQUATIONS_MATRICES),STAT=ERR)
@@ -771,7 +793,7 @@ CONTAINS
                         & solver_matrix_idx)%LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR)
                       ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                         & solver_matrix_idx)%LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR,STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not equations to solver matrix maps.",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations to solver matrix maps.",ERR,ERROR,*999)
                       CALL SOLVER_MAPPING_EQUATIONS_TO_SOLVER_MAPS_INITIALISE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                         & equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)% &
                         & LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR,ERR,ERROR,*999)
@@ -788,7 +810,7 @@ CONTAINS
                     IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
                       ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                         & solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP,STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not Jacobian to solver matrix maps.",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Jacobian to solver matrix maps.",ERR,ERROR,*999)
                       CALL SOLVER_MAPPING_JACOBIAN_TO_SOLVER_MAP_INITIALISE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                         & equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP, &
                         & ERR,ERROR,*999)
@@ -842,14 +864,26 @@ CONTAINS
                           & solver_matrix_idx)%DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS(DYNAMIC_EQUATIONS_MATRIX_OFFSET+ &
                           & equations_matrix_idx)%PTR%EQUATIONS_MATRIX=>DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS( &
                           & MATRIX_NUMBER)%EQUATIONS_MATRIX
-                        NUMBER_OF_COLUMNS=DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(MATRIX_NUMBER)%NUMBER_OF_COLUMNS
+                        NUMBER_OF_EQUATIONS_COLUMNS=DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(MATRIX_NUMBER)%NUMBER_OF_COLUMNS
                         ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                           & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS( &
                           & DYNAMIC_EQUATIONS_MATRIX_OFFSET+equations_matrix_idx)%PTR%EQUATIONS_COL_SOLVER_COLS_MAP( &
-                          & NUMBER_OF_COLUMNS),STAT=ERR)
+                          & NUMBER_OF_EQUATIONS_COLUMNS),STAT=ERR)
                         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dynamic equations column to solver columns map.", &
                           & ERR,ERROR,*999)
                       ENDDO !equations_matrix_idx
+                      IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
+                        SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
+                          & solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP%SOLVER_MATRIX_NUMBER=solver_matrix_idx
+                        SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
+                          & solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP%JACOBIAN_MATRIX=>NONLINEAR_MAPPING% &
+                          & JACOBIAN_TO_VAR_MAP%JACOBIAN
+                        NUMBER_OF_EQUATIONS_COLUMNS=NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%NUMBER_OF_COLUMNS
+                        ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                          & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP% &
+                          & JACOBIAN_COL_SOLVER_COLS_MAP(NUMBER_OF_EQUATIONS_COLUMNS),STAT=ERR)
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Jacobian column to solver columns map.",ERR,ERROR,*999)
+                      ENDIF
                     ELSE
                       !Allocate linear equations to solver matrix maps equations column to solver columns maps
                       IF(ASSOCIATED(LINEAR_MAPPING)) THEN
@@ -866,11 +900,11 @@ CONTAINS
                             & solver_matrix_idx)%LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS(LINEAR_EQUATIONS_MATRIX_OFFSET+ &
                             & equations_matrix_idx)%PTR%EQUATIONS_MATRIX=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS( &
                             & MATRIX_NUMBER)%EQUATIONS_MATRIX
-                          NUMBER_OF_COLUMNS=LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(MATRIX_NUMBER)%NUMBER_OF_COLUMNS
+                          NUMBER_OF_EQUATIONS_COLUMNS=LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(MATRIX_NUMBER)%NUMBER_OF_COLUMNS
                           ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                             & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS( &
                             & LINEAR_EQUATIONS_MATRIX_OFFSET+equations_matrix_idx)%PTR%EQUATIONS_COL_SOLVER_COLS_MAP( &
-                            & NUMBER_OF_COLUMNS),STAT=ERR)
+                            & NUMBER_OF_EQUATIONS_COLUMNS),STAT=ERR)
                           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate linear equations column to solver columns map.", &
                             & ERR,ERROR,*999)
                         ENDDO !equations_matrix_idx
@@ -881,11 +915,11 @@ CONTAINS
                         SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                           & solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP%JACOBIAN_MATRIX=>NONLINEAR_MAPPING% &
                           & JACOBIAN_TO_VAR_MAP%JACOBIAN
-                        NUMBER_OF_COLUMNS=NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%NUMBER_OF_COLUMNS
+                        NUMBER_OF_EQUATIONS_COLUMNS=NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%NUMBER_OF_COLUMNS
                         ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                           & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP% &
-                          & JACOBIAN_COL_SOLVER_COLS_MAP(NUMBER_OF_COLUMNS),STAT=ERR)
-                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate jacobian column to solver columns map.",ERR,ERROR,*999)
+                          & JACOBIAN_COL_SOLVER_COLS_MAP(NUMBER_OF_EQUATIONS_COLUMNS),STAT=ERR)
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Jacobian column to solver columns map.",ERR,ERROR,*999)
                       ENDIF
                     ENDIF
                   ENDIF !rank==0
@@ -929,13 +963,13 @@ CONTAINS
                           !There are no ghosted coLs for the solver matrices so there is only 1 domain for the global to local map.
                           !Allocate the global to local map arrays
                           ALLOCATE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(NUMBER_OF_GLOBAL_SOLVER_COLS)%LOCAL_NUMBER(1),STAT=ERR)
-                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column domain global to local map local number", &
+                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column domain global to local map local number.", &
                             & ERR,ERROR,*999)
                           ALLOCATE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(NUMBER_OF_GLOBAL_SOLVER_COLS)%DOMAIN_NUMBER(1),STAT=ERR)
-                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column domain global to local map domain number", &
+                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column domain global to local map domain number.", &
                             & ERR,ERROR,*999)
                           ALLOCATE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(NUMBER_OF_GLOBAL_SOLVER_COLS)%LOCAL_TYPE(1),STAT=ERR)
-                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column domain global to local map domain number", &
+                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column domain global to local map domain number.", &
                             & ERR,ERROR,*999)
                           !Set up the global to local mappings
                           COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(NUMBER_OF_GLOBAL_SOLVER_COLS)%NUMBER_OF_DOMAINS=1
@@ -1129,6 +1163,32 @@ CONTAINS
                                 & COUPLING_COEFFICIENTS(1)=DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(MATRIX_NUMBER)% &
                                 & MATRIX_COEFFICIENT                              
                             ENDDO !equations_matrix_idx
+                            IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
+                              jacobian_column=NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP%DOF_TO_COLUMNS_MAP(myrank_local_dof)
+                              !Allocate the Jacobian to solver map column items.
+                              !No coupling yet so the mapping is 1-1
+                              ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP% &
+                                & JACOBIAN_COL_SOLVER_COLS_MAP(jacobian_column)%SOLVER_COLS(1),STAT=ERR)
+                              IF(ERR/=0) CALL  &
+                                & FLAG_ERROR("Could not allocate Jacobian column to solver columns map solver colums.", &
+                                & ERR,ERROR,*999)
+                              ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP% &
+                                & JACOBIAN_COL_SOLVER_COLS_MAP(jacobian_column)%COUPLING_COEFFICIENTS(1),STAT=ERR)
+                              IF(ERR/=0) CALL &
+                                & FLAG_ERROR("Could not allocate Jacobain column to solver columns map coupling coefficients.",&
+                                & ERR,ERROR,*999)
+                              SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
+                                & solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP%JACOBIAN_COL_SOLVER_COLS_MAP(jacobian_column)% &
+                                & NUMBER_OF_SOLVER_COLS=1
+                              SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
+                                & solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP%JACOBIAN_COL_SOLVER_COLS_MAP(jacobian_column)% &
+                                & SOLVER_COLS(1)=NUMBER_OF_GLOBAL_SOLVER_COLS
+                              SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
+                                & solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP%JACOBIAN_COL_SOLVER_COLS_MAP(jacobian_column)% &
+                                & COUPLING_COEFFICIENTS(1)=NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%JACOBIAN_COEFFICIENT
+                            ENDIF
                           ELSE
                             IF(ASSOCIATED(LINEAR_MAPPING)) THEN
                               DO equations_matrix_idx=1,NUMBER_OF_LINEAR_EQUATIONS_MATRICES
@@ -1217,6 +1277,13 @@ CONTAINS
                                 & solver_matrix_idx)%DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS(DYNAMIC_EQUATIONS_MATRIX_OFFSET+ &
                                 & equations_matrix_idx)%PTR%EQUATIONS_COL_SOLVER_COLS_MAP(equations_column)%NUMBER_OF_SOLVER_COLS=0
                             ENDDO !equations_matrix_idx
+                            IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
+                              jacobian_column=NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP%DOF_TO_COLUMNS_MAP(myrank_local_dof)
+                              !No coupling yet so the mapping is 1-1
+                              SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
+                                & solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP%JACOBIAN_COL_SOLVER_COLS_MAP( &
+                                & jacobian_column)%NUMBER_OF_SOLVER_COLS=0
+                            ENDIF
                           ELSE
                             IF(ASSOCIATED(LINEAR_MAPPING)) THEN
                               !Set up the equations columns -> solver columns mapping
@@ -1325,7 +1392,8 @@ CONTAINS
 
     IF(DIAGNOSTICS1) THEN
       CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Solver mappings:",ERR,ERROR,*999)
-      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of equations sets = ",SOLVER_MAPPING% &
+      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  Equation sets:",ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of equations sets = ",SOLVER_MAPPING% &
         & NUMBER_OF_EQUATIONS_SETS,ERR,ERROR,*999)
       DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
         EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
@@ -1335,36 +1403,36 @@ CONTAINS
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Equations set user number = ",EQUATIONS_SET%USER_NUMBER, &
           & ERR,ERROR,*999)                
       ENDDO !equations_set_idx
-      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Row mappings:",ERR,ERROR,*999)      
-      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of rows = ",SOLVER_MAPPING%NUMBER_OF_ROWS,ERR,ERROR,*999)
-      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of global rows = ",SOLVER_MAPPING%NUMBER_OF_GLOBAL_ROWS, &
+      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  Row mappings:",ERR,ERROR,*999)      
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of rows = ",SOLVER_MAPPING%NUMBER_OF_ROWS,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of global rows = ",SOLVER_MAPPING%NUMBER_OF_GLOBAL_ROWS, &
         & ERR,ERROR,*999)
-      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  Solver rows to equations sets rows mappings:",ERR,ERROR,*999)      
+      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"    Solver rows to equations sets rows mappings:",ERR,ERROR,*999)      
       DO row_idx=1,SOLVER_MAPPING%NUMBER_OF_ROWS
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Solver row : ",row_idx,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of rows mapped to = ",SOLVER_MAPPING% &
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Solver row : ",row_idx,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Number of rows mapped to = ",SOLVER_MAPPING% &
           & SOLVER_ROW_TO_EQUATIONS_SET_MAPS(row_idx)%NUMBER_OF_ROWS,ERR,ERROR,*999)
         CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MAPPING%SOLVER_ROW_TO_EQUATIONS_SET_MAPS(row_idx)% &
           & NUMBER_OF_ROWS,5,5,SOLVER_MAPPING%SOLVER_ROW_TO_EQUATIONS_SET_MAPS(row_idx)%EQUATIONS_SET, &
-          & '("      Equations sets indices  :",5(X,I13))','(31X,5(X,I13))',ERR,ERROR,*999) 
+          & '("        Equations sets indices  :",5(X,I13))','(33X,5(X,I13))',ERR,ERROR,*999) 
         CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MAPPING%SOLVER_ROW_TO_EQUATIONS_SET_MAPS(row_idx)% &
           & NUMBER_OF_ROWS,5,5,SOLVER_MAPPING%SOLVER_ROW_TO_EQUATIONS_SET_MAPS(row_idx)%EQUATIONS_ROW_NUMBER, &
-          & '("      Equations row numbers   :",5(X,I13))','(31X,5(X,I13))',ERR,ERROR,*999) 
+          & '("        Equations row numbers   :",5(X,I13))','(33X,5(X,I13))',ERR,ERROR,*999) 
         CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MAPPING%SOLVER_ROW_TO_EQUATIONS_SET_MAPS(row_idx)% &
           & NUMBER_OF_ROWS,5,5,SOLVER_MAPPING%SOLVER_ROW_TO_EQUATIONS_SET_MAPS(row_idx)%COUPLING_COEFFICIENTS, &
-          & '("      Coupling coefficients   :",5(X,E13.6))','(31X,5(X,E13.6))',ERR,ERROR,*999) 
+          & '("        Coupling coefficients   :",5(X,E13.6))','(33X,5(X,E13.6))',ERR,ERROR,*999) 
       ENDDO !row_idx
-      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  Equations sets rows to solver rows mappings:",ERR,ERROR,*999)
+      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"    Equations sets rows to solver rows mappings:",ERR,ERROR,*999)
       DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
         EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
         EQUATIONS=>EQUATIONS_SET%EQUATIONS
         EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Equations set index : ",equations_set_idx,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of equations set rows = ",EQUATIONS_MAPPING% &
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Equations set index : ",equations_set_idx,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Number of equations set rows = ",EQUATIONS_MAPPING% &
           & TOTAL_NUMBER_OF_ROWS,ERR,ERROR,*999)
         DO row_idx=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
-          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Equations set row : ",row_idx,ERR,ERROR,*999)
-          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Number of rows mapped to = ",SOLVER_MAPPING% &
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Equations set row : ",row_idx,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"          Number of rows mapped to = ",SOLVER_MAPPING% &
             & EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(row_idx)%NUMBER_OF_SOLVER_ROWS, &
             & ERR,ERROR,*999)
           IF(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(row_idx)% &
@@ -1372,95 +1440,107 @@ CONTAINS
             CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
               & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(row_idx)%NUMBER_OF_SOLVER_ROWS,5,5,SOLVER_MAPPING% &
               & EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(row_idx)%SOLVER_ROWS, &
-              & '("        Solver row numbers    :",5(X,I13))','(31X,5(X,I13))',ERR,ERROR,*999)
+              & '("          Solver row numbers    :",5(X,I13))','(33X,5(X,I13))',ERR,ERROR,*999)
             CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
               & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(row_idx)%NUMBER_OF_SOLVER_ROWS,5,5,SOLVER_MAPPING% &
               & EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(row_idx)%COUPLING_COEFFICIENTS, &
-              & '("        Coupling coefficients :",5(X,E13.6))','(31X,5(X,E13.6))',ERR,ERROR,*999)
+              & '("          Coupling coefficients :",5(X,E13.6))','(31X,5(X,E13.6))',ERR,ERROR,*999)
           ENDIF
         ENDDO !row_idx
       ENDDO !equations_set_idx            
-      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Column mappings:",ERR,ERROR,*999)      
-      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Number of solver matrices = ",SOLVER_MAPPING% &
+      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  Column mappings:",ERR,ERROR,*999)      
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of solver matrices = ",SOLVER_MAPPING% &
         & NUMBER_OF_SOLVER_MATRICES,ERR,ERROR,*999)
       DO solver_matrix_idx=1,SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Solver matrix : ",solver_matrix_idx,ERR,ERROR,*999)
-        CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  Solver columns to equations sets columns mappings:",ERR,ERROR,*999)        
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of columns = ",SOLVER_MAPPING% &
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Solver matrix : ",solver_matrix_idx,ERR,ERROR,*999)
+        CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"      Solver columns to equations sets columns mappings:",ERR,ERROR,*999)        
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Number of columns = ",SOLVER_MAPPING% &
           & SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%NUMBER_OF_COLUMNS,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of DOFs = ",SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
-          & solver_matrix_idx)%NUMBER_OF_DOFS,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Total number of DOFs = ",SOLVER_MAPPING% &
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Number of DOFs = ",SOLVER_MAPPING% &
+          & SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%NUMBER_OF_DOFS,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Total number of DOFs = ",SOLVER_MAPPING% &
           & SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%TOTAL_NUMBER_OF_DOFS,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of global DOFs = ",SOLVER_MAPPING% &
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Number of global DOFs = ",SOLVER_MAPPING% &
           & SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%NUMBER_OF_GLOBAL_DOFS,ERR,ERROR,*999)
         DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
-          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Equations set index : ",equations_set_idx,ERR,ERROR,*999)          
-          CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  Column mappings:",ERR,ERROR,*999)        
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Equations set index : ",equations_set_idx,ERR,ERROR,*999)
+          CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"          Column mappings:",ERR,ERROR,*999)        
           DO column_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%NUMBER_OF_COLUMNS           
-            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Solver column : ",column_idx,ERR,ERROR,*999)
-            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of dynamic equations matrices mapped to = ", &
-              & SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS( &
-              & equations_set_idx)%SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS(column_idx)%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES, &
-              & ERR,ERROR,*999)
+            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"            Solver column : ",column_idx,ERR,ERROR,*999)
             IF(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS( &
-              & equations_set_idx)%SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS(column_idx)%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES>0) THEN
-              CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
-                & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS( &
-                & column_idx)%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES,5,5,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
-                & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS( &
-                & column_idx)%EQUATIONS_MATRIX_NUMBERS,'("      Equation matrices numbers  :",5(X,I13))','(34X,5(X,I13))', &
+              & equations_set_idx)%HAVE_DYNAMIC) THEN
+              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"              Number of dynamic equations matrices mapped to = ", &
+                & SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS( &
+                & equations_set_idx)%SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS(column_idx)%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES, &
                 & ERR,ERROR,*999)
-              CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
-                & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS( &
-                & column_idx)%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES,5,5,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
-                & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS( &
-                & column_idx)%EQUATIONS_COL_NUMBERS,'("      Equation column numbers    :",5(X,I13))','(34X,5(X,I13))', &
-                & ERR,ERROR,*999)
-              CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
-                & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS( &
-                & column_idx)%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES,5,5,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
-                & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS( &
-                & column_idx)%COUPLING_COEFFICIENTS,'("      Coupling coefficients      :",5(X,E13.6))','(34X,5(X,E13.6))', &
-                & ERR,ERROR,*999)
+              IF(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS( &
+                & equations_set_idx)%SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS(column_idx)%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES>0) THEN
+                CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
+                  & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS( &
+                  & column_idx)%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES,5,5,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
+                  & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS( &
+                  & column_idx)%EQUATIONS_MATRIX_NUMBERS,'("                Equation matrices numbers  :",5(X,I13))', &
+                  & '(44X,5(X,I13))',ERR,ERROR,*999)
+                CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
+                  & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS( &
+                  & column_idx)%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES,5,5,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
+                  & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS( &
+                  & column_idx)%EQUATIONS_COL_NUMBERS,'("                Equation column numbers    :",5(X,I13))', &
+                  & '(44X,5(X,I13))',ERR,ERROR,*999)
+                CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
+                  & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS( &
+                  & column_idx)%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES,5,5,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
+                  & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS( &
+                  & column_idx)%COUPLING_COEFFICIENTS,'("                Coupling coefficients      :",5(X,E13.6))', &
+                  & '(44X,5(X,E13.6))',ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"              Number of dynamic equations matrices mapped to = ", &
+                & 0_INTG,ERR,ERROR,*999)
             ENDIF
-            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of linear equations matrices mapped to = ", &
-              & SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS( &
-              & equations_set_idx)%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS(column_idx)%NUMBER_OF_LINEAR_EQUATIONS_MATRICES, &
-              & ERR,ERROR,*999)
             IF(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS( &
-              & equations_set_idx)%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS(column_idx)%NUMBER_OF_LINEAR_EQUATIONS_MATRICES>0) THEN
-              CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
-                & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS( &
-                & column_idx)%NUMBER_OF_LINEAR_EQUATIONS_MATRICES,5,5,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
-                & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS( &
-                & column_idx)%EQUATIONS_MATRIX_NUMBERS,'("      Equation matrices numbers  :",5(X,I13))','(34X,5(X,I13))', &
+              & equations_set_idx)%HAVE_STATIC) THEN
+              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"              Number of linear equations matrices mapped to = ", &
+                & SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS( &
+                & equations_set_idx)%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS(column_idx)%NUMBER_OF_LINEAR_EQUATIONS_MATRICES, &
                 & ERR,ERROR,*999)
-              CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
-                & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS( &
-                & column_idx)%NUMBER_OF_LINEAR_EQUATIONS_MATRICES,5,5,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
-                & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS( &
-                & column_idx)%EQUATIONS_COL_NUMBERS,'("      Equation column numbers    :",5(X,I13))','(34X,5(X,I13))', &
-                & ERR,ERROR,*999)
-              CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
-                & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS( &
-                & column_idx)%NUMBER_OF_LINEAR_EQUATIONS_MATRICES,5,5,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
-                & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS( &
-                & column_idx)%COUPLING_COEFFICIENTS,'("      Coupling coefficients      :",5(X,E13.6))','(34X,5(X,E13.6))', &
-                & ERR,ERROR,*999)
+              IF(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS( &
+                & equations_set_idx)%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS(column_idx)%NUMBER_OF_LINEAR_EQUATIONS_MATRICES>0) THEN
+                CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
+                  & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS( &
+                  & column_idx)%NUMBER_OF_LINEAR_EQUATIONS_MATRICES,5,5,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
+                  & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS( &
+                  & column_idx)%EQUATIONS_MATRIX_NUMBERS,'("                Equation matrices numbers  :",5(X,I13))', &
+                  & '(44X,5(X,I13))',ERR,ERROR,*999)
+                CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
+                  & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS( &
+                  & column_idx)%NUMBER_OF_LINEAR_EQUATIONS_MATRICES,5,5,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
+                  & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS( &
+                  & column_idx)%EQUATIONS_COL_NUMBERS,'("                Equation column numbers    :",5(X,I13))', &
+                  & '(44X,5(X,I13))',ERR,ERROR,*999)
+                CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
+                  & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS( &
+                  & column_idx)%NUMBER_OF_LINEAR_EQUATIONS_MATRICES,5,5,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
+                  & solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx)%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS( &
+                  & column_idx)%COUPLING_COEFFICIENTS,'("                Coupling coefficients      :",5(X,E13.6))', &
+                  & '(44X,5(X,E13.6))',ERR,ERROR,*999)
+              ENDIF
+              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"                Jacobian column number     = ", &
+                & SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS( &
+                & equations_set_idx)%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS(column_idx)%JACOBIAN_COL_NUMBER,ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"                Jacobian coupling coeff    = ", &
+                & SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS( &
+                & equations_set_idx)%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS(column_idx)%JACOBIAN_COUPLING_COEFFICIENT,ERR,ERROR,*999)
+            ELSE
+              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"              Number of static equations matrices mapped to = ", &
+                & 0_INTG,ERR,ERROR,*999)
             ENDIF
-            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Jacobian column number     = ", &
-              & SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS( &
-              & equations_set_idx)%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS(column_idx)%JACOBIAN_COL_NUMBER,ERR,ERROR,*999)
-            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Jacobian coupling coeff    = ", &
-              & SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS( &
-              & equations_set_idx)%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS(column_idx)%JACOBIAN_COUPLING_COEFFICIENT,ERR,ERROR,*999)
           ENDDO !column_idx
         ENDDO !equations_set_idx
-        CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  Variable mappings:",ERR,ERROR,*999)        
+        CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"      Variable mappings:",ERR,ERROR,*999)        
         DO dof_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%TOTAL_NUMBER_OF_DOFS     
-          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Solver dof : ",dof_idx,ERR,ERROR,*999)
-          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of equations sets mapped to = ",SOLVER_MAPPING% &
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Solver dof : ",dof_idx,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"          Number of equations sets mapped to = ",SOLVER_MAPPING% &
             & SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS(dof_idx)% &
             & NUMBER_OF_EQUATIONS_SETS,ERR,ERROR,*999)
           IF(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS(dof_idx)% &
@@ -1468,28 +1548,28 @@ CONTAINS
             CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
               & solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS(dof_idx)%NUMBER_OF_EQUATIONS_SETS,5,5,SOLVER_MAPPING% &
               & SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS(dof_idx)%EQUATIONS_SET_INDICES, &
-              & '("      Equations set indices  :",5(X,I13))','(28X,5(X,I13))',ERR,ERROR,*999)
+              & '("            Equations set indices  :",5(X,I13))','(34X,5(X,I13))',ERR,ERROR,*999)
 !!TODO: write out the variables somehow.
             !CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
             !  & solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS(column_idx)%NUMBER_OF_EQUATIONS_SETS,5,5,SOLVER_MAPPING% &
             !  & SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS(dof_idx)%VARIABLE_TYPE, &
-            !  & '("      Variable types         :",5(X,I13))','(28X,5(X,I13))',ERR,ERROR,*999)
+            !  & '("          Variable types         :",5(X,I13))','(234X,5(X,I13))',ERR,ERROR,*999)
             CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
               & solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS(dof_idx)%NUMBER_OF_EQUATIONS_SETS,5,5,SOLVER_MAPPING% &
               & SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS(dof_idx)%VARIABLE_DOF, &
-              & '("      Variable dofs          :",5(X,I13))','(28X,5(X,I13))',ERR,ERROR,*999)
+              & '("            Variable dofs          :",5(X,I13))','(32X,5(X,I13))',ERR,ERROR,*999)
             CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
               & solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS(dof_idx)%NUMBER_OF_EQUATIONS_SETS,5,5,SOLVER_MAPPING% &
               & SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS(dof_idx)% &
-              & VARIABLE_COEFFICIENT,'("      Variable coefficients  :",5(X,E13.6))','(28X,5(X,E13.6))',ERR,ERROR,*999)
+              & VARIABLE_COEFFICIENT,'("            Variable coefficients  :",5(X,E13.6))','(34X,5(X,E13.6))',ERR,ERROR,*999)
             CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP( &
               & solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS(dof_idx)%NUMBER_OF_EQUATIONS_SETS,5,5,SOLVER_MAPPING% &
               & SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS(dof_idx)% &
-              & ADDITIVE_CONSTANT,'("      Additive constants     :",5(X,E13.6))','(28X,5(X,E13.6))',ERR,ERROR,*999)
+              & ADDITIVE_CONSTANT,'("            Additive constants     :",5(X,E13.6))','(34X,5(X,E13.6))',ERR,ERROR,*999)
           ENDIF
         ENDDO !dof_idx
       ENDDO !solver_matrix_idx
-      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  Equations sets columns to solver columns mappings:",ERR,ERROR,*999)
+      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"    Equations sets columns to solver columns mappings:",ERR,ERROR,*999)
       DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
         EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
         EQUATIONS=>EQUATIONS_SET%EQUATIONS
@@ -1497,14 +1577,14 @@ CONTAINS
         DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
         LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
         NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Equations set index : ",equations_set_idx,ERR,ERROR,*999)          
-        CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"    Solver matrix indexing:",ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Equations set index : ",equations_set_idx,ERR,ERROR,*999)          
+        CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"        Solver matrix indexing:",ERR,ERROR,*999)
         DO solver_matrix_idx=1,SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES
-          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Solver matrix : ",solver_matrix_idx,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"          Solver matrix : ",solver_matrix_idx,ERR,ERROR,*999)
           IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
-            CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"      Dynamic equations matrix columns to solver matrix columns:", &
+            CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"            Dynamic equations matrix columns to solver matrix columns:", &
               & ERR,ERROR,*999)
-            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of dynamic equations matrices = ",SOLVER_MAPPING% &
+            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"              Number of dynamic equations matrices = ",SOLVER_MAPPING% &
               & EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)% &
               & NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES,ERR,ERROR,*999)
             DO equations_matrix_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
@@ -1512,22 +1592,26 @@ CONTAINS
               EQUATIONS_TO_SOLVER_MAP=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                 & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS( &
                 & equations_matrix_idx)%PTR
-              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Equations matrix index : ",equations_matrix_idx,ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"              Equations matrix index : ",equations_matrix_idx, &
+                & ERR,ERROR,*999)
               equations_matrix=EQUATIONS_TO_SOLVER_MAP%EQUATIONS_MATRIX_NUMBER
-              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Equations matrix number = ",equations_matrix,ERR,ERROR,*999)
-              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Solver matrix number    = ",EQUATIONS_TO_SOLVER_MAP% &
+              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"                Equations matrix number = ",equations_matrix, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"                Solver matrix number    = ",EQUATIONS_TO_SOLVER_MAP% &
                 & SOLVER_MATRIX_NUMBER,ERR,ERROR,*999)
               DO column_idx=1,DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(equations_matrix)%NUMBER_OF_COLUMNS
-                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Equations matrix column : ",column_idx,ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"          Number of solver columns mapped to = ", &
+                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"                Equations matrix column : ",column_idx, &
+                  & ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"                  Number of solver columns mapped to = ", &
                   & EQUATIONS_TO_SOLVER_MAP%EQUATIONS_COL_SOLVER_COLS_MAP(column_idx)%NUMBER_OF_SOLVER_COLS,ERR,ERROR,*999)
                 IF(EQUATIONS_TO_SOLVER_MAP%EQUATIONS_COL_SOLVER_COLS_MAP(column_idx)%NUMBER_OF_SOLVER_COLS>0) THEN
                   CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,EQUATIONS_TO_SOLVER_MAP%EQUATIONS_COL_SOLVER_COLS_MAP( &
                     & column_idx)%NUMBER_OF_SOLVER_COLS,5,5,EQUATIONS_TO_SOLVER_MAP%EQUATIONS_COL_SOLVER_COLS_MAP(column_idx)% &
-                    & SOLVER_COLS,'("          Solver columns         :",5(X,I13))','(33X,5(X,I13))',ERR,ERROR,*999)
+                    & SOLVER_COLS,'("                  Solver columns         :",5(X,I13))','(41X,5(X,I13))',ERR,ERROR,*999)
                   CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,EQUATIONS_TO_SOLVER_MAP%EQUATIONS_COL_SOLVER_COLS_MAP( &
                     & column_idx)%NUMBER_OF_SOLVER_COLS,5,5,EQUATIONS_TO_SOLVER_MAP%EQUATIONS_COL_SOLVER_COLS_MAP(column_idx)% &
-                    & COUPLING_COEFFICIENTS,'("          Coupling coefficients  :",5(X,E13.6))','(33X,5(X,E13.6))',ERR,ERROR,*999)
+                    & COUPLING_COEFFICIENTS,'("                  Coupling coefficients  :",5(X,E13.6))','(41X,5(X,E13.6))', &
+                    & ERR,ERROR,*999)
                 ENDIF
               ENDDO !column_idx
             ENDDO !equations_matrix_idx
@@ -2294,7 +2378,7 @@ CONTAINS
                           CALL FLAG_ERROR("Equations mapping nonlinear mapping is not associated.",ERR,ERROR,*999)
                         ENDIF
                       CASE DEFAULT
-                        LOCAL_ERROR="The solver equaitons linearity type of "// &
+                        LOCAL_ERROR="The solver equations linearity type of "// &
                           & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
@@ -2308,14 +2392,26 @@ CONTAINS
                           CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
                         ENDIF
                      CASE(SOLVER_EQUATIONS_NONLINEAR)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+! SEBK 16/09/09 NOT SURE ABOUT SOLVER MAPPING HERE
+!|
+                        IF(ASSOCIATED(EQUATIONS_MAPPING%DYNAMIC_MAPPING)) THEN
+                          SOLVER_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+1)= &
+                            & EQUATIONS_MAPPING%DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
+! new.... need to double check
+                          SOLVER_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+1)= &
+                            & EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLE_TYPE
+                        ELSE
+                          CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
+                        ENDIF
+!|
+! SEBK 16/09/09 NOT SURE ABOUT SOLVER MAPPING HERE
                       CASE DEFAULT
-                        LOCAL_ERROR="The solver equaitons linearity type of "// &
+                        LOCAL_ERROR="The solver equations linearity type of "// &
                           & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     CASE DEFAULT
-                      LOCAL_ERROR="The solver equaitons time dependence type of "// &
+                      LOCAL_ERROR="The solver equations time dependence type of "// &
                         & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     END SELECT
@@ -2926,7 +3022,7 @@ CONTAINS
       NULLIFY(JACOBIAN_TO_SOLVER_MATRIX_MAP%JACOBIAN_MATRIX)
       NULLIFY(JACOBIAN_TO_SOLVER_MATRIX_MAP%SOLVER_MATRIX)
     ELSE
-      CALL FLAG_ERROR("Jacobian to solver matrix map is not associated.",ERR,ERROR,*998)
+      CALL FLAG_ERROR("Jacobian to solver matrix map is not associated.",ERR,ERROR,*999)
     ENDIF
         
     CALL EXITS("SOLVER_MAPPING_JACOBIAN_TO_SOLVER_MAP_INITIALISE")
@@ -3068,6 +3164,7 @@ CONTAINS
           & SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS(col_idx),ERR,ERROR,*999)
       ENDDO !col_idx
       DEALLOCATE(SOLVER_COL_TO_EQUATIONS_SET_MAP%SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS)
+      SOLVER_COL_TO_EQUATIONS_SET_MAP%HAVE_DYNAMIC=.FALSE.
     ENDIF
     IF(ALLOCATED(SOLVER_COL_TO_EQUATIONS_SET_MAP%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS)) THEN
       DO col_idx=1,SIZE(SOLVER_COL_TO_EQUATIONS_SET_MAP%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS,1)
@@ -3075,6 +3172,7 @@ CONTAINS
           & SOLVER_COL_TO_STATIC_EQUATIONS_MAPS(col_idx),ERR,ERROR,*999)
       ENDDO !col_idx
       DEALLOCATE(SOLVER_COL_TO_EQUATIONS_SET_MAP%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS)
+      SOLVER_COL_TO_EQUATIONS_SET_MAP%HAVE_STATIC=.FALSE.
     ENDIF
        
     CALL EXITS("SOLVER_MAPPING_SOL_COL_TO_EQUATS_SET_MAP_FINALISE")
@@ -3100,6 +3198,8 @@ CONTAINS
     CALL ENTERS("SOLVER_MAPPING_SOL_COL_TO_EQUATS_SET_MAP_INITIALISE",ERR,ERROR,*999)
 
     NULLIFY(SOLVER_COL_TO_EQUATIONS_SET_MAP%EQUATIONS)
+    SOLVER_COL_TO_EQUATIONS_SET_MAP%HAVE_DYNAMIC=.FALSE.
+    SOLVER_COL_TO_EQUATIONS_SET_MAP%HAVE_STATIC=.FALSE.
     
     CALL EXITS("SOLVER_MAPPING_SOL_COL_TO_EQUATS_SET_MAP_INITIALISE")
     RETURN

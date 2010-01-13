@@ -49,7 +49,7 @@ MODULE KINDS
 
   !> \addtogroup KINDS_IntegerKinds KINDS::IntegerKinds
   !> \brief Kind parameters for integer data types
-  !> \see KINDS
+  !> \see KINDS,OPENCMISS_IntegerKinds
   !>@{
   INTEGER, PARAMETER :: INTG=SELECTED_INT_KIND(9) !<Standard integer kind \see KINDS_IntegerKinds,KINDS
   INTEGER, PARAMETER :: SINTG=SELECTED_INT_KIND(4) !<Short integer kind \see KINDS_IntegerKinds,KINDS
@@ -59,7 +59,7 @@ MODULE KINDS
   
   !> \addtogroup KINDS_RealKinds KINDS::RealKinds
   !> \brief Kind parameters for real data types
-  !> \see KINDS
+  !> \see KINDS,OPENCMISS_RealKinds
   !>@{
   INTEGER, PARAMETER :: SP=SELECTED_REAL_KIND(6,15) !<Single precision real kind \see KINDS_RealKinds,KINDS
   INTEGER, PARAMETER :: DP=SELECTED_REAL_KIND(15,307) !<Double precision real kind \see KINDS_RealKinds,KINDS
@@ -68,7 +68,7 @@ MODULE KINDS
 
   !> \addtogroup KINDS_ComplexKinds KINDS::ComplexKinds
   !> \brief Kind parameters for complex data types
-  !> \see KINDS
+  !> \see KINDS,OPENCMISS_ComplexKinds
   !>@{
   INTEGER, PARAMETER :: SPC=KIND((1.0_SP,1.0_SP)) !<Single precision complex kind \see KINDS_ComplexKinds,KINDS
   INTEGER, PARAMETER :: DPC=KIND((1.0_DP,1.0_DP)) !<Double precision complex kind \see KINDS_ComplexKinds,KINDS

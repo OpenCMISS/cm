@@ -91,21 +91,25 @@ MODULE EQUATIONS_SET_ROUTINES
   PUBLIC EQUATIONS_SET_CREATE_START,EQUATIONS_SET_CREATE_FINISH,EQUATIONS_SET_DESTROY,EQUATIONS_SETS_INITIALISE, &
     & EQUATIONS_SETS_FINALISE
 
-  PUBLIC EQUATIONS_SET_EQUATIONS_CREATE_FINISH,EQUATIONS_SET_EQUATIONS_CREATE_START
+  PUBLIC EQUATIONS_SET_EQUATIONS_CREATE_FINISH,EQUATIONS_SET_EQUATIONS_CREATE_START,EQUATIONS_SET_EQUATIONS_DESTROY
   
   PUBLIC EQUATIONS_SET_MATERIALS_CREATE_START,EQUATIONS_SET_MATERIALS_CREATE_FINISH,EQUATIONS_SET_MATERIALS_DESTROY
 
   PUBLIC EQUATIONS_SET_DEPENDENT_CREATE_START,EQUATIONS_SET_DEPENDENT_CREATE_FINISH,EQUATIONS_SET_DEPENDENT_DESTROY
+
+  PUBLIC EQUATIONS_SET_INDEPENDENT_CREATE_START,EQUATIONS_SET_INDEPENDENT_CREATE_FINISH,EQUATIONS_SET_INDEPENDENT_DESTROY
  
   PUBLIC EQUATIONS_SET_JACOBIAN_EVALUATE,EQUATIONS_SET_RESIDUAL_EVALUATE
 
-  PUBLIC EQUATIONS_SET_SOLUTION_METHOD_SET
+  PUBLIC EQUATIONS_SET_SOLUTION_METHOD_GET,EQUATIONS_SET_SOLUTION_METHOD_SET
   
   PUBLIC EQUATIONS_SET_SOURCE_CREATE_START,EQUATIONS_SET_SOURCE_CREATE_FINISH,EQUATIONS_SET_SOURCE_DESTROY
 
+  PUBLIC EQUATIONS_SET_SPECIFICATION_GET,EQUATIONS_SET_SPECIFICATION_SET
+
   PUBLIC EQUATIONS_SET_ASSEMBLE
-  
-  PUBLIC EQUATIONS_SET_SPECIFICATION_SET
+
+  PUBLIC EQUATIONS_SET_USER_NUMBER_FIND
   
 CONTAINS
 
@@ -113,7 +117,7 @@ CONTAINS
   !================================================================================================================================
   !
       
-  !>Finish the creation of a analytic solution for equations set.
+  !>Finish the creation of a analytic solution for equations set. \see OPENCMISS::CMISSEquationsSetAnalyticCreateFinish
   SUBROUTINE EQUATIONS_SET_ANALYTIC_CREATE_FINISH(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -165,7 +169,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Start the creation of a analytic solution for a equations set.
+  !>Start the creation of a analytic solution for a equations set. \see OPENCMISS::CMISSEquationsSetAnalyticCreateStart
   SUBROUTINE EQUATIONS_SET_ANALYTIC_CREATE_START(EQUATIONS_SET,ANALYTIC_FUNCTION_TYPE,ANALYTIC_FIELD_USER_NUMBER,ANALYTIC_FIELD, &
     & ERR,ERROR,*)
 
@@ -279,7 +283,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Destroy the analytic solution for an equations set.
+  !>Destroy the analytic solution for an equations set. \see OPENCMISS::CMISSEquationsSetAnalyticDestroy
   SUBROUTINE EQUATIONS_SET_ANALYTIC_DESTROY(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -445,7 +449,37 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE(EQUATIONS_QUASISTATIC)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+! chrm, 17/09/09
+            SELECT CASE(EQUATIONS%LINEARITY)
+            CASE(EQUATIONS_LINEAR)
+              SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+              CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+                CALL EQUATIONS_SET_ASSEMBLE_QUASISTATIC_LINEAR_FEM(EQUATIONS_SET,ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The equations set solution method of "// &
+                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
+                  & " is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+            CASE(EQUATIONS_NONLINEAR)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE(EQUATIONS_NONLINEAR_BCS)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE DEFAULT
+              LOCAL_ERROR="The equations linearity of "// &
+                & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
           CASE(EQUATIONS_FIRST_ORDER_DYNAMIC,EQUATIONS_SECOND_ORDER_DYNAMIC)
             SELECT CASE(EQUATIONS%LINEARITY)
             CASE(EQUATIONS_LINEAR)
@@ -964,6 +998,161 @@ CONTAINS
   !================================================================================================================================
   !
 
+! chrm, 17/09/09
+  
+  !>Assembles the equations stiffness matrix and rhs for a linear quasistatic equations set using the finite element method.
+  SUBROUTINE EQUATIONS_SET_ASSEMBLE_QUASISTATIC_LINEAR_FEM(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to assemble the equations for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: element_idx,ne,NUMBER_OF_TIMES
+    REAL(SP) :: ELEMENT_USER_ELAPSED,ELEMENT_SYSTEM_ELAPSED,USER_ELAPSED,USER_TIME1(1),USER_TIME2(1),USER_TIME3(1),USER_TIME4(1), &
+      & USER_TIME5(1),USER_TIME6(1),SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),SYSTEM_TIME3(1),SYSTEM_TIME4(1), &
+      & SYSTEM_TIME5(1),SYSTEM_TIME6(1)
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    
+    CALL ENTERS("EQUATIONS_SET_ASSEMBLE_QUASISTATIC_LINEAR_FEM",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+      IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+        EQUATIONS=>EQUATIONS_SET%EQUATIONS
+        IF(ASSOCIATED(EQUATIONS)) THEN
+          EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+          IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME1,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME1,ERR,ERROR,*999)
+            ENDIF
+            !Initialise the matrices and rhs vector
+            CALL EQUATIONS_MATRICES_VALUES_INITIALISE(EQUATIONS_MATRICES,EQUATIONS_MATRICES_LINEAR_ONLY,0.0_DP,ERR,ERROR,*999)
+            !Assemble the elements
+            !Allocate the element matrices 
+            CALL EQUATIONS_MATRICES_ELEMENT_INITIALISE(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ELEMENTS_MAPPING=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+              & MAPPINGS%ELEMENTS
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME2,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME2,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME2(1)-USER_TIME1(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME2(1)-SYSTEM_TIME1(1)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for equations setup and initialisation = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for equations setup and initialisation = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+              ELEMENT_USER_ELAPSED=0.0_SP
+              ELEMENT_SYSTEM_ELAPSED=0.0_SP
+            ENDIF
+            NUMBER_OF_TIMES=0
+            !Loop over the internal elements
+            DO element_idx=ELEMENTS_MAPPING%INTERNAL_START,ELEMENTS_MAPPING%INTERNAL_FINISH
+              ne=ELEMENTS_MAPPING%DOMAIN_LIST(element_idx)
+              NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
+              CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_SET_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDDO !element_idx                  
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME3,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME3,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME3(1)-USER_TIME2(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME3(1)-SYSTEM_TIME2(1)
+              ELEMENT_USER_ELAPSED=USER_ELAPSED
+              ELEMENT_SYSTEM_ELAPSED=SYSTEM_ELAPSED
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for internal equations assembly = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for internal equations assembly = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+             ENDIF
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME4,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME4,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME4(1)-USER_TIME3(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME4(1)-SYSTEM_TIME3(1)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for parameter transfer completion = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for parameter transfer completion = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)              
+            ENDIF
+            !Loop over the boundary and ghost elements
+            DO element_idx=ELEMENTS_MAPPING%BOUNDARY_START,ELEMENTS_MAPPING%GHOST_FINISH
+              ne=ELEMENTS_MAPPING%DOMAIN_LIST(element_idx)
+              NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
+              CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_SET_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDDO !element_idx
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME5,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME5,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME5(1)-USER_TIME4(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME5(1)-SYSTEM_TIME4(1)
+              ELEMENT_USER_ELAPSED=ELEMENT_USER_ELAPSED+USER_ELAPSED
+              ELEMENT_SYSTEM_ELAPSED=ELEMENT_SYSTEM_ELAPSED+USER_ELAPSED
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for boundary+ghost equations assembly = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for boundary+ghost equations assembly = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+              IF(NUMBER_OF_TIMES>0) THEN
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Average element user time for equations assembly = ", &
+                  & ELEMENT_USER_ELAPSED/NUMBER_OF_TIMES,ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Average element system time for equations assembly = ", &
+                  & ELEMENT_SYSTEM_ELAPSED/NUMBER_OF_TIMES,ERR,ERROR,*999)
+              ENDIF
+            ENDIF
+            !Finalise the element matrices
+            CALL EQUATIONS_MATRICES_ELEMENT_FINALISE(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            !Output equations matrices and RHS vector if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_MATRIX_OUTPUT) THEN
+              CALL EQUATIONS_MATRICES_OUTPUT(GENERAL_OUTPUT_TYPE,EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDIF
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME6,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME6,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME6(1)-USER_TIME1(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME6(1)-SYSTEM_TIME1(1)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for equations assembly = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total system time for equations assembly = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Equations matrices is not associated",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Equations is not associated",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Dependent field is not associated",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_ASSEMBLE_QUASISTATIC_LINEAR_FEM")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_ASSEMBLE_QUASISTATIC_LINEAR_FEM",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_ASSEMBLE_QUASISTATIC_LINEAR_FEM")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_ASSEMBLE_QUASISTATIC_LINEAR_FEM
+
+  !
+  !================================================================================================================================
+  !
+
   !>Backsubstitutes with an equations set to calculate unknown right hand side vectors
   SUBROUTINE EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,ERR,ERROR,*)
 
@@ -1238,7 +1427,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Set boundary conditions for an equation set according to the analytic equations.
+  !>Set boundary conditions for an equation set according to the analytic equations. \see OPENCMISS::CMISSEquationsSetBoundaryConditionsAnalytic
   SUBROUTINE EQUATIONS_SET_BOUNDARY_CONDITIONS_ANALYTIC(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -1274,7 +1463,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finish the creation of boundary conditions for an equation set.
+  !>Finish the creation of boundary conditions for an equation set. \see OPENCMISS::CMISSEquationsSetBoundaryConditionsCreateFinish
   SUBROUTINE EQUATIONS_SET_BOUNDARY_CONDITIONS_CREATE_FINISH(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -1310,7 +1499,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Start the creation of boundary conditions for an equations set.
+  !>Start the creation of boundary conditions for an equations set. \see OPENCMISS::CMISSEquationsSetBoundaryConditionsCreateStart
   SUBROUTINE EQUATIONS_SET_BOUNDARY_CONDITIONS_CREATE_START(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
 
     !Argument variables
@@ -1370,7 +1559,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Destroy the BOUNDARY conditions for an equations set and deallocate all memory.
+  !>Destroy the BOUNDARY conditions for an equations set and deallocate all memory. \see OPENCMISS::CMISSEquationsSetBoundaryConditionsDestroy
   SUBROUTINE EQUATIONS_SET_BOUNDARY_CONDITIONS_DESTROY(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -1402,7 +1591,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finishes the process of creating an equation set on a region.
+  !>Finishes the process of creating an equation set on a region. \see OPENCMISS::CMISSEquationsSetCreateStart
   SUBROUTINE EQUATIONS_SET_CREATE_FINISH(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -1447,7 +1636,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Starts the process of creating an equations set defined by USER_NUMBER in the region identified by REGION.    
+  !>Starts the process of creating an equations set defined by USER_NUMBER in the region identified by REGION. \see OPENCMISS::CMISSEquationsSetCreateStart
   !>Default values set for the EQUATIONS_SET's attributes are:
   !>- CLASS: 4 (EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
   !>- TYPE: 1 (EQUATIONS_SET_LAPLACE_EQUATION_TYPE)
@@ -1576,8 +1765,8 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Destroys an equations set identified by a user number on the give region and deallocates all memory.
-  SUBROUTINE EQUATIONS_SET_DESTROY(USER_NUMBER,REGION,ERR,ERROR,*)
+  !>Destroys an equations set identified by a user number on the give region and deallocates all memory. \see OPENCMISS::CMISSEquationsSetDestroy
+  SUBROUTINE EQUATIONS_SET_DESTROY_NUMBER(USER_NUMBER,REGION,ERR,ERROR,*)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the equations set to destroy
@@ -1593,7 +1782,7 @@ CONTAINS
 
     NULLIFY(NEW_EQUATIONS_SETS)
 
-    CALL ENTERS("EQUATIONS_SET_DESTROY",ERR,ERROR,*999)
+    CALL ENTERS("EQUATIONS_SET_DESTROY_NUMBER",ERR,ERROR,*999)
 
     IF(ASSOCIATED(REGION)) THEN
       IF(ASSOCIATED(REGION%EQUATIONS_SETS)) THEN
@@ -1648,6 +1837,70 @@ CONTAINS
       CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*998)
     ENDIF    
 
+    CALL EXITS("EQUATIONS_SET_DESTROY_NUMBER")
+    RETURN
+999 IF(ASSOCIATED(NEW_EQUATIONS_SETS)) DEALLOCATE(NEW_EQUATIONS_SETS)
+998 CALL ERRORS("EQUATIONS_SET_DESTROY_NUMBER",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_DESTROY_NUMBER")
+    RETURN 1   
+  END SUBROUTINE EQUATIONS_SET_DESTROY_NUMBER
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroys an equations set identified by a pointer and deallocates all memory. \see OPENCMISS::CMISSEquationsSetDestroy
+  SUBROUTINE EQUATIONS_SET_DESTROY(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to destroy
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: equations_set_idx,equations_set_position
+    TYPE(EQUATIONS_SETS_TYPE), POINTER :: EQUATIONS_SETS
+    TYPE(EQUATIONS_SET_PTR_TYPE), POINTER :: NEW_EQUATIONS_SETS(:)
+
+    NULLIFY(NEW_EQUATIONS_SETS)
+
+    CALL ENTERS("EQUATIONS_SET_DESTROY",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      EQUATIONS_SETS=>EQUATIONS_SET%EQUATIONS_SETS
+      IF(ASSOCIATED(EQUATIONS_SETS)) THEN
+        equations_set_position=EQUATIONS_SET%GLOBAL_NUMBER
+
+        !Destroy all the equations set components
+        CALL EQUATIONS_SET_FINALISE(EQUATIONS_SET,ERR,ERROR,*999)
+        
+        !Remove the equations set from the list of equations set
+        IF(EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS>1) THEN
+          ALLOCATE(NEW_EQUATIONS_SETS(EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS-1),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new equations sets.",ERR,ERROR,*999)
+          DO equations_set_idx=1,EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS
+            IF(equations_set_idx<equations_set_position) THEN
+              NEW_EQUATIONS_SETS(equations_set_idx)%PTR=>EQUATIONS_SETS%EQUATIONS_SETS(equations_set_idx)%PTR
+            ELSE IF(equations_set_idx>equations_set_position) THEN
+              EQUATIONS_SETS%EQUATIONS_SETS(equations_set_idx)%PTR%GLOBAL_NUMBER=EQUATIONS_SETS% &
+                & EQUATIONS_SETS(equations_set_idx)%PTR%GLOBAL_NUMBER-1
+              NEW_EQUATIONS_SETS(equations_set_idx-1)%PTR=>EQUATIONS_SETS%EQUATIONS_SETS(equations_set_idx)%PTR
+            ENDIF
+          ENDDO !equations_set_idx
+          IF(ASSOCIATED(EQUATIONS_SETS%EQUATIONS_SETS)) DEALLOCATE(EQUATIONS_SETS%EQUATIONS_SETS)
+          EQUATIONS_SETS%EQUATIONS_SETS=>NEW_EQUATIONS_SETS
+          EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS=EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS-1
+        ELSE
+          DEALLOCATE(EQUATIONS_SETS%EQUATIONS_SETS)
+          EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS=0
+        ENDIF
+        
+      ELSE
+        CALL FLAG_ERROR("Equations set equations set is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*998)
+    ENDIF    
+
     CALL EXITS("EQUATIONS_SET_DESTROY")
     RETURN
 999 IF(ASSOCIATED(NEW_EQUATIONS_SETS)) DEALLOCATE(NEW_EQUATIONS_SETS)
@@ -1674,6 +1927,7 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       CALL EQUATIONS_SET_GEOMETRY_FINALISE(EQUATIONS_SET%GEOMETRY,ERR,ERROR,*999)
       CALL EQUATIONS_SET_DEPENDENT_FINALISE(EQUATIONS_SET%DEPENDENT,ERR,ERROR,*999)
+      CALL EQUATIONS_SET_INDEPENDENT_FINALISE(EQUATIONS_SET%INDEPENDENT,ERR,ERROR,*999)
       CALL EQUATIONS_SET_MATERIALS_FINALISE(EQUATIONS_SET%MATERIALS,ERR,ERROR,*999)
       CALL EQUATIONS_SET_SOURCE_FINALISE(EQUATIONS_SET%SOURCE,ERR,ERROR,*999)
       CALL EQUATIONS_SET_ANALYTIC_FINALISE(EQUATIONS_SET%ANALYTIC,ERR,ERROR,*999)
@@ -2088,6 +2342,269 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finish the creation of independent variables for an equations set. \see OPENCMISS::CMISSEquationsSetIndependentCreateFinish
+  SUBROUTINE EQUATIONS_SET_INDEPENDENT_CREATE_FINISH(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to finish the creation of the independent field for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(EQUATIONS_SET_SETUP_TYPE) :: EQUATIONS_SET_SETUP_INFO
+    TYPE(FIELD_TYPE), POINTER :: INDEPENDENT_FIELD
+
+    CALL ENTERS("EQUATIONS_SET_INDEPENDENT_CREATE_FINISH",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(ASSOCIATED(EQUATIONS_SET%INDEPENDENT)) THEN
+        IF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FINISHED) THEN
+          CALL FLAG_ERROR("Equations set independent field has already been finished.",ERR,ERROR,*999)
+        ELSE
+          !Initialise the setup
+          CALL EQUATIONS_SET_SETUP_INITIALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
+          EQUATIONS_SET_SETUP_INFO%SETUP_TYPE=EQUATIONS_SET_SETUP_INDEPENDENT_TYPE
+          EQUATIONS_SET_SETUP_INFO%ACTION_TYPE=EQUATIONS_SET_SETUP_FINISH_ACTION
+          INDEPENDENT_FIELD=>EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD
+          IF(ASSOCIATED(INDEPENDENT_FIELD)) THEN
+            EQUATIONS_SET_SETUP_INFO%FIELD_USER_NUMBER=INDEPENDENT_FIELD%USER_NUMBER
+            EQUATIONS_SET_SETUP_INFO%FIELD=>INDEPENDENT_FIELD
+            !Finish equations set specific startup
+            CALL EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
+          ELSE
+            CALL FLAG_ERROR("Equations set independent independent field is not associated.",ERR,ERROR,*999)
+          ENDIF
+          !Finalise the setup
+          CALL EQUATIONS_SET_SETUP_FINALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)          
+          !Finish independent creation
+          EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FINISHED=.TRUE.
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The equations set independent is not associated",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_INDEPENDENT_CREATE_FINISH")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_INDEPENDENT_CREATE_FINISH",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_INDEPENDENT_CREATE_FINISH")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_INDEPENDENT_CREATE_FINISH
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the creation of independent variables for an equations set. \see OPENCMISS::CMISSEquationsSetIndependentCreateStart
+  SUBROUTINE EQUATIONS_SET_INDEPENDENT_CREATE_START(EQUATIONS_SET,INDEPENDENT_FIELD_USER_NUMBER,INDEPENDENT_FIELD,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to start the creation of the materials field for
+    INTEGER(INTG), INTENT(IN) :: INDEPENDENT_FIELD_USER_NUMBER !<The user specified independent field number
+    TYPE(FIELD_TYPE), POINTER :: INDEPENDENT_FIELD !<If associated on entry, a pointer to the user created independent field which has the same user number as the specified independent field user number. If not associated on entry, on exit, a pointer to the created independent field for the equations set.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(EQUATIONS_SET_SETUP_TYPE) :: EQUATIONS_SET_SETUP_INFO
+    TYPE(FIELD_TYPE), POINTER :: FIELD,GEOMETRIC_FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION,INDEPENDENT_FIELD_REGION
+    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
+
+    CALL ENTERS("EQUATIONS_SET_INDEPENDENT_CREATE_START",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(ASSOCIATED(EQUATIONS_SET%INDEPENDENT)) THEN
+        CALL FLAG_ERROR("The equations set independent is already associated",ERR,ERROR,*998)        
+      ELSE
+        REGION=>EQUATIONS_SET%REGION
+        IF(ASSOCIATED(REGION)) THEN
+          IF(ASSOCIATED(INDEPENDENT_FIELD)) THEN
+            !Check the independent field has been finished
+            IF(INDEPENDENT_FIELD%FIELD_FINISHED) THEN
+              !Check the user numbers match
+              IF(INDEPENDENT_FIELD_USER_NUMBER/=INDEPENDENT_FIELD%USER_NUMBER) THEN
+                LOCAL_ERROR="The specified independent field user number of "// &
+                  & TRIM(NUMBER_TO_VSTRING(INDEPENDENT_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
+                  & " does not match the user number of the specified independent field of "// &
+                  & TRIM(NUMBER_TO_VSTRING(INDEPENDENT_FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+              INDEPENDENT_FIELD_REGION=>INDEPENDENT_FIELD%REGION
+              IF(ASSOCIATED(INDEPENDENT_FIELD_REGION)) THEN                
+                !Check the field is defined on the same region as the equations set
+                IF(INDEPENDENT_FIELD_REGION%USER_NUMBER/=REGION%USER_NUMBER) THEN
+                  LOCAL_ERROR="Invalid region setup. The specified independent field has been created on region number "// &
+                    & TRIM(NUMBER_TO_VSTRING(INDEPENDENT_FIELD_REGION%USER_NUMBER,"*",ERR,ERROR))// &
+                    & " and the specified equations set has been created on region number "// &
+                    & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+                !Check the specified independent field has the same decomposition as the geometric field
+                GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+                IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
+                  IF(.NOT.ASSOCIATED(GEOMETRIC_FIELD%DECOMPOSITION,INDEPENDENT_FIELD%DECOMPOSITION)) THEN
+                    CALL FLAG_ERROR("The specified independent field does not have the same decomposition as the geometric "// &
+                      & "field for the specified equations set.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("The geometric field is not associated for the specified equations set.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("The specified independent field region is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("The specified independent field has not been finished.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            !Check the user number has not already been used for a field in this region.
+            CALL FIELD_USER_NUMBER_FIND(INDEPENDENT_FIELD_USER_NUMBER,REGION,FIELD,ERR,ERROR,*999)
+            IF(ASSOCIATED(FIELD)) THEN
+              LOCAL_ERROR="The specified independent field user number of "// &
+                & TRIM(NUMBER_TO_VSTRING(INDEPENDENT_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
+                & "has already been used to create a field on region number "// &
+                & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ENDIF
+          !Initialise the equations set independent
+          CALL EQUATIONS_SET_INDEPENDENT_INITIALISE(EQUATIONS_SET,ERR,ERROR,*999)
+          IF(.NOT.ASSOCIATED(INDEPENDENT_FIELD)) EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED=.TRUE.
+          !Initialise the setup
+          CALL EQUATIONS_SET_SETUP_INITIALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
+          EQUATIONS_SET_SETUP_INFO%SETUP_TYPE=EQUATIONS_SET_SETUP_INDEPENDENT_TYPE
+          EQUATIONS_SET_SETUP_INFO%ACTION_TYPE=EQUATIONS_SET_SETUP_START_ACTION
+          EQUATIONS_SET_SETUP_INFO%FIELD_USER_NUMBER=INDEPENDENT_FIELD_USER_NUMBER
+          EQUATIONS_SET_SETUP_INFO%FIELD=>INDEPENDENT_FIELD
+          !Start equations set specific startup
+          CALL EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
+          !Finalise the setup
+          CALL EQUATIONS_SET_SETUP_FINALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
+          !Set pointers
+          IF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED) THEN            
+            INDEPENDENT_FIELD=>EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD
+          ELSE
+            EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD=>INDEPENDENT_FIELD
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Equation set region is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*998)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_INDEPENDENT_CREATE_START")
+    RETURN
+999 CALL EQUATIONS_SET_INDEPENDENT_FINALISE(EQUATIONS_SET%INDEPENDENT,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("EQUATIONS_SET_INDEPENDENT_CREATE_START",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_INDEPENDENT_CREATE_START")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_INDEPENDENT_CREATE_START
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroy the independent field for an equations set. \see OPENCMISS::CMISSEquationsSetIndependentDestroy
+  SUBROUTINE EQUATIONS_SET_INDEPENDENT_DESTROY(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to destroy the independent field for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("EQUATIONS_SET_INDEPENDENT_DESTROY",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(ASSOCIATED(EQUATIONS_SET%INDEPENDENT)) THEN
+        CALL EQUATIONS_SET_INDEPENDENT_FINALISE(EQUATIONS_SET%INDEPENDENT,ERR,ERROR,*999)
+      ELSE
+        CALL FLAG_ERROR("Equations set indpendent is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_INDEPENDENT_DESTROY")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_INDEPENDENT_DESTROY",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_INDEPENDENT_DESTROY")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_INDEPENDENT_DESTROY
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise the independent field for an equations set.
+  SUBROUTINE EQUATIONS_SET_INDEPENDENT_FINALISE(EQUATIONS_SET_INDEPENDENT,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_INDEPENDENT_TYPE), POINTER :: EQUATIONS_SET_INDEPENDENT !<A pointer to the equations set independent to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("EQUATIONS_SET_INDEPENDENT_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET_INDEPENDENT)) THEN
+      DEALLOCATE(EQUATIONS_SET_INDEPENDENT)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_INDEPENDENT_FINALISE")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_INDEPENDENT_FINALISE",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_INDEPENDENT_FINALISE")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_INDEPENDENT_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises the independent field for an equations set.
+  SUBROUTINE EQUATIONS_SET_INDEPENDENT_INITIALISE(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to initialise the independent for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+    
+    CALL ENTERS("EQUATIONS_SET_INDEPENDENT_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(ASSOCIATED(EQUATIONS_SET%INDEPENDENT)) THEN
+        CALL FLAG_ERROR("Independent field is already associated for these equations sets.",ERR,ERROR,*998)
+      ELSE
+        ALLOCATE(EQUATIONS_SET%INDEPENDENT,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations set independent field.",ERR,ERROR,*999)
+        EQUATIONS_SET%INDEPENDENT%EQUATIONS_SET=>EQUATIONS_SET
+        EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FINISHED=.FALSE.
+        EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED=.FALSE.
+        NULLIFY(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*998)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_INDEPENDENT_INITIALISE")
+    RETURN
+999 CALL EQUATIONS_SET_INDEPENDENT_FINALISE(EQUATIONS_SET%INDEPENDENT,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("EQUATIONS_SET_INDEPENDENT_INITIALISE",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_INDEPENDENT_INITIALISE")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_INDEPENDENT_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
   !>Initialises an equations set.
   SUBROUTINE EQUATIONS_SET_INITIALISE(EQUATIONS_SET,ERR,ERROR,*)
 
@@ -2111,6 +2628,7 @@ CONTAINS
       EQUATIONS_SET%SOLUTION_METHOD=0
       CALL EQUATIONS_SET_GEOMETRY_INITIALISE(EQUATIONS_SET,ERR,ERROR,*999)
       CALL EQUATIONS_SET_DEPENDENT_INITIALISE(EQUATIONS_SET,ERR,ERROR,*999)
+      NULLIFY(EQUATIONS_SET%INDEPENDENT)
       NULLIFY(EQUATIONS_SET%MATERIALS)
       NULLIFY(EQUATIONS_SET%SOURCE)
       NULLIFY(EQUATIONS_SET%ANALYTIC)
@@ -2186,7 +2704,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finish the creation of materials for an equations set.
+  !>Finish the creation of materials for an equations set. \see OPENCMISS::CMISSEquationsSetMaterialsCreateFinish
   SUBROUTINE EQUATIONS_SET_MATERIALS_CREATE_FINISH(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -2240,7 +2758,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Start the creation of materials for a problem.
+  !>Start the creation of materials for a problem. \see OPENCMISS::CMISSEquationsSetMaterialsCreateStart
   SUBROUTINE EQUATIONS_SET_MATERIALS_CREATE_START(EQUATIONS_SET,MATERIALS_FIELD_USER_NUMBER,MATERIALS_FIELD,ERR,ERROR,*)
 
     !Argument variables
@@ -2351,7 +2869,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Destroy the materials for an equations set.
+  !>Destroy the materials for an equations set. \see OPENCMISS::CMISSEquationsSetMaterialsDestroy
   SUBROUTINE EQUATIONS_SET_MATERIALS_DESTROY(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -2450,7 +2968,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finish the creation of a dependent variables for an equations set.
+  !>Finish the creation of a dependent variables for an equations set. \see OPENCMISS::CMISSEquationsSetDependentCreateFinish
   SUBROUTINE EQUATIONS_SET_DEPENDENT_CREATE_FINISH(EQUATIONS_SET,ERR,ERROR,*)
     
     !Argument variables
@@ -2500,7 +3018,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Start the creation of dependent variables for an equations set.
+  !>Start the creation of dependent variables for an equations set. \see OPENCMISS::CMISSEquationsSetDependentCreateStart
   SUBROUTINE EQUATIONS_SET_DEPENDENT_CREATE_START(EQUATIONS_SET,DEPENDENT_FIELD_USER_NUMBER,DEPENDENT_FIELD,ERR,ERROR,*)
 
     !Argument variables
@@ -2567,7 +3085,7 @@ CONTAINS
             IF(ASSOCIATED(FIELD)) THEN
               LOCAL_ERROR="The specified dependent field user number of "// &
                 & TRIM(NUMBER_TO_VSTRING(DEPENDENT_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
-                & "has already been used to create a field on region number "// &
+                & " has already been used to create a field on region number "// &
                 & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
@@ -2609,7 +3127,7 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Destroy the dependent variables for an equations sety.
+  !>Destroy the dependent variables for an equations set. \see OPENCMISS::CMISSEquationsSetDependentDestroy
   SUBROUTINE EQUATIONS_SET_DEPENDENT_DESTROY(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -2741,7 +3259,7 @@ CONTAINS
   !================================================================================================================================
   !
 
- !>Finish the creation of equations for the equations set.
+ !>Finish the creation of equations for the equations set. \see OPENCMISS::CMISSEquationsSetEquationsCreateFinish
   SUBROUTINE EQUATIONS_SET_EQUATIONS_CREATE_FINISH(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -2777,7 +3295,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Start the creation of equations for the equation set.
+  !>Start the creation of equations for the equation set. \see CMISSEquationsSetEquationsCreateStart
   !>Default values set for the EQUATIONS's attributes are:
   !>- OUTPUT_TYPE: 0 (EQUATIONS_SET_NO_OUTPUT)
   !>- SPARSITY_TYPE: 1 (EQUATIONS_SET_SPARSE_MATRICES)
@@ -2830,6 +3348,38 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Destroy the equations for an equations set. \see OPENCMISS::CMISSEquationsSetEquationsDestroy
+  SUBROUTINE EQUATIONS_SET_EQUATIONS_DESTROY(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to destroy the equations for.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("EQUATIONS_SET_EQUATIONS_DESTROY",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(ASSOCIATED(EQUATIONS_SET%EQUATIONS)) THEN        
+        CALL EQUATIONS_FINALISE(EQUATIONS_SET%EQUATIONS,ERR,ERROR,*999)
+      ELSE
+        CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_EQUATIONS_DESTROY")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_EQUATIONS_DESTROY",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_EQUATIONS_DESTROY")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_EQUATIONS_DESTROY
+
+  !
+  !================================================================================================================================
+  !
+
   !>Evaluates the Jacobian for a nonlinear equations set.
   SUBROUTINE EQUATIONS_SET_JACOBIAN_EVALUATE(EQUATIONS_SET,ERR,ERROR,*)
 
@@ -2874,10 +3424,27 @@ CONTAINS
               END SELECT
             CASE(EQUATIONS_QUASISTATIC)
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-            CASE(EQUATIONS_FIRST_ORDER_DYNAMIC)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-            CASE(EQUATIONS_SECOND_ORDER_DYNAMIC)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE(EQUATIONS_FIRST_ORDER_DYNAMIC,EQUATIONS_SECOND_ORDER_DYNAMIC)
+! sebk 15/09/09
+              SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+              CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+                CALL EQUATIONS_SET_JACOBIAN_EVALUATE_DYNAMIC_FEM(EQUATIONS_SET,ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The equations set solution method  of "// &
+                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
+                  & " is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
             CASE(EQUATIONS_TIME_STEPPING)
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
@@ -3067,6 +3634,161 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Evaluates the Jacobian for an dynamic equations set using the finite element method
+  SUBROUTINE EQUATIONS_SET_JACOBIAN_EVALUATE_DYNAMIC_FEM(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to evaluate the Jacobian for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: element_idx,ne,NUMBER_OF_TIMES
+    REAL(SP) :: ELEMENT_USER_ELAPSED,ELEMENT_SYSTEM_ELAPSED,USER_ELAPSED,USER_TIME1(1),USER_TIME2(1),USER_TIME3(1),USER_TIME4(1), &
+      & USER_TIME5(1),USER_TIME6(1),SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),SYSTEM_TIME3(1),SYSTEM_TIME4(1), &
+      & SYSTEM_TIME5(1),SYSTEM_TIME6(1)
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+  
+    CALL ENTERS("EQUATIONS_SET_JACOBIAN_EVALUATE_DYNAMIC_FEM",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+      IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+        EQUATIONS=>EQUATIONS_SET%EQUATIONS
+        IF(ASSOCIATED(EQUATIONS)) THEN
+          EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+          IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME1,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME1,ERR,ERROR,*999)
+            ENDIF
+!!Do we need to transfer parameter sets???
+            !Initialise the matrices and rhs vector
+            CALL EQUATIONS_MATRICES_VALUES_INITIALISE(EQUATIONS_MATRICES,EQUATIONS_MATRICES_JACOBIAN_ONLY,0.0_DP,ERR,ERROR,*999)
+            !Assemble the elements
+            !Allocate the element matrices 
+            CALL EQUATIONS_MATRICES_ELEMENT_INITIALISE(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ELEMENTS_MAPPING=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+              & MAPPINGS%ELEMENTS
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME2,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME2,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME2(1)-USER_TIME1(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME2(1)-SYSTEM_TIME1(1)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for equations setup and initialisation = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for equations setup and initialisation = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+              ELEMENT_USER_ELAPSED=0.0_SP
+              ELEMENT_SYSTEM_ELAPSED=0.0_SP
+            ENDIF
+            NUMBER_OF_TIMES=0
+            !Loop over the internal elements
+            DO element_idx=ELEMENTS_MAPPING%INTERNAL_START,ELEMENTS_MAPPING%INTERNAL_FINISH
+              ne=ELEMENTS_MAPPING%DOMAIN_LIST(element_idx)
+              NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
+              CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_SET_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDDO !element_idx                  
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME3,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME3,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME3(1)-USER_TIME2(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME3(1)-SYSTEM_TIME2(1)
+              ELEMENT_USER_ELAPSED=USER_ELAPSED
+              ELEMENT_SYSTEM_ELAPSED=SYSTEM_ELAPSED
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for internal equations assembly = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for internal equations assembly = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+             ENDIF
+             !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME4,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME4,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME4(1)-USER_TIME3(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME4(1)-SYSTEM_TIME3(1)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for parameter transfer completion = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for parameter transfer completion = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)              
+            ENDIF
+            !Loop over the boundary and ghost elements
+            DO element_idx=ELEMENTS_MAPPING%BOUNDARY_START,ELEMENTS_MAPPING%GHOST_FINISH
+              ne=ELEMENTS_MAPPING%DOMAIN_LIST(element_idx)
+              NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
+              CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_SET_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDDO !element_idx
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME5,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME5,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME5(1)-USER_TIME4(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME5(1)-SYSTEM_TIME4(1)
+              ELEMENT_USER_ELAPSED=ELEMENT_USER_ELAPSED+USER_ELAPSED
+              ELEMENT_SYSTEM_ELAPSED=ELEMENT_SYSTEM_ELAPSED+USER_ELAPSED
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for boundary+ghost equations assembly = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for boundary+ghost equations assembly = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+              IF(NUMBER_OF_TIMES>0) THEN
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Average element user time for equations assembly = ", &
+                  & ELEMENT_USER_ELAPSED/NUMBER_OF_TIMES,ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Average element system time for equations assembly = ", &
+                  & ELEMENT_SYSTEM_ELAPSED/NUMBER_OF_TIMES,ERR,ERROR,*999)
+              ENDIF
+            ENDIF
+            !Finalise the element matrices
+            CALL EQUATIONS_MATRICES_ELEMENT_FINALISE(EQUATIONS_MATRICES,ERR,ERROR,*999)
+             !Output equations matrices and RHS vector if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_MATRIX_OUTPUT) THEN
+              CALL EQUATIONS_MATRICES_OUTPUT(GENERAL_OUTPUT_TYPE,EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDIF
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME6,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME6,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME6(1)-USER_TIME1(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME6(1)-SYSTEM_TIME1(1)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for equations assembly = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total system time for equations assembly = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Equations matrices is not associated",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Equations is not associated",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Dependent field is not associated",ERR,ERROR,*999)
+      ENDIF            
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_JACOBIAN_EVALUATE_DYNAMIC_FEM")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_JACOBIAN_EVALUATE_DYNAMIC_FEM",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_JACOBIAN_EVALUATE_DYNAMIC_FEM")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_JACOBIAN_EVALUATE_DYNAMIC_FEM
+
+  !
+  !================================================================================================================================
+  !
+
+
   !>Evaluates the residual for an equations set.
   SUBROUTINE EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*)
 
@@ -3112,7 +3834,29 @@ CONTAINS
             CASE(EQUATIONS_QUASISTATIC)
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_FIRST_ORDER_DYNAMIC)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+! sebk 19/08/09
+!|
+              SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+              CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+                CALL EQUATIONS_SET_RESIDUAL_EVALUATE_DYNAMIC_FEM(EQUATIONS_SET,ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The equations set solution method  of "// &
+                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
+                  & " is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+!|
+! sebk 19/08/09
             CASE(EQUATIONS_SECOND_ORDER_DYNAMIC)
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_TIME_STEPPING)
@@ -3146,7 +3890,161 @@ CONTAINS
     RETURN 1
   END SUBROUTINE EQUATIONS_SET_RESIDUAL_EVALUATE
 
- !
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluates the residual for an dynamic equations set using the finite element method
+  SUBROUTINE EQUATIONS_SET_RESIDUAL_EVALUATE_DYNAMIC_FEM(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to evaluate the residual for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: element_idx,ne,NUMBER_OF_TIMES
+    REAL(SP) :: ELEMENT_USER_ELAPSED,ELEMENT_SYSTEM_ELAPSED,USER_ELAPSED,USER_TIME1(1),USER_TIME2(1),USER_TIME3(1),USER_TIME4(1), &
+      & USER_TIME5(1),USER_TIME6(1),SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),SYSTEM_TIME3(1),SYSTEM_TIME4(1), &
+      & SYSTEM_TIME5(1),SYSTEM_TIME6(1)
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+ 
+    CALL ENTERS("EQUATIONS_SET_RESIDUAL_EVALUATE_DYNAMIC_FEM",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+      IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+        EQUATIONS=>EQUATIONS_SET%EQUATIONS
+        IF(ASSOCIATED(EQUATIONS)) THEN
+          EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+          IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME1,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME1,ERR,ERROR,*999)
+            ENDIF
+            !!Do we need to transfer parameter sets???
+            !Initialise the matrices and rhs vector
+            CALL EQUATIONS_MATRICES_VALUES_INITIALISE(EQUATIONS_MATRICES,EQUATIONS_MATRICES_NONLINEAR_ONLY,0.0_DP,ERR,ERROR,*999)
+            !Assemble the elements
+            !Allocate the element matrices 
+            CALL EQUATIONS_MATRICES_ELEMENT_INITIALISE(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ELEMENTS_MAPPING=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+              & MAPPINGS%ELEMENTS
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME2,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME2,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME2(1)-USER_TIME1(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME2(1)-SYSTEM_TIME1(1)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for equations setup and initialisation = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for equations setup and initialisation = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+              ELEMENT_USER_ELAPSED=0.0_SP
+              ELEMENT_SYSTEM_ELAPSED=0.0_SP
+            ENDIF
+            NUMBER_OF_TIMES=0
+            !Loop over the internal elements
+            DO element_idx=ELEMENTS_MAPPING%INTERNAL_START,ELEMENTS_MAPPING%INTERNAL_FINISH
+              ne=ELEMENTS_MAPPING%DOMAIN_LIST(element_idx)
+              NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
+              CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDDO !element_idx                  
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME3,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME3,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME3(1)-USER_TIME2(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME3(1)-SYSTEM_TIME2(1)
+              ELEMENT_USER_ELAPSED=USER_ELAPSED
+              ELEMENT_SYSTEM_ELAPSED=SYSTEM_ELAPSED
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for internal equations assembly = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for internal equations assembly = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+             ENDIF
+             !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME4,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME4,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME4(1)-USER_TIME3(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME4(1)-SYSTEM_TIME3(1)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for parameter transfer completion = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for parameter transfer completion = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)              
+            ENDIF
+            !Loop over the boundary and ghost elements
+            DO element_idx=ELEMENTS_MAPPING%BOUNDARY_START,ELEMENTS_MAPPING%GHOST_FINISH
+              ne=ELEMENTS_MAPPING%DOMAIN_LIST(element_idx)
+              NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
+              CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
+              CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDDO !element_idx
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME5,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME5,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME5(1)-USER_TIME4(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME5(1)-SYSTEM_TIME4(1)
+              ELEMENT_USER_ELAPSED=ELEMENT_USER_ELAPSED+USER_ELAPSED
+              ELEMENT_SYSTEM_ELAPSED=ELEMENT_SYSTEM_ELAPSED+USER_ELAPSED
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for boundary+ghost equations assembly = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for boundary+ghost equations assembly = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+              IF(NUMBER_OF_TIMES>0) THEN
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Average element user time for equations assembly = ", &
+                  & ELEMENT_USER_ELAPSED/NUMBER_OF_TIMES,ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Average element system time for equations assembly = ", &
+                  & ELEMENT_SYSTEM_ELAPSED/NUMBER_OF_TIMES,ERR,ERROR,*999)
+              ENDIF
+            ENDIF
+            !Finalise the element matrices
+            CALL EQUATIONS_MATRICES_ELEMENT_FINALISE(EQUATIONS_MATRICES,ERR,ERROR,*999)
+            !Output equations matrices and RHS vector if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_MATRIX_OUTPUT) THEN
+              CALL EQUATIONS_MATRICES_OUTPUT(GENERAL_OUTPUT_TYPE,EQUATIONS_MATRICES,ERR,ERROR,*999)
+            ENDIF
+            !Output timing information if required
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
+              CALL CPU_TIMER(USER_CPU,USER_TIME6,ERR,ERROR,*999)
+              CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME6,ERR,ERROR,*999)
+              USER_ELAPSED=USER_TIME6(1)-USER_TIME1(1)
+              SYSTEM_ELAPSED=SYSTEM_TIME6(1)-SYSTEM_TIME1(1)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for equations assembly = ",USER_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total system time for equations assembly = ",SYSTEM_ELAPSED, &
+                & ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Equations matrices is not associated",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Equations is not associated",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Dependent field is not associated",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_RESIDUAL_EVALUATE_DYNAMIC_FEM")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_RESIDUAL_EVALUATE_DYNAMIC_FEM",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_RESIDUAL_EVALUATE_DYNAMIC_FEM")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_RESIDUAL_EVALUATE_DYNAMIC_FEM
+
+  !
   !================================================================================================================================
   !
 
@@ -3360,7 +4258,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the soltuion method for an equations set.
+  !>Sets/changes the solution method for an equations set. \see OPENCMISS::CMISSEquationsSetSolutionMethodSet
   SUBROUTINE EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
 
     !Argument variables
@@ -3410,7 +4308,40 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finish the creation of a source for an equation set.
+  !>Returns the solution method for an equations set. \see OPENCMISS::CMISSEquationsSetSolutionMethodGet
+  SUBROUTINE EQUATIONS_SET_SOLUTION_METHOD_GET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to get the solution method for
+    INTEGER(INTG), INTENT(OUT) :: SOLUTION_METHOD !<On return, the equations set solution method \see EQUATIONS_SET_CONSTANTS_SolutionMethods,EQUATIONS_SET_CONSTANTS
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("EQUATIONS_SET_SOLUTION_METHOD_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(EQUATIONS_SET%EQUATIONS_SET_FINISHED) THEN
+        SOLUTION_METHOD=EQUATIONS_SET%SOLUTION_METHOD
+      ELSE
+        CALL FLAG_ERROR("Equations set has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("EQUATIONS_SET_SOLUTION_METHOD_GET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_SOLUTION_METHOD_GET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_SOLUTION_METHOD_GET")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_SOLUTION_METHOD_GET
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Finish the creation of a source for an equation set. \see OPENCMISS::CMISSEquationsSetSourceCreateFinish
   SUBROUTINE EQUATIONS_SET_SOURCE_CREATE_FINISH(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -3421,7 +4352,7 @@ CONTAINS
     TYPE(EQUATIONS_SET_SETUP_TYPE) :: EQUATIONS_SET_SETUP_INFO
     TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD
 
-    CALL ENTERS("EQUATIONS_SET_CREATE_FINISH",ERR,ERROR,*999)
+    CALL ENTERS("EQUATIONS_SET_SOURCE_CREATE_FINISH",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       IF(ASSOCIATED(EQUATIONS_SET%SOURCE)) THEN
@@ -3464,7 +4395,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Start the creation of a source for an equations set.
+  !>Start the creation of a source for an equations set. \see OPENCMISS::CMISSEquationsSetSourceCreateStart
   SUBROUTINE EQUATIONS_SET_SOURCE_CREATE_START(EQUATIONS_SET,SOURCE_FIELD_USER_NUMBER,SOURCE_FIELD,ERR,ERROR,*)
 
     !Argument variables
@@ -3575,7 +4506,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Destroy the source for an equations set.
+  !>Destroy the source for an equations set. \see OPENCMISS::CMISSEquationsSetSourceDestroy
   SUBROUTINE EQUATIONS_SET_SOURCE_DESTROY(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
@@ -3673,7 +4604,45 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the equations set specification i.e., equations set class, type and subtype for an equations set.
+  !>Returns the equations set specification i.e., equations set class, type and subtype for an equations set. \see OPENCMISS::CMISSEquationsSetSpecificationGet
+  SUBROUTINE EQUATIONS_SET_SPECIFICATION_GET(EQUATIONS_SET,EQUATIONS_SET_CLASS,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE, &
+    & ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to get the specification for
+    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_SET_CLASS !<On return, the equations set class.
+    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_SET_TYPE_ !<On return, the equations set type.
+    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_SET_SUBTYPE !<On return, the equations set subtype.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("EQUATIONS_SET_SPECIFICATION_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(EQUATIONS_SET%EQUATIONS_SET_FINISHED) THEN
+        EQUATIONS_SET_CLASS=EQUATIONS_SET%CLASS
+        EQUATIONS_SET_TYPE_=EQUATIONS_SET%TYPE
+        EQUATIONS_SET_SUBTYPE=EQUATIONS_SET%SUBTYPE
+      ELSE
+        CALL FLAG_ERROR("Equations set has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("EQUATIONS_SET_SPECIFICATION_GET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_SPECIFICATION_GET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_SPECIFICATION_GET")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_SPECIFICATION_GET
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the equations set specification i.e., equations set class, type and subtype for an equations set. \see OPENCMISS::CMISSEquationsSetSpecificationSet
   SUBROUTINE EQUATIONS_SET_SPECIFICATION_SET(EQUATIONS_SET,EQUATIONS_SET_CLASS,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE, &
     & ERR,ERROR,*)
 
@@ -3793,15 +4762,13 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) ::USER_NUMBER
 
     CALL ENTERS("EQUATIONS_SETS_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(REGION)) THEN
       IF(ASSOCIATED(REGION%EQUATIONS_SETS)) THEN
         DO WHILE(REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS>0)
-          USER_NUMBER=REGION%EQUATIONS_SETS%EQUATIONS_SETS(1)%PTR%USER_NUMBER
-          CALL EQUATIONS_SET_DESTROY(USER_NUMBER,REGION,ERR,ERROR,*999)
+          CALL EQUATIONS_SET_DESTROY(REGION%EQUATIONS_SETS%EQUATIONS_SETS(1)%PTR,ERR,ERROR,*999)
         ENDDO !problem_idx
         DEALLOCATE(REGION%EQUATIONS_SETS)
       ENDIF

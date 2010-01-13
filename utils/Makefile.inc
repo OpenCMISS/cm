@@ -49,10 +49,6 @@ ifndef MP
   MP = false
 endif
 
-ifndef COMPILER
-  COMPILER = intel
-endif
-
 # set architecture dependent directories and default options
 
 # defaults
@@ -65,6 +61,9 @@ ifeq ($(SYSNAME),Linux)
   ifeq ($(filter-out i%86,$(MACHNAME)),)
     INSTRUCTION := i686
   endif
+  ifeq ($(filter-out ppc%,$(MACHNAME)),)
+    INSTRUCTION := ppc
+  endif
   ifneq ($(filter $(INSTRUCTION),i686 ia64 x86_64),)# i686, ia64, x86_64 
     LIB_ARCH_DIR = $(INSTRUCTION)-$(OPERATING_SYSTEM)# no ABI required
   endif
@@ -76,6 +75,15 @@ ifeq ($(SYSNAME),Linux)
     ifneq (,$(filter $(MACHNAME),ia64 x86_64))# ia64 or x86_64
       ABI=64
     endif
+    ifneq (,$(filter $(MACHNAME),ppc64))# power-pc
+      ABI=64
+    endif
+  endif
+  ifndef COMPILER
+    COMPILER = intel
+  endif
+  ifndef MPI
+    MPI = mpich2
   endif
 endif
 ifeq ($(SYSNAME),win32)
@@ -83,18 +91,36 @@ ifeq ($(SYSNAME),win32)
   ABI=32
   INSTRUCTION := i386
   OPERATING_SYSTEM := win32
+  ifndef COMPILER
+    COMPILER = intel
+  endif
+  ifndef MPI
+    MPI = mpich2
+  endif
 endif
 ifeq ($(SYSNAME),CYGWIN_NT-5.1)
   LIB_ARCH_DIR = $(INSTRUCTION)-$(OPERATING_SYSTEM)# no ABI
   ABI=32
   INSTRUCTION := i386
   OPERATING_SYSTEM := win32
+  ifndef COMPILER
+    COMPILER = intel
+  endif
+  ifndef MPI
+    MPI = mpich2
+  endif
 endif
 ifeq ($(SYSNAME),CYGWIN_NT-6.0)
   LIB_ARCH_DIR = $(INSTRUCTION)-$(OPERATING_SYSTEM)# no ABI
   ABI=32
   INSTRUCTION := i386
   OPERATING_SYSTEM := win32
+  ifndef COMPILER
+    COMPILER = intel
+  endif
+  ifndef MPI
+    MPI = mpich2
+  endif
 endif
 ifeq ($(SYSNAME),AIX)
   ifndef ABI
@@ -109,6 +135,12 @@ ifeq ($(SYSNAME),AIX)
   endif
   INSTRUCTION := rs6000
   OPERATING_SYSTEM := aix
+  ifndef COMPILER
+    COMPILER = ibm
+  endif
+  ifndef MPI
+    MPI = poe
+  endif
 endif
 
 EXE_ABI_SUFFIX =
@@ -146,6 +178,7 @@ else
   DEBUG_SUFFIX = 
 endif
 
+#keep this for now whilst we move over to the new directory structure
 ifeq ($(OPERATING_SYSTEM),linux)
   ifeq ($(COMPILER),intel)
     COMPILER_SUFFIX = -intel
@@ -153,7 +186,11 @@ ifeq ($(OPERATING_SYSTEM),linux)
     ifeq ($(COMPILER),gnu)
       COMPILER_SUFFIX = -gnu
     else
-      $(error invalid COMPILER specification)
+      ifeq ($(COMPILER),ibm)
+        COMPILER_SUFFIX = -ibm
+      else
+        $(error invalid COMPILER specification)
+      endif
     endif	
   endif
 else
@@ -180,4 +217,8 @@ cygwintowin = $($1)
 ENV_FILE = /tmp/env
 env_shell1 = $(shell rm -f $(ENV_FILE))$(foreach V,$1,$(shell echo export $V=$($V) >> $(ENV_FILE)))$(shell echo 'rm -f $3' >> $(ENV_FILE))$(shell echo '$2 >& $3' >> $(ENV_FILE))$(shell /bin/bash -e $(ENV_FILE) )
 env_shell2 = $(shell rm -f $(ENV_FILE))$(foreach V,$1,$(shell echo export $V=$($V) >> $(ENV_FILE)))$(shell echo '$2' >> $(ENV_FILE))$(shell echo 'rm -f $4'>> $(ENV_FILE))$(shell echo '$3 >& $4' >> $(ENV_FILE))$(shell /bin/bash -e $(ENV_FILE))
+
+# Create a shell that can call nmake from make 
+NMAKE_ENV_FILE = /tmp/nmake_env
+nmake_shell = $(shell rm -f $(NMAKE_ENV_FILE))$(shell echo 'rm -f $3' >> $(NMAKE_ENV_FILE))$(shell echo '$1' >> $(NMAKE_ENV_FILE))$(shell echo 'nmake MAKEFLAGS= $2 >& $3' >> $(NMAKE_ENV_FILE))$(shell /bin/bash -e $(NMAKE_ENV_FILE) )
 

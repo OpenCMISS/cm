@@ -241,7 +241,8 @@ MODULE BASIS_ROUTINES
   PUBLIC BASIS_XI_COLLAPSED,BASIS_COLLAPSED_AT_XI0,BASIS_COLLAPSED_AT_XI1,BASIS_NOT_COLLAPSED, BASIS_FUNCTIONS
 
   PUBLIC BASIS_COLLAPSED_XI_SET,BASIS_INTERPOLATE_GAUSS,BASIS_INTERPOLATE_XI,BASIS_NUMBER_OF_LOCAL_NODES_GET, &
-    & BASIS_INTERPOLATION_XI_SET,BASIS_NUMBER_OF_XI_SET,BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_SET,BASIS_QUADRATURE_ORDER_SET,&
+    & BASIS_INTERPOLATION_XI_SET,BASIS_NUMBER_OF_XI_SET,BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_SET, &
+    & BASIS_QUADRATURE_DESTROY,BASIS_QUADRATURE_ORDER_SET,&
     & BASIS_QUADRATURE_TYPE_SET,BASIS_TYPE_SET,BASIS_CREATE_START,BASIS_CREATE_FINISH,BASIS_DESTROY, &
     & BASES_FINALISE,BASIS_USER_NUMBER_FIND,BASES_INITIALISE
     
@@ -268,7 +269,7 @@ CONTAINS
 
     !Destroy any created basis functions
     DO WHILE(BASIS_FUNCTIONS%NUMBER_BASIS_FUNCTIONS>0)
-      CALL BASIS_DESTROY(BASIS_FUNCTIONS%BASES(1)%PTR%USER_NUMBER,ERR,ERROR,*999)
+      CALL BASIS_DESTROY(BASIS_FUNCTIONS%BASES(1)%PTR,ERR,ERROR,*999)
     ENDDO !nb
     !Destroy basis functions and deallocated any memory allocated
     BASIS_FUNCTIONS%NUMBER_BASIS_FUNCTIONS=0
@@ -551,7 +552,7 @@ CONTAINS
     
     CALL EXITS("BASIS_CREATE_START")
     RETURN
-999 IF(ASSOCIATED(NEW_BASIS)) CALL BASIS_DESTROY(NEW_BASIS%USER_NUMBER,ERR,ERROR,*998)
+999 IF(ASSOCIATED(NEW_BASIS)) CALL BASIS_DESTROY(NEW_BASIS,ERR,ERROR,*998)
 998 IF(ASSOCIATED(NEW_BASES)) DEALLOCATE(NEW_BASES)
     NULLIFY(BASIS)
     CALL ERRORS("BASIS_CREATE_START",ERR,ERROR)
@@ -565,7 +566,7 @@ CONTAINS
   !
 
   !>Destroys a basis identified by its basis user number \see BASIS_ROUTINES::BASIS_DESTROY_FAMILY,OPENCMISS::CMISSBasisDestroy
-  RECURSIVE SUBROUTINE BASIS_DESTROY(USER_NUMBER,ERR,ERROR,*)
+  RECURSIVE SUBROUTINE BASIS_DESTROY_NUMBER(USER_NUMBER,ERR,ERROR,*)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the basis to destroy
@@ -573,9 +574,41 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    CALL ENTERS("BASIS_DESTROY",ERR,ERROR,*999)
+    CALL ENTERS("BASIS_DESTROY_NUMBER",ERR,ERROR,*999)
 
     CALL BASIS_FAMILY_DESTROY(USER_NUMBER,0,ERR,ERROR,*999)
+    
+    CALL EXITS("BASIS_DESTROY_NUMBER")
+    RETURN
+999 CALL ERRORS("BASIS_DESTROY_NUMBER",ERR,ERROR)
+    CALL EXITS("BASIS_DESTROY_NUMBER")
+    RETURN 1
+    
+  END SUBROUTINE BASIS_DESTROY_NUMBER
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroys a basis. \see BASIS_ROUTINES::BASIS_DESTROY_FAMILY,OPENCMISS::CMISSBasisDestroy
+  RECURSIVE SUBROUTINE BASIS_DESTROY(BASIS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis to destroy
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: USER_NUMBER
+    
+    CALL ENTERS("BASIS_DESTROY",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(BASIS)) THEN
+      USER_NUMBER=BASIS%USER_NUMBER
+      CALL BASIS_FAMILY_DESTROY(USER_NUMBER,0,ERR,ERROR,*999)
+      NULLIFY(BASIS)
+    ELSE
+      CALL FLAG_ERROR("Basis is not associated.",ERR,ERROR,*999)
+    ENDIF
     
     CALL EXITS("BASIS_DESTROY")
     RETURN
@@ -858,7 +891,7 @@ CONTAINS
       CASE(BASIS_SIMPLEX_TYPE)
         !Create the area coordinates from the xi coordinates
         XIL(1:SIZE(XI,1))=1.0_DP-XI
-        XIL(SIZE(XI,1)+1)=SUM(XI)-1.0_DP
+        XIL(SIZE(XI,1)+1)=SUM(XI)-(SIZE(XI,1)-1.0_DP)
         ns=0
         DO nn=1,BASIS%NUMBER_OF_NODES
           ns=ns+1
@@ -2231,6 +2264,7 @@ CONTAINS
           CALL FLAG_ERROR("Gauss Laguerre quadrature type not implemented",ERR,ERROR,*999)
         CASE(BASIS_GUASS_HERMITE_QUADRATURE)
           CALL FLAG_ERROR("Gauss Hermite quadrature type not implemented",ERR,ERROR,*999)
+
         CASE(BASIS_GAUSS_SIMPLEX_QUADRATURE)
           !Allocate one scheme and add it to the list of schemes
           ALLOCATE(NEW_SCHEME,STAT=ERR)
@@ -2342,6 +2376,34 @@ CONTAINS
    
   END SUBROUTINE BASIS_QUADRATURE_CREATE
         
+  !
+  !================================================================================================================================
+  !
+  
+  !>Destroys a quadrature on a given basis and deallocates all memory. \todo fix all this basis/quadrature into standard form.
+  SUBROUTINE BASIS_QUADRATURE_DESTROY(QUADRATURE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(QUADRATURE_TYPE), POINTER :: QUADRATURE !<A pointer to the quadrature
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("BASIS_QUADRATURE_DESTROY",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(QUADRATURE)) THEN
+      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)     
+    ELSE
+      CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("BASIS_QUADRATURE_DESTROY")
+    RETURN
+999 CALL ERRORS("BASIS_QUADRATURE_DESTROY",ERR,ERROR)
+    CALL EXITS("BASIS_QUADRATURE_DESTROY")
+    RETURN 1
+  END SUBROUTINE BASIS_QUADRATURE_DESTROY
+
   !
   !================================================================================================================================
   !
@@ -2760,7 +2822,7 @@ CONTAINS
       ELSE
         IF(ASSOCIATED(BASIS%QUADRATURE%BASIS)) THEN
           IF(BASIS%TYPE==BASIS_SIMPLEX_TYPE) THEN !Relax this i.e., use this to set gauss points in each direction for LHTP's???
-            IF(ORDER>1.AND.ORDER<5) THEN
+            IF(ORDER>1.AND.ORDER<=5) THEN
               BASIS%QUADRATURE%GAUSS_ORDER=ORDER
             ELSE
               LOCAL_ERROR="An order value of "//TRIM(NUMBER_TO_VSTRING(ORDER,"*",ERR,ERROR))// &
@@ -4725,7 +4787,6 @@ CONTAINS
   !>Reference: Liu, Yen and Vinokur, Marcel. "Exact Integrations of Polynomials and Symmetric Quadrature Formulas
   !> over Arbitrary Polyhedral Grids", Journal of Computational Physics, 140:122-147 (1998).
   !>
-  !> \todo Fix the Gauss points for 5th order tetrahedra. There should be 19 of them.
   SUBROUTINE GAUSS_SIMPLEX(ORDER,NUMBER_OF_VERTICES,N,X,W,ERR,ERROR,*)
 
     !Argument variables
@@ -5302,14 +5363,13 @@ CONTAINS
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         CASE(5)
-          !!!CHECK WHY NOT 19 gpts
-
           N=14
           IF(SIZE(X,2)>=N) THEN
             IF(SIZE(W,1)>=N) THEN
-              ACOS_ARG=67.0_DP*SQRT(79.0_DP)/24964.0_DP+TWOPI
+              ACOS_ARG=67.0_DP*SQRT(79.0_DP)/24964.0_DP
               !!todo CHECK THIS!!!
-              LAMBDA=4.0_DP/27.0_DP*(4.0_DP*SQRT(79.0_DP)*COS((ACOS(ACOS_ARG)/3.0_DP)+71.0_DP))
+              LAMBDA=4.0_DP/27.0_DP*(4.0_DP*SQRT(79.0_DP)*COS(((ACOS(ACOS_ARG)+TWOPI)/3.0_DP))+71.0_DP)
+
               ALPHA_1=(SQRT(9.0_DP*LAMBDA*LAMBDA-248.0_DP*LAMBDA+1680.0_DP)+28.0_DP-3.0_DP*LAMBDA)/ &
                 & (112.0_DP-10.0_DP*LAMBDA)
               ALPHA_2=(-1.0_DP*SQRT(9.0_DP*LAMBDA*LAMBDA-248.0_DP*LAMBDA+1680.0_DP)+28.0_DP-3.0_DP*LAMBDA)/ &
@@ -5997,7 +6057,7 @@ CONTAINS
       CASE(3)
         SIMPLEX_CUBIC_EVALUATE_DP=3.0_DP/2.0_DP*(6.0_DP*XL-1) !3/2.(6L-1)
       CASE(4)
-        SIMPLEX_CUBIC_EVALUATE_DP=XL*XL-9.0_DP*XL+1.0_DP !L^2-9L+1
+        SIMPLEX_CUBIC_EVALUATE_DP=13.5_DP*XL*XL-9.0_DP*XL+1.0_DP !27/2.L^2-9L+1
       CASE DEFAULT
         CALL FLAG_ERROR("Invalid node index.",ERR,ERROR,*999)
       END SELECT

@@ -58,13 +58,13 @@ int fieldexport_nodecount( const int handle, const int nodeCount );
 
 int fieldexport_fieldcount( const int handle, const int fieldCount );
 
-int fieldexport_coordinatevariable( const int handle, const int variableNumber, CMISS_CoordinateSystem * coordinateSystem,
+int fieldexport_coordinatevariable( const int handle, const int variableNumber, int coordinateSystemType,
 	const int componentCount );
 
 int fieldexport_variable( const int handle, const int variableNumber, const int fieldType, const int variableType,
 	const int componentCount );
 
-int fieldexport_coordinatecomponent( const int handle, CMISS_CoordinateSystem * coordinateSystem,
+int fieldexport_coordinatecomponent( const int handle, int coordinateSystemType,
 	const int componentNumber, const int isNodal, const int numberOfXi, const int * const interpolationXi );
 
 int fieldexport_component( const int handle, const int componentNumber, const int isNodal, const int numberOfXi, const int * const interpolationXi );
@@ -72,7 +72,7 @@ int fieldexport_component( const int handle, const int componentNumber, const in
 int fieldexport_elementgridsize( const int handle, const int numberOfXi );
 
 int fieldexport_nodescaleindexes( const int handle, const int nodeCount, const int *const derivativeCount,
-	const int *const elementDerivatives, const int firstScaleIndex );
+	const int *const elementDerivatives, const int *const nodeIndexes, const int firstScaleIndex );
 
 int fieldexport_elementindex( const int handle, const int dimensionCount, const int index );
 

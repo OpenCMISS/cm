@@ -25,7 +25,7 @@
 !> of Oxford are Copyright (C) 2007 by the University of Auckland and
 !> the University of Oxford. All Rights Reserved.
 !>
-!> Contributor(s):
+!> Contributor(s): Kumar Mithraratne
 !>
 !> Alternatively, the contents of this file may be used under the terms of
 !> either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -92,10 +92,6 @@ MODULE COORDINATE_ROUTINES
   
   !Module types
 
-  TYPE COORDINATE_SYSTEM_PTR_TYPE
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: PTR
-  END TYPE COORDINATE_SYSTEM_PTR_TYPE
-  
   TYPE COORDINATE_SYSTEMS_TYPE
     INTEGER(INTG) :: NUMBER_OF_COORDINATE_SYSTEMS
     TYPE(COORDINATE_SYSTEM_PTR_TYPE), POINTER :: COORDINATE_SYSTEMS(:)
@@ -169,13 +165,30 @@ MODULE COORDINATE_ROUTINES
   PUBLIC COORDINATE_SYSTEM_TYPE_STRING
 
   PUBLIC COORDINATE_CONVERT_FROM_RC,COORDINATE_CONVERT_TO_RC,COORDINATE_DELTA_CALCULATE,COORDINATE_DERIVATIVE_NORM, &
-    & COORDINATE_INTERPOLATION_ADJUST,COORDINATE_INTERPOLATION_PARAMETERS_ADJUST,COORDINATE_METRICS_CALCULATE, &
-    & COORDINATE_SYSTEM_DIMENSION_GET,COORDINATE_SYSTEM_FOCUS_GET,COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET, &
-    & COORDINATE_SYSTEM_TYPE_GET,COORDINATE_SYSTEM_DIMENSION_SET,COORDINATE_SYSTEM_FOCUS_SET, &
-    & COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET,COORDINATE_SYSTEM_TYPE_SET,COORDINATE_SYSTEM_ORIGIN_SET, &
-    & COORDINATE_SYSTEM_ORIENTATION_SET,COORDINATE_SYSTEM_CREATE_START,COORDINATE_SYSTEM_CREATE_FINISH, &
-    & COORDINATE_DERIVATIVE_CONVERT_TO_RC,COORDINATE_SYSTEM_DESTROY,COORDINATE_SYSTEM_USER_NUMBER_FIND, &
-    & COORDINATE_SYSTEMS_INITIALISE,COORDINATE_SYSTEMS_FINALISE
+    & COORDINATE_INTERPOLATION_ADJUST,COORDINATE_INTERPOLATION_PARAMETERS_ADJUST, &
+    & COORDINATE_MATERIAL_COORDINATE_SYSTEM_CALCULATE,COORDINATE_METRICS_CALCULATE
+  
+  PUBLIC COORDINATE_SYSTEM_DIMENSION_GET,COORDINATE_SYSTEM_DIMENSION_SET
+
+  PUBLIC COORDINATE_SYSTEM_FOCUS_GET,COORDINATE_SYSTEM_FOCUS_SET
+
+  PUBLIC COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET,COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET
+  
+  PUBLIC COORDINATE_SYSTEM_TYPE_GET,COORDINATE_SYSTEM_TYPE_SET
+
+  PUBLIC COORDINATE_SYSTEM_ORIGIN_GET,COORDINATE_SYSTEM_ORIGIN_SET
+  
+  PUBLIC COORDINATE_SYSTEM_ORIENTATION_GET,COORDINATE_SYSTEM_ORIENTATION_SET
+
+  PUBLIC COORDINATE_SYSTEM_CREATE_START,COORDINATE_SYSTEM_CREATE_FINISH
+
+  PUBLIC COORDINATE_SYSTEM_DESTROY
+
+  PUBLIC COORDINATE_DERIVATIVE_CONVERT_TO_RC
+
+  PUBLIC COORDINATE_SYSTEM_USER_NUMBER_FIND
+  
+  PUBLIC COORDINATE_SYSTEMS_INITIALISE,COORDINATE_SYSTEMS_FINALISE
   
 CONTAINS
 
@@ -993,87 +1006,175 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the coordinate system dimension. Note: no error handling at the moment as there can be no errors for now. \todo Change to subroutine
-  PURE FUNCTION COORDINATE_SYSTEM_DIMENSION_GET(COORDINATE_SYSTEM)
+  !>Gets the coordinate system dimension. 
+  SUBROUTINE COORDINATE_SYSTEM_DIMENSION_GET(COORDINATE_SYSTEM,NUMBER_OF_DIMENSIONS,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM !<The coordinate system to get the dimension for
-    !Function Result
-    INTEGER(INTG) :: COORDINATE_SYSTEM_DIMENSION_GET
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<A pointer to the coordinate system to get the dimension for
+    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_DIMENSIONS !<On return, the number of dimensions in the coordinate system.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    COORDINATE_SYSTEM_DIMENSION_GET=COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
-    
+    CALL ENTERS("COORDINATE_SYSTEM_DIMENSION_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
+      IF(COORDINATE_SYSTEM%COORDINATE_SYSTEM_FINISHED) THEN
+        NUMBER_OF_DIMENSIONS=COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
+      ELSE
+        CALL FLAG_ERROR("Coordinate system has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
+    ENDIF
+   
+    CALL EXITS("COORDINATE_SYSTEM_DIMENSION_GET")
     RETURN
-  END FUNCTION COORDINATE_SYSTEM_DIMENSION_GET
+999 CALL ERRORS("COORDINATE_SYSTEM_DIMENSION_GET",ERR,ERROR)
+    CALL EXITS("COORDINATE_SYSTEM_DIMENSION_GET")
+    RETURN 1
+
+  END SUBROUTINE COORDINATE_SYSTEM_DIMENSION_GET
 
   !
   !================================================================================================================================
   !
 
-  !>Gets the coordinate system focus. \todo change to subroutine
-  FUNCTION COORDINATE_SYSTEM_FOCUS_GET(COORDINATE_SYSTEM,ERR,ERROR)
+  !>Finalises a coordinate system and deallocates all memory. 
+  SUBROUTINE COORDINATE_SYSTEM_FINALISE(COORDINATE_SYSTEM,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM !<The coordinate system to get the focus for
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<A pointer to the coordinate system to finalise.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Function Result
-    REAL(DP) :: COORDINATE_SYSTEM_FOCUS_GET
+    !Local Variables
+
+    CALL ENTERS("COORDINATE_SYSTEM_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
+      DEALLOCATE(COORDINATE_SYSTEM)
+    ENDIF
+   
+    CALL EXITS("COORDINATE_SYSTEM_FINALISE")
+    RETURN
+999 CALL ERRORS("COORDINATE_SYSTEM_FINALISE",ERR,ERROR)
+    CALL EXITS("COORDINATE_SYSTEM_FINALISE")
+    RETURN 1
+
+  END SUBROUTINE COORDINATE_SYSTEM_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the coordinate system focus. 
+  SUBROUTINE COORDINATE_SYSTEM_FOCUS_GET(COORDINATE_SYSTEM,FOCUS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<A pointer to the coordinate system to get the focus for
+    REAL(DP), INTENT(OUT) :: FOCUS !<On return, the focus of the coordinate system.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("COORDINATE_SYSTEM_FOCUS_GET",ERR,ERROR,*999)
 
-    SELECT CASE(COORDINATE_SYSTEM%TYPE)
-    CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE,COORDINATE_OBLATE_SPHEROIDAL_TYPE)
-      COORDINATE_SYSTEM_FOCUS_GET=COORDINATE_SYSTEM%FOCUS
-    CASE DEFAULT
-      CALL FLAG_ERROR("No focus defined for this coordinate system type.",ERR,ERROR,*999)
-    END SELECT
+    IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
+      IF(COORDINATE_SYSTEM%COORDINATE_SYSTEM_FINISHED) THEN
+        SELECT CASE(COORDINATE_SYSTEM%TYPE)
+        CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE,COORDINATE_OBLATE_SPHEROIDAL_TYPE)
+          FOCUS=COORDINATE_SYSTEM%FOCUS
+        CASE DEFAULT
+          CALL FLAG_ERROR("No focus defined for this coordinate system type.",ERR,ERROR,*999)
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("Coordinate system has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
+    ENDIF
     
     CALL EXITS("COORDINATE_SYSTEM_FOCUS_GET")
     RETURN
 999 CALL ERRORS("COORDINATE_SYSTEM_FOCUS_GET",ERR,ERROR)
     CALL EXITS("COORDINATE_SYSTEM_FOCUS_GET")
-    RETURN
-  END FUNCTION COORDINATE_SYSTEM_FOCUS_GET
+    RETURN 1
+    
+  END SUBROUTINE COORDINATE_SYSTEM_FOCUS_GET
 
   !
   !================================================================================================================================
   !
 
 
-  !>Gets the coordinate system radial interpolation type. Note: no error handling at the moment as there can be no errors for now. \todo change to subroutine
-  PURE FUNCTION COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET(COORDINATE_SYSTEM)
+  !>Gets the coordinate system radial interpolation type. 
+  SUBROUTINE COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET(COORDINATE_SYSTEM,RADIAL_INTERP_TYPE,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM !<The coordinate system to get the radial interpolation for
-    !Function Result
-    INTEGER(INTG) :: COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<The coordinate system to get the radial interpolation for
+    INTEGER(INTG), INTENT(OUT) :: RADIAL_INTERP_TYPE !<On return, the radial interpolation type for the coordinate system.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-
-    COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET=COORDINATE_SYSTEM%RADIAL_INTERPOLATION_TYPE
     
+    CALL ENTERS("COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
+      IF(COORDINATE_SYSTEM%COORDINATE_SYSTEM_FINISHED) THEN
+        SELECT CASE(COORDINATE_SYSTEM%TYPE)
+        CASE(COORDINATE_CYLINDRICAL_POLAR_TYPE,COORDINATE_SPHERICAL_POLAR_TYPE)
+          RADIAL_INTERP_TYPE=COORDINATE_SYSTEM%RADIAL_INTERPOLATION_TYPE
+        CASE DEFAULT
+          CALL FLAG_ERROR("No radial interpolation type defined for this coordinate system interpolation.",ERR,ERROR,*999)
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("Coordinate system has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET")
     RETURN
-  END FUNCTION COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET
+999 CALL ERRORS("COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET",ERR,ERROR)
+    CALL EXITS("COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET")
+    RETURN 1
+    
+  END SUBROUTINE COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET
 
   !
   !================================================================================================================================
   !
 
-  !>Gets the coordinate system type. Note: no error handling at the moment as there can be no errors for now. \todo change to subroutine
-  PURE FUNCTION COORDINATE_SYSTEM_TYPE_GET(COORDINATE_SYSTEM)
+  !>Gets the coordinate system type. 
+  SUBROUTINE COORDINATE_SYSTEM_TYPE_GET(COORDINATE_SYSTEM,SYSTEM_TYPE,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(COORDINATE_SYSTEM_TYPE), INTENT(IN) :: COORDINATE_SYSTEM !<The coordinate system to get the type for
-    !Function Result
-    INTEGER(INTG) :: COORDINATE_SYSTEM_TYPE_GET
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<A pointer to the coordinate system to get the type for
+    INTEGER(INTG), INTENT(OUT) :: SYSTEM_TYPE !<On return, the type for the coordinate system.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    COORDINATE_SYSTEM_TYPE_GET=COORDINATE_SYSTEM%TYPE
+    CALL ENTERS("COORDINATE_SYSTEM_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
+      IF(COORDINATE_SYSTEM%COORDINATE_SYSTEM_FINISHED) THEN
+        SYSTEM_TYPE=COORDINATE_SYSTEM%TYPE
+      ELSE
+        CALL FLAG_ERROR("Coordinate system has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
+    ENDIF
     
+    CALL EXITS("COORDINATE_SYSTEM_TYPE_GET")
     RETURN
-  END FUNCTION COORDINATE_SYSTEM_TYPE_GET
+999 CALL ERRORS("COORDINATE_SYSTEM_TYPE_GET",ERR,ERROR)
+    CALL EXITS("COORDINATE_SYSTEM_TYPE_GET")
+    RETURN 1
+
+  END SUBROUTINE COORDINATE_SYSTEM_TYPE_GET
 
   !
   !================================================================================================================================
@@ -1311,6 +1412,44 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns the origin of a coordinate system. \see OPENCMISS::CMISSCoordinateSystemOriginGet
+  SUBROUTINE COORDINATE_SYSTEM_ORIGIN_GET(COORDINATE_SYSTEM,ORIGIN,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<A pointer to the coordinate system to get the origin for
+    REAL(DP), INTENT(OUT) :: ORIGIN(:) !<On return, the origin of the coordinate system.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("COORDINATE_SYSTEM_ORIGIN_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
+      IF(COORDINATE_SYSTEM%COORDINATE_SYSTEM_FINISHED) THEN
+        IF(SIZE(ORIGIN)>=3) THEN
+          ORIGIN(1:3)=COORDINATE_SYSTEM%ORIGIN
+        ELSE
+          CALL FLAG_ERROR("The origin must have >= 3 components.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Coordinate system has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("COORDINATE_SYSTEM_ORIGIN_GET")
+    RETURN
+999 CALL ERRORS("COORDINATE_SYSTEM_ORIGIN_GET",ERR,ERROR)
+    CALL EXITS("COORDINATE_SYSTEM_ORIGIN_GET")
+    RETURN 1
+    
+  END SUBROUTINE COORDINATE_SYSTEM_ORIGIN_GET
+
+  !
+  !================================================================================================================================
+  !
+
   !>Sets/changes the origin of a coordinate system. \see OPENCMISS::CMISSCoordinateSystemOriginSet
   SUBROUTINE COORDINATE_SYSTEM_ORIGIN_SET(COORDINATE_SYSTEM,ORIGIN,ERR,ERROR,*)
 
@@ -1344,6 +1483,43 @@ CONTAINS
     RETURN 1
   END SUBROUTINE COORDINATE_SYSTEM_ORIGIN_SET
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the orientation of a coordinate system. \see OPENCMISS::CMISSCoordinateSystemOrientationSets/changesGet
+  SUBROUTINE COORDINATE_SYSTEM_ORIENTATION_GET(COORDINATE_SYSTEM,ORIENTATION,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<A pointer to the coordinate system to get the orientation for
+    REAL(DP), INTENT(OUT) :: ORIENTATION(:,:) !<On return, the orientation of the coordinate system
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("COORDINATE_SYSTEM_ORIENTATION_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
+      IF(COORDINATE_SYSTEM%COORDINATE_SYSTEM_FINISHED) THEN
+        IF(SIZE(ORIENTATION,1)>=3.AND.SIZE(ORIENTATION,2)>=3) THEN
+          ORIENTATION(1:3,1:3)=COORDINATE_SYSTEM%ORIENTATION
+        ELSE
+          CALL FLAG_ERROR("The orientation matrix must have >= 3x3 components.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+         CALL FLAG_ERROR("Coordinate system has not been finished.",ERR,ERROR,*999)
+       ENDIF
+    ELSE
+      CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("COORDINATE_SYSTEM_ORIENTATION_GET")
+    RETURN
+999 CALL ERRORS("COORDINATE_SYSTEM_ORIENTATION_GET",ERR,ERROR)
+    CALL EXITS("COORDINATE_SYSTEM_ORIENTATION_GET")
+    RETURN 1
+  END SUBROUTINE COORDINATE_SYSTEM_ORIENTATION_GET
+  
   !
   !================================================================================================================================
   !
@@ -1541,7 +1717,7 @@ CONTAINS
           ENDIF
         ENDDO !coord_system_no
         IF(FOUND) THEN
-          DEALLOCATE(COORDINATE_SYSTEM)
+          CALL COORDINATE_SYSTEM_FINALISE(COORDINATE_SYSTEM,ERR,ERROR,*999)
           DEALLOCATE(COORDINATE_SYSTEMS%COORDINATE_SYSTEMS)
           COORDINATE_SYSTEMS%COORDINATE_SYSTEMS=>NEW_COORDINATE_SYSTEMS
           COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS=COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS-1
@@ -3552,6 +3728,183 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculates transformation between spatial CS and rotated refernce orthogonal material CS
+  SUBROUTINE COORDINATE_MATERIAL_COORDINATE_SYSTEM_CALCULATE(GEOMETRIC_INTERPOLATED_POINT,FIBRE_INTERPOLATED_POINT,DXDNU, &
+    & ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: GEOMETRIC_INTERPOLATED_POINT,FIBRE_INTERPOLATED_POINT
+    REAL(DP),INTENT(OUT) :: DXDNU(3,3)
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: derivative_idx,fibre_idx,geometric_idx,idx1,idx2,xi_idx
+    INTEGER(INTG) :: NUMBER_OF_GEOMETRIC_COMPONENTS,NUMBER_OF_FIBRE_COMPONENTS,NUMBER_OF_XI_COORDS 
+    INTEGER(INTG) :: vector(3) = (/1,2,3/)
+    REAL(DP) :: ANGLE(3),DXDNU1(3,3),DXDNU2(3,3),DXDNU3(3,3),DXDNUR(3,3),DXDXI(3,3),F(3),G(3),H(3),Ra(3,3),Rb(3,3)
+    
+    CALL ENTERS("COORDINATE_MATERIAL_COORDINATE_SYSTEM_CALCULATE",ERR,ERROR,*999)
+    
+    !initialse arrays
+    DO idx1=1,3
+      ANGLE(idx1)=0.0_DP
+      DO idx2=1,3
+        DXDNU(idx1,idx2)=0.0_DP
+        DXDXI(idx1,idx2)=0.0_DP
+      ENDDO
+    ENDDO
+
+    NUMBER_OF_GEOMETRIC_COMPONENTS=GEOMETRIC_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS 
+    NUMBER_OF_FIBRE_COMPONENTS=FIBRE_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS    
+    NUMBER_OF_XI_COORDS=GEOMETRIC_INTERPOLATED_POINT%interpolation_parameters%bases(1)%ptr%number_of_xi
+    
+    DO geometric_idx=1,NUMBER_OF_GEOMETRIC_COMPONENTS 
+      DO xi_idx=1,NUMBER_OF_XI_COORDS
+        derivative_idx=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(xi_idx) !2,4,7      
+        DXDXI(geometric_idx,xi_idx)=GEOMETRIC_INTERPOLATED_POINT%VALUES(geometric_idx,derivative_idx) !dx/dxi
+      ENDDO
+    ENDDO
+
+    DO fibre_idx=1,NUMBER_OF_FIBRE_COMPONENTS    
+      ANGLE(fibre_idx)=FIBRE_INTERPOLATED_POINT%VALUES(fibre_idx,1) !fibre, imbrication and sheet. All in radians
+    ENDDO
+
+    !First calculate reference material CS
+    DO geometric_idx=1,NUMBER_OF_GEOMETRIC_COMPONENTS
+      F(geometric_idx)=DXDXI(geometric_idx,1) !reference material direction 1.
+    ENDDO
+    CALL CROSS_PRODUCT(DXDXI(vector,1),DXDXI(vector,2),H,ERR,ERROR,*999) !reference material direction 3.    
+    CALL CROSS_PRODUCT(H,F,G,ERR,ERROR,*999) !reference material direction 2.      
+
+    DO geometric_idx=1,NUMBER_OF_GEOMETRIC_COMPONENTS
+      DXDNUR(geometric_idx,1)=F(geometric_idx)/L2NORM(F) 
+      DXDNUR(geometric_idx,2)=G(geometric_idx)/L2NORM(G)      
+      DXDNUR(geometric_idx,3)=H(geometric_idx)/L2NORM(H)        
+    ENDDO
+
+    !FIBRE ANGLE(alpha) - ANGLE(1) 
+    !In order to rotate reference material CS by alpha(fibre angle) in anti-clockwise  
+    !direction about its axis 3, following steps are performed.
+    !(a) first align reference material direction 3 with Z(spatial) axis by rotating the ref matrial CS. 
+    !(b) then rotate the aligned material CS by alpha about Z axis in anti-clockwise direction
+    !(c) apply the inverse of step(a) to the CS in (b)
+    !It can be shown that steps (a),(b) and (c) are equivalent to post-multiplying
+    !rotation in (a) by rotation in (b). i.e. Ra*Rb  
+       
+    !The normalised reference material CS contains the transformation(rotaion) between 
+    !the spatial CS -> reference material CS. i.e. Ra 
+    DO idx1=1,3
+      DO idx2=1,3
+        Ra(idx1,idx2)=DXDNUR(idx1,idx2)  
+      ENDDO
+    ENDDO   
+
+    !Initialise rotation matrix Rb
+    DO idx1=1,3
+      DO idx2=1,3
+        Rb(idx1,idx2)=0.0_DP 
+        IF (idx1==idx2) THEN
+          Rb(idx1,idx2)=1.0_DP  
+        ENDIF
+      ENDDO
+    ENDDO    
+    !Populate rotation matrix Rb about axis 3 (Z)
+    Rb(1,1)=cos(ANGLE(1))
+    Rb(1,2)=-sin(ANGLE(1))
+    Rb(2,1)=sin(ANGLE(1))
+    Rb(2,2)=cos(ANGLE(1))
+    
+    CALL MATRIX_PRODUCT(Ra,Rb,DXDNU3,ERR,ERROR,*999)  
+
+
+    !IMBRICATION ANGLE (beta) - ANGLE(2)     
+    !In order to rotate alpha-rotated material CS by beta(imbrication angle) in anti-clockwise  
+    !direction about its new axis 2, following steps are performed.
+    !(a) first align new material direction 2 with Y(spatial) axis by rotating the new matrial CS. 
+    !(b) then rotate the aligned CS by beta about Y axis in anti-clockwise direction
+    !(c) apply the inverse of step(a) to the CS in (b)
+    !As mentioned above, (a),(b) and (c) are equivalent to post-multiplying
+    !rotation in (a) by rotation in (b). i.e. Ra*Rb  
+        
+    !DXNU3 contains the transformation(rotaion) between 
+    !the spatial CS -> alpha-rotated reference material CS. i.e. Ra 
+    DO idx1=1,3
+      DO idx2=1,3
+        Ra(idx1,idx2)=DXDNU3(idx1,idx2)  
+      ENDDO
+    ENDDO   
+    !Initialise rotation matrix Rb
+    DO idx1=1,3
+      DO idx2=1,3
+        Rb(idx1,idx2)=0.0_DP 
+        IF (idx1==idx2) THEN
+          Rb(idx1,idx2)=1.0_DP  
+        ENDIF
+      ENDDO
+    ENDDO    
+    !Populate rotation matrix Rb about axis 2 (Y). Note the sign change
+    Rb(1,1)=cos(ANGLE(2))
+    Rb(1,3)=sin(ANGLE(2))
+    Rb(3,1)=-sin(ANGLE(2))
+    Rb(3,3)=cos(ANGLE(2))
+
+    CALL MATRIX_PRODUCT(Ra,Rb,DXDNU2,ERR,ERROR,*999)  
+
+
+    !SHEET ANGLE (gamma) - ANGLE(3)    
+    !In order to rotate alpha-beta-rotated material CS by gama(sheet angle) in anti-clockwise  
+    !direction about its new axis 1, following steps are performed.
+    !(a) first align new material direction 1 with X(spatial) axis by rotating the new matrial CS. 
+    !(b) then rotate the aligned CS by gama about X axis in anti-clockwise direction
+    !(c) apply the inverse of step(a) to the CS in (b)
+    !Again steps (a),(b) and (c) are equivalent to post-multiplying
+    !rotation in (a) by rotation in (b). i.e. Ra*Rb  
+        
+    !DXNU2 contains the transformation(rotaion) between 
+    !the spatial CS -> alpha-beta-rotated reference material CS. i.e. Ra 
+    DO idx1=1,3
+      DO idx2=1,3
+        Ra(idx1,idx2)=DXDNU2(idx1,idx2)  
+      ENDDO
+    ENDDO   
+    !Initialise rotation matrix Rb
+    DO idx1=1,3
+      DO idx2=1,3
+        Rb(idx1,idx2)=0.0_DP 
+        IF (idx1==idx2) THEN
+          Rb(idx1,idx2)=1.0_DP  
+        ENDIF
+      ENDDO
+    ENDDO    
+    !Populate rotation matrix Rb about axis 1 (X). 
+    Rb(2,2)=cos(ANGLE(3))
+    Rb(2,3)=-sin(ANGLE(3))
+    Rb(3,2)=sin(ANGLE(3))
+    Rb(3,3)=cos(ANGLE(3))
+
+    CALL MATRIX_PRODUCT(Ra,Rb,DXDNU1,ERR,ERROR,*999)  
+
+    DO idx1=1,3
+      DO idx2=1,3
+        DXDNU(idx1,idx2)=DXDNU1(idx1,idx2)  
+      ENDDO
+    ENDDO   
+
+    CALL EXITS("COORDINATE_MATERIAL_COORDINATE_SYSTEM_CALCULATE")
+    RETURN
+999 CALL ERRORS("COORDINATE_MATERIAL_COORDINATE_SYSTEM_CALCULATE",ERR,ERROR)
+    CALL EXITS("COORDINATE_MATERIAL_COORDINATE_SYSTEM_CALCULATE")
+    RETURN 1
+  END SUBROUTINE COORDINATE_MATERIAL_COORDINATE_SYSTEM_CALCULATE
+
+  !
+  !================================================================================================================================
+  !
+
   !>Returns a pointer to the coordinate system identified by USER_NUMBER. If a coordinate system with that number is not
   !>found then COORDINATE_SYSTEM is set to NULL.
   SUBROUTINE COORDINATE_SYSTEM_USER_NUMBER_FIND(USER_NUMBER,COORDINATE_SYSTEM,ERR,ERROR,*)
@@ -3569,17 +3922,15 @@ CONTAINS
     IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
       CALL FLAG_ERROR("Coordinate_system is already associated.",ERR,ERROR,*999)
     ELSE
-      IF(USER_NUMBER==0) THEN
-        NULLIFY(COORDINATE_SYSTEM)
-        coord_system_idx=1
-        DO WHILE(coord_system_idx<=COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS.AND..NOT.ASSOCIATED(COORDINATE_SYSTEM))
-          IF(COORDINATE_SYSTEMS%COORDINATE_SYSTEMS(coord_system_idx)%PTR%USER_NUMBER==USER_NUMBER) THEN
-            COORDINATE_SYSTEM=>COORDINATE_SYSTEMS%COORDINATE_SYSTEMS(coord_system_idx)%PTR
-          ELSE
-            coord_system_idx=coord_system_idx+1
-          ENDIF
-        ENDDO
-      ENDIF
+      NULLIFY(COORDINATE_SYSTEM)
+      coord_system_idx=1
+      DO WHILE(coord_system_idx<=COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS.AND..NOT.ASSOCIATED(COORDINATE_SYSTEM))
+        IF(COORDINATE_SYSTEMS%COORDINATE_SYSTEMS(coord_system_idx)%PTR%USER_NUMBER==USER_NUMBER) THEN
+          COORDINATE_SYSTEM=>COORDINATE_SYSTEMS%COORDINATE_SYSTEMS(coord_system_idx)%PTR
+        ELSE
+          coord_system_idx=coord_system_idx+1
+        ENDIF
+      ENDDO
     ENDIF
     
     CALL EXITS("COORDINATE_SYSTEM_USER_NUMBER_FIND")
@@ -3605,7 +3956,7 @@ CONTAINS
     CALL ENTERS("COORDINATE_SYSTEMS_FINALISE",ERR,ERROR,*999)
 
     DO coord_system_idx=1,COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS
-      DEALLOCATE(COORDINATE_SYSTEMS%COORDINATE_SYSTEMS(coord_system_idx)%PTR)
+      CALL COORDINATE_SYSTEM_FINALISE(COORDINATE_SYSTEMS%COORDINATE_SYSTEMS(coord_system_idx)%PTR,ERR,ERROR,*999)
     ENDDO !coord_system_idx
     DEALLOCATE(COORDINATE_SYSTEMS%COORDINATE_SYSTEMS)
     COORDINATE_SYSTEMS%NUMBER_OF_COORDINATE_SYSTEMS=0
@@ -3661,3 +4012,4 @@ CONTAINS
   !
   
 END MODULE COORDINATE_ROUTINES
+

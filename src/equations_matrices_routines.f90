@@ -786,7 +786,6 @@ CONTAINS
     TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
     TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
     TYPE(EQUATIONS_MAPPING_RHS_TYPE), POINTER :: RHS_MAPPING
-    TYPE(EQUATIONS_MAPPING_SOURCE_TYPE), POINTER :: SOURCE_MAPPING
     TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: DYNAMIC_MATRICES
     TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
     TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
@@ -1149,61 +1148,73 @@ CONTAINS
         ENDIF
         SOURCE_VECTOR=>EQUATIONS_MATRICES%SOURCE_VECTOR
         IF(ASSOCIATED(SOURCE_VECTOR)) THEN
-          !Calculate the rows the equations source
-          SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS=0
+          !Calculate the rows the equations source. The number of rows is not set by the source field so take the number of rows
+          !from the RHS vector in the first instance.
           IF(SOURCE_VECTOR%UPDATE_VECTOR) THEN
-            SOURCE_MAPPING=>EQUATIONS_MAPPING%SOURCE_MAPPING
-            IF(ASSOCIATED(SOURCE_MAPPING)) THEN
-              FIELD_VARIABLE=>SOURCE_MAPPING%SOURCE_VARIABLE
-              DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                ELEMENTS_TOPOLOGY=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS
-                IF(ELEMENT_NUMBER>=1.AND.ELEMENT_NUMBER<=ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS) THEN
-                  SELECT CASE(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE)
-                  CASE(FIELD_CONSTANT_INTERPOLATION)
-                    local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
-                    SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS=SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS+1
-                    SOURCE_VECTOR%ELEMENT_VECTOR%ROW_DOFS(SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS)=local_ny
-                  CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
-                    local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP(element_number)
-                    SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS=SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS+1
-                    SOURCE_VECTOR%ELEMENT_VECTOR%ROW_DOFS(SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS)=local_ny
-                  CASE(FIELD_NODE_BASED_INTERPOLATION)
-                    BASIS=>ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                    DO node_idx=1,BASIS%NUMBER_OF_NODES
-                      node=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(node_idx)
-                      DO derivative_idx=1,BASIS%NUMBER_OF_DERIVATIVES(node_idx)
-                        derivative=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(derivative_idx,node_idx)
-                        local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(derivative,node)
+            IF(ASSOCIATED(RHS_VECTOR)) THEN
+              IF(RHS_VECTOR%UPDATE_VECTOR) THEN
+                SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS=RHS_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS
+                SOURCE_VECTOR%ELEMENT_VECTOR%ROW_DOFS(1:SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS)= &
+                  RHS_VECTOR%ELEMENT_VECTOR%ROW_DOFS(1:SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS)
+              ELSE
+                SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS=0
+                RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
+                IF(ASSOCIATED(RHS_MAPPING)) THEN
+                  FIELD_VARIABLE=>RHS_MAPPING%RHS_VARIABLE
+                  DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                    ELEMENTS_TOPOLOGY=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS
+                    IF(ELEMENT_NUMBER>=1.AND.ELEMENT_NUMBER<=ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS) THEN
+                      SELECT CASE(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE)
+                      CASE(FIELD_CONSTANT_INTERPOLATION)
+                        local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP
                         SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS=SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS+1
                         SOURCE_VECTOR%ELEMENT_VECTOR%ROW_DOFS(SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS)=local_ny
-                      ENDDO !derivative_idx
-                    ENDDO !node_idx
-                  CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                  CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                  CASE DEFAULT
-                    LOCAL_ERROR="The interpolation type of "// &
-                      & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
-                      & " is invalid for component number "// &
-                      & TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
+                      CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                        local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP(ELEMENT_NUMBER)
+                        SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS=SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS+1
+                        SOURCE_VECTOR%ELEMENT_VECTOR%ROW_DOFS(SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS)=local_ny
+                      CASE(FIELD_NODE_BASED_INTERPOLATION)
+                        BASIS=>ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                        DO node_idx=1,BASIS%NUMBER_OF_NODES
+                          node=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(node_idx)
+                          DO derivative_idx=1,BASIS%NUMBER_OF_DERIVATIVES(node_idx)
+                            derivative=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(derivative_idx,node_idx)
+                            local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(derivative,node)
+                            SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS=SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS+1
+                            SOURCE_VECTOR%ELEMENT_VECTOR%ROW_DOFS(SOURCE_VECTOR%ELEMENT_VECTOR%NUMBER_OF_ROWS)=local_ny
+                          ENDDO !derivative_idx
+                        ENDDO !node_idx
+                      CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      CASE DEFAULT
+                        LOCAL_ERROR="The interpolation type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
+                          & " is invalid for component number "// &
+                          & TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
                           & " of dependent variable number "// &
                           & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%VARIABLE_NUMBER,"*",ERR,ERROR))//"."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)          
-                  END SELECT
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)          
+                      END SELECT
+                    ELSE
+                      LOCAL_ERROR="Element number "//TRIM(NUMBER_TO_VSTRING(ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                        & " is invalid for component number "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
+                        & " of dependent variable number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%VARIABLE_NUMBER,"*",ERR,ERROR))// &
+                        & ". The element number must be between 1 and "// &
+                        & TRIM(NUMBER_TO_VSTRING(ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS,"*",ERR,ERROR))//"."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                  ENDDO !component_idx
                 ELSE
-                  LOCAL_ERROR="Element number "//TRIM(NUMBER_TO_VSTRING(ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                    & " is invalid for component number "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
-                    & " of dependent variable number "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%VARIABLE_NUMBER,"*",ERR,ERROR))// &
-                    & ". The element number must be between 1 and "// &
-                    & TRIM(NUMBER_TO_VSTRING(ELEMENTS_TOPOLOGY%TOTAL_NUMBER_OF_ELEMENTS,"*",ERR,ERROR))//"."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Equations mapping rhs mapping is not associated.",ERR,ERROR,*999)
                 ENDIF
-              ENDDO !component_idx
-              SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR=0.0_DP
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             ENDIF
-          ELSE
-            CALL FLAG_ERROR("Equations mapping source mapping is not associated.",ERR,ERROR,*999)
+            SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR=0.0_DP
           ENDIF
         ENDIF
       ELSE
@@ -1344,7 +1355,6 @@ CONTAINS
     TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
     TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
     TYPE(EQUATIONS_MAPPING_RHS_TYPE), POINTER :: RHS_MAPPING
-    TYPE(EQUATIONS_MAPPING_SOURCE_TYPE), POINTER :: SOURCE_MAPPING
     TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: DYNAMIC_MATRICES
     TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
     TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
@@ -1571,30 +1581,36 @@ CONTAINS
         ENDIF
         SOURCE_VECTOR=>EQUATIONS_MATRICES%SOURCE_VECTOR
         IF(ASSOCIATED(SOURCE_VECTOR)) THEN
-          !Initialise the source element vector
-          SOURCE_MAPPING=>EQUATIONS_MAPPING%SOURCE_MAPPING
-          IF(ASSOCIATED(SOURCE_MAPPING)) THEN
-            FIELD_VARIABLE=>SOURCE_MAPPING%SOURCE_VARIABLE
-            IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-              SOURCE_VECTOR%ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS=FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
-                & FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-              IF(ALLOCATED(SOURCE_VECTOR%ELEMENT_VECTOR%ROW_DOFS)) THEN
-                CALL FLAG_ERROR("Source element vector row dofs already allocated.",ERR,ERROR,*999)        
+          !Initialise the source element vector. Note that the number of rows in the source vector is taken, for now, from the RHS
+          !vector
+          IF(ASSOCIATED(RHS_VECTOR)) THEN
+            !Initialise the RHS element vector
+            RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
+            IF(ASSOCIATED(RHS_MAPPING)) THEN
+              FIELD_VARIABLE=>RHS_MAPPING%RHS_VARIABLE
+              IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                SOURCE_VECTOR%ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS=FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
+                  & FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                IF(ALLOCATED(SOURCE_VECTOR%ELEMENT_VECTOR%ROW_DOFS)) THEN
+                  CALL FLAG_ERROR("Source element vector row dofs already allocated.",ERR,ERROR,*999)        
+                ELSE
+                  ALLOCATE(SOURCE_VECTOR%ELEMENT_VECTOR%ROW_DOFS(SOURCE_VECTOR%ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS),STAT=ERR)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate source element vector row dofs.",ERR,ERROR,*999)
+                ENDIF
+                IF(ALLOCATED(SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR)) THEN
+                  CALL FLAG_ERROR("Source element vector already allocated.",ERR,ERROR,*999)        
+                ELSE
+                  ALLOCATE(SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR(SOURCE_VECTOR%ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS),STAT=ERR)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate source element vector.",ERR,ERROR,*999)
+                ENDIF
               ELSE
-                ALLOCATE(SOURCE_VECTOR%ELEMENT_VECTOR%ROW_DOFS(SOURCE_VECTOR%ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate source element vector row dofs.",ERR,ERROR,*999)
-              ENDIF
-              IF(ALLOCATED(SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR)) THEN
-                CALL FLAG_ERROR("Source element vector already allocated.",ERR,ERROR,*999)        
-              ELSE
-                ALLOCATE(SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR(SOURCE_VECTOR%ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate source element vector.",ERR,ERROR,*999)
+                CALL FLAG_ERROR("RHS variable is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Source variable is not associated.",ERR,ERROR,*999)
+              CALL FLAG_ERROR("RHS mapping is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Source mapping is not associated.",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
           ENDIF
         ENDIF
       ELSE
@@ -2275,7 +2291,7 @@ CONTAINS
     TYPE(EQUATIONS_MAPPING_SOURCE_TYPE), POINTER :: SOURCE_MAPPING
     TYPE(VARYING_STRING) :: DUMMY_ERROR
     
-    CALL ENTERS("EQUATIONS_MATRICES_RHS_INITIALISE",ERR,ERROR,*998)
+    CALL ENTERS("EQUATIONS_MATRICES_SOURCE_INITIALISE",ERR,ERROR,*998)
 
     IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
       EQUATIONS_MAPPING=>EQUATIONS_MATRICES%EQUATIONS_MAPPING
@@ -3111,7 +3127,7 @@ CONTAINS
                                         & NUMBER_OF_SURROUNDING_ELEMENTS*FIELD_VARIABLE%COMPONENTS(nh)% &
                                         & MAX_NUMBER_OF_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
                                       CALL LIST_CREATE_FINISH(COLUMN_INDICES_LISTS(local_ny)%PTR,ERR,ERROR,*999)
-                                     !Loop over all elements containing the dof
+                                      !Loop over all elements containing the dof
                                       DO elem_idx=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_SURROUNDING_ELEMENTS
                                         ne=DOMAIN_NODES%NODES(np)%SURROUNDING_ELEMENTS(elem_idx)
                                         DO nh2=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
