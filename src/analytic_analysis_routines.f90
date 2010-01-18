@@ -63,6 +63,15 @@ MODULE ANALYTIC_ANALYSIS_ROUTINES
 
   !Module parameters
 
+  !> \addtogroup ANALYTIC_ANALYSIS_ROUTINES_ErrorTypes ANALYTIC_ANALYSIS_ROUTINES::ErrorTypes
+  !> \brief errors definition type parameters
+  !> \see ANALYTIC_ANALYSIS_ROUTINES,OPENCMISS_ErrorTypes
+  !>@{
+  INTEGER(INTG), PARAMETER :: ABSOLUTE_ERROR_TYPE=1 !<The absolute type \see ANALYTIC_ANALYSIS_ROUTINES_ErrorTypes,ANALYTIC_ANALYSIS_ROUTINES
+  INTEGER(INTG), PARAMETER :: PERCENTAGE_ERROR_TYPE=2 !<The percentage type \see ANALYTIC_ANALYSIS_ROUTINES_ErrorTypes,ANALYTIC_ANALYSIS_ROUTINES
+  INTEGER(INTG), PARAMETER :: RELATIVE_ERROR_TYPE=3 !<The relative type \see ANALYTIC_ANALYSIS_ROUTINES_ErrorTypes,ANALYTIC_ANALYSIS_ROUTINES
+  !>@}
+
   !Module types
 
   !Module variables
@@ -70,8 +79,6 @@ MODULE ANALYTIC_ANALYSIS_ROUTINES
   !Interfaces
 
   PUBLIC ANALYTIC_ANALYSIS_OUTPUT
-
-  PUBLIC ANALYTIC_ANALYSIS_EXPORT
   
   PUBLIC ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_NODE,ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_NODE, &
     & ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_NODE
@@ -82,7 +89,7 @@ MODULE ANALYTIC_ANALYSIS_ROUTINES
   PUBLIC ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_CONSTANT,ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_CONSTANT, &
     & ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_CONSTANT
  
-  PUBLIC ANALYTIC_ANALYSIS_RMS_PERCENT_ERROR_GET,ANALYTIC_ANALYSIS_RMS_ABSOLUTE_ERROR_GET,ANALYTIC_ANALYSIS_RMS_RELATIVE_ERROR_GET
+  PUBLIC ANALYTIC_ANALYSIS_RMS_ERROR_GET_NODE,ANALYTIC_ANALYSIS_RMS_ERROR_GET_ELEMENT
   
   PUBLIC ANALYTIC_ANALYSIS_INTEGRAL_NUMERICAL_VALUE_GET,ANALYTIC_ANALYSIS_INTEGRAL_ANALYTIC_VALUE_GET, &
     & ANALYTIC_ANALYSIS_INTEGRAL_PERCENT_ERROR_GET,ANALYTIC_ANALYSIS_INTEGRAL_ABSOLUTE_ERROR_GET, &
@@ -970,150 +977,7 @@ CONTAINS
     CALL EXITS("ANALYTIC_ANALYSIS_INTEGRAL_ERRORS")
     RETURN 1
   END SUBROUTINE ANALYTIC_ANALYSIS_INTEGRAL_ERRORS
-  
-  !
-  !================================================================================================================================
-  !  
 
-  !>Calculate the analytic analysis data. 
-  SUBROUTINE ANALYTIC_ANALYSIS_NODAL_RMS_CALCULATE(FIELD,FILE_ID,DERIVATIVE_NUMBERS,ERR,ERROR,*)
-  
-    !Argument variables 
-    TYPE(FIELD_TYPE), INTENT(IN), POINTER :: FIELD  
-    INTEGER(INTG), INTENT(IN) :: FILE_ID !<file ID
-    INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBERS(:)
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: var_idx,comp_idx,global_node,node_idx,dev_idx,NUM_OF_NODAL_DEV
-    TYPE(VARYING_STRING) :: STRING_DATA
-    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
-    REAL(DP) :: VALUE_BUFFER(5)
-    REAL(DP) :: RMS_PERCENT, RMS_ABSOLUTE, RMS_RELATIVE, INTEGRAL_NUM, INTEGRAL_ANA
-    
-    CALL ENTERS("ANALYTIC_ANALYSIS_NODAL_RMS_CALCULATE",ERR,ERROR,*999)
-    
-    IF(ASSOCIATED(FIELD)) THEN
-      DO var_idx=1,FIELD%NUMBER_OF_VARIABLES
-        IF(var_idx==1) THEN
-          IF(DERIVATIVE_NUMBERS(1)==1) STRING_DATA="Dependent variable"
-          IF(DERIVATIVE_NUMBERS(1)==2) STRING_DATA="Arc Length Derivative"
-          IF(DERIVATIVE_NUMBERS(1)==4) STRING_DATA="Arc Length Cross Derivative"
-          RMS_PERCENT=0.0_DP
-          RMS_ABSOLUTE=0.0_DP
-          RMS_RELATIVE=0.0_DP
-          INTEGRAL_NUM=0.0_DP
-          INTEGRAL_ANA=0.0_DP
-          CALL WRITE_STRING(FILE_ID,STRING_DATA,ERR,ERROR,*999)
-          STRING_DATA="Node #              Numerical      Analytic      % error      Absolute error Relative error"
-          CALL WRITE_STRING(FILE_ID,STRING_DATA,ERR,ERROR,*999)
-          DO comp_idx=1,FIELD%VARIABLES(var_idx)%NUMBER_OF_COMPONENTS
-            DOMAIN_NODES=>FIELD%VARIABLES(var_idx)%COMPONENTS(comp_idx)%DOMAIN%TOPOLOGY%NODES
-            DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-              global_node=DOMAIN_NODES%DOMAIN%MAPPINGS%NODES%LOCAL_TO_GLOBAL_MAP(node_idx)
-              NUM_OF_NODAL_DEV=SIZE(DERIVATIVE_NUMBERS)
-              DO dev_idx=1,NUM_OF_NODAL_DEV
-                CALL FIELD_PARAMETER_SET_GET_NODE(FIELD,var_idx,FIELD_VALUES_SET_TYPE,DERIVATIVE_NUMBERS(dev_idx),node_idx, &
-                  & comp_idx,VALUE_BUFFER(1),ERR,ERROR,*999)
-                CALL FIELD_PARAMETER_SET_GET_NODE(FIELD,var_idx,FIELD_ANALYTIC_VALUES_SET_TYPE,DERIVATIVE_NUMBERS(dev_idx), &
-                  & node_idx,comp_idx,VALUE_BUFFER(2),ERR,ERROR,*999)
-                CALL ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_NODE(FIELD,var_idx,DERIVATIVE_NUMBERS(dev_idx),node_idx,comp_idx, &
-                  & VALUE_BUFFER(3),ERR,ERROR,*999)
-                CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_NODE(FIELD,var_idx,DERIVATIVE_NUMBERS(dev_idx),node_idx,comp_idx, &
-                  & VALUE_BUFFER(4),ERR,ERROR,*999)
-                CALL ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_NODE(FIELD,var_idx,DERIVATIVE_NUMBERS(dev_idx),node_idx,comp_idx, &
-                  & VALUE_BUFFER(5),ERR,ERROR,*999)
-                CALL WRITE_STRING_VECTOR(FILE_ID,1,1,5,5,5,VALUE_BUFFER, &
-                  & CHAR('("     '//NUMBER_TO_VSTRING(global_node,"*",ERR,ERROR)//'",5(X,D13.4))'),'(20X,5(X,D13.4))', &
-                  & ERR,ERROR,*999)
-              ENDDO !dev_idx
-            ENDDO !node_idx
-          ENDDO !comp_idx
-        
-          CALL ANALYTIC_ANALYSIS_RMS_PERCENT_ERROR_GET(FIELD,var_idx,DERIVATIVE_NUMBERS,RMS_PERCENT,ERR,ERROR,*999)
-          CALL WRITE_STRING_VALUE(FILE_ID,"RMS error (Percent) = ",RMS_PERCENT,ERR,ERROR,*999)
-          CALL ANALYTIC_ANALYSIS_RMS_ABSOLUTE_ERROR_GET(FIELD,var_idx,DERIVATIVE_NUMBERS,RMS_ABSOLUTE,ERR,ERROR,*999)
-          CALL WRITE_STRING_VALUE(FILE_ID,"RMS error (Absolute) = ",RMS_ABSOLUTE,ERR,ERROR,*999)
-          CALL ANALYTIC_ANALYSIS_RMS_RELATIVE_ERROR_GET(FIELD,var_idx,DERIVATIVE_NUMBERS,RMS_RELATIVE,ERR,ERROR,*999)
-          CALL WRITE_STRING_VALUE(FILE_ID,"RMS error (Relative) = ",RMS_RELATIVE,ERR,ERROR,*999)
-        ENDIF
-      ENDDO !var_idx
-    ELSE
-       CALL FLAG_ERROR("The field is not associated!",ERR,ERROR,*999)     
-    ENDIF
-          
-    CALL EXITS("ANALYTIC_ANALYSIS_NODAL_RMS_CALCULATE")
-    RETURN
-999 CALL ERRORS("ANALYTIC_ANALYSIS_NODAL_RMS_CALCULATE",ERR,ERROR)
-    CALL EXITS("ANALYTIC_ANALYSIS_NODAL_RMS_CALCULATE")
-    RETURN 1
-  END SUBROUTINE ANALYTIC_ANALYSIS_NODAL_RMS_CALCULATE
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Export analytic information \see{ANALYTIC_ANALYSIS_ROUTINES::ANALYTIC_ANALYSIS_EXPORT}.                 
-  SUBROUTINE ANALYTIC_ANALYSIS_EXPORT(FIELD,FILE_NAME, METHOD, ERR,ERROR,*)
-    !Argument variables       
-    TYPE(FIELD_TYPE), POINTER :: FIELD !<the field object
-    TYPE(VARYING_STRING), INTENT(INOUT) :: FILE_NAME !<file name
-    TYPE(VARYING_STRING), INTENT(IN):: METHOD
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: FILE_STATUS 
-    INTEGER(INTG) :: FILE_ID
-
-    CALL ENTERS("ANALYTIC_ANALYSIS_EXPORT", ERR,ERROR,*999)    
-
-    IF(METHOD=="FORTRAN") THEN
-       FILE_STATUS="REPLACE"
-       FILE_ID=1245+FIELD%GLOBAL_NUMBER
-       CALL ANALYTIC_ANALYSIS_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
-       !CALL ANALYTIC_ANALYSIS_CALCULATE(FIELD,FILE_ID,ERR,ERROR,*999)
-    ELSE IF(METHOD=="MPIIO") THEN
-       CALL FLAG_ERROR("MPI IO has not been implemented yet!",ERR,ERROR,*999)
-    ELSE 
-       CALL FLAG_ERROR("Unknown method!",ERR,ERROR,*999)   
-    ENDIF   
-    
-    CALL EXITS("ANALYTIC_ANALYSIS_EXPORT")
-    RETURN
-999 CALL ERRORS("ANALYTIC_ANALYSIS_EXPORT",ERR,ERROR)
-    CALL EXITS("ANALYTIC_ANALYSIS_EXPORT")
-    RETURN 1  
-  END SUBROUTINE ANALYTIC_ANALYSIS_EXPORT
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Open a file using Fortran. TODO should we use method in FIELD_IO??     
-  SUBROUTINE ANALYTIC_ANALYSIS_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*)
-  
-    !Argument variables   
-    TYPE(VARYING_STRING), INTENT(INOUT) :: FILE_NAME !<the name of file.
-    TYPE(VARYING_STRING), INTENT(IN) :: FILE_STATUS !<status for opening a file
-    INTEGER(INTG), INTENT(INOUT) :: FILE_ID !<file ID
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-        
-    CALL ENTERS("ANALYTIC_ANALYSIS_FORTRAN_FILE_OPEN",ERR,ERROR,*999)       
-
-    !CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"OPEN FILE",ERR,ERROR,*999)
-    FILE_NAME=FILE_NAME//TRIM(NUMBER_TO_VSTRING(COMPUTATIONAL_ENVIRONMENT%MY_COMPUTATIONAL_NODE_NUMBER,"*",ERR,ERROR))
-    OPEN(UNIT=FILE_ID, FILE=CHAR(FILE_NAME), STATUS=CHAR(FILE_STATUS), FORM="FORMATTED", ERR=999)   
-        
-    
-    CALL EXITS("ANALYTIC_ANALYSIS_FORTRAN_FILE_OPEN")
-    RETURN
-999 CALL ERRORS("ANALYTIC_ANALYSIS_FORTRAN_FILE_OPEN",ERR,ERROR)
-    CALL EXITS("ANALYTIC_ANALYSIS_FORTRAN_FILE_OPEN")
-    RETURN 1
-  END SUBROUTINE ANALYTIC_ANALYSIS_FORTRAN_FILE_OPEN
-  
   !
   !================================================================================================================================
   !
@@ -1807,144 +1671,248 @@ CONTAINS
     RETURN 1
   END SUBROUTINE ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_CONSTANT
 
+  !
+  !================================================================================================================================
+  !
 
+  !>Get rms error value for the field
+  SUBROUTINE ANALYTIC_ANALYSIS_RMS_ERROR_GET_NODE(FIELD,VARIABLE_TYPE,COMPONENT_NUMBER,ERROR_TYPE,LOCAL_RMS,LOCAL_GHOST_RMS, &
+    & GLOBAL_RMS,ERR,ERROR,*)
+  
+    !Argument variables   
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<the field.
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<variable type
+    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<component index
+    INTEGER(INTG), INTENT(IN) :: ERROR_TYPE !<error type
+    REAL(DP), INTENT(OUT) :: LOCAL_RMS(8) !<On return, the local rms percentage error
+    REAL(DP), INTENT(OUT) :: LOCAL_GHOST_RMS(8) !<On return, the local + ghost rms percentage error
+    REAL(DP), INTENT(OUT) :: GLOBAL_RMS(8) !<On return, the global rms percentage error
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    REAL(DP) :: ERROR_VALUE
+    INTEGER(INTG) :: GHOST_NUMBER(8),NUMBER(8),MPI_IERROR
+    REAL(DP) :: RMS_ERROR(8),GHOST_RMS_ERROR(8)
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: NODES_DOMAIN
+    INTEGER(INTG) :: node_idx,deriv_idx
+        
+    CALL ENTERS("ANALYTIC_ANALYSIS_RMS_PERCENTAGE_ERROR_GET_NODE",ERR,ERROR,*999)
 
+    IF(ASSOCIATED(FIELD)) THEN
+      NODES_DOMAIN=>FIELD%VARIABLE_TYPE_MAP(VARIABLE_TYPE)%PTR%COMPONENTS(COMPONENT_NUMBER)%DOMAIN%TOPOLOGY%NODES
+      IF(ASSOCIATED(NODES_DOMAIN)) THEN
+        NUMBER=0
+        RMS_ERROR=0.0_DP
+        GHOST_NUMBER=0
+        GHOST_RMS_ERROR=0.0_DP
+        DO node_idx=1,NODES_DOMAIN%NUMBER_OF_NODES
+          DO deriv_idx=1,NODES_DOMAIN%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+            SELECT CASE(ERROR_TYPE)
+            CASE(ABSOLUTE_ERROR_TYPE)
+              CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_NODE(FIELD,VARIABLE_TYPE,deriv_idx,node_idx,COMPONENT_NUMBER, &
+                & ERROR_VALUE,ERR,ERROR,*999)
+            CASE(PERCENTAGE_ERROR_TYPE)
+              CALL ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_NODE(FIELD,VARIABLE_TYPE,deriv_idx,node_idx,COMPONENT_NUMBER, &
+                & ERROR_VALUE,ERR,ERROR,*999)
+            CASE(RELATIVE_ERROR_TYPE)
+              CALL ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_NODE(FIELD,VARIABLE_TYPE,deriv_idx,node_idx,COMPONENT_NUMBER, &
+                & ERROR_VALUE,ERR,ERROR,*999)
+            CASE DEFAULT
+              CALL FLAG_ERROR("The error type is not valid!",ERR,ERROR,*999)
+            END SELECT
+            !Accumlate the RMS errors
+            NUMBER(deriv_idx)=NUMBER(deriv_idx)+1
+            RMS_ERROR(deriv_idx)=RMS_ERROR(deriv_idx)+ERROR_VALUE*ERROR_VALUE
+          ENDDO !deriv_idx
+        ENDDO !node_idx
+        DO node_idx=NODES_DOMAIN%NUMBER_OF_NODES+1,NODES_DOMAIN%TOTAL_NUMBER_OF_NODES
+          DO deriv_idx=1,NODES_DOMAIN%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+            SELECT CASE(ERROR_TYPE)
+            CASE(ABSOLUTE_ERROR_TYPE)
+              CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_NODE(FIELD,VARIABLE_TYPE,deriv_idx,node_idx,COMPONENT_NUMBER, &
+                & ERROR_VALUE,ERR,ERROR,*999)
+            CASE(PERCENTAGE_ERROR_TYPE)
+              CALL ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_NODE(FIELD,VARIABLE_TYPE,deriv_idx,node_idx,COMPONENT_NUMBER, &
+                & ERROR_VALUE,ERR,ERROR,*999)
+            CASE(RELATIVE_ERROR_TYPE)
+              CALL ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_NODE(FIELD,VARIABLE_TYPE,deriv_idx,node_idx,COMPONENT_NUMBER, &
+                & ERROR_VALUE,ERR,ERROR,*999)
+            CASE DEFAULT
+              CALL FLAG_ERROR("The error type is not valid!",ERR,ERROR,*999)
+            END SELECT
+            !Accumlate the RMS errors
+            GHOST_NUMBER(deriv_idx)=GHOST_NUMBER(deriv_idx)+1
+            GHOST_RMS_ERROR(deriv_idx)=GHOST_RMS_ERROR(deriv_idx)+ERROR_VALUE*ERROR_VALUE
+          ENDDO !deriv_idx
+        ENDDO !node_idx
+
+        IF(COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES>1) THEN
+          IF(ANY(NUMBER>0)) THEN
+            DO deriv_idx=1,8
+              IF(NUMBER(deriv_idx)>0) THEN
+                LOCAL_RMS(deriv_idx)=SQRT(RMS_ERROR(deriv_idx)/NUMBER(deriv_idx))
+              ENDIF
+            ENDDO !deriv_idx
+            DO deriv_idx=1,8
+              IF(NUMBER(deriv_idx)>0) THEN
+                LOCAL_GHOST_RMS(deriv_idx)=SQRT((RMS_ERROR(deriv_idx)+GHOST_RMS_ERROR(deriv_idx))/(NUMBER(deriv_idx) &
+                      & +GHOST_NUMBER(deriv_idx)))
+              ENDIF
+            ENDDO !deriv_idx
+            !Global RMS values
+            !Collect the values across the ranks
+            CALL MPI_ALLREDUCE(MPI_IN_PLACE,NUMBER,8,MPI_INTEGER,MPI_SUM,COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
+            CALL MPI_ERROR_CHECK("MPI_ALLREDUCE",MPI_IERROR,ERR,ERROR,*999)
+            CALL MPI_ALLREDUCE(MPI_IN_PLACE,RMS_ERROR,8,MPI_DOUBLE_PRECISION,MPI_SUM,COMPUTATIONAL_ENVIRONMENT%MPI_COMM, &
+              & MPI_IERROR)
+            CALL MPI_ERROR_CHECK("MPI_ALLREDUCE",MPI_IERROR,ERR,ERROR,*999)
+            DO deriv_idx=1,8
+              IF(NUMBER(deriv_idx)>0) THEN
+                GLOBAL_RMS(deriv_idx)=SQRT(RMS_ERROR(deriv_idx)/NUMBER(deriv_idx))
+              ENDIF
+            ENDDO !deriv_idx
+          ENDIF
+        ELSE
+          IF(ANY(NUMBER>0)) THEN
+            DO deriv_idx=1,8
+              IF(NUMBER(deriv_idx)>0) THEN
+                LOCAL_RMS(deriv_idx)=SQRT(RMS_ERROR(deriv_idx)/NUMBER(deriv_idx))
+                GLOBAL_RMS(deriv_idx)=LOCAL_RMS(deriv_idx)
+              ENDIF
+            ENDDO !deriv_idx
+          ENDIF
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Nodes domain topology is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+    ENDIF 
+    
+    CALL EXITS("ANALYTIC_ANALYSIS_RMS_ERROR_GET_NODE")
+    RETURN
+999 CALL ERRORS("ANALYTIC_ANALYSIS_RMS_ERROR_GET_NODE",ERR,ERROR)
+    CALL EXITS("ANALYTIC_ANALYSIS_RMS_ERROR_GET_NODE")
+    RETURN 1
+  END SUBROUTINE ANALYTIC_ANALYSIS_RMS_ERROR_GET_NODE
 
   !
   !================================================================================================================================
   !
 
-  !>Get rms percentage error value for the field
-  SUBROUTINE ANALYTIC_ANALYSIS_RMS_PERCENT_ERROR_GET(FIELD,VARIABLE_NUMBER,DERIVATIVE_NUMBERS,VALUE,ERR,ERROR,*)
-  
-    !Argument variables   
+  !>Get rms error value for the field
+  SUBROUTINE ANALYTIC_ANALYSIS_RMS_ERROR_GET_ELEMENT(FIELD,VARIABLE_TYPE,COMPONENT_NUMBER,ERROR_TYPE,LOCAL_RMS,LOCAL_GHOST_RMS, &
+    & GLOBAL_RMS,ERR,ERROR,*)
+
+    !Argument variables
     TYPE(FIELD_TYPE), POINTER :: FIELD !<the field.
-    INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<variable number
-    INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBERS(:)
-    REAL(DP), INTENT(OUT) :: VALUE !<On return, the rms percentage error
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<variable type
+    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<component index
+    INTEGER(INTG), INTENT(IN) :: ERROR_TYPE !<error type
+    REAL(DP), INTENT(OUT) :: LOCAL_RMS !<On return, the local rms percentage error
+    REAL(DP), INTENT(OUT) :: LOCAL_GHOST_RMS !<On return, the local + ghost rms percentage error
+    REAL(DP), INTENT(OUT) :: GLOBAL_RMS !<On return, the global rms percentage error
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    REAL(DP) :: PERCENT_ERROR_VALUE
-    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
-    INTEGER(INTG) :: comp_idx,node_idx,dev_idx
-        
-    CALL ENTERS("ANALYTIC_ANALYSIS_RMS_PERCENT_ERROR_GET",ERR,ERROR,*999)       
+    REAL(DP) :: ERROR_VALUE
+    INTEGER(INTG) :: GHOST_NUMBER,NUMBER,MPI_IERROR
+    REAL(DP) :: RMS_ERROR,GHOST_RMS_ERROR
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    TYPE(DECOMPOSITION_ELEMENTS_TYPE), POINTER :: ELEMENTS_DECOMPOSITION
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: DECOMPOSITION_TOPOLOGY
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+    TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS_DOMAIN
+    INTEGER(INTG) :: element_idx
+
+    CALL ENTERS("ANALYTIC_ANALYSIS_RMS_ERROR_GET_ELEMENT",ERR,ERROR,*999)
 
     IF(ASSOCIATED(FIELD)) THEN
-      VALUE=0.0_DP
-      DO comp_idx=1,FIELD%VARIABLES(VARIABLE_NUMBER)%NUMBER_OF_COMPONENTS
-        DOMAIN_NODES=>FIELD%VARIABLES(VARIABLE_NUMBER)%COMPONENTS(comp_idx)%DOMAIN%TOPOLOGY%NODES
-        DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-          DO dev_idx=1,SIZE(DERIVATIVE_NUMBERS)
-            CALL ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_NODE(FIELD,VARIABLE_NUMBER,DERIVATIVE_NUMBERS(dev_idx),node_idx,comp_idx, &
-              & PERCENT_ERROR_VALUE,ERR,ERROR,*999)
-            VALUE=VALUE+PERCENT_ERROR_VALUE**2/(DOMAIN_NODES%NUMBER_OF_NODES*SIZE(DERIVATIVE_NUMBERS))
-          ENDDO !dev_idx
-        ENDDO !node_idx
-        VALUE=SQRT(VALUE)
-      ENDDO !comp_idx
+      DOMAIN=>FIELD%VARIABLE_TYPE_MAP(VARIABLE_TYPE)%PTR%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
+      ELEMENTS_DOMAIN=>DOMAIN%TOPOLOGY%ELEMENTS
+      IF(ASSOCIATED(ELEMENTS_DOMAIN)) THEN
+        DECOMPOSITION=>DOMAIN%DECOMPOSITION
+        IF(ASSOCIATED(DECOMPOSITION)) THEN
+          DECOMPOSITION_TOPOLOGY=>DECOMPOSITION%TOPOLOGY
+          IF(ASSOCIATED(DECOMPOSITION_TOPOLOGY)) THEN
+            ELEMENTS_DECOMPOSITION=>DECOMPOSITION_TOPOLOGY%ELEMENTS
+            IF(ASSOCIATED(ELEMENTS_DECOMPOSITION)) THEN
+              NUMBER=0
+              RMS_ERROR=0.0_DP
+              GHOST_NUMBER=0
+              GHOST_RMS_ERROR=0.0_DP
+              DO element_idx=1,ELEMENTS_DOMAIN%NUMBER_OF_ELEMENTS
+                SELECT CASE(ERROR_TYPE)
+                CASE(ABSOLUTE_ERROR_TYPE)
+                  CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_ELEMENT(FIELD,VARIABLE_TYPE,element_idx,COMPONENT_NUMBER,ERROR_VALUE, &
+                    & ERR,ERROR,*999)
+                CASE(PERCENTAGE_ERROR_TYPE)
+                  CALL ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_ELEMENT(FIELD,VARIABLE_TYPE,element_idx,COMPONENT_NUMBER, &
+                    & ERROR_VALUE,ERR,ERROR,*999)
+                CASE(RELATIVE_ERROR_TYPE)
+                  CALL ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_ELEMENT(FIELD,VARIABLE_TYPE,element_idx,COMPONENT_NUMBER,ERROR_VALUE, &
+                    & ERR,ERROR,*999)
+                CASE DEFAULT
+                  CALL FLAG_ERROR("The error type is not valid!",ERR,ERROR,*999)
+                END SELECT
+                NUMBER=NUMBER+1
+                RMS_ERROR=RMS_ERROR+ERROR_VALUE*ERROR_VALUE
+              ENDDO !element_idx
+              DO element_idx=ELEMENTS_DOMAIN%NUMBER_OF_ELEMENTS+1,ELEMENTS_DOMAIN%TOTAL_NUMBER_OF_ELEMENTS
+                SELECT CASE(ERROR_TYPE)
+                CASE(ABSOLUTE_ERROR_TYPE)
+                  CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_ELEMENT(FIELD,VARIABLE_TYPE,element_idx,COMPONENT_NUMBER,ERROR_VALUE, &
+                    & ERR,ERROR,*999)
+                CASE(PERCENTAGE_ERROR_TYPE)
+                  CALL ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_ELEMENT(FIELD,VARIABLE_TYPE,element_idx,COMPONENT_NUMBER, &
+                    & ERROR_VALUE,ERR,ERROR,*999)
+                CASE(RELATIVE_ERROR_TYPE)
+                  CALL ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_ELEMENT(FIELD,VARIABLE_TYPE,element_idx,COMPONENT_NUMBER,ERROR_VALUE, &
+                    & ERR,ERROR,*999)
+                CASE DEFAULT
+                  CALL FLAG_ERROR("The error type is not valid!",ERR,ERROR,*999)
+                END SELECT
+                GHOST_NUMBER=GHOST_NUMBER+1
+                GHOST_RMS_ERROR=GHOST_RMS_ERROR+ERROR_VALUE*ERROR_VALUE
+              ENDDO !element_idx
+              IF(NUMBER>0) THEN
+                IF(COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES>1) THEN
+                  !Local elements only
+                  LOCAL_RMS=SQRT(RMS_ERROR/NUMBER)
+                  !Local and ghost elements
+                  LOCAL_GHOST_RMS=SQRT((RMS_ERROR+GHOST_RMS_ERROR)/(NUMBER+GHOST_NUMBER))
+                  !Global RMS values
+                  !Collect the values across the ranks
+                  CALL MPI_ALLREDUCE(MPI_IN_PLACE,NUMBER,1,MPI_INTEGER,MPI_SUM,COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
+                  CALL MPI_ERROR_CHECK("MPI_ALLREDUCE",MPI_IERROR,ERR,ERROR,*999)
+                  CALL MPI_ALLREDUCE(MPI_IN_PLACE,RMS_ERROR,1,MPI_DOUBLE_PRECISION,MPI_SUM,COMPUTATIONAL_ENVIRONMENT%MPI_COMM, &
+                    & MPI_IERROR)
+                  CALL MPI_ERROR_CHECK("MPI_ALLREDUCE",MPI_IERROR,ERR,ERROR,*999)
+                  GLOBAL_RMS=SQRT(RMS_ERROR/NUMBER)
+                ENDIF
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Decomposition topology elements is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Decomposition topology is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Domain decomposition is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Elements domain topology is not associated.",ERR,ERROR,*999)
+      ENDIF
     ELSE
       CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
-    ENDIF 
-    
-    CALL EXITS("ANALYTIC_ANALYSIS_RMS_PERCENT_ERROR_GET")
+    ENDIF
+
+    CALL EXITS("ANALYTIC_ANALYSIS_RMS_ERROR_GET_ELEMENT")
     RETURN
-999 CALL ERRORS("ANALYTIC_ANALYSIS_RMS_PERCENT_ERROR_GET",ERR,ERROR)
-    CALL EXITS("ANALYTIC_ANALYSIS_RMS_PERCENT_ERROR_GET")
+999 CALL ERRORS("ANALYTIC_ANALYSIS_RMS_ERROR_GET_ELEMENT",ERR,ERROR)
+    CALL EXITS("ANALYTIC_ANALYSIS_RMS_ERROR_GET_ELEMENT")
     RETURN 1
-  END SUBROUTINE ANALYTIC_ANALYSIS_RMS_PERCENT_ERROR_GET
-  
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Get rms absolute error value for the field
-  SUBROUTINE ANALYTIC_ANALYSIS_RMS_ABSOLUTE_ERROR_GET(FIELD,VARIABLE_NUMBER,DERIVATIVE_NUMBERS,VALUE,ERR,ERROR,*)
-  
-    !Argument variables   
-    TYPE(FIELD_TYPE), POINTER :: FIELD !<the field.
-    INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<variable number
-    INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBERS(:) 
-    REAL(DP), INTENT(OUT) :: VALUE !<On return, the rms absolute error
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    REAL(DP) :: ABSOLUTE_ERROR_VALUE
-    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
-    INTEGER(INTG) :: comp_idx,node_idx, dev_idx
-        
-    CALL ENTERS("ANALYTIC_ANALYSIS_RMS_ABSOLUTE_ERROR_GET",ERR,ERROR,*999)       
-
-    IF(ASSOCIATED(FIELD)) THEN
-      VALUE=0.0_DP
-      DO comp_idx=1,FIELD%VARIABLES(VARIABLE_NUMBER)%NUMBER_OF_COMPONENTS
-        DOMAIN_NODES=>FIELD%VARIABLES(VARIABLE_NUMBER)%COMPONENTS(comp_idx)%DOMAIN%TOPOLOGY%NODES
-        DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-          DO dev_idx=1,SIZE(DERIVATIVE_NUMBERS)
-            CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_NODE(FIELD,VARIABLE_NUMBER,DERIVATIVE_NUMBERS(dev_idx),node_idx,comp_idx, &
-              & ABSOLUTE_ERROR_VALUE,ERR,ERROR,*999)
-            VALUE=VALUE+ABSOLUTE_ERROR_VALUE**2/(DOMAIN_NODES%NUMBER_OF_NODES*SIZE(DERIVATIVE_NUMBERS))
-          ENDDO !dev_idx
-        ENDDO !node_idx
-        VALUE=SQRT(VALUE)
-      ENDDO !comp_idx
-    ELSE
-      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
-    ENDIF 
-    
-    CALL EXITS("ANALYTIC_ANALYSIS_RMS_ABSOLUTE_ERROR_GET")
-    RETURN
-999 CALL ERRORS("ANALYTIC_ANALYSIS_RMS_ABSOLUTE_ERROR_GET",ERR,ERROR)
-    CALL EXITS("ANALYTIC_ANALYSIS_RMS_ABSOLUTE_ERROR_GET")
-    RETURN 1
-  END SUBROUTINE ANALYTIC_ANALYSIS_RMS_ABSOLUTE_ERROR_GET
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Get rms relative error value for the field
-  SUBROUTINE ANALYTIC_ANALYSIS_RMS_RELATIVE_ERROR_GET(FIELD,VARIABLE_NUMBER,DERIVATIVE_NUMBERS,VALUE,ERR,ERROR,*)
-  
-    !Argument variables   
-    TYPE(FIELD_TYPE), POINTER :: FIELD !<the field.
-    INTEGER(INTG), INTENT(IN) :: VARIABLE_NUMBER !<variable number
-    INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBERS(:)
-    REAL(DP), INTENT(OUT) :: VALUE !<On return, the rms relative error
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    REAL(DP) :: RELATIVE_ERROR_VALUE
-    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
-    INTEGER(INTG) :: comp_idx,node_idx, dev_idx
-        
-    CALL ENTERS("ANALYTIC_ANALYSIS_RMS_RELATIVE_ERROR_GET",ERR,ERROR,*999)       
-
-    IF(ASSOCIATED(FIELD)) THEN
-      VALUE=0.0_DP
-      DO comp_idx=1,FIELD%VARIABLES(VARIABLE_NUMBER)%NUMBER_OF_COMPONENTS
-        DOMAIN_NODES=>FIELD%VARIABLES(VARIABLE_NUMBER)%COMPONENTS(comp_idx)%DOMAIN%TOPOLOGY%NODES
-        DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-          DO dev_idx=1,SIZE(DERIVATIVE_NUMBERS)
-            CALL ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_NODE(FIELD,VARIABLE_NUMBER,DERIVATIVE_NUMBERS(dev_idx),node_idx,comp_idx, &
-              & RELATIVE_ERROR_VALUE,ERR,ERROR,*999)
-            VALUE=VALUE+RELATIVE_ERROR_VALUE**2/(DOMAIN_NODES%NUMBER_OF_NODES*SIZE(DERIVATIVE_NUMBERS))
-          ENDDO !dev_idx
-        ENDDO !node_idx
-        VALUE=SQRT(VALUE)
-      ENDDO !comp_idx
-    ELSE
-      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
-    ENDIF 
-    
-    CALL EXITS("ANALYTIC_ANALYSIS_RMS_RELATIVE_ERROR_GET")
-    RETURN
-999 CALL ERRORS("ANALYTIC_ANALYSIS_RMS_RELATIVE_ERROR_GET",ERR,ERROR)
-    CALL EXITS("ANALYTIC_ANALYSIS_RMS_RELATIVE_ERROR_GET")
-    RETURN 1
-  END SUBROUTINE ANALYTIC_ANALYSIS_RMS_RELATIVE_ERROR_GET
+  END SUBROUTINE ANALYTIC_ANALYSIS_RMS_ERROR_GET_ELEMENT
 
   !
   !================================================================================================================================

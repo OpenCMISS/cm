@@ -328,6 +328,18 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSAnalyticAnalysisRelativeErrorGetConstantNumber
     MODULE PROCEDURE CMISSAnalyticAnalysisRelativeErrorGetConstantObj
   END INTERFACE !CMISSAnalyticAnalysisRelativeErrorGetConstant
+
+  !>Get the rms error of nodes.
+  INTERFACE CMISSAnalyticAnalysisRmsErrorGetNode
+    MODULE PROCEDURE CMISSAnalyticAnalysisRmsErrorGetNodeNumber
+    MODULE PROCEDURE CMISSAnalyticAnalysisRmsErrorGetNodeObj
+  END INTERFACE !CMISSAnalyticAnalysisRmsErrorGetNode
+
+  !>Get the rms error of elements.
+  INTERFACE CMISSAnalyticAnalysisRmsErrorGetElement
+    MODULE PROCEDURE CMISSAnalyticAnalysisRmsErrorGetElementNumber
+    MODULE PROCEDURE CMISSAnalyticAnalysisRmsErrorGetElementObj
+  END INTERFACE !CMISSAnalyticAnalysisRmsErrorGetElement
   
   PUBLIC CMISSAnalyticAnalysisOutput
 
@@ -339,6 +351,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSAnalyticAnalysisAbsoluteErrorGetConstant,CMISSAnalyticAnalysisPercentageErrorGetConstant, &
     & CMISSAnalyticAnalysisRelativeErrorGetConstant
+
+  PUBLIC CMISSAnalyticAnalysisRmsErrorGetNode,CMISSAnalyticAnalysisRmsErrorGetElement
 
 !!==================================================================================================================================
 !!
@@ -5629,6 +5643,179 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSAnalyticAnalysisRelativeErrorGetConstantObj
+
+  !
+  !================================================================================================================================
+  ! 
+
+  !>Get rms error value for nodes in a field compared to the analytic value.
+  SUBROUTINE CMISSAnalyticAnalysisRmsErrorGetNodeNumber(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, ErrorType, &
+    & LocalValue,LocalGhostValue,GlobalValue,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
+    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    INTEGER(INTG), INTENT(IN) :: ErrorType !<error type
+    REAL(DP), INTENT(OUT) :: LocalValue(8) !<On return, the local error
+    REAL(DP), INTENT(OUT) :: LocalGhostValue(8) !<On return, the local ghost error
+    REAL(DP), INTENT(OUT) :: GlobalValue(8) !<On return, the global error
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSAnalyticAnalysisRmsErrorGetNodeNumber",Err,ERROR,*999)
+    
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL ANALYTIC_ANALYSIS_RMS_ERROR_GET_NODE(FIELD,VariableType,ComponentNumber,ErrorType,LocalValue,LocalGhostValue, &
+          & GlobalValue,ERR,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSAnalyticAnalysisRmsErrorGetNodeNumber")
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisRmsErrorGetNodeNumber",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisRmsErrorGetNodeNumber")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisRmsErrorGetNodeNumber
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Get rms error value for nodes in a field identified by an object compared to the analytic value.
+  SUBROUTINE CMISSAnalyticAnalysisRmsErrorGetNodeObj(Field,VariableType,ComponentNumber,ErrorType,LocalValue,LocalGhostValue, &
+    & GlobalValue,Err)
+  
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    INTEGER(INTG), INTENT(IN) :: ErrorType !<error type
+    REAL(DP), INTENT(OUT) :: LocalValue(8) !<On return, the local error
+    REAL(DP), INTENT(OUT) :: LocalGhostValue(8) !<On return, the local ghost error
+    REAL(DP), INTENT(OUT) :: GlobalValue(8) !<On return, the global error
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSAnalyticAnalysisRmsErrorGetNodeObj",Err,ERROR,*999)
+    
+    CALL ANALYTIC_ANALYSIS_RMS_ERROR_GET_NODE(Field%FIELD,VariableType,ComponentNumber,ErrorType,LocalValue,LocalGhostValue, &
+      & GlobalValue,ERR,ERROR,*999)
+
+    CALL EXITS("CMISSAnalyticAnalysisRmsErrorGetNodeObj")
+
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisRmsErrorGetNodeObj",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisRmsErrorGetNodeObj")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisRmsErrorGetNodeObj
+
+  !
+  !================================================================================================================================
+  ! 
+
+  !>Get rms error value for elements in a field compared to the analytic value.
+  SUBROUTINE CMISSAnalyticAnalysisRmsErrorGetElementNumber(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, & 
+    & ErrorType,LocalValue,LocalGhostValue,GlobalValue,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
+    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    INTEGER(INTG), INTENT(IN) :: ErrorType !<error type
+    REAL(DP), INTENT(OUT) :: LocalValue !<On return, the local error
+    REAL(DP), INTENT(OUT) :: LocalGhostValue !<On return, the local ghost error
+    REAL(DP), INTENT(OUT) :: GlobalValue !<On return, the global error
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSAnalyticAnalysisRmsErrorGetElementNumber",Err,ERROR,*999)
+    
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL ANALYTIC_ANALYSIS_RMS_ERROR_GET_ELEMENT(FIELD,VariableType,ComponentNumber,ErrorType,LocalValue,LocalGhostValue, &
+          & GlobalValue,ERR,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSAnalyticAnalysisRmsErrorGetElementNumber")
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisRmsErrorGetElementNumber",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisRmsErrorGetElementNumber")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisRmsErrorGetElementNumber
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Get relative error value for the constant in a field identified by an object compared to the analytic value.
+  SUBROUTINE CMISSAnalyticAnalysisRmsErrorGetElementObj(Field,VariableType,ComponentNumber,ErrorType,LocalValue,LocalGhostValue, &
+    & GlobalValue,Err)
+  
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    INTEGER(INTG), INTENT(IN) :: ErrorType !<error type
+    REAL(DP), INTENT(OUT) :: LocalValue !<On return, the local error
+    REAL(DP), INTENT(OUT) :: LocalGhostValue !<On return, the local ghost error
+    REAL(DP), INTENT(OUT) :: GlobalValue !<On return, the global error
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSAnalyticAnalysisRmsErrorGetNodeObj",Err,ERROR,*999)
+    
+    CALL ANALYTIC_ANALYSIS_RMS_ERROR_GET_ELEMENT(Field%FIELD,VariableType,ComponentNumber,ErrorType,LocalValue,LocalGhostValue, &
+      & GlobalValue,ERR,ERROR,*999)
+
+    CALL EXITS("CMISSAnalyticAnalysisRmsErrorGetElementObj")
+
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisRmsErrorGetElementObj",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisRmsErrorGetElementObj")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisRmsErrorGetElementObj
+
 
 
 !!==================================================================================================================================
