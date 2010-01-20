@@ -436,6 +436,15 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSBasisQuadraticSimplexInterpolation = BASIS_QUADRATIC_SIMPLEX_INTERPOLATION !<Quadratic Simplex interpolation specification \see OPENCMISS_BasisInterpolationSpecifications,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSBasisCubicSimplexInterpolation = BASIS_CUBIC_SIMPLEX_INTERPOLATION !<Cubic Simplex interpolation specification \see OPENCMISS_BasisInterpolationSpecifications,OPENCMISS
   !>@}
+  !> \addtogroup OPENCMISS_BasisQuadratureSchemes OPENCMISS::Basis::QuadratureSchemes
+  !> \brief Quadrature scheme parameters
+  !> \see OPENCMISS::BasisConstants,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISSBasisDefaultQuadratureScheme = BASIS_DEFAULT_QUADRATURE_SCHEME !<Identifier for the default quadrature scheme \see OPENCMISS_BasisQuadratureSchemes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSBasisLowQuadratureScheme = BASIS_LOW_QUADRATURE_SCHEME !<Identifier for a low order quadrature scheme \see OPENCMISS_BasisQuadratureSchemes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSBasisMidQuadratureScheme = BASIS_MID_QUADRATURE_SCHEME !<Identifier for a mid order quadrature scheme \see OPENCMISS_BasisQuadratureSchemes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSBasisHighQuadratureScheme = BASIS_HIGH_QUADRATURE_SCHEME !<Identifier for a high order quadrature scheme \see OPENCMISS_BasisQuadratureSchemes,OPENCMISS
+  !>@}
   !> \addtogroup OPENCMISS_BasisQuadratureTypes OPENCMISS::Basis::QuadratureTypes
   !> \brief Basis quadrature type parameters.
   !> \see OPENCMISS::BasisConstants,OPENCMISS
@@ -577,6 +586,9 @@ MODULE OPENCMISS
   PUBLIC CMISSBasisLinearLagrangeInterpolation,CMISSBasisQuadraticLagrangeInterpolation,CMISSBasisCubicLagrangeInterpolation, &
     & CMISSBasisCubicHermiteInterpolation,CMISSBasisQuadratic1HermiteInterpolation,CMISSBasisQuadratic2HermiteInterpolation, &
     & CMISSBasisLinearSimplexInterpolation,CMISSBasisQuadraticSimplexInterpolation,CMISSBasisCubicSimplexInterpolation
+
+  PUBLIC CMISSBasisDefaultQuadratureScheme,CMISSBasisLowQuadratureScheme,CMISSBasisMidQuadratureScheme, &
+    & CMISSBasisHighQuadratureScheme
 
   PUBLIC CMISSBasisGaussLegendreQuadrature,CMISSBasisGaussLaguerreQuadrature,CMISSBasisGaussHermiteQuadrature, &
     & CMISSBasisAdaptiveGaussLegendreQuadrature,CMISSBasisGaussSimplexQuadrature
@@ -2096,6 +2108,13 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSFieldParameterSetUpdateStartObj
   END INTERFACE !CMISSFieldParameterSetUpdateStart
 
+  !>Copy the parameters from the parameter set of a component of a field variable to the paramters of a parameter set of
+  !>a component of another field variable.
+  INTERFACE CMISSFieldParametersToFieldParametersComponentCopy
+    MODULE PROCEDURE CMISSFieldParametersToFieldParametersComponentCopyNumber
+    MODULE PROCEDURE CMISSFieldParametersToFieldParametersComponentCopyObj
+  END INTERFACE !CMISSFieldParametersToFieldParametersComponentCopy
+
   !>Returns the scaling type for a field.  
   INTERFACE CMISSFieldScalingTypeGet
     MODULE PROCEDURE CMISSFieldScalingTypeGetNumber
@@ -2217,6 +2236,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSFieldParameterSetUpdateConstant,CMISSFieldParameterSetUpdateElement,CMISSFieldParameterSetUpdateNode
 
   PUBLIC CMISSFieldParameterSetUpdateFinish,CMISSFieldParameterSetUpdateStart
+
+  PUBLIC CMISSFieldParametersToFieldParametersComponentCopy
 
   PUBLIC CMISSFieldScalingTypeGet,CMISSFieldScalingTypeSet
 
@@ -19157,6 +19178,114 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSFieldParameterSetUpdateStartObj
+
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Copy the parameters from the parameter set of a component of a field variable to the paramters of a parameter set of
+  !>a component of another field variable, where both fields are identified by user numbers.
+  SUBROUTINE CMISSFieldParametersToFieldParametersComponentCopyNumber(FromRegionUserNumber,FromFieldUserNumber,FromVariableType, &
+      & FromParameterSetType, FromComponentNumber,ToRegionUserNumber,ToFieldUserNumber,ToVariableType,ToParameterSetType, &
+      & ToComponentNumber,Err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: FromRegionUserNumber !<The user number of the region containing the field to copy from
+    INTEGER(INTG), INTENT(IN) :: FromFieldUserNumber !<The field to copy from
+    INTEGER(INTG), INTENT(IN) :: FromVariableType !<The field variable type to copy from
+    INTEGER(INTG), INTENT(IN) :: FromParameterSetType !<The field parameter set type to copy from
+    INTEGER(INTG), INTENT(IN) :: FromComponentNumber !<The field variable component number to copy from
+    INTEGER(INTG), INTENT(IN) :: ToRegionUserNumber !<The user number of the region containing the field to copy to
+    INTEGER(INTG), INTENT(IN) :: ToFieldUserNumber !<The field to copy to
+    INTEGER(INTG), INTENT(IN) :: ToVariableType !<The field variable type to copy to
+    INTEGER(INTG), INTENT(IN) :: ToParameterSetType !<The parameter set type to copy to
+    INTEGER(INTG), INTENT(IN) :: ToComponentNumber !<The field variable component to copy to
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: FROM_REGION
+    TYPE(FIELD_TYPE), POINTER :: FROM_FIELD
+    TYPE(REGION_TYPE), POINTER :: TO_REGION
+    TYPE(FIELD_TYPE), POINTER :: TO_FIELD
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSFieldParametersToFieldParametersComponentCopyNumber",Err,ERROR,*999)
+
+    NULLIFY(FROM_REGION)
+    NULLIFY(FROM_FIELD)
+    NULLIFY(TO_REGION)
+    NULLIFY(TO_FIELD)
+    CALL REGION_USER_NUMBER_FIND(FromRegionUserNumber,FROM_REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(FROM_REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(FromFieldUserNumber,FROM_REGION,FROM_FIELD,Err,ERROR,*999)
+      IF(ASSOCIATED(FROM_FIELD)) THEN
+        CALL REGION_USER_NUMBER_FIND(ToRegionUserNumber,TO_REGION,Err,ERROR,*999)
+        IF(ASSOCIATED(TO_REGION)) THEN
+          CALL FIELD_USER_NUMBER_FIND(ToFieldUserNumber,TO_REGION,TO_FIELD,Err,ERROR,*999)
+          IF(ASSOCIATED(TO_FIELD)) THEN
+            CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(FROM_FIELD,FromVariableType,FromParameterSetType, &
+              & FromComponentNumber,TO_FIELD,ToVariableType,ToParameterSetType,ToComponentNumber,Err,ERROR,*999)
+          ELSE
+            LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(ToFieldUserNumber,"*",Err,ERROR))// &
+              & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(ToRegionUserNumber,"*",Err,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(ToRegionUserNumber,"*",Err,ERROR))// &
+            & " does not exist."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FromFieldUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(FromRegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(FromRegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    RETURN
+999 CALL ERRORS("CMISSFieldParametersToFieldParametersComponentCopyNumber",Err,ERROR)
+    CALL EXITS("CMISSFieldParametersToFieldParametersComponentCopyNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+  
+  END SUBROUTINE CMISSFieldParametersToFieldParametersComponentCopyNumber
+
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Copy the parameters from the parameter set of a component of a field variable to the paramters of a parameter set of
+  !>a component of another field variable, where both fields are objects.
+  SUBROUTINE CMISSFieldParametersToFieldParametersComponentCopyObj(FromField,FromVariableType,FromParameterSetType, &
+    & FromComponentNumber,ToField,ToVariableType,ToParameterSetType,ToComponentNumber,Err)
+
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: FromField !<The field to copy from
+    INTEGER(INTG), INTENT(IN) :: FromVariableType !<The field variable type to copy from
+    INTEGER(INTG), INTENT(IN) :: FromParameterSetType !<The field parameter set type to copy from
+    INTEGER(INTG), INTENT(IN) :: FromComponentNumber !<The field variable component number to copy from
+    TYPE(CMISSFieldType), INTENT(IN) :: ToField !<The field to copy to
+    INTEGER(INTG), INTENT(IN) :: ToVariableType !<The field variable type to copy to
+    INTEGER(INTG), INTENT(IN) :: ToParameterSetType !<The parameter set type to copy to
+    INTEGER(INTG), INTENT(IN) :: ToComponentNumber !<The field variable component to copy to
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code
+    !Local variables
+
+    CALL ENTERS("CMISSFieldParametersToFieldParametersComponentCopyObj",Err,ERROR,*999)
+
+    CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(FromField%FIELD,FromVariableType,FromParameterSetType, &
+      & FromComponentNumber,ToField%FIELD,ToVariableType,ToParameterSetType,ToComponentNumber,Err,ERROR,*999)
+
+    RETURN
+999 CALL ERRORS("CMISSFieldParametersToFieldParametersComponentCopyObj",Err,ERROR)
+    CALL EXITS("CMISSFieldParametersToFieldParametersComponentCopyObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+  
+  END SUBROUTINE CMISSFieldParametersToFieldParametersComponentCopyObj
 
   !  
   !================================================================================================================================
