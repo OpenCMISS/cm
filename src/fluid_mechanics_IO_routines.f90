@@ -286,8 +286,8 @@ CONTAINS
       & variables(1)%number_of_components
     NumberOfElements=REGION%meshes%meshes(1)%ptr%number_of_elements
     NumberOfMeshComponents=REGION%meshes%meshes(1)%ptr%number_of_components
-    ALLOCATE(NodesPerElement(NumberOfMeshComponents))
-    ALLOCATE(NodesPerMeshComponent(NumberOfMeshComponents))
+    IF(.NOT.ALLOCATED(NodesPerElement)) ALLOCATE(NodesPerElement(NumberOfMeshComponents))
+    IF(.NOT.ALLOCATED(NodesPerMeshComponent)) ALLOCATE(NodesPerMeshComponent(NumberOfMeshComponents))
     MaxNodesPerElement=0
 
     DO I=1,NumberOfMeshComponents
@@ -300,30 +300,30 @@ CONTAINS
     MaxNodesPerElement=NodesPerElement(1)
     MaxNodesPerMeshComponent=NodesPerMeshComponent(1)
 
-    ALLOCATE(XI_COORDINATES(NumberOfDimensions))
-    ALLOCATE(COORDINATES(NumberOfDimensions))
-    ALLOCATE(NodeXValue(NodesPerMeshComponent(1)))
-    ALLOCATE(NodeYValue(NodesPerMeshComponent(1)))
-    ALLOCATE(NodeZValue(NodesPerMeshComponent(1)))
-    ALLOCATE(NodeUValue(NodesPerMeshComponent(1)))
-    ALLOCATE(NodeVValue(NodesPerMeshComponent(1)))
-    ALLOCATE(NodeWValue(NodesPerMeshComponent(1)))
-    ALLOCATE(NodePValue(NodesPerMeshComponent(1)))
-    ALLOCATE(NodeMUValue(NodesPerMeshComponent(1)))
-    ALLOCATE(NodeRHOValue(NodesPerMeshComponent(1)))
-    ALLOCATE(ElementNodesScales(NumberOfElements,NodesPerElement(1)))
-    ALLOCATE(ElementNodes(NumberOfElements,NodesPerElement(1)))
+    IF(.NOT.ALLOCATED(XI_COORDINATES))  ALLOCATE(XI_COORDINATES(NumberOfDimensions))
+    IF(.NOT.ALLOCATED(COORDINATES)) ALLOCATE(COORDINATES(NumberOfDimensions))
+    IF(.NOT.ALLOCATED(NodeXValue)) ALLOCATE(NodeXValue(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeYValue)) ALLOCATE(NodeYValue(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeZValue)) ALLOCATE(NodeZValue(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeUValue)) ALLOCATE(NodeUValue(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeVValue)) ALLOCATE(NodeVValue(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeWValue)) ALLOCATE(NodeWValue(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodePValue)) ALLOCATE(NodePValue(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeMUValue)) ALLOCATE(NodeMUValue(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeRHOValue)) ALLOCATE(NodeRHOValue(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(ElementNodesScales)) ALLOCATE(ElementNodesScales(NumberOfElements,NodesPerElement(1)))
+    IF(.NOT.ALLOCATED(ElementNodes)) ALLOCATE(ElementNodes(NumberOfElements,NodesPerElement(1)))
 
     !chrm, 20.08.09
-    ALLOCATE(NodeUValue_analytic(NodesPerMeshComponent(1)))
-    ALLOCATE(NodeVValue_analytic(NodesPerMeshComponent(1)))
-    ALLOCATE(NodeWValue_analytic(NodesPerMeshComponent(1)))
-    ALLOCATE(NodePValue_analytic(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeUValue_analytic)) ALLOCATE(NodeUValue_analytic(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeVValue_analytic)) ALLOCATE(NodeVValue_analytic(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeWValue_analytic)) ALLOCATE(NodeWValue_analytic(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodePValue_analytic)) ALLOCATE(NodePValue_analytic(NodesPerMeshComponent(1)))
 
-    ALLOCATE(NodeUValue_error(NodesPerMeshComponent(1)))
-    ALLOCATE(NodeVValue_error(NodesPerMeshComponent(1)))
-    ALLOCATE(NodeWValue_error(NodesPerMeshComponent(1)))
-    ALLOCATE(NodePValue_error(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeUValue_error)) ALLOCATE(NodeUValue_error(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeVValue_error)) ALLOCATE(NodeVValue_error(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeWValue_error)) ALLOCATE(NodeWValue_error(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodePValue_error)) ALLOCATE(NodePValue_error(NodesPerMeshComponent(1)))
 
     CALL ENTERS("CMGUI OUTPUT",ERR,ERROR,*999)
 
@@ -795,7 +795,7 @@ CONTAINS
     END DO
 
     IF(lagrange_simplex==2) THEN
-      ALLOCATE(SimplexOutputHelp(NodesPerElement(1)))
+      IF(.NOT.ALLOCATED(SimplexOutputHelp)) ALLOCATE(SimplexOutputHelp(NodesPerElement(1)))
 
       DO K = 1,NumberOfElements
         IF(NumberOfDimensions==2)THEN
@@ -877,14 +877,20 @@ CONTAINS
     CALL FLUID_MECHANICS_IO_READ_NODES
     CALL FLUID_MECHANICS_IO_READ_ELEMENTS
 
-    ALLOCATE(OPENCMISS_ELEM_M(NumberOfElementsDefined(1),NumberOfNodesPerElement(1)),STAT=ALLOC_ERROR)
-    ALLOCATE(OPENCMISS_ELEM_V(NumberOfElementsDefined(2),NumberOfNodesPerElement(2)),STAT=ALLOC_ERROR)
-    ALLOCATE(OPENCMISS_ELEM_P(NumberOfElementsDefined(3),NumberOfNodesPerElement(3)),STAT=ALLOC_ERROR)
+    IF(.NOT.ALLOCATED(OPENCMISS_ELEM_M)) ALLOCATE(OPENCMISS_ELEM_M(NumberOfElementsDefined(1),NumberOfNodesPerElement(1)), & 
+      & STAT=ALLOC_ERROR)
+    IF(.NOT.ALLOCATED(OPENCMISS_ELEM_V))ALLOCATE(OPENCMISS_ELEM_V(NumberOfElementsDefined(2),NumberOfNodesPerElement(2)), &
+      & STAT=ALLOC_ERROR)
+    IF(.NOT.ALLOCATED(OPENCMISS_ELEM_P))ALLOCATE(OPENCMISS_ELEM_P(NumberOfElementsDefined(3),NumberOfNodesPerElement(3)), &
+      & STAT=ALLOC_ERROR)
 
     CALL FLUID_MECHANICS_IO_MAKE_UNIQUE
-    CALL FLUID_MECHANICS_IO_ORDER_NUMBERING(OPENCMISS_ELEM_M,MESH_INFO(1)%T,NumberOfElementsDefined(1),NumberOfNodesPerElement(1),1)
-    CALL FLUID_MECHANICS_IO_ORDER_NUMBERING(OPENCMISS_ELEM_V,MESH_INFO(2)%T,NumberOfElementsDefined(2),NumberOfNodesPerElement(2),2)
-    CALL FLUID_MECHANICS_IO_ORDER_NUMBERING(OPENCMISS_ELEM_P,MESH_INFO(3)%T,NumberOfElementsDefined(3),NumberOfNodesPerElement(3),3)
+    CALL FLUID_MECHANICS_IO_ORDER_NUMBERING(OPENCMISS_ELEM_M,MESH_INFO(1)%T,NumberOfElementsDefined(1), & 
+      & NumberOfNodesPerElement(1),1)
+    CALL FLUID_MECHANICS_IO_ORDER_NUMBERING(OPENCMISS_ELEM_V,MESH_INFO(2)%T,NumberOfElementsDefined(2), & 
+      & NumberOfNodesPerElement(2),2)
+    CALL FLUID_MECHANICS_IO_ORDER_NUMBERING(OPENCMISS_ELEM_P,MESH_INFO(3)%T,NumberOfElementsDefined(3), & 
+      & NumberOfNodesPerElement(3),3)
   
     
     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Export finished successfully...",ERR,ERROR,*999)
@@ -1418,7 +1424,7 @@ CONTAINS
     END DO
     CLOSE(1)
 
-    ALLOCATE(OPENCMISS_NODE_COORD(TotalNumberOfNodes,3),STAT=ALLOC_ERROR)
+    IF(.NOT.ALLOCATED(OPENCMISS_NODE_COORD)) ALLOCATE(OPENCMISS_NODE_COORD(TotalNumberOfNodes,3),STAT=ALLOC_ERROR)
     a=1
     b=0
     DO I=1,3
@@ -1445,26 +1451,57 @@ CONTAINS
   !
 
   !> Reads boundary conditions from a file
-  SUBROUTINE FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS(SOLVER_TYPE,BOUNDARY_VALUES,NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION,TIME)
+  SUBROUTINE FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS(SOLVER_TYPE,BOUNDARY_VALUES,NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION, & 
+    & OPTION,TIME)
 
-    INTEGER(INTG):: SOLVER_TYPE
+    INTEGER(INTG):: SOLVER_TYPE,I,J,NUMBER_OF_TIME_STEPS,OPTION
     REAL(DP), POINTER :: BOUNDARY_VALUES(:)
     INTEGER(INTG):: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION
-    REAL(DP):: TIME
+    REAL(DP):: TIME, TIME_TOLERANCE, TIME_STEP_SIZE, TIME_STEP
 
+    CHARACTER(34) :: INPUT_FILE
 
+    !We assume a cardiac cycle to be 1s resolved with 20 time-steps which
+    !gives us a time-step size of 0.05s
 
     INTEGER(INTG):: ENDI
 
-    ENDI=SIZE(BOUNDARY_VALUES)/NUMBER_OF_DIMENSIONS
-    IF(SOLVER_TYPE==1) THEN
+
+    IF(SOLVER_TYPE==1) THEN !LINEAR
       IF(BOUNDARY_CONDITION==5)THEN !MOVED WALL
-        !U,X COMPONENT
-        BOUNDARY_VALUES(1:ENDI)=0.0_DP                                       
-        !V,Y COMPONENT
-         BOUNDARY_VALUES(ENDI+1:ENDI+ENDI)=-0.05_DP*COS(2.0_DP*PI*1.0_DP/40.0_DP*TIME)
-        !W,Z COMPONENT
-        BOUNDARY_VALUES(ENDI+ENDI+1:ENDI+ENDI+ENDI)=0.0_DP
+        IF(OPTION==0) THEN
+          !do nothing (default)    
+        ELSE IF(OPTION==1) THEN
+          TIME_STEP_SIZE=0.05_DP
+          TIME_TOLERANCE=0.00001_DP
+          NUMBER_OF_TIME_STEPS=19
+          ENDI=SIZE(BOUNDARY_VALUES)
+          DO J=1,NUMBER_OF_TIME_STEPS
+            TIME_STEP=J
+            IF((TIME/TIME_STEP_SIZE<TIME_STEP+TIME_TOLERANCE).AND.(TIME/TIME_STEP_SIZE>TIME_STEP-TIME_TOLERANCE)) THEN
+              IF(J<10) THEN
+                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_0",I0,".dat")') J
+              ELSE IF(J<100) THEN
+                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_",I0,".dat")') J
+              ENDIF
+              OPEN(UNIT=J, FILE=INPUT_FILE,STATUS='unknown') 
+              DO I=1,ENDI
+                READ(J,*) BOUNDARY_VALUES(I)
+              ENDDO
+              CLOSE(J)
+            ENDIF
+          ENDDO
+        ELSEIF(OPTION==2) THEN
+          ENDI=SIZE(BOUNDARY_VALUES)/NUMBER_OF_DIMENSIONS
+          !U,X COMPONENT
+          BOUNDARY_VALUES(1:ENDI)=0.0_DP                                       
+          !V,Y COMPONENT
+          BOUNDARY_VALUES(ENDI+1:ENDI+ENDI)=-0.05_DP*COS(2.0_DP*PI*1.0_DP/40.0_DP*TIME)
+          !W,Z COMPONENT
+          BOUNDARY_VALUES(ENDI+ENDI+1:ENDI+ENDI+ENDI)=0.0_DP
+        ELSE
+          STOP 'Error during boundary input'
+        ENDIF
       END IF
     ELSE IF(SOLVER_TYPE==3) THEN
       IF(BOUNDARY_CONDITION==2)THEN !FIXED INLET

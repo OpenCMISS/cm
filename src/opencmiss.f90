@@ -848,6 +848,13 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSControlLoopTimeOutputSetObj
   END INTERFACE !CMISSControlLoopTimeOutputSet
 
+  !>Sets/changes the input parameters for a time control loop.
+  INTERFACE CMISSControlLoopTimeInputSet
+    MODULE PROCEDURE CMISSControlLoopTimeInputSetNumber0
+    MODULE PROCEDURE CMISSControlLoopTimeInputSetNumber1
+    MODULE PROCEDURE CMISSControlLoopTimeInputSetObj
+  END INTERFACE !CMISSControlLoopTimeInputSet
+
   !>Returns the time parameters for a time control loop.
   INTERFACE CMISSControlLoopTimesGet
     MODULE PROCEDURE CMISSControlLoopTimesGetNumber0
@@ -883,7 +890,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSControlLoopNumberOfSubLoopsGet,CMISSControlLoopNumberOfSubLoopsSet
 
-  PUBLIC CMISSControlLoopTimeOutputSet
+  PUBLIC CMISSControlLoopTimeOutputSet,CMISSControlLoopTimeInputSet
   
   PUBLIC CMISSControlLoopTimesGet,CMISSControlLoopTimesSet
 
@@ -1255,6 +1262,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardLaplaceSubtype = EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE !<Standard Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetGeneralisedLaplaceSubtype = EQUATIONS_SET_GENERALISED_LAPLACE_SUBTYPE !<Generalised Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMovingMeshLaplaceSubtype = EQUATIONS_SET_MOVING_MESH_LAPLACE_SUBTYPE !<Moving mesh Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetVectorSourcePoissonSubtype = EQUATIONS_SET_VECTOR_SOURCE_POISSON_SUBTYPE !<Vector source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourcePoissonSubtype = EQUATIONS_SET_CONSTANT_SOURCE_POISSON_SUBTYPE !<Constant source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourcePoissonSubtype = EQUATIONS_SET_LINEAR_SOURCE_POISSON_SUBTYPE !<Linear source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuadraticSourcePoissonSubtype = EQUATIONS_SET_QUADRATIC_SOURCE_POISSON_SUBTYPE !<Quadratic source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -1361,7 +1369,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   !> \brief The analytic function types for a LinearElasticity equation
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{  
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityEquationOneDim1 = EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_ONE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityEquationOneDim1 = &
+    & EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_ONE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityEquationTwoDim1 = & 
     & EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_TWO_DIM_PLANE_STRESS_1 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityEquationThreeDim1 = & 
@@ -1399,6 +1408,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & CMISSEquationsSetQuasistaticDarcySubtype,CMISSEquationsSetALEDarcySubtype, &
     & CMISSEquationsSetStandardLaplaceSubtype,CMISSEquationsSetMovingMeshLaplaceSubtype, &
     & CMISSEquationsSetGeneralisedLaplaceSubtype,CMISSEquationsSetConstantSourcePoissonSubtype, &
+    & CMISSEquationsSetVectorSourcePoissonSubtype, &
     & CMISSEquationsSetLinearSourcePoissonSubtype,CMISSEquationsSetQuadraticSourcePoissonSubtype, &
     & CMISSEquationsSetExponentialSourcePoissonSubtype,CMISSEquationsSetNoSourceHelmholtzSubtype, &
     & CMISSEquationsSetNoSourceDiffusionSubtype,CMISSEquationsSetConstantSourceDiffusionSubtype, &
@@ -2824,6 +2834,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSProblemStandardLaplaceSubtype = PROBLEM_STANDARD_LAPLACE_SUBTYPE !<Standard Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemGeneralisedLaplaceSubtype = PROBLEM_GENERALISED_LAPLACE_SUBTYPE !<Generalised Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemLinearSourcePoissonSubtype = PROBLEM_LINEAR_SOURCE_POISSON_SUBTYPE !<Linear source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemVectorSourcePoissonSubtype = PROBLEM_VECTOR_SOURCE_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemNonlinearSourcePoissonSubtype = PROBLEM_NONLINEAR_SOURCE_POISSON_SUBTYPE !<Nonlinear source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemNoSourceHelmholtzSubtype = PROBLEM_NO_SOURCE_HELMHOLTZ_SUBTYPE !<No source Helmholtz problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemNoSourceDiffusionSubtype = PROBLEM_NO_SOURCE_DIFFUSION_SUBTYPE !<No source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -2899,7 +2910,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSProblemStandardLaplaceSubtype,CMISSProblemGeneralisedLaplaceSubtype
 
-  PUBLIC CMISSProblemLinearSourcePoissonSubtype,CMISSProblemNonlinearSourcePoissonSubtype
+  PUBLIC CMISSProblemLinearSourcePoissonSubtype,CMISSProblemNonlinearSourcePoissonSubtype,CMISSProblemVectorSourcePoissonSubtype
 
   PUBLIC CMISSProblemNoSourceHelmholtzSubtype
 
@@ -8767,6 +8778,111 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSControlLoopTimeOutputSetObj
+
+  !
+  !================================================================================================================================
+  !  
+  
+  !>Sets/changes the input parameters for a time control loop identified by user numbers.
+  SUBROUTINE CMISSControlLoopTimeInputSetNumber0(ProblemUserNumber,ControlLoopIdentifier,InputOption,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the output parameters for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier.
+    INTEGER(INTG), INTENT(IN) :: InputOption !<The input option modulo to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSControlLoopTimeInputSetNumber0",Err,ERROR,*999)
+    
+    NULLIFY(CONTROL_LOOP)
+    NULLIFY(PROBLEM)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_CONTROL_LOOP_GET(PROBLEM,ControlLoopIdentifier,CONTROL_LOOP,Err,ERROR,*999)
+      CALL CONTROL_LOOP_TIME_OUTPUT_SET(CONTROL_LOOP,InputOption,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSControlLoopTimeInputSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopTimeInputSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSControlLoopTimeInputSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopTimeInputSetNumber0
+
+  !
+  !================================================================================================================================
+  !  
+  
+  !>Sets/changes the input parameters for a time control loop identified by user numbers.
+  SUBROUTINE CMISSControlLoopTimeInputSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,InputOption,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the output parameters for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<The control loop identifier.
+    INTEGER(INTG), INTENT(IN) :: InputOption !<The output frequency modulo to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+
+    CALL ENTERS("CMISSControlLoopTimeInputSetNumber1",Err,ERROR,*999)
+    
+    NULLIFY(CONTROL_LOOP)
+    NULLIFY(PROBLEM)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_CONTROL_LOOP_GET(PROBLEM,ControlLoopIdentifiers,CONTROL_LOOP,Err,ERROR,*999)
+      CALL CONTROL_LOOP_TIME_OUTPUT_SET(CONTROL_LOOP,InputOption,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSControlLoopTimeInputSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopTimeInputSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSControlLoopTimeInputSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopTimeInputSetNumber1
+
+  !
+  !================================================================================================================================
+  !  
+  
+  !>Sets/changes the input parameters for a time control loop identified by an object.
+  SUBROUTINE CMISSControlLoopTimeInputSetObj(ControlLoop,InputOption,Err)
+  
+    !Argument variables
+    TYPE(CMISSControlLoopType), INTENT(INOUT) :: ControlLoop !<The control loop to set the output parameters for.
+    INTEGER(INTG), INTENT(IN) ::  InputOption !<The output frequency modulo to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSControlLoopTimeInputSetObj",Err,ERROR,*999)
+    
+    CALL CONTROL_LOOP_TIME_INPUT_SET(ControlLoop%CONTROL_LOOP,InputOption,Err,ERROR,*999)
+
+    CALL EXITS("CMISSControlLoopTimeInputSetObj")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopTimeInputSetObj",Err,ERROR)
+    CALL EXITS("CMISSControlLoopTimeInputSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopTimeInputSetObj
+
 
   !
   !================================================================================================================================
