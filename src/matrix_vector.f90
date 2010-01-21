@@ -1357,34 +1357,50 @@ CONTAINS
         CASE(MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
           !Search for the column number in the sparsity list using the bisection (binary search) algorithm
           LOWLIMIT=MATRIX%ROW_INDICES(I)
-          UPLIMIT=MATRIX%ROW_INDICES(I+1)
-          DO WHILE((UPLIMIT-LOWLIMIT)>1)
-            MIDPOINT=(UPLIMIT+LOWLIMIT)/2
-            IF(MATRIX%COLUMN_INDICES(MIDPOINT)>J) THEN
-              UPLIMIT=MIDPOINT
+          IF(J>=MATRIX%COLUMN_INDICES(LOWLIMIT)) THEN
+            UPLIMIT=MATRIX%ROW_INDICES(I+1)
+            IF(J<=MATRIX%COLUMN_INDICES(UPLIMIT-1)) THEN
+              DO WHILE((UPLIMIT-LOWLIMIT)>1)
+                MIDPOINT=(UPLIMIT+LOWLIMIT)/2
+                IF(MATRIX%COLUMN_INDICES(MIDPOINT)>J) THEN
+                  UPLIMIT=MIDPOINT
+                ELSE
+                  LOWLIMIT=MIDPOINT
+                ENDIF
+              ENDDO
+              IF(MATRIX%COLUMN_INDICES(LOWLIMIT)==J) THEN
+                LOCATION=LOWLIMIT
+              ELSE
+                LOCATION=0
+              ENDIF
             ELSE
-              LOWLIMIT=MIDPOINT
+              LOCATION=0
             ENDIF
-          ENDDO
-          IF(MATRIX%COLUMN_INDICES(LOWLIMIT)==J) THEN
-            LOCATION=LOWLIMIT
           ELSE
             LOCATION=0
           ENDIF
         CASE(MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
           !Search for the row number in the sparsity list using the bisection (binary search) algorithm
           LOWLIMIT=MATRIX%COLUMN_INDICES(J)
-          UPLIMIT=MATRIX%COLUMN_INDICES(J+1)
-          DO WHILE((UPLIMIT-LOWLIMIT)>1)
-            MIDPOINT=(UPLIMIT+LOWLIMIT)/2
-            IF(MATRIX%ROW_INDICES(MIDPOINT)>I) THEN
-              UPLIMIT=MIDPOINT
+          IF(I>=MATRIX%ROW_INDICES(LOWLIMIT)) THEN
+            UPLIMIT=MATRIX%COLUMN_INDICES(J+1)
+            IF(I<=MATRIX%ROW_INDICES(UPLIMIT-1)) THEN
+              DO WHILE((UPLIMIT-LOWLIMIT)>1)
+                MIDPOINT=(UPLIMIT+LOWLIMIT)/2
+                IF(MATRIX%ROW_INDICES(MIDPOINT)>I) THEN
+                  UPLIMIT=MIDPOINT
+                ELSE
+                  LOWLIMIT=MIDPOINT
+                ENDIF
+              ENDDO
+              IF(MATRIX%ROW_INDICES(LOWLIMIT)==I) THEN
+                LOCATION=LOWLIMIT
+              ELSE
+                LOCATION=0
+              ENDIF
             ELSE
-              LOWLIMIT=MIDPOINT
+              LOCATION=0
             ENDIF
-          ENDDO
-          IF(MATRIX%ROW_INDICES(LOWLIMIT)==I) THEN
-            LOCATION=LOWLIMIT
           ELSE
             LOCATION=0
           ENDIF
