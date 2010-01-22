@@ -1416,7 +1416,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSEquationsSetNoSubtype,CMISSEquationsSetThreeDimensionalSubtype,CMISSEquationsSetPlaneStressSubtype, &
     & CMISSEquationsSetPlaneStrainSubtype,CMISSEquationsSetOneDimensionalSubtype,CMISSEquationsSetPlateSubtype, &
-    & CMISSEquationsSetShellSubtype,CMISSEquationsSetIsotropicExponentialSubtype, &
+    & CMISSEquationsSetShellSubtype, &
+    & CMISSEquationsSetMooneyRivlinSubtype,CMISSEquationsSetIsotropicExponentialSubtype, &
     & CMISSEquationsSetTransverseIsotropicExponentialSubtype, &
     & CMISSEquationsSetStaticStokesSubtype, CMISSEquationsSetLaplaceStokesSubtype, &
     & CMISSEquationsSetTransientStokesSubtype,CMISSEquationsSetALEStokesSubtype,CMISSEquationsSetALENavierStokesSubtype, &
