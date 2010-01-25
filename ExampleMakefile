@@ -811,7 +811,6 @@ OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/blas.o \
 	$(OBJECT_DIR)/classical_field_routines.o \
 	$(OBJECT_DIR)/cmiss.o \
-	$(OBJECT_DIR)/cmiss_cellml.o \
 	$(OBJECT_DIR)/cmiss_mpi.o \
 	$(OBJECT_DIR)/cmiss_parmetis.o \
 	$(OBJECT_DIR)/cmiss_petsc.o \
