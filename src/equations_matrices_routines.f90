@@ -3340,7 +3340,10 @@ CONTAINS
                                   !First, loop over the rows and calculate the number of non-zeros
                                   NUMBER_OF_NON_ZEROS=0
                                   DO local_ny=1,DEPENDENT_DOFS_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
-                                    IF(DEPENDENT_DOFS_PARAM_MAPPING%DOF_TYPE(1,local_ny)==FIELD_NODE_DOF_TYPE) THEN
+                                    SELECT CASE(DEPENDENT_DOFS_PARAM_MAPPING%DOF_TYPE(1,local_ny))
+                                    CASE(FIELD_CONSTANT_INTERPOLATION)
+                                      CALL FLAG_ERROR("Constant interpolation is not implemented yet.",ERR,ERROR,*999)
+                                    CASE(FIELD_NODE_DOF_TYPE)
                                       nyy=DEPENDENT_DOFS_PARAM_MAPPING%DOF_TYPE(2,local_ny)
                                       np=DEPENDENT_DOFS_PARAM_MAPPING%NODE_DOF2PARAM_MAP(2,nyy)
                                       nh=DEPENDENT_DOFS_PARAM_MAPPING%NODE_DOF2PARAM_MAP(3,nyy)
@@ -3381,9 +3384,11 @@ CONTAINS
                                               ENDDO !mk
                                             ENDDO !nn
                                           CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
-                                            CALL FLAG_ERROR("grid point based interpolation is not implemented yet",ERR,ERROR,*999)
+                                            CALL FLAG_ERROR("Grid point based interpolation is not implemented yet.",& 
+                                              & ERR,ERROR,*999)
                                           CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
-                                            CALL FLAG_ERROR("gauss point based interpolation is not implemented yet",ERR,ERROR,*999)
+                                            CALL FLAG_ERROR("Gauss point based interpolation is not implemented yet.",&
+                                              & ERR,ERROR,*999)
                                           CASE DEFAULT
                                             LOCAL_ERROR="Local dof number "//TRIM(NUMBER_TO_VSTRING(local_ny,"*",ERR,ERROR))// &
                                               & " has invalid interpolation type."
@@ -3396,7 +3401,7 @@ CONTAINS
                                         & ERR,ERROR,*999)
                                       NUMBER_OF_NON_ZEROS=NUMBER_OF_NON_ZEROS+NUMBER_OF_COLUMNS
                                       ROW_INDICES(local_ny+1)=NUMBER_OF_NON_ZEROS+1
-                                    ELSEIF(DEPENDENT_DOFS_PARAM_MAPPING%DOF_TYPE(1,local_ny)==FIELD_ELEMENT_DOF_TYPE) THEN
+                                    CASE(FIELD_ELEMENT_DOF_TYPE)
                                       ! row corresponds to a variable that's element-wisely interpolated
                                       nyy=DEPENDENT_DOFS_PARAM_MAPPING%DOF_TYPE(2,local_ny)          ! nyy = index in ELEMENT_DOF2PARAM_MAP
                                       nh=DEPENDENT_DOFS_PARAM_MAPPING%ELEMENT_DOF2PARAM_MAP(2,nyy)   ! current variable component
@@ -3414,10 +3419,14 @@ CONTAINS
                                       DO nh2=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
                                         SELECT CASE(FIELD_VARIABLE%COMPONENTS(nh2)%INTERPOLATION_TYPE)
                                         CASE(FIELD_CONSTANT_INTERPOLATION)
-                                          ! do nothing? this will probably never be encountered...?
+                                          CALL FLAG_ERROR("Constant interpolation is not implemented yet.",ERR,ERROR,*999)
                                         CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
-                                          ! do nothing here? (diagonal entry is added just once below)
                                           ! it's assumed that element-based variables arne't directly coupled
+                                          ! put a diagonal entry
+                                          local_column=FIELD_VARIABLE%COMPONENTS(nh2)%PARAM_TO_DOF_MAP% &
+                                            & ELEMENT_PARAM2DOF_MAP(ne)
+                                          global_column=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
+                                          CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(local_ny)%PTR,global_column,ERR,ERROR,*999)
                                         CASE(FIELD_NODE_BASED_INTERPOLATION)
                                           ! loop over all nodes in the element (and dofs belonging to them)
                                           DO nn=1,BASIS%NUMBER_OF_NODES
@@ -3432,31 +3441,30 @@ CONTAINS
                                             ENDDO !mk
                                           ENDDO !nn
                                         CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
-                                          CALL FLAG_ERROR("grid point based interpolation is not implemented yet",ERR,ERROR,*999)
+                                          CALL FLAG_ERROR("Grid point based interpolation is not implemented yet.",ERR,ERROR,*999)
                                         CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
-                                          CALL FLAG_ERROR("gauss point based interpolation is not implemented yet",ERR,ERROR,*999)
+                                          CALL FLAG_ERROR("Gauss point based interpolation is not implemented yet.",ERR,ERROR,*999)
                                         CASE DEFAULT
                                           LOCAL_ERROR="Local dof number "//TRIM(NUMBER_TO_VSTRING(local_ny,"*",ERR,ERROR))// &
                                             & " has invalid interpolation type."
                                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                         END SELECT
                                       ENDDO !nh2
-                                      ! put a diagonal entry
-                                      local_column=FIELD_VARIABLE%COMPONENTS(nh)%PARAM_TO_DOF_MAP% &
-                                          & ELEMENT_PARAM2DOF_MAP(ne)
-                                      global_column=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
-                                      CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(local_ny)%PTR,global_column,ERR,ERROR,*999)
                                       ! clean up the list
                                       CALL LIST_REMOVE_DUPLICATES(COLUMN_INDICES_LISTS(local_ny)%PTR,ERR,ERROR,*999)
                                       CALL LIST_NUMBER_OF_ITEMS_GET(COLUMN_INDICES_LISTS(local_ny)%PTR,NUMBER_OF_COLUMNS, &
                                         & ERR,ERROR,*999)
                                       NUMBER_OF_NON_ZEROS=NUMBER_OF_NON_ZEROS+NUMBER_OF_COLUMNS
                                       ROW_INDICES(local_ny+1)=NUMBER_OF_NON_ZEROS+1
-                                    ELSE
+                                    CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                                      CALL FLAG_ERROR("Grid point based interpolation is not implemented yet.",ERR,ERROR,*999)
+                                    CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                                      CALL FLAG_ERROR("Gauss point based interpolation is not implemented yet.",ERR,ERROR,*999)
+                                    CASE DEFAULT
                                       LOCAL_ERROR="Local dof number "//TRIM(NUMBER_TO_VSTRING(local_ny,"*",ERR,ERROR))// &
-                                        & " is not a node or element based dof."
+                                        & " has an invalid type."
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                    ENDIF
+                                    END SELECT
                                   ENDDO !local_ny
                                   !Allocate and setup the column locations
                                   ALLOCATE(COLUMN_INDICES(NUMBER_OF_NON_ZEROS),STAT=ERR)
