@@ -11521,7 +11521,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetDataRestoreLCPtr !<Error Code.
     !Local variables
     TYPE(CMISSFieldType), POINTER :: Field
-    REAL(C_INT), POINTER :: Parameters(:)
+    INTEGER(C_INT), POINTER :: Parameters(:)
 
     CMISSFieldParameterSetDataRestoreLCPtr = CMISSNoError
     IF(C_ASSOCIATED(ParametersPtr)) THEN
