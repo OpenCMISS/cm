@@ -3358,8 +3358,68 @@ CONTAINS
                                       DO elem_idx=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_SURROUNDING_ELEMENTS
                                         ne=DOMAIN_NODES%NODES(np)%SURROUNDING_ELEMENTS(elem_idx)
                                         DO nh2=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                                          DOMAIN_ELEMENTS=>FIELD_VARIABLE%COMPONENTS(nh2)%DOMAIN%TOPOLOGY%ELEMENTS
-                                          BASIS=>DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS
+                                          SELECT CASE(FIELD_VARIABLE%COMPONENTS(nh2)%INTERPOLATION_TYPE)
+                                          CASE(FIELD_CONSTANT_INTERPOLATION)
+                                            ! do nothing? this will probably never be encountered...?
+                                          CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                                            local_column=FIELD_VARIABLE%COMPONENTS(nh2)%PARAM_TO_DOF_MAP% &
+                                              & ELEMENT_PARAM2DOF_MAP(ne)
+                                            global_column=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
+                                            CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(local_ny)%PTR,global_column,ERR,ERROR,*999)
+                                          CASE(FIELD_NODE_BASED_INTERPOLATION)
+                                            DOMAIN_ELEMENTS=>FIELD_VARIABLE%COMPONENTS(nh2)%DOMAIN%TOPOLOGY%ELEMENTS
+                                            BASIS=>DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS
+                                            DO nn=1,BASIS%NUMBER_OF_NODES
+                                              mp=DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_NODES(nn)
+                                              DO nnk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
+                                                mk=DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_DERIVATIVES(nnk,nn)
+                                                !Find the local and global column and add the global column to the indices list
+                                                local_column=FIELD_VARIABLE%COMPONENTS(nh2)%PARAM_TO_DOF_MAP% &
+                                                  & NODE_PARAM2DOF_MAP(mk,mp)
+                                                global_column=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
+                                                CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(local_ny)%PTR,global_column,ERR,ERROR,*999)
+                                              ENDDO !mk
+                                            ENDDO !nn
+                                          CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                                            CALL FLAG_ERROR("grid point based interpolation is not implemented yet",ERR,ERROR,*999)
+                                          CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                                            CALL FLAG_ERROR("gauss point based interpolation is not implemented yet",ERR,ERROR,*999)
+                                          CASE DEFAULT
+                                            LOCAL_ERROR="Local dof number "//TRIM(NUMBER_TO_VSTRING(local_ny,"*",ERR,ERROR))// &
+                                              & " has invalid interpolation type."
+                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                          END SELECT
+                                        ENDDO !nh2
+                                      ENDDO !elem_idx
+                                      CALL LIST_REMOVE_DUPLICATES(COLUMN_INDICES_LISTS(local_ny)%PTR,ERR,ERROR,*999)
+                                      CALL LIST_NUMBER_OF_ITEMS_GET(COLUMN_INDICES_LISTS(local_ny)%PTR,NUMBER_OF_COLUMNS, &
+                                        & ERR,ERROR,*999)
+                                      NUMBER_OF_NON_ZEROS=NUMBER_OF_NON_ZEROS+NUMBER_OF_COLUMNS
+                                      ROW_INDICES(local_ny+1)=NUMBER_OF_NON_ZEROS+1
+                                    ELSEIF(DEPENDENT_DOFS_PARAM_MAPPING%DOF_TYPE(1,local_ny)==FIELD_ELEMENT_DOF_TYPE) THEN
+                                      ! row corresponds to a variable that's element-wisely interpolated
+                                      nyy=DEPENDENT_DOFS_PARAM_MAPPING%DOF_TYPE(2,local_ny)          ! nyy = index in ELEMENT_DOF2PARAM_MAP
+                                      nh=DEPENDENT_DOFS_PARAM_MAPPING%ELEMENT_DOF2PARAM_MAP(2,nyy)   ! current variable component
+                                      ne=DEPENDENT_DOFS_PARAM_MAPPING%ELEMENT_DOF2PARAM_MAP(1,nyy)   ! current element (i.e. corresponds to current dof)
+                                      DOMAIN_ELEMENTS=>FIELD_VARIABLE%COMPONENTS(nh)%DOMAIN%TOPOLOGY%ELEMENTS
+                                      BASIS=>DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS
+                                      !Set up list
+                                      NULLIFY(COLUMN_INDICES_LISTS(local_ny)%PTR)
+                                      CALL LIST_CREATE_START(COLUMN_INDICES_LISTS(local_ny)%PTR,ERR,ERROR,*999)
+                                      CALL LIST_DATA_TYPE_SET(COLUMN_INDICES_LISTS(local_ny)%PTR,LIST_INTG_TYPE,ERR,ERROR,*999)
+                                      CALL LIST_INITIAL_SIZE_SET(COLUMN_INDICES_LISTS(local_ny)%PTR, &
+                                        & FIELD_VARIABLE%COMPONENTS(nh)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS+1, &
+                                        & ERR,ERROR,*999) ! size = all nodal dofs + itself
+                                      CALL LIST_CREATE_FINISH(COLUMN_INDICES_LISTS(local_ny)%PTR,ERR,ERROR,*999)
+                                      DO nh2=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                                        SELECT CASE(FIELD_VARIABLE%COMPONENTS(nh2)%INTERPOLATION_TYPE)
+                                        CASE(FIELD_CONSTANT_INTERPOLATION)
+                                          ! do nothing? this will probably never be encountered...?
+                                        CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                                          ! do nothing here? (diagonal entry is added just once below)
+                                          ! it's assumed that element-based variables arne't directly coupled
+                                        CASE(FIELD_NODE_BASED_INTERPOLATION)
+                                          ! loop over all nodes in the element (and dofs belonging to them)
                                           DO nn=1,BASIS%NUMBER_OF_NODES
                                             mp=DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_NODES(nn)
                                             DO nnk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
@@ -3371,8 +3431,22 @@ CONTAINS
                                               CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(local_ny)%PTR,global_column,ERR,ERROR,*999)
                                             ENDDO !mk
                                           ENDDO !nn
-                                        ENDDO !nh2
-                                      ENDDO !elem_idx
+                                        CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                                          CALL FLAG_ERROR("grid point based interpolation is not implemented yet",ERR,ERROR,*999)
+                                        CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                                          CALL FLAG_ERROR("gauss point based interpolation is not implemented yet",ERR,ERROR,*999)
+                                        CASE DEFAULT
+                                          LOCAL_ERROR="Local dof number "//TRIM(NUMBER_TO_VSTRING(local_ny,"*",ERR,ERROR))// &
+                                            & " has invalid interpolation type."
+                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        END SELECT
+                                      ENDDO !nh2
+                                      ! put a diagonal entry
+                                      local_column=FIELD_VARIABLE%COMPONENTS(nh)%PARAM_TO_DOF_MAP% &
+                                          & ELEMENT_PARAM2DOF_MAP(ne)
+                                      global_column=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
+                                      CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(local_ny)%PTR,global_column,ERR,ERROR,*999)
+                                      ! clean up the list
                                       CALL LIST_REMOVE_DUPLICATES(COLUMN_INDICES_LISTS(local_ny)%PTR,ERR,ERROR,*999)
                                       CALL LIST_NUMBER_OF_ITEMS_GET(COLUMN_INDICES_LISTS(local_ny)%PTR,NUMBER_OF_COLUMNS, &
                                         & ERR,ERROR,*999)
@@ -3380,7 +3454,7 @@ CONTAINS
                                       ROW_INDICES(local_ny+1)=NUMBER_OF_NON_ZEROS+1
                                     ELSE
                                       LOCAL_ERROR="Local dof number "//TRIM(NUMBER_TO_VSTRING(local_ny,"*",ERR,ERROR))// &
-                                        & " is not a node based dof."
+                                        & " is not a node or element based dof."
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                     ENDIF
                                   ENDDO !local_ny
@@ -3465,6 +3539,7 @@ CONTAINS
     ELSE
       CALL FLAG_ERROR("Jacobian matrix is not associated.",ERR,ERROR,*999)
     ENDIF
+
       
     CALL EXITS("JACOBIAN_MATRIX_STRUCTURE_CALCULATE")
     RETURN
