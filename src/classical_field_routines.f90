@@ -584,7 +584,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets up the output type for a fluid mechanics problem class.
+  !>Sets up the output type for a classical field problem class.
   SUBROUTINE CLASSICAL_FIELD_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
     !Argument variables
@@ -602,7 +602,7 @@ CONTAINS
       CASE(PROBLEM_LAPLACE_EQUATION_TYPE)
         !CALL LAPLACE_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
       CASE(PROBLEM_POISSON_EQUATION_TYPE)
-        !CALL POISSON_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+        CALL POISSON_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
       CASE(PROBLEM_HELMHOLTZ_EQUATION_TYPE)
         !CALL HELMHOLTZ_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
       CASE(PROBLEM_WAVE_EQUATION_TYPE)

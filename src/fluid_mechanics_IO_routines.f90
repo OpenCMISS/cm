@@ -200,6 +200,7 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   !Interfaces
 
   PUBLIC FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS
+  PUBLIC FLUID_MECHANICS_IO_READ_DATA
 
   PUBLIC FLUID_MECHANICS_IO_WRITE_CMGUI
   PUBLIC FLUID_MECHANICS_IO_READ_CMHEART
@@ -408,6 +409,7 @@ CONTAINS
       !For 3D, the following call works ...
       lagrange_simplex=REGION%equations_sets%equations_sets(1)%ptr%equations% &
         & interpolation%geometric_interp_parameters%bases(1)%ptr%type
+!         lagrange_simplex=2
     ELSE
       !chrm, 20.08.09:
       ! ... but the above call does not work for 2D.
@@ -1512,6 +1514,122 @@ CONTAINS
     RETURN
 
   END SUBROUTINE FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS 
+
+  ! OK
+  !================================================================================================================================
+  !
+
+  !> Reads input data from a file
+  SUBROUTINE FLUID_MECHANICS_IO_READ_DATA(SOLVER_TYPE,INPUT_VALUES,NUMBER_OF_DIMENSIONS,INPUT_TYPE, & 
+    & INPUT_OPTION,TIME)
+
+    INTEGER(INTG):: SOLVER_TYPE,I,INPUT_OPTION,CHECK
+    REAL(DP), POINTER :: INPUT_VALUES(:)
+    INTEGER(INTG):: NUMBER_OF_DIMENSIONS,INPUT_TYPE
+    REAL(DP):: TIME, TIME_TOLERANCE, TIME_STEP_SIZE, TIME_STEP
+
+    INTEGER(INTG):: ENDI,NUMBER_OF_TIME_STEPS,J
+    CHARACTER(34) :: INPUT_FILE
+
+  
+    TIME_STEP_SIZE=42.0_DP  
+    TIME_TOLERANCE=0.00001_DP
+  
+!     IF(SOLVER_TYPE==1) THEN !LINEAR
+      IF(INPUT_TYPE==1)THEN !POISSON VECTOR SOURCE TEMPORARY
+        ENDI=SIZE(INPUT_VALUES)/NUMBER_OF_DIMENSIONS
+        IF(NUMBER_OF_DIMENSIONS==3) THEN
+!           do nothing
+          TIME_STEP=TIME/TIME_STEP_SIZE
+        ENDIF
+        IF(INPUT_OPTION==1) THEN
+          DO I=1,NUMBER_OF_DIMENSIONS
+            IF(I==1) THEN
+              OPEN(UNIT=I, FILE="./input/data/U_DATA.dat",STATUS='unknown') 
+                READ(I,*) CHECK
+                IF(CHECK/=ENDI) THEN
+                  STOP 'Error during data input'
+                ENDIF
+                READ(I,*) INPUT_VALUES(1:ENDI)
+              CLOSE(I)
+            ELSE IF(I==2) THEN
+              OPEN(UNIT=I, FILE="./input/data/V_DATA.dat",STATUS='unknown') 
+                READ(I,*) CHECK
+                IF(CHECK/=ENDI) THEN
+                  STOP 'Error during data input'
+                ENDIF
+                READ(I,*) INPUT_VALUES(ENDI+1:2*ENDI)
+              CLOSE(I)
+            ELSE IF(I==3) THEN
+              OPEN(UNIT=I, FILE="./input/data/W_DATA.dat",STATUS='unknown') 
+                READ(I,*) CHECK
+                IF(CHECK/=ENDI) THEN
+                  STOP 'Error during data input'
+                ENDIF
+                READ(I,*) INPUT_VALUES(2*ENDI+1:3*ENDI)
+              CLOSE(I)
+            ENDIF
+          ENDDO
+        ELSE IF(INPUT_OPTION==2) THEN
+          DO I=1,NUMBER_OF_DIMENSIONS
+            IF(I==1) THEN
+              OPEN(UNIT=I, FILE="./input/data/U_DATA.dat",STATUS='unknown') 
+                READ(I,*) CHECK
+                IF(CHECK/=ENDI) THEN
+                  STOP 'Error during data input'
+                ENDIF
+                READ(I,*) INPUT_VALUES(1:ENDI)
+              CLOSE(I)
+            ELSE IF(I==2) THEN
+              OPEN(UNIT=I, FILE="./input/data/V_DATA.dat",STATUS='unknown') 
+                READ(I,*) CHECK
+                IF(CHECK/=ENDI) THEN
+                  STOP 'Error during data input'
+                ENDIF
+                READ(I,*) INPUT_VALUES(ENDI+1:2*ENDI)
+              CLOSE(I)
+            ELSE IF(I==3) THEN
+              OPEN(UNIT=I, FILE="./input/data/W_DATA.dat",STATUS='unknown') 
+                READ(I,*) CHECK
+                IF(CHECK/=ENDI) THEN
+                  STOP 'Error during data input'
+                ENDIF
+                READ(I,*) INPUT_VALUES(2*ENDI+1:3*ENDI)
+              CLOSE(I)
+            ENDIF
+          ENDDO
+        ENDIF
+      ELSE IF(INPUT_TYPE==42) THEN
+! do nothing for now
+        IF(INPUT_OPTION==0) THEN
+          !do nothing (default)    
+        ELSE IF(INPUT_OPTION==1) THEN
+          TIME_STEP_SIZE=0.05_DP
+          TIME_TOLERANCE=0.00001_DP
+          NUMBER_OF_TIME_STEPS=19
+          ENDI=SIZE(INPUT_VALUES)
+          DO J=1,NUMBER_OF_TIME_STEPS
+            TIME_STEP=J
+            IF((TIME/TIME_STEP_SIZE<TIME_STEP+TIME_TOLERANCE).AND.(TIME/TIME_STEP_SIZE>TIME_STEP-TIME_TOLERANCE)) THEN
+              IF(J<10) THEN
+                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_0",I0,".dat")') J
+              ELSE IF(J<100) THEN
+                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_",I0,".dat")') J
+              ENDIF
+              OPEN(UNIT=J, FILE=INPUT_FILE,STATUS='unknown') 
+              DO I=1,ENDI
+                READ(J,*) INPUT_VALUES(I)
+              ENDDO
+              CLOSE(J)
+            ENDIF
+          ENDDO
+        ELSE
+          STOP 'Error during data input'
+        ENDIF
+      ENDIF
+    RETURN
+
+  END SUBROUTINE FLUID_MECHANICS_IO_READ_DATA
 
   ! OK
   !================================================================================================================================
