@@ -2163,6 +2163,12 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSFieldScalingTypeSetObj
   END INTERFACE !CMISSFieldScalingTypeSet
     
+  !>Sets/changes the scaling type for a field and locks it.  
+  INTERFACE CMISSFieldScalingTypeSetAndLock
+    MODULE PROCEDURE CMISSFieldScalingTypeSetAndLockNumber
+    MODULE PROCEDURE CMISSFieldScalingTypeSetAndLockObj
+  END INTERFACE !CMISSFieldScalingTypeSetAndLock
+    
   !>Returns the type for a field. 
   INTERFACE CMISSFieldTypeGet
     MODULE PROCEDURE CMISSFieldTypeGetNumber
@@ -2275,7 +2281,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSFieldParametersToFieldParametersComponentCopy
 
-  PUBLIC CMISSFieldScalingTypeGet,CMISSFieldScalingTypeSet
+  PUBLIC CMISSFieldScalingTypeGet,CMISSFieldScalingTypeSet,CMISSFieldScalingTypeSetAndLock
 
   PUBLIC CMISSFieldTypeGet,CMISSFieldTypeSet
 
@@ -19574,6 +19580,77 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSFieldScalingTypeSetObj
+
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Sets/changes the scaling type for a field identified by a user number, and locks it so that no further changes can be made.
+  SUBROUTINE CMISSFieldScalingTypeSetAndLockNumber(RegionUserNumber,FieldUserNumber,ScalingType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to set the scaling type for.
+    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to set the scaling type for.
+    INTEGER(INTG), INTENT(IN) :: ScalingType !<The field scaling type to set. \see OPENCMISS_FieldScalingTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSFieldScalingTypeSetAndLockNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL FIELD_SCALING_TYPE_SET_AND_LOCK(FIELD,ScalingType,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSFieldScalingTypeSetAndLockNumber")
+    RETURN
+999 CALL ERRORS("CMISSFieldScalingTypeSetAndLockNumber",Err,ERROR)
+    CALL EXITS("CMISSFieldScalingTypeSetAndLockNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldScalingTypeSetAndLockNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the scaling type for a field identified by an object, and locks it so that no further changes can be made.
+  SUBROUTINE CMISSFieldScalingTypeSetAndLockObj(Field,ScalingType,Err)
+  
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to set the scaling type for.
+    INTEGER(INTG), INTENT(IN) :: ScalingType !<The field scaling type to set. \see OPENCMISS_FieldScalingTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSFieldScalingTypeSetAndLockObj",Err,ERROR,*999)
+ 
+    CALL FIELD_SCALING_TYPE_SET_AND_LOCK(Field%FIELD,ScalingType,Err,ERROR,*999)
+
+    CALL EXITS("CMISSFieldScalingTypeSetAndLockObj")
+    RETURN
+999 CALL ERRORS("CMISSFieldScalingTypeSetAndLockObj",Err,ERROR)
+    CALL EXITS("CMISSFieldScalingTypeSetAndLockObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldScalingTypeSetAndLockObj
 
   !  
   !================================================================================================================================

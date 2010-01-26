@@ -19726,7 +19726,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the scaling type for a field and locks it so that not further changes can be made.
+  !>Sets/changes the scaling type for a field and locks it so that no further changes can be made.
   SUBROUTINE FIELD_SCALING_TYPE_SET_AND_LOCK(FIELD,SCALING_TYPE,ERR,ERROR,*)
 
     !Argument variables
