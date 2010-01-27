@@ -121,7 +121,7 @@ MODULE OPENCMISS_C
 
  PUBLIC CMISSAnalyticAnalysisOutputCNum, CMISSAnalyticAnalysisOutputCPtr
 
- PUBLIC CMISSAnalyticAnalysisNodeAbsoluteErrorGetCNum, CMISSAnalyticAnalysisNodeAbsoluteErrorGetCPtr
+ PUBLIC CMISSAnalyticAnalysisAbsoluteErrorGetNodeCNum, CMISSAnalyticAnalysisAbsoluteErrorGetNodeCPtr
 
 !!==================================================================================================================================
 !!
@@ -752,7 +752,7 @@ MODULE OPENCMISS_C
 
  PUBLIC CMISSSolverLibraryTypeSetCNum, CMISSSolverLibraryTypeSetCPtr
 
- PUBLIC CMISSSolverLinearDirectTypeSetCNum, CMISSSolverLinearDirectSetCPtr
+ PUBLIC CMISSSolverLinearDirectTypeSetCNum, CMISSSolverLinearDirectTypeSetCPtr
 
  PUBLIC CMISSSolverLinearIterativeAbsoluteToleranceSetCNum, CMISSSolverLinearIterativeAbsoluteToleranceSetCPtr
 
@@ -2289,8 +2289,8 @@ END FUNCTION CMISSFieldsTypeCreateC
   !
 
   !>Get absolute error value for the node in a field specified by a user number compared to the analytic value for C.
-  FUNCTION CMISSAnalyticAnalysisNodeAbsoluteErrorGetCNum(RegionUserNumber,FieldUserNumber,DerivativeNumber,NodeNumber, &
-    & ComponentNumber,VariableNumber,Value) BIND(C, NAME = "CMISSAnalyticAnalysisNodeAbsoluteErrorGetNum")
+  FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetNodeCNum(RegionUserNumber,FieldUserNumber,DerivativeNumber,NodeNumber, &
+    & ComponentNumber,VariableNumber,Value) BIND(C, NAME = "CMISSAnalyticAnalysisAbsoluteErrorGetNodeNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number, for C, of the region containing the field for analytic error analysis.
@@ -2301,23 +2301,23 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableNumber !<Variable number, for C, of the field to calculate the analytic error analysis for.
     REAL(C_DOUBLE), INTENT(OUT) :: Value !<The absolute error of the field to calculate the analytic error analysis for, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSAnalyticAnalysisNodeAbsoluteErrorGetCNum !<Error code.
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisAbsoluteErrorGetNodeCNum !<Error code.
     !Local variable
 
-    CALL CMISSAnalyticAnalysisNodeAbsoluteErrorGet(RegionUserNumber,FieldUserNumber,DerivativeNumber,NodeNumber, &
-      & ComponentNumber,VariableNumber,Value, CMISSAnalyticAnalysisNodeAbsoluteErrorGetCNum)
+    CALL CMISSAnalyticAnalysisAbsoluteErrorGetNode(RegionUserNumber,FieldUserNumber,DerivativeNumber,NodeNumber, &
+      & ComponentNumber,VariableNumber,Value, CMISSAnalyticAnalysisAbsoluteErrorGetNodeCNum)
 
     RETURN
 
-  END FUNCTION CMISSAnalyticAnalysisNodeAbsoluteErrorGetCNum
+  END FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetNodeCNum
 
   !
   !================================================================================================================================
   !
 
   !>Get absolute error value for the node in a field identified by an object compared to the analytic value for C.
-  FUNCTION CMISSAnalyticAnalysisNodeAbsoluteErrorGetCPtr(FieldPtr,DerivativeNumber,NodeNumber,ComponentNumber,VariableNumber, &
-    & Value) BIND(C, NAME = "CMISSAnalyticAnalysisNodeAbsoluteErrorGet")
+  FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetNodeCPtr(FieldPtr,DerivativeNumber,NodeNumber,ComponentNumber,VariableNumber, &
+    & Value) BIND(C, NAME = "CMISSAnalyticAnalysisAbsoluteErrorGetNode")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
@@ -2327,26 +2327,27 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableNumber !<Variable number, for C, of the field to calculate the analytic error analysis for.
     REAL(C_DOUBLE), INTENT(OUT) :: Value !<The absolute error of the field to calculate the analytic error analysis for, for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSAnalyticAnalysisNodeAbsoluteErrorGetCPtr !<Error Code.
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisAbsoluteErrorGetNodeCPtr !<Error Code.
     !Local variable
     TYPE(CMISSFieldType), POINTER :: Field
 
-    CMISSAnalyticAnalysisNodeAbsoluteErrorGetCPtr = CMISSNoError
+    CMISSAnalyticAnalysisAbsoluteErrorGetNodeCPtr = CMISSNoError
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSAnalyticAnalysisNodeAbsoluteErrorGet(Field,DerivativeNumber,NodeNumber,ComponentNumber,VariableNumber, &
-          & Value, CMISSAnalyticAnalysisNodeAbsoluteErrorGetCPtr)
+        CALL CMISSAnalyticAnalysisAbsoluteErrorGetNode(Field,DerivativeNumber,NodeNumber,ComponentNumber,VariableNumber, &
+          & Value, CMISSAnalyticAnalysisAbsoluteErrorGetNodeCPtr)
       ELSE
-        CMISSAnalyticAnalysisNodeAbsoluteErrorGetCPtr = CMISSErrorConvertingPointer
+        CMISSAnalyticAnalysisAbsoluteErrorGetNodeCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSAnalyticAnalysisNodeAbsoluteErrorGetCPtr = CMISSPointerIsNULL
+      CMISSAnalyticAnalysisAbsoluteErrorGetNodeCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSAnalyticAnalysisNodeAbsoluteErrorGetCPtr
+  END FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetNodeCPtr
+
 
 !!==================================================================================================================================
 !!
@@ -5224,7 +5225,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   !>Sets/changes the dimension of a coordinate system identified by an object, for C.
   FUNCTION CMISSCoordinateSystemDimensionSetCPtr(CoordinateSystemPtr,CoordinateSystemDimension) BIND(C, NAME = &
-    & "CMISSCoordinateSystemDimensionSetCPtr")
+    & "CMISSCoordinateSystemDimensionSet")
 
     !Argument variables
     TYPE(C_PTR), INTENT(INOUT)  :: CoordinateSystemPtr !<C pointer to the coordinate system to set the dimension for.
@@ -8539,7 +8540,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldComponentValuesInitialiseIntgCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldComponentValuesInitialiseIntg(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, &
+    CALL CMISSFieldComponentValuesInitialise(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, &
     & ComponentNumber, Value, CMISSFieldComponentValuesInitialiseIntgCNum)
 
     RETURN
@@ -8569,7 +8570,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldComponentValuesInitialiseIntg(Field, VariableType, FieldSetType, ComponentNumber, Value, &
+        CALL CMISSFieldComponentValuesInitialise(Field, VariableType, FieldSetType, ComponentNumber, Value, &
         & CMISSFieldComponentValuesInitialiseIntgCPtr)
       ELSE
         CMISSFieldComponentValuesInitialiseIntgCPtr = CMISSErrorConvertingPointer
@@ -8601,7 +8602,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldComponentValuesInitialiseSPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldComponentValuesInitialiseSP(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, &
+    CALL CMISSFieldComponentValuesInitialise(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, &
     & ComponentNumber, Value, CMISSFieldComponentValuesInitialiseSPCNum)
 
     RETURN
@@ -8632,7 +8633,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldComponentValuesInitialiseSP(Field, VariableType, FieldSetType, ComponentNumber, Value, &
+        CALL CMISSFieldComponentValuesInitialise(Field, VariableType, FieldSetType, ComponentNumber, Value, &
         & CMISSFieldComponentValuesInitialiseSPCPtr)
       ELSE
         CMISSFieldComponentValuesInitialiseSPCPtr = CMISSErrorConvertingPointer
@@ -8664,7 +8665,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldComponentValuesInitialiseDPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldComponentValuesInitialiseDP(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType,&
+    CALL CMISSFieldComponentValuesInitialise(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType,&
     & ComponentNumber, Value, CMISSFieldComponentValuesInitialiseDPCNum)
 
     RETURN
@@ -8694,7 +8695,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldComponentValuesInitialiseDP(Field, VariableType, FieldSetType, ComponentNumber, Value, &
+        CALL CMISSFieldComponentValuesInitialise(Field, VariableType, FieldSetType, ComponentNumber, Value, &
         & CMISSFieldComponentValuesInitialiseDPCPtr)
       ELSE
         CMISSFieldComponentValuesInitialiseDPCPtr = CMISSErrorConvertingPointer
@@ -8726,7 +8727,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldComponentValuesInitialiseLCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldComponentValuesInitialiseL(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, ComponentNumber,&
+    CALL CMISSFieldComponentValuesInitialise(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, ComponentNumber,&
     & Value==CMISSTrue, CMISSFieldComponentValuesInitialiseLCNum)
 
     RETURN
@@ -8756,7 +8757,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldComponentValuesInitialiseL(Field, VariableType, FieldSetType, ComponentNumber, Value==CMISSTrue, &
+        CALL CMISSFieldComponentValuesInitialise(Field, VariableType, FieldSetType, ComponentNumber, Value==CMISSTrue, &
         & CMISSFieldComponentValuesInitialiseLCPtr)
       ELSE
         CMISSFieldComponentValuesInitialiseLCPtr = CMISSErrorConvertingPointer
@@ -9450,12 +9451,12 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region corresponding to the field to set the geometric field to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !< The user number for the field to set the geometric field to, for C.
-    INTEGER(C_INT), VALUE, INTENT(IN) :: GeometricFieldUserNumber !<The field geometric field user number to set for C.
+    INTEGER(C_INT), INTENT(OUT) :: GeometricFieldUserNumber !<The field geometric field user number to set for C.
     !Function variable
     INTEGER(C_INT) :: CMISSFieldGeometricFieldSetCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldGeometricFieldSetNum(RegionUserNumber,FieldUserNumber,GeometricFieldUserNumber,&
+    CALL CMISSFieldGeometricFieldSet(RegionUserNumber,FieldUserNumber,GeometricFieldUserNumber,&
     & CMISSFieldGeometricFieldSetCNum)
 
     RETURN
@@ -9989,7 +9990,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetAddConstantIntgCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddConstantIntg(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
+    CALL CMISSFieldParameterSetAddConstant(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
     & ComponentNumber,Value, CMISSFieldParameterSetAddConstantIntgCNum)
 
     RETURN
@@ -10019,7 +10020,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddConstantIntg(Field, VariableType, FieldSetType, ComponentNumber, Value, &
+        CALL CMISSFieldParameterSetAddConstant(Field, VariableType, FieldSetType, ComponentNumber, Value, &
         & CMISSFieldParameterSetAddConstantIntgCPtr)
       ELSE
         CMISSFieldParameterSetAddConstantIntgCPtr = CMISSErrorConvertingPointer
@@ -10052,7 +10053,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetAddConstantSPCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddConstantSP (RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber,&
+    CALL CMISSFieldParameterSetAddConstant(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber,&
     & Value,CMISSFieldParameterSetAddConstantSPCNum)
 
     RETURN
@@ -10082,7 +10083,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddConstantSP(Field, VariableType, FieldSetType, ComponentNumber, Value, &
+        CALL CMISSFieldParameterSetAddConstant(Field, VariableType, FieldSetType, ComponentNumber, Value, &
         & CMISSFieldParameterSetAddConstantSPCPtr)
       ELSE
         CMISSFieldParameterSetAddConstantSPCPtr = CMISSErrorConvertingPointer
@@ -10114,7 +10115,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetAddConstantDPCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddConstantDP(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber,&
+    CALL CMISSFieldParameterSetAddConstant(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber,&
     & Value,CMISSFieldParameterSetAddConstantDPCNum)
 
     RETURN
@@ -10144,7 +10145,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddConstantDP(Field, VariableType, FieldSetType, ComponentNumber, Value, &
+        CALL CMISSFieldParameterSetAddConstant(Field, VariableType, FieldSetType, ComponentNumber, Value, &
         & CMISSFieldParameterSetAddConstantDPCPtr)
       ELSE
         CMISSFieldParameterSetAddConstantDPCPtr = CMISSErrorConvertingPointer
@@ -10176,7 +10177,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetAddConstantLCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetAddConstantL(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, ComponentNumber, &
+    CALL CMISSFieldParameterSetAddConstant(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, ComponentNumber, &
     & Value==CMISSTrue, CMISSFieldParameterSetAddConstantLCNum)
 
     RETURN
@@ -10206,7 +10207,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddConstantL(Field, VariableType, FieldSetType, ComponentNumber, Value==CMISSTrue, &
+        CALL CMISSFieldParameterSetAddConstant(Field, VariableType, FieldSetType, ComponentNumber, Value==CMISSTrue, &
         & CMISSFieldParameterSetAddConstantLCPtr)
       ELSE
         CMISSFieldParameterSetAddConstantLCPtr = CMISSErrorConvertingPointer
@@ -10240,7 +10241,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetAddElementIntgCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddElementIntg(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
+    CALL CMISSFieldParameterSetAddElement(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
     & ComponentNumber,Value, CMISSFieldParameterSetAddElementIntgCNum)
 
     RETURN
@@ -10271,7 +10272,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddElementIntg(Field, VariableType, FieldSetType, UserElementNumber, ComponentNumber, Value, &
+        CALL CMISSFieldParameterSetAddElement(Field, VariableType, FieldSetType, UserElementNumber, ComponentNumber, Value, &
         & CMISSFieldParameterSetAddElementIntgCPtr)
       ELSE
         CMISSFieldParameterSetAddElementIntgCPtr = CMISSErrorConvertingPointer
@@ -10304,7 +10305,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetAddElementSPCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddElementSP(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
+    CALL CMISSFieldParameterSetAddElement(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
     & ComponentNumber,Value,CMISSFieldParameterSetAddElementSPCNum)
 
     RETURN
@@ -10335,7 +10336,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddElementSP(Field, VariableType, FieldSetType, UserElementNumber, ComponentNumber, Value, &
+        CALL CMISSFieldParameterSetAddElement(Field, VariableType, FieldSetType, UserElementNumber, ComponentNumber, Value, &
         & CMISSFieldParameterSetAddElementSPCPtr)
       ELSE
         CMISSFieldParameterSetAddElementSPCPtr = CMISSErrorConvertingPointer
@@ -10368,7 +10369,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetAddElementDPCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddElementDP(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber,&
+    CALL CMISSFieldParameterSetAddElement(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber,&
     & ComponentNumber,Value,CMISSFieldParameterSetAddElementDPCNum)
 
     RETURN
@@ -10400,7 +10401,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddElementDP(Field, VariableType, FieldSetType, UserElementNumber, ComponentNumber, Value, &
+        CALL CMISSFieldParameterSetAddElement(Field, VariableType, FieldSetType, UserElementNumber, ComponentNumber, Value, &
         & CMISSFieldParameterSetAddElementDPCPtr)
       ELSE
         CMISSFieldParameterSetAddElementDPCPtr = CMISSErrorConvertingPointer
@@ -10433,7 +10434,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetAddElementLCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddElementL(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
+    CALL CMISSFieldParameterSetAddElement(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
     & ComponentNumber,Value==CMISSTrue,CMISSFieldParameterSetAddElementLCNum)
 
     RETURN
@@ -10464,7 +10465,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddElementL(Field, VariableType, FieldSetType, UserElementNumber, ComponentNumber, &
+        CALL CMISSFieldParameterSetAddElement(Field, VariableType, FieldSetType, UserElementNumber, ComponentNumber, &
           & Value==CMISSTrue, CMISSFieldParameterSetAddElementLCPtr)
       ELSE
         CMISSFieldParameterSetAddElementLCPtr = CMISSErrorConvertingPointer
@@ -10498,7 +10499,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeIntgCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddNodeIntg(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber,&
+    CALL CMISSFieldParameterSetAddNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber,&
     & UserNodeNumber,ComponentNumber,Value,CMISSFieldParameterSetAddNodeIntgCNum)
 
     RETURN
@@ -10530,7 +10531,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddNodeIntg(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
+        CALL CMISSFieldParameterSetAddNode(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
         & ComponentNumber, Value, CMISSFieldParameterSetAddNodeIntgCPtr)
       ELSE
         CMISSFieldParameterSetAddNodeIntgCPtr = CMISSErrorConvertingPointer
@@ -10566,7 +10567,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeSPCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddNodeSP(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
+    CALL CMISSFieldParameterSetAddNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
     & UserNodeNumber,ComponentNumber,Value,CMISSFieldParameterSetAddNodeSPCNum)
 
     RETURN
@@ -10598,7 +10599,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddNodeSP(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
+        CALL CMISSFieldParameterSetAddNode(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
         & ComponentNumber, Value, CMISSFieldParameterSetAddNodeSPCPtr)
       ELSE
         CMISSFieldParameterSetAddNodeSPCPtr = CMISSErrorConvertingPointer
@@ -10632,7 +10633,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeDPCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddNodeDP(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
+    CALL CMISSFieldParameterSetAddNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
     & UserNodeNumber,ComponentNumber,Value,CMISSFieldParameterSetAddNodeDPCNum)
 
     RETURN
@@ -10664,7 +10665,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddNodeDP(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
+        CALL CMISSFieldParameterSetAddNode(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
         & ComponentNumber, Value, CMISSFieldParameterSetAddNodeDPCPtr)
       ELSE
         CMISSFieldParameterSetAddNodeDPCPtr = CMISSErrorConvertingPointer
@@ -10698,7 +10699,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeLCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddNodeL(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,&
+    CALL CMISSFieldParameterSetAddNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,&
     & ComponentNumber,Value==CMISSTrue,CMISSFieldParameterSetAddNodeLCNum)
 
     RETURN
@@ -10730,7 +10731,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddNodeL(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, ComponentNumber, &
+        CALL CMISSFieldParameterSetAddNode(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, ComponentNumber, &
         & Value==CMISSTrue, CMISSFieldParameterSetAddNodeLCPtr)
       ELSE
         CMISSFieldParameterSetAddNodeLCPtr = CMISSErrorConvertingPointer
@@ -10879,7 +10880,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(ParametersPtr)) THEN
       CALL C_F_POINTER(ParametersPtr, Parameters, ParametersSize)
       IF(ASSOCIATED(Parameters)) THEN
-        CALL CMISSFieldParameterSetDataGetIntg(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType, Parameters, &
+        CALL CMISSFieldParameterSetDataGet(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType, Parameters, &
           & CMISSFieldParameterSetDataGetIntgCNum)
         ParametersSize = Size(Parameters,1)
         ParametersPtr = C_LOC(Parameters(1)) !Point to first element as fortran pointers to arrays are not interoperable. This assumes that the parameters array is sequential in memory
@@ -10921,7 +10922,7 @@ END FUNCTION CMISSFieldsTypeCreateC
         IF(C_ASSOCIATED(FieldPtr)) THEN
           CALL C_F_POINTER(FieldPtr, Field)
           IF(ASSOCIATED(Field)) THEN
-            CALL CMISSFieldParameterSetDataGetIntg(Field, VariableType, FieldSetType, Parameters, &
+            CALL CMISSFieldParameterSetDataGet(Field, VariableType, FieldSetType, Parameters, &
               & CMISSFieldParameterSetDataGetIntgCPtr)
             ParametersSize = Size(Parameters,1)
             ParametersPtr = C_LOC(Parameters(1)) !Point to first element as fortran pointers to arrays are not interoperable. This assumes that the parameters array is sequential in memory
@@ -10966,7 +10967,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(ParametersPtr)) THEN
       CALL C_F_POINTER(ParametersPtr, Parameters, ParametersSize)
       IF(ASSOCIATED(Parameters)) THEN
-        CALL CMISSFieldParameterSetDataGetSP(RegionUserNumber,FieldUserNumber, VariableType, FieldSetType, Parameters, &
+        CALL CMISSFieldParameterSetDataGet(RegionUserNumber,FieldUserNumber, VariableType, FieldSetType, Parameters, &
         & CMISSFieldParameterSetDataGetSPCNum)
         ParametersSize = Size(Parameters, 1)
         ParametersPtr = C_LOC(Parameters(1)) !Point to first element as fortran pointers to arrays are not interoperable. This assumes that the parameters array is sequential in memory
@@ -11008,7 +11009,7 @@ END FUNCTION CMISSFieldsTypeCreateC
         IF(C_ASSOCIATED(FieldPtr)) THEN
           CALL C_F_POINTER(FieldPtr,Field)
           IF(ASSOCIATED(Field)) THEN
-            CALL CMISSFieldParameterSetDataGetSP(Field, VariableType, FieldSetType, Parameters, CMISSFieldParameterSetDataGetSPCPtr)
+            CALL CMISSFieldParameterSetDataGet(Field, VariableType, FieldSetType, Parameters, CMISSFieldParameterSetDataGetSPCPtr)
             ParametersSize = Size(Parameters, 1)
             ParametersPtr = C_LOC(Parameters(1)) !Point to first element as fortran pointers to arrays are not interoperable. This assumes that the parameters array is sequential in memory
           ELSE
@@ -11052,7 +11053,7 @@ END FUNCTION CMISSFieldsTypeCreateC
      IF(C_ASSOCIATED(ParametersPtr)) THEN
       CALL C_F_POINTER(ParametersPtr, Parameters, ParametersSize)
       IF(ASSOCIATED(Parameters)) THEN
-        CALL CMISSFieldParameterSetDataGetDP(RegionUserNumber,FieldUserNumber, VariableType, FieldSetType, Parameters, &
+        CALL CMISSFieldParameterSetDataGet(RegionUserNumber,FieldUserNumber, VariableType, FieldSetType, Parameters, &
           & CMISSFieldParameterSetDataGetDPCNum)
         ParametersSize = Size(Parameters, 1)
         ParametersPtr = C_LOC(Parameters(1)) !Point to first element as fortran pointers to arrays are not interoperable. This assumes that the parameters array is sequential in memory
@@ -11094,7 +11095,7 @@ END FUNCTION CMISSFieldsTypeCreateC
         IF(C_ASSOCIATED(FieldPtr)) THEN
           CALL C_F_POINTER(FieldPtr,Field)
           IF(ASSOCIATED(Field)) THEN
-            CALL CMISSFieldParameterSetDataGetDP(Field, VariableType, FieldSetType, Parameters, CMISSFieldParameterSetDataGetDPCPtr)
+            CALL CMISSFieldParameterSetDataGet(Field, VariableType, FieldSetType, Parameters, CMISSFieldParameterSetDataGetDPCPtr)
             ParametersSize = Size(Parameters, 1)
             ParametersPtr = C_LOC(Parameters(1)) !Point to first element as fortran pointers to arrays are not interoperable. This assumes that the parameters array is sequential in memory
           ELSE
@@ -11138,7 +11139,7 @@ END FUNCTION CMISSFieldsTypeCreateC
      IF(C_ASSOCIATED(ParametersPtr)) THEN
       CALL C_F_POINTER(ParametersPtr, Parameters, ParametersSize)
       IF(ASSOCIATED(Parameters)) THEN
-        CALL CMISSFieldParameterSetDataGetL(RegionUserNumber,FieldUserNumber, VariableType, FieldSetType, Parameters==CMISSTrue, &
+        CALL CMISSFieldParameterSetDataGet(RegionUserNumber,FieldUserNumber, VariableType, FieldSetType, Parameters, &
           & CMISSFieldParameterSetDataGetLCNum)
         ParametersSize = Size(Parameters, 1)
         ParametersPtr = C_LOC(Parameters(1)) !Point to first element as fortran pointers to arrays are not interoperable. This assumes that the parameters array is sequential in memory
@@ -11180,7 +11181,7 @@ END FUNCTION CMISSFieldsTypeCreateC
         IF(C_ASSOCIATED(FieldPtr)) THEN
           CALL C_F_POINTER(FieldPtr,Field)
           IF(ASSOCIATED(Field)) THEN
-            CALL CMISSFieldParameterSetDataGetL(Field, VariableType, FieldSetType, Parameters==CMISSTrue, &
+            CALL CMISSFieldParameterSetDataGet(Field, VariableType, FieldSetType, Parameters, &
               & CMISSFieldParameterSetDataGetLCPtr)
             ParametersSize = Size(Parameters, 1)
             ParametersPtr = C_LOC(Parameters(1)) !Point to first element as fortran pointers to arrays are not interoperable. This assumes that the parameters array is sequential in memory
@@ -11225,7 +11226,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(ParametersPtr)) THEN
       CALL C_F_POINTER(ParametersPtr, Parameters, ParametersSize)
       IF(ASSOCIATED(Parameters)) THEN
-        CALL CMISSFieldParameterSetDataRestoreIntg(RegionUserNumber,FieldUserNumber, VariableType, FieldSetType, Parameters, &
+        CALL CMISSFieldParameterSetDataRestore(RegionUserNumber,FieldUserNumber, VariableType, FieldSetType, Parameters, &
           & CMISSFieldParameterSetDataRestoreIntgCNum)
         ParametersSize = Size(Parameters, 1)
         ParametersPtr = C_LOC(Parameters(1)) !Point to first element as fortran pointers to arrays are not interoperable. This assumes that the parameters array is sequential in memory
@@ -11267,7 +11268,7 @@ END FUNCTION CMISSFieldsTypeCreateC
         IF(C_ASSOCIATED(FieldPtr)) THEN
           CALL C_F_POINTER(FieldPtr,Field)
           IF(ASSOCIATED(Field)) THEN
-            CALL CMISSFieldParameterSetDataRestoreIntg(Field, VariableType, FieldSetType, Parameters, &
+            CALL CMISSFieldParameterSetDataRestore(Field, VariableType, FieldSetType, Parameters, &
               & CMISSFieldParameterSetDataRestoreIntgCPtr)
             ParametersSize = Size(Parameters, 1)
             ParametersPtr = C_LOC(Parameters(1)) !Point to first element as fortran pointers to arrays are not interoperable. This assumes that the parameters array is sequential in memory
@@ -11313,7 +11314,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(ParametersPtr)) THEN
       CALL C_F_POINTER(ParametersPtr, Parameters, ParametersSize)
       IF(ASSOCIATED(Parameters)) THEN
-        CALL CMISSFieldParameterSetDataRestoreSP(RegionUserNumber,FieldUserNumber, VariableType, FieldSetType, Parameters, &
+        CALL CMISSFieldParameterSetDataRestore(RegionUserNumber,FieldUserNumber, VariableType, FieldSetType, Parameters, &
           & CMISSFieldParameterSetDataRestoreSPCNum)
         ParametersSize = Size(Parameters, 1)
         ParametersPtr = C_LOC(Parameters(1)) !Point to first element as fortran pointers to arrays are not interoperable. This assumes that the parameters array is sequential in memory
@@ -11356,7 +11357,7 @@ END FUNCTION CMISSFieldsTypeCreateC
         IF(C_ASSOCIATED(FieldPtr)) THEN
           CALL C_F_POINTER(FieldPtr,Field)
           IF(ASSOCIATED(Field)) THEN
-            CALL CMISSFieldParameterSetDataRestoreSP(Field, VariableType, FieldSetType, Parameters, &
+            CALL CMISSFieldParameterSetDataRestore(Field, VariableType, FieldSetType, Parameters, &
               & CMISSFieldParameterSetDataRestoreSPCPtr)
             ParametersSize = Size(Parameters, 1)
             ParametersPtr = C_LOC(Parameters(1)) !Point to first element as fortran pointers to arrays are not interoperable. This assumes that the parameters array is sequential in memory
@@ -11401,7 +11402,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(ParametersPtr)) THEN
       CALL C_F_POINTER(ParametersPtr, Parameters, ParametersSize)
       IF(ASSOCIATED(Parameters)) THEN
-        CALL CMISSFieldParameterSetDataRestoreDP(RegionUserNumber,FieldUserNumber, VariableType, FieldSetType, Parameters, &
+        CALL CMISSFieldParameterSetDataRestore(RegionUserNumber,FieldUserNumber, VariableType, FieldSetType, Parameters, &
           & CMISSFieldParameterSetDataRestoreDPCNum)
         ParametersSize = Size(Parameters, 1)
         ParametersPtr = C_LOC(Parameters(1)) !Point to first element as fortran pointers to arrays are not interoperable. This assumes that the parameters array is sequential in memory
@@ -11443,7 +11444,7 @@ END FUNCTION CMISSFieldsTypeCreateC
         IF(C_ASSOCIATED(FieldPtr)) THEN
           CALL C_F_POINTER(FieldPtr,Field)
           IF(ASSOCIATED(Field)) THEN
-            CALL CMISSFieldParameterSetDataRestoreDP(Field, VariableType, FieldSetType, Parameters, &
+            CALL CMISSFieldParameterSetDataRestore(Field, VariableType, FieldSetType, Parameters, &
               & CMISSFieldParameterSetDataRestoreDPCPtr)
             ParametersSize = Size(Parameters, 1)
             ParametersPtr = C_LOC(Parameters(1)) !Point to first element as fortran pointers to arrays are not interoperable. This assumes that the parameters array is sequential in memory
@@ -11488,8 +11489,8 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(ParametersPtr)) THEN
       CALL C_F_POINTER(ParametersPtr, Parameters, ParametersSize)
       IF(ASSOCIATED(Parameters)) THEN
-        CALL CMISSFieldParameterSetDataRestoreL(RegionUserNumber,FieldUserNumber, VariableType, FieldSetType, &
-          & Parameters==CMISSTrue,CMISSFieldParameterSetDataRestoreLCNum)
+        CALL CMISSFieldParameterSetDataRestore(RegionUserNumber,FieldUserNumber, VariableType, FieldSetType, &
+          & Parameters,CMISSFieldParameterSetDataRestoreLCNum)
         ParametersSize = Size(Parameters, 1)
         ParametersPtr = C_LOC(Parameters(1)) !Point to first element as fortran pointers to arrays are not interoperable. This assumes that the parameters array is sequential in memory
       ELSE
@@ -11530,7 +11531,7 @@ END FUNCTION CMISSFieldsTypeCreateC
         IF(C_ASSOCIATED(FieldPtr)) THEN
           CALL C_F_POINTER(FieldPtr,Field)
           IF(ASSOCIATED(Field)) THEN
-            CALL CMISSFieldParameterSetDataRestoreL(Field, VariableType, FieldSetType, Parameters==CMISSTrue, &
+            CALL CMISSFieldParameterSetDataRestore(Field, VariableType, FieldSetType, Parameters, &
               & CMISSFieldParameterSetDataRestoreLCPtr)
             ParametersSize = Size(Parameters, 1)
             ParametersPtr = C_LOC(Parameters(1)) !Point to first element as fortran pointers to arrays are not interoperable. This assumes that the parameters array is sequential in memory
@@ -11570,7 +11571,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetGetConstantIntgCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetConstantIntg(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber,Value, &
+    CALL CMISSFieldParameterSetGetConstant(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber,Value, &
       & CMISSFieldParameterSetGetConstantIntgCNum)
 
     RETURN
@@ -11600,7 +11601,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr,Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetConstantIntg(Field,VariableType,FieldSetType,ComponentNumber,Value, &
+        CALL CMISSFieldParameterSetGetConstant(Field,VariableType,FieldSetType,ComponentNumber,Value, &
           & CMISSFieldParameterSetGetConstantIntgCPtr)
       ELSE
         CMISSFieldParameterSetGetConstantIntgCPtr = CMISSErrorConvertingPointer
@@ -11632,7 +11633,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetGetConstantSPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetConstantSP(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber, &
+    CALL CMISSFieldParameterSetGetConstant(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber, &
       & Value,CMISSFieldParameterSetGetConstantSPCNum)
 
     RETURN
@@ -11662,7 +11663,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetConstantSP(Field, VariableType, FieldSetType, ComponentNumber, Value, &
+        CALL CMISSFieldParameterSetGetConstant(Field, VariableType, FieldSetType, ComponentNumber, Value, &
           & CMISSFieldParameterSetGetConstantSPCPtr)
       ELSE
         CMISSFieldParameterSetGetConstantSPCPtr = CMISSErrorConvertingPointer
@@ -11695,7 +11696,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetGetConstantDPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetConstantDP(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber, &
+    CALL CMISSFieldParameterSetGetConstant(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber, &
       & Value,CMISSFieldParameterSetGetConstantDPCNum)
 
     RETURN
@@ -11725,7 +11726,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetConstantDP(Field, VariableType, FieldSetType, ComponentNumber, Value, &
+        CALL CMISSFieldParameterSetGetConstant(Field, VariableType, FieldSetType, ComponentNumber, Value, &
           & CMISSFieldParameterSetGetConstantDPCPtr)
       ELSE
         CMISSFieldParameterSetGetConstantDPCPtr = CMISSErrorConvertingPointer
@@ -11757,7 +11758,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetGetConstantLCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetConstantL(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber, &
+    CALL CMISSFieldParameterSetGetConstant(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,ComponentNumber, &
       & Value,CMISSFieldParameterSetGetConstantLCNum)
 
     IF(Value==CMISSTrue) THEN
@@ -11793,7 +11794,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetConstantL(Field, VariableType, FieldSetType, ComponentNumber, Value, &
+        CALL CMISSFieldParameterSetGetConstant(Field, VariableType, FieldSetType, ComponentNumber, Value, &
           & CMISSFieldParameterSetGetConstantLCPtr)
         IF(Value==CMISSTrue) THEN
           Value = 1
@@ -11831,7 +11832,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetGetElementIntgCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetElementIntg(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
+    CALL CMISSFieldParameterSetGetElement(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
       & ComponentNumber,Value,CMISSFieldParameterSetGetElementIntgCNum)
 
     RETURN
@@ -11862,7 +11863,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetElementIntg(Field, VariableType, FieldSetType,UserElementNumber, ComponentNumber, Value, &
+        CALL CMISSFieldParameterSetGetElement(Field, VariableType, FieldSetType,UserElementNumber, ComponentNumber, Value, &
           & CMISSFieldParameterSetGetElementIntgCPtr)
       ELSE
         CMISSFieldParameterSetGetElementIntgCPtr = CMISSErrorConvertingPointer
@@ -11895,7 +11896,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetGetElementSPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetElementSP(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
+    CALL CMISSFieldParameterSetGetElement(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
       & ComponentNumber,Value,CMISSFieldParameterSetGetElementSPCNum)
 
     RETURN
@@ -11926,7 +11927,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetElementSP(Field, VariableType, FieldSetType,UserElementNumber, ComponentNumber, Value, &
+        CALL CMISSFieldParameterSetGetElement(Field, VariableType, FieldSetType,UserElementNumber, ComponentNumber, Value, &
           & CMISSFieldParameterSetGetElementSPCPtr)
       ELSE
         CMISSFieldParameterSetGetElementSPCPtr = CMISSErrorConvertingPointer
@@ -11959,7 +11960,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetGetElementDPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetElementDP(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
+    CALL CMISSFieldParameterSetGetElement(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
       & ComponentNumber,Value,CMISSFieldParameterSetGetElementDPCNum)
 
     RETURN
@@ -11990,7 +11991,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetElementDP(Field, VariableType, FieldSetType,UserElementNumber, ComponentNumber, Value, &
+        CALL CMISSFieldParameterSetGetElement(Field, VariableType, FieldSetType,UserElementNumber, ComponentNumber, Value, &
           & CMISSFieldParameterSetGetElementDPCPtr)
       ELSE
         CMISSFieldParameterSetGetElementDPCPtr = CMISSErrorConvertingPointer
@@ -12023,7 +12024,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetGetElementLCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetElementL(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
+    CALL CMISSFieldParameterSetGetElement(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,UserElementNumber, &
       & ComponentNumber,Value,CMISSFieldParameterSetGetElementLCNum)
 
     IF(Value==CMISSTrue) THEN
@@ -12061,7 +12062,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetElementL(Field, VariableType, FieldSetType, UserElementNumber, ComponentNumber, &
+        CALL CMISSFieldParameterSetGetElement(Field, VariableType, FieldSetType, UserElementNumber, ComponentNumber, &
           & Value,CMISSFieldParameterSetGetElementLCPtr)
         IF(Value==CMISSTrue) THEN
           Value = 1
@@ -12100,7 +12101,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeIntgCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetNodeIntg(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, DerivativeNumber, &
+    CALL CMISSFieldParameterSetGetNode(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, DerivativeNumber, &
       & UserNodeNumber, ComponentNumber,Value, CMISSFieldParameterSetGetNodeIntgCNum)
 
     RETURN
@@ -12132,7 +12133,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetNodeIntg(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
+        CALL CMISSFieldParameterSetGetNode(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
           & ComponentNumber, Value, CMISSFieldParameterSetGetNodeIntgCPtr)
       ELSE
         CMISSFieldParameterSetGetNodeIntgCPtr = CMISSErrorConvertingPointer
@@ -12166,7 +12167,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeSPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetNodeSP(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, DerivativeNumber, &
+    CALL CMISSFieldParameterSetGetNode(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, DerivativeNumber, &
       &UserNodeNumber, ComponentNumber,Value, CMISSFieldParameterSetGetNodeSPCNum)
 
     RETURN
@@ -12198,7 +12199,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetNodeSP(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
+        CALL CMISSFieldParameterSetGetNode(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
           & ComponentNumber, Value, CMISSFieldParameterSetGetNodeSPCPtr)
       ELSE
         CMISSFieldParameterSetGetNodeSPCPtr = CMISSErrorConvertingPointer
@@ -12232,7 +12233,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeDPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetNodeDP(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, DerivativeNumber, &
+    CALL CMISSFieldParameterSetGetNode(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, DerivativeNumber, &
       & UserNodeNumber, ComponentNumber,Value, CMISSFieldParameterSetGetNodeDPCNum)
 
     RETURN
@@ -12264,7 +12265,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetNodeDP(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
+        CALL CMISSFieldParameterSetGetNode(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
           & ComponentNumber, Value, CMISSFieldParameterSetGetNodeDPCPtr)
       ELSE
         CMISSFieldParameterSetGetNodeDPCPtr = CMISSErrorConvertingPointer
@@ -12298,7 +12299,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeLCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetNodeL(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, DerivativeNumber, &
+    CALL CMISSFieldParameterSetGetNode(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, DerivativeNumber, &
       & UserNodeNumber, ComponentNumber,Value, CMISSFieldParameterSetGetNodeLCNum)
 
     IF(Value==CMISSTrue) THEN
@@ -12336,7 +12337,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetNodeL(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
+        CALL CMISSFieldParameterSetGetNode(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
           & ComponentNumber, Value, CMISSFieldParameterSetGetNodeLCPtr)
         IF(Value==CMISSTrue) THEN
           Value = 1
@@ -12373,7 +12374,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetUpdateConstantIntgCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetUpdateConstantIntg(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,&
+    CALL CMISSFieldParameterSetUpdateConstant(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,&
       & ComponentNumber,Value,CMISSFieldParameterSetUpdateConstantIntgCNum)
 
     RETURN
@@ -12403,7 +12404,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateConstantIntg(Field, VariableType,FieldSetType,ComponentNumber,Value,&
+        CALL CMISSFieldParameterSetUpdateConstant(Field, VariableType,FieldSetType,ComponentNumber,Value,&
           & CMISSFieldParameterSetUpdateConstantIntgCPtr)
       ELSE
         CMISSFieldParameterSetUpdateConstantIntgCPtr = CMISSErrorConvertingPointer
@@ -12435,7 +12436,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetUpdateConstantSPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetUpdateConstantSP(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,ComponentNumber,&
+    CALL CMISSFieldParameterSetUpdateConstant(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,ComponentNumber,&
       & Value,CMISSFieldParameterSetUpdateConstantSPCNum)
 
     RETURN
@@ -12465,7 +12466,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateConstantSP(Field, VariableType,FieldSetType,ComponentNumber,Value, &
+        CALL CMISSFieldParameterSetUpdateConstant(Field, VariableType,FieldSetType,ComponentNumber,Value, &
           & CMISSFieldParameterSetUpdateConstantSPCPtr)
       ELSE
         CMISSFieldParameterSetUpdateConstantSPCPtr = CMISSErrorConvertingPointer
@@ -12497,7 +12498,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetUpdateConstantDPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetUpdateConstantDP(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,&
+    CALL CMISSFieldParameterSetUpdateConstant(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,&
       & ComponentNumber,Value,CMISSFieldParameterSetUpdateConstantDPCNum)
 
     RETURN
@@ -12527,7 +12528,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateConstantDP(Field, VariableType,FieldSetType,ComponentNumber,Value,&
+        CALL CMISSFieldParameterSetUpdateConstant(Field, VariableType,FieldSetType,ComponentNumber,Value,&
           & CMISSFieldParameterSetUpdateConstantDPCPtr)
       ELSE
         CMISSFieldParameterSetUpdateConstantDPCPtr = CMISSErrorConvertingPointer
@@ -12559,7 +12560,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetUpdateConstantLCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetUpdateConstantL(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,ComponentNumber, &
+    CALL CMISSFieldParameterSetUpdateConstant(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,ComponentNumber, &
       & Value==CMISSTrue,CMISSFieldParameterSetUpdateConstantLCNum)
 
     RETURN
@@ -12590,7 +12591,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateConstantL(Field, VariableType,FieldSetType,ComponentNumber,Value==CMISSTrue,&
+        CALL CMISSFieldParameterSetUpdateConstant(Field, VariableType,FieldSetType,ComponentNumber,Value==CMISSTrue,&
           & CMISSFieldParameterSetUpdateConstantLCPtr)
       ELSE
         CMISSFieldParameterSetUpdateConstantLCPtr = CMISSErrorConvertingPointer
@@ -12623,7 +12624,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetUpdateElementIntgCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetUpdateElementIntg(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,&
+    CALL CMISSFieldParameterSetUpdateElement(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,&
       & UserElementNumber,ComponentNumber,Value,CMISSFieldParameterSetUpdateElementIntgCNum)
 
     RETURN
@@ -12654,7 +12655,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateElementIntg(Field, VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value,&
+        CALL CMISSFieldParameterSetUpdateElement(Field, VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value,&
           & CMISSFieldParameterSetUpdateElementIntgCPtr)
       ELSE
         CMISSFieldParameterSetUpdateElementIntgCPtr = CMISSErrorConvertingPointer
@@ -12687,7 +12688,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetUpdateElementSPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetUpdateElementSP(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,UserElementNumber,&
+    CALL CMISSFieldParameterSetUpdateElement(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,UserElementNumber,&
       & ComponentNumber,Value,CMISSFieldParameterSetUpdateElementSPCNum)
 
     RETURN
@@ -12718,7 +12719,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateElementSP(Field, VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value, &
+        CALL CMISSFieldParameterSetUpdateElement(Field, VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value, &
           & CMISSFieldParameterSetUpdateElementSPCPtr)
       ELSE
         CMISSFieldParameterSetUpdateElementSPCPtr = CMISSErrorConvertingPointer
@@ -12751,7 +12752,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetUpdateElementDPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetUpdateElementDP(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,UserElementNumber,&
+    CALL CMISSFieldParameterSetUpdateElement(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,UserElementNumber,&
       & ComponentNumber,Value,CMISSFieldParameterSetUpdateElementDPCNum)
 
     RETURN
@@ -12782,7 +12783,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateElementDP(Field, VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value,&
+        CALL CMISSFieldParameterSetUpdateElement(Field, VariableType,FieldSetType,UserElementNumber,ComponentNumber,Value,&
           & CMISSFieldParameterSetUpdateElementDPCPtr)
       ELSE
         CMISSFieldParameterSetUpdateElementDPCPtr = CMISSErrorConvertingPointer
@@ -12815,7 +12816,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetUpdateElementLCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetUpdateElementL(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,UserElementNumber,&
+    CALL CMISSFieldParameterSetUpdateElement(RegionUserNumber, FieldUserNumber,VariableType,FieldSetType,UserElementNumber,&
       & ComponentNumber,Value==CMISSTrue,CMISSFieldParameterSetUpdateElementLCNum)
 
     RETURN
@@ -12846,7 +12847,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateElementL(Field, VariableType,FieldSetType,UserElementNumber,ComponentNumber, &
+        CALL CMISSFieldParameterSetUpdateElement(Field, VariableType,FieldSetType,UserElementNumber,ComponentNumber, &
           & Value==CMISSTrue,CMISSFieldParameterSetUpdateElementLCPtr)
       ELSE
         CMISSFieldParameterSetUpdateElementLCPtr = CMISSErrorConvertingPointer
@@ -12937,7 +12938,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeIntgCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetUpdateNodeIntg(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, DerivativeNumber, &
+    CALL CMISSFieldParameterSetUpdateNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, DerivativeNumber, &
       & UserNodeNumber, ComponentNumber, Value, CMISSFieldParameterSetUpdateNodeIntgCNum)
 
     RETURN
@@ -12970,7 +12971,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateNodeIntg(Field,VariableType,FieldSetType, DerivativeNumber, UserNodeNumber, &
+        CALL CMISSFieldParameterSetUpdateNode(Field,VariableType,FieldSetType, DerivativeNumber, UserNodeNumber, &
           & ComponentNumber,Value,CMISSFieldParameterSetUpdateNodeIntgCPtr)
       ELSE
         CMISSFieldParameterSetUpdateNodeIntgCPtr = CMISSErrorConvertingPointer
@@ -13004,7 +13005,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeSPCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetUpdateNodeSP(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, DerivativeNumber, &
+    CALL CMISSFieldParameterSetUpdateNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, DerivativeNumber, &
       & UserNodeNumber, ComponentNumber, Value, CMISSFieldParameterSetUpdateNodeSPCNum)
 
     RETURN
@@ -13037,7 +13038,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateNodeSP(Field,VariableType,FieldSetType, DerivativeNumber, UserNodeNumber, &
+        CALL CMISSFieldParameterSetUpdateNode(Field,VariableType,FieldSetType, DerivativeNumber, UserNodeNumber, &
           & ComponentNumber, Value,CMISSFieldParameterSetUpdateNodeSPCPtr)
       ELSE
         CMISSFieldParameterSetUpdateNodeSPCPtr = CMISSErrorConvertingPointer
@@ -13071,7 +13072,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeDPCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetUpdateNodeDP(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, DerivativeNumber, &
+    CALL CMISSFieldParameterSetUpdateNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, DerivativeNumber, &
       & UserNodeNumber, ComponentNumber, Value, CMISSFieldParameterSetUpdateNodeDPCNum)
 
     RETURN
@@ -13104,7 +13105,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateNodeDP(Field,VariableType,FieldSetType, DerivativeNumber, UserNodeNumber, &
+        CALL CMISSFieldParameterSetUpdateNode(Field,VariableType,FieldSetType, DerivativeNumber, UserNodeNumber, &
           & ComponentNumber, Value,CMISSFieldParameterSetUpdateNodeDPCPtr)
       ELSE
         CMISSFieldParameterSetUpdateNodeDPCPtr = CMISSErrorConvertingPointer
@@ -13138,7 +13139,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeLCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetUpdateNodeL(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, DerivativeNumber,&
+    CALL CMISSFieldParameterSetUpdateNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, DerivativeNumber,&
       & UserNodeNumber, ComponentNumber, Value==CMISSTrue, CMISSFieldParameterSetUpdateNodeLCNum)
 
     RETURN
@@ -13171,7 +13172,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateNodeL(Field,VariableType,FieldSetType, DerivativeNumber, UserNodeNumber, &
+        CALL CMISSFieldParameterSetUpdateNode(Field,VariableType,FieldSetType, DerivativeNumber, UserNodeNumber, &
           & ComponentNumber, Value==CMISSTrue,CMISSFieldParameterSetUpdateNodeLCPtr)
       ELSE
         CMISSFieldParameterSetUpdateNodeLCPtr = CMISSErrorConvertingPointer
@@ -13470,7 +13471,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Local variable
     CHARACTER(LEN = LabelSize-1) :: FLabel
 
-    CALL CMISSFieldVariableLabelGetCNum(RegionUserNumber,FieldUserNumber,VariableType,FLabel,CMISSFieldVariableLabelGetCCNum)
+    CALL CMISSFieldVariableLabelGet(RegionUserNumber,FieldUserNumber,VariableType,FLabel,CMISSFieldVariableLabelGetCCNum)
     CALL CMISSF2CString(FLabel,Label)
 
     RETURN
@@ -13532,7 +13533,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Local variable
     CHARACTER(LEN = LabelSize -1) :: FLabel
 
-    CALL CMISSC2FLabel(Label, FLabel)
+    CALL CMISSC2FString(Label, FLabel)
     CALL CMISSFieldVariableLabelSet(RegionUserNumber,FieldUserNumber,VariableType,FLabel,CMISSFieldVariableLabelSetCCNum)
 
     RETURN
@@ -13665,7 +13666,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(VariableTypesPtr)) THEN
       CALL C_F_POINTER(VariableTypesPtr, VariableTypes, VariableTypesSize)
       IF(ASSOCIATED(VariableTypes)) THEN
-        CALL CMISSFieldVariableTypesSetNum(RegionUserNumber,FieldUserNumber,VariableTypes,CMISSFieldVariableTypesSetCNum)
+        CALL CMISSFieldVariableTypesSet(RegionUserNumber,FieldUserNumber,VariableTypes,CMISSFieldVariableTypesSetCNum)
       ELSE
         CMISSFieldVariableTypesSetCNum = CMISSErrorConvertingPointer
       ENDIF
@@ -13701,7 +13702,7 @@ END FUNCTION CMISSFieldsTypeCreateC
         IF(C_ASSOCIATED(VariableTypesPtr)) THEN
           CALL C_F_POINTER(VariableTypesPtr, VariableTypes, VariableTypesSize)
           IF(ASSOCIATED(VariableTypes)) THEN
-            CALL CMISSFieldVariableTypesSetObj(Field, VariableTypes, CMISSFieldVariableTypesSetCPtr)
+            CALL CMISSFieldVariableTypesSet(Field, VariableTypes, CMISSFieldVariableTypesSetCPtr)
           ELSE
             CMISSFieldVariableTypesSetCPtr = CMISSErrorConvertingPointer
           ENDIF
@@ -13748,7 +13749,7 @@ END FUNCTION CMISSFieldsTypeCreateC
       IF(ASSOCIATED(Fields)) THEN
         CALL CMISSC2FString(FileName, FFileName)
         CALL CMISSC2FString(Method, FMethod)
-        CALL CMISSFieldIOElementsExportC(Fields,FileName,Method, CMISSFieldIOElementsExportCCPtr)
+        CALL CMISSFieldIOElementsExport(Fields,FFileName,FMethod,CMISSFieldIOElementsExportCCPtr)
         IF(ASSOCIATED(Fields)) THEN
           FieldsPtr = C_LOC(Fields)
         ELSE
@@ -13792,7 +13793,7 @@ END FUNCTION CMISSFieldsTypeCreateC
       IF(ASSOCIATED(Fields)) THEN
         CALL CMISSC2FString(FileName, FFileName)
         CALL CMISSC2FString(Method, FMethod)
-        CALL CMISSFieldIONodesExportC(Fields,FileName,Method, CMISSFieldIONodesExportCCPtr)
+        CALL CMISSFieldIONodesExport(Fields,FFileName,FMethod,CMISSFieldIONodesExportCCPtr)
         IF(ASSOCIATED(Fields)) THEN
           FieldsPtr = C_LOC(Fields)
         ELSE
@@ -14035,13 +14036,13 @@ END FUNCTION CMISSFieldsTypeCreateC
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to create, for C.
-    TYPE(C_PTR), INTENT(INOUT) :: GeneratedMeshPtr !<C pointer to the generated mesh to finish the creation of.
     TYPE(C_PTR), INTENT(INOUT) :: RegionPtr !<C pointer to the region to created generated mesh in.
+    TYPE(C_PTR), INTENT(INOUT) :: GeneratedMeshPtr !<C pointer to the generated mesh to finish the creation of.
     !Function variable
     INTEGER(C_INT) :: CMISSGeneratedMeshCreateStartCPtr !<Error Code.
     !Local variables
-    TYPE(CMISSGeneratedMeshType), POINTER :: GeneratedMesh
     TYPE(CMISSRegionType), POINTER :: Region
+    TYPE(CMISSGeneratedMeshType), POINTER :: GeneratedMesh
 
     CMISSGeneratedMeshCreateStartCPtr = CMISSNoError
     IF(C_ASSOCIATED(GeneratedMeshPtr)) THEN
@@ -16518,7 +16519,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     !Local variables
     CHARACTER(LEN = LabelSize-1) :: FLabel
 
-    CALL CMISSNodesLabelGetC(RegionUserNumber,NodeGlobalNumber, FLabel, CMISSNodesLabelGetCCNum)
+    CALL CMISSNodesLabelGet(RegionUserNumber,NodeGlobalNumber, FLabel, CMISSNodesLabelGetCCNum)
     CALL CMISSF2CString(FLabel, Label)
 
     RETURN
@@ -16547,7 +16548,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(NodesPtr)) THEN
       CALL C_F_POINTER(NodesPtr,Nodes)
       IF(ASSOCIATED(Nodes)) THEN
-        CALL CMISSNodesLabelGetC(Nodes, NodeGlobalNumber, FLabel, CMISSNodesLabelGetCCPtr)
+        CALL CMISSNodesLabelGet(Nodes, NodeGlobalNumber, FLabel, CMISSNodesLabelGetCCPtr)
         CALL CMISSF2CString(FLabel, Label)
       ELSE
         CMISSNodesLabelGetCCPtr = CMISSErrorConvertingPointer
@@ -16579,7 +16580,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     CHARACTER(LEN = LabelSize-1) :: FLabel
 
     CALL CMISSC2FString(Label, FLabel)
-    CALL CMISSNodesLabelSetC(RegionUserNumber,NodeGlobalNumber, FLabel, CMISSNodesLabelSetCCNum)
+    CALL CMISSNodesLabelSet(RegionUserNumber,NodeGlobalNumber, FLabel, CMISSNodesLabelSetCCNum)
 
 
     RETURN
@@ -16609,7 +16610,7 @@ END FUNCTION CMISSFieldsTypeCreateC
       CALL C_F_POINTER(NodesPtr,Nodes)
       IF(ASSOCIATED(Nodes)) THEN
         CALL CMISSC2FString(Label, FLabel)
-        CALL CMISSNodesLabelSetC(Nodes, NodeGlobalNumber, FLabel, CMISSNodesLabelSetCCPtr)
+        CALL CMISSNodesLabelSet(Nodes, NodeGlobalNumber, FLabel, CMISSNodesLabelSetCCPtr)
       ELSE
         CMISSNodesLabelSetCCPtr = CMISSErrorConvertingPointer
       ENDIF
@@ -18212,7 +18213,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
       CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
       IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
-        CALL CMISSSolverDAEEulerSolverTypeGet(ProblemUserNumber,ControlLoopIdentifiersPtr,SolverIndex, DAEEulerSolverType, &
+        CALL CMISSSolverDAEEulerSolverTypeGet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, DAEEulerSolverType, &
           & CMISSSolverDAEEulerSolverTypeGetCNum)
       ELSE
         CMISSSolverDAEEulerSolverTypeGetCNum = CMISSErrorConvertingPointer
@@ -19291,31 +19292,31 @@ END FUNCTION CMISSFieldsTypeCreateC
   !
 
   !>Sets/changes the type of direct linear solver for a solver identified by an object for C.
-  FUNCTION CMISSSolverLinearDirectSetCPtr(SolverPtr,DirectSolverType) BIND(C,NAME="CMISSSolverLinearDirectSet")
+  FUNCTION CMISSSolverLinearDirectTypeSetCPtr(SolverPtr,DirectSolverType) BIND(C,NAME="CMISSSolverLinearDirectTypeSet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the solver to set the library type for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DirectSolverType !<The type of the direct linear solver to set for C. \see OPENCMISS_DirectLinearSolverTypes
     !Function variable
-    INTEGER(C_INT) :: CMISSSolverLinearDirectSetCPtr !<Error Code.
+    INTEGER(C_INT) :: CMISSSolverLinearDirectTypeSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSSolverType), POINTER :: Solver
 
-    CMISSSolverLinearDirectSetCPtr = CMISSNoError
+    CMISSSolverLinearDirectTypeSetCPtr = CMISSNoError
     IF(C_ASSOCIATED(SolverPtr)) THEN
       CALL C_F_POINTER(SolverPtr,Solver)
       IF(ASSOCIATED(Solver)) THEN
-        CALL CMISSSolverLinearDirectSet(Solver, DirectSolverType, CMISSSolverLinearDirectSetCPtr)
+        CALL CMISSSolverLinearDirectTypeSet(Solver, DirectSolverType, CMISSSolverLinearDirectTypeSetCPtr)
       ELSE
-        CMISSSolverLinearDirectSetCPtr = CMISSErrorConvertingPointer
+        CMISSSolverLinearDirectTypeSetCPtr = CMISSErrorConvertingPointer
       ENDIF
     ELSE
-      CMISSSolverLinearDirectSetCPtr = CMISSPointerIsNULL
+      CMISSSolverLinearDirectTypeSetCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN
 
-  END FUNCTION CMISSSolverLinearDirectSetCPtr
+  END FUNCTION CMISSSolverLinearDirectTypeSetCPtr
 
   !
   !================================================================================================================================
