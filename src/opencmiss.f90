@@ -3246,7 +3246,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSSolverIterativeRichardson = SOLVER_ITERATIVE_RICHARDSON !<Richardson iterative solver type. \see  OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverIterativeChebychev = SOLVER_ITERATIVE_CHEBYCHEV !<Chebychev iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverIterativeConjugateGradient = SOLVER_ITERATIVE_CONJUGATE_GRADIENT !<Conjugate gradient iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverIterativeBiconjugateGradinet = SOLVER_ITERATIVE_BICONJUGATE_GRADIENT !<Bi-conjugate gradient iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverIterativeBiconjugateGradient = SOLVER_ITERATIVE_BICONJUGATE_GRADIENT !<Bi-conjugate gradient iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverIterativeGMRES = SOLVER_ITERATIVE_GMRES !<Generalised minimum residual iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverIterativeBiCGSTAB = SOLVER_ITERATIVE_BiCGSTAB !<Stabalised bi-conjugate gradient iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverConjgradSquared = SOLVER_ITERATIVE_CONJGRAD_SQUARED !<Conjugate gradient squared iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
@@ -3335,14 +3335,14 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSSolverDynamicNewmark3Scheme = SOLVER_DYNAMIC_NEWMARK3_SCHEME !<3rd Newmark dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDynamicThirdDegreeGearScheme = SOLVER_DYNAMIC_THIRD_DEGREE_GEAR_SCHEME !<3rd degree Gear dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDynamicThirdDegreeLiniger1Scheme = SOLVER_DYNAMIC_THIRD_DEGREE_LINIGER1_SCHEME !<1st 3rd degree Liniger dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicThirdDegreeLiniger3Scheme = SOLVER_DYNAMIC_THIRD_DEGREE_LINIGER2_SCHEME !<2nd 3rd degree Liniger dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicThirdDegreeLiniger2Scheme = SOLVER_DYNAMIC_THIRD_DEGREE_LINIGER2_SCHEME !<2nd 3rd degree Liniger dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDynamicHouboltScheme = SOLVER_DYNAMIC_HOUBOLT_SCHEME !<Houbolt dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDynamicWilsonScheme = SOLVER_DYNAMIC_WILSON_SCHEME !<Wilson dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDynamicBossakNewmark1Scheme = SOLVER_DYNAMIC_BOSSAK_NEWMARK1_SCHEME !<1st Bossak-Newmark dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDynamicBossakNewmark2Scheme = SOLVER_DYNAMIC_BOSSAK_NEWMARK2_SCHEME !<2nd Bossak-Newmark dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDynamicHilbertHughesTaylor1Scheme = SOLVER_DYNAMIC_HILBERT_HUGHES_TAYLOR1_SCHEME !<1st Hilbert-Hughes-Taylor dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDynamicHilbertHughesTaylor2Scheme = SOLVER_DYNAMIC_HILBERT_HUGHES_TAYLOR2_SCHEME !<1st Hilbert-Hughes-Taylor dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicUserDefiniedScheme = SOLVER_DYNAMIC_USER_DEFINED_SCHEME !<User specified degree and theta dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicUserDefinedScheme = SOLVER_DYNAMIC_USER_DEFINED_SCHEME !<User specified degree and theta dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_DAETypes OPENCMISS::Solver::DAETypes
   !> \brief The type of differential-algebraic equation.
@@ -3512,6 +3512,13 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSSolverLibraryTypeSetNumber1
     MODULE PROCEDURE CMISSSolverLibraryTypeSetObj
   END INTERFACE !CMISSSolverLibraryTypeSet
+
+  !>Sets/changes the type of direct linear solver.
+  INTERFACE CMISSSolverLinearDirectTypeSet
+    MODULE PROCEDURE CMISSSolverLinearDirectTypeSetNumber0
+    MODULE PROCEDURE CMISSSolverLinearDirectTypeSetNumber1
+    MODULE PROCEDURE CMISSSolverLinearDirectTypeSetObj
+  END INTERFACE !CMISSSolverLinearDirectTypeSet
   
   !>Sets/changes the absolute tolerance for an iterative linear solver.
   INTERFACE CMISSSolverLinearIterativeAbsoluteToleranceSet
@@ -3666,6 +3673,13 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSSolverNewtonTypeSetNumber1
     MODULE PROCEDURE CMISSSolverNewtonTypeSetObj
   END INTERFACE !CMISSSolverNewtonTypeSet
+
+  !>Sets/changes the type of nonlinear solver.
+  INTERFACE CMISSSolverNonlinearTypeSet
+    MODULE PROCEDURE CMISSSolverNonlinearTypeSetNumber0
+    MODULE PROCEDURE CMISSSolverNonlinearTypeSetNumber1
+    MODULE PROCEDURE CMISSSolverNonlinearTypeSetObj
+  END INTERFACE !CMISSSolverNonlinearTypeSet
   
   !>Sets/changes the output type for a solver.
   INTERFACE CMISSSolverOutputTypeSet
@@ -3704,7 +3718,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSSolverLinearDirectSolveType,CMISSSolverLinearIterativeSolveType
 
   PUBLIC CMISSSolverIterativeRichardson,CMISSSolverIterativeChebychev,CMISSSolverIterativeConjugateGradient, &
-    & CMISSSolverIterativeBiconjugateGradinet,CMISSSolverIterativeGMRES,CMISSSolverIterativeBiCGSTAB,CMISSSolverConjgradSquared
+    & CMISSSolverIterativeBiconjugateGradient,CMISSSolverIterativeGMRES,CMISSSolverIterativeBiCGSTAB,CMISSSolverConjgradSquared
 
   PUBLIC CMISSSolverIterativeNoPreconditioner,CMISSSolverIterativeJacobiPreconditioner, &
     & CMISSSolverIterativeBlockJacobiPreconditioner,CMISSSolverIterativeSORPreconditioner, &
@@ -3732,9 +3746,9 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & CMISSSolverDynamicSecondDegreeLiniger1Scheme,CMISSSolverDynamicSecondDegreeLiniger2Scheme, &
     & CMISSSolverDynamicNewmark1Scheme,CMISSSolverDynamicNewmark2Scheme,CMISSSolverDynamicNewmark3Scheme, &
     & CMISSSolverDynamicThirdDegreeGearScheme,CMISSSolverDynamicThirdDegreeLiniger1Scheme, &
-    & CMISSSolverDynamicThirdDegreeLiniger3Scheme,CMISSSolverDynamicHouboltScheme,CMISSSolverDynamicWilsonScheme, &
+    & CMISSSolverDynamicThirdDegreeLiniger2Scheme,CMISSSolverDynamicHouboltScheme,CMISSSolverDynamicWilsonScheme, &
     & CMISSSolverDynamicBossakNewmark1Scheme,CMISSSolverDynamicBossakNewmark2Scheme,CMISSSolverDynamicHilbertHughesTaylor1Scheme, &
-    & CMISSSolverDynamicHilbertHughesTaylor2Scheme,CMISSSolverDynamicUserDefiniedScheme
+    & CMISSSolverDynamicHilbertHughesTaylor2Scheme,CMISSSolverDynamicUserDefinedScheme
 
   PUBLIC CMISSSolverDAEDifferentialOnly,CMISSSolverDAEIndex1,CMISSSolverDAEIndex2,CMISSSolverDAEIndex3
 
@@ -3749,7 +3763,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSSolverEquationsSparseMatrices,CMISSSolverEquationsFullMatrices
 
-  PUBLIC CMISSSolverDAEEulerSolverTypeSet
+  PUBLIC CMISSSolverDAEEulerSolverTypeGet, CMISSSolverDAEEulerSolverTypeSet
 
   PUBLIC CMISSSolverDAESolverTypeGet,CMISSSolverDAESolverTypeSet
 
@@ -3768,6 +3782,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSSolverDynamicTimesSet
 
   PUBLIC CMISSSolverLibraryTypeGet,CMISSSolverLibraryTypeSet
+ 
+  PUBLIC CMISSSolverLinearDirectTypeSet
 
   PUBLIC CMISSSolverLinearIterativeAbsoluteToleranceSet
 
@@ -3801,6 +3817,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSSolverNewtonMaximumFunctionEvaluationsSet
 
+  PUBLIC CMISSSolverNewtonMaximumIterationsSet
+
   PUBLIC CMISSSolverNewtonRelativeToleranceSet
 
   PUBLIC CMISSSolverNewtonSolutionToleranceSet
@@ -3810,6 +3828,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSSolverNewtonTrustRegionToleranceSet
 
   PUBLIC CMISSSolverNewtonTypeSet
+
+  PUBLIC CMISSSolverNonlinearTypeSet
 
   PUBLIC CMISSSolverOutputTypeSet
 
@@ -27880,7 +27900,7 @@ CONTAINS
   !  
  
   !>Sets/changes the type of direct linear solver for a solver identified by an object.
-  SUBROUTINE CMISSSolverLinearDirectSetObj(Solver,DirectSolverType,Err)
+  SUBROUTINE CMISSSolverLinearDirectTypeSetObj(Solver,DirectSolverType,Err)
   
     !Argument variables
     TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to set the library type for.
@@ -27888,18 +27908,18 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
-    CALL ENTERS("CMISSSolverLinearDirectSetObj",Err,ERROR,*999)
+    CALL ENTERS("CMISSSolverLinearDirectTypeSetObj",Err,ERROR,*999)
  
     CALL SOLVER_LINEAR_DIRECT_TYPE_SET(Solver%SOLVER,DirectSolverType,Err,ERROR,*999)
 
-    CALL EXITS("CMISSSolverLinearDirectSetObj")
+    CALL EXITS("CMISSSolverLinearDirectTypeSetObj")
     RETURN
-999 CALL ERRORS("CMISSSolverLinearDirectSetObj",Err,ERROR)
-    CALL EXITS("CMISSSolverLinearDirectSetObj")
+999 CALL ERRORS("CMISSSolverLinearDirectTypeSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearDirectTypeSetObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
 
-  END SUBROUTINE CMISSSolverLinearDirectSetObj
+  END SUBROUTINE CMISSSolverLinearDirectTypeSetObj
     
   !  
   !================================================================================================================================
