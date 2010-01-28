@@ -3887,13 +3887,6 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSSolverNonlinearTypeSetObj
   END INTERFACE !CMISSSolverNonlinearTypeSet
   
-  !>Sets/changes the type of nonlinear solver.
-  INTERFACE CMISSSolverNonlinearTypeSet
-    MODULE PROCEDURE CMISSSolverNonlinearTypeSetNumber0
-    MODULE PROCEDURE CMISSSolverNonlinearTypeSetNumber1
-    MODULE PROCEDURE CMISSSolverNonlinearTypeSetObj
-  END INTERFACE !CMISSSolverNonlinearTypeSet
-  
   !>Sets/changes the output type for a solver.
   INTERFACE CMISSSolverOutputTypeSet
     MODULE PROCEDURE CMISSSolverOutputTypeSetNumber0
