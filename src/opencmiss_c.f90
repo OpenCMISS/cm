@@ -79,6 +79,8 @@ MODULE OPENCMISS_C
 
   PUBLIC CMISSBoundaryConditionsTypeFinaliseC, CMISSBoundaryConditionsTypeInitialiseC
 
+  PUBLIC CMISSCellMLTypeFinaliseC, CMISSCellMLTypeInitialiseC
+
   PUBLIC CMISSControlLoopTypeFinaliseC, CMISSControlLoopTypeInitialiseC
 
   PUBLIC CMISSCoordinateSystemTypeFinaliseC,CMISSCoordinateSystemTypeInitialiseC
@@ -203,11 +205,45 @@ MODULE OPENCMISS_C
 
 !!==================================================================================================================================
 !!
+!! CMISS_CELLML
+!!
+!!==================================================================================================================================
+
+ PUBLIC CMISSCellMLCreateFinishCNum,CMISSCellMLCreateFinishCPtr,CMISSCellMLCreateStartCNum,CMISSCellMLCreateStartCPtr
+
+ PUBLIC CMISSCellMLDestroyCNum,CMISSCellMLDestroyCPtr
+ 
+ PUBLIC CMISSCellMLModelsCreateFinishCNum,CMISSCellMLModelsCreateFinishCPtr,CMISSCellMLModelsCreateStartCNum, &
+   & CMISSCellMLModelsCreateStartCPtr,CMISSCellMLModelImportCNum,CMISSCellMLModelImportCPtr
+ 
+ PUBLIC CMISSCellMLModelsFieldCreateFinishCNum,CMISSCellMLModelsFieldCreateFinishCPtr,CMISSCellMLModelsFieldCreateStartCNum, &
+   & CMISSCellMLModelsFieldCreateStartCpTR,CMISSCellMLModelsFieldGetCNum,CMISSCellMLModelsFieldGetCPtr
+ 
+ PUBLIC CMISSCellMLStateFieldCreateFinishCNum,CMISSCellMLStateFieldCreateFinishCPtr,CMISSCellMLStateFieldCreateStartCNum, &
+   & CMISSCellMLStateFieldCreateStartCPtr,CMISSCellMLStateFieldGetCNum,CMISSCellMLStateFieldGetCPtr
+ 
+ PUBLIC CMISSCellMLFieldComponentGetCNum,CMISSCellMLFieldComponentGetCPtr
+ 
+ PUBLIC CMISSCellMLIntermediateFieldAddCNum,CMISSCellMLIntermediateFieldAddCPtr,CMISSCellMLIntermediateFieldCreateFinishCNum, &
+   & CMISSCellMLIntermediateFieldCreateFinishCPtr,CMISSCellMLIntermediateFieldCreateStartCNum, &
+   & CMISSCellMLIntermediateFieldCreateStartCPtr,CMISSCellMLIntermediateFieldGetCNum,CMISSCellMLIntermediateFieldGetCPtr
+ 
+ PUBLIC CMISSCellMLParameterAddCNum,CMISSCellMLParameterAddCPtr,CMISSCellMLParametersCreateFinishCNum, &
+   & CMISSCellMLParametersCreateFinishCPtr,CMISSCellMLParametersCreateStartCNum,CMISSCellMLParametersCreateStartCPtr
+ 
+ PUBLIC CMISSCellMLParametersFieldCreateFinishCNum,CMISSCellMLParametersFieldCreateFinishCPtr, &
+   & CMISSCellMLParametersFieldCreateStartCNum,CMISSCellMLParametersFieldCreateStartCPtr,CMISSCellMLParametersFieldGetCNum, &
+   & CMISSCellMLParametersFieldGetCPtr
+ 
+ PUBLIC CMISSCellMLGenerateCNum,CMISSCellMLGenerateCPtr
+  
+!!==================================================================================================================================
+!!
 !! COMP_ENVIRONMENT
 !!
 !!==================================================================================================================================
 
-  PUBLIC CMISSComputationalNodeNumberGetC, CMISSComputationalNumberOfNodesGetC
+  PUBLIC CMISSComputationalNodeNumberGetC, CMISSComputationalNodesNumberGetC
 
 !!==================================================================================================================================
 !!
@@ -1074,6 +1110,72 @@ CONTAINS
     RETURN
 
   END FUNCTION CMISSBoundaryConditionsTypeInitialiseC
+
+  !
+  !============================================================================
+  !
+
+  !>Finalises a CMISSCellMLType object for C.
+
+  FUNCTION CMISSCellMLTypeFinaliseC(CellMLTypePtr) BIND (C, NAME = "CMISSCellMLTypeFinalise")
+
+    !Argument Variables
+    TYPE (C_PTR), INTENT(INOUT) :: CellMLTypePtr !<C pointer to CMISSCellMLType object to finalise.
+    !Function Variable
+    INTEGER(C_INT) :: CMISSCellMLTypeFinaliseC !<Error Code.
+    !Local Variables
+    TYPE(CMISSCellMLType), POINTER :: CellMLType
+
+    CMISSCellMLTypeFinaliseC = CMISSNoError
+    IF (C_ASSOCIATED(CellMLTypePtr)) THEN
+      CALL C_F_POINTER (CellMLTypePtr, CellMLType)
+      IF(ASSOCIATED(CellMLType)) THEN
+        CALL CMISSCellMLTypeFinalise (CellMLType, CMISSCellMLTypeFinaliseC)
+        DEALLOCATE (CellMLType)
+        CellMLTypePtr = C_NULL_PTR
+      ELSE
+         CMISSCellMLTypeFinaliseC = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+       CMISSCellMLTypeFinaliseC = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLTypeFinaliseC
+
+  !
+  !============================================================================
+  !
+
+  !>Initialises a CMISSCellMLType object for C.
+
+  FUNCTION CMISSCellMLTypeInitialiseC (CellMLTypePtr) BIND (C, NAME = &
+  & "CMISSCellMLTypeInitialise")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT (INOUT) :: CellMLTypePtr !<C pointer to the CMISSCellMLType object to be initialised.
+    !Function variables
+    INTEGER(C_INT) :: CMISSCellMLTypeInitialiseC !<Error Code.
+    !Local Variables
+    INTEGER(C_INT) :: Err
+    TYPE(CMISSCellMLType), POINTER :: CellMLType
+
+    IF (C_ASSOCIATED(CellMLTypePtr)) THEN
+      CMISSCellMLTypeInitialiseC = CMISSPointerNotNull
+    ELSE
+      NULLIFY (CellMLType)
+      ALLOCATE(CellMLType, STAT = Err)
+      IF (Err /= 0) THEN
+        CMISSCellMLTypeInitialiseC = CMISSCouldNotAllocatePointer
+      ELSE
+        CALL CMISSCellMLTypeInitialise(CellMLType, CMISSCellMLTypeInitialiseC)
+      ENDIF
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLTypeInitialiseC
 
   !
   !===========================================================================
@@ -3640,7 +3742,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   END FUNCTION CMISSBoundaryConditionsDestroyCNum
 
-    !
+  !
   !================================================================================================================================
   !
 
@@ -4130,6 +4232,1339 @@ END FUNCTION CMISSFieldsTypeCreateC
 
 !!==================================================================================================================================
 !!
+!! CMISS_CELLML
+!!
+!!==================================================================================================================================
+
+  !>Finishes the creation of a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLCreateFinishCNum(CellMLUserNumber)  BIND(C, NAME = "CMISSCellMLCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to finish creating.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLCreateFinishCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLCreateFinish(CellMLUserNumber,CMISSCellMLCreateFinishCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the creation of a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLCreateFinishCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to finish creating.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLCreateFinishCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLCreateFinishCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSCellMLCreateFinish(CellML,CMISSCellMLCreateFinishCPtr )
+      ELSE
+        CMISSCellMLCreateFinishCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLCreateFinishCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the creation of a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLCreateStartCNum(CellMLUserNumber,RegionUserNumber,FieldUserNumber) BIND(C, NAME = "CMISSCellMLCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to start creating.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to create the CellML environment for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to create the CellML environment for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLCreateStartCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLCreateStart(CellMLUserNumber,RegionUserNumber,FieldUserNumber,CMISSCellMLCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the creation of a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLCreateStartCPtr(CellMLUserNumber,FieldPtr,CellMLPtr) BIND(C, NAME = "CMISSCellMLCreateStart")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to create.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<A C pointer to the field to create the CellML environment.
+    TYPE(C_PTR), INTENT(INOUT) :: CellMLPtr !<On return, the created C pointer to the CellML environment.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLCreateStartCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSCellMLCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr,Field )
+      IF(ASSOCIATED(Field)) THEN
+        IF(C_ASSOCIATED(CellMLPtr)) THEN
+          CMISSCellMLCreateStartCPtr = CMISSPointerNotNULL
+        ELSE
+          NULLIFY(CellML)
+          CALL CMISSCellMLCreateStart(CellMLUserNumber,Field,CellML,CMISSCellMLCreateStartCPtr )          
+          CellMLPtr = C_LOC(CellML)
+        ENDIF
+      ELSE
+        CMISSCellMLCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroys a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLDestroyCNum(CellMLUserNumber)  BIND(C, NAME = "CMISSCellMLDestroyNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to destroy.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLDestroyCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLDestroy(CellMLUserNumber,CMISSCellMLDestroyCNum)
+
+    RETURN
+    
+  END FUNCTION CMISSCellMLDestroyCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroys a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLDestroyCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLDestroy")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to destroy.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLDestroyCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLDestroyCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSDestroy(CellML,CMISSCellMLDestroyCPtr )
+      ELSE
+        CMISSCellMLDestroyCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLDestroyCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLDestroyCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Finishes the creation of CellML models for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLModelsCreateFinishCNum(CellMLUserNumber)  BIND(C, NAME = "CMISSCellMLModelsCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to finish creating the models for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelsCreateFinishCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLModelsCreateFinish(CellMLUserNumber,CMISSCellMLModelsCreateFinishCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelsCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the creation of CellML models for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLModelsCreateFinishCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLModelsCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to finish creating the models for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelsCreateFinishCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLModelsCreateFinishCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSCellMLModelsCreateFinish(CellML,CMISSCellMLModelsCreateFinishCPtr )
+      ELSE
+        CMISSCellMLModelsCreateFinishCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLModelsCreateFinishCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelsCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Starts the creation of CellML models for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLModelsCreateStartCNum(CellMLUserNumber)  BIND(C, NAME = "CMISSCellMLModelsCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to start creating the models for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelsCreateStartCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLModelsCreateStart(CellMLUserNumber,CMISSCellMLModelsCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelsCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the creation of CellML models for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLModelsCreateStartCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLModelsCreateStart")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to start creating the models for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelsCreateStartCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLModelsCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSCellMLModelsCreateStart(CellML,CMISSCellMLModelsCreateStartCPtr )
+      ELSE
+        CMISSCellMLModelsCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLModelsCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelsCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Imports a specified CellML model as specified by a character URI into a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLModelImportCNum(CellMLModelUserNumber,CellMLUserNumber,URISize,URI) &
+    & BIND(C, NAME = "CMISSCellMLModelImportNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLModelUserNumber !<The user number of the imported CellML model.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to import a model for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: URISize !<URI size for the character string URI for C.
+    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: URI(URISize) !< The URI of the CellML model to import
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelImportCNum !<Error Code.
+    !Local variables
+    CHARACTER(LEN=URISize-1) :: FURI
+
+    CALL CMISSC2FString(URI,FURI)
+    CALL CMISSCellMLModelImport(CellMLModelUserNumber,CellMLUserNumber,CMISSCellMLModelImportCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelImportCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Imports a specified CellML model as specified by a character URI into a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLModelImportCPtr(CellMLModelUserNumber,CellMLPtr,URISize,URI) BIND(C, NAME = "CMISSCellMLModelImport")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLModelUserNumber !<The user number of the imported CellML model.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<A pointer to the CellML environment to import a model for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: URISize !<URI size for the character string URI for C.
+    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: URI(URISize) !< The URI of the CellML model to import
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelImportCPtr !<Error Code.
+    !Local variables
+    CHARACTER(LEN=URISize-1) :: FURI
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLModelImportCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSC2FString(URI,FURI)
+        CALL CMISSCellMLModelImport(CellMLModelUserNumber,CellML,FURI,CMISSCellMLModelImportCPtr )
+      ELSE
+        CMISSCellMLModelImportCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLModelImportCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelImportCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Finishes the creation of CellML models field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLModelsFieldCreateFinishCNum(CellMLUserNumber) BIND(C, NAME = "CMISSCellMLModelsFieldCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to finish creating the models field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelsFieldCreateFinishCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLModelsFieldCreateFinish(CellMLUserNumber,CMISSCellMLModelsFieldCreateFinishCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelsFieldCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the creation of CellML models field for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLModelsFieldCreateFinishCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLModelsFieldCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to finish creating the models field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelsFieldCreateFinishCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLModelsFieldCreateFinishCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSCellMLModelsFieldCreateFinish(CellML,CMISSCellMLModelsFieldCreateFinishCPtr )
+      ELSE
+        CMISSCellMLModelsFieldCreateFinishCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLModelsFieldCreateFinishCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelsFieldCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Starts the creation of a CellML models field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLModelsFieldCreateStartCNum(CellMLModelsFieldUserNumber,CellMLUserNumber) &
+    & BIND(C, NAME = "CMISSCellMLModelsFieldCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLModelsFieldUserNumber !<The user number of the CellML models field to start creating.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to start creating the models field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelsFieldCreateStartCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLModelsFieldCreateStart(CellMLModelsFieldUserNumber,CellMLUserNumber,CMISSCellMLModelsFieldCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelsFieldCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the creation of a CellML models field for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLModelsFieldCreateStartCPtr(CellMLModelsFieldUserNumber,CellMLPtr,FieldPtr) &
+    & BIND(C, NAME = "CMISSCellMLModelsFieldCreateStart")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLModelsFieldUserNumber !<The user number of the CellML models field to start creating.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to start creating the models field for.
+    TYPE(C_PTR), INTENT(INOUT) :: FieldPtr !<On return, a C pointer to the created models field. Must be NULL on entry.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelsFieldCreateStartCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSCellMLModelsFieldCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        IF(C_ASSOCIATED(FieldPtr)) THEN
+          CMISSCellMLModelsFieldCreateStartCPtr = CMISSPointerNotNULL
+        ELSE
+          NULLIFY(Field)
+          CALL CMISSCellMLModelsFieldCreateStart(CellMLModelsFieldUserNumber,CellML,Field,CMISSCellMLModelsFieldCreateStartCPtr )
+          FieldPtr = C_LOC(Field)
+        ENDIF
+      ELSE
+        CMISSCellMLModelsFieldCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLModelsFieldCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelsFieldCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Returns the CellML models field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLModelsFieldGetCNum(CellMLUserNumber,CellMLModelsFieldUserNumber) &
+    & BIND(C, NAME = "CMISSCellMLModelsFieldGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to get the models field for.
+    INTEGER(C_INT), INTENT(OUT) :: CellMLModelsFieldUserNumber !<On return, the user number of the CellML models field.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelsFieldGetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLModelsFieldGet(CellMLUserNumber,CellMLModelsFieldUserNumber,CMISSCellMLModelsFieldGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelsFieldGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the CellML models field for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLModelsFieldGetCPtr(CellMLPtr,FieldPtr) BIND(C, NAME = "CMISSCellMLModelsFieldGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to get the models field for.
+    TYPE(C_PTR), INTENT(INOUT) :: FieldPtr !<On return, a C pointer to the CellML environment models field. Must be NULL on entry.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelsFieldGetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSCellMLModelsFieldGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        IF(C_ASSOCIATED(FieldPtr)) THEN
+          CMISSCellMLModelsFieldGetCPtr = CMISSPointerNotNULL
+        ELSE
+          NULLIFY(Field)
+          CALL CMISSCellMLModelsFieldGet(CellML,Field,CMISSCellMLModelsFieldGetCPtr )
+          FieldPtr = C_LOC(Field)
+        ENDIF
+      ELSE
+        CMISSCellMLModelsFieldGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLModelsFieldGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelsFieldGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Finishes the creation of CellML state field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLStateFieldCreateFinishCNum(CellMLUserNumber) BIND(C, NAME = "CMISSCellMLStateFieldCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to finish creating the state field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLStateFieldCreateFinishCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLStateFieldCreateFinish(CellMLUserNumber,CMISSCellMLStateFieldCreateFinishCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLStateFieldCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the creation of CellML state field for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLStateFieldCreateFinishCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLStateFieldCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to finish creating the state field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLStateFieldCreateFinishCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLStateFieldCreateFinishCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSCellMLStateFieldCreateFinish(CellML,CMISSCellMLStateFieldCreateFinishCPtr )
+      ELSE
+        CMISSCellMLStateFieldCreateFinishCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLStateFieldCreateFinishCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLStateFieldCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Starts the creation of a CellML state field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLStateFieldCreateStartCNum(CellMLStateFieldUserNumber,CellMLUserNumber) &
+    & BIND(C, NAME = "CMISSCellMLStateFieldCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLStateFieldUserNumber !<The user number of the CellML state field to start creating.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to start creating the state field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLStateFieldCreateStartCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLStateFieldCreateStart(CellMLStateFieldUserNumber,CellMLUserNumber,CMISSCellMLStateFieldCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLStateFieldCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the creation of a CellML state field for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLStateFieldCreateStartCPtr(CellMLStateFieldUserNumber,CellMLPtr,FieldPtr) &
+    & BIND(C, NAME = "CMISSCellMLStateFieldCreateStart")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLStateFieldUserNumber !<The user number of the CellML state field to start creating.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to start creating the state field for.
+    TYPE(C_PTR), INTENT(INOUT) :: FieldPtr !<On return, a C pointer to the created state field. Must be NULL on entry.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLStateFieldCreateStartCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSCellMLStateFieldCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        IF(C_ASSOCIATED(FieldPtr)) THEN
+          CMISSCellMLStateFieldCreateStartCPtr = CMISSPointerNotNULL
+        ELSE
+          NULLIFY(Field)
+          CALL CMISSCellMLStateFieldCreateStart(CellMLStateFieldUserNumber,CellML,Field,CMISSCellMLStateFieldCreateStartCPtr )
+          FieldPtr = C_LOC(Field)
+        ENDIF
+      ELSE
+        CMISSCellMLStateFieldCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLStateFieldCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLStateFieldCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Returns the CellML state field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLStateFieldGetCNum(CellMLUserNumber,CellMLStateFieldUserNumber) &
+    & BIND(C, NAME = "CMISSCellMLStateFieldGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to get the state field for.
+    INTEGER(C_INT), INTENT(OUT) :: CellMLStateFieldUserNumber !<On return, the user number of the CellML state field.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLStateFieldGetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLStateFieldGet(CellMLUserNumber,CellMLStateFieldUserNumber,CMISSCellMLStateFieldGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLStateFieldGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the CellML models state for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLStateFieldGetCPtr(CellMLPtr,FieldPtr) BIND(C, NAME = "CMISSCellMLStateFieldGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to get the state field for.
+    TYPE(C_PTR), INTENT(INOUT) :: FieldPtr !<On return, a C pointer to the CellML environment state field. Must be NULL on entry.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLStateFieldGetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSCellMLStateFieldGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        IF(C_ASSOCIATED(FieldPtr)) THEN
+          CMISSCellMLStateFieldGetCPtr = CMISSPointerNotNULL
+        ELSE
+          NULLIFY(Field)
+          CALL CMISSCellMLStateFieldGet(CellML,Field,CMISSCellMLStateFieldGetCPtr )
+          FieldPtr = C_LOC(Field)
+        ENDIF
+      ELSE
+        CMISSCellMLStateFieldGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLStateFieldGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLStateFieldGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Imports a specified CellML model as specified by a character URI into a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLFieldComponentGetCNum(CellMLUserNumber,CellMLFieldType,URISize,URI,FieldComponent) &
+    & BIND(C, NAME = "CMISSCellMLFieldComponentGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to get the component for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLFieldType !<The type of CellML field to get the component for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: URISize !<URI size for the character string URI for C.
+    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: URI(URISize) !< The URI of the CellML model variable to get the corresponding component for.
+    INTEGER(C_INT), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the URI.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLFieldComponentGetCNum !<Error Code.
+    !Local variables
+    CHARACTER(LEN=URISize-1) :: FURI
+
+    CALL CMISSC2FString(URI,FURI)
+    CALL CMISSCellMLFieldComponentGet(CellMLUserNumber,CellMLFieldType,FURI,FieldComponent,CMISSCellMLFieldComponentGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLFieldComponentGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Imports a specified CellML model as specified by a character URI into a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLFieldComponentGetCPtr(CellMLPtr,CellMLFieldType,URISize,URI,FieldComponent)  &
+    & BIND(C, NAME = "CMISSCellMLFieldComponentGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<A pointer to the CellML environment to import a model for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLFieldType !<The type of CellML field to get the component for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: URISize !<URI size for the character string URI for C.
+    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: URI(URISize) !< The URI of the CellML model variable to get the corresponding component for.
+    INTEGER(C_INT), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the URI.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLFieldComponentGetCPtr !<Error Code.
+    !Local variables
+    CHARACTER(LEN=URISize-1) :: FURI
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLFieldComponentGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSC2FString(URI,FURI)
+        CALL CMISSCellMLFieldComponentGet(CellML,CellMLFieldType,FURI,FieldComponent,CMISSCellMLFieldComponentGetCPtr )
+      ELSE
+        CMISSCellMLFieldComponentGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+       CMISSCellMLFieldComponentGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLFieldComponentGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Adds a specific variable to a CellML intermediate field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLIntermediateFieldAddCNum(CellMLUserNumber,CellMLModelUserNumber,URISize,URI) &
+    & BIND(C, NAME = "CMISSCellMLIntermediateFieldAddNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to the intermediate field for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add to the intermediate field.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: URISize !<URI size for the character string URI for C.
+    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: URI(URISize) !< The URI of the CellML variable to add.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLIntermediateFieldAddCNum !<Error Code.
+    !Local variables
+    CHARACTER(LEN=URISize-1) :: FURI
+
+    CALL CMISSC2FString(URI,FURI)
+    CALL CMISSCellMLIntermediateFieldAdd(CellMLUserNumber,CellMLModelUserNumber,FURI,CMISSCellMLIntermediateFieldAddCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLIntermediateFieldAddCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Adds a specific variable to a CellML intermediate field for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLIntermediateFieldAddCPtr(CellMLPtr,CellMLModelUserNumber,URISize,URI) &
+    & BIND(C, NAME = "CMISSCellMLIntermediateFieldAdd")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<A pointer to the CellML environment to add to the intermediate field for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add to the intermediate field.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: URISize !<URI size for the character string URI for C.
+    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: URI(URISize) !< The URI of the CellML variable to add.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLIntermediateFieldAddCPtr !<Error Code.
+    !Local variables
+    CHARACTER(LEN=URISize-1) :: FURI
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLIntermediateFieldAddCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSC2FString(URI,FURI)
+        CALL CMISSCellMLModelImport(CellML,CellMLModelUserNumber,FURI,CMISSCellMLIntermediateFieldAddCPtr )
+      ELSE
+        CMISSCellMLIntermediateFieldAddCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLIntermediateFieldAddCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLIntermediateFieldAddCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Finishes the creation of CellML intermediate field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLIntermediateFieldCreateFinishCNum(CellMLUserNumber) &
+    & BIND(C, NAME = "CMISSCellMLIntermediateFieldCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to finish creating the intermediate field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLIntermediateFieldCreateFinishCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLIntermediateFieldCreateFinish(CellMLUserNumber,CMISSCellMLIntermediateFieldCreateFinishCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLIntermediateFieldCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the creation of CellML intermediate field for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLIntermediateFieldCreateFinishCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLIntermediateFieldCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to finish creating the intermediate field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLIntermediateFieldCreateFinishCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLIntermediateFieldCreateFinishCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSCellMLIntermediateFieldCreateFinish(CellML,CMISSCellMLIntermediateFieldCreateFinishCPtr )
+      ELSE
+        CMISSCellMLIntermediateFieldCreateFinishCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLIntermediateFieldCreateFinishCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLIntermediateFieldCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Starts the creation of a CellML intermediate field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLIntermediateFieldCreateStartCNum(CellMLIntermediateFieldUserNumber,CellMLUserNumber) &
+    & BIND(C, NAME = "CMISSCellMLIntermediateFieldCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLIntermediateFieldUserNumber !<The user number of the CellML intermediate field to start creating.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to start creating the intermediate field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLIntermediateFieldCreateStartCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLIntermediateFieldCreateStart(CellMLIntermediateFieldUserNumber,CellMLUserNumber, &
+      & CMISSCellMLIntermediateFieldCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLIntermediateFieldCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the creation of a CellML intermediate field for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLIntermediateFieldCreateStartCPtr(CellMLIntermediateFieldUserNumber,CellMLPtr,FieldPtr) &
+    & BIND(C, NAME = "CMISSCellMLIntermeidateFieldCreateStart")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLIntermediateFieldUserNumber !<The user number of the CellML intermediate field to start creating.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to start creating the intermediate field for.
+    TYPE(C_PTR), INTENT(INOUT) :: FieldPtr !<On return, a C pointer to the created intermediate field. Must be NULL on entry.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLIntermediateFieldCreateStartCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSCellMLIntermediateFieldCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        IF(C_ASSOCIATED(FieldPtr)) THEN
+          CMISSCellMLIntermediateFieldCreateStartCPtr = CMISSPointerNotNULL
+        ELSE
+          NULLIFY(Field)
+          CALL CMISSCellMLIntermediateFieldCreateStart(CellMLIntermediateFieldUserNumber,CellML,Field, &
+            & CMISSCellMLIntermediateFieldCreateStartCPtr )
+          FieldPtr = C_LOC(Field)
+        ENDIF
+      ELSE
+        CMISSCellMLIntermediateFieldCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLIntermediateFieldCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLIntermediateFieldCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Returns the CellML intermediate field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLIntermediateFieldGetCNum(CellMLUserNumber,CellMLIntermediateFieldUserNumber) &
+    & BIND(C, NAME = "CMISSCellMLIntermediateFieldGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to get the intermediate field for.
+    INTEGER(C_INT), INTENT(OUT) :: CellMLIntermediateFieldUserNumber !<On return, the user number of the CellML intermediate field.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLIntermediateFieldGetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLIntermediateFieldGet(CellMLUserNumber,CellMLIntermediateFieldUserNumber,CMISSCellMLIntermediateFieldGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLIntermediateFieldGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the CellML models intermediate for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLIntermediateFieldGetCPtr(CellMLPtr,FieldPtr) BIND(C, NAME = "CMISSCellMLIntermediateFieldGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to get the intermediate field for.
+    TYPE(C_PTR), INTENT(INOUT) :: FieldPtr !<On return, a C pointer to the CellML environment intermediate field. Must be NULL on entry.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLIntermediateFieldGetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSCellMLIntermediateFieldGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        IF(C_ASSOCIATED(FieldPtr)) THEN
+          CMISSCellMLIntermediateFieldGetCPtr = CMISSPointerNotNULL
+        ELSE
+          NULLIFY(Field)
+          CALL CMISSCellMLStateFieldGet(CellML,Field,CMISSCellMLIntermediateFieldGetCPtr )
+          FieldPtr = C_LOC(Field)
+        ENDIF
+      ELSE
+        CMISSCellMLIntermediateFieldGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLIntermediateFieldGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLIntermediateFieldGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Override a specific parameter variable from a model in a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLParameterAddCNum(CellMLUserNumber,CellMLModelUserNumber,URISize,URI) &
+    & BIND(C, NAME = "CMISSCellMLParameterAddNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to add the parameter for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add the parameter for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: URISize !<URI size for the character string URI for C.
+    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: URI(URISize) !< The URI of the CellML variable to add.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParameterAddCNum !<Error Code.
+    !Local variables
+    CHARACTER(LEN=URISize-1) :: FURI
+
+    CALL CMISSC2FString(URI,FURI)
+    CALL CMISSCellMLParameterAdd(CellMLUserNumber,CellMLModelUserNumber,FURI,CMISSCellMLParameterAddCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParameterAddCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Override a specific parameter variable from a model in a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLParameterAddCPtr(CellMLPtr,CellMLModelUserNumber,URISize,URI) BIND(C, NAME = "CMISSCellMLParameterAdd")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<A pointer to the CellML environment to add to the parameters for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add to the parameters.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: URISize !<URI size for the character string URI for C.
+    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: URI(URISize) !< The URI of the CellML variable to add.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParameterAddCPtr !<Error Code.
+    !Local variables
+    CHARACTER(LEN=URISize-1) :: FURI
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLParameterAddCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSC2FString(URI,FURI)
+        CALL CMISSCellMLParameterAdd(CellML,CellMLModelUserNumber,FURI,CMISSCellMLParameterAddCPtr )
+      ELSE
+       CMISSCellMLParameterAddCPtr  = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLParameterAddCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParameterAddCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the creation of parameters for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLParametersCreateFinishCNum(CellMLUserNumber)  BIND(C, NAME = "CMISSCellMLParametersCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to finish creating the parameters for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParametersCreateFinishCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLParametersCreateFinish(CellMLUserNumber,CMISSCellMLParametersCreateFinishCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParametersCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the creation of parameters for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLParametersCreateFinishCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLParametersCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to finish creating the parameters for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParametersCreateFinishCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLParametersCreateFinishCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSCellMLParametersCreateFinish(CellML,CMISSCellMLParametersCreateFinishCPtr )
+      ELSE
+        CMISSCellMLParametersCreateFinishCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLParametersCreateFinishCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParametersCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the creation of parameters for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLParametersCreateStartCNum(CellMLUserNumber) BIND(C, NAME = "CMISSCellMLParametersCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to start creating the parameters for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParametersCreateStartCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLParametersCreateStart(CellMLUserNumber,CMISSCellMLParametersCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParametersCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the creation of parameters for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLParametersCreateStartCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLParametersCreateStart")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<The  C pointer to the CellML environment to create the parameters for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParametersCreateStartCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLParametersCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSCellMLParametersCreateStart(CellML,CMISSCellMLParametersCreateStartCPtr )          
+      ELSE
+        CMISSCellMLParametersCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLParametersCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParametersCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Finishes the creation of CellML parameters field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLParametersFieldCreateFinishCNum(CellMLUserNumber) BIND(C, NAME = "CMISSCellMLParametersFieldCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to finish creating the parameters field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParametersFieldCreateFinishCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLParametersFieldCreateFinish(CellMLUserNumber,CMISSCellMLParametersFieldCreateFinishCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParametersFieldCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the creation of CellML parameters field for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLParametersFieldCreateFinishCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLParametersFieldCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to finish creating the parameters field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParametersFieldCreateFinishCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLParametersFieldCreateFinishCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSCellMLParametersFieldCreateFinish(CellML,CMISSCellMLParametersFieldCreateFinishCPtr )
+      ELSE
+        CMISSCellMLParametersFieldCreateFinishCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLParametersFieldCreateFinishCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParametersFieldCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Starts the creation of a CellML parameters field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLParametersFieldCreateStartCNum(CellMLParametersFieldUserNumber,CellMLUserNumber) &
+    & BIND(C, NAME = "CMISSCellMLParametersFieldCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLParametersFieldUserNumber !<The user number of the CellML parameters field to start creating.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to start creating the parameters field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParametersFieldCreateStartCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLParametersFieldCreateStart(CellMLParametersFieldUserNumber,CellMLUserNumber, &
+      & CMISSCellMLParametersFieldCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParametersFieldCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the creation of a CellML parameters field for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLParametersFieldCreateStartCPtr(CellMLParametersFieldUserNumber,CellMLPtr,FieldPtr) &
+    & BIND(C, NAME = "CMISSCellMLParametersFieldCreateStart")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLParametersFieldUserNumber !<The user number of the CellML parameters field to start creating.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to start creating the parameters field for.
+    TYPE(C_PTR), INTENT(INOUT) :: FieldPtr !<On return, a C pointer to the created parameters field. Must be NULL on entry.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParametersFieldCreateStartCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSCellMLParametersFieldCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        IF(C_ASSOCIATED(FieldPtr)) THEN
+          CMISSCellMLParametersFieldCreateStartCPtr = CMISSPointerNotNULL
+        ELSE
+          NULLIFY(Field)
+          CALL CMISSCellMLParametersFieldCreateStart(CellMLParametersFieldUserNumber,CellML,Field, &
+            & CMISSCellMLParametersFieldCreateStartCPtr )
+          FieldPtr = C_LOC(Field)
+        ENDIF
+      ELSE
+        CMISSCellMLParametersFieldCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLParametersFieldCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParametersFieldCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Returns the CellML parameters field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLParametersFieldGetCNum(CellMLUserNumber,CellMLParametersFieldUserNumber) &
+    & BIND(C, NAME = "CMISSCellMLParametersFieldGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to get the parameters field for.
+    INTEGER(C_INT), INTENT(OUT) :: CellMLParametersFieldUserNumber !<On return, the user number of the CellML parameters field.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParametersFieldGetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLParametersFieldGet(CellMLUserNumber,CellMLParametersFieldUserNumber,CMISSCellMLParametersFieldGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParametersFieldGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the CellML models parameters for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLParametersFieldGetCPtr(CellMLPtr,FieldPtr) BIND(C, NAME = "CMISSCellMLParametersFieldGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to get the parameters field for.
+    TYPE(C_PTR), INTENT(INOUT) :: FieldPtr !<On return, a C pointer to the CellML environment parameters field. Must be NULL on entry.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParametersFieldGetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSCellMLParametersFieldGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        IF(C_ASSOCIATED(FieldPtr)) THEN
+          CMISSCellMLParametersFieldGetCPtr = CMISSPointerNotNULL
+        ELSE
+          NULLIFY(Field)
+          CALL CMISSCellMLParametersFieldGet(CellML,Field,CMISSCellMLParametersFieldGetCPtr )
+          FieldPtr = C_LOC(Field)
+        ENDIF
+      ELSE
+        CMISSCellMLParametersFieldGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLParametersFieldGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParametersFieldGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Validiate and instantiate a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLGenerateCNum(CellMLUserNumber)  BIND(C, NAME = "CMISSCellMLGenerateNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to generate.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLGenerateCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLGenerate(CellMLUserNumber,CMISSCellMLGenerateCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLGenerateCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>
+
+  !>Validiate and instantiate a CellML environment identified by a POINTER for C.
+  FUNCTION CMISSCellMLGenerateCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLGenerate")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to generate.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLGenerateCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLGenerateCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSCellMLParametersCreateFinish(CellML,CMISSCellMLGenerateCPtr )
+      ELSE
+        CMISSCellMLGenerateCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLGenerateCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLGenerateCPtr
+
+
+!!==================================================================================================================================
+!!
 !! COMP_ENVIRONMENT
 !!
 !!==================================================================================================================================
@@ -4152,19 +5587,19 @@ END FUNCTION CMISSFieldsTypeCreateC
   !================================================================================================================================
   !
 
-  FUNCTION CMISSComputationalNumberOfNodesGetC(NumberOfNodes) BIND(C, NAME = "CMISSComputationalNumberOfNodesGet")
+  FUNCTION CMISSComputationalNodesNumberGetC(NumberOfNodes) BIND(C, NAME = "CMISSComputationalNodesNumberGet")
 
     !Argument variables
     INTEGER(C_INT), INTENT(OUT) :: NumberOfNodes !<The Number of Nodes for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSComputationalNumberOfNodesGetC !<Error Code.
+    INTEGER(C_INT) :: CMISSComputationalNodesNumberGetC !<Error Code.
     !Local variable
 
-    CALL CMISSComputationalNumberOfNodesGet(NumberOfNodes, CMISSComputationalNumberOfNodesGetC)
+    CALL CMISSComputationalNodesNumberGet(NumberOfNodes, CMISSComputationalNodesNumberGetC)
 
     RETURN
 
-  END FUNCTION CMISSComputationalNumberOfNodesGetC
+  END FUNCTION CMISSComputationalNodesNumberGetC
 
 
 !!==================================================================================================================================

@@ -2056,7 +2056,7 @@ MODULE TYPES
     TYPE(PROBLEM_TYPE), POINTER :: PTR !<The pointer to the problem.
   END TYPE PROBLEM_PTR_TYPE
        
-  !>Contains information on the problems defined on a region.
+  !>Contains information on the problems defined.
   TYPE PROBLEMS_TYPE
     INTEGER(INTG) :: NUMBER_OF_PROBLEMS !<The number of problems defined.
     TYPE(PROBLEM_PTR_TYPE), POINTER :: PROBLEMS(:) !<The array of pointers to the problems.
@@ -2099,7 +2099,7 @@ MODULE TYPES
   
   !> This type is a wrapper for the C_PTR which references the actual CellML model definition object.
   TYPE CELLML_MODEL_TYPE
-!      TYPE(C_PTR) :: PTR !< The handle for the actual C++ CellML model definition object
+     !TYPE(C_PTR) :: PTR !< The handle for the actual C++ CellML model definition object
      INTEGER(INTG) :: USER_NUMBER !< The user defined identifier for this CellML model
      INTEGER(INTG) :: GLOBAL_NUMBER !< The global number of this CellML model within the parent CellML environment.
   END TYPE CELLML_MODEL_TYPE
@@ -2120,6 +2120,7 @@ MODULE TYPES
   TYPE CELLML_TYPE
      INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the CellML environment in the list of environments for a field.
      INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the CellML environment. The user number must be unique.
+     TYPE(CELLML_ENVIRONMENTS_TYPE), POINTER :: ENVIRONMENTS !<A pointer back to the CellML environments.
      LOGICAL :: CELLML_FINISHED !<Is .TRUE. if the environment has finished being created, .FALSE. if not.
      TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD !<The source field for this CellML environment
      TYPE(CELLML_MODELS_TYPE), POINTER :: MODELS !< A pointer to the models for this environment
@@ -2130,6 +2131,12 @@ MODULE TYPES
   TYPE CELLML_PTR_TYPE
      TYPE(CELLML_TYPE), POINTER :: PTR !< The pointer to the CellML environment.
   END TYPE CELLML_PTR_TYPE
+
+  !>Contains information on the CellML environments defined.
+  TYPE CELLML_ENVIRONMENTS_TYPE
+    INTEGER(INTG) :: NUMBER_OF_ENVIRONMENTS !<The number of environments defined.
+    TYPE(CELLML_PTR_TYPE), ALLOCATABLE :: ENVIRONMENTS(:) !<The array of pointers to the CellML environments.
+  END TYPE CELLML_ENVIRONMENTS_TYPE
 
   !
   !================================================================================================================================

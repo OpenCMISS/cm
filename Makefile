@@ -80,7 +80,7 @@ ifndef MPI
   MPI := mpich2
 endif
 
-ifndef USECELLMLL
+ifndef USECELLML
   USECELLML := false
 endif
 
@@ -669,7 +669,9 @@ BLAS_INCLUDE_PATH =#
 EXTERNAL_INCLUDE_PATH = $(strip $(TAO_INCLUDE_PATH) $(PETSC_INCLUDE_PATH) $(SUNDIALS_INCLUDE_PATH) $(HYPRE_INCLUDE_PATH) $(MUMPS_INCLUDE_PATH) $(SCALAPCK_INCLUDE_PATH) $(BLACS_INCLUDE_PATH) $(PARMETIS_INCLUDE_PATH) $(MPI_INCLUDE_PATH) $(BLAS_INCLUDE_PATH))
 
 ifeq ($(USECELLML),true)
-     EXTERNAL_INCLUDE_PATH += $(CELLML_INCLUDE_PATH)
+  EXTERNAL_INCLUDE_PATH += $(CELLML_INCLUDE_PATH)
+  FPPFLAGS += -DUSECELLML
+  CPPFLAGS += -DUSECELLML
 endif
 
 CPPFLAGS += $(EXTERNAL_INCLUDE_PATH)
@@ -934,6 +936,7 @@ $(OBJECT_DIR)/classical_field_routines.o	:	$(SOURCE_DIR)/classical_field_routine
 $(OBJECT_DIR)/cmiss.o	:	$(SOURCE_DIR)/cmiss.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
+	$(CELLML_OBJECT) \
 	$(OBJECT_DIR)/computational_environment.o \
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/coordinate_routines.o \
@@ -1456,6 +1459,7 @@ $(OBJECT_DIR)/opencmiss.o	:	$(SOURCE_DIR)/opencmiss.f90 \
 	$(OBJECT_DIR)/basis_routines.o \
 	$(OBJECT_DIR)/boundary_condition_routines.o \
 	$(OBJECT_DIR)/cmiss.o \
+	$(CELLML_OBJECT) \
 	$(OBJECT_DIR)/cmiss_mpi.o \
 	$(OBJECT_DIR)/computational_environment.o \
 	$(OBJECT_DIR)/constants.o \

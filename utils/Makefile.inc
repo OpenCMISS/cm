@@ -189,7 +189,11 @@ ifeq ($(OPERATING_SYSTEM),linux)
       ifeq ($(COMPILER),ibm)
         COMPILER_SUFFIX = -ibm
       else
-        $(error invalid COMPILER specification)
+        ifeq ($(COMPILER),cray)
+          COMPILER_SUFFIX = -cray
+        else
+          $(error invalid COMPILER specification)
+        endif
       endif
     endif	
   endif
