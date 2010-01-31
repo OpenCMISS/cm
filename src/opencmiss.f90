@@ -289,7 +289,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSAnalyticAnalysisAbsoluteErrorGetNodeNumber
     MODULE PROCEDURE CMISSAnalyticAnalysisAbsoluteErrorGetNodeObj
   END INTERFACE !CMISSAnalyticAnalysisAbsoluteErrorGetNode
-
+  
   !>Get the percentage error of the node.
   INTERFACE CMISSAnalyticAnalysisPercentageErrorGetNode
     MODULE PROCEDURE CMISSAnalyticAnalysisPercentageErrorGetNodeNumber
@@ -1420,6 +1420,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetModalClass = EQUATIONS_SET_MODAL_CLASS !<Modal equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS     
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetFittingClass = EQUATIONS_SET_FITTING_CLASS !<Fitting equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS     
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetOptimisationClass = EQUATIONS_SET_OPTIMISATION_CLASS !<Optimisation equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS     
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiPhysicsClass = EQUATIONS_SET_MULTI_PHYSICS_CLASS !<Multi Physics equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS   
   !>@}
   !> \addtogroup OPENCMISS_EquationsSetTypes OPENCMISS::EquationsSet::Types
   !> \brief Equations set Types.
@@ -1446,6 +1447,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetBidomainEquationType = EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE !<Bidomain equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticModalType = EQUATIONS_SET_LINEAR_ELASTIC_MODAL_TYPE !<Linear elasticity modal equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetGalerkinProjectionEquationType = EQUATIONS_SET_GALERKIN_PROJECTION_EQUATION_TYPE !<Galerkin projection equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityDarcyType = EQUATIONS_SET_FINITE_ELASTICITY_DARCY_TYPE !<Finite Elasticity Darcy equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_EquationsSetSubtypes OPENCMISS::EquationsSet::Subtypes
   !> \brief Equations set subtypes.
@@ -1521,6 +1523,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & EQUATIONS_SET_GENERALISED_GALERKIN_PROJECTION_SUBTYPE !<Generalised Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMatPropertiesGalerkinProjectionSubtype = &
     & EQUATIONS_SET_MAT_PROPERTIES_GALERKIN_PROJECTION_SUBTYPE !<Material Properties Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardElasticityDarcySubtype = EQUATIONS_SET_STANDARD_ELASTICITY_DARCY_SUBTYPE !<Standard Elasticity Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_EquationsSetSolutionMethods OPENCMISS::EquationsSet::SolutionMethods
   !> \brief The solution method parameters
@@ -1619,7 +1623,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSEquationsSetNoClass,CMISSEquationsSetElasticityClass,CMISSEquationsSetFluidMechanicsClass, &
     & CMISSEquationsSetElectroMechanicsClass,CMISSEquationsSetClassicalFieldClass,CMISSEquationsSetBioelectricsClass, &
-    & CMISSEquationsSetModalClass,CMISSEquationsSetFittingClass,CMISSEquationsSetOptimisationClass
+    & CMISSEquationsSetModalClass,CMISSEquationsSetFittingClass,CMISSEquationsSetOptimisationClass, &
+    & CMISSEquationsSetMultiPhysicsClass
 
   PUBLIC CMISSEquationsSetNoType,CMISSEquationsSetLinearElasticityType,CMISSEquationsSetFiniteElasticityType, &
     & CMISSEquationsSetStokesEquationType,CMISSEquationsSetNavierStokesEquationType,CMISSEquationsSetDarcyEquationType, &
@@ -1629,6 +1634,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & CMISSEquationsSetReactionDiffusionEquationType,CMISSEquationsSetBiharmonicEquationType, &
     & CMISSEquationsSetMonodomainEquationType,CMISSEquationsSetBidomainEquationType,CMISSEquationsSetLinearElasticModalType, &
     & CMISSEquationsSetGalerkinProjectionEquationType
+
+  PUBLIC CMISSEquationsSetFiniteElasticityDarcyType
 
   PUBLIC CMISSEquationsSetNoSubtype,CMISSEquationsSetThreeDimensionalSubtype,CMISSEquationsSetPlaneStressSubtype, &
     & CMISSEquationsSetPlaneStrainSubtype,CMISSEquationsSetOneDimensionalSubtype,CMISSEquationsSetPlateSubtype, &
@@ -3024,6 +3031,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSProblemModalClass = PROBLEM_MODAL_CLASS !<Modal problem class \see OPENCMISS_ProblemClasses,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemFittingClass = PROBLEM_FITTING_CLASS !<Fitting problem class \see OPENCMISS_ProblemClasses,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemOptimisationClass = PROBLEM_OPTIMISATION_CLASS !<Optimisation problem class \see OPENCMISS_ProblemClasses,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISSProblemMultiPhysicsClass = PROBLEM_MULTI_PHYSICS_CLASS !<Multi physics problem class \see OPENCMISS_ProblemClasses,OPENCMISS 
   !>@}
   !> \addtogroup OPENCMISS_ProblemTypes OPENCMISS::Problem::Types
   !> \brief Problem Types.
@@ -3050,6 +3058,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSProblemBidomainEquationType = PROBLEM_BIDOMAIN_EQUATION_TYPE !<Bidomain equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemLinearElasticModalType = PROBLEM_LINEAR_ELASTIC_MODAL_TYPE !<Linear elastic modal problem type \see OPENCMISS_ProblemTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemGalerkinProjectionType = PROBLEM_GALERKIN_PROJECTION_TYPE !<Galerkin projection problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISSProblemFiniteElasticityDarcyType = PROBLEM_FINITE_ELASTICITY_DARCY_TYPE !<Finite Elasticity Darcy problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   !>@}
   !> \addtogroup OPENCMISS_ProblemSubTypes OPENCMISS::Problem::Subtypes
   !> \brief Problem Subtypes.
@@ -3099,6 +3108,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & PROBLEM_GENERALISED_GALERKIN_PROJECTION_SUBTYPE !<Generalised Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemMatPropertiesGalerkinProjectionSubtype = &
     & PROBLEM_MAT_PROPERTIES_GALERKIN_PROJECTION_SUBTYPE !<Material Properties Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+
+  INTEGER(INTG), PARAMETER :: CMISSProblemStandardElasticityDarcySubtype = PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE !<Standard Elasticity Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_ProblemControlLoopTypes OPENCMISS::Problem::ControlLoopTypes
   !> \brief Problem control loop type parameters
@@ -3119,7 +3130,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSProblemNoClass,CMISSProblemElasticityClass,CMISSProblemFluidMechanicsClass,CMISSProblemElectromagneticsClass, &
     & CMISSProblemClassicalFieldClass,CMISSProblemBioelectricsClass,CMISSProblemModalClass,CMISSProblemFittingClass, &
-    & CMISSProblemOptimisationClass
+    & CMISSProblemOptimisationClass,CMISSProblemMultiPhysicsClass
 
   PUBLIC CMISSProblemNoType
 
@@ -3138,6 +3149,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSProblemLinearElasticModalType
 
   PUBLIC CMISSProblemGalerkinProjectionType
+
+  PUBLIC CMISSProblemFiniteElasticityDarcyType
 
   PUBLIC CMISSProblemNoSubtype
 
@@ -3169,6 +3182,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSProblemControlSimpleType,CMISSProblemControlFixedLoopType,CMISSProblemControlTimeLoopType, &
     & CMISSProblemControlWhileLoopType
+
+  PUBLIC CMISSProblemStandardElasticityDarcySubtype
 
 !!==================================================================================================================================
 !!
@@ -3718,7 +3733,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSSolverLibraryTypeSetNumber1
     MODULE PROCEDURE CMISSSolverLibraryTypeSetObj
   END INTERFACE !CMISSSolverLibraryTypeSet
-
+  
   !>Sets/changes the type of direct linear solver.
   INTERFACE CMISSSolverLinearDirectTypeSet
     MODULE PROCEDURE CMISSSolverLinearDirectTypeSetNumber0
@@ -3879,7 +3894,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSSolverNewtonTypeSetNumber1
     MODULE PROCEDURE CMISSSolverNewtonTypeSetObj
   END INTERFACE !CMISSSolverNewtonTypeSet
-
+  
   !>Sets/changes the type of nonlinear solver.
   INTERFACE CMISSSolverNonlinearTypeSet
     MODULE PROCEDURE CMISSSolverNonlinearTypeSetNumber0
@@ -3988,7 +4003,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSSolverDynamicTimesSet
 
   PUBLIC CMISSSolverLibraryTypeGet,CMISSSolverLibraryTypeSet
- 
+
   PUBLIC CMISSSolverLinearDirectTypeSet
 
   PUBLIC CMISSSolverLinearIterativeAbsoluteToleranceSet

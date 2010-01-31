@@ -1065,7 +1065,7 @@ CONTAINS
     REAL(DP):: BETA_PARAM, P_SINK_PARAM
 !     REAL(DP):: MIDPOINT_X, MIDPOINT_Y
 
-    REAL(DP):: PERM_OVER_VIS_PARAM, POROSITY, GRAD_POROSITY(3)
+    REAL(DP):: PERM_OVER_VIS_PARAM, POROSITY, GRAD_POROSITY(3), RHO_PARAM
     REAL(DP):: PERM_TENSOR_OVER_VIS(3,3), VIS_OVER_PERM_TENSOR(3,3), Jmat
     REAL(DP):: MESH_VEL(3), MESH_VEL_DERIV(3,3), MESH_VEL_DERIV_PHYS(3,3)
     REAL(DP):: X(3), ARG(3), L, FACT
@@ -1081,6 +1081,8 @@ CONTAINS
     !--- testcase: default
     DARCY%TESTCASE = 0
     DARCY%ANALYTIC = .FALSE.
+
+    RHO_PARAM = 1.0_DP  !Pass this through material parameters ! ???
 
 
     CALL ENTERS("DARCY_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
@@ -1442,17 +1444,22 @@ CONTAINS
 !                 !===================================================================================================================
 !                 !DAMPING_MATRIX
 ! 
-!                           IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_DARCY_SUBTYPE) THEN
+                          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_DARCY_SUBTYPE) THEN
 !                             IF(UPDATE_DAMPING_MATRIX) THEN
-!                               IF(nh==mh.AND.mh<=FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1) THEN 
-!                                 SUM=0.0_DP 
-!                                 !Calculate SUM 
-!                                 SUM=PGM*PGN*RHO_PARAM
-!                                 !Calculate MATRIX
+                              IF(mh==nh.AND.mh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
+                                PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                                PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+                                !
+                                SUM=0.0_DP 
+                                !Calculate SUM 
+                                SUM=PGM*PGN*RHO_PARAM
+                                !Calculate MATRIX
 !                                 MT_MATRIX(mhs,nhs)=MT_MATRIX(mhs,nhs)+SUM*RWG
-!                               END IF
+                                DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
+                                  & SUM * RWG
+                              END IF
 !                             END IF
-!                           END IF
+                          END IF
 !---toe
 
                     ENDDO !ns
@@ -2369,7 +2376,7 @@ CONTAINS
 !---tob
                 CALL DARCY_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
 !---toe
-            CASE(PROBLEM_ALE_DARCY_SUBTYPE)
+            CASE(PROBLEM_ALE_DARCY_SUBTYPE,PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE)
               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"ALE Darcy pre solve ... ",ERR,ERROR,*999)
 
               !--- Set 'SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.'
@@ -2484,7 +2491,7 @@ CONTAINS
                 ! do nothing ???
               CASE(PROBLEM_QUASISTATIC_DARCY_SUBTYPE)
                 ! do nothing ???
-              CASE(PROBLEM_ALE_DARCY_SUBTYPE)
+              CASE(PROBLEM_ALE_DARCY_SUBTYPE,PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE)
                 SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
                 IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
                   SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
@@ -2630,7 +2637,7 @@ CONTAINS
                 ! do nothing ???
               CASE(PROBLEM_TRANSIENT_DARCY_SUBTYPE)
                 ! do nothing ???
-              CASE(PROBLEM_ALE_DARCY_SUBTYPE)
+              CASE(PROBLEM_ALE_DARCY_SUBTYPE,PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE)
                 SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
                 IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
                   SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
@@ -2773,7 +2780,7 @@ CONTAINS
                 ! do nothing ???
               CASE(PROBLEM_TRANSIENT_DARCY_SUBTYPE)
                 ! do nothing ???
-              CASE(PROBLEM_ALE_DARCY_SUBTYPE)
+              CASE(PROBLEM_ALE_DARCY_SUBTYPE,PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE)
                 SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
                 IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
                   SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
@@ -2959,7 +2966,7 @@ CONTAINS
               ! do nothing ???
             CASE(PROBLEM_TRANSIENT_DARCY_SUBTYPE)
               ! do nothing ???
-            CASE(PROBLEM_ALE_DARCY_SUBTYPE)
+            CASE(PROBLEM_ALE_DARCY_SUBTYPE,PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE)
               IF(SOLVER%GLOBAL_NUMBER==2) THEN
                 !--- Get the dependent field of the Material-Properties Galerkin-Projection equations
                 CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Update materials ... ",ERR,ERROR,*999)
@@ -3089,7 +3096,7 @@ CONTAINS
               CALL DARCY_EQUATION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE(PROBLEM_QUASISTATIC_DARCY_SUBTYPE)
               CALL DARCY_EQUATION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-            CASE(PROBLEM_ALE_DARCY_SUBTYPE)
+            CASE(PROBLEM_ALE_DARCY_SUBTYPE,PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE)
               IF(SOLVER%GLOBAL_NUMBER==2) THEN
                 CALL DARCY_EQUATION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
               END IF
@@ -3169,7 +3176,8 @@ CONTAINS
                     ENDDO
                   ENDIF 
                 ENDIF
-            CASE(PROBLEM_QUASISTATIC_DARCY_SUBTYPE, PROBLEM_ALE_DARCY_SUBTYPE, PROBLEM_TRANSIENT_DARCY_SUBTYPE)
+            CASE(PROBLEM_QUASISTATIC_DARCY_SUBTYPE, PROBLEM_ALE_DARCY_SUBTYPE, PROBLEM_TRANSIENT_DARCY_SUBTYPE, &
+              & PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE)
               SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
               IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
                 SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
