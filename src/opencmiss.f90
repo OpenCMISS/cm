@@ -349,6 +349,36 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSAnalyticAnalysisRmsErrorGetElementNumber
     MODULE PROCEDURE CMISSAnalyticAnalysisRmsErrorGetElementObj
   END INTERFACE !CMISSAnalyticAnalysisRmsErrorGetElement
+
+  !>Get integral of numerical values.
+  INTERFACE CMISSAnalyticAnalysisIntegralNumericalValueGet
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralNumericalValueGetNumber
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralNumericalValueGetObj
+  END INTERFACE !CMISSAnalyticAnalysisIntegralNumericalValueGet
+
+  !>Get integral of analytical values.
+  INTERFACE CMISSAnalyticAnalysisIntegralAnalyticValueGet
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralAnalyticValueGetNumber
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralAnalyticValueGetObj
+  END INTERFACE !CMISSAnalyticAnalysisIntegralAnalyticValueGet
+
+  !>Get integral of percentage errors.
+  INTERFACE CMISSAnalyticAnalysisIntegralPercentageErrorGet
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralPercentageErrorGetNumber
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralPercentageErrorGetObj
+  END INTERFACE !CMISSAnalyticAnalysisIntegralPercentageErrorGet
+
+  !>Get integral of absolute errors.
+  INTERFACE CMISSAnalyticAnalysisIntegralAbsoluteErrorGet
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralAbsoluteErrorGetNumber
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralAbsoluteErrorGetObj
+  END INTERFACE !CMISSAnalyticAnalysisIntegralAbsoluteErrorGet
+
+  !>Get integral of relative errors.
+  INTERFACE CMISSAnalyticAnalysisIntegralRelativeErrorGet
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralRelativeErrorGetNumber
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralRelativeErrorGetObj
+  END INTERFACE !CMISSAnalyticAnalysisIntegralRelativeErrorGet
   
   PUBLIC CMISSAnalyticAnalysisOutput
 
@@ -362,6 +392,10 @@ MODULE OPENCMISS
     & CMISSAnalyticAnalysisRelativeErrorGetConstant
 
   PUBLIC CMISSAnalyticAnalysisRmsErrorGetNode,CMISSAnalyticAnalysisRmsErrorGetElement
+
+  PUBLIC CMISSAnalyticAnalysisIntegralNumericalValueGet,CMISSAnalyticAnalysisIntegralAnalyticValueGet, &
+    & CMISSAnalyticAnalysisIntegralPercentageErrorGet,CMISSAnalyticAnalysisIntegralAbsoluteErrorGet, &
+    & CMISSAnalyticAnalysisIntegralRelativeErrorGet
  
 !!==================================================================================================================================
 !!
@@ -6186,6 +6220,417 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSAnalyticAnalysisRmsErrorGetElementObj
+
+  !
+  !================================================================================================================================
+  ! 
+
+  !>Get integral value for the numerical values.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralNumericalValueGetNumber(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, & 
+    & IntegralValue,GhostIntegralValue,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
+    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralNumericalValueGetNumber",Err,ERROR,*999)
+    
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL ANALYTIC_ANALYSIS_INTEGRAL_NUMERICAL_VALUE_GET(FIELD,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue, &
+          & ERR,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNumericalValueGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralNumericalValueGetNumber",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNumericalValueGetNumber")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralNumericalValueGetNumber
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Get integral value for the numerical values.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralNumericalValueGetObj(Field,VariableType,ComponentNumber,IntegralValue, &
+    & GhostIntegralValue,Err)
+  
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralNumericalValueGetObj",Err,ERROR,*999)
+    
+    CALL ANALYTIC_ANALYSIS_INTEGRAL_NUMERICAL_VALUE_GET(Field%FIELD,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue, &
+          & ERR,ERROR,*999)
+
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNumericalValueGetObj")
+
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralNumericalValueGetObj",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNumericalValueGetObj")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralNumericalValueGetObj
+
+  !
+  !================================================================================================================================
+  ! 
+
+  !>Get integral value for the analytic values.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralAnalyticValueGetNumber(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, & 
+    & IntegralValue,GhostIntegralValue,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
+    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralAnalyticValueGetNumber",Err,ERROR,*999)
+    
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL ANALYTIC_ANALYSIS_INTEGRAL_ANALYTIC_VALUE_GET(FIELD,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue, &
+          & ERR,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSAnalyticAnalysisIntegralAnalyticValueGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralAnalyticValueGetNumber",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralAnalyticValueGetNumber")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralAnalyticValueGetNumber
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Get integral value for the analytic values.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralAnalyticValueGetObj(Field,VariableType,ComponentNumber,IntegralValue, &
+    & GhostIntegralValue,Err)
+  
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralAnalyticValueGetObj",Err,ERROR,*999)
+    
+    CALL ANALYTIC_ANALYSIS_INTEGRAL_ANALYTIC_VALUE_GET(Field%FIELD,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue, &
+          & ERR,ERROR,*999)
+
+    CALL EXITS("CMISSAnalyticAnalysisIntegralAnalyticValueGetObj")
+
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralAnalyticValueGetObj",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralAnalyticValueGetObj")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralAnalyticValueGetObj
+
+  !
+  !================================================================================================================================
+  ! 
+
+  !>Get integral value for the percentage errors.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralPercentageErrorGetNumber(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, & 
+    & IntegralValue,GhostIntegralValue,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
+    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralPercentageErrorGetNumber",Err,ERROR,*999)
+    
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL ANALYTIC_ANALYSIS_INTEGRAL_PERCENTAGE_ERROR_GET(FIELD,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue, &
+          & ERR,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSAnalyticAnalysisIntegralPercentageErrorGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralPercentageErrorGetNumber",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralPercentageErrorGetNumber")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralPercentageErrorGetNumber
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Get integral value for the percentage errors.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralPercentageErrorGetObj(Field,VariableType,ComponentNumber,IntegralValue, &
+    & GhostIntegralValue,Err)
+  
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralPercentageErrorGetObj",Err,ERROR,*999)
+    
+    CALL ANALYTIC_ANALYSIS_INTEGRAL_PERCENTAGE_ERROR_GET(Field%FIELD,VariableType,ComponentNumber,IntegralValue, & 
+      & GhostIntegralValue,ERR,ERROR,*999)
+
+    CALL EXITS("CMISSAnalyticAnalysisIntegralPercentageErrorGetObj")
+
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralPercentageErrorGetObj",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralPercentageErrorGetObj")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralPercentageErrorGetObj
+
+  !
+  !================================================================================================================================
+  ! 
+
+  !>Get integral value for the absolute errors.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralAbsoluteErrorGetNumber(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, & 
+    & IntegralValue,GhostIntegralValue,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
+    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetNumber",Err,ERROR,*999)
+    
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL ANALYTIC_ANALYSIS_INTEGRAL_ABSOLUTE_ERROR_GET(FIELD,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue, &
+          & ERR,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetNumber",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetNumber")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralAbsoluteErrorGetNumber
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Get integral value for the absolute errors.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralAbsoluteErrorGetObj(Field,VariableType,ComponentNumber,IntegralValue, &
+    & GhostIntegralValue,Err)
+  
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetObj",Err,ERROR,*999)
+    
+    CALL ANALYTIC_ANALYSIS_INTEGRAL_ABSOLUTE_ERROR_GET(Field%FIELD,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue, &
+          & ERR,ERROR,*999)
+
+    CALL EXITS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetObj")
+
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetObj",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetObj")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralAbsoluteErrorGetObj
+
+  !
+  !================================================================================================================================
+  ! 
+
+  !>Get integral value for the relative error.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralRelativeErrorGetNumber(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, & 
+    & IntegralValue,GhostIntegralValue,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
+    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralRelativeErrorGetNumber",Err,ERROR,*999)
+    
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL ANALYTIC_ANALYSIS_INTEGRAL_RELATIVE_ERROR_GET(FIELD,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue, &
+          & ERR,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSAnalyticAnalysisIntegralRelativeErrorGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralRelativeErrorGetNumber",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralRelativeErrorGetNumber")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralRelativeErrorGetNumber
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Get integral value for the relative error.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralRelativeErrorGetObj(Field,VariableType,ComponentNumber,IntegralValue, & 
+    & GhostIntegralValue,Err)
+  
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralRelativeErrorGetObj",Err,ERROR,*999)
+    
+    CALL ANALYTIC_ANALYSIS_INTEGRAL_RELATIVE_ERROR_GET(Field%FIELD,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue, &
+          & ERR,ERROR,*999)
+
+    CALL EXITS("CMISSAnalyticAnalysisIntegralRelativeErrorGetObj")
+
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralRelativeErrorGetObj",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralRelativeErrorGetObj")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralRelativeErrorGetObj
+
 
 
 
