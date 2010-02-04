@@ -379,6 +379,18 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSAnalyticAnalysisIntegralRelativeErrorGetNumber
     MODULE PROCEDURE CMISSAnalyticAnalysisIntegralRelativeErrorGetObj
   END INTERFACE !CMISSAnalyticAnalysisIntegralRelativeErrorGet
+
+  !>Get integral of nid numerical errors.
+  INTERFACE CMISSAnalyticAnalysisIntegralNidNumericalValueGet
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralNidNumericalValueGetNumber
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralNidNumericalValueGetObj
+  END INTERFACE !CMISSAnalyticAnalysisIntegralNidNumericalValueGet
+
+  !>Get integral of nid errors.
+  INTERFACE CMISSAnalyticAnalysisIntegralNidErrorGet
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralNidErrorGetNumber
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralNidErrorGetObj
+  END INTERFACE !CMISSAnalyticAnalysisIntegralNidErrorGet
   
   PUBLIC CMISSAnalyticAnalysisOutput
 
@@ -395,7 +407,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSAnalyticAnalysisIntegralNumericalValueGet,CMISSAnalyticAnalysisIntegralAnalyticValueGet, &
     & CMISSAnalyticAnalysisIntegralPercentageErrorGet,CMISSAnalyticAnalysisIntegralAbsoluteErrorGet, &
-    & CMISSAnalyticAnalysisIntegralRelativeErrorGet
+    & CMISSAnalyticAnalysisIntegralRelativeErrorGet,CMISSAnalyticAnalysisIntegralNidNumericalValueGet, &
+    & CMISSAnalyticAnalysisIntegralNidErrorGet
  
 !!==================================================================================================================================
 !!
@@ -6619,7 +6632,7 @@ CONTAINS
     CALL ENTERS("CMISSAnalyticAnalysisIntegralRelativeErrorGetObj",Err,ERROR,*999)
     
     CALL ANALYTIC_ANALYSIS_INTEGRAL_RELATIVE_ERROR_GET(Field%FIELD,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue, &
-          & ERR,ERROR,*999)
+      & ERR,ERROR,*999)
 
     CALL EXITS("CMISSAnalyticAnalysisIntegralRelativeErrorGetObj")
 
@@ -6630,6 +6643,169 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSAnalyticAnalysisIntegralRelativeErrorGetObj
+
+  !
+  !================================================================================================================================
+  ! 
+
+  !>Get integral value for the nid numerical.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralNidNumericalValueGetNumber(RegionUserNumber,FieldUserNumber,VariableType, &
+    & ComponentNumber,IntegralValue,GhostIntegralValue,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
+    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetNumber",Err,ERROR,*999)
+    
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL ANALYTIC_ANALYSIS_INTEGRAL_NID_NUMERICAL_VALUE_GET(FIELD,VariableType,ComponentNumber,IntegralValue, &
+          & GhostIntegralValue,ERR,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetNumber",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetNumber")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralNidNumericalValueGetNumber
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Get integral value for the nid numerical.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralNidNumericalValueGetObj(Field,VariableType,ComponentNumber,IntegralValue, & 
+    & GhostIntegralValue,Err)
+  
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetObj",Err,ERROR,*999)
+    
+    CALL ANALYTIC_ANALYSIS_INTEGRAL_NID_NUMERICAL_VALUE_GET(Field%FIELD,VariableType,ComponentNumber,IntegralValue, &
+      & GhostIntegralValue,ERR,ERROR,*999)
+
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetObj")
+
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetObj",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetObj")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralNidNumericalValueGetObj
+
+  !
+  !================================================================================================================================
+  ! 
+
+  !>Get integral value for the nid error.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralNidErrorGetNumber(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & IntegralValue,GhostIntegralValue,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
+    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralNidErrorGetNumber",Err,ERROR,*999)
+    
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL ANALYTIC_ANALYSIS_INTEGRAL_NID_ERROR_GET(FIELD,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue,ERR, &
+          & ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNidErrorGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralNidErrorGetNumber",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNidErrorGetNumber")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralNidErrorGetNumber
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Get integral value for the nid error.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralNidErrorGetObj(Field,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue,Err)
+  
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralNidErrorGetObj",Err,ERROR,*999)
+    
+    CALL ANALYTIC_ANALYSIS_INTEGRAL_NID_ERROR_GET(Field%FIELD,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue,ERR, &
+      & ERROR,*999)
+
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNidErrorGetObj")
+
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralNidErrorGetObj",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNidErrorGetObj")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralNidErrorGetObj
 
 
 
