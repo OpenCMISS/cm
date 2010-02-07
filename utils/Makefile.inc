@@ -28,6 +28,10 @@ ifndef MPIPROF
   MPIPROF := false
 endif
 
+ifndef TAUPROF
+  TAUPROF := false
+endif
+
 ifndef DEBUG
   ifneq ($(PROF),false)
     OPT := true
