@@ -692,9 +692,9 @@ MODULE OPENCMISS
   !Temporary boundary flags (to be removed when general boundary object becomes available!)
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionFixedWall = BOUNDARY_CONDITION_FIXED_WALL
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionInletWall = BOUNDARY_CONDITION_FIXED_INLET
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionOutletWall = BOUNDARY_CONDITION_FIXED_OUTLET
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionMovedWall = BOUNDARY_CONDITION_MOVED_WALL
-
-
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionFreeWall = BOUNDARY_CONDITION_FREE_WALL
 
   !>@}
   !>@}
@@ -755,7 +755,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSBoundaryConditionNotFixed,CMISSBoundaryConditionFixed,CMISSBoundaryConditionMixed
   !Temporary boundary flags (to be removed when general boundary object becomes available!)
-  PUBLIC CMISSBoundaryConditionFixedWall,CMISSBoundaryConditionInletWall,CMISSBoundaryConditionMovedWall
+  PUBLIC CMISSBoundaryConditionFixedWall,CMISSBoundaryConditionInletWall,CMISSBoundaryConditionMovedWall, &
+    & CMISSBoundaryConditionFreeWall,CMISSBoundaryConditionOutletWall
 
   PUBLIC CMISSBoundaryConditionsDestroy
 
@@ -1496,7 +1497,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetGalerkinProjectionEquationType = EQUATIONS_SET_GALERKIN_PROJECTION_EQUATION_TYPE !<Galerkin projection equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityDarcyType = EQUATIONS_SET_FINITE_ELASTICITY_DARCY_TYPE !<Finite Elasticity Darcy equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityStokesType = EQUATIONS_SET_FINITE_ELASTICITY_STOKES_TYPE !<Finite Elasticity Stokes equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityNavierStokesType = EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_TYPE !<Finite Elasticity Navier Stokes equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityNavierStokesType = &
+    & EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_TYPE !<Finite Elasticity Navier Stokes equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetDiffusionDiffusionType = EQUATIONS_SET_DIFFUSION_DIFFUSION_TYPE !<Diffusion Diffusion equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetDiffusionAdvectionDiffusionType = EQUATIONS_SET_DIFFUSION_ADVECTION_DIFFUSION_TYPE !<Diffusion Advection Diffusion equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   !>@}
@@ -1536,7 +1538,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardLaplaceSubtype = EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE !<Standard Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetGeneralisedLaplaceSubtype = EQUATIONS_SET_GENERALISED_LAPLACE_SUBTYPE !<Generalised Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMovingMeshLaplaceSubtype = EQUATIONS_SET_MOVING_MESH_LAPLACE_SUBTYPE !<Moving mesh Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetVectorSourcePoissonSubtype = EQUATIONS_SET_VECTOR_SOURCE_POISSON_SUBTYPE !<Vector source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesPoissonSubtype = EQUATIONS_SET_STOKES_POISSON_SUBTYPE !<Vector source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesPoissonSubtype = EQUATIONS_SET_NAVIER_STOKES_POISSON_SUBTYPE !<Vector source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourcePoissonSubtype = EQUATIONS_SET_CONSTANT_SOURCE_POISSON_SUBTYPE !<Constant source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourcePoissonSubtype = EQUATIONS_SET_LINEAR_SOURCE_POISSON_SUBTYPE !<Linear source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuadraticSourcePoissonSubtype = EQUATIONS_SET_QUADRATIC_SOURCE_POISSON_SUBTYPE !<Quadratic source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -1703,7 +1706,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & CMISSEquationsSetQuasistaticDarcySubtype,CMISSEquationsSetALEDarcySubtype,CMISSEquationsSetTransientDarcySubtype, &
     & CMISSEquationsSetStandardLaplaceSubtype,CMISSEquationsSetMovingMeshLaplaceSubtype, &
     & CMISSEquationsSetGeneralisedLaplaceSubtype,CMISSEquationsSetConstantSourcePoissonSubtype, &
-    & CMISSEquationsSetVectorSourcePoissonSubtype, &
+    & CMISSEquationsSetStokesPoissonSubtype, CMISSEquationsSetNavierStokesPoissonSubtype, &
     & CMISSEquationsSetLinearSourcePoissonSubtype,CMISSEquationsSetQuadraticSourcePoissonSubtype, &
     & CMISSEquationsSetExponentialSourcePoissonSubtype,CMISSEquationsSetNoSourceHelmholtzSubtype, &
     & CMISSEquationsSetNoSourceDiffusionSubtype,CMISSEquationsSetConstantSourceDiffusionSubtype, &
@@ -3141,7 +3144,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSProblemStandardLaplaceSubtype = PROBLEM_STANDARD_LAPLACE_SUBTYPE !<Standard Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemGeneralisedLaplaceSubtype = PROBLEM_GENERALISED_LAPLACE_SUBTYPE !<Generalised Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemLinearSourcePoissonSubtype = PROBLEM_LINEAR_SOURCE_POISSON_SUBTYPE !<Linear source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemVectorSourcePoissonSubtype = PROBLEM_VECTOR_SOURCE_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemStokesPoissonSubtype = PROBLEM_STOKES_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemNavierStokesPoissonSubtype = PROBLEM_NAVIER_STOKES_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemNonlinearSourcePoissonSubtype = PROBLEM_NONLINEAR_SOURCE_POISSON_SUBTYPE !<Nonlinear source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemNoSourceHelmholtzSubtype = PROBLEM_NO_SOURCE_HELMHOLTZ_SUBTYPE !<No source Helmholtz problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemNoSourceDiffusionSubtype = PROBLEM_NO_SOURCE_DIFFUSION_SUBTYPE !<No source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -3224,7 +3228,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSProblemStandardLaplaceSubtype,CMISSProblemGeneralisedLaplaceSubtype
 
-  PUBLIC CMISSProblemLinearSourcePoissonSubtype,CMISSProblemNonlinearSourcePoissonSubtype,CMISSProblemVectorSourcePoissonSubtype
+  PUBLIC CMISSProblemLinearSourcePoissonSubtype,CMISSProblemNonlinearSourcePoissonSubtype,CMISSProblemStokesPoissonSubtype, &
+    & CMISSProblemNavierStokesPoissonSubtype
 
   PUBLIC CMISSProblemNoSourceHelmholtzSubtype
 

@@ -181,7 +181,8 @@ CONTAINS
                                   !For now assume 1-1 mapping between rows and dofs.
                                   global_dof=global_row                                  
                                   INCLUDE_ROW=BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)== &
-                                    & BOUNDARY_CONDITION_NOT_FIXED
+                                    & BOUNDARY_CONDITION_NOT_FIXED.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
+                                    & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE_WALL
                                 ELSE
                                   CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
                                 ENDIF
@@ -195,7 +196,8 @@ CONTAINS
                                     !For now assume 1-1 mapping between rows and dofs.
                                     global_dof=global_row                                  
                                     INCLUDE_ROW=BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)== &
-                                      & BOUNDARY_CONDITION_NOT_FIXED
+                                      & BOUNDARY_CONDITION_NOT_FIXED.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
+                                      & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE_WALL
                                   ELSE
                                     CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
                                   ENDIF
@@ -217,7 +219,8 @@ CONTAINS
                                       !global_dof=DEPENDENT_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_dof)
                                       global_dof=global_row                                    
                                       INCLUDE_ROW=INCLUDE_ROW.OR.BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS( &
-                                        & global_dof)==BOUNDARY_CONDITION_NOT_FIXED
+                                        & global_dof)==BOUNDARY_CONDITION_NOT_FIXED.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
+                                        & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE_WALL
                                     ELSE
                                       CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
                                     ENDIF
@@ -379,7 +382,9 @@ CONTAINS
                       !This is wrong as we only have the mappings for the local rank not the global ranks.
                       !For now assume 1-1 mapping between rows and dofs.
                       global_dof=global_row                                  
-                      INCLUDE_ROW=BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NOT_FIXED
+                      INCLUDE_ROW=BOUNDARY_CONDITIONS_VARIABLE% & 
+                        & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NOT_FIXED.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
+                        & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE_WALL
                     ELSE
                       CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
                     ENDIF
@@ -393,7 +398,8 @@ CONTAINS
                         !For now assume 1-1 mapping between rows and dofs.
                         global_dof=global_row                                  
                         INCLUDE_ROW=BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)== &
-                          & BOUNDARY_CONDITION_NOT_FIXED
+                          & BOUNDARY_CONDITION_NOT_FIXED.OR.BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)== &
+                          & BOUNDARY_CONDITION_FREE_WALL
                       ELSE
                         CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
                       ENDIF
@@ -413,7 +419,8 @@ CONTAINS
                           !global_dof=DEPENDENT_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_dof)
                           global_dof=global_row                                    
                           INCLUDE_ROW=INCLUDE_ROW.OR.BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)== &
-                            & BOUNDARY_CONDITION_NOT_FIXED
+                            & BOUNDARY_CONDITION_NOT_FIXED.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
+                            & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE_WALL
                         ELSE
                           CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
                         ENDIF
@@ -638,7 +645,9 @@ CONTAINS
                               EXIT
                             ENDIF
                           ENDDO
-                          IF(BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NOT_FIXED) THEN
+                          IF(BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)== & 
+                            & BOUNDARY_CONDITION_NOT_FIXED.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
+                            & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE_WALL) THEN
                             NUMBER_OF_GLOBAL_SOLVER_COLS=NUMBER_OF_GLOBAL_SOLVER_COLS+1
                             IF(MYRANK_DOF) TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS=TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS+1
                             IF(rank==myrank) NUMBER_OF_LOCAL_SOLVER_COLS=NUMBER_OF_LOCAL_SOLVER_COLS+1
@@ -943,7 +952,8 @@ CONTAINS
                           EXIT
                         ENDIF
                       ENDDO                                          
-                      IF(BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NOT_FIXED) THEN
+                      IF(BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NOT_FIXED.OR. & 
+                        & BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE_WALL) THEN
                         !DOF is not fixed so map the variable/equation dof to a new solver dof
                         NUMBER_OF_GLOBAL_SOLVER_COLS=NUMBER_OF_GLOBAL_SOLVER_COLS+1
                         !Initialise_sm
