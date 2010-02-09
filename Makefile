@@ -639,6 +639,12 @@ ifeq ($(USECELLML),true)
   endif
 endif
 
+#TAU/PAPI
+ifeq ($(TAUPROF),true)
+  CPPFLAGS += -DTAUPROF
+  FPPFLAGS += -DTAUPROF
+endif
+
 #MPI
 MPI_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
