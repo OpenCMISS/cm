@@ -124,11 +124,19 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: MPI_IERROR,SEND_COUNT,variable_type_idx
+    INTEGER(INTG) :: MPI_IERROR,SEND_COUNT,variable_type_idx,dof_idx,NUMBER_OF_DIRICHLET_CONDITIONS, equ_matrix_idx, dirichlet_idx
+    INTEGER(INTG), POINTER :: ROW_INDICES(:), COLUMN_INDICES(:)
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITION_VARIABLE
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: VARIABLE_DOMAIN_MAPPING
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    TYPE(BOUNDARY_CONDITIONS_DIRICHLET_TYPE), POINTER :: BOUNDARY_CONDITIONS_DIRICHLET
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(INTG), POINTER :: DIRICHLET_INDICES(:)
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
+    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATION_MATRIX
     
     CALL ENTERS("BOUNDARY_CONDITIONS_CREATE_FINISH",ERR,ERROR,*999)
 
@@ -157,6 +165,95 @@ CONTAINS
                     LOCAL_ERROR="Field variable domain mapping is not associated for variable type "// &
                       & TRIM(NUMBER_TO_VSTRING(variable_type_idx,"*",ERR,ERROR))//"."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
+                  ! Find out how many dirichlet conditions in problem
+                  NUMBER_OF_DIRICHLET_CONDITIONS=0
+                  DO dof_idx=1,FIELD_VARIABLE%NUMBER_OF_DOFS
+                    IF(BOUNDARY_CONDITION_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(dof_idx)==BOUNDARY_CONDITION_FIXED) THEN
+                      NUMBER_OF_DIRICHLET_CONDITIONS=NUMBER_OF_DIRICHLET_CONDITIONS+1
+                    ENDIF
+                  ENDDO
+                  ! Allocate space for dirichlet
+                  ALLOCATE(DIRICHLET_INDICES(NUMBER_OF_DIRICHLET_CONDITIONS),STAT=ERR)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate list for Dirichlet indices",ERR,ERROR,*999)
+                  ! Find dirichlet conditions
+                  dirichlet_idx=1
+                  DO dof_idx=1,FIELD_VARIABLE%NUMBER_OF_DOFS
+                    IF(BOUNDARY_CONDITION_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(dof_idx)==BOUNDARY_CONDITION_FIXED) THEN
+                      DIRICHLET_INDICES(dirichlet_idx)=dof_idx
+                      dirichlet_idx=dirichlet_idx+1
+                    ENDIF
+                  ENDDO
+                  ! Check that there is at least one dirichlet condition
+                  IF(NUMBER_OF_DIRICHLET_CONDITIONS>0) THEN
+                    ALLOCATE(BOUNDARY_CONDITION_VARIABLE%DIRICHLET_BOUNDARY_CONDITIONS,STAT=ERR)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Dirichlet Boundary Conditions",ERR,ERROR,*999)
+                    BOUNDARY_CONDITIONS_DIRICHLET=>BOUNDARY_CONDITION_VARIABLE%DIRICHLET_BOUNDARY_CONDITIONS
+                    BOUNDARY_CONDITIONS_DIRICHLET%NUMBER_OF_DIRICHLET_CONDITIONS=NUMBER_OF_DIRICHLET_CONDITIONS ! CHECK!!!!!!!!!!!!!!!!!!!!
+                    IF(ASSOCIATED(BOUNDARY_CONDITIONS_DIRICHLET)) THEN
+                      ! Store Dirichlet dof indices
+                      ALLOCATE(BOUNDARY_CONDITIONS_DIRICHLET%DIRICHLET_DOF_INDICES(NUMBER_OF_DIRICHLET_CONDITIONS),STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate list for Dirichlet indices",ERR,ERROR,*999)
+                      CALL LIST_DETACH_AND_DESTROY(DIRICHLET_INDICES,NUMBER_OF_DIRICHLET_CONDITIONS, &
+                        & BOUNDARY_CONDITIONS_DIRICHLET%DIRICHLET_DOF_INDICES, ERR,ERROR,*999)
+                      EQUATIONS_SET=>BOUNDARY_CONDITIONS%EQUATIONS_SET
+                      IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                        EQUATIONS=>EQUATIONS_SET%EQUATIONS
+                        IF(ASSOCIATED(EQUATIONS)) THEN
+                          EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+                          IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+                            LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
+                            IF(ASSOCIATED(LINEAR_MATRICES)) THEN !Need to do this for dynamic
+                              ! Iterate through equations matrices
+                              DO equ_matrix_idx,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
+                                EQUATION_MATRIX=>LINEAR_MATRICES%MATRICES(equ_matrix_idx)%PTR
+                                IF(ASSOCIATED(EQUATION_MATRIX) THEN
+                                  SELECT CASE(EQUATION_MATRIX%STORAGE_TYPE)
+                                  CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
+                                    ! COMPLETE!!
+                                  CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
+                                    ! COMPLETE!!
+                                  CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+                                    ! COMPLETE!!
+                                  CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
+                                    ! COMPLETE!!
+                                  CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+                                    CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(DISTRIBUTED_MATRIX, ROW_INDICES, COLUMN_INDICES, ERR, ERROR,*)
+                                  CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+                                    ! COMPLETE!!
+                                  CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
+                                    ! COMPLETE!!
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The storage type of "//TRIM(NUMBER_TO_VSTRING( &
+                                      & LINEAR_MATRICES%MATRICES(equ_matrix_idx)%PTR%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                ENDIF ! else necesary here??
+                            ELSE
+                              LOCAL_ERROR="Linear Matrices is not associated for these Equations Matrices "// & ! necesary?? i.e only linear or only dynamic matrices
+                                & TRIM(NUMBER_TO_VSTRING(variable_type_idx,"*",ERR,ERROR))//"."
+                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            LOCAL_ERROR="Equations Matrices is not associated for these Equations "// &
+                              & TRIM(NUMBER_TO_VSTRING(variable_type_idx,"*",ERR,ERROR))//"."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          ENDIF
+                        ELSE
+                          LOCAL_ERROR="Equations is not associated for this Equations Set "// &
+                            & TRIM(NUMBER_TO_VSTRING(variable_type_idx,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        LOCAL_ERROR="Equations Set is not associated for boundary conditions variable "// &
+                          & TRIM(NUMBER_TO_VSTRING(variable_type_idx,"*",ERR,ERROR))//"."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      LOCAL_ERROR="Dirichlet Boundary Conditions type is not associated for boundary condition variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(variable_type_idx,"*",ERR,ERROR))//"."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
                   ENDIF
                 ELSE
                   LOCAL_ERROR="Field variable is not associated for variable type "// &
@@ -1106,7 +1203,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
  
-    CALL ENTERS("BOUNDARY_CONDITIONS_SET_NODE",ERR,ERROR,*999)
+    CALL ENTERS("BOUNDARY_CONDITIONS_ADD_NODE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
       IF(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_FINISHED) THEN
@@ -1220,6 +1317,8 @@ CONTAINS
                   BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_ny)=BOUNDARY_CONDITION_MOVED_WALL
                   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny,VALUE, &
                     & ERR,ERROR,*999)
+                CASE(BOUNDARY_CONDITION_FREE_WALL)
+                  BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_ny)=BOUNDARY_CONDITION_FREE_WALL
                 CASE(BOUNDARY_CONDITION_MIXED)
                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                 CASE DEFAULT
@@ -1246,10 +1345,10 @@ CONTAINS
       CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("BOUNDARY_CONDITION_SET_NODE")
+    CALL EXITS("BOUNDARY_CONDITIONS_SET_NODE")
     RETURN
-999 CALL ERRORS("BOUNDARY_CONDITION_SET_NODE",ERR,ERROR)
-    CALL EXITS("BOUNDARY_CONDITION_SET_NODE")
+999 CALL ERRORS("BOUNDARY_CONDITIONS_SET_NODE",ERR,ERROR)
+    CALL EXITS("BOUNDARY_CONDITIONS_SET_NODE")
     RETURN 1
   END SUBROUTINE BOUNDARY_CONDITIONS_SET_NODE
   
@@ -1390,5 +1489,106 @@ CONTAINS
   !
   !================================================================================================================================
   !  
- 
+
+    !>Start the creation of dirichlet boundary conditions for the boundary conditions variable.
+  SUBROUTINE BOUNDARY_CONDITIONS_DIRICHLET_CREATE_START(BOUNDARY_CONDITIONS,BOUNDARY_CONDITIONS_DIRICHLET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(BOUNDARY_CONDITIONS_DIRICHLET_TYPE), POINTER :: BOUNDARY_CONDITIONS_DIRICHLET !<COMPLETE
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<COMPLETE
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("BOUNDARY_CONDITIONS_DIRICHLET_CREATE_START",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+      IF(ASSOCIATED(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_DIRICHLET)) THEN
+        CALL FLAG_ERROR("Dirichlet boundary conditions are already associated for the boundary conditions.",ERR,ERROR,*999)
+      ELSE
+        IF(ASSOCIATED(BOUNDARY_CONDITIONS_DIRICHLET) THEN
+          CALL FLAG_ERROR("Dirichlet boundary conditions is already associated.",ERR,ERROR,*999)
+        ELSE
+          !Initialise the boundary conditions
+          CALL BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE(EQUATIONS_SET,ERR,ERROR,*999)
+          !Return the pointer
+          BOUNDARY_CONDITIONS_DIRICHLET=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_DIRICHLET
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Boundary Conditions is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("BOUNDARY_CONDITIONS_DIRICHLET_CREATE_START")
+    RETURN
+999 CALL ERRORS("BOUNDARY_CONDITIONS_DIRICHLET_CREATE_START",ERR,ERROR)
+    CALL EXITS("BOUNDARY_CONDITIONS_DIRICHLET_CREATE_START")
+    RETURN 1
+
+  END SUBROUTINE BOUNDARY_CONDITIONS_DIRICHLET_CREATE_START
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise dirichlet boundary conditions for a boundary conditions.
+  SUBROUTINE BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE(BOUNDARY_CONDITIONS,FIELD_VARIABLE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<A pointer to the boundary conditions to initialise a variable t ype for
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE !<A pointer to the field variable to initialise the boundary conditions variable for.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR,variable_type
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: VARIABLE_DOMAIN_MAPPING
+    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
+
+    CALL ENTERS("BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+      IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+        IF(ALLOCATED(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP)) THEN
+          VARIABLE_DOMAIN_MAPPING=>FIELD_VARIABLE%DOMAIN_MAPPING
+          IF(ASSOCIATED(VARIABLE_DOMAIN_MAPPING)) THEN
+            variable_type=FIELD_VARIABLE%VARIABLE_TYPE
+            IF(ASSOCIATED(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR)) THEN
+              LOCAL_ERROR="The boundary conditions variable is already associated for variable type "// &
+                & TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
+            ELSE
+              ALLOCATE(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR,STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate boundary condition variable.",ERR,ERROR,*999)
+              BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR%BOUNDARY_CONDITIONS=> &
+                & BOUNDARY_CONDITIONS
+              BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR%VARIABLE_TYPE=variable_type
+              BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR%VARIABLE=>FIELD_VARIABLE
+              ALLOCATE(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR% &
+                & GLOBAL_BOUNDARY_CONDITIONS(VARIABLE_DOMAIN_MAPPING%NUMBER_OF_GLOBAL),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global boundary conditions.",ERR,ERROR,*999)
+              BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR%GLOBAL_BOUNDARY_CONDITIONS= &
+                & BOUNDARY_CONDITION_NOT_FIXED
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Field variable domain mapping is not associated.",ERR,ERROR,*998)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Boundary conditions variable type map is not allocated.",ERR,ERROR,*998)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*998)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*998)
+    ENDIF
+
+    CALL EXITS("BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE")
+    RETURN
+999 CALL BOUNDARY_CONDITIONS_VARIABLE_FINALISE(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP( &
+      & variable_type)%PTR,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE",ERR,ERROR)
+    CALL EXITS("BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE")
+    RETURN 1
+  END SUBROUTINE BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE
+
 END MODULE BOUNDARY_CONDITIONS_ROUTINES
