@@ -1564,6 +1564,7 @@ CONTAINS
 
 #ifdef TAUPROF
             CALL TAU_STATIC_PHASE_STOP("SET POINTERS")
+#endif
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! LOOP OVER GAUSS POINTS !!!
