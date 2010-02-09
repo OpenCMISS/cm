@@ -1462,6 +1462,14 @@ CONTAINS
     REAL(DP) :: W_VALUE(3)
     REAL(DP)::  X(3)
 
+#ifdef TAUPROF
+    CHARACTER(26) :: CVAR
+    INTEGER :: GAUSS_POINT_LOOP_PHASE(2) = (/ 0, 0 /)
+    SAVE GAUSS_POINT_LOOP_PHASE
+    INTEGER :: FIELD_COMPONENT_LOOP_PHASE(2) = (/ 0, 0 /)
+    SAVE FIELD_COMPONENT_LOOP_PHASE
+#endif
+
     CALL ENTERS("STOKES_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
 
     out=0
@@ -1490,6 +1498,9 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! SET POINTERS !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#ifdef TAUPROF
+            CALL TAU_STATIC_PHASE_START("SET POINTERS")
+#endif
             DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
             INDEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%INDEPENDENT_FIELD
             GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
@@ -1551,18 +1562,26 @@ CONTAINS
             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
               & MATERIALS_INTERP_PARAMETERS,ERR,ERROR,*999)
 
+#ifdef TAUPROF
+            CALL TAU_STATIC_PHASE_STOP("SET POINTERS")
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! LOOP OVER GAUSS POINTS !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
             DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
+#ifdef TAUPROF
+              WRITE (CVAR,'(a17,i2)') 'Gauss Point Loop ',ng
+              CALL TAU_PHASE_CREATE_DYNAMIC(GAUSS_POINT_LOOP_PHASE,CVAR)
+              CALL TAU_PHASE_START(GAUSS_POINT_LOOP_PHASE)
+
+              CALL TAU_STATIC_PHASE_START("INTERPOLATE")
+#endif
               CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
                 & GEOMETRIC_INTERP_POINT,ERR,ERROR,*999)
               CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,EQUATIONS%INTERPOLATION% &
                 & GEOMETRIC_INTERP_POINT_METRICS,ERR,ERROR,*999)
               CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
                 & MATERIALS_INTERP_POINT,ERR,ERROR,*999)
-
 
               IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_STOKES_SUBTYPE) THEN
                 CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
@@ -1576,13 +1595,14 @@ CONTAINS
                 W_VALUE=0.0_DP
               END IF
 
-
               !Define MU_PARAM, viscosity=1
               MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(1,NO_PART_DERIV)
               !Define RHO_PARAM, density=2
               RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT%VALUES(2,NO_PART_DERIV)
 
-
+#ifdef TAUPROF
+              CALL TAU_STATIC_PHASE_STOP("INTERPOLATE")
+#endif
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! CALCULATE PARTIAL MATRICES !!!
@@ -1593,14 +1613,29 @@ CONTAINS
                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_STOKES_SUBTYPE.OR. &
                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE) THEN
                 !Loop over field components
-
                 mhs=0
+!#ifdef TAUPROF
+!                CALL TAU_STATIC_PHASE_START("FIELD COMPONENT LOOP")
+!#endif
                 DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
+#ifdef TAUPROF
+                  WRITE (CVAR,'(a22,i2)') 'Field Components Loop ',mh
+                  CALL TAU_PHASE_CREATE_DYNAMIC(FIELD_COMPONENT_LOOP_PHASE,CVAR)
+                  CALL TAU_PHASE_START(FIELD_COMPONENT_LOOP_PHASE)
+
+                  CALL TAU_STATIC_PHASE_START("Field Set Variables")
+#endif
+
                   MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
                   DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
                     & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
                   QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
                   JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME1%GAUSS_WEIGHTS(ng)
+
+#ifdef TAUPROF
+                  CALL TAU_STATIC_PHASE_STOP("Field Set Variables")
+                  CALL TAU_STATIC_PHASE_START("Main Loop")
+#endif
 
                   DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
                     mhs=mhs+1
@@ -1608,6 +1643,9 @@ CONTAINS
                     IF(UPDATE_STIFFNESS_MATRIX.OR.UPDATE_DAMPING_MATRIX) THEN
                       !Loop over element columns
                       DO nh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS)
+!#ifdef TAUPROF
+!                        CALL TAU_STATIC_PHASE_START("Element Set Variables")
+!#endif
                         MESH_COMPONENT2=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
                         DEPENDENT_BASIS2=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT2)%PTR% &
                           & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
@@ -1615,6 +1653,9 @@ CONTAINS
                           & (BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
                         ! JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME2%&
                         ! &GAUSS_WEIGHTS(ng)                        
+!#ifdef TAUPROF
+!                        CALL TAU_STATIC_PHASE_STOP("Element Set Variables")
+!#endif
 
                         DO ns=1,DEPENDENT_BASIS2%NUMBER_OF_ELEMENT_PARAMETERS
                           nhs=nhs+1
@@ -1622,7 +1663,9 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! PRECONDITIONS !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+!#ifdef TAUPROF
+!                          CALL TAU_STATIC_PHASE_START("PRECONDITIONS")
+!#endif
                           DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
                             DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
                               DXI_DX(mi,ni)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(mi,ni)
@@ -1641,11 +1684,17 @@ CONTAINS
                         !                           ENDDO !ni
                         !                         ENDDO !mi
 
+!#ifdef TAUPROF
+!                          CALL TAU_STATIC_PHASE_STOP("PRECONDITIONS")
+!#endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! A LAPLACE ONLY !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
                           IF(UPDATE_STIFFNESS_MATRIX) THEN
+!#ifdef TAUPROF
+!                            CALL TAU_STATIC_PHASE_START("A LAPLACE")
+!#endif
                             !LAPLACE TYPE 
                             IF(nh==mh) THEN 
                               SUM=0.0_DP
@@ -1661,6 +1710,9 @@ CONTAINS
                               !Calculate MATRIX  
                               AL_MATRIX(mhs,nhs)=AL_MATRIX(mhs,nhs)+SUM*JGW
                             END IF
+!#ifdef TAUPROF
+!                            CALL TAU_STATIC_PHASE_STOP("A LAPLACE")
+!#endif
                           END IF
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1668,6 +1720,9 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
                           IF(UPDATE_STIFFNESS_MATRIX) THEN
+!#ifdef TAUPROF
+!                            CALL TAU_STATIC_PHASE_START("A STANDARD")
+!#endif
                             !GRADIENT TRANSPOSE TYPE
                             IF(EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE) THEN 
                               IF(nh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
@@ -1684,6 +1739,9 @@ CONTAINS
                                 AG_MATRIX(mhs,nhs)=AG_MATRIX(mhs,nhs)+SUM*JGW
                               END IF
                             END IF
+!#ifdef TAUPROF
+!                            CALL TAU_STATIC_PHASE_STOP("A STANDARD")
+!#endif
                           END IF
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1691,6 +1749,9 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
                           IF(UPDATE_STIFFNESS_MATRIX) THEN
+!#ifdef TAUPROF
+!                            CALL TAU_STATIC_PHASE_START("ALE CONTRIBUTION")
+!#endif
                             !GRADIENT TRANSPOSE TYPE
                             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_STOKES_SUBTYPE) THEN 
                               IF(nh==mh) THEN 
@@ -1705,14 +1766,19 @@ CONTAINS
                                 ALE_MATRIX(mhs,nhs)=ALE_MATRIX(mhs,nhs)+SUM*JGW
                               END IF
                             END IF
+!#ifdef TAUPROF
+!                            CALL TAU_STATIC_PHASE_STOP("ALE CONTRIBUTION")
+!#endif
                           END IF
-
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! B TRANSPOSE !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
                           IF(UPDATE_STIFFNESS_MATRIX) THEN
+!#ifdef TAUPROF
+!                            CALL TAU_STATIC_PHASE_START("B TRANSPOSE")
+!#endif
                             !LAPLACE TYPE 
                             IF(nh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
                               SUM=0.0_DP
@@ -1723,6 +1789,9 @@ CONTAINS
                               !Calculate MATRIX
                               BT_MATRIX(mhs,nhs)=BT_MATRIX(mhs,nhs)+SUM*JGW
                             END IF
+!#ifdef TAUPROF
+!                            CALL TAU_STATIC_PHASE_STOP("B TRANSPOSE")
+!#endif
                           END IF
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1731,6 +1800,9 @@ CONTAINS
 
                           IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE.OR. &
                             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_STOKES_SUBTYPE) THEN
+!#ifdef TAUPROF
+!                            CALL TAU_STATIC_PHASE_START("M")
+!#endif
                             IF(UPDATE_DAMPING_MATRIX) THEN
                               IF(nh==mh) THEN 
                                 SUM=0.0_DP 
@@ -1740,7 +1812,12 @@ CONTAINS
                                 MT_MATRIX(mhs,nhs)=MT_MATRIX(mhs,nhs)+SUM*JGW
                               END IF
                             END IF
+!#ifdef TAUPROF
+!                            CALL TAU_STATIC_PHASE_STOP("M")
+!#endif
                           END IF
+
+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! NO RIGHT HAND SIDE FOR THIS CASE
@@ -1750,13 +1827,24 @@ CONTAINS
                       ENDDO !nh
                     ENDIF
                   ENDDO !ms
+#ifdef TAUPROF
+                  CALL TAU_STATIC_PHASE_STOP("Main Loop")
+
+                  CALL TAU_PHASE_STOP(FIELD_COMPONENT_LOOP_PHASE)
+#endif
                 ENDDO !mh
+
+!#ifdef TAUPROF
+!                CALL TAU_STATIC_PHASE_STOP("FIELD COMPONENT LOOP")
+!#endif
+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! RIGHT HAND SIDE FOR ANALYTIC SOLUTION
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
+#ifdef TAUPROF
+                CALL TAU_STATIC_PHASE_START("RIGHT HAND SIDE FOR ANALYTIC SOLUTION")
+#endif
                 IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
                   IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_1.OR. &
                     & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_2.OR. &
@@ -1858,19 +1946,31 @@ CONTAINS
                   ELSE
                     RH_VECTOR(mhs)=0.0_DP
                   ENDIF                 
-                ENDIF                                                                     
+                ENDIF
+
+#ifdef TAUPROF
+                CALL TAU_STATIC_PHASE_STOP("RIGHT HAND SIDE FOR ANALYTIC SOLUTION")
+#endif
     
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! GO TO ASSEMBLY !!! 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                        
               END IF   
+#ifdef TAUPROF
+              CALL TAU_PHASE_STOP(GAUSS_POINT_LOOP_PHASE)
+#endif
             ENDDO !ng  
                        
+
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! ASSEMBLE STIFFNESS AND DAMPING MATRIX !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                       
+#ifdef TAUPROF
+            CALL TAU_STATIC_PHASE_START("ASSEMBLE STIFFNESS")
+#endif
+
             mhs_min=mhs
             mhs_max=nhs
             nhs_min=mhs
@@ -1902,9 +2002,15 @@ CONTAINS
               END IF
             END IF
 
+#ifdef TAUPROF
+          CALL TAU_STATIC_PHASE_STOP("ASSEMBLE STIFFNESS")
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! RIGHT HAND SIDE VECTOR !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+          CALL TAU_STATIC_PHASE_START("RIGHT HAND SIDE VECTOR")
+#endif
 
           IF(RHS_VECTOR%FIRST_ASSEMBLY) THEN
             IF(UPDATE_RHS_VECTOR) THEN
@@ -1912,11 +2018,15 @@ CONTAINS
             ENDIF
           ENDIF
 
+#ifdef TAUPROF
+          CALL TAU_STATIC_PHASE_STOP("RIGHT HAND SIDE VECTOR")
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! DEFINE SCALING
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+          CALL TAU_STATIC_PHASE_START("DEFINE SCALING")
+#endif
 
 !!!FIX UP THIS BIT !!!!!
 !!!
@@ -1966,6 +2076,10 @@ CONTAINS
                 ENDDO !ms
               ENDDO !mh
             ENDIF
+
+#ifdef TAUPROF
+                      CALL TAU_STATIC_PHASE_STOP("DEFINE SCALING")
+#endif
 
           CASE DEFAULT
             LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &

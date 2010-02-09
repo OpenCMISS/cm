@@ -166,7 +166,15 @@ CONTAINS
 !                   CALL PROBLEM_SOLVER_EQUATIONS_PRE_SOLVE(CONTROL_LOOP,SOLVER&
 !                     &%SOLVER_EQUATIONS,ERR,ERROR,*999)
 !chrm 08.10.09
+#ifdef TAUPROF
+                  CALL TAU_STATIC_PHASE_START('PRE SOLVE')
+#endif
                   CALL PROBLEM_SOLVER_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+#ifdef TAUPROF
+                  CALL TAU_STATIC_PHASE_STOP('PRE SOLVE')
+                  
+                  CALL TAU_STATIC_PHASE_START('SOLVE')
+#endif
                   IF(ASSOCIATED(SOLVER)) THEN
                     CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER&
                       &%SOLVER_EQUATIONS,ERR,ERROR,*999)
@@ -177,7 +185,15 @@ CONTAINS
 !                   CALL PROBLEM_SOLVER_EQUATIONS_POST_SOLVE(CONTROL_LOOP&
 !                     &,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
 !chrm 08.10.09
+#ifdef TAUPROF
+                  CALL TAU_STATIC_PHASE_STOP('SOLVE')
+
+                  CALL TAU_STATIC_PHASE_START('POST SOLVE')
+#endif
                   CALL PROBLEM_SOLVER_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+#ifdef TAUPROF
+                  CALL TAU_STATIC_PHASE_STOP('POST SOLVE')
+#endif
                 ENDDO !solver_idx
               ELSE
                 CALL FLAG_ERROR("Control loop solvers is not associated.",ERR&
@@ -1742,6 +1758,12 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
     
+#ifdef TAUPROF
+    CHARACTER(12) :: CVAR
+    INTEGER :: PHASE(2) = (/ 0, 0 /)
+    SAVE PHASE
+#endif
+
     CALL ENTERS("PROBLEM_SOLVER_EQUATIONS_STATIC_LINEAR_SOLVE",ERR,ERROR,*999)
     
     IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
@@ -1751,18 +1773,34 @@ CONTAINS
         IF(ASSOCIATED(SOLVER_MAPPING)) THEN
           !Make sure the equations sets are up to date
           DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+#ifdef TAUPROF
+            WRITE (CVAR,'(a8,i2)') 'Assemble',equations_set_idx
+            CALL TAU_PHASE_CREATE_DYNAMIC(PHASE,CVAR)
+            CALL TAU_PHASE_START(PHASE)
+#endif
             EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
             !CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)    
             !Assemble the equations for linear problems
             CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
+#ifdef TAUPROF
+            CALL TAU_PHASE_STOP(PHASE)
+#endif
           ENDDO !equations_set_idx          
           !Solve
+
           CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
+
+#ifdef TAUPROF
+          CALL TAU_STATIC_PHASE_START('EQUATIONS_SET_BACKSUBSTITUTE()')
+#endif
           !Back-substitute to find flux values for linear problems
           DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
             EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
             CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,ERR,ERROR,*999)
           ENDDO !equations_set_idx
+#ifdef TAUPROF
+          CALL TAU_STATIC_PHASE_STOP('EQUATIONS_SET_BACKSUBSTITUTE()')
+#endif
         ELSE
           CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
         ENDIF

@@ -7084,8 +7084,10 @@ CONTAINS
                                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                               END SELECT
                               !Solver the linear system
+                              CALL TAU_STATIC_PHASE_START("test")
                               CALL PETSC_KSPSOLVE(LINEAR_ITERATIVE_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR,SOLVER_VECTOR%PETSC%VECTOR, &
                                 & ERR,ERROR,*999)
+                              CALL TAU_STATIC_PHASE_STOP("test")
                               !Check for convergence
                               CALL PETSC_KSPGETCONVERGEDREASON(LINEAR_ITERATIVE_SOLVER%KSP,CONVERGED_REASON,ERR,ERROR,*999)
                               SELECT CASE(CONVERGED_REASON)
@@ -7454,11 +7456,22 @@ CONTAINS
     IF(ASSOCIATED(LINEAR_SOLVER)) THEN
       SOLVER=>LINEAR_SOLVER%SOLVER
       IF(ASSOCIATED(SOLVER)) THEN
+
+#ifdef TAUPROF
+        CALL TAU_STATIC_PHASE_START("Assemble Solver Matrix")
+#endif
         IF(.NOT.ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
           !Assemble the solver matrices
 !!TODO: Work out what to assemble
+
           CALL SOLVER_MATRICES_STATIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_LINEAR_ONLY,ERR,ERROR,*999)
         ENDIF
+
+#ifdef TAUPROF
+        CALL TAU_STATIC_PHASE_STOP("Assemble Solver Matrix")
+
+        CALL TAU_STATIC_PHASE_START("Linear Solve")
+#endif
         SELECT CASE(LINEAR_SOLVER%LINEAR_SOLVE_TYPE)
         CASE(SOLVER_LINEAR_DIRECT_SOLVE_TYPE)
           CALL SOLVER_LINEAR_DIRECT_SOLVE(LINEAR_SOLVER%DIRECT_SOLVER,ERR,ERROR,*999)
@@ -7469,9 +7482,18 @@ CONTAINS
             & " is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
+#ifdef TAUPROF
+          CALL TAU_STATIC_PHASE_STOP("Linear Solve")
+#endif
         IF(.NOT.ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
           !Update depenent field with solution
+#ifdef TAUPROF
+          CALL TAU_STATIC_PHASE_START("Update field with solution")
+#endif
           CALL SOLVER_VARIABLES_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
+#ifdef TAUPROF
+          CALL TAU_STATIC_PHASE_STOP("Update field with solution")
+#endif
         ENDIF
       ELSE
         CALL FLAG_ERROR("Linear solver solver is not associated.",ERR,ERROR,*999)
@@ -9080,7 +9102,7 @@ CONTAINS
     ELSE
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
-    
+
     CALL EXITS("SOLVER_MATRICES_STATIC_ASSEMBLE")
     RETURN
 999 IF(ALLOCATED(DEPENDENT_PARAMETERS)) DEALLOCATE(DEPENDENT_PARAMETERS)    
