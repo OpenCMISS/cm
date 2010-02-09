@@ -1,9 +1,0 @@
-/*!
-\page equations_set_linear_elasticity_type Equaitons Set Linear Elasticity Type
-Documenation relating to the Opencmiss implementation of Linear Elasticity theory using the Finite Element Method.
-
-The currently implemented subtypes are shown below.
-
-\section Subtypes
-- \subpage linear_elasticity_type_3D_subtype
-*/

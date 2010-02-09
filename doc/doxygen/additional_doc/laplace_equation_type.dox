@@ -1,9 +1,0 @@
-/*!
-\page laplace_equation_type Laplace Equation Type
-Documenation relating to the Opencmiss implementation of the Laplace Equation
-
-The currently implemented subtypes are shown below.
-
-\section Subtypes
-- \subpage standard_laplace_subtype
-*/

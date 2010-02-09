@@ -1,9 +1,0 @@
-/*!
-\page classical_field_equation_set_class Classical Field Equation Set Class
-Documenation relating to the Opencmiss implementation of Classical Field Equation Set Class.
-
-The currently implemented equation sets are shown below.
-
-\section equation_sets Equation Sets
-- \subpage laplace_equation_type
-*/

@@ -1,9 +1,0 @@
-/*!
-\page elasticity_equation_set_class Elasticity Equations Set Class
-Documenation relating to the Opencmiss implementation of Elasticity Equation Set Class.
-
-The currently implemented equation sets are shown below.
-
-\section equation_sets Equation Sets
-- \subpage equations_set_linear_elasticity_type
-*/
