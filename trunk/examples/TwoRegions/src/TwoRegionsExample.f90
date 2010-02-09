@@ -1,0 +1,383 @@
+!> \file
+!> $Id: TwoRegionsExample.f90 20 2007-05-28 20:22:52Z cpb $
+!> \author Chris Bradley
+!> \brief This is an example program which sets up a field in two regions using openCMISS calls.
+!>
+!> \section LICENSE
+!>
+!> Version: MPL 1.1/GPL 2.0/LGPL 2.1
+!>
+!> The contents of this file are subject to the Mozilla Public License
+!> Version 1.1 (the "License"); you may not use this file except in
+!> compliance with the License. You may obtain a copy of the License at
+!> http://www.mozilla.org/MPL/
+!>
+!> Software distributed under the License is distributed on an "AS IS"
+!> basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
+!> License for the specific language governing rights and limitations
+!> under the License.
+!>
+!> The Original Code is OpenCMISS
+!>
+!> The Initial Developer of the Original Code is University of Auckland,
+!> Auckland, New Zealand and University of Oxford, Oxford, United
+!> Kingdom. Portions created by the University of Auckland and University
+!> of Oxford are Copyright (C) 2007 by the University of Auckland and
+!> the University of Oxford. All Rights Reserved.
+!>
+!> Contributor(s):
+!>
+!> Alternatively, the contents of this file may be used under the terms of
+!> either the GNU General Public License Version 2 or later (the "GPL"), or
+!> the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+!> in which case the provisions of the GPL or the LGPL are applicable instead
+!> of those above. If you wish to allow use of your version of this file only
+!> under the terms of either the GPL or the LGPL, and not to allow others to
+!> use your version of this file under the terms of the MPL, indicate your
+!> decision by deleting the provisions above and replace them with the notice
+!> and other provisions required by the GPL or the LGPL. If you do not delete
+!> the provisions above, a recipient may use your version of this file under
+!> the terms of any one of the MPL, the GPL or the LGPL.
+!>
+
+!> \example TwoRegions/src/TwoRegionsExample.f90
+!! Example program which sets up a field in two regions using openCMISS calls.
+!! \par Latest Builds:
+!! \li <a href='http://autotest.bioeng.auckland.ac.nz/opencmiss-build/logs_x86_64-linux/TwoRegions/build-intel'>Linux Intel Build</a>
+!! \li <a href='http://autotest.bioeng.auckland.ac.nz/opencmiss-build/logs_x86_64-linux/TwoRegions/build-gnu'>Linux GNU Build</a>
+!<
+
+!> Main program
+PROGRAM TWOREGIONSEXAMPLE
+
+  USE BASE_ROUTINES
+  USE BASIS_ROUTINES
+  USE CMISS
+  USE CMISS_MPI
+  USE COMP_ENVIRONMENT
+  USE CONSTANTS
+  USE CONTROL_LOOP_ROUTINES
+  USE COORDINATE_ROUTINES
+  USE DISTRIBUTED_MATRIX_VECTOR
+  USE DOMAIN_MAPPINGS
+  USE EQUATIONS_ROUTINES
+  USE EQUATIONS_SET_CONSTANTS
+  USE EQUATIONS_SET_ROUTINES
+  USE FIELD_ROUTINES
+  USE FIELD_IO_ROUTINES
+  USE GENERATED_MESH_ROUTINES
+  USE INPUT_OUTPUT
+  USE ISO_VARYING_STRING
+  USE KINDS
+  USE LISTS
+  USE MESH_ROUTINES
+  USE MPI
+  USE PROBLEM_CONSTANTS
+  USE PROBLEM_ROUTINES
+  USE REGION_ROUTINES
+  USE SOLVER_ROUTINES
+  USE TIMER
+  USE TYPES
+
+#ifdef WIN32
+  USE IFQWIN
+#endif
+
+  IMPLICIT NONE
+
+  !Test program parameters
+
+  REAL(DP), PARAMETER :: HEIGHT=1.0_DP
+  REAL(DP), PARAMETER :: WIDTH=2.0_DP
+  REAL(DP), PARAMETER :: LENGTH=3.0_DP
+  
+  !Program types
+  
+  !Program variables
+
+  INTEGER(INTG) :: NUMBER_GLOBAL_X_ELEMENTS,NUMBER_GLOBAL_Y_ELEMENTS,NUMBER_GLOBAL_Z_ELEMENTS
+  INTEGER(INTG) :: NUMBER_OF_DOMAINS
+  
+  INTEGER(INTG) :: NUMBER_COMPUTATIONAL_NODES
+  INTEGER(INTG) :: MY_COMPUTATIONAL_NODE_NUMBER
+  INTEGER(INTG) :: MPI_IERROR
+
+  TYPE(BASIS_TYPE), POINTER :: BASIS1,BASIS2
+  TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM1,COORDINATE_SYSTEM2
+  TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH1,GENERATED_MESH2
+  TYPE(MESH_TYPE), POINTER :: MESH1,MESH2
+  TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION1,DECOMPOSITION2
+  TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD1,GEOMETRIC_FIELD2
+  TYPE(REGION_TYPE), POINTER :: REGION1,REGION2,WORLD_REGION
+   
+  LOGICAL :: EXPORT_FIELD
+  TYPE(VARYING_STRING) :: FILE,METHOD
+
+  REAL(SP) :: START_USER_TIME(1),STOP_USER_TIME(1),START_SYSTEM_TIME(1),STOP_SYSTEM_TIME(1)
+
+#ifdef WIN32
+  !Quickwin type
+  LOGICAL :: QUICKWIN_STATUS=.FALSE.
+  TYPE(WINDOWCONFIG) :: QUICKWIN_WINDOW_CONFIG
+#endif
+  
+  !Generic CMISS variables
+  
+  INTEGER(INTG) :: ERR
+  TYPE(VARYING_STRING) :: ERROR
+
+  INTEGER(INTG) :: DIAG_LEVEL_LIST(5)
+  CHARACTER(LEN=MAXSTRLEN) :: DIAG_ROUTINE_LIST(1),TIMING_ROUTINE_LIST(1)
+  
+#ifdef WIN32
+  !Initialise QuickWin
+  QUICKWIN_WINDOW_CONFIG%TITLE="General Output" !Window title
+  QUICKWIN_WINDOW_CONFIG%NUMTEXTROWS=-1 !Max possible number of rows
+  QUICKWIN_WINDOW_CONFIG%MODE=QWIN$SCROLLDOWN
+  !Set the window parameters
+  QUICKWIN_STATUS=SETWINDOWCONFIG(QUICKWIN_WINDOW_CONFIG)
+  !If attempt fails set with system estimated values
+  IF(.NOT.QUICKWIN_STATUS) QUICKWIN_STATUS=SETWINDOWCONFIG(QUICKWIN_WINDOW_CONFIG)
+#endif
+
+  !Intialise cmiss
+  NULLIFY(WORLD_REGION)
+  CALL CMISS_INITIALISE(WORLD_REGION,ERR,ERROR,*999)
+  
+  !Set all diganostic levels on for testing
+  !DIAG_LEVEL_LIST(1)=1
+  !DIAG_LEVEL_LIST(2)=2
+  !DIAG_LEVEL_LIST(3)=3
+  !DIAG_LEVEL_LIST(4)=4
+  !DIAG_LEVEL_LIST(5)=5
+  !DIAG_ROUTINE_LIST(1)=""
+  !CALL DIAGNOSTICS_SET_ON(ALL_DIAG_TYPE,DIAG_LEVEL_LIST,"TwoRegionsExample",DIAG_ROUTINE_LIST,ERR,ERROR,*999)
+  !CALL DIAGNOSTICS_SET_ON(ALL_DIAG_TYPE,DIAG_LEVEL_LIST,"",DIAG_ROUTINE_LIST,ERR,ERROR,*999)
+ 
+  !TIMING_ROUTINE_LIST(1)=""
+  !CALL TIMING_SET_ON(IN_TIMING_TYPE,.TRUE.,"",TIMING_ROUTINE_LIST,ERR,ERROR,*999)
+  
+  !Calculate the start times
+  CALL CPU_TIMER(USER_CPU,START_USER_TIME,ERR,ERROR,*999)
+  CALL CPU_TIMER(SYSTEM_CPU,START_SYSTEM_TIME,ERR,ERROR,*999)
+  
+  !Get the number of computational nodes
+  NUMBER_COMPUTATIONAL_NODES=COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)
+  IF(ERR/=0) GOTO 999
+  !Get my computational node number
+  MY_COMPUTATIONAL_NODE_NUMBER=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
+  IF(ERR/=0) GOTO 999
+    
+  !Read in the number of elements in the X & Y directions, and the number of partitions on the master node (number 0)
+  IF(MY_COMPUTATIONAL_NODE_NUMBER==0) THEN
+    WRITE(*,'("Enter the number of elements in the X direction :")')
+    READ(*,*) NUMBER_GLOBAL_X_ELEMENTS
+    WRITE(*,'("Enter the number of elements in the Y direction :")')
+    READ(*,*) NUMBER_GLOBAL_Y_ELEMENTS
+    WRITE(*,'("Enter the number of elements in the Z direction :")')
+    READ(*,*) NUMBER_GLOBAL_Z_ELEMENTS
+    WRITE(*,'("Enter the number of domains :")')
+    READ(*,*) NUMBER_OF_DOMAINS
+  ENDIF
+  !Broadcast the number of elements in the X & Y directions and the number of partitions to the other computational nodes
+  CALL MPI_BCAST(NUMBER_GLOBAL_X_ELEMENTS,1,MPI_INTEGER,0,MPI_COMM_WORLD,MPI_IERROR)
+  CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+  CALL MPI_BCAST(NUMBER_GLOBAL_Y_ELEMENTS,1,MPI_INTEGER,0,MPI_COMM_WORLD,MPI_IERROR)
+  CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+  CALL MPI_BCAST(NUMBER_GLOBAL_Z_ELEMENTS,1,MPI_INTEGER,0,MPI_COMM_WORLD,MPI_IERROR)
+  CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+  CALL MPI_BCAST(NUMBER_OF_DOMAINS,1,MPI_INTEGER,0,MPI_COMM_WORLD,MPI_IERROR)
+  CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+
+  !Start the creation of a new RC coordinate system for the first region
+  NULLIFY(COORDINATE_SYSTEM1)
+  CALL COORDINATE_SYSTEM_CREATE_START(1,COORDINATE_SYSTEM1,ERR,ERROR,*999)
+  IF(NUMBER_GLOBAL_Z_ELEMENTS==0) THEN
+    !Set the coordinate system to be 2D
+    CALL COORDINATE_SYSTEM_DIMENSION_SET(COORDINATE_SYSTEM1,2,ERR,ERROR,*999)
+  ELSE
+    !Set the coordinate system to be 3D
+    CALL COORDINATE_SYSTEM_DIMENSION_SET(COORDINATE_SYSTEM1,3,ERR,ERROR,*999)
+  ENDIF
+  !Finish the creation of the coordinate system
+  CALL COORDINATE_SYSTEM_CREATE_FINISH(COORDINATE_SYSTEM1,ERR,ERROR,*999)
+
+  !Start the creation of a new RC coordinate system for the second region
+  NULLIFY(COORDINATE_SYSTEM2)
+  CALL COORDINATE_SYSTEM_CREATE_START(2,COORDINATE_SYSTEM2,ERR,ERROR,*999)
+  IF(NUMBER_GLOBAL_Z_ELEMENTS==0) THEN
+    !Set the coordinate system to be 2D
+    CALL COORDINATE_SYSTEM_DIMENSION_SET(COORDINATE_SYSTEM2,2,ERR,ERROR,*999)
+  ELSE
+    !Set the coordinate system to be 3D
+    CALL COORDINATE_SYSTEM_DIMENSION_SET(COORDINATE_SYSTEM2,3,ERR,ERROR,*999)
+  ENDIF
+  !Set the origin
+  CALL COORDINATE_SYSTEM_ORIGIN_SET(COORDINATE_SYSTEM2,(/1.0_DP,1.0_DP,1.0_DP/),ERR,ERROR,*999)
+  !Finish the creation of the coordinate system
+  CALL COORDINATE_SYSTEM_CREATE_FINISH(COORDINATE_SYSTEM2,ERR,ERROR,*999)
+
+  !Start the creation of the first region
+  NULLIFY(REGION1)
+  CALL REGION_CREATE_START(1,WORLD_REGION,REGION1,ERR,ERROR,*999)
+  !Set the regions coordinate system to the 2D RC coordinate system that we have created
+  CALL REGION_COORDINATE_SYSTEM_SET(REGION1,COORDINATE_SYSTEM1,ERR,ERROR,*999)
+  !Finish the creation of the region
+  CALL REGION_CREATE_FINISH(REGION1,ERR,ERROR,*999)
+
+  !Start the creation of the second region
+  NULLIFY(REGION2)
+  CALL REGION_CREATE_START(2,WORLD_REGION,REGION2,ERR,ERROR,*999)
+  !Set the regions coordinate system to the 2D RC coordinate system that we have created
+  CALL REGION_COORDINATE_SYSTEM_SET(REGION2,COORDINATE_SYSTEM2,ERR,ERROR,*999)
+  !Finish the creation of the region
+  CALL REGION_CREATE_FINISH(REGION2,ERR,ERROR,*999)
+  
+  !Start the creation of a bi/tri-linear-Lagrange basis
+  NULLIFY(BASIS1)
+  CALL BASIS_CREATE_START(1,BASIS1,ERR,ERROR,*999)  
+  IF(NUMBER_GLOBAL_Z_ELEMENTS==0) THEN
+    !Set the basis to be a bilinear Lagrange basis
+    CALL BASIS_NUMBER_OF_XI_SET(BASIS1,2,ERR,ERROR,*999)
+  ELSE
+    !Set the basis to be a trilinear Lagrange basis
+    CALL BASIS_NUMBER_OF_XI_SET(BASIS1,3,ERR,ERROR,*999)
+  ENDIF
+  !Finish the creation of the basis
+  CALL BASIS_CREATE_FINISH(BASIS1,ERR,ERROR,*999)
+
+  !Start the creation of a bi/tri-cubic-Hermite basis
+  NULLIFY(BASIS2)
+  CALL BASIS_CREATE_START(2,BASIS2,ERR,ERROR,*999)  
+  IF(NUMBER_GLOBAL_Z_ELEMENTS==0) THEN
+    !Set the basis to be a bilinear Lagrange basis
+    CALL BASIS_NUMBER_OF_XI_SET(BASIS2,2,ERR,ERROR,*999)
+    !Set the basis to be a bicubic Hermite basis
+    CALL BASIS_INTERPOLATION_XI_SET(BASIS2,(/BASIS_CUBIC_HERMITE_INTERPOLATION,BASIS_CUBIC_HERMITE_INTERPOLATION/), &
+      & ERR,ERROR,*999)
+  ELSE
+    !Set the basis to be a trilinear Lagrange basis
+    CALL BASIS_NUMBER_OF_XI_SET(BASIS2,3,ERR,ERROR,*999)
+    !Set the basis to be a tricubic Hermite basis
+    CALL BASIS_INTERPOLATION_XI_SET(BASIS2,(/BASIS_CUBIC_HERMITE_INTERPOLATION,BASIS_CUBIC_HERMITE_INTERPOLATION, &
+      & BASIS_CUBIC_HERMITE_INTERPOLATION/),ERR,ERROR,*999)
+  ENDIF
+  !Finish the creation of the basis
+  CALL BASIS_CREATE_FINISH(BASIS2,ERR,ERROR,*999)
+  
+  !Start the creation of a generated mesh in the region
+  NULLIFY(GENERATED_MESH1)
+  NULLIFY(MESH1)
+  CALL GENERATED_MESH_CREATE_START(1,REGION1,GENERATED_MESH1,ERR,ERROR,*999)
+  !Set up a regular mesh
+  CALL GENERATED_MESH_TYPE_SET(GENERATED_MESH1,GENERATED_MESH_REGULAR_MESH_TYPE,ERR,ERROR,*999)
+  CALL GENERATED_MESH_BASIS_SET(GENERATED_MESH1,BASIS1,ERR,ERROR,*999)  
+  !Define the mesh 
+  IF(NUMBER_GLOBAL_Z_ELEMENTS==0) THEN
+    CALL GENERATED_MESH_EXTENT_SET(GENERATED_MESH1,(/WIDTH,HEIGHT/),ERR,ERROR,*999)
+    CALL GENERATED_MESH_NUMBER_OF_ELEMENTS_SET(GENERATED_MESH1,(/NUMBER_GLOBAL_X_ELEMENTS,NUMBER_GLOBAL_Y_ELEMENTS/), &
+      & ERR,ERROR,*999)
+  ELSE
+    CALL GENERATED_MESH_EXTENT_SET(GENERATED_MESH1,(/WIDTH,HEIGHT,LENGTH/),ERR,ERROR,*999)
+    CALL GENERATED_MESH_NUMBER_OF_ELEMENTS_SET(GENERATED_MESH1,(/NUMBER_GLOBAL_X_ELEMENTS, &
+      & NUMBER_GLOBAL_X_ELEMENTS,NUMBER_GLOBAL_Z_ELEMENTS/), ERR,ERROR,*999)
+  ENDIF    
+  !Finish the creation of a generated mesh 
+  CALL GENERATED_MESH_CREATE_FINISH(GENERATED_MESH1,1,MESH1,ERR,ERROR,*999) 
+
+  !Start the creation of a generated mesh in the region
+  NULLIFY(GENERATED_MESH2)
+  NULLIFY(MESH2)
+  CALL GENERATED_MESH_CREATE_START(2,REGION2,GENERATED_MESH2,ERR,ERROR,*999)
+  !Set up a regular mesh
+  CALL GENERATED_MESH_TYPE_SET(GENERATED_MESH2,GENERATED_MESH_REGULAR_MESH_TYPE,ERR,ERROR,*999)
+  CALL GENERATED_MESH_BASIS_SET(GENERATED_MESH2,BASIS2,ERR,ERROR,*999)  
+  !Define the mesh 
+  IF(NUMBER_GLOBAL_Z_ELEMENTS==0) THEN
+    CALL GENERATED_MESH_EXTENT_SET(GENERATED_MESH2,(/WIDTH,HEIGHT/),ERR,ERROR,*999)
+    CALL GENERATED_MESH_NUMBER_OF_ELEMENTS_SET(GENERATED_MESH2,(/NUMBER_GLOBAL_X_ELEMENTS,NUMBER_GLOBAL_Y_ELEMENTS/), &
+      & ERR,ERROR,*999)
+  ELSE
+    CALL GENERATED_MESH_EXTENT_SET(GENERATED_MESH2,(/WIDTH,HEIGHT,LENGTH/),ERR,ERROR,*999)
+    CALL GENERATED_MESH_NUMBER_OF_ELEMENTS_SET(GENERATED_MESH2,(/NUMBER_GLOBAL_X_ELEMENTS, &
+      & NUMBER_GLOBAL_X_ELEMENTS,NUMBER_GLOBAL_Z_ELEMENTS/), ERR,ERROR,*999)
+  ENDIF    
+  !Finish the creation of a generated mesh 
+  CALL GENERATED_MESH_CREATE_FINISH(GENERATED_MESH2,1,MESH2,ERR,ERROR,*999) 
+
+  !Create a decomposition for mesh1
+  NULLIFY(DECOMPOSITION1)
+  CALL DECOMPOSITION_CREATE_START(1,MESH1,DECOMPOSITION1,ERR,ERROR,*999)
+  !Set the decomposition to be a general decomposition with the specified number of domains
+  CALL DECOMPOSITION_TYPE_SET(DECOMPOSITION1,DECOMPOSITION_CALCULATED_TYPE,ERR,ERROR,*999)
+  CALL DECOMPOSITION_NUMBER_OF_DOMAINS_SET(DECOMPOSITION1,NUMBER_OF_DOMAINS,ERR,ERROR,*999)
+  CALL DECOMPOSITION_CREATE_FINISH(DECOMPOSITION1,ERR,ERROR,*999)
+
+  !Create a decomposition for mesh2
+  NULLIFY(DECOMPOSITION2)
+  CALL DECOMPOSITION_CREATE_START(1,MESH2,DECOMPOSITION2,ERR,ERROR,*999)
+  !Set the decomposition to be a general decomposition with the specified number of domains
+  CALL DECOMPOSITION_TYPE_SET(DECOMPOSITION2,DECOMPOSITION_CALCULATED_TYPE,ERR,ERROR,*999)
+  CALL DECOMPOSITION_NUMBER_OF_DOMAINS_SET(DECOMPOSITION2,NUMBER_OF_DOMAINS,ERR,ERROR,*999)
+  CALL DECOMPOSITION_CREATE_FINISH(DECOMPOSITION2,ERR,ERROR,*999)
+
+  !Start to create a default (geometric) field on the first region
+  NULLIFY(GEOMETRIC_FIELD1)
+  CALL FIELD_CREATE_START(1,REGION1,GEOMETRIC_FIELD1,ERR,ERROR,*999)
+  !Set the decomposition to use
+  CALL FIELD_MESH_DECOMPOSITION_SET(GEOMETRIC_FIELD1,DECOMPOSITION1,ERR,ERROR,*999)
+  !Set the domain to be used by the field components
+  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(GEOMETRIC_FIELD1,FIELD_U_VARIABLE_TYPE,1,1,ERR,ERROR,*999)
+  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(GEOMETRIC_FIELD1,FIELD_U_VARIABLE_TYPE,2,1,ERR,ERROR,*999)
+  IF(NUMBER_GLOBAL_Z_ELEMENTS/=0) THEN
+    CALL FIELD_COMPONENT_MESH_COMPONENT_SET(GEOMETRIC_FIELD1,FIELD_U_VARIABLE_TYPE,3,1,ERR,ERROR,*999)
+  ENDIF
+  !Finish creating the field
+  CALL FIELD_CREATE_FINISH(GEOMETRIC_FIELD1,ERR,ERROR,*999)
+       
+  !Start to create a default (geometric) field on the second region
+  NULLIFY(GEOMETRIC_FIELD2)
+  CALL FIELD_CREATE_START(1,REGION2,GEOMETRIC_FIELD2,ERR,ERROR,*999)
+  !Set the decomposition to use
+  CALL FIELD_MESH_DECOMPOSITION_SET(GEOMETRIC_FIELD2,DECOMPOSITION2,ERR,ERROR,*999)
+  !Set the domain to be used by the field components
+  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(GEOMETRIC_FIELD2,FIELD_U_VARIABLE_TYPE,1,1,ERR,ERROR,*999)
+  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(GEOMETRIC_FIELD2,FIELD_U_VARIABLE_TYPE,2,1,ERR,ERROR,*999)
+  IF(NUMBER_GLOBAL_Z_ELEMENTS/=0) THEN
+    CALL FIELD_COMPONENT_MESH_COMPONENT_SET(GEOMETRIC_FIELD2,FIELD_U_VARIABLE_TYPE,3,1,ERR,ERROR,*999)
+  ENDIF
+  !Finish creating the field
+  CALL FIELD_CREATE_FINISH(GEOMETRIC_FIELD2,ERR,ERROR,*999)
+       
+  !Update the geometric field parameters
+  CALL GENERATED_MESH_GEOMETRIC_PARAMETERS_CALCULATE(GEOMETRIC_FIELD1,GENERATED_MESH1,ERR,ERROR,*999)
+  !Update the geometric field parameters
+  CALL GENERATED_MESH_GEOMETRIC_PARAMETERS_CALCULATE(GEOMETRIC_FIELD2,GENERATED_MESH2,ERR,ERROR,*999)
+
+  EXPORT_FIELD=.TRUE.
+  METHOD="FORTRAN"
+  IF(EXPORT_FIELD) THEN
+    FILE="TwoRegionExample_1"
+    CALL FIELD_IO_NODES_EXPORT(REGION1%FIELDS, FILE, METHOD, ERR,ERROR,*999)  
+    CALL FIELD_IO_ELEMENTS_EXPORT(REGION1%FIELDS, FILE, METHOD, ERR,ERROR,*999)
+    FILE="TwoRegionExample_2"
+    CALL FIELD_IO_NODES_EXPORT(REGION2%FIELDS, FILE, METHOD, ERR,ERROR,*999)  
+    CALL FIELD_IO_ELEMENTS_EXPORT(REGION2%FIELDS, FILE, METHOD, ERR,ERROR,*999)
+  ENDIF
+  
+  !Calculate the stop times and write out the elapsed user and system times
+  CALL CPU_TIMER(USER_CPU,STOP_USER_TIME,ERR,ERROR,*999)
+  CALL CPU_TIMER(SYSTEM_CPU,STOP_SYSTEM_TIME,ERR,ERROR,*999)
+
+  CALL WRITE_STRING_TWO_VALUE(GENERAL_OUTPUT_TYPE,"User time = ",STOP_USER_TIME(1)-START_USER_TIME(1),", System time = ", &
+    & STOP_SYSTEM_TIME(1)-START_SYSTEM_TIME(1),ERR,ERROR,*999)
+  
+  CALL CMISS_FINALISE(ERR,ERROR,*999)
+
+  WRITE(*,'(A)') "Program successfully completed."
+  
+  STOP
+999 CALL CMISS_WRITE_ERROR(ERR,ERROR)
+  STOP
+  
+END PROGRAM TWOREGIONSEXAMPLE

@@ -1,0 +1,10 @@
+# cpb 4/10/96 Adding directories under figs
+## prefix filename with 'plots/' (subdirectory)
+#   s%file=%file=plots/%
+s%file=%file=plots/CUR_DIR/%
+
+# remove group definition
+/\\begingroup/,/\\fi\\endgroup/d
+
+
+ 

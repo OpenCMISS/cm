@@ -1,0 +1,9 @@
+gfortran -ffree-form -O3 cheart_vis3D.f -o VIS.o -w -c 
+
+gfortran -ffree-form -O3 cheart_visbasis3D.f -o BAS.o -w -c
+
+gfortran -ffree-form -O3 cheart_vistools3D.f -o TOOL.o -w -c
+
+gfortran -ffree-form -O3 cheart_viserrors3D.f -o ERR.o -w -c
+
+gfortran -o Convert_CUBIT_cmHeart.out -ffree-form -O3 VIS.o  BAS.o TOOL.o ERR.o

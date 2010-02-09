@@ -1,0 +1,122 @@
+#!/bin/bash
+rm -rf ./04_OpenCMISSInput/*
+echo
+echo "Please chose element type:"
+echo 
+echo "1 = hex_mesh.inp"
+echo "2 = tet_mesh.inp"
+echo "3 = quad_mesh.inp"
+echo "4 = tri_mesh.inp"
+echo 
+read NUM
+if [ $NUM -eq 1 ]
+then
+    TYPE="hex_mesh.inp"
+fi
+if [ $NUM -eq 2 ]
+then
+    TYPE="tet_mesh.inp"
+fi
+if [ $NUM -eq 3 ]
+then
+    TYPE="quad_mesh.inp"
+fi
+if [ $NUM -eq 4 ]
+then
+    TYPE="tri_mesh.inp"
+fi
+echo 
+echo "Changing directory to >> ./01_CubitInput/ << ... "
+cd ./01_CubitInput/
+echo "DONE"
+echo
+echo "Moving input files to >> ./02_CreateCMInput/ << ... "
+cp *_mesh.inp ../02_CreateCMInput/
+echo "DONE"
+echo
+echo "Changing directory to >> ./02_CreateCMInput/ << ... "
+cd ../02_CreateCMInput/
+echo "DONE"
+echo
+echo "Compiling converter ... "
+./compile_CONVERTER
+echo "DONE"
+echo
+echo "Start converter ... "
+./Convert_CUBIT_cmHeart.out -iF "$TYPE"
+echo
+echo "Start field creation from linear spatial mesh"
+mv *.M ../03_CreateField/
+mv *.C ../03_CreateField/
+echo "Changing directory to >> ./03_CreateField/ << ... "
+rm *.inp
+cd ../03_CreateField/
+echo "DONE"
+echo
+echo "Compiling converter ... "
+./compile_CONVERTER
+echo "DONE"
+echo
+echo "Start converter ... "
+echo "Choose tri-nterpolation type for M (1=linear, 2=quadratic, 3=cubic):"
+read M
+echo "Choose tri-interpolation type for V (1=linear, 2=quadratic, 3=cubic):"
+read V
+echo "Choose tri-interpolation type for P (1=linear, 2=quadratic, 3=cubic):"
+read P
+if [ $NUM -eq 1 ]
+then
+    iM="hex_linear.M"
+    iC="hex_linear.C"
+    iB="HEX-M1.aux"
+    fB="HEX-M$M-V$V-P$P.aux"
+    fO="HEX-M$M-V$V-P$P"
+    cp "HEX-M$M-V$V-P$P.aux" ../04_OpenCMISSInput/"HEX-M$M-V$V-P$P"_FE.aux
+fi
+if [ $NUM -eq 2 ]
+then
+    iM="tet_linear.M"
+    iC="tet_linear.C"
+    iB="TET-M1.aux"
+    fB="TET-M$M-V$V-P$P.aux"
+    fO="TET-M$M-V$V-P$P"
+    cp "TET-M$M-V$V-P$P.aux" ../04_OpenCMISSInput/"TET-M$M-V$V-P$P"_FE.aux
+fi
+if [ $NUM -eq 3 ]
+then
+    iM="quad_linear.M"
+    iC="quad_linear.C"
+    iB="QUAD-M1.aux"
+    fB="QUAD-M$M-V$V-P$P.aux"
+    fO="QUAD-M$M-V$V-P$P"
+    cp "QUAD-M$M-V$V-P$P.aux" ../04_OpenCMISSInput/"QUAD-M$M-V$V-P$P"_FE.aux
+fi
+if [ $NUM -eq 4 ]
+then
+    iM="tri_linear.M"
+    iC="tri_linear.C"
+    iB="TRI-M1.aux"
+    fB="TRI-M$M-V$V-P$P.aux"
+    fO="TRI-M$M-V$V-P$P"
+    cp "TRI-M$M-V$V-P$P.aux" ../04_OpenCMISSInput/"TET-M$M-V$V-P$P"_FE.aux
+fi
+echo "./GenerateInputFiles.out -iM $iM -iC $iC -iB $iB -fB $fB -fO $fO"
+./GenerateInputFiles.out -iM "$iM" -iC "$iC" -iB "$iB" -fB "$fB" -fO "$fO"
+
+echo "DONE"
+echo 
+mv *_FE* ../04_OpenCMISSInput/
+cd ../04_OpenCMISSInput/
+echo "Have a nice day..."
+echo 
+rm -rf ./02_CreateCMInput/*.inp
+rm -rf ./02_CreateCMInput/*.M
+rm -rf ./02_CreateCMInput/*.C
+rm -rf ./03_CreateCMInput/*.M
+rm -rf ./03_CreateCMInput/*.C
+ls *_FE*
+cd ..
+echo 
+
+
+

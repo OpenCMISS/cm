@@ -1,0 +1,35 @@
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "Fortran", "Fortran\Fortran.vfproj", "{AD2C9AA0-14F6-4E61-85F3-F9C3E978D6AD}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "C", "C\C.vcproj", "{233E3A7E-14F3-414D-8BE3-24CEFC5F3AA8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Debug-mpe|Win32 = Debug-mpe|Win32
+		Profile|Win32 = Profile|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AD2C9AA0-14F6-4E61-85F3-F9C3E978D6AD}.Debug|Win32.ActiveCfg = Debug|Win32
+		{AD2C9AA0-14F6-4E61-85F3-F9C3E978D6AD}.Debug|Win32.Build.0 = Debug|Win32
+		{AD2C9AA0-14F6-4E61-85F3-F9C3E978D6AD}.Debug-mpe|Win32.ActiveCfg = Debug-mpe|Win32
+		{AD2C9AA0-14F6-4E61-85F3-F9C3E978D6AD}.Debug-mpe|Win32.Build.0 = Debug-mpe|Win32
+		{AD2C9AA0-14F6-4E61-85F3-F9C3E978D6AD}.Profile|Win32.ActiveCfg = Profile|Win32
+		{AD2C9AA0-14F6-4E61-85F3-F9C3E978D6AD}.Profile|Win32.Build.0 = Profile|Win32
+		{AD2C9AA0-14F6-4E61-85F3-F9C3E978D6AD}.Release|Win32.ActiveCfg = Release|Win32
+		{AD2C9AA0-14F6-4E61-85F3-F9C3E978D6AD}.Release|Win32.Build.0 = Release|Win32
+		{233E3A7E-14F3-414D-8BE3-24CEFC5F3AA8}.Debug|Win32.ActiveCfg = Debug|Win32
+		{233E3A7E-14F3-414D-8BE3-24CEFC5F3AA8}.Debug|Win32.Build.0 = Debug|Win32
+		{233E3A7E-14F3-414D-8BE3-24CEFC5F3AA8}.Debug-mpe|Win32.ActiveCfg = Debug-mpe|Win32
+		{233E3A7E-14F3-414D-8BE3-24CEFC5F3AA8}.Debug-mpe|Win32.Build.0 = Debug-mpe|Win32
+		{233E3A7E-14F3-414D-8BE3-24CEFC5F3AA8}.Profile|Win32.ActiveCfg = Profile|Win32
+		{233E3A7E-14F3-414D-8BE3-24CEFC5F3AA8}.Profile|Win32.Build.0 = Profile|Win32
+		{233E3A7E-14F3-414D-8BE3-24CEFC5F3AA8}.Release|Win32.ActiveCfg = Release|Win32
+		{233E3A7E-14F3-414D-8BE3-24CEFC5F3AA8}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

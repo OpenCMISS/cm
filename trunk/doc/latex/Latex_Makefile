@@ -1,0 +1,259 @@
+#***********************************************************************
+# FILE : 
+#   Latex_Makefile
+#
+# CREATED :
+#   Chris Bradley and Martyn Nash, Feburary 1996
+# UPDATES : 
+#   Leo Cheng, November 1998 - Adding option to generate 2 to a page ps.
+#   Martyn Nash, Feb 2006 - Adding option to generate 2 to a page pdf.
+#
+#
+# DESCRIPTION :
+#   Generic Makefile for LaTeX documents. Document specific parameters
+#   defined anare invoked from the shell script within the individual 
+#   directory. See the Latex_make.sh script.
+#
+#   The following options are implemented.
+#
+#     (none)    - Latex the document.
+#     clean     - Clean up. Removes as in qclean + figs and plot cleans
+#     clobber   - Removes as in clean + the .aux, .toc, .dvi and .ps files
+#     help      - print this message
+#     html      - Generate the html version of the document
+#     index     - Generate the index of the document
+#     qclean    - Quick clean. Removes .log, .bbl and .blg files
+#     quick     - Always latex the document quickly (i.e. no rerun)
+#     pdf       - Generate the pdf version of the document
+#     pdf2      - Generate the 2 page landscape pdf version of the document
+#     pics      - Make sure the .pstex versions of the figures and the plots
+#                    are up to date.
+#     pics_clean - Clean the figures and the plots.
+#     print     - Print the document to the specified printer.
+#     print_range FIRST=# LAST=# - Print only the pages in the range
+#                    FIRST-LAST to the specified printer.
+#     ps        - Generate the postcript version of the document.
+#     ps2       - Generate 2 to a page landscape postscipt version."
+#     ps_range FIRST=# LAST=# - Generate the postscript version of only
+#                    the pages in the range FIRST-LAST.
+#     update_html - Move the html version of the document to the 
+#                    directory where the html version will be referenced
+#
+#***********************************************************************
+
+SHELL		=	/bin/sh
+
+# fixed commands 
+BIBTEX          =       bibtex
+
+# This cannot be found on esu1 - using ps2pdf now
+#DVIPDF          =       dvipdf
+#DVIPDF_OPTS     =       
+
+PS2PDF		=	ps2pdf
+PS2PDF_OPTS	=	
+
+
+DVIPS           =       dvips
+DVIPS_OPTS      =        -Z -n 500 -t a4 -K0 -N0
+
+# latex2html98.1 uses undef as a list operator which is not perl5.6
+LATEX2HTML      =       perl -S latex2html
+LATEX2HTML_OPTS =       -address ' ' -no_navigation -info ' ' -split 0 -tmp /tmp
+FIXL2HTML	=	${OPENCMISS_ROOT}/cm/doc/html_utils/fixl2html.sh
+MAKEINDEX	=	makeindex
+PRINT           =       lpr
+PSNUP           =       psnup -2 -d0.1
+
+# plot and figure files
+MAKEFIGS	=	make -f ${OPENCMISS_ROOT}/cm/doc/latex/Makefigs
+MAKEPLOTS	=	make -f ${OPENCMISS_ROOT}/cm/doc/latex/Makeplots
+
+#
+# Standard TeX makefile follows
+#
+
+.SUFFIXES:	.pdf .ps .tex .fig .eps
+
+.PRECIOUS:	$(MAINFILE).dvi
+
+LATEX_CHECK	=	latex '\def\inputfigure{\input}' \\syntax \\input
+LATEX_DVI	=	latex '\def\inputfigure{\input}' \\input
+LATEX_DVIQ	=	latex \\batchmode '\def\inputfigure{\input}' \\input
+LATEX_PS	=	latex '\def\inputfigure\#1{\psfig{figure=\#1.ps,silent=}}' \\input
+LATEX_PSQ	=	latex \\batchmode \
+			'\def\inputfigure\#1{\psfig{figure=\#1.ps}}' \
+			\\input
+
+$(MAINFILE).dvi	:	$(MAINFILE).tex $(TEX_SRC) $(BIBS) $(EPS_SRC) $(FIG_SRC) $(PLOT_SRC)
+	@if test -d figs ; \
+		then $(MAKE) -f ${OPENCMISS_ROOT}/cm/doc/latex/Latex_Makefile figsmake ; \
+		else : ; \
+	fi
+	@if test -d plots ; \
+		then $(MAKE) -f ${OPENCMISS_ROOT}/cm/doc/latex/Latex_Makefile plotsmake ; \
+		else : ; \
+	fi
+	@if test -r $(MAINFILE).aux ; \
+		 then : ; \
+		 else $(LATEX_DVI) $(MAINFILE) ; \
+	fi
+	@if grep 'Warning.*: Citation'  $(MAINFILE).log >/dev/null ; \
+		then $(BIBTEX) $(MAINFILE) ; $(LATEX_DVIQ) $(MAINFILE) ; \
+	fi
+	$(LATEX_DVI) $(MAINFILE)
+	@if grep Rerun $(MAINFILE).log >/dev/null ; \
+		then $(LATEX_DVIQ) $(MAINFILE) ; \
+		else : ; \
+	fi
+
+$(MAINFILE).pdf :	$(MAINFILE).ps
+	$(PS2PDF) $(PS2PDF_OPTS) $(MAINFILE).ps $@ 
+
+$(MAINFILE)_2.pdf :	$(MAINFILE)_2.ps
+	$(PS2PDF) $(PS2PDF_OPTS) $(MAINFILE)_2.ps $@ 
+
+$(MAINFILE).ps :	$(MAINFILE).dvi
+	$(DVIPS) $(DVIPS_OPTS) -o $@ $(MAINFILE)
+
+$(MAINFILE)_2.ps :	$(MAINFILE).ps
+	$(PSNUP) $(MAINFILE).ps $(MAINFILE)_2.ps
+
+help :
+	@echo "General make for OpenCMISS latex documents:"
+	@echo ""	
+	@echo "Usage: latexmake [options]"
+	@echo
+	@echo "The following options are implemented -"
+	@echo
+	@echo "     (none)      - Latex the document."
+	@echo "     bib         - Always bibtex then latex the document."
+	@echo "     clean       - Clean up. Removes as in qclean + figs and plot cleans."
+	@echo "     clobber     - Removes as in clean + the .aux, .toc, .dvi and .ps files."
+	@echo "     help        - print this message."
+	@echo "     html        - Generate the html version of the document."
+	@echo "     index       - Generate the index of the document."
+	@echo "     qclean      - Quick clean. Removes .log, .bbl and .blg files."
+	@echo "     quick       - Always latex the document quickly (i.e. no rerun)."
+	@echo "     pdf         - Generate the pdf version of the document."
+	@echo "     pdf2        - Generate the 2 page landscape pdf version of the document."
+	@echo "     pics        - Make sure the .pstex versions of the figures and "
+	@echo "                    the plots are up to date."
+	@echo "     pics_clean  - Clean the figures and plots."
+	@echo "     print       - Print the document to the specified printer."
+	@echo "     print_range FIRST=# LAST=# - Print only the pages in the range"
+	@echo "                    FIRST-LAST to the specified printer."
+	@echo "     ps          - Generate the postcript version of the document."
+	@echo "     ps2         - Generate 2 to a page landscape postscipt version."
+	@echo "     ps_range FIRST=# LAST=# - Generate the postscript version of only"
+	@echo "                    the pages in the range FIRST-LAST."
+	@echo "     update_html - Move the html version of the document to the"
+	@echo "                    directory where the html version will be referenced."
+	@echo ""
+	@echo "See the file Latex_make.sh for document specific options."
+
+bib :	
+	$(BIBTEX) $(MAINFILE)
+	$(LATEX_DVI) $(MAINFILE)
+	@if grep Rerun $(MAINFILE).log >/dev/null ; \
+		then $(LATEX_DVIQ) $(MAINFILE) ; \
+		else : ; \
+	fi
+
+html :	$(MAINFILE)/index.html
+
+$(MAINFILE)/index.html :	$(MAINFILE).tex
+	$(LATEX2HTML) $(LATEX2HTML_OPTS) $(MAINFILE).tex
+
+quick	:	
+	$(LATEX_DVI) $(MAINFILE)
+
+pics :	$(FIG_SRC) $(PLOT_SRC)
+	@if test -d figs ; \
+		then $(MAKE) -f ${OPENCMISS_ROOT}/cm/doc/latex/Latex_Makefile figsmake ; \
+		else : ; \
+	fi
+	@if test -d plots ; \
+		then $(MAKE) -f ${OPENCMISS_ROOT}/cm/doc/latex/Latex_Makefile plotsmake ; \
+		else : ; \
+	fi
+
+pics_clean :
+	@if test -d figs ; \
+		then $(MAKE) -f ${OPENCMISS_ROOT}/cm/doc/latex/Latex_Makefile figsclean ; \
+		else : ; \
+	fi
+	@if test -d plots ; \
+		then $(MAKE) -f ${OPENCMISS_ROOT}/cm/doc/latex/Latex_Makefile plotsclean ; \
+		else : ; \
+	fi
+
+pdf :	$(MAINFILE).pdf
+
+pdf2 :	$(MAINFILE)_2.pdf
+
+ps :	$(MAINFILE).ps
+
+ps2:	$(MAINFILE)_2.ps
+
+ps_range :	$(MAINFILE).dvi
+	$(DVIPS) $(DVIPS_OPTS) -p $(FIRST) -l $(LAST) -o range.ps $(MAINFILE)
+
+print :	$(MAINFILE).ps
+	$(PRINT) -P$(PRINTER) $(MAINFILE).ps
+
+print_range :	$(MAINFILE).dvi
+	$(DVIPS) $(DVIPS_OPTS) -p $(FIRST) -l $(LAST) -o range.ps $(MAINFILE)
+	$(PRINT) -P$(PRINTER) range.ps
+
+
+update_html :	$(HTMLUPDATE_DIR)/$(MAINFILE)/index.html
+
+$(HTMLUPDATE_DIR)/$(MAINFILE)/index.html : $(MAINFILE)/index.html
+	$(FIXL2HTML) $(HTMLIDXTYPE) $(MAINFILE)/index.html $(MAINFILE)
+	@if test -d $(HTMLUPDATE_DIR)/$(MAINFILE) ; \
+		then : ; \
+		else mkdir $(HTMLUPDATE_DIR)/$(MAINFILE) ; \
+	fi
+	cp $(MAINFILE)/*.* $(HTMLUPDATE_DIR)/$(MAINFILE)/.
+
+index :	$(MAINFILE).ind
+
+$(MAINFILE).ind : $(MAINFILE).idx
+	$(MAKEINDEX) $(MAINFILE).idx
+	@if grep 'Output written in '$(MAINFILE)'.ind' $(MAINFILE).ilg >/dev/null ; \
+		then $(LATEX_DVIQ) $(MAINFILE) ; \
+		else : ; \
+	fi
+
+qclean :
+	-rm -f $(MAINFILE).dvi $(MAINFILE).bbl $(MAINFILE).blg $(MAINFILE).log
+
+clean :	qclean
+	@if test -d figs ; \
+		then $(MAKE) -f ${OPENCMISS_ROOT}/cm/doc/latex/Latex_Makefile figsclean ; \
+		else : ; \
+	fi
+	@if test -d plots ; \
+		then $(MAKE) -f ${OPENCMISS_ROOT}/cm/doc/latex/Latex_Makefile plotsclean ; \
+		else : ; \
+	fi
+
+clobber :	clean
+	find . -name "*.aux" -exec rm -f {} \;
+	-rm -f *.toc *.lof *.lot
+	-rm -f $(MAINFILE).dvi $(MAINFILE).ps range.ps
+
+figsmake :
+	@(cd figs ; $(MAKEFIGS))
+
+figsclean :
+	@(cd figs ; $(MAKEFIGS) clean)
+
+plotsmake :
+	@(cd plots ; $(MAKEPLOTS))
+
+plotsclean :
+	@(cd plots ; $(MAKEPLOTS) clean)
+
+

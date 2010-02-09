@@ -1,0 +1,27 @@
+dim_field_M!
+  3
+
+no_basis_M!
+  2
+
+M_basis!
+  1  -1
+  0   1
+
+M_P_basis!
+  0   1 
+
+M_xi_coordinates!
+  0.0
+  1.0
+
+basis_ordering_M!
+  1  1  1
+  2  1  1
+  1  2  1
+  2  2  1
+  1  1  2
+  2  1  2
+  1  2  2
+  2  2  2
+

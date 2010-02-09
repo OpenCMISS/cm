@@ -1,0 +1,15 @@
+/*!
+\page linear_elasticity_type_3D_subtype Linear Elasticity Type 3D subtype
+The governing equations and FEM implementation of 3D Linear Elasticity is explained below
+
+\section linear_elasticity_governing_equations Governing Equations
+
+
+    
+\section linear_elasticity_fem_implementation FEM implementation
+
+\section linear_elasticity_references References
+- J.N.Reddy 2006, An introduction to the Finite Element Method, Third edition, McGraw-Hill
+- en.wikipedia.org/wiki/Linear_elasticity
+*/
+

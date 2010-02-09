@@ -1,0 +1,21 @@
+Dependent variable
+Node #              Numerical      Analytic      % error      Absolute error Relative error
+     1               0.1536D-15    0.1536D-15    0.0000D+00    0.0000D+00    0.0000D+00
+     2               0.2509D+01    0.2509D+01    0.0000D+00    0.0000D+00    0.0000D+00
+     3               0.1536D-15    0.1536D-15    0.0000D+00    0.0000D+00    0.0000D+00
+     4               0.6123D-16    0.6123D-16    0.0000D+00    0.0000D+00    0.0000D+00
+     5               0.6273D+00    0.1000D+01    0.3727D+02    0.3727D+00    0.1864D+00
+     6               0.6123D-16    0.6123D-16    0.0000D+00    0.0000D+00    0.0000D+00
+     7               0.1536D-15    0.1536D-15    0.0000D+00    0.0000D+00    0.0000D+00
+     8               0.2509D+01    0.2509D+01    0.0000D+00    0.0000D+00    0.0000D+00
+     9               0.1536D-15    0.1536D-15    0.0000D+00    0.0000D+00    0.0000D+00
+RMS error (Percent) =    12.423512677849516
+RMS error (Absolute) =   0.12423512677849517
+RMS error (Relative) =   6.21175633892475862E-002
+Dependent variable integral error
+Node #              Numerical      Analytic      % error      Absolute error Relative error
+  Intgl             0.7739D+01    0.8659D+01    0.1062D+02    0.9196D+00   -0.9521D-01
+  Int^2             0.1651D+02    0.1800D+02    0.8313D+01    0.1496D+01   -0.7875D-01
+Node #              Numerical           NID
+  Diff.            -0.9196D+00   -0.1188D+00
+  Dif^2             0.3427D+00    0.1441D+00

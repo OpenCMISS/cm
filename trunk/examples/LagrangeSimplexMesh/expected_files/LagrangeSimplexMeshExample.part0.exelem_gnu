@@ -1,0 +1,102 @@
+ Group name: Region 1           
+ Shape.  Dimension=2
+ #Scale factor sets= 1
+ l.Lagrange*q.Lagrange, #Scale factors=6
+ #Nodes=           6
+ #Fields=1
+ 1) coordinates,  coordinate, rectangular cartesian, #Components=2
+   x.   l.Lagrange*q.Lagrange, no modify, standard node based.
+     #Nodes= 6
+     1.  #Values=1
+      Value indices:     1
+      Scale factor indices:    1
+     2.  #Values=1
+      Value indices:     1
+      Scale factor indices:    2
+     3.  #Values=1
+      Value indices:     1
+      Scale factor indices:    3
+     4.  #Values=1
+      Value indices:     1
+      Scale factor indices:    4
+     5.  #Values=1
+      Value indices:     1
+      Scale factor indices:    5
+     6.  #Values=1
+      Value indices:     1
+      Scale factor indices:    6
+   y.   l.Lagrange*q.Lagrange, no modify, standard node based.
+     #Nodes= 6
+     1.  #Values=1
+      Value indices:     1
+      Scale factor indices:    1
+     2.  #Values=1
+      Value indices:     1
+      Scale factor indices:    2
+     3.  #Values=1
+      Value indices:     1
+      Scale factor indices:    3
+     4.  #Values=1
+      Value indices:     1
+      Scale factor indices:    4
+     5.  #Values=1
+      Value indices:     1
+      Scale factor indices:    5
+     6.  #Values=1
+      Value indices:     1
+      Scale factor indices:    6
+ Element:            0 1 0
+  Nodes:
+           1           2           5           6           8           9
+   Scale factors:
+   1.0000000000000000E+000   1.0000000000000000E+000   1.0000000000000000E+000   1.0000000000000000E+000   1.0000000000000000E+000   1.0000000000000000E+000
+ #Scale factor sets= 1
+ q.simplex(2)*q.simplex, #Scale factors=6
+ #Nodes=           6
+ #Fields=1
+ 1) coordinates,  coordinate, rectangular cartesian, #Components=2
+   y.   q.simplex(2)*q.simplex, no modify, standard node based.
+     #Nodes= 6
+     1.  #Values=1
+      Value indices:     1
+      Scale factor indices:    1
+     2.  #Values=1
+      Value indices:     1
+      Scale factor indices:    2
+     3.  #Values=1
+      Value indices:     1
+      Scale factor indices:    3
+     4.  #Values=1
+      Value indices:     1
+      Scale factor indices:    4
+     5.  #Values=1
+      Value indices:     1
+      Scale factor indices:    5
+     6.  #Values=1
+      Value indices:     1
+      Scale factor indices:    6
+   y.   q.simplex(2)*q.simplex, no modify, standard node based.
+     #Nodes= 6
+     1.  #Values=1
+      Value indices:     1
+      Scale factor indices:    1
+     2.  #Values=1
+      Value indices:     1
+      Scale factor indices:    2
+     3.  #Values=1
+      Value indices:     1
+      Scale factor indices:    3
+     4.  #Values=1
+      Value indices:     1
+      Scale factor indices:    4
+     5.  #Values=1
+      Value indices:     1
+      Scale factor indices:    5
+     6.  #Values=1
+      Value indices:     1
+      Scale factor indices:    6
+ Element:            0 2 0
+  Nodes:
+           9           2           4           6           3           7
+   Scale factors:
+   1.0000000000000000E+000   1.0000000000000000E+000   1.0000000000000000E+000   1.0000000000000000E+000   1.0000000000000000E+000   1.0000000000000000E+000
