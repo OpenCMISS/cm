@@ -1085,7 +1085,7 @@ CONTAINS
 
     !Argument variables
     TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
-    INTEGER(INTG), INTENT(OUT) :: NUMBER_NON_ZEROS !<The number of non zeros in the matrix to get
+    INTEGER(INTG), INTENT(OUT) :: NUMBER_NON_ZEROS !<On return, The number of non zeros in the matrix to get
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1095,29 +1095,17 @@ CONTAINS
 
     IF(ASSOCIATED(MATRIX)) THEN
       IF(MATRIX%MATRIX_FINISHED) THEN
-        CALL FLAG_ERROR("The matrix has already been finished.",ERR,ERROR,*999)
-      ELSE
         SELECT CASE(MATRIX%STORAGE_TYPE)
-        CASE(MATRIX_BLOCK_STORAGE_TYPE)
-          CALL FLAG_ERROR("Can not get the number of non-zeros for a matrix with block storage.",ERR,ERROR,*999)
-        CASE(MATRIX_DIAGONAL_STORAGE_TYPE)
-          CALL FLAG_ERROR("Can not get the number of non-zeros for a matrix with diagonal storage.",ERR,ERROR,*999)
-        CASE(MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-          CALL FLAG_ERROR("Can not get the number of non-zeros for a matrix with column major storage.",ERR,ERROR,*999)
-        CASE(MATRIX_ROW_MAJOR_STORAGE_TYPE)
-          CALL FLAG_ERROR("Can not get the number of non-zeros for a matrix with row major storage.",ERR,ERROR,*999)
-        CASE(MATRIX_COMPRESSED_ROW_STORAGE_TYPE,MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE,MATRIX_ROW_COLUMN_STORAGE_TYPE)
-          IF(NUMBER_NON_ZEROS>0) THEN
-            NUMBER_NON_ZEROS=MATRIX%NUMBER_NON_ZEROS=NUMBER_NON_ZEROS
-          ELSE
-            LOCAL_ERROR="The number of non-zeros ("//TRIM(NUMBER_TO_VSTRING(NUMBER_NON_ZEROS,"*",ERR,ERROR))// &
-              & ") is invalid. The number must be greater than zero."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          ENDIF
+        CASE(MATRIX_BLOCK_STORAGE_TYPE,MATRIX_DIAGONAL_STORAGE_TYPE,MATRIX_COLUMN_MAJOR_STORAGE_TYPE, &
+          & MATRIX_ROW_MAJOR_STORAGE_TYPE,MATRIX_COMPRESSED_ROW_STORAGE_TYPE,MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE, &
+          & MATRIX_ROW_COLUMN_STORAGE_TYPE)
+          NUMBER_NON_ZEROS=MATRIX%NUMBER_NON_ZEROS
         CASE DEFAULT
           LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
+      ELSE
+        CALL FLAG_ERROR("The matrix is not finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)

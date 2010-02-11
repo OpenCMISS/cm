@@ -1678,7 +1678,7 @@ CONTAINS
 
     !Argument variables
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: DISTRIBUTED_MATRIX !<A pointer to the distributed matrix
-    INTEGER(INTG), INTENT(OUT) :: NUMBER_NON_ZEROS !<The number of non zeros in the matrix to get
+    INTEGER(INTG), INTENT(OUT) :: NUMBER_NON_ZEROS !<On return, the number of non zeros in the matrix to get
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1688,8 +1688,6 @@ CONTAINS
 
     IF(ASSOCIATED(DISTRIBUTED_MATRIX)) THEN
       IF(DISTRIBUTED_MATRIX%MATRIX_FINISHED) THEN
-        CALL FLAG_ERROR("The distributed matrix has been finished.",ERR,ERROR,*999)
-      ELSE
         SELECT CASE(DISTRIBUTED_MATRIX%LIBRARY_TYPE)
         CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
           IF(ASSOCIATED(DISTRIBUTED_MATRIX%CMISS)) THEN
@@ -1699,13 +1697,7 @@ CONTAINS
           ENDIF
         CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
           IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
-            IF(NUMBER_NON_ZEROS>0) THEN
-              NUMBER_NON_ZEROS=DISTRIBUTED_MATRIX%PETSC%NUMBER_NON_ZEROS
-            ELSE
-              LOCAL_ERROR="The number of non zeros ("//TRIM(NUMBER_TO_VSTRING(NUMBER_NON_ZEROS,"*",ERR,ERROR))// &
-                & ") is invalid. The number must be > 0."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            ENDIF
+            NUMBER_NON_ZEROS=DISTRIBUTED_MATRIX%PETSC%NUMBER_NON_ZEROS
           ELSE
             CALL FLAG_ERROR("Distributed matrix PETSc is not associated.",ERR,ERROR,*999)
           ENDIF
@@ -1714,6 +1706,8 @@ CONTAINS
             & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
+      ELSE
+        CALL FLAG_ERROR("The distributed matrix is not finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Distributed matrix is not associated.",ERR,ERROR,*999)
