@@ -7084,10 +7084,14 @@ CONTAINS
                                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                               END SELECT
                               !Solver the linear system
-                              CALL TAU_STATIC_PHASE_START("test")
+#ifdef TAUPROF
+                              CALL TAU_STATIC_PHASE_START("KSPSOLVE")
+#endif
                               CALL PETSC_KSPSOLVE(LINEAR_ITERATIVE_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR,SOLVER_VECTOR%PETSC%VECTOR, &
                                 & ERR,ERROR,*999)
-                              CALL TAU_STATIC_PHASE_STOP("test")
+#ifdef TAUPROF
+                              CALL TAU_STATIC_PHASE_STOP("KSPSOLVE")
+#endif
                               !Check for convergence
                               CALL PETSC_KSPGETCONVERGEDREASON(LINEAR_ITERATIVE_SOLVER%KSP,CONVERGED_REASON,ERR,ERROR,*999)
                               SELECT CASE(CONVERGED_REASON)
