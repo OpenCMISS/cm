@@ -124,20 +124,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: MPI_IERROR,SEND_COUNT,NUMBER_OF_DIRICHLET_CONDITIONS, STORAGE_TYPE, NUMBER_OF_NON_ZEROS, NUMBER_OF_ROWS
-    INTEGER(INTG) :: variable_type_idx,dof_idx, equ_matrix_idx, dirichlet_idx
+    INTEGER(INTG) :: MPI_IERROR,SEND_COUNT,NUMBER_OF_DIRICHLET_CONDITIONS, STORAGE_TYPE, NUMBER_OF_NON_ZEROS, NUMBER_OF_ROWS, TEMP
+    INTEGER(INTG) :: variable_type_idx,dof_idx, equ_matrix_idx, dirichlet_idx, sparse_idx, LAST, LAST_ROW_INDEX
     INTEGER(INTG), POINTER :: ROW_INDICES(:), COLUMN_INDICES(:)
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITION_VARIABLE
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: VARIABLE_DOMAIN_MAPPING
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(BOUNDARY_CONDITIONS_DIRICHLET_TYPE), POINTER :: BOUNDARY_CONDITIONS_DIRICHLET
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    TYPE(INTG), POINTER :: DIRICHLET_INDICES(:)
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
     TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATION_MATRIX
+    TYPE(BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE), POINTER :: SPARSITY_INDICES
+    TYPE(LIST_TYPE), POINTER :: SPARSE_INDICES
     
     CALL ENTERS("BOUNDARY_CONDITIONS_CREATE_FINISH",ERR,ERROR,*999)
 
@@ -175,22 +176,19 @@ CONTAINS
                     ENDIF
                   ENDDO
                   BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS=NUMBER_OF_DIRICHLET_CONDITIONS
-                  ! Allocate space for dirichlet
-                  ALLOCATE(DIRICHLET_INDICES(NUMBER_OF_DIRICHLET_CONDITIONS),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate list for Dirichlet indices",ERR,ERROR,*999)
-                  ! Find dirichlet conditions
-                  dirichlet_idx=1
-                  DO dof_idx=1,FIELD_VARIABLE%NUMBER_OF_DOFS
-                    IF(BOUNDARY_CONDITION_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(dof_idx)==BOUNDARY_CONDITION_FIXED) THEN
-                      DIRICHLET_INDICES(dirichlet_idx)=dof_idx
-                      dirichlet_idx=dirichlet_idx+1
-                    ENDIF
-                  ENDDO
                   ! Check that there is at least one dirichlet condition
                   IF(NUMBER_OF_DIRICHLET_CONDITIONS>0) THEN
                     CALL BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE(BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
                     BOUNDARY_CONDITIONS_DIRICHLET=>BOUNDARY_CONDITION_VARIABLE%DIRICHLET_BOUNDARY_CONDITIONS
                     IF(ASSOCIATED(BOUNDARY_CONDITIONS_DIRICHLET)) THEN
+                      ! Find dirichlet conditions
+                      dirichlet_idx=1
+                      DO dof_idx=1,FIELD_VARIABLE%NUMBER_OF_DOFS
+                        IF(BOUNDARY_CONDITION_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(dof_idx)==BOUNDARY_CONDITION_FIXED) THEN
+                          BOUNDARY_CONDITIONS_DIRICHLET%DIRICHLET_DOF_INDICES(dirichlet_idx)=dof_idx
+                          dirichlet_idx=dirichlet_idx+1
+                        ENDIF
+                      ENDDO
                       ! Store Dirichlet dof indices
                       EQUATIONS_SET=>BOUNDARY_CONDITIONS%EQUATIONS_SET
                       IF(ASSOCIATED(EQUATIONS_SET)) THEN
@@ -201,7 +199,7 @@ CONTAINS
                             LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
                             IF(ASSOCIATED(LINEAR_MATRICES)) THEN !Need to do this for dynamic
                               ! Iterate through equations matrices
-                              DO equ_matrix_idx,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
+                              DO equ_matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
                                 EQUATION_MATRIX=>LINEAR_MATRICES%MATRICES(equ_matrix_idx)%PTR
                                 CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_GET(EQUATION_MATRIX, STORAGE_TYPE, ERR, ERROR,*999)
                                 IF(ASSOCIATED(EQUATION_MATRIX) THEN
@@ -215,10 +213,47 @@ CONTAINS
                                   CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
                                     ! COMPLETE!!
                                   CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
-                                    CALL EQUATIONS_MATRIX_STRUCTURE_CALCULATE(EQUATION_MATRIX,NUMBER_OF_NON_ZEROS,ROW_INDICES, &
-                                      & COLUMN_INDICES,ERR,ERROR,*)
-                                    NUMBER_OF_ROWS
+                                    CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(EQUATION_MATRIX,ROW_INDICES,COLUMN_INDICES, &
+                                      & ERR,ERROR,*)
 
+                                    !CHECK WITH CHRIS WHAT IS WRONG WITH THIS?
+                                    NUMBER_OF_ROWS=EQUATIONS_MATRICES%NUMBER_OF_ROWS
+
+                                    CALL BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE(BOUNDARY_CONDITIONS_DIRICHLET% &
+                                      & LINEAR_SPARSITY_INDICES(equ_matrix_idx),BOUNDARY_CONDITION_VARIABLE% &
+                                      & NUMBER_OF_DIRICHLET_CONDITIONS,ERR,ERROR,*)
+
+                                    SPARSITY_INDICES=>BOUNDARY_CONDITIONS_DIRICHLET%LINEAR_SPARSITY_INDICES(equ_matrix_idx)%PTR
+                                    NULLIFY(SPARSE_INDICES)
+                                    CALL LIST_CREATE_START(SPARSE_INDICES,ERR,ERROR,*999)
+                                    CALL LIST_DATA_TYPE_SET(SPARSE_INDICES,LIST_INTG_TYPE,ERR,ERROR,*999)
+                                    CALL LIST_INITIAL_SIZE_SET(SPARSE_INDICES,,ERR,ERROR,*999)!CHANGE TO ARRAY (TWO PASSES NEEDED)
+                                    CALL LIST_CREATE_FINISH(SPARSE_INDICES,ERR,ERROR,*999)
+                                    CALL LIST_ITEM_ADD(SPARSE_INDICES,global_column,ERR,ERROR,*999)
+                                    CALL LIST_REMOVE_DUPLICATES(SPARSE_INDICES,ERR,ERROR,*999)
+                                    CALL LIST_NUMBER_OF_ITEMS_GET(SPARSE_INDICES,NUMBER_OF_COLUMNS,ERR,ERROR,*999)
+
+                                    IF(ASSOCIATED(SPARSITY_INDICES)) THEN
+                                      LAST=0
+                                      LAST_ROW_INDEX=1
+                                      DO sparse_idx=1,NUMBER_OF_NON_ZEROS
+                                        TEMP=COLUMN_INDICES(sparse_idx)
+                                        DO dirichlet_idx=1,BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
+                                          IF (TEMP=BOUNDARY_CONDITIONS_DIRICHLET%DIRICHLET_DOF_INDICES(dirichlet_idx)) THEN
+                                            IF (TEMP>LAST) THEN
+
+                                            ELSE
+
+                                              LAST_ROW_INDEX=LAST_ROW_INDEX+1
+                                              LAST=TEMP
+                                            ENDIF
+                                          ENDIF
+                                        ENDDO
+                                      ENDDO
+                                    ELSE
+                                      LOCAL_ERROR="Sparsity indices arrays are not associated for this equations matrix"
+                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    ENDIF
                                   CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
                                     ! COMPLETE!!
                                   CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
@@ -230,18 +265,15 @@ CONTAINS
                                   END SELECT
                                 ENDIF ! else necesary here??
                             ELSE
-                              LOCAL_ERROR="Linear Matrices is not associated for these Equations Matrices "// & ! necesary?? i.e only linear or only dynamic matrices
-                                & TRIM(NUMBER_TO_VSTRING(variable_type_idx,"*",ERR,ERROR))//"."
+                              LOCAL_ERROR="Linear Matrices is not associated for these Equations Matrices " ! necesary?? i.e only linear or only dynamic matrices
                               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            LOCAL_ERROR="Equations Matrices is not associated for these Equations "// &
-                              & TRIM(NUMBER_TO_VSTRING(variable_type_idx,"*",ERR,ERROR))//"."
+                            LOCAL_ERROR="Equations Matrices is not associated for these Equations "
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          LOCAL_ERROR="Equations is not associated for this Equations Set "// &
-                            & TRIM(NUMBER_TO_VSTRING(variable_type_idx,"*",ERR,ERROR))//"."
+                          LOCAL_ERROR="Equations is not associated for this Equations Set "
                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
@@ -1502,6 +1534,7 @@ CONTAINS
     INTEGER(INTG) :: DUMMY_ERR
     TYPE(VARYING_STRING) :: DUMMY_ERROR
 
+    CALL ENTERS("BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
       IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE%DIRICHLET_BOUNDARY_CONDITIONS)) THEN
@@ -1514,8 +1547,9 @@ CONTAINS
         NUMBER_OF_DIRICHLET_CONDITIONS=BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
         ALLOCATE(BOUNDARY_CONDITIONS_DIRICHLET%DIRICHLET_DOF_INDICES(NUMBER_OF_DIRICHLET_CONDITIONS),STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Dirichlet DOF indices array",ERR,ERROR,*999)
+
         ALLOCATE(BOUNDARY_CONDITIONS_DIRICHLET%LINEAR_SPARSITY_INDICES(BOUNDARY_CONDITIONS_VARIABLE%BOUNDARY_CONDITIONS% &
-          & EQUATIONS_SET%EQUATIONS%EQUATIONS_MATRICES%LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES),STAT=ERR) !CORRECT??!?? need more error handling??!?!?!
+          & EQUATIONS_SET%EQUATIONS%EQUATIONS_MATRICES%LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES),STAT=ERR) !CORRECT??!?? need more error handling??!?!?! Equations mapping
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Dirichlet linear sparsity indices array",ERR,ERROR,*999)
         ALLOCATE(BOUNDARY_CONDITIONS_DIRICHLET%DYNAMIC_SPARSITY_INDICES(BOUNDARY_CONDITIONS_VARIABLE%BOUNDARY_CONDITIONS% &
           & EQUATIONS_SET%EQUATIONS%EQUATIONS_MATRICES%DYNAMIC_MATRICES%NUMBER_OF_DYNAMIC_MATRICES),STAT=ERR)
@@ -1527,11 +1561,52 @@ CONTAINS
 
     CALL EXITS("BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE")
     RETURN
-999 CALL BOUNDARY_CONDITIONS_DIRICHLET_FINALISE(BOUNDARY_CONDITION_VARIABLE%DIRICHLET_BOUNDARY_CONDITIONS,DUMMY_ERR,
+999 CALL BOUNDARY_CONDITIONS_DIRICHLET_FINALISE(BOUNDARY_CONDITION_VARIABLE%DIRICHLET_BOUNDARY_CONDITIONS,DUMMY_ERR, &
       & DUMMY_ERROR,*998)
 998 CALL ERRORS("BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE",ERR,ERROR)
     CALL EXITS("BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE")
     RETURN 1
   END SUBROUTINE BOUNDARY_CONDITIONS_DIRICHLET_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise dirichlet boundary conditions for a boundary conditions.
+  SUBROUTINE BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE(SPARSITY_INDICES,NUMBER_OF_DIRICHLET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(BOUNDARY_CONDITIONS_SPARSITY_INDICES_PTR_TYPE), POINTER :: SPARSITY_INDICES !<A pointer to the boundary conditions to initialise a variable t ype for
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DIRICHLET
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_ROWS
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+
+    CALL ENTERS("BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE",ERR,ERROR,*999)
+
+    ALLOCATE(SPARSITY_INDICES,STAT=ERR)
+    IF(ASSOCIATED(SPARSITY_INDICES)) THEN
+     CALL FLAG_ERROR("Boundary conditions variable is not associated.",ERR,ERROR,*998)
+    ELSE
+      ALLOCATE(SPARSITY_INDICES%PTR,STAT=ERR)
+      IF(ASSOCIATED(SPARSITY_INDICES%PTR)) THEN ! Is this possible????
+        CALL FLAG_ERROR("Dirichlet boundary conditions are already associated for this boundary conditions variable." &
+           & ,ERR,ERROR,*998)
+      ELSE
+        ALLOCATE(SPARSITY_INDICES%PTR%SPARSE_COLUMN_INDICES(NUMBER_OF_DIRICHLET+1),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sparsity column indices array",ERR,ERROR,*999)
+      ENDIF
+    ENDIF
+
+    CALL EXITS("BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE")
+    RETURN
+999 CALL BOUNDARY_CONDITIONS_SPARSITY_INDICES_FINALISE(SPARSITY_INDICES,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE",ERR,ERROR)
+    CALL EXITS("BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE")
+    RETURN 1
+  END SUBROUTINE BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE
 
 END MODULE BOUNDARY_CONDITIONS_ROUTINES
