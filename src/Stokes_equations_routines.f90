@@ -2304,6 +2304,7 @@ CONTAINS
                           CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                             & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
 
+                          NULLIFY(BOUNDARY_VALUES)
                           CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
                             & FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
                           CALL FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS(SOLVER_LINEAR_TYPE,BOUNDARY_VALUES, & 
@@ -2319,6 +2320,10 @@ CONTAINS
                                 & BOUNDARY_VALUES(equations_row_number),ERR,ERROR,*999)
                             END IF
                           END DO
+                          
+                          CALL FIELD_PARAMETER_SET_DATA_RESTORE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                            & FIELD_U_VARIABLE_TYPE,FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
+                          
 !This part should be read in out of a file eventually
                         ELSE
                           CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
@@ -2358,8 +2363,11 @@ CONTAINS
 
                           CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                             & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                          
+                          NULLIFY(MESH_VELOCITY_VALUES)
                           CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
                             & FIELD_MESH_VELOCITY_SET_TYPE,MESH_VELOCITY_VALUES,ERR,ERROR,*999)
+                          NULLIFY(BOUNDARY_VALUES)
                           CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
                             & FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
 
@@ -2381,6 +2389,11 @@ CONTAINS
                                 & BOUNDARY_VALUES(equations_row_number),ERR,ERROR,*999)
                             END IF
                           END DO
+
+                          CALL FIELD_PARAMETER_SET_DATA_RESTORE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                            & FIELD_U_VARIABLE_TYPE,FIELD_MESH_VELOCITY_SET_TYPE,MESH_VELOCITY_VALUES,ERR,ERROR,*999)
+                          CALL FIELD_PARAMETER_SET_DATA_RESTORE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                            & FIELD_U_VARIABLE_TYPE,FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
                         ELSE
                           CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
                         END IF
@@ -2531,6 +2544,7 @@ CONTAINS
                   !Use calculated values to update mesh
                   CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET_ALE_STOKES%GEOMETRY%GEOMETRIC_FIELD, & 
                     & FIELD_U_VARIABLE_TYPE,1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                  NULLIFY(MESH_DISPLACEMENT_VALUES)
                   CALL FIELD_PARAMETER_SET_DATA_GET(INDEPENDENT_FIELD_ALE_STOKES,FIELD_U_VARIABLE_TYPE, & 
                     & FIELD_MESH_DISPLACEMENT_SET_TYPE,MESH_DISPLACEMENT_VALUES,ERR,ERROR,*999)
                   EQUATIONS=>SOLVER_MAPPING_LAPLACE%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
@@ -2544,7 +2558,10 @@ CONTAINS
                       END DO
                     ELSE
                       CALL FLAG_ERROR("Equations mapping is not associated.",ERR,ERROR,*999)
-                    END IF
+                    ENDIF
+                    CALL FIELD_PARAMETER_SET_DATA_RESTORE(INDEPENDENT_FIELD_ALE_STOKES,FIELD_U_VARIABLE_TYPE, & 
+                      & FIELD_MESH_DISPLACEMENT_SET_TYPE,MESH_DISPLACEMENT_VALUES,ERR,ERROR,*999)
+                    
                   ELSE
                     CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
                   END IF
@@ -2630,6 +2647,7 @@ CONTAINS
                   SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
                   IF(ASSOCIATED(SOLVER_MAPPING)) THEN
                     EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
+                    NULLIFY(MESH_STIFF_VALUES)
                     CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
                       & FIELD_VALUES_SET_TYPE,MESH_STIFF_VALUES,ERR,ERROR,*999)
                     IF(ASSOCIATED(EQUATIONS_SET)) THEN
@@ -2654,7 +2672,9 @@ CONTAINS
                       END IF
                     ELSE
                       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-                    END IF
+                    ENDIF
+                    CALL FIELD_PARAMETER_SET_DATA_RESTORE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                      & FIELD_VALUES_SET_TYPE,MESH_STIFF_VALUES,ERR,ERROR,*999)                     
                   ELSE
                     CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
                   END IF
