@@ -471,6 +471,8 @@ CONTAINS
       !Form of constitutive model is:
       ! W=c1/2 (e^Q - 1)
       ! where Q=c2(I1-3)
+      C(1)=MATERIALS_INTERPOLATED_POINT%VALUES(1,1)
+      C(2)=MATERIALS_INTERPOLATED_POINT%VALUES(2,1)
 
       TEMPTERM=C(1)*C(2)*EXP(AZL(1,1)+AZL(2,2)+AZL(3,3)-3.0_DP)
       PIOLA_TENSOR(1,1)=TEMPTERM+P*AZU(1,1)
@@ -487,6 +489,11 @@ CONTAINS
       ! W=c1/2 (e^Q - 1)
       ! where Q=2c2(E11+E22+E33)+c3(E11^2)+c4(E22^2+E33^2+E23^2+E32^2)+c5(E12^2+E21^2+E31^2+E13^2)
       ! with E expressed in fibre coordinates
+      C(1)=MATERIALS_INTERPOLATED_POINT%VALUES(1,1)
+      C(2)=MATERIALS_INTERPOLATED_POINT%VALUES(2,1)
+      C(3)=MATERIALS_INTERPOLATED_POINT%VALUES(3,1)
+      C(4)=MATERIALS_INTERPOLATED_POINT%VALUES(4,1)
+      C(5)=MATERIALS_INTERPOLATED_POINT%VALUES(5,1)
 
       TEMPTERM=C(1)*EXP(2.0*C(2)*(E(1,1)+E(2,2)+E(3,3))+C(3)*E(1,1)**2+C(4)*(E(2,2)**2+E(3,3)**2+2.0_DP*E(2,3)**2)+ &
           & C(5)*2.0_DP*(E(1,2)**2+E(1,3)**2))
