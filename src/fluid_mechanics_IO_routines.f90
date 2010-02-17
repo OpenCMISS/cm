@@ -206,7 +206,7 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   PUBLIC FLUID_MECHANICS_IO_READ_CMHEART
   PUBLIC EXPORT_CONTAINER
   PUBLIC FLUID_MECHANICS_IO_WRITE_ENCAS,FLUID_MECHANICS_IO_WRITE_MASTER_ENCAS
-  PUBLIC FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK,FLUID_MECHANICS_IO_WRITE_MASTER_ENCAS_BLOCK
+  PUBLIC FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK
 
 
   PUBLIC FLUID_MECHANICS_IO_READ_DARCY_PARAMS
@@ -1140,13 +1140,13 @@ CONTAINS
         END IF
 
         NodeUValue(K)=REGION%equations_sets%equations_sets(1)%ptr%source%source_field%variables(1) &
-          & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
+          & %parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K)
         NodeVValue(K)=REGION%equations_sets%equations_sets(1)%ptr%source%source_field%variables(1) &
-          & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
+          & %parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
 
         IF(NumberOfDimensions==3)THEN
           NodeWValue(K)=REGION%equations_sets%equations_sets(1)%ptr%source%source_field%variables(1) &
-            & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+            & %parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
         END IF
 
 ! ! !       NodeUValue(K)=INTERPOLATED_POINT%VALUES(1,1)
@@ -1158,10 +1158,8 @@ CONTAINS
       END DO 
     END DO
 
-!     NodeMUValue=REGION%equations_sets%equations_sets(1)%ptr%materials%materials_field%variables(1)% &
-!       & parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(1)
-!     NodeRHOValue=REGION%equations_sets%equations_sets(1)%ptr%materials%materials_field%variables(1)% &
-!       & parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(2)
+    NodeMUValue=0.0_DP
+    NodeRHOValue=0.0_DP
 
     IF( NumberOfDimensions==3 )THEN
       !For 3D, the following call works ...
@@ -1191,7 +1189,15 @@ CONTAINS
       END DO
     END DO
 
-    CALL FLUID_MECHANICS_IO_WRITE_DATA_ENCAS(NAME)
+
+    !This is for Poisson-Flow problems only
+    IF(NumberOfVariableComponents==1)NumberOfVariableComponents=4
+    IF(NumberOfMaterialComponents==5)NumberOfMaterialComponents=2
+
+
+    CALL FLUID_MECHANICS_IO_WRITE_NODES_CMGUI(NAME)
+    CALL FLUID_MECHANICS_IO_WRITE_ELEMENTS_CMGUI(NAME)
+    CALL FLUID_MECHANICS_IO_WRITE_DATA_ENCAS_BLOCK(NAME)
 
 
     CALL EXITS("FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK")
@@ -1217,41 +1223,11 @@ CONTAINS
     INTEGER:: I
     INTEGER(INTG) :: ERR
     TYPE(VARYING_STRING):: ERROR 
-    DOUBLE PRECISION:: velocity_magnitude
+!     DOUBLE PRECISION:: velocity_magnitude
 !     CHARACTER(80):: OUTPUT_FILE
 
   !==================
 
-
-
-  !==================
-    FILENAME="./output/"//NAME//".geo"
-    OPEN(UNIT=80, FILE=CHAR(FILENAME),STATUS='unknown')
-    WRITE(80,*)'OpenCMISS Exported Encas Model Geometry File' 
-    WRITE(80,*)'' 
-    WRITE(80,*)'node id assign'
-    WRITE(80,*)'element id assign'
-    WRITE(80,*)'extents'
-    WRITE(80,*)'-1.15662e+02 1.52908e+02'
-    WRITE(80,*)'-1.61114e+02 1.24480e+02'
-    WRITE(80,*)'-1.57030e+02 1.60470e+02'
-    WRITE(80,*)'part'
-    WRITE(80,*)'        1'
-    WRITE(80,*)'Total Volume, Mins/Maxs=(I:1/128,J:1/104,K:1/48)'
-    WRITE(80,*)'block'
-    WRITE(80,*)'       128       104        48'
-    WRITE(80,*)''
-    DO I = 1,NodesPerMeshComponent(1)
-      WRITE(80,'(e12.5)')NodeXValue(I)
-    ENDDO
-    DO I = 1,NodesPerMeshComponent(1)
-      WRITE(80,'(e12.5)')NodeYValue(I)
-    ENDDO
-    DO I = 1,NodesPerMeshComponent(1)
-      WRITE(80,'(e12.5)')NodeZValue(I)
-    ENDDO
-    CLOSE(80)
-  !==================
     FILENAME="./output/"//NAME//".scl1"
     OPEN(UNIT=81, FILE=CHAR(FILENAME),STATUS='unknown')
     WRITE(81,*)'Absolute Pressure' 
@@ -1263,74 +1239,6 @@ CONTAINS
     ENDDO
     CLOSE(81)
  
-  !==================
-    FILENAME="./output/"//NAME//".scl2"
-    OPEN(UNIT=82, FILE=CHAR(FILENAME),STATUS='unknown')
-    WRITE(82,*)'Velocity Magnitude' 
-    WRITE(82,*)'part'
-    WRITE(82,*)'        1'
-    WRITE(82,*)'coordinates'
-    DO I = 1,NodesPerMeshComponent(1)
-      velocity_magnitude=sqrt(NodeUValue(I)*NodeUValue(I)+ & 
-        & NodeVValue(I)*NodeVValue(I)+NodeWValue(I)*NodeWValue(I))
-      WRITE(82,'(e12.5)')velocity_magnitude
-    ENDDO
-    CLOSE(82)
-  
-  !==================
-    FILENAME="./output/"//NAME//".scl3"
-    OPEN(UNIT=83, FILE=CHAR(FILENAME),STATUS='unknown')
-    WRITE(83,*)'X Velocity' 
-    WRITE(83,*)'part'
-    WRITE(83,*)'        1'
-    WRITE(83,*)'coordinates'
-    DO I = 1,NodesPerMeshComponent(1)
-      WRITE(83,'(e12.5)')NodeUValue(I)
-    ENDDO
-    CLOSE(83)
-  
-  !==================
-    FILENAME="./output/"//NAME//".scl4"
-    OPEN(UNIT=84, FILE=CHAR(FILENAME),STATUS='unknown')
-    WRITE(84,*)'Y Velocity' 
-    WRITE(84,*)'part'
-    WRITE(84,*)'        1'
-    WRITE(84,*)'coordinates'
-    DO I = 1,NodesPerMeshComponent(1)
-      WRITE(84,'(e12.5)')NodeVValue(I)
-    ENDDO
-    CLOSE(84)
-
-  !==================
-    FILENAME="./output/"//NAME//".scl5"
-    OPEN(UNIT=85, FILE=CHAR(FILENAME),STATUS='unknown')
-    WRITE(85,*)'Z Velocity' 
-    WRITE(85,*)'part'
-    WRITE(85,*)'        1'
-    WRITE(85,*)'coordinates'
-    DO I = 1,NodesPerMeshComponent(1)
-      WRITE(85,'(e12.5)')NodeWValue(I)
-    ENDDO
-    CLOSE(85)
-  
-  !==================
-    FILENAME="./output/"//NAME//".vel"
-    OPEN(UNIT=86, FILE=CHAR(FILENAME),STATUS='unknown')
-    WRITE(86,*)'Velocity' 
-    WRITE(86,*)'part'
-    WRITE(86,*)'        1'
-    WRITE(86,*)'coordinates'
-    DO I = 1,NodesPerMeshComponent(1)
-      WRITE(86,'(e12.5)')NodeUValue(I)
-    ENDDO
-    DO I = 1,NodesPerMeshComponent(1)
-      WRITE(86,'(e12.5)')NodeVValue(I)
-    ENDDO
-    DO I = 1,NodesPerMeshComponent(1)
-      WRITE(86,'(e12.5)')NodeWValue(I)
-    ENDDO
-    CLOSE(86)
-  !==================
     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Writing Encas data...",ERR,ERROR,*999)
     RETURN
 999 CALL ERRORS("FLUID_MECHANICS_IO_WRITE_DATA_ENCAS_BLOCK",ERR,ERROR)    
@@ -1338,71 +1246,6 @@ CONTAINS
 
   END SUBROUTINE FLUID_MECHANICS_IO_WRITE_DATA_ENCAS_BLOCK
 
-
-
-  ! OK
-  !================================================================================================================================
-  !
-
-
-  !> Executes nodes writing process.
-  SUBROUTINE FLUID_MECHANICS_IO_WRITE_MASTER_ENCAS_BLOCK(NAME,start_time_step,number_of_timesteps,time_increment)
-
-    IMPLICIT NONE
-
-    INTEGER:: I,J,start_time_step,number_of_timesteps
-    DOUBLE PRECISION:: time_increment,time
-
-    CHARACTER(14), INTENT(IN) :: NAME !<the prefix name of file.
-    TYPE(VARYING_STRING) :: FILENAME !<the prefix name of file.
-!     CHARACTER :: FILENAME !<the prefix name of file.
-    INTEGER(INTG) :: ERR
-    TYPE(VARYING_STRING):: ERROR 
-
-    FILENAME="./output/"//NAME//".encas"
-    OPEN(UNIT=87, FILE=CHAR(FILENAME),STATUS='unknown')
-
-    WRITE(87,*)'FORMAT' 
-    WRITE(87,*)'type:  ensight gold'
-    WRITE(87,*)''
-    WRITE(87,*)'GEOMETRY'
-    WRITE(87,*)'model:  1   ./TIME_STEP_****.geo'
-    WRITE(87,*)''
-    WRITE(87,*)'VARIABLE'
-    WRITE(87,*)'scalar per node:  1  pressure                  ./TIME_STEP_****.scl1'
-    WRITE(87,*)'scalar per node:  1  velocity-magnitude        ./TIME_STEP_****.scl2'
-    WRITE(87,*)'scalar per node:  1  velocity-u                ./TIME_STEP_****.scl3'
-    WRITE(87,*)'scalar per node:  1  velocity-v                ./TIME_STEP_****.scl4'
-    WRITE(87,*)'scalar per node:  1  velocity-w                ./TIME_STEP_****.scl5'
-    WRITE(87,*)'scalar per node:  1  MRI-magnitude             ./TIME_STEP_****.scl5'
-    WRITE(87,*)'vector per node:  1  velocity                  ./TIME_STEP_****.vel'  
-    WRITE(87,*)''
-    WRITE(87,*)'TIME'
-    WRITE(87,*)'time set: 1 Model'
-    WRITE(87,*)'number of steps: ',  number_of_timesteps
-    WRITE(87,*)'filename start number:      ',  start_time_step
-    WRITE(87,*)'filename increment:         1'
-    WRITE(87,'(" time values:")',ADVANCE="NO")
-    J=1
-    DO I=1,number_of_timesteps
-      J=J+1
-      time=I*time_increment
-      WRITE(87,'(e13.5)',ADVANCE="NO")time
-      IF(J==8) THEN
-        WRITE(87,*) ' '
-        J=0
-      ENDIF
-    ENDDO
-  
-  CLOSE(87)
-  
-
-    CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Writing encas master...",ERR,ERROR,*999)
-    RETURN
-999 CALL ERRORS("FLUID_MECHANICS_IO_WRITE_MASTER_ENCAS_BLOCK",ERR,ERROR)    
-    RETURN
-
-  END SUBROUTINE FLUID_MECHANICS_IO_WRITE_MASTER_ENCAS_BLOCK
 
 
   ! OK
@@ -2484,82 +2327,56 @@ CONTAINS
     & INPUT_OPTION,TIME)
 
     INTEGER(INTG):: SOLVER_TYPE,I,INPUT_OPTION,CHECK
+    INTEGER(INTG) :: ERR
+    TYPE(VARYING_STRING):: ERROR
     REAL(DP), POINTER :: INPUT_VALUES(:)
-    INTEGER(INTG):: NUMBER_OF_DIMENSIONS,INPUT_TYPE
-    REAL(DP):: TIME, TIME_TOLERANCE, TIME_STEP_SIZE, TIME_STEP
+    INTEGER(INTG):: NUMBER_OF_DIMENSIONS,INPUT_TYPE,TEST
+    REAL(DP):: TIME, TIME_TOLERANCE, TIME_STEP_SIZE
 
-    INTEGER(INTG):: ENDI,NUMBER_OF_TIME_STEPS,J
+    INTEGER(INTG):: ENDI,NUMBER_OF_TIME_STEPS,J, TIME_STEP
     CHARACTER(34) :: INPUT_FILE
+    CHARACTER(28) :: UVEL_FILE
 
     I=SOLVER_TYPE
   
-    TIME_STEP_SIZE=42.0_DP  
+    TIME_STEP_SIZE=1.0_DP  
     TIME_TOLERANCE=0.00001_DP
   
 !     IF(SOLVER_TYPE==1) THEN !LINEAR
       IF(INPUT_TYPE==1)THEN !POISSON VECTOR SOURCE TEMPORARY
-        ENDI=SIZE(INPUT_VALUES)/NUMBER_OF_DIMENSIONS
-        IF(NUMBER_OF_DIMENSIONS==3) THEN
+        ENDI=SIZE(INPUT_VALUES)
+!         IF(NUMBER_OF_DIMENSIONS==3) THEN
 !           do nothing
-          TIME_STEP=TIME/TIME_STEP_SIZE
-        ENDIF
+          TIME_STEP=INT(TIME/TIME_STEP_SIZE)
+!         ENDIF
+         TEST=NUMBER_OF_DIMENSIONS
+
+! WRITE(*,*) "TIME_STEP", TIME_STEP
+
         IF(INPUT_OPTION==1) THEN
-          DO I=1,NUMBER_OF_DIMENSIONS
-            IF(I==1) THEN
-              OPEN(UNIT=I, FILE="./input/data/U_DATA.dat",STATUS='unknown') 
-                READ(I,*) CHECK
-                IF(CHECK/=ENDI) THEN
-                  STOP 'Error during data input'
-                ENDIF
-                READ(I,*) INPUT_VALUES(1:ENDI)
-              CLOSE(I)
-            ELSE IF(I==2) THEN
-              OPEN(UNIT=I, FILE="./input/data/V_DATA.dat",STATUS='unknown') 
-                READ(I,*) CHECK
-                IF(CHECK/=ENDI) THEN
-                  STOP 'Error during data input'
-                ENDIF
-                READ(I,*) INPUT_VALUES(ENDI+1:2*ENDI)
-              CLOSE(I)
-            ELSE IF(I==3) THEN
-              OPEN(UNIT=I, FILE="./input/data/W_DATA.dat",STATUS='unknown') 
-                READ(I,*) CHECK
-                IF(CHECK/=ENDI) THEN
-                  STOP 'Error during data input'
-                ENDIF
-                READ(I,*) INPUT_VALUES(2*ENDI+1:3*ENDI)
-              CLOSE(I)
-            ENDIF
-          ENDDO
+          IF(TIME_STEP<10) THEN
+            WRITE(UVEL_FILE,'("./input/data/VEL_DATA_0",I0,".dat")') TIME_STEP
+          ELSE IF(TIME_STEP<100) THEN
+            WRITE(UVEL_FILE,'("./input/data/VEL_DATA_",I0,".dat")') TIME_STEP
+          ENDIF
         ELSE IF(INPUT_OPTION==2) THEN
-          DO I=1,NUMBER_OF_DIMENSIONS
-            IF(I==1) THEN
-              OPEN(UNIT=I, FILE="./input/data/U_DATA.dat",STATUS='unknown') 
-                READ(I,*) CHECK
-                IF(CHECK/=ENDI) THEN
-                  STOP 'Error during data input'
-                ENDIF
-                READ(I,*) INPUT_VALUES(1:ENDI)
-              CLOSE(I)
-            ELSE IF(I==2) THEN
-              OPEN(UNIT=I, FILE="./input/data/V_DATA.dat",STATUS='unknown') 
-                READ(I,*) CHECK
-                IF(CHECK/=ENDI) THEN
-                  STOP 'Error during data input'
-                ENDIF
-                READ(I,*) INPUT_VALUES(ENDI+1:2*ENDI)
-              CLOSE(I)
-            ELSE IF(I==3) THEN
-              OPEN(UNIT=I, FILE="./input/data/W_DATA.dat",STATUS='unknown') 
-                READ(I,*) CHECK
-                IF(CHECK/=ENDI) THEN
-                  STOP 'Error during data input'
-                ENDIF
-                READ(I,*) INPUT_VALUES(2*ENDI+1:3*ENDI)
-              CLOSE(I)
-            ENDIF
-          ENDDO
+          IF(TIME_STEP<=10) THEN
+            WRITE(UVEL_FILE,'("./input/data/VEL_DATA_0",I0,".dat")') TIME_STEP-1
+          ELSE IF(TIME_STEP<100) THEN
+            WRITE(UVEL_FILE,'("./input/data/VEL_DATA_",I0,".dat")') TIME_STEP-1
+          ENDIF
         ENDIF
+          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,UVEL_FILE,ERR,ERROR,*999)
+          OPEN(UNIT=42, FILE=UVEL_FILE,STATUS='unknown') 
+          READ(42,*) CHECK
+          IF(CHECK/=ENDI) THEN
+            STOP 'Error during data input'
+          ENDIF
+          DO I=1,ENDI
+            READ(42,*) INPUT_VALUES(I)
+          ENDDO
+          CLOSE(42)
+
       ELSE IF(INPUT_TYPE==42) THEN
 ! do nothing for now
         IF(INPUT_OPTION==0) THEN
@@ -2589,7 +2406,8 @@ CONTAINS
         ENDIF
       ENDIF
     RETURN
-
+999 CALL ERRORS("FLUID_MECHANICS_IO_READ_DATA",ERR,ERROR)    
+    RETURN
   END SUBROUTINE FLUID_MECHANICS_IO_READ_DATA
 
   ! OK
