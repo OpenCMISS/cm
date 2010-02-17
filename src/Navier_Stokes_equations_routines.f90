@@ -2680,6 +2680,26 @@ CONTAINS
                                 & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,equations_row_number, & 
                                 & BOUNDARY_VALUES(equations_row_number),ERR,ERROR,*999)
                             END IF
+!TEMP INLET/OUTLET SWAP
+                            IF(CURRENT_TIME>0.49_DP.AND.CURRENT_TIME<0.51_DP) THEN
+                              IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_WALL) THEN
+                                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Change fixed wall to free wall... ", & 
+                                  & ERR,ERROR,*999)
+                                BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(equations_row_number)= &
+                                  & BOUNDARY_CONDITION_FREE_WALL
+                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
+                                  & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,equations_row_number, & 
+                                  & 0.0_DP,ERR,ERROR,*999)
+                              ELSE IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FREE_WALL) THEN
+                                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Change free wall to fixed wall... ", & 
+                                  & ERR,ERROR,*999)
+                                BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(equations_row_number)= &
+                                  & BOUNDARY_CONDITION_FIXED_WALL
+                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
+                                  & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,equations_row_number, & 
+                                  & 0.0_DP,ERR,ERROR,*999)
+                              ENDIF
+                            ENDIF
                           END DO
                         ELSE
                           CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
@@ -2798,6 +2818,26 @@ CONTAINS
                                 & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,equations_row_number, & 
                                 & BOUNDARY_VALUES(equations_row_number),ERR,ERROR,*999)
                             END IF
+!TEMP INLET/OUTLET SWAP
+                            IF(CURRENT_TIME>0.49_DP.AND.CURRENT_TIME<0.51_DP) THEN
+                              IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_WALL) THEN
+                                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Change fixed wall to free wall... ", & 
+                                  & ERR,ERROR,*999)
+                                BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(equations_row_number)= &
+                                  & BOUNDARY_CONDITION_FREE_WALL
+                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
+                                  & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,equations_row_number, & 
+                                  & 0.0_DP,ERR,ERROR,*999)
+                              ELSE IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FREE_WALL) THEN
+                                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Change free wall to fixed wall... ", & 
+                                  & ERR,ERROR,*999)
+                                BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(equations_row_number)= &
+                                  & BOUNDARY_CONDITION_FIXED_WALL
+                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
+                                  & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,equations_row_number, & 
+                                  & 0.0_DP,ERR,ERROR,*999)
+                              ENDIF
+                            ENDIF
                           END DO
                         ELSE
                           CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
