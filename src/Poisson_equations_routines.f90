@@ -744,128 +744,73 @@ CONTAINS
         CASE(EQUATIONS_SET_SETUP_SOURCE_TYPE)
           SELECT CASE(EQUATIONS_SET%SUBTYPE)
           CASE(EQUATIONS_SET_STOKES_POISSON_SUBTYPE,EQUATIONS_SET_NAVIER_STOKES_POISSON_SUBTYPE)
-              SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
-               !Set start action
-                CASE(EQUATIONS_SET_SETUP_START_ACTION)
-                  IF(EQUATIONS_SET%SOURCE%SOURCE_FIELD_AUTO_CREATED) THEN
-                    !Create the auto created source field
-                    !start field creation with name 'SOURCE_FIELD'
-                    CALL FIELD_CREATE_START(EQUATIONS_SET_SETUP%FIELD_USER_NUMBER,EQUATIONS_SET%REGION, &
-                      & EQUATIONS_SET%SOURCE%SOURCE_FIELD,ERR,ERROR,*999)
-                    !start creation of a new field
-                    CALL FIELD_TYPE_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
-                    !label the field
-                    CALL FIELD_LABEL_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD,"Source Field",ERR,ERROR, & 
-                      & *999)
-                    !define new created field to be source
-                    CALL FIELD_DEPENDENT_TYPE_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD, &
+            SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
+              !Set start action
+            CASE(EQUATIONS_SET_SETUP_START_ACTION)
+              IF(EQUATIONS_SET%SOURCE%SOURCE_FIELD_AUTO_CREATED) THEN
+                !Create the auto created source field
+                !start field creation with name 'SOURCE_FIELD'
+                CALL FIELD_CREATE_START(EQUATIONS_SET_SETUP%FIELD_USER_NUMBER,EQUATIONS_SET%REGION, &
+                  & EQUATIONS_SET%SOURCE%SOURCE_FIELD,ERR,ERROR,*999)
+                !start creation of a new field
+                CALL FIELD_TYPE_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+                !label the field
+                CALL FIELD_LABEL_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD,"Source Field",ERR,ERROR, & 
+                  & *999)
+                !define new created field to be source
+                CALL FIELD_DEPENDENT_TYPE_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD, &
                       & FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
-                    !look for decomposition rule already defined
-                    CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION, &
-                      & ERR,ERROR,*999)
-                    !apply decomposition rule found on new created field
-                    CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD, &
-                      & GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
-                    !point new field to geometric field
-                    CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD,EQUATIONS_SET% & 
-                      & GEOMETRY%GEOMETRIC_FIELD,ERR,ERROR,*999)
-                    !set number of variables to 1 (1 for U)
-                    SOURCE_FIELD_NUMBER_OF_VARIABLES=1
-                    CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD, &
-                    & SOURCE_FIELD_NUMBER_OF_VARIABLES,ERR,ERROR,*999)
-                    CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD, & 
-                      & (/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
-                    CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, &
-                      & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
-                    CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, &
-                      & FIELD_DP_TYPE,ERR,ERROR,*999)
-                    CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                      & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-                    !calculate number of components with one component for each dimension
-                    SOURCE_FIELD_NUMBER_OF_COMPONENTS=NUMBER_OF_DIMENSIONS
-                    CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD, & 
-                      & FIELD_U_VARIABLE_TYPE,SOURCE_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
-                    CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                      & 1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
-                    !Default to the geometric interpolation setup
-                    DO I=1,SOURCE_FIELD_NUMBER_OF_COMPONENTS
-                      CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%SOURCE%SOURCE_FIELD, & 
-                        & FIELD_U_VARIABLE_TYPE,I,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
-                    END DO
-
-                    SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
-                      !Specify fem solution method
-                      CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
-                        DO I=1,SOURCE_FIELD_NUMBER_OF_COMPONENTS
-                          CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD, &
-                          & FIELD_U_VARIABLE_TYPE,I,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-                        END DO
-                        CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE, &
-                          & ERR,ERROR,*999)
-                        CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%SOURCE%SOURCE_FIELD,GEOMETRIC_SCALING_TYPE, &
-                          & ERR,ERROR,*999)
-                        !Other solutions not defined yet
-                      CASE DEFAULT
-                        LOCAL_ERROR="The solution method of " &
-                          & //TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// " is invalid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    END SELECT 
-
-                  ELSE
-                    !Check the user specified field
-                    CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
-                    CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
-                    CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,1,ERR,ERROR,*999)
-                    CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
-                    CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
-                      & ERR,ERROR,*999)
-                    CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
-                    CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                      & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-   
-                    !calculate number of components with one component for each dimension and one for pressure
-                    SOURCE_FIELD_NUMBER_OF_COMPONENTS=NUMBER_OF_DIMENSIONS
-                    CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, &
-                      & SOURCE_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
-   
-                    SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
-                      CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
-                        CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1, &
-                          & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-                        CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
-                          & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-                      CASE DEFAULT
-                        LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD, &
-                          &"*",ERR,ERROR))//" is invalid."
-                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    END SELECT
-
-                  ENDIF    
-                !Specify finish action
-                CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
-                  IF(EQUATIONS_SET%SOURCE%SOURCE_FIELD_AUTO_CREATED) THEN
-                    CALL FIELD_CREATE_FINISH(EQUATIONS_SET%SOURCE%SOURCE_FIELD,ERR,ERROR,*999)
-                    CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, &
-                       & FIELD_INPUT_DATA1_SET_TYPE,ERR,ERROR,*999)
-                    CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, &
-                       & FIELD_INPUT_DATA2_SET_TYPE,ERR,ERROR,*999)
-                    CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, &
-                       & FIELD_INPUT_DATA3_SET_TYPE,ERR,ERROR,*999)
-                    CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, &
-                      & FIELD_BOUNDARY_SET_TYPE,ERR,ERROR,*999)
-                  ENDIF
-      
+                !look for decomposition rule already defined
+                CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION, &
+                  & ERR,ERROR,*999)
+                !apply decomposition rule found on new created field
+                CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD, &
+                  & GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
+                !point new field to geometric field
+                CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD,EQUATIONS_SET% & 
+                  & GEOMETRY%GEOMETRIC_FIELD,ERR,ERROR,*999)
+                !set number of variables to 1 (1 for U)
+                SOURCE_FIELD_NUMBER_OF_VARIABLES=1
+                CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD, &
+                  & SOURCE_FIELD_NUMBER_OF_VARIABLES,ERR,ERROR,*999)
+                CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD, & 
+                  & (/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
+                CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & FIELD_DP_TYPE,ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                !calculate number of components with one component for each dimension
+                SOURCE_FIELD_NUMBER_OF_COMPONENTS=NUMBER_OF_DIMENSIONS
+                CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD, & 
+                  & FIELD_U_VARIABLE_TYPE,SOURCE_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+                CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                  & 1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                !Default to the geometric interpolation setup
+                DO I=1,SOURCE_FIELD_NUMBER_OF_COMPONENTS
+                  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%SOURCE%SOURCE_FIELD, & 
+                    & FIELD_U_VARIABLE_TYPE,I,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                END DO
+                
+                SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+                  !Specify fem solution method
+                CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+                  DO I=1,SOURCE_FIELD_NUMBER_OF_COMPONENTS
+                    CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%SOURCE%SOURCE_FIELD, &
+                      & FIELD_U_VARIABLE_TYPE,I,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                  END DO
+                  CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE, &
+                    & ERR,ERROR,*999)
+                  CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%SOURCE%SOURCE_FIELD,GEOMETRIC_SCALING_TYPE, &
+                    & ERR,ERROR,*999)
+                  !Other solutions not defined yet
                 CASE DEFAULT
                   LOCAL_ERROR="The solution method of " &
                     & //TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// " is invalid."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
                 
-                CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE, &
-                  & ERR,ERROR,*999)
-                CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%SOURCE%SOURCE_FIELD,GEOMETRIC_SCALING_TYPE, &
-                  & ERR,ERROR,*999)
-               
               ELSE
                 !Check the user specified field
                 CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
@@ -887,16 +832,8 @@ CONTAINS
                 CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
                   CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1, &
                     & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-                CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
+                    & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                 CASE DEFAULT
                   LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD, &
                     &"*",ERR,ERROR))//" is invalid."
@@ -904,7 +841,6 @@ CONTAINS
                 END SELECT
                 
               ENDIF
-              
               !Specify finish action
             CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
               IF(EQUATIONS_SET%SOURCE%SOURCE_FIELD_AUTO_CREATED) THEN
@@ -918,7 +854,7 @@ CONTAINS
                 CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & FIELD_BOUNDARY_SET_TYPE,ERR,ERROR,*999)
               ENDIF
-      
+              
             CASE DEFAULT
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                 & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
