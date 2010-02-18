@@ -1,4 +1,4 @@
-/*!
+ /*!
 \page installation Obtaining the Code and Setting up the Development Environment
 \section obtain_code_and_libraries Obtaining the Code and Libraries
 To obtain the OpenCMISS source you need to check it out from the subversion repository. 
@@ -21,9 +21,8 @@ where architecture is the appropriate architecture for the machine. Possible arc
 - i386-win32-debug
 - i686-linux
 - i686-linux-debug
-- x86_64-linux-intel
-- x86_64-linux-debug-gnu
-- x86_64-linux-debug-intel
+- x86_64-linux
+- x86_64-linux-debug
 - rs6000-32-aix
 - rs6000-32-aix-debug
 .
