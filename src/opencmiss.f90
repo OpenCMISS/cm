@@ -67,7 +67,7 @@ MODULE OPENCMISS
   USE GENERATED_MESH_ROUTINES
   USE HISTORY_ROUTINES
   USE INPUT_OUTPUT
-  USE ISO_C_BINDING
+  !USE ISO_C_BINDING
   USE ISO_VARYING_STRING
   USE KINDS
   USE MESH_ROUTINES
@@ -827,12 +827,12 @@ MODULE OPENCMISS
   END INTERFACE !CMISSCellMLModelsCreateStart
 
   !>Imports the specified CellML model into a CellML models environment. 
-  INTERFACE CMISSCellMLModelsImport
+  INTERFACE CMISSCellMLModelImport
     MODULE PROCEDURE CMISSCellMLModelImportNumberC
     MODULE PROCEDURE CMISSCellMLModelImportObjC
     MODULE PROCEDURE CMISSCellMLModelImportNumberVS
     MODULE PROCEDURE CMISSCellMLModelImportObjVS
-  END INTERFACE !CMISSCellMLModelsImport
+  END INTERFACE !CMISSCellMLModelImport
 
   !>Finishes the creation of CellML models field. \see OPENCMISS::CMISSCellMLModelsFieldCreateStart
   INTERFACE CMISSCellMLModelsFieldCreateFinish
@@ -954,7 +954,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSCellMLDestroy
 
-  PUBLIC CMISSCellMLModelsCreateFinish,CMISSCellMLModelsCreateStart,CMISSCellMLModelsImport
+  PUBLIC CMISSCellMLModelsCreateFinish,CMISSCellMLModelsCreateStart,CMISSCellMLModelImport
 
   PUBLIC CMISSCellMLModelsFieldCreateFinish,CMISSCellMLModelsFieldCreateStart,CMISSCellMLModelsFieldGet
 
