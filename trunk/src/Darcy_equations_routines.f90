@@ -86,6 +86,7 @@ MODULE DARCY_EQUATIONS_ROUTINES
 
   PUBLIC DARCY_EQUATION_PRE_SOLVE
   PUBLIC DARCY_EQUATION_POST_SOLVE
+  PUBLIC DARCY_EQUATION_POST_SOLVE_OUTPUT_DATA
 
   
   LOGICAL :: idebug1, idebug2, idebug3
@@ -1061,7 +1062,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     REAL(DP):: SOURCE
-    REAL(DP):: COORD_X, COORD_Y, COORD_Z, ARG_X, ARG_Y, ARG_Z
+!     REAL(DP):: COORD_X, COORD_Y
     REAL(DP):: BETA_PARAM, P_SINK_PARAM
 !     REAL(DP):: MIDPOINT_X, MIDPOINT_Y
 
@@ -2518,6 +2519,7 @@ CONTAINS
                               & FIELD_VALUES_SET_TYPE,FIELD_INITIAL_VALUES_SET_TYPE,ALPHA,ERR,ERROR,*999)
 
                             IF(DIAGNOSTICS1) THEN
+                              NULLIFY(INITIAL_VALUES)
                               CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                                 & FIELD_INITIAL_VALUES_SET_TYPE,INITIAL_VALUES,ERR,ERROR,*999)
                               NDOFS_TO_PRINT = SIZE(INITIAL_VALUES,1)
@@ -2525,6 +2527,8 @@ CONTAINS
                                 & INITIAL_VALUES, &
                                 & '(" DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_INITIAL_VALUES_SET_TYPE = ",4(X,E13.6))', &
                                 & '4(4(X,E13.6))',ERR,ERROR,*999)
+                              CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                & FIELD_INITIAL_VALUES_SET_TYPE,INITIAL_VALUES,ERR,ERROR,*999)
                             ENDIF
                           ELSE
                             CALL FLAG_ERROR("Dependent field and / or geometric field is / are not associated.",ERR,ERROR,*999)
@@ -2662,7 +2666,7 @@ CONTAINS
                             CALL FIELD_PARAMETER_SETS_COPY(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                               & FIELD_INITIAL_VALUES_SET_TYPE,FIELD_MESH_DISPLACEMENT_SET_TYPE,ALPHA,ERR,ERROR,*999)
 
-
+                            NULLIFY(MESH_DISPLACEMENT_VALUES)
                             CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
                               & FIELD_MESH_DISPLACEMENT_SET_TYPE,MESH_DISPLACEMENT_VALUES,ERR,ERROR,*999)
                             IF(DIAGNOSTICS1) THEN
@@ -2691,6 +2695,8 @@ CONTAINS
                             ALPHA=1.0_DP/TIME_INCREMENT
                             CALL FIELD_PARAMETER_SETS_COPY(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
                               & FIELD_MESH_DISPLACEMENT_SET_TYPE,FIELD_MESH_VELOCITY_SET_TYPE,ALPHA,ERR,ERROR,*999)
+                            CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                              & FIELD_MESH_DISPLACEMENT_SET_TYPE,MESH_DISPLACEMENT_VALUES,ERR,ERROR,*999)
                           ELSE
                             CALL FLAG_ERROR("Geometric field is not associated.",ERR,ERROR,*999)
                           ENDIF
@@ -2804,8 +2810,10 @@ CONTAINS
                                 BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS% & 
                                   & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
                                 IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+                                  NULLIFY(MESH_VELOCITY_VALUES)
                                   CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                                     & FIELD_MESH_VELOCITY_SET_TYPE,MESH_VELOCITY_VALUES,ERR,ERROR,*999)
+                                  NULLIFY(INITIAL_VALUES)
                                   CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                                     & FIELD_INITIAL_VALUES_SET_TYPE,INITIAL_VALUES,ERR,ERROR,*999)
                                   IF(DIAGNOSTICS1) THEN
@@ -2864,7 +2872,15 @@ CONTAINS
                                       & NDOFS_TO_PRINT,DUMMY_VALUES1, &
                                       & '(" DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE (after) = ",4(X,E13.6))', &
                                       & '4(4(X,E13.6))',ERR,ERROR,*999)
+                                    CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                      & FIELD_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
                                   ENDIF
+                                  CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                    & FIELD_MESH_VELOCITY_SET_TYPE,MESH_VELOCITY_VALUES,ERR,ERROR,*999)
+                                  CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                    & FIELD_INITIAL_VALUES_SET_TYPE,INITIAL_VALUES,ERR,ERROR,*999)
+
+                                  
                                 ELSE
                                   CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
                                 END IF
@@ -3041,6 +3057,8 @@ CONTAINS
                   CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT,NDOFS_TO_PRINT,DUMMY_VALUES2, &
                     & '(" DEPENDENT_FIELD_MAT_PROPERTIES,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE = ",4(X,E13.6))',&
                     & '4(4(X,E13.6))',ERR,ERROR,*999)
+                  CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD_MAT_PROPERTIES,FIELD_U_VARIABLE_TYPE, &
+                    & FIELD_VALUES_SET_TYPE,DUMMY_VALUES2,ERR,ERROR,*999)
                 ENDIF
 
               ELSE  

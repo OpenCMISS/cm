@@ -1167,6 +1167,7 @@ static int CMISSSolverEquationsFullMatrices = 2;
 
 struct CMISSBasisType_;
 struct CMISSBoundaryConditionsType_;
+struct CMISSCellMLType_;
 struct CMISSControlLoopType_;
 struct CMISSCoordinateSystemType_;
 struct CMISSDecompositionType_;
@@ -1194,6 +1195,7 @@ struct CMISSSolverEquationsType_;
 typedef int CMISSError;
 typedef struct CMISSBasisType_ *CMISSBasisType;
 typedef struct CMISSBoundaryConditionsType_ *CMISSBoundaryConditionsType;
+typedef struct CMISSCellMLType_ *CMISSCellMLType;
 typedef struct CMISSControlLoopType_ *CMISSControlLoopType;
 typedef struct CMISSCoordinateSystemType_ *CMISSCoordinateSystemType;
 typedef struct CMISSDecompositionType_ *CMISSDecompositionType;
@@ -1231,6 +1233,10 @@ CMISSError CMISSBasisTypeInitialise(CMISSBasisType *Basis);
 CMISSError CMISSBoundaryConditionsTypeFinalise(CMISSBoundaryConditionsType *BoundaryConditions);
 
 CMISSError CMISSBoundaryConditionsTypeInitialise(CMISSBoundaryConditionsType *BoundaryConditions);
+
+CMISSError CMISSCellMLTypeFinalise(CMISSCellMLType *CellML);
+
+CMISSError CMISSCellMLTypeInitialise(CMISSCellMLType *CellML);
 
 CMISSError CMISSControlLoopTypeFinalise(CMISSControlLoopType *ControlLoop);
 
@@ -1299,7 +1305,7 @@ CMISSError CMISSSolverTypeFinalise(CMISSSolverType *Solver);
 
 CMISSError CMISSSolverTypeInitialise(CMISSSolverType *Solver);
 
-CMISSError CMISSolverEquationsTypeFinalise(CMISSSolverEquationsType *SolverEquations);
+CMISSError CMISSSolverEquationsTypeFinalise(CMISSSolverEquationsType *SolverEquations);
 
 CMISSError CMISSSolverEquationsTypeInitialise(CMISSSolverEquationsType *SolverEquations);
 
@@ -1335,7 +1341,232 @@ CMISSError CMISSAnalyticAnalysisAbsoluteErrorGetNode(const CMISSFieldType Field,
 		const int VariableNumber,
 		double *Value);
 
+CMISSError CMISSAnalyticAnalysisPercentageErrorGetNodeNum(const int RegionUserNumber,
+		const int FieldUserNumber,
+		const int DerivativeNumber,
+		const int NodeNumber,
+		const int ComponentNumber,
+		const int VariableType,
+		double *Value);
 
+CMISSError CMISSAnalyticAnalysisPercentageErrorGetNode(const CMISSFieldType Field,
+		const int DerivativeNumber,
+		const int NodeNumber,
+		const int ComponentNumber,
+		const int VariableType,
+		double *Value);
+
+CMISSError CMISSAnalyticAnalysisRelativeErrorGetNodeNum(const int RegionUserNumber,
+		const int FieldUserNumber,
+		const int DerivativeNumber,
+		const int NodeNumber,
+		const int ComponentNumber,
+		const int VariableType,
+		double *Value);
+
+CMISSError CMISSAnalyticAnalysisRelativeErrorGetNode(const CMISSFieldType Field,
+		const int DerivativeNumber,
+		const int NodeNumber,
+		const int ComponentNumber,
+		const int VariableType,
+		double *Value);
+
+CMISSError CMISSAnalyticAnalysisAbsoluteErrorGetElementNum(const int RegionUserNumber,
+		const int FieldUserNumber,
+		const int ElementNumber,
+		const int ComponentNumber,
+		const int VariableType,
+		doulbe *Value);
+
+CMISSError CMISSAnalyticAnalysisAbsoluteErrorGetElement(const CMISSFieldType Field,
+		const int ElementNumber,
+		const int ComponentNumber,
+		const int VariableType,
+		double *Value);
+
+CMISSError CMISSAnalyticAnalysisPercentageErrorGetElementNum(const int RegionUserNumber,
+		const int FieldUserNumber,
+		const int ElementNumber,
+		const int ComponentNumber,
+		const int VariableType,
+		double *Value);
+
+CMISSError CMISSAnalyticAnalysisPercentageErrorGetElement(const CMISSFieldType Field,
+		const int ElementNumber,
+		const int ComponentNumber,
+		const int VariableType,
+		double *Value);
+
+CMISSError CMISSAnalyticAnalysisRelativeErrorGetElementNum(const int RegionUserNumber,
+		const int FieldUserNumber,
+		const int ElementNumber,
+		const int ComponentNumber,
+		const int VariableType,
+		double *Value);
+
+CMISSError CMISSAnalyticAnalysisRelativeErrorGetElement(const CMISSFieldType Field,
+		const int ElementNumber,
+		const int ComponentNumber,
+		const int VariableType,
+		double *Value);
+
+CMISSError CMISSAnalyticAnalysisAbsoluteErrorGetConstantNum(const int RegionUserNumber,
+		const int FieldUserNumber,
+		const int ComponentNumber,
+		const int VariableType,
+		double *Value);
+
+CMISSError CMISSAnalyticAnalysisAbsoluteErrorGetConstant(const CMISSFieldType Field,
+		const int ComponentNumber,
+		const int VariableType,
+		double *Value);
+
+CMISSError CMISSAnalyticAnalysisPercentageErrorGetConstantNum(const int RegionUserNumber,
+		const int FieldUserNumber,
+		const int ComponentNumber,
+		const int VariableTYpe,
+		double *Value);
+
+CMISSError CMISSAnalyticAnalysisPercentageErrorGetConstant(const CMISSFieldType Field,
+		const int ComponentNumber,
+		const int VariableType,
+		double *Value);
+
+CMISSError CMISSAnalyticAnalysisRelativeErrorGetConstantNum(const int RegionUserNumber,
+		const int FieldUserNumber,
+		const int ComponentNumber,
+		const int VariableType,
+		double *Value);
+
+CMISSError CMISSAnalyticAnalysisRelativeErrorGetConstant(const CMISSFieldType Field,
+		const int ComponentNumber,
+		const int VariableType,
+		double *Value);
+
+CMISSError CMISSAnalyticAnalysisRmsErrorGetNodeNum(const int RegionUserNumber,
+		const int FieldUserNumber,
+		const int ComponentNumber,
+		const int VariableType,
+		const int ErrorType,
+		double *LocalValue,
+		double *LocalGhostValue)
+		double *GlobalValue);
+
+CMISSError CMISSAnalyticAnalysisRmsErrorGetNode(const CMISSFieldType Field,
+		const int ComponentNumber,
+		const int VariableType,
+		const int ErrorType,
+		double *LocalValue,
+		double *LocalGhostValue,
+		double *GlobalValue);
+
+CMISSError CMISSAnalyticAnalysisRmsErrorGetElementNumber(const int RegionUserNumber,
+		const int FieldUserNumber,
+		const int ComponentNumber,
+		const int VariableType,
+		const int ErrorType,
+		double *LocalValue,
+		double *LocalGhostValue)
+		double *GlobalValue);
+
+CMISSError CMISSAnalyticAnalysisRmsErrorGetElement(const CMISSFieldType Field,
+		const int ComponentNumber,
+		const int VariableType,
+		const int ErrorType,
+		double *LocalValue,
+		double *LocalGhostValue,
+		double *GlobalValue);
+
+CMISSError CMISSAnalyticAnalysisIntegralNumericalValueGetNum(const int RegionUserNumber,
+		const int FieldUserNumber,
+		const int ComponentNumber,
+		const int VariableType,
+		double *IntegralValue,
+		double *GhostIntegralValue);
+
+CMISSError CMISSAnalyticAnalysisIntegralNumericalValueGet(const CMISSFieldType Field,
+		const int ComponentNumber,
+		const int VariableType,
+		double *IntegralValue,
+		double *GhostIntegralValue);
+
+CMISSError CMISSAnalyticAnalysisIntegralAnalyticValueGetNum(const int RegionUserNumber,
+		const int FieldUserNumber,
+		const int ComponentNumber,
+		const int VariableType,
+		double *IntegralValue,
+		double *GhostIntegralValue);
+
+CMISSError CMISSAnalyticAnalysisIntegralAnalyticValueGet(const CMISSFieldType Field,
+		const int ComponentNumber,
+		const int VariableType,
+		double *IntegralValue,
+		double *GhostIntegralValue);
+
+CMISSError CMISSAnalyticAnalysisIntegralPercentageErrorGetNum(const int RegionUserNumber,
+		const int FieldUserNumber,
+		const int ComponentNumber,
+		const int VariableType,
+		double *IntegralValue,
+		double *GhostIntegralValue);
+
+CMISSError CMISSAnalyticAnalysisIntegralPercentageErrorGet(const CMISSFieldType Field,
+		const int ComponentNumber,
+		const int VariableType,
+		double *IntegralValue,
+		double *GhostIntegralValue);
+
+CMISSError CMISSAnalyticAnalysisIntegralAbsoluteErrorGetNum(const int RegionUserNumber,
+		const int FieldUserNumber,
+		const int ComponentNumber,
+		const int VariableType,
+		double *IntegralValue,
+		double *GhostIntegralValue);
+
+CMISSError CMISSAnalyticAnalysisIntegralAbsoluteErrorGet(const CMISSFieldType Field,
+		const int ComponentNumber,
+		const int VariableType,
+		double *IntegralValue,
+		double *GhostIntegralValue);
+
+CMISSError CMISSAnalyticAnalysisIntegralRelativeErrorGetNum(const int RegionUserNumber,
+		const int FieldUserNumber,
+		const int ComponentNumber,
+		const int VariableType,
+		double *IntegralValue,
+		double *GhostIntegralValue);
+
+CMISSError CMISSAnalyticAnalysisIntegralRelativeErrorGet(const CMISSFieldType Field,
+		const int ComponentNumber,
+		const int VariableType,
+		double *IntegralValue,
+		double *GhostIntegralValue);
+
+CMISSError CMISSAnalyticAnalysisIntegralNidNumericalValueGetNum(const int RegionUserNumber,
+		const int FieldUserNumber,
+		const int ComponentNumber,
+		const int VariableType,
+		double *IntegralValue,
+		double *GhostIntegralValue);
+
+CMISSError CMISSAnalyticAnalysisIntegralNidNumericalValueGet(const CMISSFieldType Field,
+		const int ComponentNumber,
+		const int VariableType,
+		double *IntegralValue,
+		double *GhostIntegralValue);
+
+CMISSError CMISSAnalyticAnalysisIntegralNidErrorGetNum(const int RegionUserNumber,
+		const int FieldUserNumber,
+		const int ComponentNumber,
+		const int VariableType,
+		double *IntegralValue,
+		double *GhostIntegralValue);
+
+CMISSError CMISSAnalyticAnalysisIntegralNidErrorGet(const CMISSFieldType Field,
+		const int ComponentNumber,
+		const int VariableType,
+		double *IntegralValue,
+		double *GhostIntegralValue);
 
 /*
  *=================================================================================================================================
@@ -1604,6 +1835,8 @@ CMISSError CMISSEquationsSetBoundaryConditionsGet(const CMISSEquationsSetType Eq
 		CMISSBoundaryConditionsType *BoundaryConditions);
 
 
+
+
 /*
  *=================================================================================================================================
  *
@@ -1623,6 +1856,160 @@ CMISSError CMISSInitialise(CMISSCoordinateSystemType *WorldCoordinateSystem,
 /*
  *==================================================================================================================================
  *
+ * CMISS_CELLML
+ *
+ *==================================================================================================================================
+ */
+
+CMISSError CMISSCellMLCreateFinishNum(const int CellMLUserNumber);
+
+CMISSError CMISSCellMLCreateFinish(CMISSCellMLType *CellML)
+
+CMISSError CMISSCellMLCreateStartNum(const int CellMLUserNumber,
+		const int RegionUserNumber,
+		const int FieldUserNumber);
+
+CMISSError CMISSCellMLCreateStart(const int CellMLUserNumber,
+		CMISSFieldType *Field,
+		CMISSCellMLType *CellML);
+
+CMISSError CMISSCellMLDestroyNum(const int CellMLUserNumber);
+
+CMISSError CMISSCellMLDestroy(CMISSCellMLType *CellML);
+
+CMISSError CMISSCellMLModelsCreateFinishNum(const int CellMLUserNumber);
+
+CMISSError CMISSCellMLModelsCreateFinish(CMISSCellMLType *CellML);
+
+CMISSError CMISSCellMLModelsCreateStartNum(const int CellMLUserNumber);
+
+CMISSError CMISSCellMLModelsCreateStart(CMISSCellMLType *CellML);
+
+CMISSError CMISSCellMLModelImportNum(const int CellMLModelUserNumber,
+		const int CellMLUserNumber,
+		const int URISize,
+		char *URI);
+
+CMISSError CMISSCellMLModelImport(const int CellMLModelUserNumber,
+		CMISSCellMLType *CellML,
+		const int URISize,
+		char *URI);
+
+CMISSError CMISSCellMLModelsFieldCreateFinishNum(const int CellMLUserNumber);
+
+CMISSError CMISSCellMLModelsFieldCreateFinish(CMISSCellMLType *CellML);
+
+CMISSError CMISSCellMLModelsFieldCreateStartNum(const int CellMLModelsFieldUserNumber,
+		const int CellMLUserNumber);
+
+CMISSError CMISSCellMLModelsFieldCreateStart(const int CellMLModelsFieldUserNumber,
+		CMISSCellMLType *CellML,
+		CMISSFieldType *Field);
+
+CMISSError CMISSCellMLModelsFieldGetNum(const int CellMLUserNumber,
+		int *CellMLModelsFieldUserNumber);
+
+CMISSError CMISSCellMLModelsFieldGet(CMISSCellMLType *CellML,
+		CMISSFieldType *Field);
+
+CMISSError CMISSCellMLStateFieldCreateFinishNum(const int CellMLUserNumber);
+
+CMISSError CMISSCellMLStateFieldCreateFinish(CMISSCellMLType *CellML);
+
+CMISSError CMISSCellMLStateFieldCreateStartNum(const int CellMLStateFieldUserNumber,
+		const int CellMLUserNumber);
+
+CMISSError CMISSCellMLStateFieldCreateStart(const int CellMLStateFieldUserNumber,
+		CMISSCellMLType *CellML,
+		CMISSFieldType *Field);
+
+CMISSError CMISSCellMLStateFieldGetNum(const int CellMLUserNumber,
+		int *CellMLStateFieldUserNumber);
+
+CMISSError CMISSCellMLStateFieldGet(CMISSCellMLType *CellML,
+		CMISSFieldType *Field);
+
+CMISSError CMISSCellMLFieldComponentGetNum(const int CellMLUserNumber,
+		const int CellMLFieldType,
+		const int URISize,
+		const char *URI,
+		int *FieldComponent);
+
+CMISSError CMISSCellMLFieldComponentGet(CMISSCellMLType *CellML,
+		const int CellMLFieldType,
+		const int URISize,
+		const char *URI,
+		int *FieldComponent);
+
+CMISSError CMISSCellMLIntermediateFieldAddNum(const int CellMLUserNumber,
+		const int CellMLModelUserNumber,
+		const int URISize,
+		const char *URI);
+
+CMISSError CMISSCellMLIntermediateFieldAdd(CMISSCellMLType *CellML,
+		const int CellMLModelUserNumber,
+		const int URISize,
+		const char *URI);
+
+CMISSError CMISSCellMLIntermediateFieldCreateFinishNum(const int CellMLUserNumber);
+
+CMISSError CMISSCellMLIntermediateFieldCreateFinish(CMISSCellMLType *CellML);
+
+CMISSError CMISSCellMLIntermediateFieldCreateStartNum(const int CellMLIntermediateFieldUserNumber,
+		const int CellMLUserNumber);
+
+CMISSError CMISSCellMLIntermediateFieldCreateStart(const int CellMLIntermediateFieldUserNumber,
+		CMISSCellMLType *CellML,
+		CMISSFieldType *Field);
+
+CMISSError CMISSCellMLIntermediateFieldGetNum(const int CellMLUserNumber,
+		int *CellMLIntermediateFieldUserNumber);
+
+CMISSError CMISSCellMLIntermediateFieldGet(CMISSCellMLType *CellML,
+		CMISSFieldType *Field);
+
+CMISSError CMISSCellMLParameterAddNum(const int CellMLUserNumber,
+	const int CellMLModelUserNumber,
+	const int URISize,
+	const char *URI);
+
+CMISSError CMISSCellMLParameterAdd(CMISSCellMLType *CellML,
+	const int CellMLModelUserNumber,
+	const int URISize,
+	const char *URI);
+
+CMISSError CMISSCellMLParametersCreateFinishNum(const int CellMLUserNumber);
+
+CMISSError CMISSCellMLParametersCreateFinish(CMISSCellMLType *CellML);
+
+CMISSError CMISSCellMLParametersCreateStartNum(const int CellMLUserNumber);
+
+CMISSError CMISSCellMLParametersCreateStart(CMISSCellMLType *CellML);
+
+CMISSError CMISSCellMLParametersFieldCreateFinishNum(const int CellMLUserNumber);
+
+CMISSError CMISSCellMLParametersFieldCreateFinish(CMISSCellMLType *CellML);
+
+CMISSError CMISSCellMLParametersFieldCreateStartNum(const int CellMLParametersFieldUserNumber,
+		const int CellMLUserNumber);
+
+CMISSError CMISSCellMLParametersFieldCreateStart(const int CellMLParametersFieldUserNumber,
+		CMISSCellMLType *CellML,
+		CMISSFieldType *Field);
+
+CMISSError CMISSCellMLParametersFieldGetNum(const int CellMLUserNumber,
+		int *CellMLParametersFieldUserNumber);
+
+CMISSError CMISSCellMLParametersFieldGet(CMISSCellMLType *CellML.
+		CMISSFieldType *Field);
+
+CMISSError CMISSCellMLGenerateNum(const int CellMLUserNumber);
+
+CMISSError CMISSCellMLGenerate(CMISSCellMLType *CellML);
+
+/*
+ *==================================================================================================================================
+ *
  * COMP_ENVIRONMENT
  *
  *==================================================================================================================================
@@ -1630,7 +2017,7 @@ CMISSError CMISSInitialise(CMISSCoordinateSystemType *WorldCoordinateSystem,
 
 CMISSError CMISSComputationalNodeNumberGet(int *NodeNumber);
 
-CMISSError CMISSComputationalNodesNumberGet(int *NumberOfNodes);
+CMISSError CMISSComputationalNumberOfNodesGet(int *NumberOfNodes);
 
 /*
  *==================================================================================================================================
@@ -1711,6 +2098,14 @@ CMISSError CMISSControlLoopTimeOutputSetNum(const int ProblemUserNumber,
 
 CMISSError CMISSControlLoopTimeOutputSet(CMISSControlLoopType *ControlLoop,
 		const int OutputFrequency);
+
+CMISSError CMISSControlLoopTimeInputSetNum(const int ProblemUserNumber,
+		const int ControlLoopIdentifiersSize[1],
+		const int *ControlLoopIdentifiers,
+		const int InputOption);
+
+CMISSError CMISSControlLoopTimeInputSet(CMISSControlLoopType *ControlLoop,
+		const int InputOption);
 
 CMISSError CMISSControlLoopTimesGetNum(const int ProblemUserNumber,
 		const int ControlLoopIdentifiersSize[1],
@@ -3083,6 +3478,26 @@ CMISSError CMISSFieldParameterSetUpdateStart(const CMISSFieldType Field,
 		const int VariableType,
 		const int FieldSetType);
 
+CMISSError CMISSFieldParametersToFieldParametersComponentCopyNum(const int FromRegionUserNumber,
+		const int FromFieldUserNumber,
+		const int FromVariableType,
+		const int FromParameterSetType,
+		const int FromComponentNumber,
+		const int ToRegionUserNumber,
+		const int ToFieldUserNumber,
+		const int ToVariableType,
+		const int ToParameterSetType,
+		const int ToComponentNumber);
+
+CMISSError CMISSFieldParametersToFieldParametersComponentCopy(const CMISSFieldType FromField,
+		const int FromVariableType,
+		const int FromParameterSetType,
+		const int FromComponentNumber,
+		const CMISSFieldType ToField,
+		const int ToVariableType,
+		const int ToParameterSetType,
+		const int ToComponentNumber);
+
 CMISSError CMISSFieldScalingTypeGetNum(const int RegionUserNumber,
 		const int FieldUserNumber,
 		int *ScalingType);
@@ -3377,6 +3792,18 @@ CMISSError CMISSDecompositionTypeSetNum(const int RegionUserNumber,
 
 CMISSError CMISSDecompositionTypeSet(const CMISSDecompositionType Decomposition,
 		const int DecompositionType);
+
+CMISSError CMISSDecompositionNodeDomainGetNum(const int RegionUserNumber,
+		const int MeshUserNumber,
+		const int DecompositionUserNumber,
+		const int NodeUserNumber,
+		const int MeshComponentNumber,
+		int *Domain);
+
+CMISSError CMISSDecompositionNodeDomainGet(const CMISSDecompositionType Decomposition,
+		const int NodeUserNumber,
+		const int MeshUserNumber,
+		int *Domain);
 
 CMISSError CMISSMeshCreateFinishNum(const int RegionUserNumber,
 		const int MeshUserNumber);
@@ -3881,13 +4308,13 @@ CMISSError CMISSSolverLibraryTypeSetNum(const int ProblemUserNumber,
 CMISSError CMISSSolverLibraryTypeSet(const CMISSSolverType Solver,
 		const int LibraryType);
 
-CMISSError CMISSSolverLinearDirectSetNum(const int ProblemUserNumber,
+CMISSError CMISSSolverLinearDirectTypeSetNum(const int ProblemUserNumber,
 		const int ControlLoopIdentifiersSize[1],
 		const int *ControlLoopIdentifiers,
 		const int SolverIndex,
 		const int DirectSolverType);
 
-CMISSError CMISSSolverLinearDirectSet(const CMISSSolverType Solver,
+CMISSError CMISSSolverLinearDirectTypeSet(const CMISSSolverType Solver,
 		const int DirectSolverType);
 
 CMISSError CMISSSolverLinearIterativeAbsoluteToleranceSetNum(const int ProblemUserNumber,

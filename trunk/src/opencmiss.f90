@@ -67,7 +67,7 @@ MODULE OPENCMISS
   USE GENERATED_MESH_ROUTINES
   USE HISTORY_ROUTINES
   USE INPUT_OUTPUT
-  USE ISO_C_BINDING
+  !USE ISO_C_BINDING
   USE ISO_VARYING_STRING
   USE KINDS
   USE MESH_ROUTINES
@@ -692,9 +692,9 @@ MODULE OPENCMISS
   !Temporary boundary flags (to be removed when general boundary object becomes available!)
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionFixedWall = BOUNDARY_CONDITION_FIXED_WALL
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionInletWall = BOUNDARY_CONDITION_FIXED_INLET
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionOutletWall = BOUNDARY_CONDITION_FIXED_OUTLET
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionMovedWall = BOUNDARY_CONDITION_MOVED_WALL
-
-
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionFreeWall = BOUNDARY_CONDITION_FREE_WALL
 
   !>@}
   !>@}
@@ -755,7 +755,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSBoundaryConditionNotFixed,CMISSBoundaryConditionFixed,CMISSBoundaryConditionMixed
   !Temporary boundary flags (to be removed when general boundary object becomes available!)
-  PUBLIC CMISSBoundaryConditionFixedWall,CMISSBoundaryConditionInletWall,CMISSBoundaryConditionMovedWall
+  PUBLIC CMISSBoundaryConditionFixedWall,CMISSBoundaryConditionInletWall,CMISSBoundaryConditionMovedWall, &
+    & CMISSBoundaryConditionFreeWall,CMISSBoundaryConditionOutletWall
 
   PUBLIC CMISSBoundaryConditionsDestroy
 
@@ -826,12 +827,12 @@ MODULE OPENCMISS
   END INTERFACE !CMISSCellMLModelsCreateStart
 
   !>Imports the specified CellML model into a CellML models environment. 
-  INTERFACE CMISSCellMLModelsImport
+  INTERFACE CMISSCellMLModelImport
     MODULE PROCEDURE CMISSCellMLModelImportNumberC
     MODULE PROCEDURE CMISSCellMLModelImportObjC
     MODULE PROCEDURE CMISSCellMLModelImportNumberVS
     MODULE PROCEDURE CMISSCellMLModelImportObjVS
-  END INTERFACE !CMISSCellMLModelsImport
+  END INTERFACE !CMISSCellMLModelImport
 
   !>Finishes the creation of CellML models field. \see OPENCMISS::CMISSCellMLModelsFieldCreateStart
   INTERFACE CMISSCellMLModelsFieldCreateFinish
@@ -953,7 +954,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSCellMLDestroy
 
-  PUBLIC CMISSCellMLModelsCreateFinish,CMISSCellMLModelsCreateStart,CMISSCellMLModelsImport
+  PUBLIC CMISSCellMLModelsCreateFinish,CMISSCellMLModelsCreateStart,CMISSCellMLModelImport
 
   PUBLIC CMISSCellMLModelsFieldCreateFinish,CMISSCellMLModelsFieldCreateStart,CMISSCellMLModelsFieldGet
 
@@ -1496,7 +1497,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetGalerkinProjectionEquationType = EQUATIONS_SET_GALERKIN_PROJECTION_EQUATION_TYPE !<Galerkin projection equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityDarcyType = EQUATIONS_SET_FINITE_ELASTICITY_DARCY_TYPE !<Finite Elasticity Darcy equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityStokesType = EQUATIONS_SET_FINITE_ELASTICITY_STOKES_TYPE !<Finite Elasticity Stokes equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityNavierStokesType = EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_TYPE !<Finite Elasticity Navier Stokes equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityNavierStokesType = &
+    & EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_TYPE !<Finite Elasticity Navier Stokes equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetDiffusionDiffusionType = EQUATIONS_SET_DIFFUSION_DIFFUSION_TYPE !<Diffusion Diffusion equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetDiffusionAdvectionDiffusionType = EQUATIONS_SET_DIFFUSION_ADVECTION_DIFFUSION_TYPE !<Diffusion Advection Diffusion equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   !>@}
@@ -1536,7 +1538,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardLaplaceSubtype = EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE !<Standard Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetGeneralisedLaplaceSubtype = EQUATIONS_SET_GENERALISED_LAPLACE_SUBTYPE !<Generalised Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMovingMeshLaplaceSubtype = EQUATIONS_SET_MOVING_MESH_LAPLACE_SUBTYPE !<Moving mesh Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetVectorSourcePoissonSubtype = EQUATIONS_SET_VECTOR_SOURCE_POISSON_SUBTYPE !<Vector source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesPoissonSubtype = EQUATIONS_SET_STOKES_POISSON_SUBTYPE !<Vector source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesPoissonSubtype = EQUATIONS_SET_NAVIER_STOKES_POISSON_SUBTYPE !<Vector source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourcePoissonSubtype = EQUATIONS_SET_CONSTANT_SOURCE_POISSON_SUBTYPE !<Constant source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourcePoissonSubtype = EQUATIONS_SET_LINEAR_SOURCE_POISSON_SUBTYPE !<Linear source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuadraticSourcePoissonSubtype = EQUATIONS_SET_QUADRATIC_SOURCE_POISSON_SUBTYPE !<Quadratic source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -1703,7 +1706,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & CMISSEquationsSetQuasistaticDarcySubtype,CMISSEquationsSetALEDarcySubtype,CMISSEquationsSetTransientDarcySubtype, &
     & CMISSEquationsSetStandardLaplaceSubtype,CMISSEquationsSetMovingMeshLaplaceSubtype, &
     & CMISSEquationsSetGeneralisedLaplaceSubtype,CMISSEquationsSetConstantSourcePoissonSubtype, &
-    & CMISSEquationsSetVectorSourcePoissonSubtype, &
+    & CMISSEquationsSetStokesPoissonSubtype, CMISSEquationsSetNavierStokesPoissonSubtype, &
     & CMISSEquationsSetLinearSourcePoissonSubtype,CMISSEquationsSetQuadraticSourcePoissonSubtype, &
     & CMISSEquationsSetExponentialSourcePoissonSubtype,CMISSEquationsSetNoSourceHelmholtzSubtype, &
     & CMISSEquationsSetNoSourceDiffusionSubtype,CMISSEquationsSetConstantSourceDiffusionSubtype, &
@@ -3141,7 +3144,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSProblemStandardLaplaceSubtype = PROBLEM_STANDARD_LAPLACE_SUBTYPE !<Standard Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemGeneralisedLaplaceSubtype = PROBLEM_GENERALISED_LAPLACE_SUBTYPE !<Generalised Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemLinearSourcePoissonSubtype = PROBLEM_LINEAR_SOURCE_POISSON_SUBTYPE !<Linear source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemVectorSourcePoissonSubtype = PROBLEM_VECTOR_SOURCE_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemStokesPoissonSubtype = PROBLEM_STOKES_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemNavierStokesPoissonSubtype = PROBLEM_NAVIER_STOKES_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemNonlinearSourcePoissonSubtype = PROBLEM_NONLINEAR_SOURCE_POISSON_SUBTYPE !<Nonlinear source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemNoSourceHelmholtzSubtype = PROBLEM_NO_SOURCE_HELMHOLTZ_SUBTYPE !<No source Helmholtz problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemNoSourceDiffusionSubtype = PROBLEM_NO_SOURCE_DIFFUSION_SUBTYPE !<No source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -3224,7 +3228,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSProblemStandardLaplaceSubtype,CMISSProblemGeneralisedLaplaceSubtype
 
-  PUBLIC CMISSProblemLinearSourcePoissonSubtype,CMISSProblemNonlinearSourcePoissonSubtype,CMISSProblemVectorSourcePoissonSubtype
+  PUBLIC CMISSProblemLinearSourcePoissonSubtype,CMISSProblemNonlinearSourcePoissonSubtype,CMISSProblemStokesPoissonSubtype, &
+    & CMISSProblemNavierStokesPoissonSubtype
 
   PUBLIC CMISSProblemNoSourceHelmholtzSubtype
 
@@ -4138,8 +4143,12 @@ CONTAINS
     !Argument variables
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
- 
+
     CALL CMISS_FINALISE(Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('OpenCMISS World Phase')
+#endif
 
     RETURN
 999 CALL CMISS_HANDLE_ERROR(Err,ERROR)
@@ -4161,6 +4170,10 @@ CONTAINS
 
     CALL CMISSFinalise(CMISSFinaliseC)
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('OpenCMISS World Phase')
+#endif
+
     RETURN
     
   END FUNCTION CMISSFinaliseC
@@ -4179,6 +4192,10 @@ CONTAINS
     !Local variables
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: WORLD_COORDINATE_SYSTEM
     TYPE(REGION_TYPE), POINTER :: WORLD_REGION
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('OpenCMISS World Phase')
+#endif
 
     NULLIFY(WORLD_COORDINATE_SYSTEM)
     NULLIFY(WORLD_REGION)
@@ -4206,6 +4223,10 @@ CONTAINS
     TYPE(CMISSRegionType), INTENT(INOUT) :: WorldRegion !<On return, the world region.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('OpenCMISS World Phase')
+#endif
 
     CALL CMISSCoordinateSystemTypeInitialise(WorldCoordinateSystem,Err)
     CALL CMISSRegionTypeInitialise(WorldRegion,Err)
@@ -4454,6 +4475,7 @@ CONTAINS
     TYPE(CMISSCoordinateSystemType), INTENT(OUT) :: CMISSCoordinateSystem !<The CMISSCoordinateSystemType object to initialise.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
+
 
     CALL ENTERS("CMISSCoordinateSystemTypeInitialise",Err,ERROR,*999)
     
@@ -4722,6 +4744,10 @@ CONTAINS
     
     NULLIFY(CMISSFields%FIELDS)
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Fields Type')
+#endif
+
     CALL EXITS("CMISSFieldsTypeFinalise")
     RETURN
 999 CALL ERRORS("CMISSFieldsTypeFinalise",Err,ERROR)
@@ -4745,6 +4771,10 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldsTypeInitialise",Err,ERROR,*999)
     
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Fields Type')
+#endif
+
     NULLIFY(CMISSFields%FIELDS)
 
     CALL EXITS("CMISSFieldsTypeInitialise")
@@ -7137,6 +7167,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF      
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Basis Create')
+#endif
+
     CALL EXITS("CMISSBasisCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSBasisCreateFinishNumber",Err,ERROR)
@@ -7162,6 +7196,10 @@ CONTAINS
 
     CALL BASIS_CREATE_FINISH(Basis%BASIS,Err,ERROR,*999)
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Basis Create')
+#endif
+
     CALL EXITS("CMISSBasisCreateFinishObj")
     RETURN
 999 CALL ERRORS("CMISSBasisCreateFinishObj",Err,ERROR)
@@ -7186,6 +7224,10 @@ CONTAINS
 
     CALL ENTERS("CMISSBasisCreateStartNumber",Err,ERROR,*999)
     
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Basis Create')
+#endif
+
     NULLIFY(BASIS)
     CALL BASIS_CREATE_START(UserNumber,BASIS,Err,ERROR,*999)
 
@@ -7213,6 +7255,10 @@ CONTAINS
 
     CALL ENTERS("CMISSBasisCreateStartObj",Err,ERROR,*999)
     
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Basis Create')
+#endif
+
     CALL BASIS_CREATE_START(UserNumber,Basis%BASIS,Err,ERROR,*999)
 
     CALL EXITS("CMISSBasisCreateStartObj")
@@ -8764,6 +8810,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('CellML Create')
+#endif
+
     CALL EXITS("CMISSCellMLCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSCellMLCreateFinishNumber",Err,ERROR)
@@ -8788,6 +8838,10 @@ CONTAINS
     CALL ENTERS("CMISSCellMLCreateFinishObj",Err,ERROR,*999)
  
     CALL CELLML_CREATE_FINISH(CellML%CELLML,Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('CellML Create')
+#endif
 
     CALL EXITS("CMISSCellMLCreateFinishObj")
     RETURN
@@ -8817,6 +8871,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSCellMLCreateStartNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('CellML Create')
+#endif
  
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -8861,6 +8919,10 @@ CONTAINS
     !Local variables
   
     CALL ENTERS("CMISSCellMLCreateStartObj",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('CellML Create')
+#endif
  
     CALL CELLML_CREATE_START(CellMLUserNumber,Field%FIELD,CellML%CELLML,Err,ERROR,*999)
 
@@ -9041,6 +9103,7 @@ CONTAINS
     !Local variables
   
     CALL ENTERS("CMISSCellMLModelsCreateStartObj",Err,ERROR,*999)
+
  
     CALL CELLML_MODELS_CREATE_START(CellML%CELLML,Err,ERROR,*999)
 
@@ -11975,6 +12038,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Coordinate System Create')
+#endif
+
     CALL EXITS("CMISSCoordinateSystemCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystemCreateFinishNumber",Err,ERROR)
@@ -12000,6 +12067,10 @@ CONTAINS
  
     CALL COORDINATE_SYSTEM_CREATE_FINISH(CoordinateSystem%COORDINATE_SYSTEM,Err,ERROR,*999)
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Coordinate System Create')
+#endif
+
     CALL EXITS("CMISSCoordinateSystemCreateFinishObj")
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystemCreateFinishObj",Err,ERROR)
@@ -12023,6 +12094,10 @@ CONTAINS
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
 
     CALL ENTERS("CMISSCoordinateSystemCreateStartNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Coordinate System Create')
+#endif
  
     NULLIFY(COORDINATE_SYSTEM)
     CALL COORDINATE_SYSTEM_CREATE_START(CoordinateSystemUserNumber,COORDINATE_SYSTEM,Err,ERROR,*999)
@@ -12050,6 +12125,10 @@ CONTAINS
     !Local variables
  
     CALL ENTERS("CMISSCoordinateSystemCreateStartObj",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Coordinate System Create')
+#endif
  
     CALL COORDINATE_SYSTEM_CREATE_START(CoordinateSystemUserNumber,CoordinateSystem%COORDINATE_SYSTEM,Err,ERROR,*999)
 
@@ -13857,6 +13936,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Boundary Conditions Create')
+#endif
+
     CALL EXITS("CMISSEquationsSetBoundaryConditionsCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSEquationsSetBoundaryConditionsCreateFinishNumber",Err,ERROR)
@@ -13881,6 +13964,10 @@ CONTAINS
     CALL ENTERS("CMISSEquationsSetBoundaryConditionsCreateFinishObj",Err,ERROR,*999)
  
     CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_CREATE_FINISH(EquationsSet%EQUATIONS_SET,Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Boundary Conditions Create')
+#endif
 
     CALL EXITS("CMISSEquationsSetBoundaryConditionsCreateFinishObj")
     RETURN
@@ -13909,6 +13996,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("CMISSEquationsSetBoundaryConditionsCreateStartNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Boundary Conditions Create')
+#endif
  
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -13951,6 +14042,10 @@ CONTAINS
     !Local variables
  
     CALL ENTERS("CMISSEquationsSetBoundaryConditionsCreateStartObj",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Boundary Conditions Create')
+#endif
  
     CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_CREATE_START(EquationsSet%EQUATIONS_SET,BoundaryConditions%BOUNDARY_CONDITIONS, &
       & Err,ERROR,*999)
@@ -14068,6 +14163,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Equations Set Create')
+#endif
+
     CALL EXITS("CMISSEquationsSetCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSEquationsSetCreateFinishNumber",Err,ERROR)
@@ -14092,6 +14191,10 @@ CONTAINS
     CALL ENTERS("CMISSEquationsSetCreateFinishObj",Err,ERROR,*999)
  
     CALL EQUATIONS_SET_CREATE_FINISH(EquationsSet%EQUATIONS_SET,Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Equations Set Create')
+#endif
 
     CALL EXITS("CMISSEquationsSetCreateFinishObj")
     RETURN
@@ -14121,6 +14224,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("CMISSEquationsSetCreateStartNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Equations Set Create')
+#endif
  
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -14165,6 +14272,10 @@ CONTAINS
     !Local variables
  
     CALL ENTERS("CMISSEquationsSetCreateStartObj",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Equations Set Create')
+#endif
  
     CALL EQUATIONS_SET_CREATE_START(EquationsSetUserNumber,Region%REGION,GeomFibreField%FIELD,EquationsSet%EQUATIONS_SET, &
       & Err,ERROR,*999)
@@ -16854,6 +16965,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Field Create')
+#endif
+
     CALL EXITS("CMISSFieldCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSFieldCreateFinishNumber",Err,ERROR)
@@ -16878,6 +16993,10 @@ CONTAINS
     CALL ENTERS("CMISSFieldCreateFinishObj",Err,ERROR,*999)
  
     CALL FIELD_CREATE_FINISH(Field%FIELD,Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Field Create')
+#endif
 
     CALL EXITS("CMISSFieldCreateFinishObj")
     RETURN
@@ -16905,6 +17024,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSFieldCreateStartNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Field Create')
+#endif
  
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -16940,6 +17063,10 @@ CONTAINS
     !Local variables
   
     CALL ENTERS("CMISSFieldCreateStartObj",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Field Create')
+#endif
  
     CALL FIELD_CREATE_START(FieldUserNumber,Region%REGION,Field%FIELD,Err,ERROR,*999)
 
@@ -23248,6 +23375,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Generated Mesh Create')
+#endif
+
     CALL EXITS("CMISSGeneratedMeshCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSGeneratedMeshCreateFinishNumber",Err,ERROR)
@@ -23275,6 +23406,10 @@ CONTAINS
  
     CALL GENERATED_MESH_CREATE_FINISH(GeneratedMesh%GENERATED_MESH,MeshUserNumber,Mesh%MESH,Err,ERROR,*999)
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Generated Mesh Create')
+#endif
+
     CALL EXITS("CMISSGeneratedMeshCreateFinishObj")
     RETURN
 999 CALL ERRORS("CMISSGeneratedMeshCreateFinishObj",Err,ERROR)
@@ -23301,6 +23436,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSGeneratedMeshCreateStartNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Generated Mesh Create')
+#endif
  
     NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
@@ -23337,6 +23476,10 @@ CONTAINS
     !Local variables
   
     CALL ENTERS("CMISSGeneratedMeshCreateStartObj",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Generated Mesh Create')
+#endif
  
     CALL GENERATED_MESH_CREATE_START(GeneratedMeshUserNumber,REGION%Region,GeneratedMesh%GENERATED_MESH,Err,ERROR,*999)
 
@@ -24034,6 +24177,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Decomposition Create')
+#endif
+
     CALL EXITS("CMISSDecompositionCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSDecompositionCreateFinishNumber",Err,ERROR)
@@ -24058,6 +24205,10 @@ CONTAINS
     CALL ENTERS("CMISSDecompositionCreateFinishObj",Err,ERROR,*999)
  
     CALL DECOMPOSITION_CREATE_FINISH(Decomposition%DECOMPOSITION,Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Decomposition Create')
+#endif
 
     CALL EXITS("CMISSDecompositionCreateFinishObj")
     RETURN
@@ -24087,6 +24238,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSDecompositionCreateStartNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Decomposition Create')
+#endif
  
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -24131,6 +24286,10 @@ CONTAINS
     !Local variables
   
     CALL ENTERS("CMISSDecompositionCreateStartObj",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Decomposition Create')
+#endif
  
     CALL DECOMPOSITION_CREATE_START(DecompositionUserNumber,Mesh%MESH,Decomposition%DECOMPOSITION,Err,ERROR,*999)
 
@@ -25092,6 +25251,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Mesh Create')
+#endif
+
     CALL EXITS("CMISSMeshCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSMeshCreateFinishNumber",Err,ERROR)
@@ -25116,6 +25279,10 @@ CONTAINS
     CALL ENTERS("CMISSMeshCreateFinishObj",Err,ERROR,*999)
  
     CALL MESH_CREATE_FINISH(Mesh%MESH,Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Mesh Create')
+#endif
 
     CALL EXITS("CMISSMeshCreateFinishObj")
     RETURN
@@ -25144,6 +25311,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSMeshCreateStartNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Mesh Create')
+#endif
  
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -25182,6 +25353,10 @@ CONTAINS
   
     CALL ENTERS("CMISSMeshCreateStartObj",Err,ERROR,*999)
  
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Mesh Create')
+#endif
+
     CALL MESH_CREATE_START(MeshUserNumber,Region%REGION,NumberOfDimensions,Mesh%MESH,Err,ERROR,*999)
 
     CALL EXITS("CMISSMeshCreateStartObj")
@@ -26239,6 +26414,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Nodes Create')
+#endif
+
     CALL EXITS("CMISSNodesCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSNodesCreateFinishNumber",Err,ERROR)
@@ -26263,6 +26442,10 @@ CONTAINS
     CALL ENTERS("CMISSNodesCreateFinishObj",Err,ERROR,*999)
  
     CALL NODES_CREATE_FINISH(Nodes%NODES,Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Nodes Create')
+#endif
 
     CALL EXITS("CMISSNodesCreateFinishObj")
     RETURN
@@ -26290,6 +26473,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSNodesCreateStartNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Nodes Create')
+#endif
  
     NULLIFY(REGION)
     NULLIFY(NODES)
@@ -26326,7 +26513,11 @@ CONTAINS
     !Local variables
   
     CALL ENTERS("CMISSNodesCreateStartObj",Err,ERROR,*999)
- 
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Nodes Create')
+#endif
+
     CALL NODES_CREATE_START(Region%REGION,NumberOfNodes,Nodes%NODES,Err,ERROR,*999)
 
     CALL EXITS("CMISSNodesCreateStartObj")
@@ -26831,6 +27022,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Problem Create')
+#endif
+
     CALL EXITS("CMISSProblemCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSProblemCreateFinishNumber",Err,ERROR)
@@ -26856,6 +27051,10 @@ CONTAINS
  
     CALL PROBLEM_CREATE_FINISH(Problem%PROBLEM,Err,ERROR,*999)
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Problem Create')
+#endif
+
     CALL EXITS("CMISSProblemCreateFinishObj")
     RETURN
 999 CALL ERRORS("CMISSProblemCreateFinishObj",Err,ERROR)
@@ -26879,6 +27078,10 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     
     CALL ENTERS("CMISSProblemCreateStartNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Problem Create')
+#endif
  
     CALL PROBLEM_CREATE_START(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
 
@@ -26905,6 +27108,10 @@ CONTAINS
     !Local variables
   
     CALL ENTERS("CMISSProblemCreateStartObj",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Problem Create')
+#endif
  
     CALL PROBLEM_CREATE_START(ProblemUserNumber,Problem%PROBLEM,Err,ERROR,*999)
 
@@ -27003,6 +27210,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Problem Control Loop Create')
+#endif
+
     CALL EXITS("CMISSProblemControlLoopCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSProblemControlLoopCreateFinishNumber",Err,ERROR)
@@ -27028,6 +27239,10 @@ CONTAINS
  
     CALL PROBLEM_CONTROL_LOOP_CREATE_FINISH(Problem%PROBLEM,Err,ERROR,*999)
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Problem Control Loop Create')
+#endif
+
     CALL EXITS("CMISSProblemControlLoopCreateFinishObj")
     RETURN
 999 CALL ERRORS("CMISSProblemControlLoopCreateFinishObj",Err,ERROR)
@@ -27052,7 +27267,11 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSProblemControlLoopCreateStartNumber",Err,ERROR,*999)
- 
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Problem Control Loop Create')
+#endif
+
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
@@ -27086,6 +27305,10 @@ CONTAINS
   
     CALL ENTERS("CMISSProblemControlLoopCreateStartObj",Err,ERROR,*999)
  
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Problem Control Loop Create')
+#endif
+
     CALL PROBLEM_CONTROL_LOOP_CREATE_START(Problem%PROBLEM,Err,ERROR,*999)
 
     CALL EXITS("CMISSProblemControlLoopCreateStartObj")
@@ -27298,6 +27521,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSProblemSolveNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Problem Solve')
+#endif
  
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
@@ -27308,6 +27535,10 @@ CONTAINS
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Problem Solve')
+#endif
 
     CALL EXITS("CMISSProblemSolveNumber")
     RETURN
@@ -27331,9 +27562,17 @@ CONTAINS
     !Local variables
     
     CALL ENTERS("CMISSProblemSolveObj",Err,ERROR,*999)
- 
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Problem Solve')
+#endif
+
     CALL PROBLEM_SOLVE(Problem%PROBLEM,Err,ERROR,*999)
- 
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Problem Solve')
+#endif
+
     CALL EXITS("CMISSProblemSolveObj")
     RETURN
 999 CALL ERRORS("CMISSProblemSolveObj",Err,ERROR)
@@ -27488,7 +27727,11 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSProblemSolverEquationsCreateFinishNumber",Err,ERROR,*999)
- 
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Solver Equations Create')
+#endif
+
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
@@ -27524,6 +27767,10 @@ CONTAINS
  
     CALL PROBLEM_SOLVER_EQUATIONS_CREATE_FINISH(Problem%PROBLEM,Err,ERROR,*999)
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Solver Equations Create')
+#endif
+
     CALL EXITS("CMISSProblemSolverEquationsCreateFinishObj")
     RETURN
 999 CALL ERRORS("CMISSProblemSolverEquationsCreateFinishObj",Err,ERROR)
@@ -27549,6 +27796,10 @@ CONTAINS
     
     CALL ENTERS("CMISSProblemSolverEquationsCreateStartNumber",Err,ERROR,*999)
  
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Solver Equations Create')
+#endif
+
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
@@ -27581,7 +27832,11 @@ CONTAINS
     !Local variables
   
     CALL ENTERS("CMISSProblemSolverEquationsCreateStartObj",Err,ERROR,*999)
- 
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Solver Equations Create')
+#endif
+
     CALL PROBLEM_SOLVER_EQUATIONS_CREATE_START(Problem%PROBLEM,Err,ERROR,*999)
 
     CALL EXITS("CMISSProblemSolverEquationsCreateStartObj")
@@ -27800,7 +28055,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSProblemSolversCreateFinishNumber",Err,ERROR,*999)
- 
+
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
@@ -27810,6 +28065,10 @@ CONTAINS
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Problem Solvers Create')
+#endif
 
     CALL EXITS("CMISSProblemSolversCreateFinishNumber")
     RETURN
@@ -27836,6 +28095,10 @@ CONTAINS
  
     CALL PROBLEM_SOLVERS_CREATE_FINISH(Problem%PROBLEM,Err,ERROR,*999)
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Problem Solvers Create')
+#endif
+
     CALL EXITS("CMISSProblemSolversCreateFinishObj")
     RETURN
 999 CALL ERRORS("CMISSProblemSolversCreateFinishObj",Err,ERROR)
@@ -27860,6 +28123,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSProblemSolversCreateStartNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Problem Solvers Create')
+#endif
  
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
@@ -27894,6 +28161,10 @@ CONTAINS
   
     CALL ENTERS("CMISSProblemSolversCreateStartObj",Err,ERROR,*999)
  
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Problem Solvers Create')
+#endif
+
     CALL PROBLEM_SOLVERS_CREATE_START(Problem%PROBLEM,Err,ERROR,*999)
 
     CALL EXITS("CMISSProblemSolversCreateStartObj")
@@ -28267,6 +28538,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Region Create')
+#endif
+
     CALL EXITS("CMISSRegionCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSRegionCreateFinishNumber",Err,ERROR)
@@ -28291,6 +28566,10 @@ CONTAINS
     CALL ENTERS("CMISSRegionCreateFinishObj",Err,ERROR,*999)
  
     CALL REGION_CREATE_FINISH(Region%REGION,Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Region Create')
+#endif
 
     CALL EXITS("CMISSRegionCreateFinishObj")
     RETURN
@@ -28317,7 +28596,11 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSRegionCreateStartNumber",Err,ERROR,*999)
- 
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Region Create')
+#endif
+
     NULLIFY(PARENT_REGION)
     NULLIFY(REGION)
     CALL REGION_USER_NUMBER_FIND(ParentRegionUserNumber,PARENT_REGION,Err,ERROR,*999)
@@ -28353,7 +28636,11 @@ CONTAINS
     !Local variables
   
     CALL ENTERS("CMISSRegionCreateStartObj",Err,ERROR,*999)
- 
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Region Create')
+#endif
+
     CALL REGION_CREATE_START(RegionUserNumber,ParentRegion%REGION,Region%REGION,Err,ERROR,*999)
 
     CALL EXITS("CMISSRegionCreateStartObj")

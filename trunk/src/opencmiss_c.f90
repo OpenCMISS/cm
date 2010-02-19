@@ -125,6 +125,41 @@ MODULE OPENCMISS_C
 
  PUBLIC CMISSAnalyticAnalysisAbsoluteErrorGetNodeCNum, CMISSAnalyticAnalysisAbsoluteErrorGetNodeCPtr
 
+ PUBLIC CMISSAnalyticAnalysisPercentageErrorGetNodeCNum, CMISSAnalyticAnalysisPercentageErrorGetNodeCPtr
+
+ PUBLIC CMISSAnalyticAnalysisRelativeErrorGetNodeCNum, CMISSAnalyticAnalysisRelativeErrorGetNodeCPtr
+
+ PUBLIC CMISSAnalyticAnalysisAbsoluteErrorGetElementCNum, CMISSAnalyticAnalysisAbsoluteErrorGetElementCPtr
+
+ PUBLIC CMISSAnalyticAnalysisPercentageErrorGetElementCNum, CMISSAnalyticAnalysisPercentageErrorGetElementCPtr
+
+ PUBLIC CMISSAnalyticAnalysisRelativeErrorGetElementCNum, CMISSAnalyticAnalysisRelativeErrorGetElementCPtr
+
+ PUBLIC CMISSAnalyticAnalysisAbsoluteErrorGetConstantCNum, CMISSAnalyticAnalysisAbsoluteErrorGetConstantCPtr
+
+ PUBLIC CMISSAnalyticAnalysisPercentageErrorGetConstantCNum, CMISSAnalyticAnalysisPercentageErrorGetConstantCPtr
+
+ PUBLIC CMISSAnalyticAnalysisRelativeErrorGetConstantCNum, CMISSAnalyticAnalysisRelativeErrorGetConstantCPtr
+
+ PUBLIC CMISSAnalyticAnalysisRmsErrorGetNodeCNum, CMISSAnalyticAnalysisRmsErrorGetNodeCPtr
+
+ PUBLIC CMISSAnalyticAnalysisRmsErrorGetElementCNum, CMISSAnalyticAnalysisRmsErrorGetElementCPtr
+
+ PUBLIC CMISSAnalyticAnalysisIntegralNumericalValueGetCNum, CMISSAnalyticAnalysisIntegralNumericalValueGetCPtr
+
+ PUBLIC CMISSAnalyticAnalysisIntegralAnalyticValueGetCNum, CMISSAnalyticAnalysisIntegralAnalyticValueGetCPtr
+
+ PUBLIC CMISSAnalyticAnalysisIntegralPercentageErrorGetCNum, CMISSAnalyticAnalysisIntegralPercentageErrorGetCPtr
+
+ PUBLIC CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCNum, CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCPtr
+
+ PUBLIC CMISSAnalyticAnalysisIntegralRelativeErrorGetCNum, CMISSAnalyticAnalysisIntegralRelativeErrorGetCPtr
+
+ PUBLIC CMISSAnalyticAnalysisIntegralNidNumericalValueGetCNum, CMISSAnalyticAnalysisIntegralNidNumericalValueGetCPtr
+
+ PUBLIC CMISSAnalyticAnalysisIntegralNidErrorGetCNum, CMISSAnalyticAnalysisIntegralNidErrorGetCPtr
+
+
 !!==================================================================================================================================
 !!
 !! BASE_ROUTINES
@@ -217,7 +252,7 @@ MODULE OPENCMISS_C
    & CMISSCellMLModelsCreateStartCPtr,CMISSCellMLModelImportCNum,CMISSCellMLModelImportCPtr
  
  PUBLIC CMISSCellMLModelsFieldCreateFinishCNum,CMISSCellMLModelsFieldCreateFinishCPtr,CMISSCellMLModelsFieldCreateStartCNum, &
-   & CMISSCellMLModelsFieldCreateStartCpTR,CMISSCellMLModelsFieldGetCNum,CMISSCellMLModelsFieldGetCPtr
+   & CMISSCellMLModelsFieldCreateStartCPtr,CMISSCellMLModelsFieldGetCNum,CMISSCellMLModelsFieldGetCPtr
  
  PUBLIC CMISSCellMLStateFieldCreateFinishCNum,CMISSCellMLStateFieldCreateFinishCPtr,CMISSCellMLStateFieldCreateStartCNum, &
    & CMISSCellMLStateFieldCreateStartCPtr,CMISSCellMLStateFieldGetCNum,CMISSCellMLStateFieldGetCPtr
@@ -243,7 +278,7 @@ MODULE OPENCMISS_C
 !!
 !!==================================================================================================================================
 
-  PUBLIC CMISSComputationalNodeNumberGetC, CMISSComputationalNodesNumberGetC
+  PUBLIC CMISSComputationalNodeNumberGetC, CMISSComputationalNumberOfNodesGetC
 
 !!==================================================================================================================================
 !!
@@ -266,6 +301,8 @@ MODULE OPENCMISS_C
  PUBLIC CMISSControlLoopNumberOfSubLoopsSetCNum, CMISSControlLoopNumberOfSubLoopsSetCPtr
 
  PUBLIC CMISSControlLoopTimeOutputSetCNum, CMISSControlLoopTimeOutputSetCPtr
+
+ PUBLIC CMISSControlLoopTimeInputSetCNum, CMISSControlLoopTimeInputSetCPtr
 
  PUBLIC CMISSControlLoopTimesGetCNum, CMISSControlLoopTimesGetCPtr
 
@@ -555,6 +592,8 @@ MODULE OPENCMISS_C
 
  PUBLIC CMISSFieldParameterSetUpdateStartCNum, CMISSFieldParameterSetUpdateStartCPtr
 
+ PUBLIC CMISSFieldParametersToFieldParametersComponentCopyCNum, CMISSFieldParametersToFieldParametersComponentCopyCPtr
+
  PUBLIC CMISSFieldScalingTypeGetCNum, CMISSFieldScalingTypeGetCPtr
 
  PUBLIC CMISSFieldScalingTypeSetCNum, CMISSFieldScalingTypeSetCPtr
@@ -638,6 +677,8 @@ MODULE OPENCMISS_C
  PUBLIC CMISSDecompositionTypeGetCNum, CMISSDecompositionTypeGetCPtr
 
  PUBLIC CMISSDecompositionTypeSetCNum, CMISSDecompositionTypeSetCPtr
+
+ PUBLIC CMISSDecompositionNodeDomainGetCNum, CMISSDecompositionNodeDomainGetCPtr
 
  PUBLIC CMISSMeshCreateFinishCNum, CMISSMeshCreateFinishCPtr
 
@@ -2449,6 +2490,1065 @@ END FUNCTION CMISSFieldsTypeCreateC
     RETURN
 
   END FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetNodeCPtr
+
+  !
+  !================================================================================================================================
+  ! 
+
+  !>Get percentage error value for the node in a field specified by a user number compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisPercentageErrorGetNodeCNum(RegionUserNumber,FieldUserNumber,VariableType,DerivativeNumber, & 
+    & NodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSAnalyticAnalysisPercentageErrorGetNodeNum")
+
+  !Argument Variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NodeNumber !<The node number, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type, for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the percentage error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisPercentageErrorGetNodeCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisPercentageErrorGetNode(RegionUserNumber, FieldUserNumber, DerivativeNumber, NodeNumber, &
+      & ComponentNumber, VariableType, Value, CMISSAnalyticAnalysisPercentageErrorGetNodeCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisPercentageErrorGetNodeCNum
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Get percentage error value for the node in a field identified by an object compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisPercentageErrorGetNodeCPtr(FieldPtr,DerivativeNumber,NodeNumber,ComponentNumber,VariableType,Value)&
+    & BIND(C, NAME = "CMISSAnalyticAnalysisPercentageErrorGetNode")
+  
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NodeNumber !<The node number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the percentage error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisPercentageErrorGetNodeCPtr !<Error Code.
+    !Local variable
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisPercentageErrorGetNodeCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisPercentageErrorGetNode(Field,DerivativeNumber,NodeNumber,ComponentNumber,VariableType, &
+          & Value, CMISSAnalyticAnalysisPercentageErrorGetNodeCPtr)
+      ELSE
+        CMISSAnalyticAnalysisPercentageErrorGetNodeCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisPercentageErrorGetNodeCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisPercentageErrorGetNodeCPtr
+
+  !
+  !================================================================================================================================
+  ! 
+
+  !>Get relative error value for the node in a field specified by a user number compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisRelativeErrorGetNodeCNum(RegionUserNumber,FieldUserNumber,VariableType,DerivativeNumber, & 
+    & NodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSAnalyticAnalysisRelativeErrorGetNodeNum")
+  
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NodeNumber !<The node number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the relative error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisRelativeErrorGetNodeCNum !<Error code.
+
+    CALL CMISSAnalyticAnalysisRelativeErrorGetNode(RegionUserNumber, FieldUserNumber, DerivativeNumber, NodeNumber, &
+      & ComponentNumber, VariableType, Value, CMISSAnalyticAnalysisRelativeErrorGetNodeCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisRelativeErrorGetNodeCNum
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Get relative error value for the node in a field identified by an object compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisRelativeErrorGetNodeCPtr(FieldPtr,VariableType,DerivativeNumber,NodeNumber,ComponentNumber,Value)&
+    & BIND(C, NAME = "CMISSAnalyticAnalysisRelativeErrorGetNode")
+  
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NodeNumber !<The node number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the relative error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisRelativeErrorGetNodeCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisRelativeErrorGetNodeCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisRelativeErrorGetNode(Field,DerivativeNumber,NodeNumber,ComponentNumber,VariableType, &
+          & Value, CMISSAnalyticAnalysisRelativeErrorGetNodeCPtr)
+      ELSE
+        CMISSAnalyticAnalysisRelativeErrorGetNodeCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisRelativeErrorGetNodeCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisRelativeErrorGetNodeCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get absolute error value for the element in a field specified by a user number compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetElementCNum(RegionUserNumber,FieldUserNumber,VariableType,ElementNumber, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSAnalyticAnalysisAbsoluteErrorGetElementNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ElementNumber !<The element number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the absolute error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisAbsoluteErrorGetElementCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisAbsoluteErrorGetElement(RegionUserNumber, FieldUserNumber, ElementNumber, ComponentNumber, &
+      & VariableType, Value, CMISSAnalyticAnalysisAbsoluteErrorGetElementCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetElementCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get absolute error value for the element in a field identified by an object compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetElementCPtr(FieldPtr,VariableType,ElementNumber,ComponentNumber,Value) BIND(C, &
+    & NAME = "CMISSAnalyticAnalysisAbsoluteErrorGetElement")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ElementNumber !<The element number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the absolute error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisAbsoluteErrorGetElementCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisAbsoluteErrorGetElementCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisAbsoluteErrorGetElement(Field,ElementNumber,ComponentNumber,VariableType, Value, &
+          & CMISSAnalyticAnalysisAbsoluteErrorGetElementCPtr)
+      ELSE
+        CMISSAnalyticAnalysisAbsoluteErrorGetElementCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisAbsoluteErrorGetElementCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetElementCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get percentage error value for the element in a field specified by a user number compared to the analytic value, for C.
+  FUNCTION CMISSAnalyticAnalysisPercentageErrorGetElementCNum(RegionUserNumber,FieldUserNumber,VariableType,ElementNumber, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSAnalyticAnalysisPercentageErrorGetElementNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ElementNumber !<The element number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the percentage error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisPercentageErrorGetElementCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisPercentageErrorGetElement(RegionUserNumber, FieldUserNumber, ElementNumber, ComponentNumber, &
+      & VariableType, Value, CMISSAnalyticAnalysisPercentageErrorGetElementCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisPercentageErrorGetElementCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get percentage error value for the element in a field identified by an object compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisPercentageErrorGetElementCPtr(FieldPtr,VariableType,ElementNumber,ComponentNumber,Value) BIND(C, &
+    & NAME = "CMISSAnalyticAnalysisPercentageErrorGetElement")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ElementNumber !<The element number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the percentage error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisPercentageErrorGetElementCPtr !<Error Code.
+    !Local variable
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisPercentageErrorGetElementCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisPercentageErrorGetElement(Field,ElementNumber,ComponentNumber,VariableType, Value, &
+          & CMISSAnalyticAnalysisPercentageErrorGetElementCPtr)
+      ELSE
+        CMISSAnalyticAnalysisPercentageErrorGetElementCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisPercentageErrorGetElementCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisPercentageErrorGetElementCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get relative error value for the element in a field specified by a user number compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisRelativeErrorGetElementCNum(RegionUserNumber,FieldUserNumber,VariableType,ElementNumber, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSAnalyticAnalysisRelativeErrorGetElementNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ElementNumber !<The element number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the relative error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisRelativeErrorGetElementCNum !<Error code.
+    !Local variable
+
+    CALL CMISSAnalyticAnalysisRelativeErrorGetElement(RegionUserNumber, FieldUserNumber, ElementNumber, ComponentNumber, &
+      & VariableType, Value, CMISSAnalyticAnalysisRelativeErrorGetElementCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisRelativeErrorGetElementCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get relative error value for the element in a field identified by an object compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisRelativeErrorGetElementCPtr(FieldPtr,VariableType,ElementNumber,ComponentNumber,Value) BIND(C, &
+    & NAME = "CMISSAnalyticAnalysisRelativeErrorGetElement")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ElementNumber !<The element number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the relative error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisRelativeErrorGetElementCPtr !<Error code.
+    !Local variable
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisRelativeErrorGetElementCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisRelativeErrorGetElement(Field,ElementNumber,ComponentNumber,VariableType, Value, &
+          & CMISSAnalyticAnalysisRelativeErrorGetElementCPtr)
+      ELSE
+        CMISSAnalyticAnalysisRelativeErrorGetElementCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisRelativeErrorGetElementCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisRelativeErrorGetElementCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get absolute error value for the constant in a field specified by a user number compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetConstantCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & Value) BIND(C, NAME = "CMISSAnalyticAnalysisAbsoluteErrorGetConstantNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the absolute error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisAbsoluteErrorGetConstantCNum !<Error code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisAbsoluteErrorGetConstant(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, Value, &
+      & CMISSAnalyticAnalysisAbsoluteErrorGetConstantCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetConstantCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get absolute error value for the constant in a field identified by an object compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetConstantCPtr(FieldPtr,VariableType,ComponentNumber,Value) BIND(C, NAME = &
+    & "CMISSAnalyticAnalysisAbsoluteErrorGetConstant")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the absolute error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisAbsoluteErrorGetConstantCPtr !<Error code.
+    !Local variable
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisAbsoluteErrorGetConstantCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisAbsoluteErrorGetConstant(Field,ComponentNumber,VariableType, Value, &
+          & CMISSAnalyticAnalysisAbsoluteErrorGetConstantCPtr)
+      ELSE
+        CMISSAnalyticAnalysisAbsoluteErrorGetConstantCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisAbsoluteErrorGetConstantCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetConstantCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get percentage error value for the constant in a field specified by a user number compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisPercentageErrorGetConstantCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & Value) BIND(C, NAME = "CMISSAnalyticAnalysisPercentageErrorGetConstantNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the percentage error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisPercentageErrorGetConstantCNum !<Error code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisPercentageErrorGetConstant(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, Value, &
+      & CMISSAnalyticAnalysisPercentageErrorGetConstantCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisPercentageErrorGetConstantCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get percentage error value for the constant in a field identified by an object compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisPercentageErrorGetConstantCPtr(FieldPtr,VariableType,ComponentNumber,Value) BIND(C, NAME = &
+    & "CMISSAnalyticAnalysisPercentageErrorGetConstant")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the percentage error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisPercentageErrorGetConstantCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisPercentageErrorGetConstantCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisPercentageErrorGetConstant(Field,ComponentNumber,VariableType, Value, &
+          & CMISSAnalyticAnalysisPercentageErrorGetConstantCPtr)
+      ELSE
+        CMISSAnalyticAnalysisPercentageErrorGetConstantCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisPercentageErrorGetConstantCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisPercentageErrorGetConstantCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get relative error value for the constant in a field specified by a user number compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisRelativeErrorGetConstantCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & Value) BIND(C, NAME = "CMISSAnalyticAnalysisRelativeErrorGetConstantNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the relative error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisRelativeErrorGetConstantCNum !<Error code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisRelativeErrorGetConstant(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, Value, &
+      & CMISSAnalyticAnalysisRelativeErrorGetConstantCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisRelativeErrorGetConstantCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get relative error value for the constant in a field identified by an object compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisRelativeErrorGetConstantCPtr(FieldPtr,VariableType,ComponentNumber,Value) BIND(C, NAME = &
+    & "CMISSAnalyticAnalysisRelativeErrorGetConstant")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the relative error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisRelativeErrorGetConstantCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisRelativeErrorGetConstantCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisRelativeErrorGetConstant(Field,ComponentNumber,VariableType, Value, &
+          & CMISSAnalyticAnalysisRelativeErrorGetConstantCPtr)
+      ELSE
+        CMISSAnalyticAnalysisRelativeErrorGetConstantCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisRelativeErrorGetConstantCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisRelativeErrorGetConstantCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get rms error value for nodes in a field compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisRmsErrorGetNodeCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, ErrorType, &
+    & LocalValue,LocalGhostValue,GlobalValue) BIND(C, NAME = "CMISSAnalyticAnalysisRmsErrorGetNodeNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ErrorType !<The error type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: LocalValue(8) !<On return, the local error for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: LocalGhostValue(8) !<On return, the local ghost error for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GlobalValue(8) !<On return, the global error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisRmsErrorGetNodeCNum
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisRmsErrorGetNode(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, ErrorType, &
+      & LocalValue, LocalGhostValue, GlobalValue, CMISSAnalyticAnalysisRmsErrorGetNodeCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisRmsErrorGetNodeCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get rms error value for nodes in a field identified by an object compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisRmsErrorGetNodeCPtr(FieldPtr,VariableType,ComponentNumber,ErrorType,LocalValue,LocalGhostValue, &
+    & GlobalValue) BIND(C, NAME = "CMISSAnalyticAnalysisRmsErrorGetNode")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ErrorType !<The error type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: LocalValue(8) !<On return, the local error for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: LocalGhostValue(8) !<On return, the local ghost error for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GlobalValue(8) !<On return, the global error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisRmsErrorGetNodeCPtr
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisRmsErrorGetNodeCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisRmsErrorGetNode(Field, ComponentNumber, VariableType, ErrorType, &
+          & LocalValue, LocalGhostValue, GlobalValue, CMISSAnalyticAnalysisRmsErrorGetNodeCPtr)
+      ELSE
+        CMISSAnalyticAnalysisRmsErrorGetNodeCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisRmsErrorGetNodeCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisRmsErrorGetNodeCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get rms error value for elements in a field compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisRmsErrorGetElementCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & ErrorType,LocalValue,LocalGhostValue,GlobalValue) BIND(C, NAME = "CMISSAnalyticAnalysisRmsErrorGetElementNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ErrorType !<The error type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: LocalValue !<On return, the local error for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: LocalGhostValue !<On return, the local ghost error for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GlobalValue !<On return, the global error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisRmsErrorGetElementCNum !<Error code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisRmsErrorGetElement(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, ErrorType, &
+      & LocalValue, LocalGhostValue, GlobalValue, CMISSAnalyticAnalysisRmsErrorGetElementCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisRmsErrorGetElementCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get relative error value for the constant in a field identified by an object compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisRmsErrorGetElementCPtr(FieldPtr,VariableType,ComponentNumber,ErrorType,LocalValue,LocalGhostValue, &
+    & GlobalValue) BIND(C, NAME = "CMISSAnalyticAnalysisRmsErrorGetElement")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ErrorType !<The error type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: LocalValue !<On return, the local error for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: LocalGhostValue !<On return, the local ghost error for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GlobalValue !<On return, the global error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisRmsErrorGetElementCPtr !<Error Code.
+    !Local variable
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisRmsErrorGetElementCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisRmsErrorGetElement(Field, ComponentNumber, VariableType, ErrorType, &
+          & LocalValue, LocalGhostValue, GlobalValue, CMISSAnalyticAnalysisRmsErrorGetElementCPtr)
+      ELSE
+        CMISSAnalyticAnalysisRmsErrorGetElementCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisRmsErrorGetElementCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisRmsErrorGetElementCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the numerical values for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralNumericalValueGetCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & IntegralValue,GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralNumericalValueGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralNumericalValueGetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisIntegralNumericalValueGet(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, &
+      & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralNumericalValueGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralNumericalValueGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the numerical values for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralNumericalValueGetCPtr(FieldPtr,VariableType,ComponentNumber,IntegralValue, &
+    & GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralNumericalValueGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralNumericalValueGetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisIntegralNumericalValueGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisIntegralNumericalValueGet(Field, ComponentNumber, VariableType, &
+          & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralNumericalValueGetCPtr)
+      ELSE
+        CMISSAnalyticAnalysisIntegralNumericalValueGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisIntegralNumericalValueGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralNumericalValueGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the analytic values for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralAnalyticValueGetCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & IntegralValue,GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralAnalyticValueGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralAnalyticValueGetCNum !<Error code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisIntegralAnalyticValueGet(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, &
+      & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralAnalyticValueGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralAnalyticValueGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the analytic values for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralAnalyticValueGetCPtr(FieldPtr,VariableType,ComponentNumber,IntegralValue, &
+    & GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralAnalyticValueGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralAnalyticValueGetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisIntegralAnalyticValueGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisIntegralAnalyticValueGet(Field, ComponentNumber, VariableType, &
+          & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralAnalyticValueGetCPtr)
+      ELSE
+        CMISSAnalyticAnalysisIntegralAnalyticValueGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisIntegralAnalyticValueGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralAnalyticValueGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the percentage errors for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralPercentageErrorGetCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & IntegralValue,GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralPercentageErrorGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralPercentageErrorGetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisIntegralPercentageErrorGet(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, &
+      & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralPercentageErrorGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralPercentageErrorGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the percentage errors for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralPercentageErrorGetCPtr(FieldPtr,VariableType,ComponentNumber,IntegralValue, &
+    & GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralPercentageErrorGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralPercentageErrorGetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisIntegralPercentageErrorGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisIntegralPercentageErrorGet(Field, ComponentNumber, VariableType, &
+          & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralPercentageErrorGetCPtr)
+      ELSE
+        CMISSAnalyticAnalysisIntegralPercentageErrorGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisIntegralPercentageErrorGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralPercentageErrorGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the absolute errors for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & IntegralValue,GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralAbsoluteErrorGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCNum !<Error code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisIntegralAbsoluteErrorGet(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, &
+      & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the absolute errors for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCPtr(FieldPtr,VariableType,ComponentNumber,IntegralValue, &
+    & GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralAbsoluteErrorGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisIntegralAbsoluteErrorGet(Field, ComponentNumber, VariableType, &
+          & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCPtr)
+      ELSE
+        CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the relative error for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralRelativeErrorGetCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & IntegralValue,GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralRelativeErrorGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralRelativeErrorGetCNum !<Error code.
+    !Local variable
+
+    CALL CMISSAnalyticAnalysisIntegralRelativeErrorGet(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, &
+      & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralRelativeErrorGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralRelativeErrorGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the relative error for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralRelativeErrorGetCPtr(FieldPtr,VariableType,ComponentNumber,IntegralValue, &
+    & GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralRelativeErrorGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralRelativeErrorGetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisIntegralRelativeErrorGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisIntegralRelativeErrorGet(Field, ComponentNumber, VariableType, &
+          & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralRelativeErrorGetCPtr)
+      ELSE
+        CMISSAnalyticAnalysisIntegralRelativeErrorGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisIntegralRelativeErrorGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralRelativeErrorGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the nid numerical for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralNidNumericalValueGetCNum(RegionUserNumber,FieldUserNumber,VariableType, &
+    & ComponentNumber,IntegralValue,GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralNidNumericalValueGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralNidNumericalValueGetCNum !<Error code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisIntegralNidNumericalValueGet(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, &
+      & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralNidNumericalValueGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralNidNumericalValueGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the nid numerical for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralNidNumericalValueGetCPtr(FieldPtr,VariableType,ComponentNumber,IntegralValue, &
+    & GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralNidNumericalValueGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralNidNumericalValueGetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisIntegralNidNumericalValueGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisIntegralNidNumericalValueGet(Field, ComponentNumber, VariableType, &
+          & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralNidNumericalValueGetCPtr)
+      ELSE
+        CMISSAnalyticAnalysisIntegralNidNumericalValueGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisIntegralNidNumericalValueGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralNidNumericalValueGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the nid error for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralNidErrorGetCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & IntegralValue,GhostIntegralValue)
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<variable type
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralNidErrorGetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisIntegralNidErrorGet(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, IntegralValue, &
+      & GhostIntegralValue, CMISSAnalyticAnalysisIntegralNidErrorGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralNidErrorGetCNum
+
+!
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the nid error for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralNidErrorGetCPtr(FieldPtr,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue) &
+    & BIND(C, NAME = "CMISSAnalyticAnalysisIntegralNidErrorGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralNidErrorGetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisIntegralNidErrorGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisIntegralNidErrorGet(Field, ComponentNumber, VariableType, &
+          & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralNidErrorGetCPtr)
+      ELSE
+        CMISSAnalyticAnalysisIntegralNidErrorGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisIntegralNidErrorGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralNidErrorGetCPtr
 
 
 !!==================================================================================================================================
@@ -4378,7 +5478,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(CellMLPtr)) THEN
       CALL C_F_POINTER(CellMLPtr,CellML )
       IF(ASSOCIATED(CellML)) THEN
-        CALL CMISSDestroy(CellML,CMISSCellMLDestroyCPtr )
+        CALL CMISSCellMLDestroy(CellML,CMISSCellMLDestroyCPtr)
       ELSE
         CMISSCellMLDestroyCPtr = CMISSErrorConvertingPointer
       ENDIF
@@ -4507,7 +5607,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     CHARACTER(LEN=URISize-1) :: FURI
 
     CALL CMISSC2FString(URI,FURI)
-    CALL CMISSCellMLModelImport(CellMLModelUserNumber,CellMLUserNumber,CMISSCellMLModelImportCNum)
+    CALL CMISSCellMLModelImport(CellMLModelUserNumber,CellMLUserNumber,FURI,CMISSCellMLModelImportCNum)
 
     RETURN
 
@@ -4522,7 +5622,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLModelUserNumber !<The user number of the imported CellML model.
-    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<A pointer to the CellML environment to import a model for.
+    TYPE(C_PTR), INTENT(INOUT) :: CellMLPtr !<A pointer to the CellML environment to import a model for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: URISize !<URI size for the character string URI for C.
     CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: URI(URISize) !< The URI of the CellML model to import
     !Function variable
@@ -4533,10 +5633,16 @@ END FUNCTION CMISSFieldsTypeCreateC
 
     CMISSCellMLModelImportCPtr = CMISSNoError
     IF(C_ASSOCIATED(CellMLPtr)) THEN
-      CALL C_F_POINTER(CellMLPtr,CellML )
+      CALL C_F_POINTER(CellMLPtr,CellML)
       IF(ASSOCIATED(CellML)) THEN
         CALL CMISSC2FString(URI,FURI)
-        CALL CMISSCellMLModelImport(CellMLModelUserNumber,CellML,FURI,CMISSCellMLModelImportCPtr )
+        CALL CMISSCellMLModelImport(CellMLModelUserNumber,CellML,FURI,CMISSCellMLModelImportCPtr)
+        IF(ASSOCIATED(CellML)) THEN
+          CellMLPtr = C_LOC(CellML)
+        ELSE
+          CMISSCellMLModelImportCPtr = CMISSPointerIsNULL
+        ENDIF
+          
       ELSE
         CMISSCellMLModelImportCPtr = CMISSErrorConvertingPointer
       ENDIF
@@ -4998,7 +6104,7 @@ END FUNCTION CMISSFieldsTypeCreateC
       CALL C_F_POINTER(CellMLPtr,CellML )
       IF(ASSOCIATED(CellML)) THEN
         CALL CMISSC2FString(URI,FURI)
-        CALL CMISSCellMLModelImport(CellML,CellMLModelUserNumber,FURI,CMISSCellMLIntermediateFieldAddCPtr )
+        CALL CMISSCellMLIntermediateFieldAdd(CellML,CellMLModelUserNumber,FURI,CMISSCellMLIntermediateFieldAddCPtr)
       ELSE
         CMISSCellMLIntermediateFieldAddCPtr = CMISSErrorConvertingPointer
       ENDIF
@@ -5587,19 +6693,19 @@ END FUNCTION CMISSFieldsTypeCreateC
   !================================================================================================================================
   !
 
-  FUNCTION CMISSComputationalNodesNumberGetC(NumberOfNodes) BIND(C, NAME = "CMISSComputationalNodesNumberGet")
+  FUNCTION CMISSComputationalNumberOfNodesGetC(NumberOfNodes) BIND(C, NAME = "CMISSComputationalNodesNumberGet")
 
     !Argument variables
     INTEGER(C_INT), INTENT(OUT) :: NumberOfNodes !<The Number of Nodes for C.
     !Function variable
-    INTEGER(C_INT) :: CMISSComputationalNodesNumberGetC !<Error Code.
+    INTEGER(C_INT) :: CMISSComputationalNumberOfNodesGetC !<Error Code.
     !Local variable
 
-    CALL CMISSComputationalNodesNumberGet(NumberOfNodes, CMISSComputationalNodesNumberGetC)
+    CALL CMISSComputationalNumberOfNodesGet(NumberOfNodes, CMISSComputationalNumberOfNodesGetC)
 
     RETURN
 
-  END FUNCTION CMISSComputationalNodesNumberGetC
+  END FUNCTION CMISSComputationalNumberOfNodesGetC
 
 
 !!==================================================================================================================================
@@ -6202,6 +7308,72 @@ END FUNCTION CMISSFieldsTypeCreateC
     RETURN
 
   END FUNCTION CMISSControlLoopTimeOutputSetCPtr
+
+  !
+  !================================================================================================================================
+  !  
+  
+  !>Sets/changes the input parameters for a time control loop identified by user numbers for C.
+  FUNCTION CMISSControlLoopTimeInputSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize, ControlLoopIdentifiersPtr,InputOption)&
+    & BIND(C, NAME = "CMISSControlLoopTimeInputSetNum")
+  
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the output parameters for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers, for C.
+    TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: InputOption !<The output frequency modulo to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSControlLoopTimeInputSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSControlLoopTimeInputSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSControlLoopTimeInputSet(ProblemUserNumber,ControlLoopIdentifiers,InputOption,CMISSControlLoopTimeInputSetCNum)
+      ELSE
+        CMISSControlLoopTimeInputSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopTimeInputSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopTimeInputSetCNum
+
+  !
+  !================================================================================================================================
+  !  
+  
+  !>Sets/changes the input parameters for a time control loop identified by an object for C.
+  FUNCTION CMISSControlLoopTimeInputSetCPtr(ControlLoopPtr,InputOption) BIND(C, NAME = "CMISSControlLoopTimeInputSet")
+  
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: ControlLoopPtr !<C pointer to the control loop to set the output parameters for.
+    INTEGER(C_INT), VALUE, INTENT(IN) ::  InputOption !<The output frequency modulo to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSControlLoopTimeInputSetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSControlLoopType), POINTER :: ControlLoop
+
+    CMISSControlLoopTimeInputSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopPtr)) THEN
+      CALL C_F_POINTER(ControlLoopPtr, ControlLoop)
+      IF(ASSOCIATED(ControlLoop)) THEN
+        CALL CMISSControlLoopTimeInputSet(ControlLoop,InputOption,CMISSControlLoopTimeInputSetCPtr)
+      ELSE
+        CMISSControlLoopTimeInputSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopTimeInputSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopTimeInputSetCPtr
+
 
   !
   !================================================================================================================================
@@ -14677,6 +15849,91 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   END FUNCTION CMISSFieldParameterSetUpdateStartCPtr
 
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Copy the parameters from the parameter set of a component of a field variable to the paramters of a parameter set of
+  !>a component of another field variable, where both fields are identified by user numbers, for C.
+  FUNCTION CMISSFieldParametersToFieldParametersComponentCopyCNum(FromRegionUserNumber,FromFieldUserNumber,FromVariableType, &
+      & FromParameterSetType, FromComponentNumber,ToRegionUserNumber,ToFieldUserNumber,ToVariableType,ToParameterSetType, &
+      & ToComponentNumber) BIND(C, NAME = "CMISSFieldParametersToFieldParametersComponentCopyNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FromRegionUserNumber !<The user number, for C, of the region containing the field to copy from.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FromFieldUserNumber !<The field, for C, to copy from.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FromVariableType !<The field variable type, for C, to copy from.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FromParameterSetType !<The field parameter set type, for C, to copy from.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FromComponentNumber !<The field variable component number, for C, to copy from.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ToRegionUserNumber !<The user number, for C, of the region containing the field to copy to.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ToFieldUserNumber !<The field, for C, to copy to.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ToVariableType !<The field variable type, for C, to copy to.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ToParameterSetType !<The parameter set type, for C, to copy to.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ToComponentNumber !<The field variable component, for C, to copy to.
+    !Function variable
+    INTEGER(C_INT) :: CMISSFieldParametersToFieldParametersComponentCopyCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSFieldParametersToFieldParametersComponentCopy(FromRegionUserNumber,FromFieldUserNumber,FromVariableType, &
+      & FromParameterSetType, FromComponentNumber,ToRegionUserNumber,ToFieldUserNumber,ToVariableType,ToParameterSetType, &
+      & ToComponentNumber, CMISSFieldParametersToFieldParametersComponentCopyCNum)
+
+    RETURN
+  
+  END FUNCTION CMISSFieldParametersToFieldParametersComponentCopyCNum
+
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Copy the parameters from the parameter set of a component of a field variable to the paramters of a parameter set of
+  !>a component of another field variable, where both fields are objects, for C.
+  FUNCTION CMISSFieldParametersToFieldParametersComponentCopyCPtr(FromFieldPtr,FromVariableType,FromParameterSetType, &
+    & FromComponentNumber,ToFieldPtr,ToVariableType,ToParameterSetType,ToComponentNumber) BIND(C, NAME = &
+    & "CMISSFieldParametersToFieldParametersComponentCopy")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FromFieldPtr !<C pointer to the field to copy from
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FromVariableType !<The field variable type, for C, to copy from
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FromParameterSetType !<The field parameter set type, for C, to copy from
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FromComponentNumber !<The field variable component number, for C, to copy from
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ToFieldPtr !<C pointer to the field to copy to
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ToVariableType !<The field variable type, for C, to copy to
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ToParameterSetType !<The parameter set type, for C, to copy to
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ToComponentNumber !<The field variable component, for C, to copy to
+    !Function variable
+    INTEGER(C_INT) :: CMISSFieldParametersToFieldParametersComponentCopyCPtr !<Error Code
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: FromField
+    TYPE(CMISSFieldType), POINTER :: ToField
+
+    CMISSFieldParametersToFieldParametersComponentCopyCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FromFieldPtr)) THEN
+      CALL C_F_POINTER(FromFieldPtr, FromField)
+      IF(ASSOCIATED(FromField)) THEN
+        IF(C_ASSOCIATED(ToFieldPtr)) THEN
+          CALL C_F_POINTER(ToFieldPtr, ToField)
+          IF(ASSOCIATED(ToField)) THEN
+            CALL CMISSFieldParametersToFieldParametersComponentCopy(FromField,FromVariableType,FromParameterSetType, &
+              & FromComponentNumber,ToField,ToVariableType,ToParameterSetType,ToComponentNumber, &
+              & CMISSFieldParametersToFieldParametersComponentCopyCPtr)
+          ELSE
+            CMISSFieldParametersToFieldParametersComponentCopyCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSFieldParametersToFieldParametersComponentCopyCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSFieldParametersToFieldParametersComponentCopyCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSFieldParametersToFieldParametersComponentCopyCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSFieldParametersToFieldParametersComponentCopyCPtr
+
   !
   !================================================================================================================================
   !
@@ -16855,6 +18112,67 @@ END FUNCTION CMISSFieldsTypeCreateC
     RETURN
 
   END FUNCTION CMISSDecompositionTypeSetCPtr
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Returns the domain for a given node in a decomposition identified by a user number.
+  FUNCTION CMISSDecompositionNodeDomainGetCNum(RegionUserNumber,MeshUserNumber,DecompositionUserNumber, &
+    & NodeUserNumber,MeshComponentNumber,Domain) BIND(C, NAME = "CMISSDecompositionNodeDomainGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number, for C, of the region containing the mesh to get the node domain for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: MeshUserNumber !<The user number, for C, of the mesh to get the node domain for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: DecompositionUserNumber !<The user number, for C, of the decomposition to get the node domain for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NodeUserNumber !<The user number, for C, of the node to get the domain for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: MeshComponentNumber !<The user number, for C, of the mesh component to get the domain for.
+    INTEGER(C_INT), INTENT(OUT) :: Domain !<On return, the computational domain, for C, of the node.
+    !Function variable
+    INTEGER(C_INT) :: CMISSDecompositionNodeDomainGetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSDecompositionNodeDomainGet(RegionUserNumber, MeshUserNumber, DecompositionUserNumber, NodeUserNumber, &
+      & MeshComponentNumber, Domain, CMISSDecompositionNodeDomainGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSDecompositionNodeDomainGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the domain for a given node in a decomposition identified by an object. \todo Maybe swap Node and MeshComponent?
+  FUNCTION CMISSDecompositionNodeDomainGetCPtr(DecompositionPtr,NodeUserNumber,MeshComponentNumber,Domain) BIND(C, NAME = &
+    & "CMISSDecompositionNodeDomainGet")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(IN) :: DecompositionPtr !<C pointer to the decomposition to get the domain for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NodeUserNumber !<The user number, for C, of the node to get the domain for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: MeshComponentNumber !<The user number, for C, of the mesh component to get the domain for.
+    INTEGER(C_INT), INTENT(OUT) :: Domain !<On return, the computational domain, for C, of the node.
+    !Function variable
+    INTEGER(C_INT) :: CMISSDecompositionNodeDomainGetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSDecompositionType), POINTER :: Decomposition
+
+    CMISSDecompositionNodeDomainGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(DecompositionPtr)) THEN
+      CALL C_F_POINTER(DecompositionPtr, Decomposition)
+      IF(ASSOCIATED(Decomposition)) THEN
+        CALL CMISSDecompositionNodeDomainGet(Decomposition,NodeUserNumber,MeshComponentNumber,Domain, &
+          & CMISSDecompositionNodeDomainGetCPtr)
+      ELSE
+        CMISSDecompositionNodeDomainGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSDecompositionNodeDomainGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSDecompositionNodeDomainGetCPtr
 
   !
   !================================================================================================================================

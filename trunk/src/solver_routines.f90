@@ -7462,7 +7462,7 @@ CONTAINS
       IF(ASSOCIATED(SOLVER)) THEN
 
 #ifdef TAUPROF
-        CALL TAU_STATIC_PHASE_START("Assemble Solver Matrix")
+        CALL TAU_STATIC_PHASE_START("Solver Matrix Assembly Phase")
 #endif
         IF(.NOT.ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
           !Assemble the solver matrices
@@ -7472,9 +7472,9 @@ CONTAINS
         ENDIF
 
 #ifdef TAUPROF
-        CALL TAU_STATIC_PHASE_STOP("Assemble Solver Matrix")
+        CALL TAU_STATIC_PHASE_STOP("Solver Matrix Assembly Phase")
 
-        CALL TAU_STATIC_PHASE_START("Linear Solve")
+        CALL TAU_STATIC_PHASE_START("Solve Phase")
 #endif
         SELECT CASE(LINEAR_SOLVER%LINEAR_SOLVE_TYPE)
         CASE(SOLVER_LINEAR_DIRECT_SOLVE_TYPE)
@@ -7487,16 +7487,16 @@ CONTAINS
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
 #ifdef TAUPROF
-          CALL TAU_STATIC_PHASE_STOP("Linear Solve")
+          CALL TAU_STATIC_PHASE_STOP("Solve Phase")
 #endif
         IF(.NOT.ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
           !Update depenent field with solution
 #ifdef TAUPROF
-          CALL TAU_STATIC_PHASE_START("Update field with solution")
+          CALL TAU_STATIC_PHASE_START("Field Update Phase")
 #endif
           CALL SOLVER_VARIABLES_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
 #ifdef TAUPROF
-          CALL TAU_STATIC_PHASE_STOP("Update field with solution")
+          CALL TAU_STATIC_PHASE_STOP("Field Update Phase")
 #endif
         ENDIF
       ELSE
@@ -8118,7 +8118,7 @@ CONTAINS
                                               & GLOBAL_BOUNDARY_CONDITIONS(rhs_global_dof)
                                             !Apply boundary conditions
                                             SELECT CASE(rhs_boundary_condition)
-                                            CASE(BOUNDARY_CONDITION_NOT_FIXED)
+                                            CASE(BOUNDARY_CONDITION_NOT_FIXED,BOUNDARY_CONDITION_FREE_WALL)
                                               !Get the equations RHS values
                                               CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_RHS_VECTOR,equations_row_number, &
                                                 & RHS_VALUE,ERR,ERROR,*999)
@@ -8780,7 +8780,7 @@ CONTAINS
                                         rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(rhs_global_dof)
                                         !Apply boundary conditions
                                         SELECT CASE(rhs_boundary_condition)
-                                        CASE(BOUNDARY_CONDITION_NOT_FIXED)
+                                        CASE(BOUNDARY_CONDITION_NOT_FIXED,BOUNDARY_CONDITION_FREE_WALL)
                                           !Add in equations RHS values
                                           CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_RHS_VECTOR,equations_row_number, &
                                             & RHS_VALUE,ERR,ERROR,*999)

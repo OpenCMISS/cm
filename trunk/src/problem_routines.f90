@@ -1365,7 +1365,7 @@ CONTAINS
             CASE(PROBLEM_ELECTROMAGNETICS_CLASS)
           !   do nothing???
             CASE(PROBLEM_CLASSICAL_FIELD_CLASS)
-          !   do nothing???
+              CALL CLASSICAL_FIELD_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE(PROBLEM_MODAL_CLASS)
          !    do nothing???
             CASE(PROBLEM_MULTI_PHYSICS_CLASS)
