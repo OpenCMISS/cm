@@ -1644,10 +1644,17 @@ CONTAINS
             CASE(PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE)
 
               IF(SOLVER%GLOBAL_NUMBER==1.OR.SOLVER%GLOBAL_NUMBER==2) THEN
+                !transfer solid displacement to Darcy independent field
+                CALL DARCY_EQUATION_PRE_SOLVE_GET_SOLID_DISPLACEMENT(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+
                 CALL DARCY_EQUATION_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              ELSE IF(SOLVER%GLOBAL_NUMBER==3) THEN
+                !transfer Darcy pressure to solid independent field
+                CALL FINITE_ELASTICITY_PRE_SOLVE_GET_DARCY_PRESSURE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+
+!                 CALL FINITE_ELASTICITY_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                  !does not exist yet
               ENDIF
-!             CALL FINITE_ELASTICITY_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-              !does not exist yet
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a Darcy fluid type of a multi physics problem class."
@@ -1696,7 +1703,6 @@ CONTAINS
 !               CALL ELASTICITY_DARCY_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
               CALL DARCY_EQUATION_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
               CALL FINITE_ELASTICITY_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-              !does not exist yet
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a finite elasticity Darcy type of a multi physics problem class."
