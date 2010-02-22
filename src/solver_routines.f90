@@ -7462,7 +7462,7 @@ CONTAINS
       IF(ASSOCIATED(SOLVER)) THEN
 
 #ifdef TAUPROF
-        CALL TAU_STATIC_PHASE_START("Assemble Solver Matrix")
+        CALL TAU_STATIC_PHASE_START("Solver Matrix Assembly Phase")
 #endif
         IF(.NOT.ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
           !Assemble the solver matrices
@@ -7472,9 +7472,9 @@ CONTAINS
         ENDIF
 
 #ifdef TAUPROF
-        CALL TAU_STATIC_PHASE_STOP("Assemble Solver Matrix")
+        CALL TAU_STATIC_PHASE_STOP("Solver Matrix Assembly Phase")
 
-        CALL TAU_STATIC_PHASE_START("Linear Solve")
+        CALL TAU_STATIC_PHASE_START("Solve Phase")
 #endif
         SELECT CASE(LINEAR_SOLVER%LINEAR_SOLVE_TYPE)
         CASE(SOLVER_LINEAR_DIRECT_SOLVE_TYPE)
@@ -7487,16 +7487,16 @@ CONTAINS
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
 #ifdef TAUPROF
-          CALL TAU_STATIC_PHASE_STOP("Linear Solve")
+          CALL TAU_STATIC_PHASE_STOP("Solve Phase")
 #endif
         IF(.NOT.ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
           !Update depenent field with solution
 #ifdef TAUPROF
-          CALL TAU_STATIC_PHASE_START("Update field with solution")
+          CALL TAU_STATIC_PHASE_START("Field Update Phase")
 #endif
           CALL SOLVER_VARIABLES_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
 #ifdef TAUPROF
-          CALL TAU_STATIC_PHASE_STOP("Update field with solution")
+          CALL TAU_STATIC_PHASE_STOP("Field Update Phase")
 #endif
         ENDIF
       ELSE
@@ -8552,7 +8552,7 @@ CONTAINS
     INTEGER(INTG) :: DEPENDENT_VARIABLE_TYPE,equations_column_number,equations_matrix_idx,equations_matrix_number, &
       & equations_row_number,equations_row_number2,equations_set_idx,LINEAR_VARIABLE_TYPE,rhs_boundary_condition, &
       & residual_variable_type,rhs_global_dof,rhs_variable_dof,rhs_variable_type,variable_boundary_condition,solver_matrix_idx, &
-      & solver_row_idx,solver_row_number,variable_dof,variable_global_dof,variable_idx,variable_type
+      & solver_row_idx,solver_row_number,variable_dof,variable_global_dof,variable_idx,variable_type,dirichlet_idx,dirichlet_row
     REAL(SP) :: SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),USER_ELAPSED,USER_TIME1(1),USER_TIME2(1)
     REAL(DP) :: DEPENDENT_VALUE,LINEAR_VALUE,LINEAR_VALUE_SUM,MATRIX_VALUE,RESIDUAL_VALUE,RHS_VALUE,row_coupling_coefficient, &
       & SOURCE_VALUE,VALUE
@@ -8587,6 +8587,7 @@ CONTAINS
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
     TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE), POINTER :: SPARSITY_INDICES
    
     CALL ENTERS("SOLVER_MATRICES_STATIC_ASSEMBLE",ERR,ERROR,*999)
     IF(ASSOCIATED(SOLVER)) THEN
@@ -8827,26 +8828,48 @@ CONTAINS
                                                     equations_column_number=LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS( &
                                                       & variable_type)%DOF_TO_COLUMNS_MAPS(equations_matrix_idx)%COLUMN_DOF( &
                                                       & variable_dof)
-                                                    DO equations_row_number2=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
-                                                      CALL DISTRIBUTED_MATRIX_VALUES_GET(EQUATIONS_MATRIX%MATRIX, &
-                                                        & equations_row_number2,equations_column_number,MATRIX_VALUE, &
-                                                        & ERR,ERROR,*999)
-                                                      IF(ABS(MATRIX_VALUE)>=ZERO_TOLERANCE) THEN
-                                                        DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-                                                          & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
-                                                          & equations_row_number2)%NUMBER_OF_SOLVER_ROWS
-                                                          solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-                                                            & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
-                                                            & equations_row_number2)%SOLVER_ROWS(solver_row_idx)
-                                                          row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-                                                            & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
-                                                            & equations_row_number2)%COUPLING_COEFFICIENTS(solver_row_idx)
-                                                          VALUE=-1.0_DP*MATRIX_VALUE*DEPENDENT_VALUE*row_coupling_coefficient
-                                                          CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number, &
-                                                            & VALUE,ERR,ERROR,*999)
-                                                        ENDDO !solver_row_idx
+                                                    IF(ASSOCIATED(DEPENDENT_BOUNDARY_CONDITIONS%DIRICHLET_BOUNDARY_CONDITIONS)) THEN
+                                                      IF(DEPENDENT_BOUNDARY_CONDITIONS%NUMBER_OF_DIRICHLET_CONDITIONS>0) THEN
+                                                        DO dirichlet_idx=1,DEPENDENT_BOUNDARY_CONDITIONS% &
+                                                          & NUMBER_OF_DIRICHLET_CONDITIONS
+                                                          IF(DEPENDENT_BOUNDARY_CONDITIONS%DIRICHLET_BOUNDARY_CONDITIONS% &
+                                                            & DIRICHLET_DOF_INDICES(dirichlet_idx)==equations_column_number) EXIT
+                                                        ENDDO
+                                                        SPARSITY_INDICES=>DEPENDENT_BOUNDARY_CONDITIONS% &
+                                                          & DIRICHLET_BOUNDARY_CONDITIONS%LINEAR_SPARSITY_INDICES( &
+                                                          & equations_matrix_idx)%PTR
+                                                        IF(ASSOCIATED(SPARSITY_INDICES)) THEN
+                                                          DO equations_row_number2=SPARSITY_INDICES%SPARSE_COLUMN_INDICES( &
+                                                            & dirichlet_idx),SPARSITY_INDICES%SPARSE_COLUMN_INDICES( &
+                                                            & dirichlet_idx+1)-1
+                                                            dirichlet_row=SPARSITY_INDICES%SPARSE_ROW_INDICES(equations_row_number2)
+                                                            CALL DISTRIBUTED_MATRIX_VALUES_GET(EQUATIONS_MATRIX%MATRIX, &
+                                                              & dirichlet_row,equations_column_number,MATRIX_VALUE,ERR,ERROR,*999)
+                                                            IF(ABS(MATRIX_VALUE)>=ZERO_TOLERANCE) THEN
+                                                              DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                                & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
+                                                                & dirichlet_row)%NUMBER_OF_SOLVER_ROWS
+                                                                solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                                  & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
+                                                                  & dirichlet_row)%SOLVER_ROWS(solver_row_idx)
+                                                                row_coupling_coefficient=SOLVER_MAPPING% &
+                                                                  & EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                                                  & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(dirichlet_row)% &
+                                                                  & COUPLING_COEFFICIENTS(solver_row_idx)
+                                                                VALUE=-1.0_DP*MATRIX_VALUE*DEPENDENT_VALUE*row_coupling_coefficient
+                                                                CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR, &
+                                                                  & solver_row_number,VALUE,ERR,ERROR,*999)
+                                                              ENDDO !solver_row_idx
+                                                            ENDIF
+                                                          ENDDO !equations_row_number2
+                                                        ELSE
+                                                          CALL FLAG_ERROR("Sparsity indices are not associated.",ERR,ERROR,*999)
+                                                        ENDIF
                                                       ENDIF
-                                                    ENDDO !equations_row_number2
+                                                    ELSE
+                                                      CALL FLAG_ERROR("Dirichlet boundary conditions is not associated.",ERR, &
+                                                        & ERROR,*999)
+                                                    ENDIF
                                                   ENDDO !matrix_idx
                                                 ENDIF
                                               ENDIF

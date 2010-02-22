@@ -710,11 +710,11 @@ CONTAINS
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     
-#ifdef TAUPROF
-    CHARACTER(28) :: CVAR
-    INTEGER :: PHASE(2) = (/ 0, 0 /)
-    SAVE PHASE
-#endif
+!#ifdef TAUPROF
+!    CHARACTER(28) :: CVAR
+!    INTEGER :: PHASE(2) = (/ 0, 0 /)
+!    SAVE PHASE
+!#endif
 
     CALL ENTERS("EQUATIONS_SET_ASSEMBLE_STATIC_LINEAR_FEM",ERR,ERROR,*999)
 
@@ -764,21 +764,27 @@ CONTAINS
             NUMBER_OF_TIMES=0
             !Loop over the internal elements
 
-            DO element_idx=ELEMENTS_MAPPING%INTERNAL_START,ELEMENTS_MAPPING%INTERNAL_FINISH
 #ifdef TAUPROF
-              WRITE (CVAR,'(a23,i3)') 'Internal Elements Loop ',element_idx
-              CALL TAU_PHASE_CREATE_DYNAMIC(PHASE,CVAR)
-              CALL TAU_PHASE_START(PHASE)
+            CALL TAU_STATIC_PHASE_START("Internal Elements Loop")
 #endif
+            DO element_idx=ELEMENTS_MAPPING%INTERNAL_START,ELEMENTS_MAPPING%INTERNAL_FINISH
+!#ifdef TAUPROF
+!              WRITE (CVAR,'(a23,i3)') 'Internal Elements Loop ',element_idx
+!              CALL TAU_PHASE_CREATE_DYNAMIC(PHASE,CVAR)
+!              CALL TAU_PHASE_START(PHASE)
+!#endif
               ne=ELEMENTS_MAPPING%DOMAIN_LIST(element_idx)
               NUMBER_OF_TIMES=NUMBER_OF_TIMES+1
               CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
               CALL EQUATIONS_SET_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
               CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
-#ifdef TAUPROF
-              CALL TAU_PHASE_STOP(PHASE)
-#endif
+!#ifdef TAUPROF
+!              CALL TAU_PHASE_STOP(PHASE)
+!#endif
             ENDDO !element_idx
+#ifdef TAUPROF
+            CALL TAU_STATIC_PHASE_STOP("Internal Elements Loop")
+#endif
 
             !Output timing information if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN

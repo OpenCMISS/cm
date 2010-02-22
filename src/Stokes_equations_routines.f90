@@ -1633,9 +1633,6 @@ CONTAINS
                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE) THEN
                 !Loop over field components
                 mhs=0
-!#ifdef TAUPROF
-!                CALL TAU_STATIC_PHASE_START("FIELD COMPONENT LOOP")
-!#endif
                 DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
 #ifdef TAUPROF
                   WRITE (CVAR,'(a22,i2)') 'Field Components Loop ',mh

@@ -353,6 +353,10 @@ CONTAINS
     CALL MPI_ERROR_CHECK("MPI_COMM_RANK",MPI_IERROR,ERR,ERROR,*999)
     COMPUTATIONAL_ENVIRONMENT%MY_COMPUTATIONAL_NODE_NUMBER=RANK
     
+#ifdef TAUPROF
+    CALL TAU_PROFILE_SET_NODE(rank)
+#endif
+
     !Create the MPI type information for the COMPUTATIONAL_NODE_TYPE
     CALL COMPUTATIONAL_NODE_MPI_TYPE_INITIALISE(COMPUTATIONAL_ENVIRONMENT%COMPUTATIONAL_NODES(RANK),ERR,ERROR,*999)
     !Fill in all the computational node data structures for this rank at the root position (will be changed later with an
