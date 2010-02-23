@@ -1616,6 +1616,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{  
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetDiffusionTwoDim1 = EQUATIONS_SET_DIFFUSION_EQUATION_TWO_DIM_1 !<u=exp(-kt)*sin(sqrt(k)*(x*cos(phi)+y*sin(phi))) \see OPENCMISS_EquationsSetDiffusionAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourceDiffusionThreeDim1 = &
+    & EQUATIONS_SET_LINEAR_SOURCE_DIFFUSION_EQUATION_THREE_DIM_1 
   !>@}
   !> \addtogroup OPENCMISS_AdvectionDiffusionAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::AdvectionDiffusion
   !> \brief The analytic function types for an advection-diffusion equation.
@@ -1730,7 +1732,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSEquationsSetLinearElasticityEquationOneDim1,CMISSEquationsSetLinearElasticityEquationTwoDim1, &
     & CMISSEquationsSetLinearElasticityEquationThreeDim1
 
-  PUBLIC CMISSEquationsSetDiffusionTwoDim1
+  PUBLIC CMISSEquationsSetDiffusionTwoDim1,CMISSEquationsSetLinearSourceDiffusionThreeDim1
 
   PUBLIC CMISSEquationsSetAdvectionDiffusionTwoDim1
 

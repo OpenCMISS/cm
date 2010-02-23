@@ -2120,7 +2120,7 @@ MODULE TYPES
   
   !> This type is a wrapper for the C_PTR which references the actual CellML model definition object.
   TYPE CELLML_MODEL_TYPE
-     TYPE(C_PTR) :: PTR !< The handle for the actual C++ CellML model definition object
+     !TYPE(C_PTR) :: PTR !< The handle for the actual C++ CellML model definition object
      INTEGER(INTG) :: USER_NUMBER !< The user defined identifier for this CellML model
      INTEGER(INTG) :: GLOBAL_NUMBER !< The global number of this CellML model within the parent CellML environment.
   END TYPE CELLML_MODEL_TYPE

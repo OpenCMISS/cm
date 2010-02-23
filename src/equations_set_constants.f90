@@ -275,6 +275,7 @@ MODULE EQUATIONS_SET_CONSTANTS
   !> \brief The analytic function types for a diffusion equation
   !>@{  
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DIFFUSION_EQUATION_TWO_DIM_1=1 !<u=exp(-kt)*sin(sqrt(k)*(x*cos(phi)+y*sin(phi)))
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_LINEAR_SOURCE_DIFFUSION_EQUATION_THREE_DIM_1=2
   !>@}
   !> \addtogroup EQUATIONS_SET_CONSTANTS_AdvectionDiffusionAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:AdvectionDiffusionAnalyticFunctionTypes
   !> \brief The analytic function types for an advection-diffusion equation
