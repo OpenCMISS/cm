@@ -13851,7 +13851,11 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("CMISSEquationsSetBoundaryConditionsAnalyticNumber",Err,ERROR,*999)
- 
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Analytic Boundary Conditions Create')
+#endif
+
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
@@ -13868,6 +13872,10 @@ CONTAINS
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Analytic Boundary Conditions Create')
+#endif
 
     CALL EXITS("CMISSEquationsSetBoundaryConditionsAnalyticNumber")
     RETURN
@@ -13891,9 +13899,17 @@ CONTAINS
     !Local variables
  
     CALL ENTERS("CMISSEquationsSetBoundaryConditionsAnalyticObj",Err,ERROR,*999)
- 
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Analytic Boundary Conditions Create')
+#endif
+
     CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_ANALYTIC(EquationsSet%EQUATIONS_SET,Err,ERROR,*999)
     
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Analytic Boundary Conditions Create')
+#endif
+
     CALL EXITS("CMISSEquationsSetBoundaryConditionsAnalyticObj")
     RETURN
 999 CALL ERRORS("CMISSEquationsSetBoundaryConditionsAnalyticObj",Err,ERROR)

@@ -126,7 +126,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: MPI_IERROR,SEND_COUNT,NUMBER_OF_DIRICHLET_CONDITIONS, STORAGE_TYPE, NUMBER_OF_NON_ZEROS, NUMBER_OF_ROWS, COUNT
-    INTEGER(INTG) :: variable_type_idx,dof_idx, equ_matrix_idx, dirichlet_idx, sparse_idx, row_idx, DUMMY, LAST
+    INTEGER(INTG) :: variable_type_idx,dof_idx, equ_matrix_idx, dirichlet_idx, sparse_idx, row_idx, DUMMY, LAST, DIRICHLET_DOF
     INTEGER(INTG), POINTER :: ROW_INDICES(:), COLUMN_INDICES(:)
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITION_VARIABLE
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: VARIABLE_DOMAIN_MAPPING
@@ -137,10 +137,11 @@ CONTAINS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
     TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
+    TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: DYNAMIC_MATRICES
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATION_MATRIX
     TYPE(BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE), POINTER :: SPARSITY_INDICES
     TYPE(LIST_TYPE), POINTER :: SPARSE_INDICES
-    
+
     CALL ENTERS("BOUNDARY_CONDITIONS_CREATE_FINISH",ERR,ERROR,*999)
 
     IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
@@ -198,6 +199,7 @@ CONTAINS
                           dirichlet_idx=dirichlet_idx+1
                         ENDIF
                       ENDDO
+
                       ! Store Dirichlet dof indices
                       EQUATIONS_SET=>BOUNDARY_CONDITIONS%EQUATIONS_SET
                       IF(ASSOCIATED(EQUATIONS_SET)) THEN
@@ -206,7 +208,7 @@ CONTAINS
                           EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
                           IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
                             LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
-                            IF(ASSOCIATED(LINEAR_MATRICES)) THEN !Need to do this for dynamic
+                            IF(ASSOCIATED(LINEAR_MATRICES)) THEN
                               ! Iterate through equations matrices
                               DO equ_matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
                                 EQUATION_MATRIX=>LINEAR_MATRICES%MATRICES(equ_matrix_idx)%PTR
@@ -245,13 +247,14 @@ CONTAINS
                                     IF(ASSOCIATED(SPARSITY_INDICES)) THEN
                                       COUNT=0
                                       SPARSITY_INDICES%SPARSE_COLUMN_INDICES(1)=1
+                                      LAST=1
                                       DO dirichlet_idx=1,BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
-                                        LAST=1
-                                        DO sparse_idx=1,NUMBER_OF_NON_ZEROS
-                                          IF(BOUNDARY_CONDITIONS_DIRICHLET%DIRICHLET_DOF_INDICES(dirichlet_idx)== &
-                                            & COLUMN_INDICES(sparse_idx)) THEN
-                                            DO row_idx=LAST,NUMBER_OF_ROWS-1
-                                              IF((sparse_idx>=ROW_INDICES(row_idx)).AND.(sparse_idx<ROW_INDICES(row_idx+1))) THEN
+                                        DIRICHLET_DOF=BOUNDARY_CONDITIONS_DIRICHLET%DIRICHLET_DOF_INDICES(dirichlet_idx)
+                                        DO row_idx=1,NUMBER_OF_ROWS
+                                          IF(DIRICHLET_DOF>=COLUMN_INDICES(ROW_INDICES(row_idx)).AND. &
+                                            & DIRICHLET_DOF<=COLUMN_INDICES(ROW_INDICES(row_idx+1)-1)) THEN
+                                            DO sparse_idx=ROW_INDICES(row_idx),ROW_INDICES(row_idx+1)-1
+                                              IF(DIRICHLET_DOF==COLUMN_INDICES(sparse_idx)) THEN
                                                 CALL LIST_ITEM_ADD(SPARSE_INDICES,row_idx,ERR,ERROR,*999)
                                                 COUNT=COUNT+1
                                                 LAST=row_idx+1
@@ -283,9 +286,87 @@ CONTAINS
                                   CALL FLAG_ERROR("The equation matrix is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ENDDO
-                            ELSE
-                              LOCAL_ERROR="Linear Matrices is not associated for these Equations Matrices " ! necesary?? i.e only linear or only dynamic matrices
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            ENDIF
+
+                            DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
+                            IF(ASSOCIATED(DYNAMIC_MATRICES)) THEN
+                              ! Iterate through equations matrices
+                              DO equ_matrix_idx=1,DYNAMIC_MATRICES%NUMBER_OF_DYNAMIC_MATRICES
+                                EQUATION_MATRIX=>DYNAMIC_MATRICES%MATRICES(equ_matrix_idx)%PTR
+                                CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_GET(EQUATION_MATRIX%MATRIX, STORAGE_TYPE, ERR, ERROR,*999)
+                                IF(ASSOCIATED(EQUATION_MATRIX)) THEN
+                                  SELECT CASE(STORAGE_TYPE)
+                                  CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
+                                    CALL FLAG_ERROR("Not implemented for block storage",ERR,ERROR,*999)
+                                  CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
+                                    CALL FLAG_ERROR("Not implemented for diagonal storage",ERR,ERROR,*999)
+                                  CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+                                    CALL FLAG_ERROR("Not implemented for column major storage",ERR,ERROR,*999)
+                                  CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
+                                    CALL FLAG_ERROR("Not implemented for row major storage",ERR,ERROR,*999)
+                                  CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+                                    ! Get Sparsity pattern, number of non zeros, number of rows
+                                    CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(EQUATION_MATRIX%MATRIX,ROW_INDICES, &
+                                      & COLUMN_INDICES,ERR,ERROR,*999)
+                                    CALL DISTRIBUTED_MATRIX_NUMBER_NON_ZEROS_GET(EQUATION_MATRIX%MATRIX,NUMBER_OF_NON_ZEROS, &
+                                      & ERR,ERROR,*999)
+                                    NUMBER_OF_ROWS=EQUATIONS_MATRICES%TOTAL_NUMBER_OF_ROWS
+                                    ! Intialise sparsity indices arrays
+                                    CALL BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE(BOUNDARY_CONDITIONS_DIRICHLET% &
+                                      & DYNAMIC_SPARSITY_INDICES(equ_matrix_idx)%PTR,BOUNDARY_CONDITION_VARIABLE% &
+                                      & NUMBER_OF_DIRICHLET_CONDITIONS,ERR,ERROR,*999)
+                                    ! Setup list for storing dirichlet non zero indices
+                                    NULLIFY(SPARSE_INDICES)
+                                    CALL LIST_CREATE_START(SPARSE_INDICES,ERR,ERROR,*999)
+                                    CALL LIST_DATA_TYPE_SET(SPARSE_INDICES,LIST_INTG_TYPE,ERR,ERROR,*999)
+                                    CALL LIST_INITIAL_SIZE_SET(SPARSE_INDICES, &
+                                      & NUMBER_OF_DIRICHLET_CONDITIONS*(NUMBER_OF_NON_ZEROS/NUMBER_OF_ROWS),ERR,ERROR,*999)
+                                    CALL LIST_CREATE_FINISH(SPARSE_INDICES,ERR,ERROR,*999)
+
+                                    ! Find dirichlet columns and store the non zero indices (with respect to the 1D storage array)
+                                    SPARSITY_INDICES=>BOUNDARY_CONDITIONS_DIRICHLET%DYNAMIC_SPARSITY_INDICES(equ_matrix_idx)%PTR
+                                    IF(ASSOCIATED(SPARSITY_INDICES)) THEN
+                                      COUNT=0
+                                      SPARSITY_INDICES%SPARSE_COLUMN_INDICES(1)=1
+                                      LAST=1
+                                      DO dirichlet_idx=1,BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
+                                        DIRICHLET_DOF=BOUNDARY_CONDITIONS_DIRICHLET%DIRICHLET_DOF_INDICES(dirichlet_idx)
+                                        DO row_idx=1,NUMBER_OF_ROWS
+                                          IF(DIRICHLET_DOF>=COLUMN_INDICES(ROW_INDICES(row_idx)).AND. &
+                                            & DIRICHLET_DOF<=COLUMN_INDICES(ROW_INDICES(row_idx+1)-1)) THEN
+                                            DO sparse_idx=ROW_INDICES(row_idx),ROW_INDICES(row_idx+1)-1
+                                              IF(DIRICHLET_DOF==COLUMN_INDICES(sparse_idx)) THEN
+                                                CALL LIST_ITEM_ADD(SPARSE_INDICES,row_idx,ERR,ERROR,*999)
+                                                COUNT=COUNT+1
+                                                LAST=row_idx+1
+                                                EXIT
+                                              ENDIF
+                                            ENDDO
+                                          ENDIF
+                                        ENDDO
+                                        SPARSITY_INDICES%SPARSE_COLUMN_INDICES(dirichlet_idx+1)=COUNT+1
+                                      ENDDO
+                                    ELSE
+                                      LOCAL_ERROR="Sparsity indices arrays are not associated for this equations matrix"
+                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    ENDIF
+
+                                    CALL LIST_DETACH_AND_DESTROY(SPARSE_INDICES,DUMMY,SPARSITY_INDICES%SPARSE_ROW_INDICES, &
+                                      & ERR,ERROR,*999)
+
+                                  CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+                                    CALL FLAG_ERROR("Not implemented for compressed column storage",ERR,ERROR,*999)
+                                  CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
+                                    CALL FLAG_ERROR("Not implemented for row column storage",ERR,ERROR,*999)
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The storage type of "//TRIM(NUMBER_TO_VSTRING(STORAGE_TYPE,"*",ERR,ERROR)) &
+                                      //" is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                ELSE
+                                  CALL FLAG_ERROR("The equation matrix is not associated.",ERR,ERROR,*999)
+                                ENDIF
+                              ENDDO
                             ENDIF
                           ELSE
                             LOCAL_ERROR="Equations Matrices is not associated for these Equations "
