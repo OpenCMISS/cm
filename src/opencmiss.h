@@ -522,6 +522,7 @@ static int CMISSEquationsSetPoissonTwoDim1 = 1;
  * >@{
  */
 static int CMISSEquationsSetDiffusionTwoDim1 = 1;
+static int CMISSEquationsSetLinearSourceDiffusionThreeDim1 = 2;
 /*
  * > \addtogroup OPENCMISS_StokesAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Stokes
  * > \brief The analytic function types for a Stokes equation.
@@ -800,6 +801,7 @@ static int CMISSProblemBioelectricsClass = 5;
 static int CMISSProblemModalClass = 6;
 static int CMISSProblemFittingClass = 7;
 static int CMISSProblemOptimisationClass = 8;
+static int CMISSProblemMultiPhysicsClass=9;
 /*
  * >@}
  * > \addtogroup OPENCMISS_ProblemTypes OPENCMISS::Problem::Types
@@ -828,6 +830,11 @@ static int CMISSProblemMonodomainEquationType = 1;
 static int CMISSProblemBidomainEquationType = 2;
 static int CMISSProblemLinearElasticModalType = 1;
 static int CMISSProblemGalerkinProjectionType = 9;
+static int CMISSProblemFiniteElasticityDarcyType = 1;
+static int CMISSProblemFiniteElasticityStokesType = 2;
+static int CMISSProblemFiniteElasticityNavierStokesType = 3;
+static int CMISSProblemDiffusionDiffusionType = 4;
+static int CMISSProblemDiffusionAdvectionDiffusionType = 5;
 /*
  * >@}
  * > \addtogroup OPENCMISS_ProblemSubTypes OPENCMISS::Problem::Subtypes
@@ -857,12 +864,17 @@ static int CMISSProblemNoSourceHelmholtzSubtype = 1;
 static int CMISSProblemNoSourceDiffusionSubtype = 1;
 static int CMISSProblemLinearSourceDiffusionSubtype = 2;
 static int CMISSProblemNonlinearSourceDiffusionSubtype = 3;
-static int CMISSProblemNoSourceAdvectionDiffusionSubtype = 4;
+static int CMISSProblemNoSourceAdvectionDiffusionSubtype = 1;
 static int CMISSProblemLinearSourceAdvectionDiffusionSubtype = 2;
 static int CMISSProblemNonlinearSourceAdvectionDiffusionSubtype = 3;
+static int CMISSProblemNoSourceStaticAdvecDiffSubtype = 4;
+static int CMISSProblemLinearSourceStaticAdvecDiffSubtype = 5;
+static int CMISSProblemNonlinearSourceStaticAdvecDiffSubtype = 6;
 static int CMISSProblemStandardGalerkinProjectionSubtype = 1;
 static int CMISSProblemGeneralisedGalerkinProjectionSubtype = 2;
 static int CMISSProblemMatPropertiesGalerkinProjectionSubtype = 3;
+static int CMISSProblemStandardElasticityDarcySubtype = 101;
+static int CMISSProblemCoupledSourceDiffusionDiffusionSubtype = 111;
 /*
  * >@}
  * > \addtogroup OPENCMISS_ProblemControlLoopTypes OPENCMISS::Problem::ControlLoopTypes
