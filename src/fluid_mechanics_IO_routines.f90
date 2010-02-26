@@ -1177,6 +1177,11 @@ CONTAINS
       ENDIF
     END IF
 
+    !This is for Poisson-Flow problems only
+    IF(NumberOfVariableComponents==1)NumberOfVariableComponents=4
+    IF(NumberOfMaterialComponents==5)NumberOfMaterialComponents=2
+
+
     NumberOfFieldComponent(1)=NumberOfDimensions
     NumberOfFieldComponent(2)=NumberOfVariableComponents
     NumberOfFieldComponent(3)=NumberOfMaterialComponents
@@ -1190,9 +1195,6 @@ CONTAINS
     END DO
 
 
-    !This is for Poisson-Flow problems only
-    IF(NumberOfVariableComponents==1)NumberOfVariableComponents=4
-    IF(NumberOfMaterialComponents==5)NumberOfMaterialComponents=2
 
 
     CALL FLUID_MECHANICS_IO_WRITE_NODES_CMGUI(NAME)
