@@ -1580,7 +1580,9 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardElasticityDarcySubtype = EQUATIONS_SET_STANDARD_ELASTICITY_DARCY_SUBTYPE !<Standard Elasticity Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetCoupledSourceDiffusionDiffusionSubtype = &
-    & EQUATIONS_SET_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE !<Standard Elasticity Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+    & EQUATIONS_SET_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE !<Coupled source diffusion-diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetCoupledSourceDiffusionAdvecDiffusionSubtype = &
+    & EQUATIONS_SET_COUPLED_SOURCE_DIFFUSION_ADVEC_DIFFUSION_SUBTYPE !<Coupled source diffusion & advection-diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
   !>@}
   !> \addtogroup OPENCMISS_EquationsSetSolutionMethods OPENCMISS::EquationsSet::SolutionMethods
@@ -1724,7 +1726,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & CMISSEquationsSetFirstBidomainSubtype,CMISSEquationsSetSecondBidomainSubtype, &
     & CMISSEquationsSetStandardGalerkinProjectionSubtype,CMISSEquationsSetGeneralisedGalerkinProjectionSubtype, &
     & CMISSEquationsSetMatPropertiesGalerkinProjectionSubtype,CMISSEquationsSetPGMNavierStokesSubtype, &
-    & CMISSEquationsSetCoupledSourceDiffusionDiffusionSubtype
+    & CMISSEquationsSetCoupledSourceDiffusionDiffusionSubtype, CMISSEquationsSetCoupledSourceDiffusionAdvecDiffusionSubtype
 
   PUBLIC CMISSEquationsSetFEMSolutionMethod,CMISSEquationsSetBEMSolutionMethod,CMISSEquationsSetFDSolutionMethod, &
     & CMISSEquationsSetFVSolutionMethod,CMISSEquationsSetGFEMSolutionMethod,CMISSEquationsSetGFDSolutionMethod, &
@@ -3179,6 +3181,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSProblemStandardElasticityDarcySubtype = PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE !<Standard Elasticity Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemCoupledSourceDiffusionDiffusionSubtype = & 
     & PROBLEM_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE !<Coupled source diffusion-diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype = & 
+    & PROBLEM_COUPLED_SOURCE_DIFFUSION_ADVEC_DIFFUSION_SUBTYPE !<Coupled source diffusion & advection-diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
   !>@}
   !> \addtogroup OPENCMISS_ProblemControlLoopTypes OPENCMISS::Problem::ControlLoopTypes
@@ -3256,7 +3260,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSProblemControlSimpleType,CMISSProblemControlFixedLoopType,CMISSProblemControlTimeLoopType, &
     & CMISSProblemControlWhileLoopType
 
-  PUBLIC CMISSProblemStandardElasticityDarcySubtype, CMISSProblemCoupledSourceDiffusionDiffusionSubtype
+  PUBLIC CMISSProblemStandardElasticityDarcySubtype, CMISSProblemCoupledSourceDiffusionDiffusionSubtype, &
+   & CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype
 
 !!==================================================================================================================================
 !!

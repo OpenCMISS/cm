@@ -875,6 +875,7 @@ static int CMISSProblemGeneralisedGalerkinProjectionSubtype = 2;
 static int CMISSProblemMatPropertiesGalerkinProjectionSubtype = 3;
 static int CMISSProblemStandardElasticityDarcySubtype = 101;
 static int CMISSProblemCoupledSourceDiffusionDiffusionSubtype = 111;
+static int CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype = 121;
 /*
  * >@}
  * > \addtogroup OPENCMISS_ProblemControlLoopTypes OPENCMISS::Problem::ControlLoopTypes

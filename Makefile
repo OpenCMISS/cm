@@ -720,6 +720,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/Darcy_equations_routines.o \
 	$(OBJECT_DIR)/finite_elasticity_Darcy_routines.o \
+	$(OBJECT_DIR)/diffusion_advection_diffusion_routines.o \
 	$(OBJECT_DIR)/diffusion_diffusion_routines.o \
 	$(OBJECT_DIR)/diffusion_equation_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
@@ -1051,6 +1052,32 @@ $(OBJECT_DIR)/finite_elasticity_Darcy_routines.o	:	$(SOURCE_DIR)/finite_elastici
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/control_loop_routines.o \
 	$(OBJECT_DIR)/Darcy_equations_routines.o \
+	$(OBJECT_DIR)/distributed_matrix_vector.o \
+	$(OBJECT_DIR)/domain_mappings.o \
+	$(OBJECT_DIR)/equations_routines.o \
+	$(OBJECT_DIR)/equations_mapping_routines.o \
+	$(OBJECT_DIR)/equations_matrices_routines.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/fluid_mechanics_IO_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o	\
+	$(OBJECT_DIR)/matrix_vector.o	\
+	$(OBJECT_DIR)/problem_constants.o	\
+	$(OBJECT_DIR)/strings.o	\
+	$(OBJECT_DIR)/solver_routines.o	\
+	$(OBJECT_DIR)/timer_f.o	\
+	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/diffusion_advection_diffusion_routines.o	:	$(SOURCE_DIR)/diffusion_advection_diffusion_routines.f90 \
+	$(OBJECT_DIR)/advection_diffusion_equation_routines.o \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/boundary_condition_routines.o \
+	$(OBJECT_DIR)/constants.o \
+	$(OBJECT_DIR)/control_loop_routines.o \
+	$(OBJECT_DIR)/diffusion_equation_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/domain_mappings.o \
 	$(OBJECT_DIR)/equations_routines.o \
@@ -1484,6 +1511,7 @@ $(OBJECT_DIR)/mesh_routines.o	:	$(SOURCE_DIR)/mesh_routines.f90 \
 
 $(OBJECT_DIR)/multi_physics_routines.o	:	$(SOURCE_DIR)/multi_physics_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/diffusion_advection_diffusion_routines.o \
 	$(OBJECT_DIR)/diffusion_diffusion_routines.o \
 	$(OBJECT_DIR)/finite_elasticity_Darcy_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
