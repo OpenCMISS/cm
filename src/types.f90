@@ -1360,11 +1360,11 @@ MODULE TYPES
   TYPE BOUNDARY_CONDITIONS_VARIABLE_TYPE
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<A pointer to the boundary conditions for this boundary conditions variable
     INTEGER(INTG) :: VARIABLE_TYPE !<The type of variable for this variable boundary conditions
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE !<A pointer to the field varaible for this boundary condition variable
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE !<A pointer to the field variable for this boundary condition variable
     INTEGER(INTG), ALLOCATABLE :: GLOBAL_BOUNDARY_CONDITIONS(:) !<GLOBAL_BOUNDARY_CONDITIONS(dof_idx). The global boundary condition for the dof_idx'th dof of the dependent field variable. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
     !TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: BOUNDARY_CONDITIONS_VALUES !<A pointer to the distributed vector containing the boundary conditions for the domain for this process.
-    TYPE(BOUNDARY_CONDITIONS_DIRICHLET_TYPE), POINTER :: DIRICHLET_BOUNDARY_CONDITIONS  !< COMPLETE!!!!!!!!!!!!!!
-    INTEGER(INTG) :: NUMBER_OF_DIRICHLET_CONDITIONS
+    TYPE(BOUNDARY_CONDITIONS_DIRICHLET_TYPE), POINTER :: DIRICHLET_BOUNDARY_CONDITIONS  !<A pointer to the dirichlet boundary condition type for this boundary condition variable
+    INTEGER(INTG) :: NUMBER_OF_DIRICHLET_CONDITIONS !<Stores the number of dirichlet conditions associated with this variable
   END TYPE BOUNDARY_CONDITIONS_VARIABLE_TYPE
 
   !>A buffer type to allow for an array of pointers to a VARIABLE_BOUNDARY_CONDITIONS_TYPE \see TYPES::VARIABLE_BOUNDARY_CONDITIONS_TYPE
@@ -1379,22 +1379,23 @@ MODULE TYPES
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_PTR_TYPE), ALLOCATABLE :: BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(:) !<BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type_idx). BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type_idx)%PTR is the pointer to the variable_type_idx'th BOUNDARY_CONDITIONS_VARIABLE
   END TYPE BOUNDARY_CONDITIONS_TYPE
 
-      !>A buffer type to allow for an array of pointers to a BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE \see TYPES::BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE
+  !>A buffer type to allow for an array of pointers to a BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE \see TYPES::BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE
   TYPE BOUNDARY_CONDITIONS_SPARSITY_INDICES_PTR_TYPE
     TYPE(BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE), POINTER :: PTR !<A pointer to the boundary conditions sparsity indices type
   END TYPE BOUNDARY_CONDITIONS_SPARSITY_INDICES_PTR_TYPE
 
-  !>Contains COMPLETE!!!!!!!!!!!!!!
+  !> Contains information on dofs with associated dirichlet conditions and corresponding non-zero elements in the equations matrices
   TYPE BOUNDARY_CONDITIONS_DIRICHLET_TYPE
-    INTEGER(INTG), ALLOCATABLE :: DIRICHLET_DOF_INDICES(:)  !<DIRICHLET_DOF_INDICES(idx).    COMPLETE!!!!!!!!!!!!!!
-    TYPE(BOUNDARY_CONDITIONS_SPARSITY_INDICES_PTR_TYPE), ALLOCATABLE :: LINEAR_SPARSITY_INDICES(:) !<LINEAR_SPARSITY_INDICES(equ_matrix_idx)
-    TYPE(BOUNDARY_CONDITIONS_SPARSITY_INDICES_PTR_TYPE), ALLOCATABLE :: DYNAMIC_SPARSITY_INDICES(:) !<DYNAMIC_SPARSITY_INDICES(equ_matrix_idx)
+    INTEGER(INTG), ALLOCATABLE :: DIRICHLET_DOF_INDICES(:)  !<DIRICHLET_DOF_INDICES(idx). Stores the dof_idx of the dofs which are subject to a dirichlet boundary condition \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
+    TYPE(BOUNDARY_CONDITIONS_SPARSITY_INDICES_PTR_TYPE), ALLOCATABLE :: LINEAR_SPARSITY_INDICES(:) !<LINEAR_SPARSITY_INDICES(equ_matrix_idx). Stores the indices of the non-zero elements of the 'equ_matrix_idx'th linear equation matrix in the columns corresponding to the dofs which are subject to a dirichlet boundary condition
+    TYPE(BOUNDARY_CONDITIONS_SPARSITY_INDICES_PTR_TYPE), ALLOCATABLE :: DYNAMIC_SPARSITY_INDICES(:) !<DYNAMIC_SPARSITY_INDICES(equ_matrix_idx). Stores the indices of the non-zero elements of the 'equ_matrix_idx'th dynamic equation matrix in the columns corresponding to the dofs which are subject to a dirichlet boundary condition
   END TYPE BOUNDARY_CONDITIONS_DIRICHLET_TYPE
 
-  !>Contains COMPLETE!!!!!!!!!!!!!!
+  !> Contains information on indices of non-zero elements with associated dirichlet conditions
+  !> Indices stored in compressed column format without a values array
   TYPE BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE
-    INTEGER(INTG), POINTER :: SPARSE_ROW_INDICES(:)
-    INTEGER(INTG), ALLOCATABLE :: SPARSE_COLUMN_INDICES(:)  !<BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type_idx).     COMPLETE!!!!!!!!!!!!!!
+    INTEGER(INTG), POINTER :: SPARSE_ROW_INDICES(:) !<SPARSE_ROW_INDICES(SPARSE_COLUMN_INDICES(column_idx)). Between SPARSE_COLUMN_INDICES(column_idx) and SPARSE_COLUMN_INDICES(column_idx+1)-1 are the row indices of non-zero elements of the 'column_idx'th column
+    INTEGER(INTG), ALLOCATABLE :: SPARSE_COLUMN_INDICES(:) !<SPARSE_COLUMN_INDICES(column_idx). Between SPARSE_COLUMN_INDICES(column_idx) and SPARSE_COLUMN_INDICES(column_idx+1)-1 are the row indices of non-zero elements of the 'column_idx'th column
   END TYPE BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE
 
 
