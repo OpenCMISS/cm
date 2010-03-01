@@ -1,19 +1,22 @@
-opencmiss_f = open('opencmiss.f90', 'r')
-opencmiss_c = open('opencmiss_c.f90', 'r')
-opencmiss_h = open('opencmiss.h', 'r')
+opencmiss_f = open('../src/opencmiss.f90', 'r')
+opencmiss_c = open('../src/opencmiss_c.f90', 'r')
+opencmiss_h = open('../src/opencmiss.h', 'r')
 f_functions = open('opencmiss_f_functions', 'w+')
 c_functions = open('opencmiss_c_functions', 'w+')
 h_functions = open('opencmiss_h_functions', 'w+')
 
+def suffixOut(str1, suffix) :
+	for suff in suffix :
+        	if str1.endswith(suff):
+			return suff
+	return ''
 
-def Read(opencmiss, f, startstring_ind, endstring_ind, endfunc_ind, startleng, endfunc_num, endfunc_ptr):
-
-	print startstring_ind
+def Read(opencmiss, f, startstring_ind, endstring_ind, startleng, endfunc):
 
 	string_c = opencmiss.readline()
-	endoffile = string_c.find(endfunc_ind)
+        string_list = []
 
-	while endoffile == -1:
+	while string_c != '':
 
 		string_c = opencmiss.readline()
 
@@ -28,21 +31,18 @@ def Read(opencmiss, f, startstring_ind, endstring_ind, endfunc_ind, startleng, e
 					readstring.extend(string_c[i])
 			joinstring = "".join(readstring)
 			joinstring = joinstring.rstrip()
-			if joinstring.find('C') != -1:
-				if joinstring.endswith(endfunc_num):
-					joinstring = joinstring.rstrip(endfunc_num)
-				if joinstring.endswith(endfunc_ptr):
-					joinstring = joinstring.rstrip(endfunc_ptr)
-				if joinstring.endswith('C'):
-					joinstring = joinstring.rstrip('C')
-				print joinstring
+			suff = suffixOut(joinstring, endfunc)
+			while suff != '' :
+				joinstring = joinstring[:-len(suff)]
+				suff = suffixOut(joinstring, endfunc)
+			if string_list.count(joinstring)==0 and joinstring!='' :
+                        	string_list.append(joinstring)
 				f.write(joinstring + '\n')
-		endoffile = string_c.find(endfunc_ind)
-	f.write('endoffile')
 
-Read(opencmiss_f, f_functions, 'SUBROUTINE CMISS', '(', 'END MODULE', 11, 'Number', 'Obj')
-Read(opencmiss_c, c_functions, 'FUNCTION CMISS', '(', 'END MODULE', 9, 'Num', 'Ptr')
-Read(opencmiss_h, h_functions, 'CMISSError CMISS', '(', 'EndOfFile', 11, 'Num', '')
+
+Read(opencmiss_f, f_functions, 'SUBROUTINE CMISS', '(', 11, ['Number','C', 'Obj','VS','0','1'])
+Read(opencmiss_c, c_functions, 'FUNCTION CMISS', '(', 9, ['Num', 'Ptr', 'C'])
+Read(opencmiss_h, h_functions, 'CMISSError CMISS', '(', 11, ['Num','C'])
 
 opencmiss_c.close()
 c_functions.close()
