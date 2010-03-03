@@ -2385,8 +2385,8 @@ CONTAINS
           !do nothing (default)    
         ELSE IF(INPUT_OPTION==1) THEN
           TIME_STEP_SIZE=0.05_DP
+          NUMBER_OF_TIME_STEPS=22
           TIME_TOLERANCE=0.00001_DP
-          NUMBER_OF_TIME_STEPS=19
           ENDI=SIZE(INPUT_VALUES)
           DO J=1,NUMBER_OF_TIME_STEPS
             TIME_STEP=J
