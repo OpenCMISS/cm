@@ -2157,7 +2157,7 @@ MODULE TYPES
   !>Contains information on the CellML environments defined.
   TYPE CELLML_ENVIRONMENTS_TYPE
     INTEGER(INTG) :: NUMBER_OF_ENVIRONMENTS !<The number of environments defined.
-    TYPE(CELLML_PTR_TYPE), ALLOCATABLE :: ENVIRONMENTS(:) !<The array of pointers to the CellML environments.
+    TYPE(CELLML_PTR_TYPE), POINTER :: ENVIRONMENTS(:) !<The array of pointers to the CellML environments.
   END TYPE CELLML_ENVIRONMENTS_TYPE
 
   !
