@@ -84,7 +84,7 @@ MODULE FINITE_ELASTICITY_ROUTINES
     & FINITE_ELASTICITY_EQUATIONS_SET_SETUP,FINITE_ELASTICITY_EQUATIONS_SET_SOLUTION_METHOD_SET, &
     & FINITE_ELASTICITY_EQUATIONS_SET_SUBTYPE_SET,FINITE_ELASTICITY_PROBLEM_SUBTYPE_SET,FINITE_ELASTICITY_PROBLEM_SETUP, &
     & FINITE_ELASTICITY_POST_SOLVE, FINITE_ELASTICITY_POST_SOLVE_OUTPUT_DATA, &
-    & FINITE_ELASTICITY_PRE_SOLVE_GET_DARCY_PRESSURE
+    & FINITE_ELASTICITY_PRE_SOLVE
 
 
 CONTAINS
@@ -1692,6 +1692,92 @@ CONTAINS
   !   
   !================================================================================================================================
   !
+ 
+  !>Sets up the finite elasticity problem pre-solve.
+  SUBROUTINE FINITE_ELASTICITY_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    !Local Variables
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
+    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
+    TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
+
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    INTEGER(INTG) :: solver_matrix_idx
+
+
+    CALL ENTERS("FINITE_ELASTICITY_PRE_SOLVE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(ASSOCIATED(SOLVER)) THEN
+        IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            CASE(PROBLEM_NO_SUBTYPE)
+              ! do nothing ???
+            CASE(PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite elasticity pre solve ... ",ERR,ERROR,*999)
+
+              !--- Set 'SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.'
+              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                  SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
+                  IF(ASSOCIATED(SOLVER_MATRICES)) THEN
+                    DO solver_matrix_idx=1,SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES
+                      SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(solver_matrix_idx)%PTR
+                      IF(ASSOCIATED(SOLVER_MATRIX)) THEN
+                        SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.
+                      ELSE
+                        CALL FLAG_ERROR("Solver Matrix is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ENDDO
+                  ELSE
+                    CALL FLAG_ERROR("Solver Matrices is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+              ENDIF
+
+              IF(SOLVER%GLOBAL_NUMBER==3) THEN
+                !--- 3.1 Get the Darcy pressure
+                CALL FINITE_ELASTICITY_PRE_SOLVE_GET_DARCY_PRESSURE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              END IF
+            CASE DEFAULT
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                & " is not valid for a finite elasticity problem class."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("FINITE_ELASTICITY_PRE_SOLVE")
+    RETURN
+999 CALL ERRORS("FINITE_ELASTICITY_PRE_SOLVE",ERR,ERROR)
+    CALL EXITS("FINITE_ELASTICITY_PRE_SOLVE")
+    RETURN 1
+  END SUBROUTINE FINITE_ELASTICITY_PRE_SOLVE
+      
+  !   
+  !================================================================================================================================
+  !
 
   !>Copy Darcy pressure into independent field of finite elasticity
   SUBROUTINE FINITE_ELASTICITY_PRE_SOLVE_GET_DARCY_PRESSURE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
@@ -1703,16 +1789,16 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 
     !Local Variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER_FINITE_ELASTICITY, SOLVER_ALE_DARCY  !<A pointer to the solvers
-    TYPE(FIELD_TYPE), POINTER :: INDEPENDENT_FIELD_FINITE_ELASTICITY, DEPENDENT_FIELD_ALE_DARCY
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS_FINITE_ELASTICITY, SOLVER_EQUATIONS_ALE_DARCY  !<A pointer to the solver equations
-    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING_FINITE_ELASTICITY, SOLVER_MAPPING_ALE_DARCY !<A pointer to the solver mapping
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET_FINITE_ELASTICITY, EQUATIONS_SET_ALE_DARCY !<A pointer to the equations set
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER_FINITE_ELASTICITY, SOLVER_DARCY  !<A pointer to the solvers
+    TYPE(FIELD_TYPE), POINTER :: INDEPENDENT_FIELD_FINITE_ELASTICITY, DEPENDENT_FIELD_DARCY
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS_FINITE_ELASTICITY, SOLVER_EQUATIONS_DARCY  !<A pointer to the solver equations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING_FINITE_ELASTICITY, SOLVER_MAPPING_DARCY !<A pointer to the solver mapping
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET_FINITE_ELASTICITY, EQUATIONS_SET_DARCY !<A pointer to the equations set
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     REAL(DP), POINTER :: DUMMY_VALUES2(:)
 
-    INTEGER(INTG) :: NUMBER_OF_COMPONENTS_INDEPENDENT_FIELD_FINITE_ELASTICITY,NUMBER_OF_COMPONENTS_DEPENDENT_FIELD_ALE_DARCY
+    INTEGER(INTG) :: NUMBER_OF_COMPONENTS_INDEPENDENT_FIELD_FINITE_ELASTICITY,NUMBER_OF_COMPONENTS_DEPENDENT_FIELD_DARCY
     INTEGER(INTG) :: NDOFS_TO_PRINT
 
 
@@ -1721,18 +1807,12 @@ CONTAINS
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
 
       NULLIFY(SOLVER_FINITE_ELASTICITY)
-      NULLIFY(SOLVER_ALE_DARCY)
+      NULLIFY(SOLVER_DARCY)
 
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
-            CASE(PROBLEM_STANDARD_DARCY_SUBTYPE)
-              ! do nothing ???
-            CASE(PROBLEM_QUASISTATIC_DARCY_SUBTYPE)
-              ! do nothing ???
-            CASE(PROBLEM_TRANSIENT_DARCY_SUBTYPE)
-              ! do nothing ???
-            CASE(PROBLEM_ALE_DARCY_SUBTYPE)
+            CASE(PROBLEM_NO_SUBTYPE)
               ! do nothing ???
             CASE(PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE)
               IF(SOLVER%GLOBAL_NUMBER==3) THEN
@@ -1763,33 +1843,33 @@ CONTAINS
                   CALL FLAG_ERROR("Finite elasticity solver equations are not associated.",ERR,ERROR,*999)
                 END IF
 
-                !--- Get the dependent field for the ALE Darcy equations
-                CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,2,SOLVER_ALE_DARCY,ERR,ERROR,*999)
-                SOLVER_EQUATIONS_ALE_DARCY=>SOLVER_ALE_DARCY%SOLVER_EQUATIONS
-                IF(ASSOCIATED(SOLVER_EQUATIONS_ALE_DARCY)) THEN
-                  SOLVER_MAPPING_ALE_DARCY=>SOLVER_EQUATIONS_ALE_DARCY%SOLVER_MAPPING
-                  IF(ASSOCIATED(SOLVER_MAPPING_ALE_DARCY)) THEN
-                    EQUATIONS_SET_ALE_DARCY=>SOLVER_MAPPING_ALE_DARCY%EQUATIONS_SETS(1)%PTR
-                    IF(ASSOCIATED(EQUATIONS_SET_ALE_DARCY)) THEN
-                      DEPENDENT_FIELD_ALE_DARCY=>EQUATIONS_SET_ALE_DARCY%DEPENDENT%DEPENDENT_FIELD
-                      IF(ASSOCIATED(DEPENDENT_FIELD_ALE_DARCY)) THEN
-                        CALL FIELD_NUMBER_OF_COMPONENTS_GET(DEPENDENT_FIELD_ALE_DARCY, & 
-                          & FIELD_U_VARIABLE_TYPE,NUMBER_OF_COMPONENTS_DEPENDENT_FIELD_ALE_DARCY,ERR,ERROR,*999)
+                !--- Get the dependent field for the Darcy equations
+                CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,2,SOLVER_DARCY,ERR,ERROR,*999)
+                SOLVER_EQUATIONS_DARCY=>SOLVER_DARCY%SOLVER_EQUATIONS
+                IF(ASSOCIATED(SOLVER_EQUATIONS_DARCY)) THEN
+                  SOLVER_MAPPING_DARCY=>SOLVER_EQUATIONS_DARCY%SOLVER_MAPPING
+                  IF(ASSOCIATED(SOLVER_MAPPING_DARCY)) THEN
+                    EQUATIONS_SET_DARCY=>SOLVER_MAPPING_DARCY%EQUATIONS_SETS(1)%PTR
+                    IF(ASSOCIATED(EQUATIONS_SET_DARCY)) THEN
+                      DEPENDENT_FIELD_DARCY=>EQUATIONS_SET_DARCY%DEPENDENT%DEPENDENT_FIELD
+                      IF(ASSOCIATED(DEPENDENT_FIELD_DARCY)) THEN
+                        CALL FIELD_NUMBER_OF_COMPONENTS_GET(DEPENDENT_FIELD_DARCY, & 
+                          & FIELD_U_VARIABLE_TYPE,NUMBER_OF_COMPONENTS_DEPENDENT_FIELD_DARCY,ERR,ERROR,*999)
                       ELSE
-                        CALL FLAG_ERROR("DEPENDENT_FIELD_ALE_DARCY is not associated.",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("DEPENDENT_FIELD_DARCY is not associated.",ERR,ERROR,*999)
                       END IF
                     ELSE
-                      CALL FLAG_ERROR("ALE Darcy equations set is not associated.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Darcy equations set is not associated.",ERR,ERROR,*999)
                     END IF
                   ELSE
-                    CALL FLAG_ERROR("ALE Darcy solver mapping is not associated.",ERR,ERROR,*999)
+                    CALL FLAG_ERROR("Darcy solver mapping is not associated.",ERR,ERROR,*999)
                   END IF
                 ELSE
-                  CALL FLAG_ERROR("ALE Darcy solver equations are not associated.",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Darcy solver equations are not associated.",ERR,ERROR,*999)
                 END IF
 
-                !--- Copy the result from ALE Darcy's dependent field (pressure) to finite-elasticity's independent field
-                CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(DEPENDENT_FIELD_ALE_DARCY, & 
+                !--- Copy the result from Darcy's dependent field (pressure) to finite-elasticity's independent field
+                CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(DEPENDENT_FIELD_DARCY, & 
                   & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,4,INDEPENDENT_FIELD_FINITE_ELASTICITY, & 
                   & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,ERR,ERROR,*999)
 
@@ -1807,8 +1887,6 @@ CONTAINS
 
               ELSE  
                 ! do nothing ???
-!                 CALL FLAG_ERROR("FINITE_ELASTICITY_PRE_SOLVE_GET_DARCY_PRESSURE may only be carried out for SOLVER%GLOBAL_NUMBER = 3", &
-!                   & ERR,ERROR,*999)
               END IF
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
