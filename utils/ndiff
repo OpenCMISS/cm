@@ -1,0 +1,589 @@
+eval 'exec perl -w -S $0 ${1+"$@"}'
+    if 0;
+#
+# This script is an extension to diff that removes differences due to
+#   corresponding floating point entries differing by not more than a specified
+#   tolerance. 
+#
+
+# ***** BEGIN LICENSE BLOCK *****
+#
+# Version: MPL 1.1/GPL 2.0/LGPL 2.1
+#
+# The contents of this file are subject to the Mozilla Public License Version
+# 1.1 (the "License"); you may not use this file except in compliance with
+# the License. You may obtain a copy of the License at
+# http://www.mozilla.org/MPL/
+#
+# Software distributed under the License is distributed on an "AS IS" basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+# for the specific language governing rights and limitations under the
+# License.
+#
+# The Original Code is CMISS Example Framework.
+#
+# The Initial Developer of the Original Code is
+# Auckland Uniservices Ltd, Auckland, New Zealand.
+# Portions created by the Initial Developer are Copyright (C) 2008
+# the Initial Developer. All Rights Reserved.
+#
+# Contributor(s):
+#
+# Alternatively, the contents of this file may be used under the terms of
+# either the GNU General Public License Version 2 or later (the "GPL"), or
+# the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+# in which case the provisions of the GPL or the LGPL are applicable instead
+# of those above. If you wish to allow use of your version of this file only
+# under the terms of either the GPL or the LGPL, and not to allow others to
+# use your version of this file under the terms of the MPL, indicate your
+# decision by deleting the provisions above and replace them with the notice
+# and other provisions required by the GPL or the LGPL. If you do not delete
+# the provisions above, a recipient may use your version of this file under
+# the terms of any one of the MPL, the GPL or the LGPL.
+#
+# ***** END LICENSE BLOCK *****
+
+# Modifications:
+#
+# As well as being able to set tolerance via a switch on the command line
+#   (via -t), the script will now look in the directory where file1 is kept to
+#   look for a file called .ndiff. If this file exists and has an entry in it
+#   like
+# tol:0.01
+#   Then the tolerance will be set to 0.01  
+#
+#   The tolerance is now allowed to be set to be relative by using a % qualifier
+#     at the end of the tolerance. This is both valid for the .ndiff file and
+#     the command line switch
+#
+# SAB Removed the .ndiff file behaviour, use the per file *.options file
+# which is passed by cmiss_test.pm to this program as its command line
+# options.
+#     Added the specification of the diff program called by ndiff so that
+# the correct diff program (controlled by cvs and the examples) is called
+# by ndiff.
+#     All options not used by ndiff are passed on to diff so that this can
+# be configured too.
+#
+# Written by Richard Boyes (r.boyes@auckland.ac.nz) and David Bullivant
+#
+
+use strict;				  
+
+use File::Basename;
+use Getopt::Long;
+
+# Default value for absolute/percentage tolerance
+my $default_TOL = 0.0; #Means that it will be behave almost the same as diff
+# my $default_TOL = 1.0E-10;
+
+# Default diff program if not specified on the command line
+my $default_diff = "diff";
+
+# Regexp to match a real number ( qr is not available in version 5.004_04 )
+# Integers are not compared with tolerances.
+# Perhaps we should also allow variations in spaces between integers.
+my $real_regexp = q/[+-]?(?:\d+\.|\.\d)\d*(?:[EeDd][+-]?\d+)?/;
+
+# value for absolute/percentage tolerance
+my $TOL;
+# conventional diff program called by ndiff
+my $diff;
+# show usage and exit
+my $help;
+
+# Format of diff output
+my $format = 'unified';
+# Number of context lines around diff hunks
+my $default_context_lines = 3;
+my $context_lines = $default_context_lines;
+# regexps that indicate matches
+my @match_regexps = ();
+
+$SIG{__DIE__} = \&errexit;
+
+# SAB Added no_auto_abbrev and pass_through so that options that are not
+# understood can be passed on to the diff program
+Getopt::Long::config qw(bundling no_getopt_compat permute no_auto_abbrev pass_through);
+unless( Getopt::Long::GetOptions ('t|tolerance=s' => \$TOL,
+				  'd|diff=s' => \$diff,
+				  'U|unified=i' => \$context_lines,
+				  'match-regexp=s' => \@match_regexps,
+				  'h|help' => \$help ) )
+{
+	die "Try `$0 --help' for more information.\n";
+}
+
+if (defined $help)
+{
+	&usage();
+	exit;
+}
+
+# SAB As we can't decipher the arguments and filenames for diff correctly
+# unless we know all its relevant options and whether or not each option
+# has parameters we just pass all the remaining options to diff and let
+# it check file existence and so on.
+
+# Default value for absolute/percentage tolerance
+unless( defined $TOL ) { $TOL = $default_TOL };
+
+# Default value for diff program
+unless( defined $diff ) { $diff = $default_diff };
+
+# determine whether tolerance is to be specified in absolute or relative terms
+my $tol_is_relative;
+if($tol_is_relative = $TOL =~ m/(.*)\%$/)
+{
+	$TOL = $1 / 100;
+}
+# convert $TOL to a number
+$TOL += 0;
+
+my $different=0;
+unless( my $pid = open DIFF, '-|' ) {
+    defined $pid or die "can't fork: $!\n";
+
+    # Child
+    # Provide diff output on STDOUT to the parent.
+
+    # Using unified diff output format.  This currently cannot be overridden
+    # but this script would work fine for normal diff output.  Perhaps
+    # an option for Posix output would be reasonable.
+
+    # The context diff means that diff hunks that are close to each
+    # other are merged into one, so if there were scattered matching
+    # lines between the hunks they are included in the diff output.
+    # This extra info for ndiff gives it more options to find lines
+    # matching within tolerance.  Diff occasionally finds matches on
+    # non-zero diagonals that used to split differences into hunks
+    # with unequal numbers of lines in each file.  With these merged
+    # into one hunk there may be a complete match within tolerance.
+
+    exec $diff $diff, '-U', $context_lines, @ARGV
+	or die "can't exec $diff: $!\n";
+}
+
+# Read the diff output
+
+# Array to store any file header
+my @file_header;
+
+my $line = <DIFF>;
+if( defined $line and $format ne 'posix' ) {
+    $line =~ m/^--- /
+	or die "unrecognized output from diff line $.:\n $line";
+    push @file_header, $line;
+    $line = <DIFF>;
+    ( defined $line and $line =~ m/^\+\+\+ / )
+	or die "unrecognized output from diff line $.:\n $line";
+    push @file_header, $line;
+    $line = <DIFF>;
+}
+
+my $have_hunk; # record if a hunk is found
+
+while( defined $line )
+{
+    # read a hunk
+#!!! need to add ability to recognize '\ No newline at end of file'
+    my (@starts, @lengths, @lines, @changed);
+    if( $format eq 'posix' )
+    {
+	if( $line =~ m/^(\d+)a(\d+)(?:,(\d+))?\n/ ) {
+	    $starts[0] = $1 + 1;
+	    $lengths[0] = 0;
+	    $starts[1] = $2;
+	    $lengths[1] = defined $3 ? $3 - $2 + 1 : 1;
+	} elsif( $line =~ /^(\d+)(?:,(\d+))?d(\d+)\n/ ) {
+	    $starts[0] = $1;
+	    $lengths[0] = defined $2 ? $2 - $1 + 1 : 1;
+	    $starts[1] = $3 + 1;
+	    $lengths[1] = 0;
+	} elsif( $line =~ /^(\d+)(?:,(\d+))?c(\d+)(?:,(\d+))?\n/ ) {
+	    $starts[0] = $1;
+	    $lengths[0] = defined $2 ? $2 - $1 + 1 : 1;
+	    $starts[1] = $3;
+	    $lengths[1] = defined $4 ? $4 - $3 + 1 : 1;
+	} else {
+	    die "unrecognized diff output";
+	}
+	# lines from oldfile
+	for( my $i=0; $i < $lengths[0]; $i++ ) {
+	    $line = <DIFF>;
+	    $line =~ m/^<\s/ or die "unrecognized diff output";
+	    push @{$lines[0]}, substr $line, 2;
+	}
+	# separator
+	if( $lengths[0] && $lengths[1] ) {
+	    $line = <DIFF>;
+	    $line eq "---\n" or die "unrecognized diff output";
+	}
+	# lines from newfile
+	for( my $i=0; $i < $lengths[1]; $i++ ) {
+	    $line = <DIFF>;
+	    $line =~ m/^>\s/ or die "unrecognized diff output";
+	    push @{$lines[1]}, substr $line, 2;
+	}
+	# all lines changed
+	@changed = map { [ (1) x $_ ] } @lengths;
+    } else { # unified
+	$line =~ m/^\@\@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? \@\@\n/
+	    or die "unrecognized diff output";
+	@starts = ($1,$3);
+	@lengths = ($2,$4);
+	foreach (0,1) {
+	    if( ! defined $lengths[$_] ) {
+		$lengths[$_] = 1; # no length means length 1
+	    } elsif( ! $lengths[$_] ) {
+		# adds or deletes occur 1 line after that recorded
+		$starts[$_]++;
+	    }
+	};
+	# read in the file lines for this hunk
+	my $lines_to_read = $lengths[0] + $lengths[1];
+	while( $lines_to_read > 0 ) {
+	    $line = <DIFF>;
+	    defined $line or die "diff output ended unexpectedly";
+	    my $file_line = substr $line, 1;
+	    if( $line =~ /^\s/ ) { # unchanged line
+		foreach my $file ( 0,1 ) {
+		    push @{$lines[$file]}, $file_line;
+		    push @{$changed[$file]}, 0;
+		    $lines_to_read--;
+		}
+	    } elsif( $line =~ /^\+/ ) { # added line
+		push @{$lines[1]}, $file_line;
+		push @{$changed[1]}, 1;
+		$lines_to_read--;
+	    } elsif( $line =~ /^-/ ) { # deleted line
+		push @{$lines[0]}, $file_line;
+		push @{$changed[0]}, 1;
+		$lines_to_read--;
+	    } else {
+		die "unrecognized diff output";
+	    }
+	}
+	$lines_to_read and die "unrecognized diff output";
+    }
+    $have_hunk = 1;
+
+    # recompare changed lines
+
+    for( my @index = (0) x 2;
+	 2 == grep { $index[$_] < $lengths[$_] } 0,1; )
+    {
+	my @line_changed = map { $changed[$_][$index[$_]] } 0,1;
+	my $change_count = grep { $_ } @line_changed;
+	if( $change_count ) { # there is a change
+	    # recheck these lines
+	    if( &ncompare( map { $lines[$_][$index[$_]] } 0,1 ) ) {
+		# lines don't match.
+		# only advance index in file(s) with changed lines
+		foreach (0,1) { $line_changed[$_] and $index[$_]++ }
+	    } else {
+		# lines do match
+		if( $change_count == 2) {
+		    # both lines were marked as changed but are the
+		    # same so mark them as unchanged
+		    foreach (0,1) { $changed[$_][$index[$_]] = 0 }
+		} else {
+		    # only one line was marked as changed.
+		    my $changed_file = $line_changed[1];
+		    # This in fact is not changed, but if we mark this
+		    # as unchanged we must mark the line that was
+		    # assumed to match the unchanged line as changed.
+		    my $match_index = $index[$changed_file];		    
+		    $changed[$changed_file][$match_index] = 0;
+		    do {
+			$match_index++;
+			if( $match_index >= $lengths[$changed_file] ) {
+			    die "matching line not found";
+			}
+		    } while $changed[$changed_file][$match_index];
+		    $changed[$changed_file][$match_index] = 1;
+		}
+		# advance index in both files.
+		foreach (0,1) { $index[$_]++ }
+	    }
+	} else { # matching lines
+	    foreach (0,1) { $index[$_]++ }
+	}
+    }
+
+    # Add matching lines to each of the hunks to simplify the hunk
+    # splitting algorithm below.
+    foreach (0,1) { push @{$changed[$_]},0 }
+
+    # split into smaller hunks
+    for( ( my @index = (0,0) ),
+	 ( my @hunk_starts = (0,0) ),
+	 ( my ($found_change,$match_count) = (0,0) );
+	 grep { $index[$_] < $lengths[$_] } 0,1; )
+    {
+	$match_count++;
+	foreach (0,1) {
+	    while( $changed[$_][$index[$_]] ) {
+		unless( $found_change ) {
+		    $found_change = 1;
+		    foreach (0,1) {
+			$hunk_starts[$_] =
+			    $index[$_] > $context_lines ?
+				$index[$_] - $context_lines : 0;
+		    }
+		}
+		$match_count = 0;
+		$index[$_]++;
+	    }
+	}
+	if( $match_count ) {
+	    foreach (0,1) { $index[$_]++ }
+	}
+	# don't print this change until we are sure that 
+	# it won't merge with the next change. ( >= is a safe ==.)
+	if( $found_change &&
+	    ( $match_count >= 2 * $context_lines ||
+	      ! grep { $index[$_] < $lengths[$_] } 0,1 ) )
+	{
+	    $different = 1;
+	    if( @file_header ) {
+		print @file_header;
+		@file_header = ();
+	    }
+	    my @hunk_ends =
+		map { $match_count > $context_lines ?
+			  $_ - $match_count + $context_lines : $_ } @index;
+	    &print_hunk( ( map { $starts[$_] + $hunk_starts[$_] } 0,1 ),
+			 ( map { [ @{$lines[$_]}[ $hunk_starts[$_] ..
+						  $hunk_ends[$_] - 1 ]]} 0,1 ),
+			 ( map { [ @{$changed[$_]}[ $hunk_starts[$_] ..
+						    $hunk_ends[$_] ]]} 0,1 ));
+	    $found_change = 0;
+	}	    
+    }
+
+    $line = <DIFF>;
+}
+
+unless( close DIFF ) {
+    $! and die "error closing pipe from diff: $!\n";
+    $? & 127 and die "$diff received signal $?\n";
+    # exit status of 1 means differences but check that differences were found
+    # (or the exit value may indicate a failure to run diff).
+    $? >> 8 == 1 && $have_hunk or die "$diff failed\n";
+}
+exit $different;
+
+sub ncompare {
+    my @strings = @_;
+
+    # returns 0 if two strings are equivalent within numerical tolerances;
+    # 1 otherwise.
+
+    my $match = 1;  #assume match until difference found
+    my $continue = 1; #true until end of strings
+
+    while( $match && $strings[0] ne $strings[1] ) {
+	my (@starts,@reals);
+	foreach my $i (0..1) {
+	    # trim off leading text and first real number
+
+	    # The number of spaces is ignored around real numbers as
+	    # this may vary with the format of the number and with the
+	    # sign.  But if a space is the separator from
+	    # surrounding text then this is compared with the
+	    # separator of the corresponding line.
+
+	    if( $strings[$i] =~
+		# units may follow the number before any separator
+		# Allow a full stop after the number provided there is some
+		# other separator to confirm that it is not a decimal point.
+		m"(^|[][)(}{,;:'\"\$\t ]) *($real_regexp) *((?:[a-z][-a-z/^0-9]*|%)?\.?[][)(}{,;:*'\"\t \n])" ) {
+		$starts[$i] = "$`$1";
+		$reals[$i] = $2;
+		$strings[$i] = "$3$'";
+	    } else {
+		$starts[$i] = $strings[$i];
+		$strings[$i] = '';
+	    }
+	}
+	if( $starts[0] ne $starts[1] ) {
+	    # leading text does not match
+	    $match = 0;
+	} elsif( defined $reals[0] and defined $reals[1] ) {
+	    # 2 real numbers found; compare.
+	    $match = &real_string_close(@reals);
+	} elsif( defined $reals[0] or defined $reals[1] ) {
+	    # only 1 real number found.
+	    $match = 0;
+	}
+    }
+
+    # check unmatching lines against regexps that indicate matches.
+    unless( $match ) {
+	@strings = @_;
+	$match |= grep { my $match_regexp = $_;
+			 2 == grep { m/$match_regexp/ } @strings;
+			 } @match_regexps;
+    }
+    return $match ? 0 : 1;
+}
+
+sub real_string_close {
+    my @real_strings = @_;
+
+    # Returns true if two strings representing real numbers are close
+    # enough to be considered equal within tolerances; false
+    # otherwise.
+
+    # If the tolerance is not zero, accept a change in the last digit
+    # because, even though this change may be larger than the
+    # tolerance it may represent a difference that is smaller.
+
+    # remove fortranism
+    map { s/d/e/i } @real_strings;
+
+    my $permissible_difference = $TOL;
+    if( $tol_is_relative ) {
+	my $abs_ref = abs $real_strings[0];
+	$abs_ref > 1 and $permissible_difference *= $abs_ref;
+    }
+
+    if( $TOL > 0 ) {
+	# determine resolution in answer
+	$real_strings[0] =~ m/\.(\d*)(?:[EeDd]([+-]?\d+))?/
+	    or die "$0: confusion over regexp for real\n";
+	# If the answer is in exponential format and is zero then it
+	# has infinitesimal resolution; otherwise work out the resolution
+	# from the number of decimal places and the exponent.
+	unless( defined $2 and $real_strings[0] == 0 ) {
+	    my $resolution_exponent = - length $1;
+	    defined $2 and $resolution_exponent += $2;
+	    #include a safety factor (1.1) for numerical rounding errors
+	    my $resolution = 1.1 * 10 ** $resolution_exponent;
+	    $resolution > $permissible_difference and
+		$permissible_difference = $resolution;
+	}
+    }
+
+    return
+	abs( $real_strings[1] - $real_strings[0] ) <=  $permissible_difference;
+}
+
+sub print_hunk {
+    my (@starts,@lines,@changed);
+    (@starts[0,1],@lines[0,1],@changed[0,1]) = @_;
+    # Prints a diff hunk.
+
+    # adds or deletes occur 1 line after that recorded
+    foreach (0,1) { @{$lines[$_]} or $starts[$_]-- };
+
+    if( $format eq 'posix' ) {
+	# range header
+	if( @{$lines[0]} <= 1 ) {
+	    printf '%d', $starts[0];
+	} else {
+	    printf '%d,%d', $starts[0], $starts[0] + @{$lines[0]} - 1;
+	}
+	print @{$lines[0]} ? ( @{$lines[1]} ? 'c' : 'd' ) : 'a';
+	if( @{$lines[1]} <= 1 ) {
+	    printf "%d\n", $starts[1];
+	} else {
+	    printf "%d,%d\n", $starts[1], $starts[1] + @{$lines[1]} - 1;
+	}
+	# lines
+	foreach (@{$lines[0]}) { print "< $_" }
+	( @{$lines[0]} && @{$lines[1]} ) and print "---\n";
+	foreach (@{$lines[1]}) { print "> $_" }
+    } else { # unified
+	# range header
+	if( @{$lines[0]} == 1 ) {
+	    printf '@@ -%d +', $starts[0];
+	} else {
+	    printf '@@ -%d,%d +', $starts[0], scalar @{$lines[0]};
+	}
+	if( @{$lines[1]} == 1 ) {
+	    printf "%d \@\@\n", $starts[1];
+	} else {
+	    printf "%d,%d \@\@\n", $starts[1], scalar @{$lines[1]};
+	}
+	# lines
+	for( my @index = (0) x 2;
+	     grep { $index[$_] < @{$lines[$_]} } 0,1; )
+	{
+	    unless( grep { $changed[$_][$index[$_]] } 0,1 ) {
+		# matching line
+		print " ",$lines[0][$index[0]];
+		foreach (0,1) { $index[$_]++ }
+	    }
+	    foreach (0,1) {
+		while( $changed[$_][$index[$_]] ) {
+		    # changed line
+		    print $_ ? '+' : '-';
+		    print $lines[$_][$index[$_]];
+		    $index[$_]++;
+		}
+	    }
+	}
+    }
+}
+
+sub usage
+{
+    print <<EOF;
+Usage: $0 [-h | --help (show this usage)]
+          [-d diff_program | --diff diff_program (default=$default_diff,
+                      ordinary diff program used by ndiff)]
+	  [--match-regexp=REGEXP (perl REGEXP that identifies lines that are considered to match)]
+          [-U NUM | --unified=NUM (default $default_context_lines, output NUM lines of unified context)]
+          [-t TOLERANCE | --tolerance=TOLERANCE (default=$default_TOL)]
+          [ordinary diff parameters] FILE1 FILE2
+
+This program calls diff to actually compare the files and then
+examines and modifies the according to whether the results are within
+the required tolerance.
+
+Tolerance can be specified in relative or absolute terms. To specify
+tolerance in relative terms (a percentage), simply put a \% sign at 
+the end of the number you put next to the -t switch. For absolute
+tolerance, leave it off.
+The default is zero tolerance.
+
+The % difference is calculated as:
+
+if number(file1) > 1
+
+| number(file1) - number(file2) |
+--------------------------------- x 100
+       | number(file1) |
+
+else
+
+| number(file1) - number(file2) | x 100
+
+If the tolerance is not zero, a change in the last digit is accepted
+because, even though this change may be larger than the tolerance, it
+may represent a difference that is smaller.
+
+If a match-regexp is specified and this perl regular expression matches
+corresponding lines in both files then these lines are considered to
+match.
+
+EOF
+}
+
+sub errexit
+{
+    if(@_)
+    {
+	print STDERR "$0: ",@_;
+    }
+    # Must exit with status not 0 or 1
+    # as these are both successful exit stati of diff.
+    exit (( $! == 0 || $! == 1 ) ? 2 : $!);
+}
+
+### Local Variables: 
+### mode: perl
+### tab-width: 8
+### End: 
