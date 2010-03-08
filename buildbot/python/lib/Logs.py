@@ -26,3 +26,11 @@ class ShellCommandWithHtmlLog(shell.ShellCommand):
        content += "</body></html>"
 
        self.addHTMLLog('results', content)
+
+class ShellCommandToCheckMissingRoutines(shell.ShellCommand):
+     def evaluateCommand(self, cmd):
+      if ("No functions missing in opencmiss_c.f90" in self.getLog("stdio").getText()) and ("No functions missing in opencmiss.h" in self.getLog("stdio").getText()):
+        return SUCCESS
+      else:
+        return FAILURE
+

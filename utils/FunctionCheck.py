@@ -1,4 +1,6 @@
-#test
+import FunctionRead
+
+FunctionRead.main()
 
 f_functions = open('opencmiss_f_functions', 'r')
 c_functions = open('opencmiss_c_functions', 'r')
@@ -22,6 +24,7 @@ while string_f != '':
 		if (string_f==string_c)	:
          		matchC=True
 	if (not matchC):
+		print 'Missing function in opencmiss_c.f90: ', string_f
 		missingfunctions_c.write(string_f)
 		countc = countc + 1
 	matchH = False
@@ -29,6 +32,7 @@ while string_f != '':
 		if (string_f==string_h) :	
          		matchH=True
 	if (not matchH):
+		print 'Missing function in opencmiss.h: ', string_f		
 		missingfunctions_h.write(string_f)
 		counth = counth + 1
 
