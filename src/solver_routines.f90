@@ -5790,9 +5790,24 @@ CONTAINS
                             !Call MUMPS through PETSc
                             IF(ASSOCIATED(RHS_VECTOR%PETSC)) THEN
                               IF(ASSOCIATED(SOLVER_VECTOR%PETSC)) THEN
-                                !Solve the linear system
-                                CALL PETSC_KSPSOLVE(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR,SOLVER_VECTOR%PETSC%VECTOR, &
-                                  & ERR,ERROR,*999)
+                                IF(ASSOCIATED(SOLVER_MATRIX%MATRIX)) THEN
+                                  IF(ASSOCIATED(SOLVER_MATRIX%MATRIX%PETSC)) THEN
+                                    IF(SOLVER_MATRIX%UPDATE_MATRIX) THEN
+                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
+                                        & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_NONZERO_PATTERN,ERR,ERROR,*999)
+                                    ELSE
+                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
+                                        & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_PRECONDITIONER,ERR,ERROR,*999)
+                                    ENDIF
+                                    !Solve the linear system
+                                    CALL PETSC_KSPSOLVE(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR, &
+                                      & SOLVER_VECTOR%PETSC%VECTOR,ERR,ERROR,*999) 
+                                  ELSE
+                                    CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
+                                  ENDIF
+                                ELSE
+                                   CALL FLAG_ERROR("Solver matrix distributed matrix is not associated.",ERR,ERROR,*999)
+                                ENDIF
                               ELSE
                                 CALL FLAG_ERROR("Solver vector PETSc vector is not associated.",ERR,ERROR,*999)
                               ENDIF
