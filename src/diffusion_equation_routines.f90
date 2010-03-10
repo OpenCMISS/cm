@@ -79,7 +79,8 @@ MODULE DIFFUSION_EQUATION_ROUTINES
   PUBLIC DIFFUSION_EQUATION_EQUATIONS_SET_SETUP,DIFFUSION_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET, &
     & DIFFUSION_EQUATION_EQUATIONS_SET_SUBTYPE_SET,DIFFUSION_EQUATION_FINITE_ELEMENT_CALCULATE, &
     & DIFFUSION_EQUATION_PROBLEM_SUBTYPE_SET,DIFFUSION_EQUATION_PROBLEM_SETUP, &
-    & DIFFUSION_EQUATION_PRE_SOLVE
+    & DIFFUSION_EQUATION_PRE_SOLVE, DIFFUSION_EQUATION_PRE_SOLVE_GET_SOURCE_VALUE, &
+    & DIFFUSION_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLUTION
   
 CONTAINS
 
@@ -894,7 +895,7 @@ CONTAINS
                     CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, &
                      & component_idx,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                     CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, &
-                      & component_idx,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
+                      & component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                   ENDDO !component_idx
                 ENDIF
                   !Default the field scaling to that of the geometric field
@@ -1549,13 +1550,274 @@ CONTAINS
     CALL EXITS("DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS")
     RETURN 1
   END SUBROUTINE DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS
-      
   !   
   !================================================================================================================================
   !
+  SUBROUTINE DIFFUSION_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLUTION(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solvers
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    !Local Variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER_DIFFUSION_ONE !<A pointer to the solvers
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD_DIFFUSION_ONE
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS_DIFFUSION_ONE !<A pointer to the solver equations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING_DIFFUSION_ONE !<A pointer to the solver mapping
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET_DIFFUSION_ONE !<A pointer to the equations set
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    REAL(DP), POINTER :: DUMMY_VALUES2(:)
+
+    INTEGER(INTG) :: NUMBER_OF_COMPONENTS_DEPENDENT_FIELD_DIFFUSION_ONE
+    INTEGER(INTG) :: NDOFS_TO_PRINT, I
+
+    CALL ENTERS("DIFFUSION_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLUTION",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+
+      NULLIFY(SOLVER_DIFFUSION_ONE)
+
+      IF(ASSOCIATED(SOLVER)) THEN
+        IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            CASE(PROBLEM_NO_SOURCE_DIFFUSION_SUBTYPE)
+              ! do nothing ???
+            CASE(PROBLEM_LINEAR_SOURCE_DIFFUSION_SUBTYPE)
+              ! do nothing ???
+            CASE(PROBLEM_NONLINEAR_SOURCE_DIFFUSION_SUBTYPE)
+              ! do nothing ???
+            CASE(PROBLEM_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE)
+              IF(SOLVER%GLOBAL_NUMBER==1) THEN
+                !--- Get the dependent field of the diffusion-one equations
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Store value diffusion-one dependent field at time, t ... ",ERR,ERROR,*999)
+                CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,1,SOLVER_DIFFUSION_ONE,ERR,ERROR,*999)
+                SOLVER_EQUATIONS_DIFFUSION_ONE=>SOLVER_DIFFUSION_ONE%SOLVER_EQUATIONS
+                IF(ASSOCIATED(SOLVER_EQUATIONS_DIFFUSION_ONE)) THEN
+                  SOLVER_MAPPING_DIFFUSION_ONE=>SOLVER_EQUATIONS_DIFFUSION_ONE%SOLVER_MAPPING
+                  IF(ASSOCIATED(SOLVER_MAPPING_DIFFUSION_ONE)) THEN
+                    EQUATIONS_SET_DIFFUSION_ONE=>SOLVER_MAPPING_DIFFUSION_ONE%EQUATIONS_SETS(1)%PTR
+                    IF(ASSOCIATED(EQUATIONS_SET_DIFFUSION_ONE)) THEN
+                      DEPENDENT_FIELD_DIFFUSION_ONE=>EQUATIONS_SET_DIFFUSION_ONE%DEPENDENT%DEPENDENT_FIELD
+                      IF(ASSOCIATED(DEPENDENT_FIELD_DIFFUSION_ONE)) THEN
+                        CALL FIELD_NUMBER_OF_COMPONENTS_GET(DEPENDENT_FIELD_DIFFUSION_ONE, &
+                          & FIELD_U_VARIABLE_TYPE,NUMBER_OF_COMPONENTS_DEPENDENT_FIELD_DIFFUSION_ONE,ERR,ERROR,*999)
+                      ELSE
+                        CALL FLAG_ERROR("DEPENDENT_FIELD_DIFFUSION_ONE is not associated.",ERR,ERROR,*999)
+                      END IF
+                    ELSE
+                      CALL FLAG_ERROR("Diffusion-one equations set is not associated.",ERR,ERROR,*999)
+                    END IF
+                  ELSE
+                    CALL FLAG_ERROR("Diffusion-one solver mapping is not associated.",ERR,ERROR,*999)
+                  END IF
+                ELSE
+                  CALL FLAG_ERROR("Diffusion-one solver equations are not associated.",ERR,ERROR,*999)
+                END IF
+
+                !--- Copy the current time value parameters set from diffusion-one's dependent field 
+                  DO I=1,NUMBER_OF_COMPONENTS_DEPENDENT_FIELD_DIFFUSION_ONE
+                    CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(DEPENDENT_FIELD_DIFFUSION_ONE, & 
+                      & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,I,DEPENDENT_FIELD_DIFFUSION_ONE, & 
+                      & FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE,I,ERR,ERROR,*999)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!FIELDMESHDISPLACEMENTTYPE needs to be changed to appropriate type for this problem
+                  END DO
+
+
+!                 IF(DIAGNOSTICS3) THEN
+!                   NULLIFY( DUMMY_VALUES2 )
+!                   CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD_FINITE_ELASTICITY,FIELD_U_VARIABLE_TYPE, &
+!                     & FIELD_VALUES_SET_TYPE,DUMMY_VALUES2,ERR,ERROR,*999)
+!                   NDOFS_TO_PRINT = SIZE(DUMMY_VALUES2,1)
+!                   CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT,NDOFS_TO_PRINT,DUMMY_VALUES2, &
+!                     & '(" DEPENDENT_FIELD_FINITE_ELASTICITY,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE = ",4(X,E13.6))',&
+!                     & '4(4(X,E13.6))',ERR,ERROR,*999)
+!                   CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD_FINITE_ELASTICITY,FIELD_U_VARIABLE_TYPE, &
+!                     & FIELD_VALUES_SET_TYPE,DUMMY_VALUES2,ERR,ERROR,*999)
+!                 ENDIF
+
+              ELSE  
+                ! do nothing ???
+!                 CALL FLAG_ERROR("DARCY_EQUATION_PRE_SOLVE_GET_SOLID_DISPLACEMENT may only be carried out for SOLVER%GLOBAL_NUMBER = 2", &
+!                   & ERR,ERROR,*999)
+              END IF
+            CASE DEFAULT
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                & " is not valid for a diffusion equation type of a classical field problem class."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
 
 
 
+    CALL EXITS("DIFFUSION_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLUTION")
+    RETURN
+999 CALL ERRORS("DIFFUSION_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLUTION",ERR,ERROR)
+    CALL EXITS("DIFFUSION_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLUTION")
+    RETURN 1
+  END SUBROUTINE DIFFUSION_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLUTION    
+  !   
+  !================================================================================================================================
+  !
+  SUBROUTINE DIFFUSION_EQUATION_PRE_SOLVE_GET_SOURCE_VALUE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solvers
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    !Local Variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER_DIFFUSION_ONE, SOLVER_DIFFUSION_TWO  !<A pointer to the solvers
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD_DIFFUSION_TWO, SOURCE_FIELD_DIFFUSION_ONE
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS_DIFFUSION_ONE, SOLVER_EQUATIONS_DIFFUSION_TWO  !<A pointer to the solver equations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING_DIFFUSION_ONE, SOLVER_MAPPING_DIFFUSION_TWO !<A pointer to the solver mapping
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET_DIFFUSION_ONE, EQUATIONS_SET_DIFFUSION_TWO !<A pointer to the equations set
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    REAL(DP), POINTER :: DUMMY_VALUES2(:)
+
+    INTEGER(INTG) :: NUMBER_OF_COMPONENTS_DEPENDENT_FIELD_DIFFUSION_TWO,NUMBER_OF_COMPONENTS_SOURCE_FIELD_DIFFUSION_ONE
+    INTEGER(INTG) :: NDOFS_TO_PRINT, I
+
+
+    CALL ENTERS("DIFFUSION_EQUATION_PRE_SOLVE_GET_SOURCE_VALUE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+
+      NULLIFY(SOLVER_DIFFUSION_ONE)
+      NULLIFY(SOLVER_DIFFUSION_TWO)
+
+      IF(ASSOCIATED(SOLVER)) THEN
+        IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            CASE(PROBLEM_NO_SOURCE_DIFFUSION_SUBTYPE)
+              ! do nothing ???
+            CASE(PROBLEM_LINEAR_SOURCE_DIFFUSION_SUBTYPE)
+              ! do nothing ???
+            CASE(PROBLEM_NONLINEAR_SOURCE_DIFFUSION_SUBTYPE)
+              ! do nothing ???
+            CASE(PROBLEM_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE)
+              IF(SOLVER%GLOBAL_NUMBER==1) THEN
+                !--- Get the dependent field of the diffusion_two equations
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Update diffusion-one source field ... ",ERR,ERROR,*999)
+                CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,2,SOLVER_DIFFUSION_TWO,ERR,ERROR,*999)
+                SOLVER_EQUATIONS_DIFFUSION_TWO=>SOLVER_DIFFUSION_TWO%SOLVER_EQUATIONS
+                IF(ASSOCIATED(SOLVER_EQUATIONS_DIFFUSION_TWO)) THEN
+                  SOLVER_MAPPING_DIFFUSION_TWO=>SOLVER_EQUATIONS_DIFFUSION_TWO%SOLVER_MAPPING
+                  IF(ASSOCIATED(SOLVER_MAPPING_DIFFUSION_TWO)) THEN
+                    EQUATIONS_SET_DIFFUSION_TWO=>SOLVER_MAPPING_DIFFUSION_TWO%EQUATIONS_SETS(1)%PTR
+                    IF(ASSOCIATED(EQUATIONS_SET_DIFFUSION_TWO)) THEN
+                      DEPENDENT_FIELD_DIFFUSION_TWO=>EQUATIONS_SET_DIFFUSION_TWO%DEPENDENT%DEPENDENT_FIELD
+                      IF(ASSOCIATED(DEPENDENT_FIELD_DIFFUSION_TWO)) THEN
+                        CALL FIELD_NUMBER_OF_COMPONENTS_GET(DEPENDENT_FIELD_DIFFUSION_TWO, &
+                          & FIELD_U_VARIABLE_TYPE,NUMBER_OF_COMPONENTS_DEPENDENT_FIELD_DIFFUSION_TWO,ERR,ERROR,*999)
+                      ELSE
+                        CALL FLAG_ERROR("DEPENDENT_FIELD_DIFFUSION_TWO is not associated.",ERR,ERROR,*999)
+                      END IF
+                    ELSE
+                      CALL FLAG_ERROR("Diffusion-two equations set is not associated.",ERR,ERROR,*999)
+                    END IF
+                  ELSE
+                    CALL FLAG_ERROR("Diffusion-two solver mapping is not associated.",ERR,ERROR,*999)
+                  END IF
+                ELSE
+                  CALL FLAG_ERROR("Diffusion-two solver equations are not associated.",ERR,ERROR,*999)
+                END IF
+
+
+                !--- Get the source field for the diffusion_one equations
+                CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,1,SOLVER_DIFFUSION_ONE,ERR,ERROR,*999)
+                SOLVER_EQUATIONS_DIFFUSION_ONE=>SOLVER_DIFFUSION_ONE%SOLVER_EQUATIONS
+                IF(ASSOCIATED(SOLVER_EQUATIONS_DIFFUSION_ONE)) THEN
+                  SOLVER_MAPPING_DIFFUSION_ONE=>SOLVER_EQUATIONS_DIFFUSION_ONE%SOLVER_MAPPING
+                  IF(ASSOCIATED(SOLVER_MAPPING_DIFFUSION_ONE)) THEN
+                    EQUATIONS_SET_DIFFUSION_ONE=>SOLVER_MAPPING_DIFFUSION_ONE%EQUATIONS_SETS(1)%PTR
+                    IF(ASSOCIATED(EQUATIONS_SET_DIFFUSION_ONE)) THEN
+                      SOURCE_FIELD_DIFFUSION_ONE=>EQUATIONS_SET_DIFFUSION_ONE%SOURCE%SOURCE_FIELD
+                      IF(ASSOCIATED(SOURCE_FIELD_DIFFUSION_ONE)) THEN
+                        CALL FIELD_NUMBER_OF_COMPONENTS_GET(SOURCE_FIELD_DIFFUSION_ONE, & 
+                          & FIELD_U_VARIABLE_TYPE,NUMBER_OF_COMPONENTS_SOURCE_FIELD_DIFFUSION_ONE,ERR,ERROR,*999)
+                      ELSE
+                        CALL FLAG_ERROR("SOURCE_FIELD_DIFFUSION_ONE is not associated.",ERR,ERROR,*999)
+                      END IF
+                    ELSE
+                      CALL FLAG_ERROR("Diffusion-one equations set is not associated.",ERR,ERROR,*999)
+                    END IF
+                  ELSE
+                    CALL FLAG_ERROR("Diffusion-one solver mapping is not associated.",ERR,ERROR,*999)
+                  END IF
+                ELSE
+                  CALL FLAG_ERROR("Diffusion-one solver equations are not associated.",ERR,ERROR,*999)
+                END IF
+
+                !--- Copy the result from diffusion-two's dependent field to diffusion-one's source field
+                IF(NUMBER_OF_COMPONENTS_SOURCE_FIELD_DIFFUSION_ONE==NUMBER_OF_COMPONENTS_DEPENDENT_FIELD_DIFFUSION_TWO) THEN
+                  DO I=1,NUMBER_OF_COMPONENTS_SOURCE_FIELD_DIFFUSION_ONE
+                    CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(DEPENDENT_FIELD_DIFFUSION_TWO, & 
+                      & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,I,SOURCE_FIELD_DIFFUSION_ONE, & 
+                      & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,I,ERR,ERROR,*999)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!FIELDMESHDISPLACEMENTTYPE needs to be changed to appropriate type for this problem
+                  END DO
+                ELSE
+                  LOCAL_ERROR="Number of components of diffusion-two dependent field "// &
+                    & "is not consistent with diffusion-one-equation source field."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END IF
+
+!                 IF(DIAGNOSTICS3) THEN
+!                   NULLIFY( DUMMY_VALUES2 )
+!                   CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD_FINITE_ELASTICITY,FIELD_U_VARIABLE_TYPE, &
+!                     & FIELD_VALUES_SET_TYPE,DUMMY_VALUES2,ERR,ERROR,*999)
+!                   NDOFS_TO_PRINT = SIZE(DUMMY_VALUES2,1)
+!                   CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT,NDOFS_TO_PRINT,DUMMY_VALUES2, &
+!                     & '(" DEPENDENT_FIELD_FINITE_ELASTICITY,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE = ",4(X,E13.6))',&
+!                     & '4(4(X,E13.6))',ERR,ERROR,*999)
+!                   CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD_FINITE_ELASTICITY,FIELD_U_VARIABLE_TYPE, &
+!                     & FIELD_VALUES_SET_TYPE,DUMMY_VALUES2,ERR,ERROR,*999)
+!                 ENDIF
+
+              ELSE  
+                ! do nothing ???
+!                 CALL FLAG_ERROR("DARCY_EQUATION_PRE_SOLVE_GET_SOLID_DISPLACEMENT may only be carried out for SOLVER%GLOBAL_NUMBER = 2", &
+!                   & ERR,ERROR,*999)
+              END IF
+            CASE DEFAULT
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                & " is not valid for a diffusion equation type of a classical field problem class."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+
+
+    CALL EXITS("DIFFUSION_EQUATION_PRE_SOLVE_GET_SOURCE_VALUE")
+    RETURN
+999 CALL ERRORS("DIFFUSION_EQUATION_PRE_SOLVE_GET_SOURCE_VALUE",ERR,ERROR)
+    CALL EXITS("DIFFUSION_EQUATION_PRE_SOLVE_GET_SOURCE_VALUE")
+    RETURN 1
+  END SUBROUTINE DIFFUSION_EQUATION_PRE_SOLVE_GET_SOURCE_VALUE
+  !   
+  !================================================================================================================================
+  !
 
   !>Calculates the element stiffness matrices and RHS for a diffusion equation finite element equations set.
   SUBROUTINE DIFFUSION_EQUATION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)

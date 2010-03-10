@@ -470,9 +470,9 @@ CONTAINS
 
               IF(SOLVER%GLOBAL_NUMBER==1) THEN
                 !copy current value of concentration_one to another variable
-                !CALL DIFFUSION_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLUTION(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                CALL DIFFUSION_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLUTION(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
                 !Set source term to be updated value of concentration_two
-                !CALL DIFFUSION_EQUATION_PRE_SOLVE_GET_SOURCE_VALUE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                CALL DIFFUSION_EQUATION_PRE_SOLVE_GET_SOURCE_VALUE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
               ELSE IF(SOLVER%GLOBAL_NUMBER==2) THEN
                 !compute value of constant source term - evaluated from lamdba*(0.5*(c_1^{t+1}+c_1^{t}) - c_2^{t})
                 !CALL DIFFUSION_EQUATION_PRE_SOLVE_GET_SOURCE_VALUE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
@@ -522,7 +522,12 @@ CONTAINS
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
             CASE(PROBLEM_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE)
-!              CALL DIFFUSION_EQUATION_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              IF(SOLVER%GLOBAL_NUMBER==1) THEN
+!              CALL DIFFUSION_EQUATION_POST_SOLVE_EVALUATE_SOURCE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+!              CALL DIFFUSION_EQUATION_POST_SOLVE_COPY_SOURCE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              ELSE IF(SOLVER%GLOBAL_NUMBER==2) THEN
+              !do nothing?!
+              ENDIF
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a diffusion-diffusion type of a multi physics problem class."
