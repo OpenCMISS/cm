@@ -234,17 +234,19 @@ CONTAINS
                                     CALL BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE(BOUNDARY_CONDITIONS_DIRICHLET% &
                                       & LINEAR_SPARSITY_INDICES(equ_matrix_idx)%PTR,BOUNDARY_CONDITION_VARIABLE% &
                                       & NUMBER_OF_DIRICHLET_CONDITIONS,ERR,ERROR,*999)
-                                    ! Setup list for storing dirichlet non zero indices
-                                    NULLIFY(SPARSE_INDICES)
-                                    CALL LIST_CREATE_START(SPARSE_INDICES,ERR,ERROR,*999)
-                                    CALL LIST_DATA_TYPE_SET(SPARSE_INDICES,LIST_INTG_TYPE,ERR,ERROR,*999)
-                                    CALL LIST_INITIAL_SIZE_SET(SPARSE_INDICES, &
-                                      & NUMBER_OF_DIRICHLET_CONDITIONS*(NUMBER_OF_NON_ZEROS/NUMBER_OF_ROWS),ERR,ERROR,*999)
-                                    CALL LIST_CREATE_FINISH(SPARSE_INDICES,ERR,ERROR,*999)
 
                                     ! Find dirichlet columns and store the non zero indices (with respect to the 1D storage array)
+                                    NULLIFY(SPARSITY_INDICES)
                                     SPARSITY_INDICES=>BOUNDARY_CONDITIONS_DIRICHLET%LINEAR_SPARSITY_INDICES(equ_matrix_idx)%PTR
                                     IF(ASSOCIATED(SPARSITY_INDICES)) THEN
+                                      ! Setup list for storing dirichlet non zero indices
+                                      NULLIFY(SPARSE_INDICES)
+                                      CALL LIST_CREATE_START(SPARSE_INDICES,ERR,ERROR,*999)
+                                      CALL LIST_DATA_TYPE_SET(SPARSE_INDICES,LIST_INTG_TYPE,ERR,ERROR,*999)
+                                      CALL LIST_INITIAL_SIZE_SET(SPARSE_INDICES, &
+                                        & NUMBER_OF_DIRICHLET_CONDITIONS*(NUMBER_OF_NON_ZEROS/NUMBER_OF_ROWS),ERR,ERROR,*999)
+                                      CALL LIST_CREATE_FINISH(SPARSE_INDICES,ERR,ERROR,*999)
+
                                       COUNT=0
                                       SPARSITY_INDICES%SPARSE_COLUMN_INDICES(1)=1
                                       LAST=1
@@ -265,14 +267,12 @@ CONTAINS
                                         ENDDO
                                         SPARSITY_INDICES%SPARSE_COLUMN_INDICES(dirichlet_idx+1)=COUNT+1
                                       ENDDO
+                                      CALL LIST_DETACH_AND_DESTROY(SPARSE_INDICES,DUMMY,SPARSITY_INDICES%SPARSE_ROW_INDICES, &
+                                        & ERR,ERROR,*999)
                                     ELSE
                                       LOCAL_ERROR="Sparsity indices arrays are not associated for this equations matrix"
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                     ENDIF
-
-                                    CALL LIST_DETACH_AND_DESTROY(SPARSE_INDICES,DUMMY,SPARSITY_INDICES%SPARSE_ROW_INDICES, &
-                                      & ERR,ERROR,*999)
-
                                   CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
                                     CALL FLAG_ERROR("Not implemented for compressed column storage",ERR,ERROR,*999)
                                   CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
@@ -315,17 +315,19 @@ CONTAINS
                                     CALL BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE(BOUNDARY_CONDITIONS_DIRICHLET% &
                                       & DYNAMIC_SPARSITY_INDICES(equ_matrix_idx)%PTR,BOUNDARY_CONDITION_VARIABLE% &
                                       & NUMBER_OF_DIRICHLET_CONDITIONS,ERR,ERROR,*999)
-                                    ! Setup list for storing dirichlet non zero indices
-                                    NULLIFY(SPARSE_INDICES)
-                                    CALL LIST_CREATE_START(SPARSE_INDICES,ERR,ERROR,*999)
-                                    CALL LIST_DATA_TYPE_SET(SPARSE_INDICES,LIST_INTG_TYPE,ERR,ERROR,*999)
-                                    CALL LIST_INITIAL_SIZE_SET(SPARSE_INDICES, &
-                                      & NUMBER_OF_DIRICHLET_CONDITIONS*(NUMBER_OF_NON_ZEROS/NUMBER_OF_ROWS),ERR,ERROR,*999)
-                                    CALL LIST_CREATE_FINISH(SPARSE_INDICES,ERR,ERROR,*999)
 
                                     ! Find dirichlet columns and store the non zero indices (with respect to the 1D storage array)
+                                    NULLIFY(SPARSITY_INDICES)
                                     SPARSITY_INDICES=>BOUNDARY_CONDITIONS_DIRICHLET%DYNAMIC_SPARSITY_INDICES(equ_matrix_idx)%PTR
                                     IF(ASSOCIATED(SPARSITY_INDICES)) THEN
+                                      ! Setup list for storing dirichlet non zero indices
+                                      NULLIFY(SPARSE_INDICES)
+                                      CALL LIST_CREATE_START(SPARSE_INDICES,ERR,ERROR,*999)
+                                      CALL LIST_DATA_TYPE_SET(SPARSE_INDICES,LIST_INTG_TYPE,ERR,ERROR,*999)
+                                      CALL LIST_INITIAL_SIZE_SET(SPARSE_INDICES, &
+                                        & NUMBER_OF_DIRICHLET_CONDITIONS*(NUMBER_OF_NON_ZEROS/NUMBER_OF_ROWS),ERR,ERROR,*999)
+                                      CALL LIST_CREATE_FINISH(SPARSE_INDICES,ERR,ERROR,*999)
+
                                       COUNT=0
                                       SPARSITY_INDICES%SPARSE_COLUMN_INDICES(1)=1
                                       LAST=1
@@ -346,14 +348,12 @@ CONTAINS
                                         ENDDO
                                         SPARSITY_INDICES%SPARSE_COLUMN_INDICES(dirichlet_idx+1)=COUNT+1
                                       ENDDO
+                                      CALL LIST_DETACH_AND_DESTROY(SPARSE_INDICES,DUMMY,SPARSITY_INDICES%SPARSE_ROW_INDICES, &
+                                        & ERR,ERROR,*999)
                                     ELSE
                                       LOCAL_ERROR="Sparsity indices arrays are not associated for this equations matrix"
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                     ENDIF
-
-                                    CALL LIST_DETACH_AND_DESTROY(SPARSE_INDICES,DUMMY,SPARSITY_INDICES%SPARSE_ROW_INDICES, &
-                                      & ERR,ERROR,*999)
-
                                   CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
                                     CALL FLAG_ERROR("Not implemented for compressed column storage",ERR,ERROR,*999)
                                   CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
@@ -1633,8 +1633,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: NUMBER_OF_DIRICHLET_CONDITIONS, NUMBER_OF_LINEAR_MATRICES, NUMBER_OF_DYNAMIC_MATRICES, matrix_idx
-    INTEGER(INTG) :: DUMMY_ERR
-    TYPE(VARYING_STRING) :: DUMMY_ERROR
     TYPE(BOUNDARY_CONDITIONS_DIRICHLET_TYPE), POINTER :: BOUNDARY_CONDITIONS_DIRICHLET
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
@@ -1717,8 +1715,6 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR
-    TYPE(VARYING_STRING) :: DUMMY_ERROR
 
     CALL ENTERS("BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE",ERR,ERROR,*999)
 
