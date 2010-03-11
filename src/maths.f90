@@ -1145,7 +1145,7 @@ CONTAINS
             B(2,1)=-A(2,1)/DET
             B(2,2)=A(1,1)/DET
           ELSE
-!             CALL FLAG_WARNING("Zero Determinant for matrix A",ERR,ERROR,*999)
+            CALL FLAG_WARNING("Zero Determinant for matrix A",ERR,ERROR,*999)
             B=0.0_DP
           ENDIF
         CASE(3)
@@ -1162,7 +1162,7 @@ CONTAINS
             B(2,3)=(A(1,3)*A(2,1)-A(2,3)*A(1,1))/DET
             B(3,3)=(A(1,1)*A(2,2)-A(2,1)*A(1,2))/DET
           ELSE
-!             CALL FLAG_WARNING("Zero Determinant for matrix A",ERR,ERROR,*999)
+            CALL FLAG_WARNING("Zero Determinant for matrix A",ERR,ERROR,*999)
             B=0.0_DP
           ENDIF
         CASE DEFAULT
@@ -1218,7 +1218,7 @@ CONTAINS
             B(2,1)=-A(2,1)/DET
             B(2,2)=A(1,1)/DET
           ELSE
-!             CALL FLAG_WARNING("Zero Determinant for matrix A",ERR,ERROR,*999)
+            CALL FLAG_WARNING("Zero Determinant for matrix A",ERR,ERROR,*999)
             B=0.0_DP
           ENDIF
         CASE(3)
@@ -1235,7 +1235,7 @@ CONTAINS
             B(2,3)=(A(1,3)*A(2,1)-A(2,3)*A(1,1))/DET
             B(3,3)=(A(1,1)*A(2,2)-A(2,1)*A(1,2))/DET
           ELSE
-!             CALL FLAG_WARNING("Zero Determinant for matrix A",ERR,ERROR,*999)
+            CALL FLAG_WARNING("Zero Determinant for matrix A",ERR,ERROR,*999)
             B=0.0_DP
           ENDIF
         CASE DEFAULT
