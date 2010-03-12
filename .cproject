@@ -769,6 +769,21 @@
 <target name="Static Stokes Build - GNU" path="examples/FluidMechanics/Stokes/Static" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
 <buildArguments>--file=${OPENCMISS_ROOT}/cm/examples/FluidMechanics/Stokes/Static/Makefile COMPILER=gnu</buildArguments>
+<stopOnError>true</stopOnError>
+<useDefaultCommand>false</useDefaultCommand>
+<runAllBuilders>true</runAllBuilders>
+</target>
+<target name="Monodomain - GNU" path="examples/Bioelectrics/Monodomain" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+<buildCommand>make</buildCommand>
+<buildArguments>USECELLML=true COMPILER=gnu --file=${OPENCMISS_ROOT}/cm/examples/Bioelectrics/Monodomain/Makefile</buildArguments>
+<buildTarget/>
+<stopOnError>true</stopOnError>
+<useDefaultCommand>false</useDefaultCommand>
+<runAllBuilders>true</runAllBuilders>
+</target>
+<target name="Monodomain - GNU clean" path="examples/Bioelectrics/Monodomain" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+<buildCommand>make</buildCommand>
+<buildArguments>--file=${OPENCMISS_ROOT}/cm/examples/Bioelectrics/Monodomain/Makefile COMPILER=gnu USECELLML=true clean</buildArguments>
 <buildTarget/>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>false</useDefaultCommand>
@@ -776,7 +791,6 @@
 </target>
 <target name="OpenCMISS Build - Intel" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 <runAllBuilders>true</runAllBuilders>
@@ -833,6 +847,14 @@
 <target name="OpenCMISS Build - GNU" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
 <buildArguments>COMPILER=gnu</buildArguments>
+<stopOnError>true</stopOnError>
+<useDefaultCommand>false</useDefaultCommand>
+<runAllBuilders>true</runAllBuilders>
+</target>
+<target name="OpenCMISS Build - GNU CellML" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+<buildCommand>make</buildCommand>
+<buildArguments>COMPILER=gnu USECELLML=true</buildArguments>
+<buildTarget/>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>false</useDefaultCommand>
 <runAllBuilders>true</runAllBuilders>
