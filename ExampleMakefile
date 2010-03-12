@@ -50,19 +50,17 @@
 #	
 #----------------------------------------------------------------------------------------------------------------------------------
 
+
+GLOBAL_CELLML_ROOT := ${OPENCMISS_ROOT}/cellml
+
 ifndef OPENCMISSEXTRAS_ROOT
-  OPENCMISSEXTRAS_ROOT := ../../opencmissextras
-  EXTERNAL_ROOT := $(CURDIR)/../../opencmissextras/cm/external
+  $(error OPENCMISSEXTRAS_ROOT is not setup)
 else
   EXTERNAL_ROOT := ${OPENCMISSEXTRAS_ROOT}/cm/external
 endif
 
-ifndef GLOBAL_ROOT
-  $(error GLOBAL_ROOT is not setup)
-else
-  include $(GLOBAL_ROOT)/utils/Makefile.inc
-  GLOBAL_CELLML_ROOT := $(GLOBAL_ROOT)/../cellml
-endif
+include $(GLOBAL_ROOT)/utils/Makefile.inc
+
 
 #----------------------------------------------------------------------------------------------------------------------------------
 ifndef LIBRARY_VERSION
@@ -141,7 +139,7 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
   ifeq ($(LIBRARY_VERSION),new)
     EXTERNAL_DIR := $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
   else
-    EXTERNAL_DIR := $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)
+    EXTERNAL_DIR := $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
   endif
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
@@ -842,6 +840,7 @@ OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/Helmholtz_equations_routines.o \
 	$(OBJECT_DIR)/history_routines.o \
 	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/interface_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/Laplace_equations_routines.o \
@@ -1243,6 +1242,7 @@ $(OBJECT_DIR)/equations_set_routines.o	:	$(MAIN_SOURCE_DIR)/equations_set_routin
 	$(OBJECT_DIR)/equations_matrices_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/fluid_mechanics_routines.o \
+	$(OBJECT_DIR)/interface_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -1336,12 +1336,6 @@ $(OBJECT_DIR)/fluid_mechanics_IO_routines.o	:	$(MAIN_SOURCE_DIR)/fluid_mechanics
 $(OBJECT_DIR)/FieldExport.o	:	$(MAIN_SOURCE_DIR)/FieldExport.c \
 	$(MAIN_SOURCE_DIR)/FieldExportConstants.h
 
-$(OBJECT_DIR)/input_output.o	:	$(MAIN_SOURCE_DIR)/input_output.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/kinds.o	\
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/strings.o
-
 $(OBJECT_DIR)/Galerkin_projection_routines.o	:	$(MAIN_SOURCE_DIR)/Galerkin_projection_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
@@ -1409,6 +1403,28 @@ $(OBJECT_DIR)/history_routines.o	:	$(MAIN_SOURCE_DIR)/history_routines.f90 \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/problem_constants.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/input_output.o	:	$(MAIN_SOURCE_DIR)/input_output.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/kinds.o	\
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/strings.o
+
+$(OBJECT_DIR)/interface_routines.o	:	$(MAIN_SOURCE_DIR)/interface_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/coordinate_routines.o \
+	$(OBJECT_DIR)/equations_routines.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/equations_matrices_routines.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/lists.o \
+	$(OBJECT_DIR)/mesh_routines.o \
+	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 

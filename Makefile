@@ -54,23 +54,13 @@ MAKEFLAGS = --no-builtin-rules --warn-undefined-variables
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
-ifndef OPENCMISS_ROOT
-  OPENCMISS_ROOT := ../../..
-  GLOBAL_CM_ROOT := $(CURDIR)/../../..
-  GLOBAL_CELLML_ROOT := $(CURDIR)/../../..
-else
-  GLOBAL_CM_ROOT := ${OPENCMISS_ROOT}/cm
-  GLOBAL_CELLML_ROOT := ${OPENCMISS_ROOT}/cellml
-endif
+OPENCMISS_ROOT = $(CURDIR)/../
+GLOBAL_CM_ROOT = $(CURDIR)
+GLOBAL_CELLML_ROOT := ${OPENCMISS_ROOT}/cellml
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
-ifndef OPENCMISSEXTRAS_ROOT
-  OPENCMISSEXTRAS_ROOT := ../../opencmissextras
-  EXTERNAL_CM_ROOT := $(CURDIR)/../../opencmissextras/cm/external
-else
-  EXTERNAL_CM_ROOT := ${OPENCMISSEXTRAS_ROOT}/cm/external
-endif
+EXTERNAL_CM_ROOT := ${OPENCMISSEXTRAS_ROOT}/cm/external
 
 include $(GLOBAL_CM_ROOT)/utils/Makefile.inc
 
@@ -733,6 +723,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/Helmholtz_equations_routines.o \
 	$(OBJECT_DIR)/history_routines.o \
 	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/interface_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/Laplace_equations_routines.o \
@@ -1151,6 +1142,7 @@ $(OBJECT_DIR)/equations_set_routines.o	:	$(SOURCE_DIR)/equations_set_routines.f9
 	$(OBJECT_DIR)/equations_matrices_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/fluid_mechanics_routines.o \
+	$(OBJECT_DIR)/interface_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -1313,6 +1305,22 @@ $(OBJECT_DIR)/history_routines.o	:	$(SOURCE_DIR)/history_routines.f90 \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/problem_constants.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/interface_routines.o	:	$(MAIN_SOURCE_DIR)/interface_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/coordinate_routines.o \
+	$(OBJECT_DIR)/equations_routines.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/equations_matrices_routines.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/lists.o \
+	$(OBJECT_DIR)/mesh_routines.o \
+	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 

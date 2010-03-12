@@ -305,6 +305,34 @@ MODULE TYPES
     TYPE(MESH_TOPOLOGY_TYPE), POINTER :: PTR !<The pointer to the mesh topology.
   END TYPE MESH_TOPOLOGY_PTR_TYPE
 
+  TYPE INTERFACE_ELEM_MAP  ! <<>>
+    INTEGER(INTG) :: NUMBER_OF_ELEM  ! <<>>
+    INTEGER(INTG), ALLOCATABLE :: MAP(:)  ! <<>>
+  END TYPE INTERFACE_ELEM_MAP  ! <<>>
+
+  TYPE INTERFACE_PTR_ELEM_MAP  ! <<>>
+    TYPE(INTERFACE_ELEM_MAP), POINTER :: PTR !<The pointer to the map topology.	! <<>>
+  END TYPE INTERFACE_PTR_ELEM_MAP	
+
+  TYPE INTERFACE_MAP  ! <<>>
+    INTEGER(INTG) :: GEOMETRIC_COMPONENT  ! <<>>
+    INTEGER(INTG) :: FIELD_COMPONENT  ! <<>>
+    TYPE(MESH_TYPE), POINTER :: DOMAIN_MESH  ! <<>>
+    TYPE(INTERFACE_PTR_ELEM_MAP), ALLOCATABLE :: INTERFACE_TO_DOMAIN(:)  ! <<>>
+  END TYPE INTERFACE_MAP  ! <<>>
+
+  TYPE INTERFACE_PTR_MAP  ! <<>>
+    TYPE(INTERFACE_MAP), POINTER :: PTR !<The pointer to the map topology.  ! <<>>
+  END TYPE INTERFACE_PTR_MAP  ! <<>>
+
+  !>Contains information on an interface mapping / mesh defined on a region. 	  <<>>
+  TYPE INTERFACE_MAPPING_TYPE  ! <<>>
+    TYPE(MESH_TYPE), POINTER :: MESH  ! <<>>
+    LOGICAL :: MAPPING_FINISHED  ! <<>>
+    INTEGER(INTG) :: N_COUPLED_REGIONS  ! <<>>
+    TYPE(INTERFACE_PTR_MAP), ALLOCATABLE :: DOMAIN_MAP(:)  ! <<>>
+  END TYPE INTERFACE_MAPPING_TYPE  ! <<>>
+
   !>Contains information on a mesh defined on a region. \see OPENCMISS::CMISSMeshType
   TYPE MESH_TYPE
     INTEGER(INTG) :: USER_NUMBER !<The user number of the mesh. The user number must be unique.
@@ -324,6 +352,7 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_OF_LINES !<The number of lines in the mesh.
     TYPE(MESH_TOPOLOGY_PTR_TYPE), POINTER :: TOPOLOGY(:) !<TOPOLOGY(mesh_component_idx). A pointer to the topology mesh_component_idx'th mesh component.
     TYPE(DECOMPOSITIONS_TYPE), POINTER :: DECOMPOSITIONS !<A pointer to the decompositions for this mesh.
+    TYPE(INTERFACE_MAPPING_TYPE), POINTER :: INTF !<A pointer to the interface specific mesh structures. <<>>
   END TYPE MESH_TYPE
 
   !>A buffer type to allow for an array of pointers to a MESH_TYPE.
@@ -1350,6 +1379,10 @@ MODULE TYPES
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES !<A pointer to the equations matrices and vectors used for the equations.
   END TYPE EQUATIONS_TYPE
 
+  TYPE EQUATIONS_PTR_TYPE
+    TYPE(EQUATIONS_TYPE), POINTER :: PTR
+  END TYPE EQUATIONS_PTR_TYPE
+
   !
   !================================================================================================================================
   !
@@ -2072,6 +2105,16 @@ MODULE TYPES
     TYPE(REGION_TYPE), POINTER :: PTR !<The pointer to the region.
   END TYPE REGION_PTR_TYPE
      
+  !>Contains information for interface region specific data that is not of 'region' importance. <<>>
+  TYPE INTERFACE_TYPE
+    INTEGER(INTG) :: N_COUPLED_REGIONS !<An integer for the number of regions coupled through the interface.  Currently, COUPLED_REGION must be 2.
+    INTEGER(INTG) :: LMHOST_REGION !<An integer which denotes the host region for the Lagrange multiplier.
+    INTEGER(INTG) :: HOST_REGION !<An integer which denotes the host region of the two domains.
+    INTEGER(INTG) :: INTERFACE_TYPE !<An integer which denotes whether coupling is nodal based or integral based.
+    INTEGER(INTG) :: COUPLING_TYPE !<An integer which denotes whether coupling is surface to surface, volume to volume, etc.
+    TYPE(REGION_PTR_TYPE), ALLOCATABLE :: COUPLED_REGIONS(:)
+  END TYPE INTERFACE_TYPE
+
   !>Contains information for a region. \see OPENCMISS::CMISSRegionType
   TYPE REGION_TYPE 
     INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the region. The user number must be unique.
@@ -2085,7 +2128,11 @@ MODULE TYPES
     TYPE(REGION_TYPE), POINTER :: PARENT_REGION !<A pointer to the parent region for the region. If the region has no parent region then it is the global (world) region and PARENT_REGION is NULL.
     INTEGER(INTG) :: NUMBER_OF_SUB_REGIONS !<The number of sub-regions defined for the region.
     TYPE(REGION_PTR_TYPE), POINTER :: SUB_REGIONS(:) !<An array of pointers to the sub-regions defined on the region. \todo make this allocatable
+    TYPE(INTERFACE_TYPE), POINTER :: INTF !<A pointer to interface region specific data. <<>>
+    LOGICAL :: INTERFACE_REGION
   END TYPE REGION_TYPE
+
+!<<>> Notes..  Make a pointer to interfaces and sub interfaces.
 
   !>Contains information about the regions
   TYPE REGIONS_TYPE

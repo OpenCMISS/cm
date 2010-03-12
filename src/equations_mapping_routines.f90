@@ -2349,7 +2349,7 @@ CONTAINS
                 CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
                   IF(CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE==0) THEN                  
                     IF(NUMBER_OF_LINEAR_EQUATIONS_MATRICES<1.OR. &
-                      & NUMBER_OF_LINEAR_EQUATIONS_MATRICES>FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
+                      & NUMBER_OF_LINEAR_EQUATIONS_MATRICES>FIELD_NUMBER_OF_VARIABLE_TYPES) THEN  ! <<>>  not sure that this check will work
                       LOCAL_ERROR="The specified number of linear matrices of "// &
                         & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_LINEAR_EQUATIONS_MATRICES,"*",ERR,ERROR))// &
                         & " is invalid. For non-dynamic linear problems without a equations set RHS the number must be "// &
