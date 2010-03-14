@@ -409,6 +409,8 @@ MODULE TYPES
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function for the line.
     INTEGER(INTG), ALLOCATABLE :: NODES_IN_LINE(:) !<NODES_IN_LINE(nn). The local node number in the domain of the nn'th local node in the line. Old CMISS name NPL(2..5,nj,nl).
     INTEGER(INTG), ALLOCATABLE :: DERIVATIVES_IN_LINE(:,:) !<DERIVATIVES_IN_LINE(nk,nn). The global derivative number of the local derivative nk for the local node nn in the line. Old CMISS name NPL(4..5,nj,nl).
+    LOGICAL :: BOUNDARY_LINE !<Is .TRUE. if the line is on the boundary of the mesh for the domain, .FALSE. if not.
+    INTEGER(INTG) :: ELEMENT_NUMBER !<The element number of the element on which the line is on
   END TYPE DOMAIN_LINE_TYPE
 
   !>A buffer type to allow for an array of pointers to a DOMAIN_LINE_TYPE
@@ -431,6 +433,8 @@ MODULE TYPES
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function for the face.
     INTEGER(INTG), ALLOCATABLE :: NODES_IN_FACE(:) !<NODES_IN_FACE(nn). The local node number in the domain of the nn'th local node in the face. Old CMISS name NPNF(nn,nbf).
     INTEGER(INTG), ALLOCATABLE :: DERIVATIVES_IN_FACE(:,:) !<DERIVATIVES_IN_FACE(nk,nn). The global derivative number of the local derivative nk for the local node nn in the face.
+    LOGICAL :: BOUNDARY_FACE !<Is .TRUE. if the face is on the boundary of the mesh for the domain, .FALSE. if not.
+    INTEGER(INTG) :: ELEMENT_NUMBER !<The element number of the element on which the face is on
   END TYPE DOMAIN_FACE_TYPE
 
   !>A buffer type to allow for an array of pointers to a DOMAIN_FACE_TYPE.
@@ -664,7 +668,7 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_OF_DOMAINS !<The number of domains that the global number is mapped to a local number in.
     INTEGER(INTG), ALLOCATABLE :: LOCAL_NUMBER(:) !<LOCAL_NUMBER(domain_idx). The mapped local number for the domain_idx'th domain for the global number.
     INTEGER(INTG), ALLOCATABLE :: DOMAIN_NUMBER(:) !<DOMAIN_NUMBER(domain_idx). The domain number for the domain_idx'th domain for which the global number is mapped to a local number
-    INTEGER(INTG), ALLOCATABLE :: LOCAL_TYPE(:) !<LOCAL_TYPE(domain_idx). The type of local for the domain_idx'th domain for which the global number is mapped to a local number. The types depend on wether the mapped local number in the domain_idx'th domain is an internal, boundary or ghost local number. \see DOMAIN_MAPPINGS_DomainType
+    INTEGER(INTG), ALLOCATABLE :: LOCAL_TYPE(:) !<LOCAL_TYPE(domain_idx). The type of local for the domain_idx'th domain for which the global number is mapped to a local number. The types depend on whether the mapped local number in the domain_idx'th domain is an internal, boundary or ghost local number. \see DOMAIN_MAPPINGS_DomainType
   END TYPE DOMAIN_GLOBAL_MAPPING_TYPE
 
   !>Contains information on the domain mappings (i.e., local and global numberings).
@@ -751,6 +755,7 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: ELEMENT_FACES(:) !<ELEMENT_FACES(nel). The local arc number of the nel'th element that surrounds (uses) this face.
 !    INTEGER(INTG) :: ADJACENT_FACES(0:1) !<ADJACENT_FACES(0:1). The face number of adjacent faces. ADJACENT_FACES(0) is the face number adjacent in the -xi direction. ADJACENT_FACES(1) is the face number adjacent in the +xi direction. Old CMISS name NPL(2..3,0,nl).
     LOGICAL :: BOUNDARY_FACE !<Is .TRUE. if the face is on the boundary of the mesh for the domain, .FALSE. if not.
+    INTEGER(INTG) :: ELEMENT_NUMBER !<The element number of the element on which the face is on
   END TYPE DECOMPOSITION_FACE_TYPE
 
   !>Contains the topology information for the faces of a decomposition.
@@ -797,7 +802,7 @@ MODULE TYPES
     INTEGER(INTG) :: MESH_COMPONENT_NUMBER !<The component number (index) of the mesh component that this decomposition belongs to (i.e., was generated from).
     INTEGER(INTG) :: DECOMPOSITION_TYPE !<The type of the domain decomposition \see MESH_ROUTINES_DecompositionTypes.
     INTEGER(INTG) :: NUMBER_OF_DOMAINS !<The number of domains that this decomposition contains.
-    INTEGER(INTG) :: NUMBER_OF_EDGES_CUT !<For automatically calcualted decompositions, the number of edges of the mesh dual graph that were cut for the composition. It provides an indication of the optimally of the automatic decomposition.
+    INTEGER(INTG) :: NUMBER_OF_EDGES_CUT !<For automatically calculated decompositions, the number of edges of the mesh dual graph that were cut for the composition. It provides an indication of the optimally of the automatic decomposition.
     INTEGER(INTG), ALLOCATABLE :: ELEMENT_DOMAIN(:) !<ELEMENT_DOMAIN(ne). The domain number that the ne'th global element is in for the decomposition. Note: the domain numbers start at 0 and go up to the NUMBER_OF_DOMAINS-1.
     TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the topology for this decomposition.
     TYPE(DOMAIN_PTR_TYPE), POINTER :: DOMAIN(:) !<DOMAIN(mesh_component_idx). A pointer to the domain for mesh component for the domain associated with the computational node. \todo Change this to allocatable???
@@ -838,7 +843,7 @@ MODULE TYPES
   TYPE FIELD_INTERPOLATED_POINT_TYPE
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS !<A pointer to the interpolation parameters of the field that is to be interpolated.
     INTEGER(INTG) :: MAX_PARTIAL_DERIVATIVE_INDEX !<The maximum number of partial derivatives that have been allocated for the values component.
-    INTEGER(INTG) :: PARTIAL_DERIVATIVE_TYPE !<The type of the partial derivatives that have been interpolated. PARTIAL_DERIVATIVE_TYPE can be either NO_PART_DERIV, FIRST_PART_DERIV or SECOND_PART_DERIV depending on wether just the field value, the field value and all first derivatives (including cross derivatives) or the first value and all first and second derivatives have been interpolated.
+    INTEGER(INTG) :: PARTIAL_DERIVATIVE_TYPE !<The type of the partial derivatives that have been interpolated. PARTIAL_DERIVATIVE_TYPE can be either NO_PART_DERIV, FIRST_PART_DERIV or SECOND_PART_DERIV depending on whether just the field value, the field value and all first derivatives (including cross derivatives) or the first value and all first and second derivatives have been interpolated.
     REAL(DP), ALLOCATABLE :: VALUES(:,:) !<VALUES(component_idx,nu). The interpolated field components and their partial derivatives.
   END TYPE FIELD_INTERPOLATED_POINT_TYPE
   
@@ -898,7 +903,7 @@ MODULE TYPES
   !>A type to hold the mapping from field parameters (nodes, elements, etc) to field dof numbers for a particular field variable component.
   TYPE FIELD_PARAM_TO_DOF_MAP_TYPE
     INTEGER(INTG) :: NUMBER_OF_CONSTANT_PARAMETERS !<The number of constant field parameters for this field variable component. Note: this is currently always 1 but is
-  !###      included for completness and to allow for multiple constants per field variable component in the future.
+  !###      included for completeness and to allow for multiple constants per field variable component in the future.
     INTEGER(INTG) :: NUMBER_OF_ELEMENT_PARAMETERS !<The number of element based field parameters for this field variable component.
     INTEGER(INTG) :: NUMBER_OF_NODE_PARAMETERS !<The number of node based field parameters for this field variable component.
     INTEGER(INTG) :: MAX_NUMBER_OF_DERIVATIVES !<The maximum number of derivatives for the node parameters for this field variable component. It is the size of the first index of the NODE_PARAM2DOF_MAP component of this type.
@@ -1365,6 +1370,8 @@ MODULE TYPES
     !TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: BOUNDARY_CONDITIONS_VALUES !<A pointer to the distributed vector containing the boundary conditions for the domain for this process.
     TYPE(BOUNDARY_CONDITIONS_DIRICHLET_TYPE), POINTER :: DIRICHLET_BOUNDARY_CONDITIONS  !<A pointer to the dirichlet boundary condition type for this boundary condition variable
     INTEGER(INTG) :: NUMBER_OF_DIRICHLET_CONDITIONS !<Stores the number of dirichlet conditions associated with this variable
+    TYPE(BOUNDARY_CONDITIONS_NEUMANN_TYPE), POINTER :: NEUMANN_BOUNDARY_CONDITIONS
+    INTEGER(INTG) :: NUMBER_OF_NEUMANN_BOUNDARIES
   END TYPE BOUNDARY_CONDITIONS_VARIABLE_TYPE
 
   !>A buffer type to allow for an array of pointers to a VARIABLE_BOUNDARY_CONDITIONS_TYPE \see TYPES::VARIABLE_BOUNDARY_CONDITIONS_TYPE
@@ -1398,6 +1405,34 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: SPARSE_COLUMN_INDICES(:) !<SPARSE_COLUMN_INDICES(column_idx). Between SPARSE_COLUMN_INDICES(column_idx) and SPARSE_COLUMN_INDICES(column_idx+1)-1 are the row indices of non-zero elements of the 'column_idx'th column
   END TYPE BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE
 
+  !>Contains the user set values for the Neumann boundary conditions
+  TYPE BOUNDARY_CONDITIONS_NEUMANN_VALUES_TYPE
+    INTEGER(INTG), ALLOCATABLE :: SET_DOF(:) !<Array of user-set DOFs on boundary
+    REAL(DP), ALLOCATABLE :: SET_DOF_VALUES(:) !<Array of user-set values of DOFs on boundary
+  END TYPE BOUNDARY_CONDITIONS_NEUMANN_VALUES_TYPE
+
+  !>A buffer type to allow for an array of pointers to BOUNDARY_CONDITIONS_NEUMANN_VALUES_TYPE
+  TYPE BOUNDARY_CONDITIONS_NEUMANN_VALUES_PTR_TYPE
+    TYPE(BOUNDARY_CONDITIONS_NEUMANN_VALUES_TYPE), POINTER :: PTR !<A pointer to the Neumann boundary conditions values type
+  END TYPE BOUNDARY_CONDITIONS_NEUMANN_VALUES_PTR_TYPE
+
+  !>Contains the arrays and mapping arrays used to calculate the Neumann boundary conditions
+  TYPE BOUNDARY_CONDITIONS_NEUMANN_TYPE
+    TYPE(BOUNDARY_CONDITIONS_NEUMANN_VALUES_PTR_TYPE), ALLOCATABLE :: NEUMANN_BOUNDARY_IDENTIFIER(:) !<Array of identifiers for user set Neumann boundaries
+    REAL(DP), ALLOCATABLE :: FACE_INTEGRATION_MATRIX(:,:) !<Array for results from face basis calculation for an individual face
+    INTEGER(INTG), ALLOCATABLE :: FACE_INTEGRATION_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of FACE_INTEGRATION_MATRIX
+    REAL(DP), ALLOCATABLE :: LINE_INTEGRATION_MATRIX(:,:) !<Array for results from line basis calculation for an individual line
+    INTEGER(INTG), ALLOCATABLE :: LINE_INTEGRATION_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of LINE_INTEGRATION_MATRIX
+    REAL(DP), ALLOCATABLE :: INTEGRATION_MATRIX(:,:) !<The INTEGRATION_MATRIX - array for conglomeration of FACE_INTEGRATION_MATRIX, the 'A' matrix
+    INTEGER(INTG), ALLOCATABLE :: INTEGRATION_MATRIX_MAPPING_X(:) !<Mapping array of domain nodes to X axis of INTEGRATION_MATRIX
+    INTEGER(INTG), ALLOCATABLE :: INTEGRATION_MATRIX_MAPPING_Y(:) !<Mapping array of domain nodes to Y axis of INTEGRATION_MATRIX
+    REAL(DP), ALLOCATABLE :: POINT_VALUES_VECTOR(:) !<The vector of set values, the 'x' vector
+    INTEGER(INTG), ALLOCATABLE :: POINT_VALUES_VECTOR_MAPPING(:) !<Mapping array of domain nodes in POINT_VALUES_VECTOR
+    REAL(DP), ALLOCATABLE :: INTEGRATED_VALUES_VECTOR(:) !<Vector for the storage of the integrated values, the 'b' vector of Ax=b 
+    INTEGER(INTG), ALLOCATABLE :: INTEGRATED_VALUES_VECTOR_MAPPING(:) !<Mapping array of domain nodes and components in INTEGRATED_VALUES_VECTOR
+    !REAL(DP), ALLOCATABLE :: INTEGRATED_VALUES(:) !<Vector for storing values from INTEGRATED_VALUES_VECTOR indexed by dof number
+    INTEGER(INTG) :: INTEGRATED_VALUES_VECTOR_SIZE !<Size of INTEGRATED_VALUES_VECTOR
+  END TYPE BOUNDARY_CONDITIONS_NEUMANN_TYPE
 
  
   !
