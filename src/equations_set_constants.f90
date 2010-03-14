@@ -271,6 +271,8 @@ MODULE EQUATIONS_SET_CONSTANTS
   !> \brief The analytic function types for a Poisson equation
   !>@{  
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_1=1 !<u=ln(4/(x+y+1^2))
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_1=2 !<u=ln(6/(x+y+z+1^2))
+  INTEGER(INTG), PARAMETER :: TEST_CASE_1=3 !<Test case setup to test Neumann Boundary Conditions with Poisson example
   !>@}
   !> \addtogroup EQUATIONS_SET_CONSTANTS_DiffusionAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:DiffusionAnalyticFunctionTypes
   !> \brief The analytic function types for a diffusion equation

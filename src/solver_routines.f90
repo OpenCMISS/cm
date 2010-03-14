@@ -8150,7 +8150,7 @@ CONTAINS
                                                 CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
                                                   & ERR,ERROR,*999)
                                               ENDDO !solver_row_idx
-                                              !Note: the Dirichlet boundary conditions are implicity included by doing a matrix
+                                              !Note: the Dirichlet boundary conditions are implicitly included by doing a matrix
                                               !vector product above with the dynamic stiffness matrix and the mean predicited
                                               !displacement vector
                                             CASE(BOUNDARY_CONDITION_FIXED)
@@ -8567,7 +8567,8 @@ CONTAINS
     INTEGER(INTG) :: DEPENDENT_VARIABLE_TYPE,equations_column_number,equations_matrix_idx,equations_matrix_number, &
       & equations_row_number,equations_row_number2,equations_set_idx,LINEAR_VARIABLE_TYPE,rhs_boundary_condition, &
       & residual_variable_type,rhs_global_dof,rhs_variable_dof,rhs_variable_type,variable_boundary_condition,solver_matrix_idx, &
-      & solver_row_idx,solver_row_number,variable_dof,variable_global_dof,variable_idx,variable_type,dirichlet_idx,dirichlet_row
+      & solver_row_idx,solver_row_number,variable_dof,variable_global_dof,variable_idx,variable_type,component_idx,&
+      & INTEGRATED_VALUE,j,dirichlet_idx,dirichlet_row
     REAL(SP) :: SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),USER_ELAPSED,USER_TIME1(1),USER_TIME2(1)
     REAL(DP) :: DEPENDENT_VALUE,LINEAR_VALUE,LINEAR_VALUE_SUM,MATRIX_VALUE,RESIDUAL_VALUE,RHS_VALUE,row_coupling_coefficient, &
       & SOURCE_VALUE,VALUE
@@ -8779,13 +8780,17 @@ CONTAINS
                                           !Loop over the solver rows associated with this equations set row
                                           DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                                             & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
+
                                             solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                                               & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
                                               & solver_row_idx)
+
                                             row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                                               & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
                                               & COUPLING_COEFFICIENTS(solver_row_idx)
+
                                             VALUE=SOURCE_VALUE*row_coupling_coefficient
+                                            !Calculates the contribution from each row of the equations matrix and adds to solver matrix
                                             CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
                                               & ERR,ERROR,*999)
                                           ENDDO !solver_row_idx
@@ -8802,12 +8807,15 @@ CONTAINS
                                           !Loop over the solver rows associated with this equations set row
                                           DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                                             & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
+
                                             solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                                               & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
                                               & solver_row_idx)
+
                                             row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                                               & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
                                               & COUPLING_COEFFICIENTS(solver_row_idx)
+
                                             VALUE=RHS_VALUE*row_coupling_coefficient
                                             CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
                                               & ERR,ERROR,*999)
@@ -8816,30 +8824,43 @@ CONTAINS
                                           IF(ASSOCIATED(LINEAR_MAPPING).AND..NOT.ASSOCIATED(NONLINEAR_MAPPING)) THEN
                                             !Loop over the dependent variables associated with this equations set row
                                             DO variable_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
+
                                               variable_type=LINEAR_MAPPING%LINEAR_MATRIX_VARIABLE_TYPES(variable_idx)
+
                                               DEPENDENT_VARIABLE=>LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS( &
                                                 & variable_type)%VARIABLE
+
                                               DEPENDENT_VARIABLE_TYPE=DEPENDENT_VARIABLE%VARIABLE_TYPE
                                               VARIABLE_DOMAIN_MAPPING=>DEPENDENT_VARIABLE%DOMAIN_MAPPING
+
                                               DEPENDENT_BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS% &
                                                 & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(DEPENDENT_VARIABLE_TYPE)%PTR
+
                                               variable_dof=LINEAR_MAPPING%EQUATIONS_ROW_TO_VARIABLE_DOF_MAPS( &
                                                 & equations_row_number,variable_idx)
+
                                               variable_global_dof=VARIABLE_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(variable_dof)
+
                                               variable_boundary_condition=DEPENDENT_BOUNDARY_CONDITIONS% &
                                                 & GLOBAL_BOUNDARY_CONDITIONS(variable_global_dof)
+
                                               IF(variable_boundary_condition==BOUNDARY_CONDITION_FIXED.OR. & 
                                                 & variable_boundary_condition==BOUNDARY_CONDITION_FIXED_INLET.OR. &
                                                 & variable_boundary_condition==BOUNDARY_CONDITION_FIXED_OUTLET.OR. &  
                                                 & variable_boundary_condition==BOUNDARY_CONDITION_FIXED_WALL.OR. & 
                                                 & variable_boundary_condition==BOUNDARY_CONDITION_MOVED_WALL) THEN
+
                                                 DEPENDENT_VALUE=DEPENDENT_PARAMETERS(variable_idx)%PTR(variable_dof)
+
                                                 IF(ABS(DEPENDENT_VALUE)>=ZERO_TOLERANCE) THEN
                                                   DO equations_matrix_idx=1,LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS( &
                                                     & variable_type)%NUMBER_OF_EQUATIONS_MATRICES
+
                                                     equations_matrix_number=LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS( &
                                                       & variable_type)%EQUATIONS_MATRIX_NUMBERS(equations_matrix_idx)
+
                                                     EQUATIONS_MATRIX=>LINEAR_MATRICES%MATRICES(equations_matrix_number)%PTR
+
                                                     equations_column_number=LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS( &
                                                       & variable_type)%DOF_TO_COLUMNS_MAPS(equations_matrix_idx)%COLUMN_DOF( &
                                                       & variable_dof)
@@ -8890,8 +8911,87 @@ CONTAINS
                                               ENDIF
                                             ENDDO !variable_idx
                                           ENDIF
+
+!!                                        CASE(BOUNDARY_CONDITION_FREE_WALL,BOUNDARY_CONDITION_NEUMANN)
+                                        CASE(BOUNDARY_CONDITION_NEUMANN)
+                                          !Add in equations RHS values
+                                          CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_RHS_VECTOR,equations_row_number, &
+                                            & RHS_VALUE,ERR,ERROR,*999)
+                                          !Loop over the solver rows associated with this equations set row
+                                          DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                            & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
+
+                                            solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
+                                              & solver_row_idx)
+
+                                            row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                              & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
+                                              & COUPLING_COEFFICIENTS(solver_row_idx)
+
+                                            VALUE=RHS_VALUE*row_coupling_coefficient
+
+                                            CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
+                                              & ERR,ERROR,*999)
+                                          ENDDO !solver_row_idx                          
+
+                                          IF(ASSOCIATED(LINEAR_MAPPING).AND..NOT.ASSOCIATED(NONLINEAR_MAPPING)) THEN
+
+                                            !Calculate the Neumann integrated flux boundary conditions
+                                            DO component_idx = 1,RHS_VARIABLE%NUMBER_OF_COMPONENTS 
+                                              CALL BOUNDARY_CONDITIONS_INTEGRATED_CALCULATE(BOUNDARY_CONDITIONS, &
+                                               & RHS_VARIABLE_TYPE,component_idx,ERR,ERROR,*999)
+                                            ENDDO
+
+                                            !Loop over the dependent variables associated with this equations set row
+                                            DO variable_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
+
+                                              variable_dof=LINEAR_MAPPING%EQUATIONS_ROW_TO_VARIABLE_DOF_MAPS( &
+                                                & equations_row_number,variable_idx)
+
+                                              DO j=1,RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS &
+                                                                                          & %INTEGRATED_VALUES_VECTOR_SIZE
+                                                IF(RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS &
+                                                                        & %INTEGRATED_VALUES_VECTOR_MAPPING(j)==variable_dof) THEN
+                                                  INTEGRATED_VALUE=RHS_BOUNDARY_CONDITIONS &
+                                                                         & %NEUMANN_BOUNDARY_CONDITIONS%INTEGRATED_VALUES_VECTOR(j)
+                                                ENDIF
+                                              ENDDO
+
+                                              DEPENDENT_VALUE=DEPENDENT_PARAMETERS(variable_idx)%PTR(variable_dof)
+
+                                              IF(ABS(DEPENDENT_VALUE)>=ZERO_TOLERANCE) THEN
+
+                                                DO equations_row_number2=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS 
+
+                                                  IF(ABS(INTEGRATED_VALUE)>=ZERO_TOLERANCE) THEN
+
+                                                    DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                      & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
+                                                      & equations_row_number2)%NUMBER_OF_SOLVER_ROWS
+ 
+                                                      solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                        & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
+                                                        & equations_row_number2)%SOLVER_ROWS(solver_row_idx)
+
+                                                      row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                        & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
+                                                        & equations_row_number2)%COUPLING_COEFFICIENTS(solver_row_idx)
+
+                                                      !Note: minus here because PETSc specifies Ax-b=0
+                                                      VALUE=-1.0_DP*(DEPENDENT_VALUE*row_coupling_coefficient+INTEGRATED_VALUE)
+                                                      !Note: the below line will add the calculated Neumann value to any existing value
+                                                      CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number, &
+                                                        & VALUE,ERR,ERROR,*999)
+                                                    ENDDO !solver_row_idx
+                                                  ENDIF
+ 
+                                                ENDDO !equations_row_number2
+                                              ENDIF
+                                            ENDDO !variable_idx
+                                          ENDIF
+
                                         CASE(BOUNDARY_CONDITION_FIXED)
-                                          !Set Neumann boundary conditions
                                           RHS_VALUE=RHS_PARAMETERS(rhs_variable_dof)
                                           IF(ABS(RHS_VALUE)>=ZERO_TOLERANCE) THEN
                                             !Loop over the solver rows associated with this equations set row
@@ -8908,9 +9008,11 @@ CONTAINS
                                                 & ERR,ERROR,*999)
                                             ENDDO !solver_row_idx
                                           ENDIF
+
                                         CASE(BOUNDARY_CONDITION_MIXED)
                                           !Set Robin or is it Cauchy??? boundary conditions
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+
                                         CASE DEFAULT
                                           LOCAL_ERROR="The RHS boundary condition of "// &
                                             & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
@@ -8918,6 +9020,7 @@ CONTAINS
                                             & TRIM(NUMBER_TO_VSTRING(rhs_variable_dof,"*",ERR,ERROR))//" is invalid."
                                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                         END SELECT
+
                                       ENDDO !equations_row_number
                                     ELSE
                                       CALL FLAG_ERROR("RHS boundary conditions variable is not associated.",ERR,ERROR,*999)

@@ -696,6 +696,12 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionMovedWall = BOUNDARY_CONDITION_MOVED_WALL
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionFreeWall = BOUNDARY_CONDITION_FREE_WALL
 
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionNeumann = BOUNDARY_CONDITION_NEUMANN
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionNeumannPoint = BOUNDARY_CONDITION_NEUMANN_POINT
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionDirichlet = BOUNDARY_CONDITION_DIRICHLET
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionCauchy = BOUNDARY_CONDITION_CAUCHY
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionRobin = BOUNDARY_CONDITION_ROBIN
+
   !>@}
   !>@}
   
@@ -747,6 +753,20 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSBoundaryConditionsSetNodeObj
   END INTERFACE !CMISSBoundaryConditionsSetNode
 
+  !>Add DOF and value to boundary condition object.
+  INTERFACE CMISSBoundaryConditionsAddDOFToBoundary
+    MODULE PROCEDURE CMISSBoundaryConditionsAddDOFToBoundaryNumber0
+    MODULE PROCEDURE CMISSBoundaryConditionsAddDOFToBoundaryNumber1
+    MODULE PROCEDURE CMISSBoundaryConditionsAddDOFToBoundaryObj0
+    MODULE PROCEDURE CMISSBoundaryConditionsAddDOFToBoundaryObj1
+  END INTERFACE !CMISSBoundaryConditionsAddDOFToBoundary
+
+  !>Sets the total number of Neumann boundaries.
+  INTERFACE CMISSBoundaryConditionsSetNumberOfBoundaries
+    MODULE PROCEDURE CMISSBoundaryConditionsSetNumberOfBoundariesNumber
+    MODULE PROCEDURE CMISSBoundaryConditionsSetNumberOfBoundariesObj
+  END INTERFACE !CMISSBoundaryConditionsSetNumberOfBoundaries
+
   !>Gets the boundary conditions for an equations set.
   INTERFACE CMISSEquationsSetBoundaryConditionsGet
     MODULE PROCEDURE CMISSEquationsSetBoundaryConditionsGetNumber
@@ -758,6 +778,9 @@ MODULE OPENCMISS
   PUBLIC CMISSBoundaryConditionFixedWall,CMISSBoundaryConditionInletWall,CMISSBoundaryConditionMovedWall, &
     & CMISSBoundaryConditionFreeWall,CMISSBoundaryConditionOutletWall
 
+  PUBLIC CMISSBoundaryConditionNeumann,CMISSBoundaryConditionNeumannPoint,CMISSBoundaryConditionDirichlet
+  PUBLIC CMISSBoundaryConditionCauchy,CMISSBoundaryConditionRobin
+
   PUBLIC CMISSBoundaryConditionsDestroy
 
   PUBLIC CMISSBoundaryConditionsAddConstant,CMISSBoundaryConditionsSetConstant
@@ -766,7 +789,9 @@ MODULE OPENCMISS
 
   PUBLIC CMISSBoundaryConditionsAddNode,CMISSBoundaryConditionsSetNode
 
-  PUBLIC CMISSEquationsSetBoundaryConditionsGet
+  PUBLIC CMISSEquationsSetBoundaryConditionsGet,CMISSBoundaryConditionsAddDOFToBoundary
+
+  PUBLIC CMISSBoundaryConditionsSetNumberOfBoundaries
 
 !!==================================================================================================================================
 !!
@@ -1615,6 +1640,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{  
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonTwoDim1 = EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_1 !<u=ln(4/(x+y+1^2)) \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonThreeDim1 = EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_1 !<u=ln(6/(x+y+z+1^2)) \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSTestCase1 = TEST_CASE_1 !<Test case setup for testing of Neumann boundary conditions
   !>@}
   !> \addtogroup OPENCMISS_DiffusionAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Diffusion
   !> \brief The analytic function types for a diffusion equation.
@@ -1742,7 +1769,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSEquationsSetAdvectionDiffusionTwoDim1
 
-  PUBLIC CMISSEquationsSetPoissonTwoDim1
+  PUBLIC CMISSEquationsSetPoissonTwoDim1,CMISSEquationsSetPoissonThreeDim1,CMISSTestCase1
 
   PUBLIC CMISSEquationsSetStokesTwoDim1,CMISSEquationsSetStokesTwoDim2,CMISSEquationsSetStokesTwoDim3
   PUBLIC CMISSEquationsSetStokesThreeDim1,CMISSEquationsSetStokesThreeDim2,CMISSEquationsSetStokesThreeDim3
@@ -8725,6 +8752,253 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSBoundaryConditionsSetNodeObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the total number of Neumann boundaries.
+  SUBROUTINE CMISSBoundaryConditionsSetNumberOfBoundariesNumber &
+                           & (RegionUserNumber,EquationsSetUserNumber,VariableType,NumberOfNeumann,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the equations set for the boundary.
+    INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set for the boundary.
+    INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent field for the boundary.
+    INTEGER(INTG), INTENT(IN) :: NumberOfNeumann !<The number of user-set Neumann boundaries.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSBoundaryConditionsSetNumberOfBoundariesNumber",Err,ERROR,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(EQUATIONS_SET)
+    NULLIFY(BOUNDARY_CONDITIONS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
+      IF(ASSOCIATED(EQUATIONS_SET)) THEN
+        CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,Err,ERROR,*999)
+        CALL BOUNDARY_CONDITIONS_BOUNDARY_SET_NUMBER_OF_BOUNDARIES &
+                 & (BOUNDARY_CONDITIONS,VariableType,NumberOfNeumann,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSBoundaryConditionsSetNumberOfBoundariesNumber")
+    RETURN
+999 CALL ERRORS("CMISSBoundaryConditionsSetNumberOfBoundariesNumber",Err,ERROR)
+    CALL EXITS("CMISSBoundaryConditionsSetNumberOfBoundariesNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSBoundaryConditionsSetNumberOfBoundariesNumber
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !>Sets the total number of Neumann boundaries.
+  SUBROUTINE CMISSBoundaryConditionsSetNumberOfBoundariesObj(BoundaryConditions,VariableType,NumberOfNeumann,Err)
+  
+    !Argument variables
+    TYPE(CMISSBoundaryConditionsType), INTENT(OUT) :: BoundaryConditions !<The boundary conditions for the boundary.
+    INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent field for the boundary. 
+    INTEGER(INTG), INTENT(IN) :: NumberOfNeumann !<The number of user-set Neumann boundaries.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    
+    CALL ENTERS("CMISSBoundaryConditionsSetNumberOfBoundariesObj",ERR,ERROR,*999)
+
+    CALL BOUNDARY_CONDITIONS_BOUNDARY_SET_NUMBER_OF_BOUNDARIES &
+                   & (BoundaryConditions%BOUNDARY_CONDITIONS,VariableType,NumberOfNeumann,Err,ERROR,*999)
+
+    CALL EXITS("CMISSBoundaryConditionsSetNumberOfBoundariesObj")
+    RETURN
+999 CALL ERRORS("CMISSBoundaryConditionsSetNumberOfBoundariesObj",Err,ERROR)
+    CALL EXITS("CMISSBoundaryConditionsSetNumberOfBoundariesObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSBoundaryConditionsSetNumberOfBoundariesObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the value of the specified dof as a boundary condition on the specified dof for boundary conditions identified by a user number.
+  SUBROUTINE CMISSBoundaryConditionsAddDOFToBoundaryNumber0(RegionUserNumber,EquationsSetUserNumber,&
+                                                                   & VariableType,DOFNumber,Value,Condition,Id,Err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the equations set to add the boundary conditions for.
+    INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to add the boundary conditions for.
+    INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent field to add the boundary condition for.
+    INTEGER(INTG), INTENT(IN) :: DOFNumber !<The global number of the dof to add the boundary conditions for.
+    REAL(DP), INTENT(IN) :: Value !<The value of the boundary condition to add.
+    INTEGER(INTG), INTENT(IN) :: Condition !<The boundary condition type to set \see OPENCMISS_BoundaryConditions,OPENCMISS
+    INTEGER(INTG), INTENT(IN) :: Id !<Identifier for the Neumann boundary condition
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+  
+    CALL ENTERS("CMISSBoundaryConditionsAddDOFToBoundaryNumber0",Err,ERROR,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(EQUATIONS_SET)
+    NULLIFY(BOUNDARY_CONDITIONS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
+      IF(ASSOCIATED(EQUATIONS_SET)) THEN
+        CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,Err,ERROR,*999)
+        CALL BOUNDARY_CONDITIONS_BOUNDARY_ADD_DOF(BOUNDARY_CONDITIONS,VariableType,DOFNumber,Value,Condition,Id,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An equations set with a user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSBoundaryConditionsAddDOFToBoundaryNumber0")
+    RETURN
+999 CALL ERRORS("CMISSBoundaryConditionsAddDOFToBoundaryNumber0",Err,ERROR)
+    CALL EXITS("CMISSBoundaryConditionsAddDOFToBoundaryNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSBoundaryConditionsAddDOFToBoundaryNumber0
+ 
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the value of the specified dof as a boundary condition on the specified dof for boundary conditions identified by a user number.
+  SUBROUTINE CMISSBoundaryConditionsAddDOFToBoundaryNumber1(RegionUserNumber,EquationsSetUserNumber,&
+                                                                   & VariableType,DOFNumber,Value,Condition,Id,Err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the equations set to add the boundary conditions for.
+    INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to add the boundary conditions for.
+    INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent field to add the boundary condition for.
+    INTEGER(INTG), INTENT(IN) :: DOFNumber(:) !<The global number of the dof to add the boundary conditions for.
+    REAL(DP), INTENT(IN) :: Value(:) !<The value of the boundary condition to add.
+    INTEGER(INTG), INTENT(IN) :: Condition(:) !<The boundary condition type to set \see OPENCMISS_BoundaryConditions,OPENCMISS
+    INTEGER(INTG), INTENT(IN) :: Id !<Identifier for the Neumann boundary condition
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+  
+    CALL ENTERS("CMISSBoundaryConditionsAddDOFToBoundaryNumber1",Err,ERROR,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(EQUATIONS_SET)
+    NULLIFY(BOUNDARY_CONDITIONS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
+      IF(ASSOCIATED(EQUATIONS_SET)) THEN
+        CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,Err,ERROR,*999)
+        CALL BOUNDARY_CONDITIONS_BOUNDARY_ADD_DOF(BOUNDARY_CONDITIONS,VariableType,DOFNumber,Value,Condition,Id,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An equations set with a user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSBoundaryConditionsAddDOFToBoundaryNumber1")
+    RETURN
+999 CALL ERRORS("CMISSBoundaryConditionsAddDOFToBoundaryNumber1",Err,ERROR)
+    CALL EXITS("CMISSBoundaryConditionsAddDOFToBoundaryNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSBoundaryConditionsAddDOFToBoundaryNumber1
+ 
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the value of the specified dof and sets this as a boundary condition on the specified dof for boundary conditions identified by an object.
+  SUBROUTINE CMISSBoundaryConditionsAddDOFToBoundaryObj0(BoundaryConditions,VariableType,DOFNumber,Value,Condition,Id,Err)
+  
+    !Argument variables
+    TYPE(CMISSBoundaryConditionsType), INTENT(IN) :: BoundaryConditions !<The boundary conditions to add the node to.
+    INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent field to set the boundary condition at. 
+    INTEGER(INTG), INTENT(IN) :: DOFNumber !<The number of the dof to set the boundary conditions for.
+    REAL(DP), INTENT(IN) :: Value !<The value of the boundary condition to add.
+    INTEGER(INTG), INTENT(IN) :: Condition !<The boundary condition type to set \see OPENCMISS_BoundaryConditions,OPENCMISS
+    INTEGER(INTG), INTENT(IN) :: Id !<Identifier for the Neumann boundary condition
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSBoundaryConditionsAddDOFToBoundaryObj0",Err,ERROR,*999)
+
+    CALL BOUNDARY_CONDITIONS_BOUNDARY_ADD_DOF(BoundaryConditions%BOUNDARY_CONDITIONS,VariableType,DOFNumber,Value,&
+                                                                                              & Condition,Id,Err,ERROR,*999)
+
+    CALL EXITS("CMISSBoundaryConditionsAddDOFToBoundaryObj0")
+    RETURN
+999 CALL ERRORS("CMISSBoundaryConditionsAddDOFToBoundaryObj0",Err,ERROR)
+    CALL EXITS("CMISSBoundaryConditionsAddDOFToBoundaryObj0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSBoundaryConditionsAddDOFToBoundaryObj0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the value of the specified dof and sets this as a boundary condition on the specified dof for boundary conditions identified by an object.
+  SUBROUTINE CMISSBoundaryConditionsAddDOFToBoundaryObj1(BoundaryConditions,VariableType,DOFNumber,Value,Condition,Id,Err)
+  
+    !Argument variables
+    TYPE(CMISSBoundaryConditionsType), INTENT(IN) :: BoundaryConditions !<The boundary conditions to add the node to.
+    INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent field to set the boundary condition at. 
+    INTEGER(INTG), INTENT(IN) :: DOFNumber(:) !<The number of the dof to set the boundary conditions for.
+    REAL(DP), INTENT(IN) :: Value(:) !<The value of the boundary condition to add.
+    INTEGER(INTG), INTENT(IN) :: Condition(:) !<The boundary condition type to set \see OPENCMISS_BoundaryConditions,OPENCMISS
+    INTEGER(INTG), INTENT(IN) :: Id !<Identifier for the Neumann boundary condition
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSBoundaryConditionsAddDOFToBoundaryObj1",Err,ERROR,*999)
+
+    CALL BOUNDARY_CONDITIONS_BOUNDARY_ADD_DOF(BoundaryConditions%BOUNDARY_CONDITIONS,VariableType,DOFNumber,Value,&
+                                                                                           & Condition,Id,Err,ERROR,*999)
+
+    CALL EXITS("CMISSBoundaryConditionsAddDOFToBoundaryObj1")
+    RETURN
+999 CALL ERRORS("CMISSBoundaryConditionsAddDOFToBoundaryObj1",Err,ERROR)
+    CALL EXITS("CMISSBoundaryConditionsAddDOFToBoundaryObj1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSBoundaryConditionsAddDOFToBoundaryObj1
 
   !
   !================================================================================================================================
