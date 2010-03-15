@@ -23,6 +23,6 @@
    - nodes: Mandatory. Number of computational nodes.
    - args: Optional. Arguments for the executables separated by space.
    - input: Optional. Inputs for the executables separated by new line (\\n).
-   - expectedFile: Optional. The path from the specified example directory to the expectedFile the output file to compare with. It should be uploaded to the repository. 
-   - actualFile: Optional. The path from the specified example directory to the actualFile which is output from execution of example.   
+   - ndiffDir: Optional. The path from the specified example directory to the directory for expected files. They should be uploaded to the repository. 
+   - actualDir: Optional. The path from the specified example directory to the directory for the output files executed by the example. The names of output files should be the same as the names in ndiffDir for ndiff to match.   
 */
