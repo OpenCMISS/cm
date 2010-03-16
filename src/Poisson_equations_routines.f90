@@ -189,6 +189,10 @@ CONTAINS
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 END SELECT
+                              CASE(EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_2)
+                                CALL FLAG_ERROR("The analytic function type is not implemented yet.",ERR,ERROR,*999)
+                              CASE(EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_3)
+                                CALL FLAG_ERROR("The analytic function type is not implemented yet.",ERR,ERROR,*999)
                               CASE(EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_1)
                                 !u=ln(6/(x+y+z+1^2))
                                 SELECT CASE(variable_type)
@@ -252,6 +256,49 @@ CONTAINS
                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                   CASE(NO_GLOBAL_DERIV)
                                     VALUE=10.0_DP
+                                  CASE(GLOBAL_DERIV_S1)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S2)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                  CASE(GLOBAL_DERIV_S1_S2)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
+                                      & " is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                CASE DEFAULT
+                                  LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+                                    & " is invalid."
+                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                END SELECT                                                              
+                              CASE(EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_2)
+                                CALL FLAG_ERROR("The analytic function type is not implemented yet.",ERR,ERROR,*999)
+                              CASE(EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3)
+                                !u=ln(4/(x+y+1^2))
+                                SELECT CASE(variable_type)
+                                CASE(FIELD_U_VARIABLE_TYPE)
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  CASE(NO_GLOBAL_DERIV)
+                                    VALUE=SIN(2.0_DP*PI*X(1)/10.0_DP)*SIN(2.0_DP*PI*X(2)/10.0_DP)*SIN(2.0_DP*PI*X(3)/10.0_DP)
+!                                     VALUE=2*X(1)*X(1)+2*X(2)
+                                  CASE(GLOBAL_DERIV_S1)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S2)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S1_S2)
+                                    CALL FLAG_ERROR("Not implmented.",ERR,ERROR,*999)
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
+                                      & " is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                 SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  CASE(NO_GLOBAL_DERIV)
+!                                     do nothing, tbd
                                   CASE(GLOBAL_DERIV_S1)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S2)
@@ -1032,6 +1079,24 @@ CONTAINS
                 IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
                   CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
                   SELECT CASE(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE)
+!                   CASE(EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_1)
+!                     !Set analtyic function type
+!                     EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_1
+!                   CASE(EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_2)
+!                     !Set analtyic function type
+!                      EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_2
+!                   CASE(EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_3)
+!                     !Set analtyic function type
+!                     EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_3
+!                   CASE(EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_1)
+!                     !Set analtyic function type
+!                     EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_1
+!                   CASE(EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_2)
+!                     !Set analtyic function type
+!                     EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_2
+                  CASE(EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3)
+                    !Set analtyic function type
+                    EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3
                   CASE DEFAULT
                     LOCAL_ERROR="The specified analytic function type of "// &
                       & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
@@ -1041,7 +1106,7 @@ CONTAINS
                 ELSE
                   CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
                 ENDIF
-             ELSE
+              ELSE
                 CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
@@ -2334,9 +2399,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) ng,mh,mhs,mi,ms,nh,nhs,ni,ns,I,J
-    REAL(DP) :: RWG,SUM,PGMSI(3),PGNSI(3)
-    REAL(DP) :: W_VALUE(3),W_DERIV(3,3),RHO_PARAM,MU_PARAM,W_OLD(3),W_SECOND(3,3)
+    INTEGER(INTG) ng,mh,mhs,mi,ms,nh,nhs,ni,ns,I,J,k1sum,k2sum
+    REAL(DP) :: RWG,SUM,PGMSI(3),PGNSI(3),SUM2,DXI_DX(3,3)
+    REAL(DP) :: W_VALUE(3),W_DERIV(3,3),RHO_PARAM,MU_PARAM,W_OLD(3),W_SECOND(3,3),X(3)
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,GEOMETRIC_BASIS,SOURCE_BASIS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
@@ -2519,6 +2584,9 @@ CONTAINS
                       DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
                         PGMSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
                         PGNSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+                        DO mi=1,DEPENDENT_BASIS%NUMBER_OF_XI
+                          DXI_DX(mi,ni)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%DXI_DX(mi,ni)
+                        END DO
                       ENDDO !ni
                       SUM=0.0_DP
                       DO mi=1,DEPENDENT_BASIS%NUMBER_OF_XI
@@ -2534,13 +2602,44 @@ CONTAINS
                   IF(RHS_VECTOR%UPDATE_VECTOR) RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=0.0_DP
                 ELSE IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_NAVIER_STOKES_POISSON_SUBTYPE) THEN
                   SUM=0.0_DP
+                  SUM2=0.0_DP
                   IF(RHS_VECTOR%UPDATE_VECTOR) THEN
                     DO I=1,3
                       DO J=1,3
-                        SUM=SUM+(W_DERIV(I,J)*W_DERIV(J,I))
+                        DO k1sum=1,3
+                          DO k2sum=1,3
+                            SUM=SUM+(W_DERIV(I,k1sum)*DXI_DX(k1sum,J)*W_DERIV(J,k2sum)*DXI_DX(k2sum,I))
+                          ENDDO
+                        ENDDO
                       ENDDO
                     ENDDO
-                    RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=-SUM*RHO_PARAM*QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)*RWG
+                    !Additional terms for analytic solution
+                    IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+                      IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3) THEN
+                        X(1) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT%VALUES(1,1)
+                        X(2) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT%VALUES(2,1)
+                        X(3) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT%VALUES(3,1)
+! TEST: will be deleted
+! ! !                         SUM2=8.0_DP
+                        SUM2=-4.0_DP*PI*PI/100.0*(3.0_DP*sin(2.0_DP*PI*X(1)/10.0_DP)*sin(2.0_DP*PI*X(2)/10.0)* &
+                          & sin(2.0_DP*PI*X(3)/10.0_DP)-6.0_DP*RHO_PARAM*cos(2.0_DP*PI*X(1)/10.0_DP)**2+ &
+                          & 8.0_DP*RHO_PARAM*cos(2.0_DP*PI*X(1)/10.0_DP)**2*cos(2.0_DP*PI*X(3)/10.0_DP)**2- &
+                          & 2.0_DP*RHO_PARAM*cos(2.0_DP*PI*X(3)/10.0_DP)**2+2.0_DP*RHO_PARAM*cos(2.0_DP*PI*X(1)/10.0_DP)**2* &
+                          & cos(2.0_DP*PI*X(2)/10.0_DP)**2+4.0_DP*RHO_PARAM*cos(2.0_DP*PI*X(2)/10.0_DP)**2- &
+                          & 2.0_DP*RHO_PARAM*cos(2.0_DP*PI*X(2)/10.0_DP)**2*cos(2.0_DP*PI*X(3)/10.0_DP)**2)
+! TEST: will be deleted
+! !                         SUM=0.0_DP
+! !                         SUM2=-12.0_DP*SIN(2.0_DP*PI*X(1)/10.0_DP)*PI*PI/100.0_DP*SIN(2.0_DP*PI*X(2)/10.0_DP)* & 
+! !                           & SIN(2.0_DP*PI*X(3)/10.0_DP)
+! ! !                         SUM2=4.0_DP
+!                         SUM=0.0_DP
+! ! !                         SUM2=4.0_DP+8*RHO_PARAM-8*RHO_PARAM*X(2)
+                      ELSE 
+                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      ENDIF
+                    ENDIF
+                    RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)+ &
+                      & (SUM*RHO_PARAM-SUM2)*QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)*RWG
                   ENDIF
                 ELSE
                   IF(RHS_VECTOR%UPDATE_VECTOR) RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=0.0_DP

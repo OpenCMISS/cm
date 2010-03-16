@@ -460,6 +460,8 @@ static int CMISSEquationsSetConstantSourcePoissonSubtype = 1;
 static int CMISSEquationsSetLinearSourcePoissonSubtype = 2;
 static int CMISSEquationsSetQuadraticSourcePoissonSubtype = 3;
 static int CMISSEquationsSetExponentialSourcePoissonSubtype = 4;
+static int CMISSEquationsSetStokesPoissonSubtype = 5;
+static int CMISSEquationsSetNavierStokesPoissonSubtype = 6;
 static int CMISSEquationsSetNoSourceHelmholtzSubtype = 1;
 static int CMISSEquationsSetNoSourceDiffusionSubtype = 1;
 static int CMISSEquationsSetConstantSourceDiffusionSubtype = 2;
@@ -514,6 +516,11 @@ static int CMISSEquationsSetLaplaceEquationThreeDim2 = 4;
  * >@{
  */
 static int CMISSEquationsSetPoissonTwoDim1 = 1;
+static int CMISSEquationsSetPoissonTwoDim2 = 2;
+static int CMISSEquationsSetPoissonTwoDim3 = 3;
+static int CMISSEquationsSetPoissonThreeDim1 = 4;
+static int CMISSEquationsSetPoissonThreeDim2 = 5;
+static int CMISSEquationsSetPoissonThreeDim3 = 6;
 /*
  * >@}
  * > \addtogroup OPENCMISS_PoissonAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Poisson

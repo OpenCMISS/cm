@@ -1640,7 +1640,11 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{  
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonTwoDim1 = EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_1 !<u=ln(4/(x+y+1^2)) \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonTwoDim2 = EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonTwoDim3 = EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonThreeDim1 = EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_1 !<u=ln(6/(x+y+z+1^2)) \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonThreeDim2 = EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonThreeDim3 = EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSTestCase1 = TEST_CASE_1 !<Test case setup for testing of Neumann boundary conditions
   !>@}
   !> \addtogroup OPENCMISS_DiffusionAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Diffusion
@@ -1769,7 +1773,9 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSEquationsSetAdvectionDiffusionTwoDim1
 
-  PUBLIC CMISSEquationsSetPoissonTwoDim1,CMISSEquationsSetPoissonThreeDim1,CMISSTestCase1
+  PUBLIC CMISSEquationsSetPoissonTwoDim1,CMISSEquationsSetPoissonTwoDim2,CMISSEquationsSetPoissonTwoDim3
+  PUBLIC CMISSEquationsSetPoissonThreeDim1,CMISSEquationsSetPoissonThreeDim2,CMISSEquationsSetPoissonThreeDim3
+  PUBLIC CMISSTestCase1
 
   PUBLIC CMISSEquationsSetStokesTwoDim1,CMISSEquationsSetStokesTwoDim2,CMISSEquationsSetStokesTwoDim3
   PUBLIC CMISSEquationsSetStokesThreeDim1,CMISSEquationsSetStokesThreeDim2,CMISSEquationsSetStokesThreeDim3
