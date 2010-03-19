@@ -2068,7 +2068,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSFieldUVariableType = FIELD_U_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldDelUDelNVariableType = FIELD_DELUDELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldDelUDelTVariableType = FIELD_DELUDELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDel2UDelT2VariableType = FIELD_DEL2UDELT2_VARIABLE_TYPE !<Second type derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldDel2UDelT2VariableType = FIELD_DEL2UDELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldVVariableType = FIELD_V_VARIABLE_TYPE !<Second standard variable type i.e., v \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldDelVDelNVariableType = FIELD_DELVDELN_VARIABLE_TYPE !<Second normal variable type i.e., dv/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
   !>@}
