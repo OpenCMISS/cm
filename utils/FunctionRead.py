@@ -13,24 +13,25 @@ def Read(opencmiss, f, startstring_ind, endstring_ind, startleng, endfunc):
 
 		string_c = opencmiss.readline()
 
-		startstring = string_c.find(startstring_ind)
-		endstring = string_c.find(endstring_ind)
+		if not string_c.startswith('!') :
+			startstring = string_c.find(startstring_ind)
+			endstring = string_c.find(endstring_ind)
 
-		readstring = []
+			readstring = []
 
-		if endstring != -1:
-			if startstring != -1:
-				for i in range(startstring+startleng, endstring):
-					readstring.extend(string_c[i])
-			joinstring = "".join(readstring)
-			joinstring = joinstring.rstrip()
-			suff = suffixOut(joinstring, endfunc)
-			while suff != '' :
-				joinstring = joinstring[:-len(suff)]
+			if endstring != -1:
+				if startstring != -1:
+					for i in range(startstring+startleng, endstring):
+						readstring.extend(string_c[i])
+				joinstring = "".join(readstring)
+				joinstring = joinstring.rstrip()
 				suff = suffixOut(joinstring, endfunc)
-			if string_list.count(joinstring)==0 and joinstring!='' :
-                        	string_list.append(joinstring)
-				f.write(joinstring + '\n')
+				while suff != '' :
+					joinstring = joinstring[:-len(suff)]
+					suff = suffixOut(joinstring, endfunc)
+				if string_list.count(joinstring)==0 and joinstring!='' :
+                        		string_list.append(joinstring)
+					f.write(joinstring + '\n')
 
 def main() :
 	opencmiss_f = open('../src/opencmiss.f90', 'r')
