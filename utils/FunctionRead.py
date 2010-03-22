@@ -1,7 +1,7 @@
-def suffixOut(str1, suffix) :
-	for suff in suffix :
-        	if str1.endswith(suff):
-			return suff
+def suffixOut(str1, suffixes) :
+	for suffix in suffixes :
+        	if str1.endswith(suffix):
+			return suffix
 	return ''
 
 def Read(opencmiss, f, startstring_ind, endstring_ind, startleng, endfunc):
@@ -25,10 +25,10 @@ def Read(opencmiss, f, startstring_ind, endstring_ind, startleng, endfunc):
 						readstring.extend(string_c[i])
 				joinstring = "".join(readstring)
 				joinstring = joinstring.rstrip()
-				suff = suffixOut(joinstring, endfunc)
-				while suff != '' :
-					joinstring = joinstring[:-len(suff)]
-					suff = suffixOut(joinstring, endfunc)
+				suffix = suffixOut(joinstring, endfunc)
+				while suffix != '' :
+					joinstring = joinstring[:-len(suffix)]
+					suffix = suffixOut(joinstring, endfunc)
 				if string_list.count(joinstring)==0 and joinstring!='' :
                         		string_list.append(joinstring)
 					f.write(joinstring + '\n')
