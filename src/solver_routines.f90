@@ -10377,18 +10377,18 @@ CONTAINS
                             & ERR,ERROR,*999)
                           SELECT CASE(CONVERGED_REASON)
                           CASE(PETSC_SNES_CONVERGED_FNORM_ABS)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged F Norm absolute", &
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged F Norm absolute.", &
                               & ERR,ERROR,*999)
                           CASE(PETSC_SNES_CONVERGED_FNORM_RELATIVE)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged F Norm relative", &
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged F Norm relative.", &
                               & ERR,ERROR,*999)
                           CASE(PETSC_SNES_CONVERGED_PNORM_RELATIVE)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged P Norm relative", &
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged P Norm relative.", &
                               & ERR,ERROR,*999)
                           CASE(PETSC_SNES_CONVERGED_ITS)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged its",ERR,ERROR,*999)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged its.",ERR,ERROR,*999)
                           CASE(PETSC_SNES_CONVERGED_ITERATING)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged iterating",ERR,ERROR,*999)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged iterating.",ERR,ERROR,*999)
                           END SELECT
                         ENDIF
                       CASE DEFAULT

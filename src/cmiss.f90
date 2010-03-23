@@ -75,18 +75,93 @@ MODULE CMISS
   INTEGER(INTG), PARAMETER :: CMISS_REVISION_VERSION = 0
 
   CHARACTER(LEN=MAXSTRLEN), PARAMETER :: CMISS_BUILD_VERSION = "$Rev:"
+
+  !> \addtogroup CMISS_ErrorHandlingModes CMISS::ErrorHandlingModes
+  !> \brief Error handling mode parameters
+  !> \see CMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISS_RETURN_ERROR_CODE = 0 !<Just return the error code \see CMISS_ErrorHandlingModes,CMISS
+  INTEGER(INTG), PARAMETER :: CMISS_OUTPUT_ERROR = 1 !<Output the error traceback and return the error code \see CMISS_ErrorHandlingModes,CMISS
+  INTEGER(INTG), PARAMETER :: CMISS_TRAP_ERROR = 2 !<Trap the error by outputing the error traceback and stopping the program \see CMISS_ErrorHandlingModes,CMISS
+  !>@}
   
   !Module types
 
   !Module variables
 
+  INTEGER(INTG), SAVE :: CMISS_ERROR_HANDLING_MODE
+
   !Interfaces
 
   PUBLIC CMISS_MAJOR_VERSION,CMISS_MINOR_VERSION,CMISS_REVISION_VERSION,CMISS_BUILD_VERSION
+
+  PUBLIC CMISS_RETURN_ERROR_CODE,CMISS_OUTPUT_ERROR,CMISS_TRAP_ERROR
+
+  PUBLIC CMISS_ERROR_HANDLING_MODE_GET,CMISS_ERROR_HANDLING_MODE_SET
   
   PUBLIC CMISS_HANDLE_ERROR,CMISS_WRITE_ERROR,CMISS_FINALISE,CMISS_INITIALISE
   
 CONTAINS
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the error handling mode for CMISS \see OPENCMISS::CMISSErrorHandlingModeGet
+  SUBROUTINE CMISS_ERROR_HANDLING_MODE_GET(ERROR_HANDLING_MODE,ERR,ERROR,*)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(OUT) :: ERROR_HANDLING_MODE !<On return, the error handling mode. \see CMISS_ErrorHandlingModes,CMISS
+    INTEGER(INTG), INTENT(INOUT) :: ERR !<The error string
+    TYPE(VARYING_STRING), INTENT(INOUT) :: ERROR !<The error code
+    !Local Variables
+
+    CALL ENTERS("CMISS_ERROR_HANDLING_MODE_GET",ERR,ERROR,*999)
+
+    ERROR_HANDLING_MODE=CMISS_ERROR_HANDLING_MODE
+    
+    CALL EXITS("CMISS_ERROR_HANDLING_MODE_GET")
+    RETURN
+999 CALL ERRORS("CMISS_ERROR_HANDLING_MODE_GET",ERR,ERROR)
+    CALL EXITS("CMISS_ERROR_HANDLING_MODE_GET")
+    RETURN 1
+  END SUBROUTINE CMISS_ERROR_HANDLING_MODE_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the error handling mode for cmiss \see OPENCMISS::CMISSErrorHandlingModeSet
+  SUBROUTINE CMISS_ERROR_HANDLING_MODE_SET(ERROR_HANDLING_MODE,ERR,ERROR,*)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ERROR_HANDLING_MODE !<The error handling mode to set. \see CMISS_ErrorHandlingModes,CMISS
+    INTEGER(INTG), INTENT(INOUT) :: ERR !<The error string
+    TYPE(VARYING_STRING), INTENT(INOUT) :: ERROR !<The error code
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISS_ERROR_HANDLING_MODE_SET",ERR,ERROR,*999)
+
+    SELECT CASE(ERROR_HANDLING_MODE)
+    CASE(CMISS_RETURN_ERROR_CODE)
+      CMISS_ERROR_HANDLING_MODE=CMISS_RETURN_ERROR_CODE
+    CASE(CMISS_OUTPUT_ERROR)
+      CMISS_ERROR_HANDLING_MODE=CMISS_OUTPUT_ERROR
+    CASE(CMISS_TRAP_ERROR)
+      CMISS_ERROR_HANDLING_MODE=CMISS_TRAP_ERROR
+    CASE DEFAULT
+      LOCAL_ERROR="The supplied error handling mode of "//TRIM(NUMBER_TO_VSTRING(ERROR_HANDLING_MODE,"*",ERR,ERROR))// &
+        & " is invalid."
+      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+    END SELECT
+
+     CALL EXITS("CMISS_ERROR_HANDLING_MODE_SET")
+    RETURN
+999 CALL ERRORS("CMISS_ERROR_HANDLING_MODE_SET",ERR,ERROR)
+    CALL EXITS("CMISS_ERROR_HANDLING_MODE_SET")
+    RETURN 1
+  END SUBROUTINE CMISS_ERROR_HANDLING_MODE_SET
 
   !
   !================================================================================================================================
@@ -135,6 +210,8 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: VERSION_STRING
 
+    !Initialise error mode
+    CMISS_ERROR_HANDLING_MODE = CMISS_OUTPUT_ERROR !Default for now, maybe make CMISS_RETURN_ERROR_CODE the default
     !Initialise the base routines
     CALL BASE_ROUTINES_INITIALISE(ERR,ERROR,*999)
     !Intialise the computational environment
@@ -203,8 +280,18 @@ CONTAINS
     INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(INOUT) :: ERROR !<The error string
     !Local Variables
-    
-    CALL WRITE_ERROR(ERR,ERROR,*999)
+
+    SELECT CASE(CMISS_ERROR_HANDLING_MODE)
+    CASE(CMISS_RETURN_ERROR_CODE)
+      !Do nothing
+    CASE(CMISS_OUTPUT_ERROR)
+      CALL WRITE_ERROR(ERR,ERROR,*999)
+    CASE(CMISS_TRAP_ERROR)
+      CALL WRITE_ERROR(ERR,ERROR,*999)
+      STOP
+    CASE DEFAULT
+      !Do nothing
+    END SELECT
 
     RETURN
 999 RETURN

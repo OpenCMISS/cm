@@ -199,6 +199,18 @@ static int CMISSBoundaryConditionMovedWall = 5;
 /*
  *==================================================================================================================================
  *
+ * CMISS
+ *
+ *==================================================================================================================================
+ */
+
+static int CMISSReturnErrorCode = 0;
+static int CMISSOutputError = 1;
+static int CMISSTrapError = 2;
+
+/*
+ *==================================================================================================================================
+ *
  * COMP_ENVIRONMENT
  *
  *==================================================================================================================================
@@ -1864,6 +1876,10 @@ CMISSError CMISSEquationsSetBoundaryConditionsGet(const CMISSEquationsSetType Eq
  *
  *==================================================================================================================================
  */
+
+CMISSError CMISSErrorHanlingModeGet(int *ErrorHandlingMode);
+
+CMISSError CMISSErrorHanlingModeSet(int ErrorHandlingMode);
 
 CMISSError CMISSFinalise();
 

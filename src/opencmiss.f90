@@ -795,6 +795,36 @@ MODULE OPENCMISS
 
 !!==================================================================================================================================
 !!
+!! CMISS
+!!
+!!==================================================================================================================================
+  
+  !Module parameters
+  !> \addtogroup OPENCMISS_CMISSConstants OPENCMISS::CMISS::Constants
+  !> \brief CMISS constants.
+  !>@{  
+  !> \addtogroup OPENCMISS_CMISSErrorHandlingModes OPENCMISS::CMISS::ErrorHandlingModes
+  !> \brief CMISS error handling mode parameters
+  !> \see OPENCMISS::CMISS,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISSReturnErrorCode = CMISS_RETURN_ERROR_CODE !<Just return the error code \see OPENCMISS_CMISSErrorHandlingModes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSOutputError = CMISS_OUTPUT_ERROR !<Output the error traceback and return the error code \see OPENCMISS_CMISSErrorHandlingModes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSTrapError = CMISS_TRAP_ERROR!<Trap the error by outputing the error traceback and stopping the program \see OPENCMISS_CMISSErrorHandlingModes,OPENCMISS
+  !>@}
+  !>@}
+ 
+  !Module types
+  
+  !Module variables
+  
+  !Interfaces
+
+  PUBLIC CMISSReturnErrorCode,CMISSOutputError,CMISSTrapError
+
+  PUBLIC CMISSErrorHandlingModeGet,CMISSErrorHandlingModeSet
+  
+!!==================================================================================================================================
+!!
 !! CMISS_CELLML
 !!
 !!==================================================================================================================================
@@ -9079,6 +9109,59 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSEquationsSetBoundaryConditionsGetObj
+
+!!==================================================================================================================================
+!!
+!! CMISS
+!!
+!!==================================================================================================================================
+
+  !>Returns the error handling mode for OpenCMISS
+  SUBROUTINE CMISSErrorHandlingModeGet(ErrorHandlingMode,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(OUT) :: ErrorHandlingMode !<On return, the error handling mode. \see OPENCMISS_CMISSErrorHandlingModes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    
+    CALL ENTERS("CMISSErrorHandlingModeGet",Err,ERROR,*999)
+
+    CALL CMISS_ERROR_HANDLING_MODE_GET(ErrorHandlingMode,Err,ERROR,*999)
+    
+    CALL EXITS("CMISSErrorHandlingModeGet")
+    RETURN
+999 CALL ERRORS("CMISSErrorHandlingModeGet",Err,ERROR)
+    CALL EXITS("CMISSErrorHandlingModeGet")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSErrorHandlingModeGet
+
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets the error handling mode for OpenCMISS
+  SUBROUTINE CMISSErrorHandlingModeSet(ErrorHandlingMode,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ErrorHandlingMode !<The error handling mode to set. \see OPENCMISS_CMISSErrorHandlingModes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    
+    CALL ENTERS("CMISSErrorHandlingModeSet",Err,ERROR,*999)
+
+    CALL CMISS_ERROR_HANDLING_MODE_SET(ErrorHandlingMode,Err,ERROR,*999)
+    
+    CALL EXITS("CMISSErrorHandlingModeSet")
+    RETURN
+999 CALL ERRORS("CMISSErrorHandlingModeSet",Err,ERROR)
+    CALL EXITS("CMISSErrorHandlingModeSet")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSErrorHandlingModeSet
+
 
 !!==================================================================================================================================
 !!

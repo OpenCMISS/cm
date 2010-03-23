@@ -52,9 +52,11 @@
 
 ifndef OPENCMISSEXTRAS_ROOT
   OPENCMISSEXTRAS_ROOT := ../../opencmissextras
-  EXTERNAL_ROOT := $(CURDIR)/../../opencmissextras/cm/external
+  EXTERNAL_CM_ROOT := $(CURDIR)/../../opencmissextras/cm/external
+  EXTERNAL_CELLML_ROOT := $(CURDIR)/../../opencmissextras/cellml
 else
-  EXTERNAL_ROOT := ${OPENCMISSEXTRAS_ROOT}/cm/external
+  EXTERNAL_CM_ROOT := ${OPENCMISSEXTRAS_ROOT}/cm/external
+  EXTERNAL_CELLML_ROOT := ${OPENCMISSEXTRAS_ROOT}/cellml
 endif
 
 ifndef GLOBAL_ROOT
@@ -139,15 +141,18 @@ endif
 EXECUTABLE := $(EXE_DIR)/$(EXE_NAME)
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   ifeq ($(LIBRARY_VERSION),new)
-    EXTERNAL_DIR := $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
-  else
-    EXTERNAL_DIR := $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)
+    EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+   else
+    EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)
   endif
+  EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    EXTERNAL_DIR := $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+    EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+    EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
   else# windows
-    EXTERNAL_DIR := $(EXTERNAL_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+    EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+    EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
   endif
 endif
 
@@ -522,21 +527,21 @@ TAO_LIB_PATH =#
 TAO_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   ifeq ($(DEBUG),false)
-    TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/linux-gnu-c-opt/ )
+    TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/linux-gnu-c-opt/ )
   else
-    TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/linux-gnu-c-debug/ )
+    TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/linux-gnu-c-debug/ )
   endif
-  TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
-  TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
+  TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
+  TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     ifeq ($(DEBUG),false)
-      TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/aix-5.3.0.0-c-opt/ )
+      TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/aix-5.3.0.0-c-opt/ )
     else
-      TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/aix-5.3.0.0-c-debug/ )
+      TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/aix-5.3.0.0-c-debug/ )
     endif
-    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
-    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
+    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
+    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
   else# windows
     TAO_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     TAO_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -549,11 +554,11 @@ PETSC_LIB_PATH =#
 PETSC_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   ifeq ($(DEBUG),false)
-    PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/linux-gnu-c-opt/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/bmake/linux-gnu-c-opt/ )
+    PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/linux-gnu-c-opt/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/bmake/linux-gnu-c-opt/ )
   else
-    PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/linux-gnu-c-debug/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/bmake/linux-gnu-c-debug/ )
+    PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/linux-gnu-c-debug/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/bmake/linux-gnu-c-debug/ )
   endif
   ifeq ($(ABI),64)
     PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib64/ )
@@ -566,20 +571,20 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
     PETSC_LIB_PATH += $(addprefix -L, /usr/lib/openmotif/ )
     PETSC_LIB_PATH +=  $(addprefix -L, /usr/lib/openmotif/ )
   endif
-  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
-  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
+  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
+  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     ifeq ($(DEBUG),false)
-      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/aix-5.3.0.0-c-opt/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/bmake/aix-5.3.0.0-c-opt/ )
+      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/aix-5.3.0.0-c-opt/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/bmake/aix-5.3.0.0-c-opt/ )
     else
-      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/aix-5.3.0.0-c-debug/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/bmake/aix-5.3.0.0-c-debug/ )
+      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/aix-5.3.0.0-c-debug/ )
+      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/bmake/aix-5.3.0.0-c-debug/ )
     endif
     PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
+    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
   else# windows
     PETSC_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     PETSC_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -591,14 +596,14 @@ SUNDIALS_LIBRARIES = -lsundials_cvode -lsundials_nvecparallel -lsundials_nvecser
 SUNDIALS_LIB_PATH =#
 SUNDIALS_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  SUNDIALS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
-  SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
-  SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
+  SUNDIALS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+  SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
+  SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    SUNDIALS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib )
-    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
-    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
+    SUNDIALS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
+    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
+    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
   else# windows
     SUNDIALS_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     SUNDIALS_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -610,14 +615,14 @@ HYPRE_LIBRARIES = -lHYPRE
 HYPRE_LIB_PATH =#
 HYPRE_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  HYPRE_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
-  HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
-  HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
+  HYPRE_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+  HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
+  HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    HYPRE_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib )
-    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
-    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
+    HYPRE_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
+    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
+    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
   else# windows
     HYPRE_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     HYPRE_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -629,14 +634,14 @@ MUMPS_LIBRARIES = -ldmumps -lmumps_common -lpord
 MUMPS_LIB_PATH =#
 MUMPS_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  MUMPS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
-  MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
-  MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
+  MUMPS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+  MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
+  MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    MUMPS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib )
-    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
-    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
+    MUMPS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
+    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
+    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
   else# windows
     MUMPS_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     MUMPS_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -648,14 +653,14 @@ SCALAPACK_LIBRARIES = -lscalapack
 SCALAPACK_LIB_PATH =#
 SCALAPACK_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  SCALAPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
-  SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
-  SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
+  SCALAPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+  SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
+  SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    SCALAPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib )
-    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
-    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
+    SCALAPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
+    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
+    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
   else# windows
     SCALAPACK_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     SCALAPACK_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -667,14 +672,14 @@ BLACS_LIBRARIES = -lblacs -lblacsC -lblacsF77 -lblacs -lblacsC -lblacsF77
 BLACS_LIB_PATH =#
 BLACS_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  BLACS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
-  BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
-  BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
+  BLACS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+  BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
+  BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    BLACS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib )
-    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/ )
-    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/include/ )
+    BLACS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
+    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
+    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
   else# windows
     BLACS_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
     BLACS_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
@@ -686,10 +691,10 @@ PARMETIS_LIBRARIES = -lparmetis -lmetis
 PARMETIS_LIB_PATH =#
 PARMETIS_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
+  PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
+    PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
   else# windows
     PARMETIS_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
   endif
@@ -699,14 +704,17 @@ endif
 CELLML_LIBRARIES =#
 CELLML_LIB_PATH =#
 ifeq ($(USECELLML),true)
-  CELLML_LIBRARIES += -loccellml
+  CELLML_LIBRARIES += -loccellml -lrdf -lxml2
   ifeq ($(OPERATING_SYSTEM),linux)# Linux
     CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/lib/ )
+    CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_CELLML_DIR)/lib/ )
   else
     ifeq ($(OPERATING_SYSTEM),aix)# AIX
          CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/lib/ )
+    	 CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_CELLML_DIR)/lib/ )
     else# windows
          CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/lib/ )
+    	 CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_CELLML_DIR)/lib/ )
     endif
   endif
 endif
@@ -722,7 +730,7 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
       MPI_LIBRARIES += -lmpe_f2cmpi -llmpe -lmpe
     endif
     MPI_LIBRARIES += -lmpich -lpthread -lrt
-    MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
+    MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
   else
     ifeq ($(MPI),intel)
       ifeq ($(MPIPROF),true)
@@ -739,9 +747,9 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
         MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib/ )
       endif
     else
-      MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_DIR)/lib/ )
+      MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/lib/ )
       MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -lnsl -lutil
-      MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_DIR)/lib/ )
+      MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
     endif
   endif
 else
@@ -1809,7 +1817,7 @@ clobber: clean
 	rm -f $(EXECUTABLE)
 
 externallibs:
-	$(MAKE) --no-print-directory -f $(EXTERNAL_ROOT)/packages/Makefile DEBUG=$(DEBUG) ABI=$(ABI) 
+	$(MAKE) --no-print-directory -f $(EXTERNAL_CM_ROOT)/packages/Makefile DEBUG=$(DEBUG) ABI=$(ABI) 
 
 debug opt debug64 opt64:
 	$(MAKE) --no-print-directory DEBUG=$(DEBUG) ABI=$(ABI)

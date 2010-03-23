@@ -240,6 +240,14 @@ MODULE OPENCMISS_C
 
 !!==================================================================================================================================
 !!
+!! CMISS
+!!
+!!==================================================================================================================================
+
+ PUBLIC CMISSErrorHandlingModeGetC,CMISSErrorHandlingModeSetC
+ 
+!!==================================================================================================================================
+!!
 !! CMISS_CELLML
 !!
 !!==================================================================================================================================
@@ -5330,6 +5338,46 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   END FUNCTION CMISSEquationsSetBoundaryConditionsGetCPtr
 
+!!==================================================================================================================================
+!!
+!! CMISS
+!!
+!!==================================================================================================================================
+
+  !>Returns the error handling mode for C.
+  FUNCTION CMISSErrorHandlingModeGetC(ErrorHandlingMode)  BIND(C, NAME = "CMISSErrorHandlingModeGet")
+
+    !Argument variables
+    INTEGER(C_INT), INTENT(OUT) :: ErrorHandlingMode !<On return, the error handling mode.
+    !Function variable
+    INTEGER(C_INT) :: CMISSErrorHandlingModeGetC !<Error Code.
+    !Local variables
+
+    CALL CMISSErrorHandlingModeGet(ErrorHandlingMode,CMISSErrorHandlingModeGetC)
+
+    RETURN
+
+  END FUNCTION CMISSErrorHandlingModeGetC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the error handling mode for C.
+  FUNCTION CMISSErrorHandlingModeSetC(ErrorHandlingMode)  BIND(C, NAME = "CMISSErrorHandlingModeSet")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ErrorHandlingMode !<The error handling mode to set
+    !Function variable
+    INTEGER(C_INT) :: CMISSErrorHandlingModeSetC !<Error Code.
+    !Local variables
+
+    CALL CMISSErrorHandlingModeSet(ErrorHandlingMode,CMISSErrorHandlingModeSetC)
+
+    RETURN
+
+  END FUNCTION CMISSErrorHandlingModeSetC
+  
 !!==================================================================================================================================
 !!
 !! CMISS_CELLML
