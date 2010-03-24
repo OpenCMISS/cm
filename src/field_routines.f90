@@ -225,7 +225,13 @@ MODULE FIELD_ROUTINES
     MODULE PROCEDURE FIELD_COMPONENT_VALUES_INITIALISE_L
   END INTERFACE !FIELD_COMPONENT_VALUES_INITIALISE
 
- !>Gets the label for a field.
+  !>Starts the process of creating a field
+  INTERFACE FIELD_CREATE_START
+    MODULE PROCEDURE FIELD_CREATE_START_INTERFACE
+    MODULE PROCEDURE FIELD_CREATE_START_REGION
+  END INTERFACE !FIELD_CREATE_START
+  
+  !>Gets the label for a field.
   INTERFACE FIELD_LABEL_GET
     MODULE PROCEDURE FIELD_LABEL_GET_C
     MODULE PROCEDURE FIELD_LABEL_GET_VS
@@ -385,6 +391,12 @@ MODULE FIELD_ROUTINES
     MODULE PROCEDURE FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE_L
   END INTERFACE !FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE
 
+  !>Finds and returns a field identified by a user number. If no field  with that number exits field is left nullified.
+  INTERFACE FIELD_USER_NUMBER_FIND
+    MODULE PROCEDURE FIELD_USER_NUMBER_FIND_INTERFACE
+    MODULE PROCEDURE FIELD_USER_NUMBER_FIND_REGION
+  END INTERFACE !FIELD_USER_NUMBER_FIND
+  
   !>Gets the label for a field variable type.
   INTERFACE FIELD_VARIABLE_LABEL_GET
     MODULE PROCEDURE FIELD_VARIABLE_LABEL_GET_C
@@ -402,6 +414,12 @@ MODULE FIELD_ROUTINES
     MODULE PROCEDURE FIELD_VARIABLE_LABEL_SET_AND_LOCK_C
     MODULE PROCEDURE FIELD_VARIABLE_LABEL_SET_AND_LOCK_VS
   END INTERFACE !FIELD_VARIABLE_LABEL_SET_AND_LOCK
+
+  !>Initialises the fields.
+  INTERFACE FIELDS_INITIALISE
+    MODULE PROCEDURE FIELDS_INITIALISE_INTERFACE
+    MODULE PROCEDURE FIELDS_INITIALISE_REGION
+  END INTERFACE !FIELDS_INITIALISE
   
   PUBLIC FIELD_INDEPENDENT_TYPE,FIELD_DEPENDENT_TYPE
 
@@ -3525,6 +3543,141 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Starts the creation of a field.
+  SUBROUTINE FIELD_CREATE_START_GENERIC(FIELDS,USER_NUMBER,FIELD,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FIELDS_TYPE), POINTER :: FIELDS !<A pointer to the fields
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number for the field to create
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<On return, a pointer to the field. Must not be associated on entry
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: field_no
+    TYPE(FIELD_TYPE), POINTER :: NEW_FIELD
+    TYPE(FIELD_PTR_TYPE), POINTER :: NEW_FIELDS(:)
+
+    NULLIFY(NEW_FIELD)
+    NULLIFY(NEW_FIELDS)
+
+    CALL ENTERS("FIELD_CREATE_START",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(FIELDS)) THEN
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL FLAG_ERROR("Field is already associated.",ERR,ERROR,*998)
+      ELSE
+        !Set default field properties
+        CALL FIELD_INITIALISE(NEW_FIELD,ERR,ERROR,*999)
+        NEW_FIELD%GLOBAL_NUMBER=FIELDS%NUMBER_OF_FIELDS+1
+        NEW_FIELD%USER_NUMBER=USER_NUMBER
+        NEW_FIELD%LABEL="Field "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))
+        IF(ERR/=0) GOTO 999
+        NEW_FIELD%FIELDS=>FIELDS
+        NULLIFY(NEW_FIELD%REGION)
+        NEW_FIELD%GEOMETRIC_FIELD=>NEW_FIELD
+        NEW_FIELD%NUMBER_OF_VARIABLES=1
+        NEW_FIELD%SCALINGS%SCALING_TYPE=FIELD_ARITHMETIC_MEAN_SCALING
+        NEW_FIELD%SCALINGS%NUMBER_OF_SCALING_INDICES=0
+        CALL FIELD_CREATE_VALUES_CACHE_INITIALISE(NEW_FIELD,ERR,ERROR,*999)
+        !Add new field into list of fields 
+        ALLOCATE(NEW_FIELDS(FIELDS%NUMBER_OF_FIELDS+1),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new fields.",ERR,ERROR,*999)
+        DO field_no=1,FIELDS%NUMBER_OF_FIELDS
+          NEW_FIELDS(field_no)%PTR=>FIELDS%FIELDS(field_no)%PTR
+        ENDDO !field_no
+        NEW_FIELDS(FIELDS%NUMBER_OF_FIELDS+1)%PTR=>NEW_FIELD
+        IF(ASSOCIATED(FIELDS%FIELDS)) DEALLOCATE(FIELDS%FIELDS)
+        FIELDS%FIELDS=>NEW_FIELDS
+        FIELDS%NUMBER_OF_FIELDS=FIELDS%NUMBER_OF_FIELDS+1
+        FIELD=>NEW_FIELD
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Fields is not associated.",ERR,ERROR,*998)
+    ENDIF
+
+    CALL EXITS("FIELD_CREATE_START_GENERIC")
+    RETURN
+999 IF(ASSOCIATED(NEW_FIELD)) DEALLOCATE(NEW_FIELD)
+    IF(ASSOCIATED(NEW_FIELDS)) DEALLOCATE(NEW_FIELDS)
+    NULLIFY(FIELD)
+998 CALL ERRORS("FIELD_CREATE_START_GENERIC",ERR,ERROR)
+    CALL EXITS("FIELD_CREATE_START_GENERIC")
+    RETURN 1
+  END SUBROUTINE FIELD_CREATE_START_GENERIC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the creation of a field defined by a user number in the specified interface. \see OPENCMISS::CMISSFieldCreateStart
+  !>Default values set for the FIELD's attributes are:
+  !>- DEPENDENT_TYPE: 1 (FIELD_INDEPENDENT_TYPE)
+  !>- DIMENSION: 2 (FIELD_VECTOR_DIMENSION_TYPE)
+  !>- TYPE: 1 (FIELD_GEOMETRIC_TYPE)
+  !>- NUMBER_OF_VARIABLES: 1
+  !>- GEOMETRIC_FIELD: itself
+  !>- SCALINGS%SCALING_TYPE: 3 (FIELD_ARITHMETIC_MEAN_SCALING)
+  !>\todo Add in FIELD_INITIALISE
+  SUBROUTINE FIELD_CREATE_START_INTERFACE(USER_NUMBER,INTERFACE,FIELD,ERR,ERROR,*)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number for the field
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface in which to create the field
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<On return, a pointer to the field being created. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR    
+
+    CALL ENTERS("FIELD_CREATE_START_INTERFACE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(INTERFACE)) THEN
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL FLAG_ERROR("Field is already associated.",ERR,ERROR,*999)
+      ELSE
+        NULLIFY(FIELD)
+        IF(ASSOCIATED(INTERFACE%FIELDS)) THEN
+          CALL FIELD_USER_NUMBER_FIND_GENERIC(USER_NUMBER,INTERFACE%FIELDS,FIELD,ERR,ERROR,*999)
+          IF(ASSOCIATED(FIELD)) THEN
+            LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))// &
+              & " has already been created on interface number "//TRIM(NUMBER_TO_VSTRING(INTERFACE%USER_NUMBER,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ELSE
+            IF(ASSOCIATED(INTERFACE%INTERFACES)) THEN
+              PARENT_REGION=>INTERFACE%INTERFACES%PARENT_REGION
+              IF(ASSOCIATED(PARENT_REGION)) THEN
+                CALL FIELD_CREATE_START_GENERIC(INTERFACE%FIELDS,USER_NUMBER,FIELD,ERR,ERROR,*999)
+                FIELD%REGION=>PARENT_REGION
+              ELSE
+                CALL FLAG_ERROR("Interfaces parent region is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Interface interfaces is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The fields on interface number "//TRIM(NUMBER_TO_VSTRING(INTERFACE%USER_NUMBER,"*",ERR,ERROR))// &
+            & " are not associated."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("FIELD_CREATE_START_INTERFACE")
+    RETURN
+999 CALL ERRORS("FIELD_CREATE_START_INTERFACE",ERR,ERROR)
+    CALL EXITS("FIELD_CREATE_START_INTERFACE")
+    RETURN 1
+    
+  END SUBROUTINE FIELD_CREATE_START_INTERFACE
+
+  !
+  !================================================================================================================================
+  !
+
   !>Starts the creation of a field defined by a user number in the specified region. \see OPENCMISS::CMISSFieldCreateStart
   !>Default values set for the FIELD's attributes are:
   !>- DEPENDENT_TYPE: 1 (FIELD_INDEPENDENT_TYPE)
@@ -3534,7 +3687,7 @@ CONTAINS
   !>- GEOMETRIC_FIELD: itself
   !>- SCALINGS%SCALING_TYPE: 3 (FIELD_ARITHMETIC_MEAN_SCALING)
   !>\todo Add in FIELD_INITIALISE
-  SUBROUTINE FIELD_CREATE_START(USER_NUMBER,REGION,FIELD,ERR,ERROR,*)
+  SUBROUTINE FIELD_CREATE_START_REGION(USER_NUMBER,REGION,FIELD,ERR,ERROR,*)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number for the field
@@ -3543,71 +3696,41 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: field_no
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    TYPE(FIELD_TYPE), POINTER :: NEW_FIELD
-    TYPE(FIELD_PTR_TYPE), POINTER :: NEW_FIELDS(:)
 
-    NULLIFY(NEW_FIELD)
-    NULLIFY(NEW_FIELDS)
-
-    CALL ENTERS("FIELD_CREATE_START",ERR,ERROR,*999)
-
-    NULLIFY(FIELD)
+    CALL ENTERS("FIELD_CREATE_START_REGION",ERR,ERROR,*999)
 
     IF(ASSOCIATED(REGION)) THEN
-      IF(ASSOCIATED(REGION%FIELDS)) THEN
-        CALL FIELD_USER_NUMBER_FIND(USER_NUMBER,REGION,FIELD,ERR,ERROR,*999)
-        IF(ASSOCIATED(FIELD)) THEN
-          LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))// &
-            & " has already been created on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
-        ELSE
-          ALLOCATE(NEW_FIELD,STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new field.",ERR,ERROR,*999)
-          !Set default field properties
-          CALL FIELD_INITIALISE(NEW_FIELD,ERR,ERROR,*999)
-          NEW_FIELD%GLOBAL_NUMBER=REGION%FIELDS%NUMBER_OF_FIELDS+1
-          NEW_FIELD%USER_NUMBER=USER_NUMBER
-          NEW_FIELD%LABEL="Field "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))
-          IF(ERR/=0) GOTO 999
-          NEW_FIELD%FIELDS=>REGION%FIELDS
-          NEW_FIELD%REGION=>REGION
-          NEW_FIELD%GEOMETRIC_FIELD=>NEW_FIELD
-          NEW_FIELD%NUMBER_OF_VARIABLES=1
-          NEW_FIELD%SCALINGS%SCALING_TYPE=FIELD_ARITHMETIC_MEAN_SCALING
-          NEW_FIELD%SCALINGS%NUMBER_OF_SCALING_INDICES=0
-          CALL FIELD_CREATE_VALUES_CACHE_INITIALISE(NEW_FIELD,ERR,ERROR,*999)
-          !Add new field into list of fields in the region
-          ALLOCATE(NEW_FIELDS(REGION%FIELDS%NUMBER_OF_FIELDS+1),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new fields.",ERR,ERROR,*999)
-          DO field_no=1,REGION%FIELDS%NUMBER_OF_FIELDS
-            NEW_FIELDS(field_no)%PTR=>REGION%FIELDS%FIELDS(field_no)%PTR
-          ENDDO !field_no
-          NEW_FIELDS(REGION%FIELDS%NUMBER_OF_FIELDS+1)%PTR=>NEW_FIELD
-          IF(ASSOCIATED(REGION%FIELDS%FIELDS)) DEALLOCATE(REGION%FIELDS%FIELDS)
-          REGION%FIELDS%FIELDS=>NEW_FIELDS
-          REGION%FIELDS%NUMBER_OF_FIELDS=REGION%FIELDS%NUMBER_OF_FIELDS+1
-          FIELD=>NEW_FIELD
-        ENDIF
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL FLAG_ERROR("Field is already associated.",ERR,ERROR,*999)
       ELSE
-        LOCAL_ERROR="The fields on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))// &
-          & " are not associated."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        NULLIFY(FIELD)
+        IF(ASSOCIATED(REGION%FIELDS)) THEN
+          CALL FIELD_USER_NUMBER_FIND_GENERIC(USER_NUMBER,REGION%FIELDS,FIELD,ERR,ERROR,*999)
+          IF(ASSOCIATED(FIELD)) THEN
+            LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))// &
+              & " has already been created on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ELSE
+            CALL FIELD_CREATE_START_GENERIC(REGION%FIELDS,USER_NUMBER,FIELD,ERR,ERROR,*999)
+            FIELD%REGION=>REGION
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The fields on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))// &
+            & " are not associated."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*998)
+      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("FIELD_CREATE_START")
+    CALL EXITS("FIELD_CREATE_START_REGION")
     RETURN
-999 IF(ASSOCIATED(NEW_FIELD)) DEALLOCATE(NEW_FIELD)
-    IF(ASSOCIATED(NEW_FIELDS)) DEALLOCATE(NEW_FIELDS)
-998 NULLIFY(FIELD)
-    CALL ERRORS("FIELD_CREATE_START",ERR,ERROR)
-    CALL EXITS("FIELD_CREATE_START")
+999 CALL ERRORS("FIELD_CREATE_START_REGION",ERR,ERROR)
+    CALL EXITS("FIELD_CREATE_START_REGION")
     RETURN 1
-  END SUBROUTINE FIELD_CREATE_START
+  END SUBROUTINE FIELD_CREATE_START_REGION
 
   !
   !================================================================================================================================
@@ -4428,7 +4551,7 @@ CONTAINS
   SUBROUTINE FIELD_INITIALISE(FIELD,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to finalise
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the new field to initialise. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -4438,6 +4561,10 @@ CONTAINS
     CALL ENTERS("FIELD_INITIALISE",ERR,ERROR,*998)
 
     IF(ASSOCIATED(FIELD)) THEN
+      CALL FLAG_ERROR("Field is already associated.",ERR,ERROR,*998)
+    ELSE
+      ALLOCATE(FIELD,STAT=ERR)
+      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field.",ERR,ERROR,*999)      
       FIELD%GLOBAL_NUMBER=0
       FIELD%USER_NUMBER=0
       FIELD%FIELD_FINISHED=.FALSE.
@@ -4455,8 +4582,6 @@ CONTAINS
       DO variable_type_idx=1,FIELD_NUMBER_OF_VARIABLE_TYPES
         NULLIFY(FIELD%VARIABLE_TYPE_MAP(variable_type_idx)%PTR)
       ENDDO !variable_type_idx
-    ELSE
-      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*998)
     ENDIF
 
     CALL EXITS("FIELD_INITIALISE")
@@ -4465,6 +4590,7 @@ CONTAINS
 998 CALL ERRORS("FIELD_INITIALISE",ERR,ERROR)
     CALL EXITS("FIELD_INITIALISE")
     RETURN 1
+    
   END SUBROUTINE FIELD_INITIALISE
 
   !
@@ -19972,47 +20098,104 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finds and returns in FIELD a pointer to the field identified by USER_NUMBER in the given REGION. If no field with that USER_NUMBER exists FIELD is left nullified.
-  SUBROUTINE FIELD_USER_NUMBER_FIND(USER_NUMBER,REGION,FIELD,ERR,ERROR,*)
+  !>Finds and returns in FIELD a pointer to the field identified by USER_NUMBER in the given list of FIELDS. If no field with that USER_NUMBER exists FIELD is left nullified.
+  SUBROUTINE FIELD_USER_NUMBER_FIND_GENERIC(USER_NUMBER,FIELDS,FIELD,ERR,ERROR,*)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The field user number to find
-    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the field
-    TYPE(FIELD_TYPE), POINTER :: FIELD !<On exit, a pointer to the field with the given user number. If no field with that user number exists in the region the FIELD is null.
+    TYPE(FIELDS_TYPE), POINTER :: FIELDS !<The list of fields containing the field
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<On return, a pointer to the field with the given user number. If no field with that user number exists in the region the FIELD is null. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: field_idx
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("FIELD_USER_NUMBER_FIND",ERR,ERROR,*999)
+    CALL ENTERS("FIELD_USER_NUMBER_FIND_GENERIC",ERR,ERROR,*999)
 
-    NULLIFY(FIELD)
-    IF(ASSOCIATED(REGION)) THEN
-      IF(ASSOCIATED(REGION%FIELDS)) THEN
+    IF(ASSOCIATED(FIELDS)) THEN
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL FLAG_ERROR("Field is already associated.",ERR,ERROR,*999)
+      ELSE
+        NULLIFY(FIELD)
         field_idx=1
-        DO WHILE(field_idx<=REGION%FIELDS%NUMBER_OF_FIELDS.AND..NOT.ASSOCIATED(FIELD))
-          IF(REGION%FIELDS%FIELDS(field_idx)%PTR%USER_NUMBER==USER_NUMBER) THEN
-            FIELD=>REGION%FIELDS%FIELDS(field_idx)%PTR
+        DO WHILE(field_idx<=FIELDS%NUMBER_OF_FIELDS.AND..NOT.ASSOCIATED(FIELD))
+          IF(FIELDS%FIELDS(field_idx)%PTR%USER_NUMBER==USER_NUMBER) THEN
+            FIELD=>FIELDS%FIELDS(field_idx)%PTR
           ELSE
             field_idx=field_idx+1
           ENDIF
         ENDDO
-      ELSE
-        LOCAL_ERROR="The fields on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))// &
-          & " are not associated."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
+    ELSE
+      CALL FLAG_ERROR("Fields is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("FIELD_USER_NUMBER_FIND_GENERIC")
+    RETURN
+999 CALL ERRORS("FIELD_USER_NUMBER_FIND_GENERIC",ERR,ERROR)
+    CALL EXITS("FIELD_USER_NUMBER_FIND_GENERIC")
+    RETURN 1
+  END SUBROUTINE FIELD_USER_NUMBER_FIND_GENERIC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finds and returns in FIELD a pointer to the field identified by USER_NUMBER in the given INTERFACE. If no field with that USER_NUMBER exists FIELD is left nullified.
+  SUBROUTINE FIELD_USER_NUMBER_FIND_INTERFACE(USER_NUMBER,INTERFACE,FIELD,ERR,ERROR,*)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The field user number to find
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface containing the field
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<On exit, a pointer to the field with the given user number. If no field with that user number exists in the region the FIELD is null. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("FIELD_USER_NUMBER_FIND_INTERFACE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(INTERFACE)) THEN
+      CALL FIELD_USER_NUMBER_FIND_GENERIC(USER_NUMBER,INTERFACE%FIELDS,FIELD,ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("FIELD_USER_NUMBER_FIND_INTERFACE")
+    RETURN
+999 CALL ERRORS("FIELD_USER_NUMBER_FIND_INTERFACE",ERR,ERROR)
+    CALL EXITS("FIELD_USER_NUMBER_FIND_INTERFACE")
+    RETURN 1
+  END SUBROUTINE FIELD_USER_NUMBER_FIND_INTERFACE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finds and returns in FIELD a pointer to the field identified by USER_NUMBER in the given REGION. If no field with that USER_NUMBER exists FIELD is left nullified.
+  SUBROUTINE FIELD_USER_NUMBER_FIND_REGION(USER_NUMBER,REGION,FIELD,ERR,ERROR,*)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The field user number to find
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the field
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<On exit, a pointer to the field with the given user number. If no field with that user number exists in the region the FIELD is null. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("FIELD_USER_NUMBER_FIND_REGION",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND_GENERIC(USER_NUMBER,REGION%FIELDS,FIELD,ERR,ERROR,*999)
     ELSE
       CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("FIELD_USER_NUMBER_FIND")
+    CALL EXITS("FIELD_USER_NUMBER_FIND_REGION")
     RETURN
-999 CALL ERRORS("FIELD_USER_NUMBER_FIND",ERR,ERROR)
-    CALL EXITS("FIELD_USER_NUMBER_FIND")
+999 CALL ERRORS("FIELD_USER_NUMBER_FIND_REGION",ERR,ERROR)
+    CALL EXITS("FIELD_USER_NUMBER_FIND_REGION")
     RETURN 1
-  END SUBROUTINE FIELD_USER_NUMBER_FIND
+  END SUBROUTINE FIELD_USER_NUMBER_FIND_REGION
 
   !
   !================================================================================================================================
@@ -20875,11 +21058,11 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finalises the fields for the given region and deallocates all memory.
-  SUBROUTINE FIELDS_FINALISE(REGION,ERR,ERROR,*)
+  !>Finalises the fields and deallocates all memory.
+  SUBROUTINE FIELDS_FINALISE(FIELDS,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to finalise the fields for
+    TYPE(FIELDS_TYPE), POINTER :: FIELDS !<A pointer to the fields to finalise
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -20887,18 +21070,14 @@ CONTAINS
 
     CALL ENTERS("FIELDS_FINALISE",ERR,ERROR,*999)
 
-    IF(ASSOCIATED(REGION)) THEN
-      IF(ASSOCIATED(REGION%FIELDS)) THEN
-        DO WHILE(REGION%FIELDS%NUMBER_OF_FIELDS>0)
-          FIELD=>REGION%FIELDS%FIELDS(1)%PTR
-          CALL FIELD_DESTROY(FIELD,ERR,ERROR,*999)
-        ENDDO !field_idx
-        DEALLOCATE(REGION%FIELDS)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
+    IF(ASSOCIATED(FIELDS)) THEN
+      DO WHILE(FIELDS%NUMBER_OF_FIELDS>0)
+        FIELD=>FIELDS%FIELDS(1)%PTR
+        CALL FIELD_DESTROY(FIELD,ERR,ERROR,*999)
+      ENDDO !field_idx
+      DEALLOCATE(FIELDS)
     ENDIF
-
+    
     CALL EXITS("FIELDS_FINALISE")
     RETURN
 999 CALL ERRORS("FIELDS_FINALISE",ERR,ERROR)
@@ -20910,8 +21089,74 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the fields.
+  SUBROUTINE FIELDS_INITIALISE_GENERIC(FIELDS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FIELDS_TYPE), POINTER :: FIELDS !<A pointer to the fields to initialise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("FIELDS_INITIALISE_GENERIC",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELDS)) THEN
+      NULLIFY(FIELDS%REGION)
+      NULLIFY(FIELDS%INTERFACE)
+      FIELDS%NUMBER_OF_FIELDS=0
+      NULLIFY(FIELDS%FIELDS)
+    ELSE
+      CALL FLAG_ERROR("Fields is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("FIELDS_INITIALISE_GENERIC")
+    RETURN
+999 CALL ERRORS("FIELDS_INITIALISE_GENERIC",ERR,ERROR)
+    CALL EXITS("FIELDS_INITIALISE_GENERIC")
+    RETURN 1
+  END SUBROUTINE FIELDS_INITIALISE_GENERIC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises the fields for the given interface.
+  SUBROUTINE FIELDS_INITIALISE_INTERFACE(INTERFACE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface to initialise the fields for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("FIELDS_INITIALISE_INTERFACE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(INTERFACE)) THEN
+      IF(ASSOCIATED(INTERFACE%FIELDS)) THEN
+        CALL FLAG_ERROR("Interface already has fields associated.",ERR,ERROR,*999)
+      ELSE
+        ALLOCATE(INTERFACE%FIELDS,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Interface fields could not be allocated.",ERR,ERROR,*999)
+        CALL FIELDS_INITIALISE_GENERIC(INTERFACE%FIELDS,ERR,ERROR,*999)
+        INTERFACE%FIELDS%INTERFACE=>INTERFACE
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("FIELDS_INITIALISE_INTERFACE")
+    RETURN
+999 CALL ERRORS("FIELDS_INITIALISE_INTERFACE",ERR,ERROR)
+    CALL EXITS("FIELDS_INITIALISE_INTERFACE")
+    RETURN 1
+  END SUBROUTINE FIELDS_INITIALISE_INTERFACE
+
+  !
+  !================================================================================================================================
+  !
+
   !>Initialises the fields for the given region.
-  SUBROUTINE FIELDS_INITIALISE(REGION,ERR,ERROR,*)
+  SUBROUTINE FIELDS_INITIALISE_REGION(REGION,ERR,ERROR,*)
 
     !Argument variables
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to initialise the fields for
@@ -20919,7 +21164,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("FIELDS_INITIALISE",ERR,ERROR,*999)
+    CALL ENTERS("FIELDS_INITIALISE_REGION",ERR,ERROR,*999)
 
     IF(ASSOCIATED(REGION)) THEN
       IF(ASSOCIATED(REGION%FIELDS)) THEN
@@ -20927,20 +21172,22 @@ CONTAINS
       ELSE
         ALLOCATE(REGION%FIELDS,STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Region fields could not be allocated.",ERR,ERROR,*999)
-        !!TODO: Inherit any fields from the parent region
-        REGION%FIELDS%NUMBER_OF_FIELDS=0
-        NULLIFY(REGION%FIELDS%FIELDS)
+        CALL FIELDS_INITIALISE_GENERIC(REGION%FIELDS,ERR,ERROR,*999)
         REGION%FIELDS%REGION=>REGION
       ENDIF
     ELSE
       CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("FIELDS_INITIALISE")
+    CALL EXITS("FIELDS_INITIALISE_REGION")
     RETURN
-999 CALL ERRORS("FIELDS_INITIALISE",ERR,ERROR)
-    CALL EXITS("FIELDS_INITIALISE")
+999 CALL ERRORS("FIELDS_INITIALISE_REGION",ERR,ERROR)
+    CALL EXITS("FIELDS_INITIALISE_REGION")
     RETURN 1
-  END SUBROUTINE FIELDS_INITIALISE
+  END SUBROUTINE FIELDS_INITIALISE_REGION
+
+  !
+  !================================================================================================================================
+  !
 
 END MODULE FIELD_ROUTINES

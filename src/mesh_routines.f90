@@ -81,6 +81,23 @@ MODULE MESH_ROUTINES
 
   !Interfaces
 
+  !>Starts the process of creating a mesh
+  INTERFACE MESH_CREATE_START
+    MODULE PROCEDURE MESH_CREATE_START_INTERFACE
+    MODULE PROCEDURE MESH_CREATE_START_REGION
+  END INTERFACE !MESH_CREATE_START
+
+  !>Initialises the meshes for a region or interface.
+  INTERFACE MESHES_INITIALISE
+    MODULE PROCEDURE MESHES_INITIALISE_INTERFACE
+    MODULE PROCEDURE MESHES_INITIALISE_REGION
+  END INTERFACE !MESHES_INITIALISE
+
+  INTERFACE MESH_USER_NUMBER_FIND
+    MODULE PROCEDURE MESH_USER_NUMBER_FIND_INTERFACE
+    MODULE PROCEDURE MESH_USER_NUMBER_FIND_REGION
+  END INTERFACE !MESH_USER_NUMBER_FIND
+
   PUBLIC DECOMPOSITION_ALL_TYPE,DECOMPOSITION_CALCULATED_TYPE,DECOMPOSITION_USER_DEFINED_TYPE
 
   PUBLIC MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS,MESH_TOPOLOGY_NODE_CHECK_EXISTS
@@ -4329,10 +4346,154 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Starts the process of creating a mesh 
+  SUBROUTINE MESH_CREATE_START_GENERIC(MESHES,USER_NUMBER,NUMBER_OF_DIMENSIONS,MESH,ERR,ERROR,*)
+    
+    !Argument variables
+    TYPE(MESHES_TYPE), POINTER :: MESHES !<The pointer to the meshes
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the mesh to create
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DIMENSIONS !<The number of dimensions in the mesh.
+    TYPE(MESH_TYPE), POINTER :: MESH !<On return, a pointer to the mesh. Must not be associated on entry
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: mesh_idx
+    TYPE(MESH_TYPE), POINTER :: NEW_MESH
+    TYPE(MESH_PTR_TYPE), POINTER :: NEW_MESHES(:)
+
+    NULLIFY(NEW_MESH)
+    NULLIFY(NEW_MESHES)
+
+    CALL ENTERS("MESH_CREATE_START_GENERIC",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(MESHES)) THEN
+      IF(ASSOCIATED(MESH)) THEN
+        CALL FLAG_ERROR("Mesh is already associated.",ERR,ERROR,*998)
+      ELSE
+        CALL MESH_INITIALISE(NEW_MESH,ERR,ERROR,*999)
+        !Set default mesh values
+        NEW_MESH%USER_NUMBER=USER_NUMBER
+        NEW_MESH%GLOBAL_NUMBER=MESHES%NUMBER_OF_MESHES+1
+        NEW_MESH%MESHES=>MESHES
+        NEW_MESH%NUMBER_OF_DIMENSIONS=NUMBER_OF_DIMENSIONS
+        NEW_MESH%NUMBER_OF_COMPONENTS=1
+        !Initialise mesh topology and decompositions
+        CALL MESH_TOPOLOGY_INITIALISE(NEW_MESH,ERR,ERROR,*999)
+        CALL DECOMPOSITIONS_INITIALISE(NEW_MESH,ERR,ERROR,*999)
+        !Add new mesh into list of meshes 
+        ALLOCATE(NEW_MESHES(MESHES%NUMBER_OF_MESHES+1),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new meshes",ERR,ERROR,*999)
+        DO mesh_idx=1,MESHES%NUMBER_OF_MESHES
+          NEW_MESHES(mesh_idx)%PTR=>MESHES%MESHES(mesh_idx)%PTR
+        ENDDO !mesh_idx
+        NEW_MESHES(MESHES%NUMBER_OF_MESHES+1)%PTR=>NEW_MESH
+        IF(ASSOCIATED(MESHES%MESHES)) DEALLOCATE(MESHES%MESHES)
+        MESHES%MESHES=>NEW_MESHES
+        MESHES%NUMBER_OF_MESHES=MESHES%NUMBER_OF_MESHES+1
+        MESH=>NEW_MESH
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Meshes is not associated",ERR,ERROR,*998)
+    ENDIF
+      
+    CALL EXITS("MESH_CREATE_START_GENERIC")
+    RETURN
+999 IF(ASSOCIATED(NEW_MESH)) DEALLOCATE(NEW_MESH)
+    IF(ASSOCIATED(NEW_MESHES)) DEALLOCATE(NEW_MESHES)
+    NULLIFY(MESH)    
+998 CALL ERRORS("MESH_CREATE_START_GENERIC",ERR,ERROR)    
+    CALL EXITS("MESH_CREATE_START_GENERIC")
+    RETURN 1
+   
+  END SUBROUTINE MESH_CREATE_START_GENERIC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the process of creating a mesh defined by a user number with the specified NUMBER_OF_DIMENSIONS in an interface. \see OPENCMISS::CMISSMeshCreateStart
+  !>Default values set for the MESH's attributes are:
+  !>- NUMBER_OF_COMPONENTS: 1
+  SUBROUTINE MESH_CREATE_START_INTERFACE(USER_NUMBER,INTERFACE,NUMBER_OF_DIMENSIONS,MESH,ERR,ERROR,*)
+    
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the mesh to create
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface to create the mesh on
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DIMENSIONS !<The number of dimensions in the mesh.
+    TYPE(MESH_TYPE), POINTER :: MESH !<On exit, a pointer to the created mesh. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MESH_CREATE_START_INTERFACE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(INTERFACE)) THEN
+      IF(ASSOCIATED(MESH)) THEN
+        CALL FLAG_ERROR("Mesh is already associated.",ERR,ERROR,*999)
+      ELSE
+        NULLIFY(MESH)
+        IF(ASSOCIATED(INTERFACE%MESHES)) THEN
+          CALL MESH_USER_NUMBER_FIND_GENERIC(USER_NUMBER,INTERFACE%MESHES,MESH,ERR,ERROR,*999)
+          IF(ASSOCIATED(MESH)) THEN
+            LOCAL_ERROR="Mesh number "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))// &
+              & " has already been created on interface number "//TRIM(NUMBER_TO_VSTRING(INTERFACE%USER_NUMBER,"*",ERR,ERROR))
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ELSE
+            IF(ASSOCIATED(INTERFACE%INTERFACES)) THEN
+              PARENT_REGION=>INTERFACE%INTERFACES%PARENT_REGION
+              IF(ASSOCIATED(PARENT_REGION)) THEN
+                IF(ASSOCIATED(PARENT_REGION%COORDINATE_SYSTEM)) THEN                  
+                  IF(NUMBER_OF_DIMENSIONS>0) THEN
+                    IF(NUMBER_OF_DIMENSIONS<=PARENT_REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS) THEN
+                      CALL MESH_CREATE_START_GENERIC(INTERFACE%MESHES,USER_NUMBER,NUMBER_OF_DIMENSIONS,MESH,ERR,ERROR,*999)
+                      MESH%REGION=>PARENT_REGION
+                    ELSE
+                      LOCAL_ERROR="Number of mesh dimensions ("//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+                        & ") must be <= number of parent region dimensions ("// &
+                        & TRIM(NUMBER_TO_VSTRING(PARENT_REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))//")"
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Number of mesh dimensions must be > 0",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Parent region coordinate system is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Interfaces parent region is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Interface interfaces is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The meshes on interface number "//TRIM(NUMBER_TO_VSTRING(INTERFACE%USER_NUMBER,"*",ERR,ERROR))// &
+            & " are not associated."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("MESH_CREATE_START_INTERFACE")
+    RETURN
+999 CALL ERRORS("MESH_CREATE_START_INTERFACE",ERR,ERROR)    
+    CALL EXITS("MESH_CREATE_START_INTERFACE")
+    RETURN 1
+   
+  END SUBROUTINE MESH_CREATE_START_INTERFACE
+
+  !
+  !================================================================================================================================
+  !
+
   !>Starts the process of creating a mesh defined by a user number with the specified NUMBER_OF_DIMENSIONS in the region identified by REGION. \see OPENCMISS::CMISSMeshCreateStart
   !>Default values set for the MESH's attributes are:
   !>- NUMBER_OF_COMPONENTS: 1
-  SUBROUTINE MESH_CREATE_START(USER_NUMBER,REGION,NUMBER_OF_DIMENSIONS,MESH,ERR,ERROR,*)
+  SUBROUTINE MESH_CREATE_START_REGION(USER_NUMBER,REGION,NUMBER_OF_DIMENSIONS,MESH,ERR,ERROR,*)
     
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the mesh to create
@@ -4342,86 +4503,59 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: mesh_idx
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    TYPE(MESH_TYPE), POINTER :: NEW_MESH
-    TYPE(MESH_PTR_TYPE), POINTER :: NEW_MESHES(:)
 
-    NULLIFY(NEW_MESH)
-    NULLIFY(NEW_MESHES)
+    CALL ENTERS("MESH_CREATE_START_REGION",ERR,ERROR,*999)
 
-    CALL ENTERS("",ERR,ERROR,*999)
-
-    NULLIFY(MESH)
     IF(ASSOCIATED(REGION)) THEN
-      IF(ASSOCIATED(REGION%COORDINATE_SYSTEM)) THEN
+      IF(ASSOCIATED(MESH)) THEN
+        CALL FLAG_ERROR("Mesh is already associated.",ERR,ERROR,*999)
+      ELSE
+        NULLIFY(MESH)
         IF(ASSOCIATED(REGION%MESHES)) THEN
-          CALL MESH_USER_NUMBER_FIND(USER_NUMBER,REGION,MESH,ERR,ERROR,*999)
+          CALL MESH_USER_NUMBER_FIND_GENERIC(USER_NUMBER,REGION%MESHES,MESH,ERR,ERROR,*999)
           IF(ASSOCIATED(MESH)) THEN
             LOCAL_ERROR="Mesh number "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))// &
               & " has already been created on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
-            IF(NUMBER_OF_DIMENSIONS>0.AND.NUMBER_OF_DIMENSIONS<=REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS) THEN
-              ALLOCATE(NEW_MESH,STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new mesh",ERR,ERROR,*999)
-              CALL MESH_INITIALISE(NEW_MESH,ERR,ERROR,*999)
-              !Set default mesh values
-              NEW_MESH%USER_NUMBER=USER_NUMBER
-              NEW_MESH%GLOBAL_NUMBER=REGION%MESHES%NUMBER_OF_MESHES+1
-              NEW_MESH%MESHES=>REGION%MESHES
-              NEW_MESH%REGION=>REGION
-              NEW_MESH%NUMBER_OF_DIMENSIONS=NUMBER_OF_DIMENSIONS
-              NEW_MESH%NUMBER_OF_COMPONENTS=1
-              !Initialise mesh topology and decompositions
-              CALL MESH_TOPOLOGY_INITIALISE(NEW_MESH,ERR,ERROR,*999)
-              CALL DECOMPOSITIONS_INITIALISE(NEW_MESH,ERR,ERROR,*999)
-              !Add new mesh into list of meshes in the region
-              ALLOCATE(NEW_MESHES(REGION%MESHES%NUMBER_OF_MESHES+1),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new meshes",ERR,ERROR,*999)
-              DO mesh_idx=1,REGION%MESHES%NUMBER_OF_MESHES
-                NEW_MESHES(mesh_idx)%PTR=>REGION%MESHES%MESHES(mesh_idx)%PTR
-              ENDDO !mesh_idx
-              NEW_MESHES(REGION%MESHES%NUMBER_OF_MESHES+1)%PTR=>NEW_MESH
-              IF(ASSOCIATED(REGION%MESHES%MESHES)) DEALLOCATE(REGION%MESHES%MESHES)
-              REGION%MESHES%MESHES=>NEW_MESHES
-              REGION%MESHES%NUMBER_OF_MESHES=REGION%MESHES%NUMBER_OF_MESHES+1
-              MESH=>NEW_MESH
-            ELSE
+            IF(ASSOCIATED(REGION%COORDINATE_SYSTEM)) THEN
               IF(NUMBER_OF_DIMENSIONS>0) THEN
-                LOCAL_ERROR="Number of mesh dimensions ("//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
-                  & ") must be <= number of region dimensions ("// &
-                  & TRIM(NUMBER_TO_VSTRING(REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))//")"
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                IF(NUMBER_OF_DIMENSIONS<=REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS) THEN
+                  CALL MESH_CREATE_START_GENERIC(REGION%MESHES,USER_NUMBER,NUMBER_OF_DIMENSIONS,MESH,ERR,ERROR,*999)
+                  MESH%REGION=>REGION
+                ELSE
+                  LOCAL_ERROR="Number of mesh dimensions ("//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+                    & ") must be <= number of region dimensions ("// &
+                    & TRIM(NUMBER_TO_VSTRING(REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))//")"
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
               ELSE
                 CALL FLAG_ERROR("Number of mesh dimensions must be > 0",ERR,ERROR,*999)
               ENDIF
+            ELSE
+              LOCAL_ERROR="The coordinate system on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))// &
+                & " are not associated"
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ENDIF
         ELSE
           LOCAL_ERROR="The meshes on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))// &
-            & " are not associated. Initialise meshes first."
+            & " are not associated."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
-      ELSE
-        LOCAL_ERROR="The coordinate system on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))// &
-          & " are not associated"
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("MESH_CREATE_START")
+    CALL EXITS("MESH_CREATE_START_REGION")
     RETURN
-999 IF(ASSOCIATED(NEW_MESH)) DEALLOCATE(NEW_MESH)
-    IF(ASSOCIATED(NEW_MESHES)) DEALLOCATE(NEW_MESHES)
-    NULLIFY(MESH)
-    CALL ERRORS("MESH_CREATE_START",ERR,ERROR)    
-    CALL EXITS("MESH_CREATE_START")
+999 CALL ERRORS("MESH_CREATE_START_REGION",ERR,ERROR)    
+    CALL EXITS("MESH_CREATE_START_REGION")
     RETURN 1
    
-  END SUBROUTINE MESH_CREATE_START
+  END SUBROUTINE MESH_CREATE_START_REGION
 
   !
   !================================================================================================================================
@@ -4606,7 +4740,7 @@ CONTAINS
   SUBROUTINE MESH_INITIALISE(MESH,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to initialise
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to initialise. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -4614,6 +4748,10 @@ CONTAINS
     CALL ENTERS("MESH_INITIALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(MESH)) THEN
+      CALL FLAG_ERROR("Mesh is already associated.",ERR,ERROR,*999)
+    ELSE
+      ALLOCATE(MESH,STAT=ERR)
+      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new mesh.",ERR,ERROR,*999)
       MESH%USER_NUMBER=0
       MESH%GLOBAL_NUMBER=0
       MESH%MESH_FINISHED=.FALSE.
@@ -4630,9 +4768,6 @@ CONTAINS
       MESH%NUMBER_OF_LINES=0
       NULLIFY(MESH%TOPOLOGY)
       NULLIFY(MESH%DECOMPOSITIONS)
-      NULLIFY(MESH%INTF)   !<<>>
-    ELSE
-      CALL FLAG_ERROR("Mesh is not associated",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("MESH_INITIALISE")
@@ -6735,8 +6870,82 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finds and returns in MESH a pointer to the mesh identified by USER_NUMBER in the given list of MESHES. If no mesh with that number exits MESH is left nullified.
+  SUBROUTINE MESH_USER_NUMBER_FIND_GENERIC(USER_NUMBER,MESHES,MESH,ERR,ERROR,*)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the mesh to find
+    TYPE(MESHES_TYPE), POINTER :: MESHES !<The list of meshes containing the mesh.
+    TYPE(MESH_TYPE), POINTER :: MESH !<On return, a pointer to the mesh of the specified user number. In no mesh with the specified user number exists the pointer is returned NULL. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: mesh_idx
+
+    CALL ENTERS("MESH_USER_NUMBER_FIND_GENERIC",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(MESHES)) THEN
+      IF(ASSOCIATED(MESH)) THEN
+        CALL FLAG_ERROR("Mesh is already associated.",ERR,ERROR,*999)
+      ELSE
+        NULLIFY(MESH)
+        mesh_idx=1
+        DO WHILE(mesh_idx<=MESHES%NUMBER_OF_MESHES.AND..NOT.ASSOCIATED(MESH))
+          IF(MESHES%MESHES(mesh_idx)%PTR%USER_NUMBER==USER_NUMBER) THEN
+            MESH=>MESHES%MESHES(mesh_idx)%PTR
+          ELSE
+            mesh_idx=mesh_idx+1
+          ENDIF
+        ENDDO
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Meshes is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("MESH_USER_NUMBER_FIND_GENERIC")
+    RETURN
+999 CALL ERRORS("MESH_USER_NUMBER_FIND_GENERIC",ERR,ERROR)
+    CALL EXITS("MESH_USER_NUMBER_FIND_GENERIC")
+    RETURN 1
+  END SUBROUTINE MESH_USER_NUMBER_FIND_GENERIC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finds and returns in MESH a pointer to the mesh identified by USER_NUMBER in the given INTERFACE. If no mesh with that number exits MESH is left nullified.
+  SUBROUTINE MESH_USER_NUMBER_FIND_INTERFACE(USER_NUMBER,INTERFACE,MESH,ERR,ERROR,*)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the mesh to find
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<The interface containing the mesh
+    TYPE(MESH_TYPE), POINTER :: MESH !<On return, a pointer to the mesh of the specified user number. In no mesh with the specified user number exists the pointer is returned NULL. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+  
+    CALL ENTERS("MESH_USER_NUMBER_FIND_INTERFACE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(INTERFACE)) THEN
+      CALL MESH_USER_NUMBER_FIND_GENERIC(USER_NUMBER,INTERFACE%MESHES,MESH,ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("MESH_USER_NUMBER_FIND_INTERFACE")
+    RETURN
+999 CALL ERRORS("MESH_USER_NUMBER_FIND_INTERFACE",ERR,ERROR)
+    CALL EXITS("MESH_USER_NUMBER_FIND_INTERFACE")
+    RETURN 1
+    
+  END SUBROUTINE MESH_USER_NUMBER_FIND_INTERFACE
+
+  !
+  !================================================================================================================================
+  !
+
   !>Finds and returns in MESH a pointer to the mesh identified by USER_NUMBER in the given REGION. If no mesh with that number exits MESH is left nullified.
-  SUBROUTINE MESH_USER_NUMBER_FIND(USER_NUMBER,REGION,MESH,ERR,ERROR,*)
+  SUBROUTINE MESH_USER_NUMBER_FIND_REGION(USER_NUMBER,REGION,MESH,ERR,ERROR,*)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the mesh to find
@@ -6745,64 +6954,46 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: mesh_idx
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("MESH_USER_NUMBER_FIND_REGION",ERR,ERROR,*999)
 
-    CALL ENTERS("MESH_USER_NUMBER_FIND",ERR,ERROR,*999)
-
-    NULLIFY(MESH)
     IF(ASSOCIATED(REGION)) THEN
-      IF(ASSOCIATED(REGION%MESHES)) THEN
-        mesh_idx=1
-        DO WHILE(mesh_idx<=REGION%MESHES%NUMBER_OF_MESHES.AND..NOT.ASSOCIATED(MESH))
-          IF(REGION%MESHES%MESHES(mesh_idx)%PTR%USER_NUMBER==USER_NUMBER) THEN
-            MESH=>REGION%MESHES%MESHES(mesh_idx)%PTR
-          ELSE
-            mesh_idx=mesh_idx+1
-          ENDIF
-        ENDDO
-      ELSE
-        LOCAL_ERROR="The meshes on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))// &
-          & " are not associated"
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      ENDIF
+      CALL MESH_USER_NUMBER_FIND_GENERIC(USER_NUMBER,REGION%MESHES,MESH,ERR,ERROR,*999)
     ELSE
       CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("MESH_USER_NUMBER_FIND")
+    CALL EXITS("MESH_USER_NUMBER_FIND_REGION")
     RETURN
-999 CALL ERRORS("MESH_USER_NUMBER_FIND",ERR,ERROR)
-    CALL EXITS("MESH_USER_NUMBER_FIND")
+999 CALL ERRORS("MESH_USER_NUMBER_FIND_REGION",ERR,ERROR)
+    CALL EXITS("MESH_USER_NUMBER_FIND_REGION")
     RETURN 1
-  END SUBROUTINE MESH_USER_NUMBER_FIND
+  END SUBROUTINE MESH_USER_NUMBER_FIND_REGION
 
   !
   !================================================================================================================================
   !
 
-  !>Finalises the meshes in the given region. \todo pass in meshes
-  SUBROUTINE MESHES_FINALISE(REGION,ERR,ERROR,*)
+  !>Finalises the meshes and deallocates all memory
+  SUBROUTINE MESHES_FINALISE(MESHES,ERR,ERROR,*)
 
    !Argument variables
-    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to finalise the meshes for.
+    TYPE(MESHES_TYPE), POINTER :: MESHES !<A pointer to the meshes to finalise the meshes for.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: USER_NUMBER
-
+    TYPE(MESH_TYPE), POINTER :: MESH
+ 
     CALL ENTERS("MESHES_FINALISE",ERR,ERROR,*999)
 
-    IF(ASSOCIATED(REGION)) THEN
-      IF(ASSOCIATED(REGION%MESHES)) THEN
-        DO WHILE(REGION%MESHES%NUMBER_OF_MESHES>0)
-          USER_NUMBER=REGION%MESHES%MESHES(1)%PTR%USER_NUMBER
-          CALL MESH_DESTROY_NUMBER(USER_NUMBER,REGION,ERR,ERROR,*999)
-        ENDDO !mesh_idx
-        DEALLOCATE(REGION%MESHES)
-      ENDIF
+    IF(ASSOCIATED(MESHES)) THEN
+      DO WHILE(MESHES%NUMBER_OF_MESHES>0)
+        MESH=>MESHES%MESHES(1)%PTR
+        CALL MESH_DESTROY(MESH,ERR,ERROR,*999)
+      ENDDO !mesh_idx
+      DEALLOCATE(MESHES)
     ELSE
-      CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Meshes is not associated",ERR,ERROR,*999)
     ENDIF
  
     CALL EXITS("MESHES_FINALISE")
@@ -6817,8 +7008,77 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Initialises the meshes for the given region. \todo finalise on error
-  SUBROUTINE MESHES_INITIALISE(REGION,ERR,ERROR,*)
+  !>Initialises the generic meshes.
+  SUBROUTINE MESHES_INITIALISE_GENERIC(MESHES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(MESHES_TYPE), POINTER :: MESHES !<A pointer to the meshes to initialise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("MESHES_INITIALISE_GENERIC",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(MESHES)) THEN
+      NULLIFY(MESHES%REGION)
+      NULLIFY(MESHES%INTERFACE)
+      MESHES%NUMBER_OF_MESHES=0
+      NULLIFY(MESHES%MESHES)
+    ELSE
+      CALL FLAG_ERROR("Meshes is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("MESHES_INITIALISE_GENERIC")
+    RETURN
+999 CALL ERRORS("MESHES_INITIALISE_GENERIC",ERR,ERROR)
+    CALL EXITS("MESHES_INITIALISE_GENERIC")
+    RETURN 1
+  END SUBROUTINE MESHES_INITIALISE_GENERIC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises the meshes for the given interface.
+  SUBROUTINE MESHES_INITIALISE_INTERFACE(INTERFACE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface to initialise the meshes for.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MESHES_INITIALISE_INTERFACE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(INTERFACE)) THEN
+      IF(ASSOCIATED(INTERFACE%MESHES)) THEN
+        LOCAL_ERROR="Interface number "//TRIM(NUMBER_TO_VSTRING(INTERFACE%USER_NUMBER,"*",ERR,ERROR))// &
+          & " already has a mesh associated"
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      ELSE
+        ALLOCATE(INTERFACE%MESHES,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Interface meshes could not be allocated",ERR,ERROR,*999)
+        CALL MESHES_INITIALISE_GENERIC(INTERFACE%MESHES,ERR,ERROR,*999)
+        INTERFACE%MESHES%INTERFACE=>INTERFACE
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("MESHES_INITIALISE_INTERFACE")
+    RETURN
+999 CALL ERRORS("MESHES_INITIALISE_INTERFACE",ERR,ERROR)
+    CALL EXITS("MESHES_INITIALISE_INTERFACE")
+    RETURN 1
+  END SUBROUTINE MESHES_INITIALISE_INTERFACE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises the meshes for the given region.
+  SUBROUTINE MESHES_INITIALISE_REGION(REGION,ERR,ERROR,*)
 
     !Argument variables
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to initialise the meshes for.
@@ -6827,7 +7087,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("MESHES_INITIALISE",ERR,ERROR,*999)
+    CALL ENTERS("MESHES_INITIALISE_REGION",ERR,ERROR,*999)
 
     IF(ASSOCIATED(REGION)) THEN
       IF(ASSOCIATED(REGION%MESHES)) THEN
@@ -6837,20 +7097,19 @@ CONTAINS
       ELSE
         ALLOCATE(REGION%MESHES,STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Region meshes could not be allocated",ERR,ERROR,*999)
-        REGION%MESHES%NUMBER_OF_MESHES=0
-        NULLIFY(REGION%MESHES%MESHES)
+        CALL MESHES_INITIALISE_GENERIC(REGION%MESHES,ERR,ERROR,*999)
         REGION%MESHES%REGION=>REGION
       ENDIF
     ELSE
       CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("MESHES_INITIALISE")
+    CALL EXITS("MESHES_INITIALISE_REGION")
     RETURN
-999 CALL ERRORS("MESHES_INITIALISE",ERR,ERROR)
-    CALL EXITS("MESHES_INITIALISE")
+999 CALL ERRORS("MESHES_INITIALISE_REGION",ERR,ERROR)
+    CALL EXITS("MESHES_INITIALISE_REGION")
     RETURN 1
-  END SUBROUTINE MESHES_INITIALISE
+  END SUBROUTINE MESHES_INITIALISE_REGION
 
   !
   !================================================================================================================================

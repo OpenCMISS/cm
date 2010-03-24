@@ -63,6 +63,18 @@ MODULE NODE_ROUTINES
 
   !Interfaces
 
+  !>Starts the process of creating nodes for an interface or region
+  INTERFACE NODES_CREATE_START
+    MODULE PROCEDURE NODES_CREATE_START_REGION
+    MODULE PROCEDURE NODES_CREATE_START_INTERFACE
+  END INTERFACE !NODES_CREATE_START
+
+  !>Initialises nodes for an interface or region
+  INTERFACE NODES_INITIALISE
+    MODULE PROCEDURE NODES_INITIALISE_REGION
+    MODULE PROCEDURE NODES_INITIALISE_INTERFACE
+  END INTERFACE !NODES_INITIALIES
+
   !>Gets the label for a node identified by a given global number.
   INTERFACE NODES_LABEL_GET
     MODULE PROCEDURE NODES_LABEL_GET_C
@@ -202,8 +214,105 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Starts the process of creating generic nodes.
+  SUBROUTINE NODES_CREATE_START_GENERIC(NODES,NUMBER_OF_NODES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(NODES_TYPE), POINTER :: NODES !<The nodes pointer
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_NODES !<The number of nodes to create
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: INSERT_STATUS,np
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("NODES_CREATE_START_GENERIC",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(NODES)) THEN
+      IF(NUMBER_OF_NODES>0) THEN
+        ALLOCATE(NODES%NODES(NUMBER_OF_NODES),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nodes nodes.",ERR,ERROR,*999)
+        NODES%NUMBER_OF_NODES=NUMBER_OF_NODES
+        CALL TREE_CREATE_START(NODES%NODES_TREE,ERR,ERROR,*999)
+        CALL TREE_INSERT_TYPE_SET(NODES%NODES_TREE,TREE_NO_DUPLICATES_ALLOWED,ERR,ERROR,*999)
+        CALL TREE_CREATE_FINISH(NODES%NODES_TREE,ERR,ERROR,*999)
+        !Set default node numbers
+        DO np=1,NODES%NUMBER_OF_NODES
+          NODES%NODES(np)%GLOBAL_NUMBER=np
+          NODES%NODES(np)%USER_NUMBER=np
+          NODES%NODES(np)%LABEL=""
+          CALL TREE_ITEM_INSERT(NODES%NODES_TREE,np,np,INSERT_STATUS,ERR,ERROR,*999)
+        ENDDO !np
+      ELSE
+        LOCAL_ERROR="The specified number of nodes of "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_NODES,"*",ERR,ERROR))// &
+          & " is invalid. The number of nodes must be > 0."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("NODES_CREATE_GENERIC")
+    RETURN
+999 CALL ERRORS("NODES_CREATE_START_GENERIC",ERR,ERROR)
+    CALL EXITS("NODES_CREATE_START_GENERIC")
+    RETURN 1
+    
+  END SUBROUTINE NODES_CREATE_START_GENERIC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the process of creating nodes in an interface.
+  SUBROUTINE NODES_CREATE_START_INTERFACE(INTERFACE,NUMBER_OF_NODES,NODES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface in which to create the nodes
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_NODES !<The number of nodes to create
+    TYPE(NODES_TYPE), POINTER :: NODES !<On exit, a pointer to the created nodes. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+
+    CALL ENTERS("NODES_CREATE_START_INTERFACE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(INTERFACE)) THEN
+      IF(ASSOCIATED(NODES)) THEN
+        CALL FLAG_ERROR("Nodes is already associated.",ERR,ERROR,*999)
+      ELSE
+        IF(ASSOCIATED(INTERFACE%NODES)) THEN
+          CALL FLAG_ERROR("Interface already has nodes associated.",ERR,ERROR,*998)
+        ELSE
+          !Initialise the nodes for the interface
+          CALL NODES_INITIALISE(INTERFACE,ERR,ERROR,*999)
+          !Create the nodes 
+          CALL NODES_CREATE_START_GENERIC(INTERFACE%NODES,NUMBER_OF_NODES,ERR,ERROR,*999)
+          !Return the pointer        
+          NODES=>INTERFACE%NODES
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*998)
+    ENDIF
+    
+    CALL EXITS("NODES_CREATE_START_INTERFACE")
+    RETURN
+999 CALL NODES_FINALISE(INTERFACE%NODES,DUMMY_ERR,DUMMY_ERROR,*998)    
+998 CALL ERRORS("NODES_CREATE_START_INTERFACE",ERR,ERROR)
+    CALL EXITS("NODES_CREATE_START_INTERFACE")
+    RETURN 1
+   
+  END SUBROUTINE NODES_CREATE_START_INTERFACE
+
+  !
+  !================================================================================================================================
+  !
+
   !>Starts the process of creating nodes in the region.  \see OPENCMISS::CMISSNodesCreateStart
-  SUBROUTINE NODES_CREATE_START(REGION,NUMBER_OF_NODES,NODES,ERR,ERROR,*)
+  SUBROUTINE NODES_CREATE_START_REGION(REGION,NUMBER_OF_NODES,NODES,ERR,ERROR,*)
 
     !Argument variables
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region in which to create the nodes
@@ -212,10 +321,10 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR,INSERT_STATUS,np
+    INTEGER(INTG) :: DUMMY_ERR
     TYPE(VARYING_STRING) :: DUMMY_ERROR
 
-    CALL ENTERS("NODES_CREATE_START",ERR,ERROR,*998)
+    CALL ENTERS("NODES_CREATE_START_REGION",ERR,ERROR,*998)
 
     NULLIFY(NODES)
     IF(ASSOCIATED(REGION)) THEN
@@ -225,20 +334,10 @@ CONTAINS
         IF(ASSOCIATED(NODES)) THEN
           CALL FLAG_ERROR("Nodes is already associated.",ERR,ERROR,*998)
         ELSE
+          !Initialise the nodes for the region
           CALL NODES_INITIALISE(REGION,ERR,ERROR,*999)
-          ALLOCATE(REGION%NODES%NODES(NUMBER_OF_NODES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nodes nodes.",ERR,ERROR,*999)
-          REGION%NODES%NUMBER_OF_NODES=NUMBER_OF_NODES
-          CALL TREE_CREATE_START(REGION%NODES%NODES_TREE,ERR,ERROR,*999)
-          CALL TREE_INSERT_TYPE_SET(REGION%NODES%NODES_TREE,TREE_NO_DUPLICATES_ALLOWED,ERR,ERROR,*999)
-          CALL TREE_CREATE_FINISH(REGION%NODES%NODES_TREE,ERR,ERROR,*999)
-          !Set default node numbers
-          DO np=1,REGION%NODES%NUMBER_OF_NODES
-            REGION%NODES%NODES(np)%GLOBAL_NUMBER=np
-            REGION%NODES%NODES(np)%USER_NUMBER=np
-            REGION%NODES%NODES(np)%LABEL=""
-            CALL TREE_ITEM_INSERT(REGION%NODES%NODES_TREE,np,np,INSERT_STATUS,ERR,ERROR,*999)
-          ENDDO !np
+          !Create the generic nodes
+          CALL NODES_CREATE_START_GENERIC(REGION%NODES,NUMBER_OF_NODES,ERR,ERROR,*999)
           !Return the pointer        
           NODES=>REGION%NODES
         ENDIF
@@ -247,14 +346,14 @@ CONTAINS
       CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*998)
     ENDIF
     
-    CALL EXITS("NODES_CREATE_START")
+    CALL EXITS("NODES_CREATE_START_REGION")
     RETURN
 999 CALL NODES_FINALISE(REGION%NODES,DUMMY_ERR,DUMMY_ERROR,*998)    
-998 CALL ERRORS("NODES_CREATE_START",ERR,ERROR)
-    CALL EXITS("NODES_CREATE_START")
+998 CALL ERRORS("NODES_CREATE_START_REGION",ERR,ERROR)
+    CALL EXITS("NODES_CREATE_START_REGION")
     RETURN 1
    
-  END SUBROUTINE NODES_CREATE_START
+  END SUBROUTINE NODES_CREATE_START_REGION
 
   !
   !================================================================================================================================
@@ -275,7 +374,11 @@ CONTAINS
       IF(ASSOCIATED(NODES%REGION)) THEN
         NULLIFY(NODES%REGION%NODES)
       ELSE
-        CALL FLAG_ERROR("Nodes region is not associated.",ERR,ERROR,*999)
+        IF(ASSOCIATED(NODES%INTERFACE)) THEN
+          NULLIFY(NODES%INTERFACE%NODES)
+        ELSE
+          CALL FLAG_ERROR("Nodes region and interface are not associated.",ERR,ERROR,*999)
+        ENDIF
       ENDIF
       CALL NODES_FINALISE(NODES,ERR,ERROR,*999)
     ELSE
@@ -328,8 +431,76 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the nodes.
+  SUBROUTINE NODES_INITIALISE_GENERIC(NODES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes to initialise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("NODES_INITIALISE_GENERIC",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(NODES)) THEN
+      NULLIFY(NODES%REGION)
+      NULLIFY(NODES%INTERFACE)
+      NODES%NODES_FINISHED=.FALSE.
+      NODES%NUMBER_OF_NODES=0
+      NULLIFY(NODES%NODES_TREE)
+    ELSE
+      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("NODES_INITIALISE_GENERIC")
+    RETURN
+999 CALL ERRORS("NODES_INITIALISE_GENERIC",ERR,ERROR)
+    CALL EXITS("NODES_INITIALISE_GENERIC")
+    RETURN 1
+  END SUBROUTINE NODES_INITIALISE_GENERIC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises the nodes in a given interface.
+  SUBROUTINE NODES_INITIALISE_INTERFACE(INTERFACE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface to initialise the nodes for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("NODES_INITIALISE_INTERFACE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(INTERFACE)) THEN
+      IF(ASSOCIATED(INTERFACE%NODES)) THEN
+        CALL FLAG_ERROR("Interface already has associated nodes.",ERR,ERROR,*999)
+      ELSE
+        ALLOCATE(INTERFACE%NODES,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface nodes.",ERR,ERROR,*999)
+        CALL NODES_INITIALISE_GENERIC(INTERFACE%NODES,ERR,ERROR,*999)
+        INTERFACE%NODES%INTERFACE=>INTERFACE
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("NODES_INITIALISE_INTERFACE")
+    RETURN
+999 CALL ERRORS("NODES_INITIALISE_INTERFACE",ERR,ERROR)
+    CALL EXITS("NODES_INITIALISE_INTERFACE")
+    RETURN 1
+    
+  END SUBROUTINE NODES_INITIALISE_INTERFACE
+
+  !
+  !================================================================================================================================
+  !
+
   !>Initialises the nodes in a given region.
-  SUBROUTINE NODES_INITIALISE(REGION,ERR,ERROR,*)
+  SUBROUTINE NODES_INITIALISE_REGION(REGION,ERR,ERROR,*)
 
     !Argument variables
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to initialise the nodes for
@@ -337,7 +508,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("NODES_INITIALISE",ERR,ERROR,*999)
+    CALL ENTERS("NODES_INITIALISE_REGION",ERR,ERROR,*999)
 
     IF(ASSOCIATED(REGION)) THEN
       IF(ASSOCIATED(REGION%NODES)) THEN
@@ -345,21 +516,19 @@ CONTAINS
       ELSE
         ALLOCATE(REGION%NODES,STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate region nodes.",ERR,ERROR,*999)
+        CALL NODES_INITIALISE_GENERIC(REGION%NODES,ERR,ERROR,*999)
         REGION%NODES%REGION=>REGION
-        REGION%NODES%NODES_FINISHED=.FALSE.
-        REGION%NODES%NUMBER_OF_NODES=0
-        NULLIFY(REGION%NODES%NODES_TREE)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("NODES_INITIALISE")
+    CALL EXITS("NODES_INITIALISE_REGION")
     RETURN
-999 CALL ERRORS("NODES_INITIALISE",ERR,ERROR)
-    CALL EXITS("NODES_INITIALISE")
+999 CALL ERRORS("NODES_INITIALISE_REGION",ERR,ERROR)
+    CALL EXITS("NODES_INITIALISE_REGION")
     RETURN 1
-  END SUBROUTINE NODES_INITIALISE
+  END SUBROUTINE NODES_INITIALISE_REGION
 
   !
   !================================================================================================================================

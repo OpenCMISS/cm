@@ -228,7 +228,8 @@ MODULE TYPES
 
   !>Contains information on the nodes defined on a region. \see OPENCMISS::CMISSNodesType
   TYPE NODES_TYPE
-    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the nodes.
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the nodes. If the nodes are in an interface rather than a region then this pointer will be NULL and the interface pointer should be used.
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface containing the nodes. If the nodes are in a region rather than an interface then this pointer will be NULL and the interface pointer should be used.
     LOGICAL :: NODES_FINISHED !<Is .TRUE. if the nodes have finished being created, .FALSE. if not.
     INTEGER(INTG) :: NUMBER_OF_NODES !<The number of nodes defined on the region.
     TYPE(NODE_TYPE), ALLOCATABLE :: NODES(:) !<NODES(nodes_idx). The nodal information for the nodes_idx'th global node.
@@ -305,34 +306,6 @@ MODULE TYPES
     TYPE(MESH_TOPOLOGY_TYPE), POINTER :: PTR !<The pointer to the mesh topology.
   END TYPE MESH_TOPOLOGY_PTR_TYPE
 
-  TYPE INTERFACE_ELEM_MAP  ! <<>>
-    INTEGER(INTG) :: NUMBER_OF_ELEM  ! <<>>
-    INTEGER(INTG), ALLOCATABLE :: MAP(:)  ! <<>>
-  END TYPE INTERFACE_ELEM_MAP  ! <<>>
-
-  TYPE INTERFACE_PTR_ELEM_MAP  ! <<>>
-    TYPE(INTERFACE_ELEM_MAP), POINTER :: PTR !<The pointer to the map topology.	! <<>>
-  END TYPE INTERFACE_PTR_ELEM_MAP	
-
-  TYPE INTERFACE_MAP  ! <<>>
-    INTEGER(INTG) :: GEOMETRIC_COMPONENT  ! <<>>
-    INTEGER(INTG) :: FIELD_COMPONENT  ! <<>>
-    TYPE(MESH_TYPE), POINTER :: DOMAIN_MESH  ! <<>>
-    TYPE(INTERFACE_PTR_ELEM_MAP), ALLOCATABLE :: INTERFACE_TO_DOMAIN(:)  ! <<>>
-  END TYPE INTERFACE_MAP  ! <<>>
-
-  TYPE INTERFACE_PTR_MAP  ! <<>>
-    TYPE(INTERFACE_MAP), POINTER :: PTR !<The pointer to the map topology.  ! <<>>
-  END TYPE INTERFACE_PTR_MAP  ! <<>>
-
-  !>Contains information on an interface mapping / mesh defined on a region. 	  <<>>
-  TYPE INTERFACE_MAPPING_TYPE  ! <<>>
-    TYPE(MESH_TYPE), POINTER :: MESH  ! <<>>
-    LOGICAL :: MAPPING_FINISHED  ! <<>>
-    INTEGER(INTG) :: N_COUPLED_REGIONS  ! <<>>
-    TYPE(INTERFACE_PTR_MAP), ALLOCATABLE :: DOMAIN_MAP(:)  ! <<>>
-  END TYPE INTERFACE_MAPPING_TYPE  ! <<>>
-
   !>Contains information on a mesh defined on a region. \see OPENCMISS::CMISSMeshType
   TYPE MESH_TYPE
     INTEGER(INTG) :: USER_NUMBER !<The user number of the mesh. The user number must be unique.
@@ -352,7 +325,6 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_OF_LINES !<The number of lines in the mesh.
     TYPE(MESH_TOPOLOGY_PTR_TYPE), POINTER :: TOPOLOGY(:) !<TOPOLOGY(mesh_component_idx). A pointer to the topology mesh_component_idx'th mesh component.
     TYPE(DECOMPOSITIONS_TYPE), POINTER :: DECOMPOSITIONS !<A pointer to the decompositions for this mesh.
-    TYPE(INTERFACE_MAPPING_TYPE), POINTER :: INTF !<A pointer to the interface specific mesh structures. <<>>
   END TYPE MESH_TYPE
 
   !>A buffer type to allow for an array of pointers to a MESH_TYPE.
@@ -362,7 +334,8 @@ MODULE TYPES
 
   !>Contains information on the meshes defined on a region.
   TYPE MESHES_TYPE
-    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region.
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containg the meshes. If the meshes are in an interface rather than a region then this pointer will be NULL and the interface pointer should be used.
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface containg the meshes. If the meshes are in a region rather than an interface then this pointer will be NULL and the region pointer should be used.
     INTEGER(INTG) :: NUMBER_OF_MESHES !<The number of meshes defined on the region.
     TYPE(MESH_PTR_TYPE), POINTER :: MESHES(:) !<MESHES(meshes_idx). The array of pointers to the meshes.
   END TYPE MESHES_TYPE
@@ -1057,7 +1030,8 @@ MODULE TYPES
 
   !>Contains information on the fields defined on a region.
   TYPE FIELDS_TYPE
-    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the fields.
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the fields. If the fields are in an interface rather than a region then this pointer will be NULL and the interface pointer should be used.
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface containing the fields. If the fields are in a region rather than an interface then this pointer will be NULL and the interface pointer should be used.
     INTEGER(INTG) :: NUMBER_OF_FIELDS !<The number of fields defined on the region.
     TYPE(FIELD_PTR_TYPE), POINTER :: FIELDS(:) !<FIELDS(fields_idx). The array of pointers to the fields.
   END TYPE FIELDS_TYPE
@@ -2105,16 +2079,6 @@ MODULE TYPES
     TYPE(REGION_TYPE), POINTER :: PTR !<The pointer to the region.
   END TYPE REGION_PTR_TYPE
      
-  !>Contains information for interface region specific data that is not of 'region' importance. <<>>
-  TYPE INTERFACE_TYPE
-    INTEGER(INTG) :: N_COUPLED_REGIONS !<An integer for the number of regions coupled through the interface.  Currently, COUPLED_REGION must be 2.
-    INTEGER(INTG) :: LMHOST_REGION !<An integer which denotes the host region for the Lagrange multiplier.
-    INTEGER(INTG) :: HOST_REGION !<An integer which denotes the host region of the two domains.
-    INTEGER(INTG) :: INTERFACE_TYPE !<An integer which denotes whether coupling is nodal based or integral based.
-    INTEGER(INTG) :: COUPLING_TYPE !<An integer which denotes whether coupling is surface to surface, volume to volume, etc.
-    TYPE(REGION_PTR_TYPE), ALLOCATABLE :: COUPLED_REGIONS(:)
-  END TYPE INTERFACE_TYPE
-
   !>Contains information for a region. \see OPENCMISS::CMISSRegionType
   TYPE REGION_TYPE 
     INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the region. The user number must be unique.
@@ -2128,16 +2092,146 @@ MODULE TYPES
     TYPE(REGION_TYPE), POINTER :: PARENT_REGION !<A pointer to the parent region for the region. If the region has no parent region then it is the global (world) region and PARENT_REGION is NULL.
     INTEGER(INTG) :: NUMBER_OF_SUB_REGIONS !<The number of sub-regions defined for the region.
     TYPE(REGION_PTR_TYPE), POINTER :: SUB_REGIONS(:) !<An array of pointers to the sub-regions defined on the region. \todo make this allocatable
-    TYPE(INTERFACE_TYPE), POINTER :: INTF !<A pointer to interface region specific data. <<>>
-    LOGICAL :: INTERFACE_REGION
+    TYPE(INTERFACES_TYPE), POINTER :: INTERFACES !<A pointer to the interfaces defined on the region.
   END TYPE REGION_TYPE
-
-!<<>> Notes..  Make a pointer to interfaces and sub interfaces.
 
   !>Contains information about the regions
   TYPE REGIONS_TYPE
     TYPE(REGION_TYPE), POINTER :: WORLD_REGION !<A pointer to the world region
   END TYPE REGIONS_TYPE
+
+  !
+  !================================================================================================================================
+  !
+  ! Interface types
+  
+  !>Contains information about an interface matrix.
+  TYPE INTERFACE_MATRIX_TYPE
+    INTEGER(INTG) :: MATRIX_NUMBER !<The number of the interface matrix
+     TYPE(INTERFACE_MATRICES_TYPE), POINTER :: INTERFACE_MATRICES !<A pointer to the interface matrices for the interface matrix.
+    INTEGER(INTG) :: STORAGE_TYPE !<The storage (sparsity) type for this matrix
+    INTEGER(INTG) :: STRUCTURE_TYPE !<The structure (sparsity) type for this matrix
+    INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in this equations matrix
+    LOGICAL :: UPDATE_MATRIX !<Is .TRUE. if this equations matrix is to be updated
+    LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this equations matrix has not been assembled
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the distributed interface matrix data
+    TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_MATRIX !<The element matrix for this equations matrix
+  END TYPE INTERFACE_MATRIX_TYPE
+
+  !>A buffer type to allow for an array of pointers to a INTERFACE_MATRIX_TYPE \see TYPES::INTERFACE_MATRIX_TYPE.
+  TYPE INTERFACE_MATRIX_PTR_TYPE
+    TYPE(INTERFACE_MATRIX_TYPE), POINTER :: PTR !<A pointer to the interface matrix.
+  END TYPE INTERFACE_MATRIX_PTR_TYPE
+ 
+   !>Contains information on the interface matrices 
+  TYPE INTERFACE_MATRICES_TYPE
+    TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS !<A pointer back to the interface equations
+    LOGICAL :: EQUATIONS_MATRICES_FINISHED !<Is .TRUE. if the interface equations matrices have finished being created, .FALSE. if not.
+    TYPE(INTERFACE_MAPPING_TYPE), POINTER :: INTERFACE_MAPPING !<A pointer to the interface equations mapping for the interface equations matrices.
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping for the interface equations matrices
+    INTEGER(INTG) :: NUMBER_OF_INTERFACE_MATRICES !<The number of interfaces matrices defined for the interface condition.
+    TYPE(INTERFACE_MATRIX_PTR_TYPE), ALLOCATABLE :: MATRICES(:) !<MATRICES(matrix_idx)%PTR contains the information on the matrix_idx'th  interface matrix.
+  END TYPE INTERFACE_MATRICES_TYPE
+
+  !>Contains information on an interface mapping.
+  TYPE INTERFACE_MAPPING_TYPE  
+    TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS  !<A pointer to the interface equations for this interface mapping
+    LOGICAL :: EQUATIONS_MAPPING_FINISHED !<Is .TRUE. if the interface mapping has finished being created, .FALSE. if not.
+    INTEGER(INTG) :: LAGRANGE_VARIABLE_TYPE !<The variable type of the mapped Lagrange field variable.
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: LAGRANGE_VARIABLE !<A pointer to the variable that is mapped to the Lagrange multiplier field variable.
+  END TYPE INTERFACE_MAPPING_TYPE
+
+  !>Contains information about the interface equations for an interface condition. 
+  TYPE INTERFACE_EQUATIONS_TYPE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION !<A pointer to the interface condition
+    LOGICAL :: EQUATIONS_FINISHED !<Is .TRUE. if the interface equations have finished being created, .FALSE. if not.
+    INTEGER(INTG) :: OUTPUT_TYPE !<The output type for the interface equations 
+    INTEGER(INTG) :: SPARSITY_TYPE !<The sparsity type for the interface equation matrices of the interface equations
+     
+    TYPE(INTERFACE_MAPPING_TYPE), POINTER :: INTERFACE_MAPPING !<A pointer to the interface equations mapping for the interface.
+    TYPE(INTERFACE_MATRICES_TYPE), POINTER :: INTERFACE_MATRICES !<A pointer to the interface equations matrices and vectors used for the interface equations.
+  END TYPE INTERFACE_EQUATIONS_TYPE
+  
+  !>Contains information about the Lagrange field information for an interface condition. 
+  TYPE INTERFACE_LAGRANGE_TYPE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION !<A pointer to the interface condition
+  END TYPE INTERFACE_LAGRANGE_TYPE
+
+  !>Contains information for the interface condition data.
+  TYPE INTERFACE_CONDITION_TYPE
+    INTEGER(INTG) :: USER_NUMBER !<The user identifying number of the interface condition. Must be unique
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The global index of the interface condition in the interface conditions.
+    LOGICAL :: INTERFACE_CONDITION_FINISHED !<Is .TRUE. if the interface condition has finished being created, .FALSE. if not.
+    TYPE(INTERFACE_CONDITIONS_TYPE), POINTER :: INTERFACE_CONDITIONS !<A pointer back to the interface conditions
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer back to the interface.
+    INTEGER(INTG) :: CONDITION_TYPE !<An integer which denotes whether type of interface condition.
+    TYPE(INTERFACE_LAGRANGE_TYPE), POINTER :: LAGRANGE !<A pointer to the interface condition Lagrange multipler information if there are any for this interface condition.
+    TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the interface equations if there are any for this interface condition
+  END TYPE INTERFACE_CONDITION_TYPE
+
+  !>A buffer type to allow for an array of pointers to a INTERFACE_CONDITION_TYPE.
+  TYPE INTERFACE_CONDITION_PTR_TYPE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: PTR !<The pointer to the interface condition.
+  END TYPE INTERFACE_CONDITION_PTR_TYPE
+  
+  !>Contains information for interface region specific data that is not of 'region' importance. <<>>
+  TYPE INTERFACE_CONDITIONS_TYPE
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer back to the interface containing the interface conditions.
+    INTEGER(INTG) :: NUMBER_OF_INTERFACE_CONDITIONS !<The number of interface conditions
+    TYPE(INTERFACE_CONDITION_PTR_TYPE), ALLOCATABLE :: INTERFACE_CONDITIONS(:) !<INTERFACE_CONDITIONS(interface_condition_idx). A pointer to the interface_condition_idx'th interface condition.
+  END TYPE INTERFACE_CONDITIONS_TYPE
+
+  !>Contains information on a mesh connectivity point
+  TYPE COUPLED_MESH_CONNECTIVITY_POINT_TYPE
+    INTEGER(INTG) :: MESH1_INDEX !<The mesh index of the first connectivity point
+    INTEGER(INTG) :: MESH1_ELEMENT !<The mesh element number of the first connectivity point
+    REAL(DP), ALLOCATABLE :: XI1(:) !<XI1(ni). The xi position of the first connectivity point
+    INTEGER(INTG) :: MESH2_INDEX !<The mesh index of the second connectivity point
+    INTEGER(INTG) :: MESH2_ELEMENT !<The mesh element number of the second connectivity point
+    REAL(DP), ALLOCATABLE :: XI2(:) !<XI1(ni). The xi position of the second connectivity point
+  END TYPE COUPLED_MESH_CONNECTIVITY_POINT_TYPE
+
+  !>A buffer type to allow for an array of pointers to a MESH_CONNECTIVITY_POINT_TYPE
+  TYPE COUPLED_MESH_CONNECTIVITY_POINT_PTR_TYPE
+    TYPE(COUPLED_MESH_CONNECTIVITY_POINT_TYPE), POINTER :: PTR
+  END TYPE COUPLED_MESH_CONNECTIVITY_POINT_PTR_TYPE
+  
+  !>Contains information on the coupling between coupled meshes in an interface
+  TYPE COUPLED_MESH_CONNECTIVITY_TYPE
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer back to the interface for the coupled mesh connectivity
+    LOGICAL :: MESH_CONNECTIVITY_FINISHED !<Is .TRUE. if the coupled mesh connectivity has finished being created, .FALSE. if not.
+    INTEGER(INTG) :: NUMBER_OF_CONNECTIVITY_POINTS !<The number of connectivity points in the mesh connectivity
+    TYPE(COUPLED_MESH_CONNECTIVITY_POINT_PTR_TYPE), POINTER :: CONNECTIVITY_POINTS(:) !<CONNECTIVITY_POINTS(point_idx). CONNECTIVITY_POINT(point_idx)%PTR is the pointer to the point_idx'th connectivity point.
+  END TYPE COUPLED_MESH_CONNECTIVITY_TYPE
+
+  !>Contains information for the interface data.
+  TYPE INTERFACE_TYPE
+    INTEGER :: USER_NUMBER !<The user defined identifier for the interface. The user number must be unique.
+    INTEGER :: GLOBAL_NUMBER !<The global number of the interface in the list of interfaces for a particular parent region.
+    LOGICAL :: INTERFACE_FINISHED !<Is .TRUE. if the interface has finished being created, .FALSE. if not.
+    TYPE(VARYING_STRING) :: LABEL !<A user defined label for the region.
+    TYPE(INTERFACES_TYPE), POINTER :: INTERFACES !<A pointer back to the parent interfaces
+    INTEGER(INTG) :: NUMBER_OF_COUPLED_MESHES !<The number of coupled meshes in the interface.
+    TYPE(MESH_PTR_TYPE), POINTER :: COUPLED_MESHES(:) !<COUPLED_MESHES(mesh_idx). COUPLED_MESHES(mesh_idx)%PTR is the pointer to the mesh_idx'th mesh involved in the interface.
+    TYPE(COUPLED_MESH_CONNECTIVITY_TYPE), POINTER :: COUPLED_MESH_CONNECTIVITY !<A pointer to the coupled mesh connectivity the interface.
+    TYPE(INTERFACE_MAPPING_TYPE), POINTER :: INTERFACE_MAPPING !<A pointer to the mapping between the region meshes of the interface.
+    TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes in an interface
+    TYPE(MESHES_TYPE), POINTER :: MESHES !<A pointer to the mesh in an interface.
+    TYPE(FIELDS_TYPE), POINTER :: FIELDS !<A pointer to the fields defined over an interface.
+    TYPE(INTERFACE_CONDITIONS_TYPE), POINTER :: INTERFACE_CONDITIONS !<The pointer to the interface conditions for this interface
+  END TYPE INTERFACE_TYPE
+
+  !>A buffer type to allow for an array of pointers to a INTERFACE_TYPE.
+  TYPE INTERFACE_PTR_TYPE
+    TYPE(INTERFACE_TYPE), POINTER :: PTR !<The pointer to the interface.
+  END TYPE INTERFACE_PTR_TYPE
+  
+  !>Contains information for interface region specific data that is not of 'region' importance. <<>>
+  TYPE INTERFACES_TYPE
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION !<A pointer back to the parent region containing the interfaces.
+    INTEGER(INTG) :: NUMBER_OF_INTERFACES !<The number of interfaces
+    TYPE(INTERFACE_PTR_TYPE), POINTER :: INTERFACES(:) !<INTERFACES(interface_idx). A pointer to the interface_idx'th interface.
+  END TYPE INTERFACES_TYPE
 
   !
   !================================================================================================================================
