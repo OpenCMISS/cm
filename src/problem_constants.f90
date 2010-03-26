@@ -101,6 +101,8 @@ MODULE PROBLEM_CONSTANTS
   !Elasticity class
   !  Linear elasticity - uses PROBLEM_NO_SUBTYPE=0
   !  Finite elasticity
+  INTEGER(INTG), PARAMETER :: PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE=1
+
   !Fluid mechanics class
   !  Stokes equations
   INTEGER(INTG), PARAMETER :: PROBLEM_STATIC_STOKES_SUBTYPE=1

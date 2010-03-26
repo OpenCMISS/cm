@@ -1624,6 +1624,7 @@ $(OBJECT_DIR)/problem_routines.o	:	$(SOURCE_DIR)/problem_routines.f90 \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/equations_set_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/finite_elasticity_routines.o \
 	$(OBJECT_DIR)/fluid_mechanics_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \

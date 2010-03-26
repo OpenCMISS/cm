@@ -473,7 +473,7 @@ CONTAINS
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE(EQUATIONS_NONLINEAR)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL EQUATIONS_SET_ASSEMBLE_QUASISTATIC_NONLINEAR_FEM(EQUATIONS_SET,ERR,ERROR,*999)
             CASE(EQUATIONS_NONLINEAR_BCS)
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
@@ -1040,6 +1040,25 @@ CONTAINS
     CALL EXITS("EQUATIONS_SET_ASSEMBLE_STATIC_NONLINEAR_FEM")
     RETURN 1
   END SUBROUTINE EQUATIONS_SET_ASSEMBLE_STATIC_NONLINEAR_FEM
+
+  ! sander, 26/03/10
+  !>Assembles the equations stiffness matrix, residuals and rhs for a nonlinear quasistatic equations set using the finite element method.
+  !> currently the same as the static nonlinear case
+  SUBROUTINE EQUATIONS_SET_ASSEMBLE_QUASISTATIC_NONLINEAR_FEM(EQUATIONS_SET,ERR,ERROR,*)
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to assemble the equations for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    CALL ENTERS("EQUATIONS_SET_ASSEMBLE_QUASISTATIC_NONLINEAR_FEM",ERR,ERROR,*999)
+    ! currently no difference
+    CALL EQUATIONS_SET_ASSEMBLE_STATIC_NONLINEAR_FEM(EQUATIONS_SET,ERR,ERROR,*999)
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_ASSEMBLE_QUASISTATIC_NONLINEAR_FEM",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_ASSEMBLE_QUASISTATIC_NONLINEAR_FEM")
+    RETURN 1
+  END  SUBROUTINE EQUATIONS_SET_ASSEMBLE_QUASISTATIC_NONLINEAR_FEM
+
 
   !
   !================================================================================================================================
@@ -3874,7 +3893,7 @@ CONTAINS
             CALL FLAG_ERROR("Can not evaluate a residual for linear equations.",ERR,ERROR,*999)
           CASE(EQUATIONS_NONLINEAR)
             SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
-            CASE(EQUATIONS_STATIC)
+            CASE(EQUATIONS_STATIC,EQUATIONS_QUASISTATIC) ! quasistatic handled like static
               SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
               CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
                 CALL EQUATIONS_SET_RESIDUAL_EVALUATE_STATIC_FEM(EQUATIONS_SET,ERR,ERROR,*999)
@@ -3894,8 +3913,6 @@ CONTAINS
                   & " is invalid."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
-            CASE(EQUATIONS_QUASISTATIC)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_FIRST_ORDER_DYNAMIC)
 ! sebk 19/08/09
 !|

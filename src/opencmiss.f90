@@ -1569,6 +1569,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetPlateSubtype = EQUATIONS_SET_PLATE_SUBTYPE !<Plate linear elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetShellSubtype = EQUATIONS_SET_SHELL_SUBTYPE !<Shell linear elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMooneyRivlinSubtype = EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE !< Mooney-Rivlin constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetActiveContractionSubtype =&
+    & EQUATIONS_SET_ACTIVECONTRACTION_SUBTYPE !< Active contraction/costa-based law with quasistatic time loop for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetIsotropicExponentialSubtype = EQUATIONS_SET_ISOTROPIC_EXPONENTIAL_SUBTYPE !< Isotropic exponential constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetTransverseIsotropicExponentialSubtype = &
     & EQUATIONS_SET_TRANSVERSE_ISOTROPIC_EXPONENTIAL_SUBTYPE !< Transverse isotropic exponential constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -1766,7 +1768,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSEquationsSetNoSubtype,CMISSEquationsSetThreeDimensionalSubtype,CMISSEquationsSetPlaneStressSubtype, &
     & CMISSEquationsSetPlaneStrainSubtype,CMISSEquationsSetOneDimensionalSubtype,CMISSEquationsSetPlateSubtype, &
     & CMISSEquationsSetShellSubtype, &
-    & CMISSEquationsSetMooneyRivlinSubtype,CMISSEquationsSetIsotropicExponentialSubtype, &
+    & CMISSEquationsSetMooneyRivlinSubtype,CMISSEquationsSetIsotropicExponentialSubtype,CMISSEquationsSetActiveContractionSubtype,&
     & CMISSEquationsSetTransverseIsotropicExponentialSubtype, CMISSEquationsSetOrthotropicMaterialCostaSubtype, &
     & CMISSEquationsSetCompressibleFiniteElasticitySubtype, &
     & CMISSEquationsSetStaticStokesSubtype, CMISSEquationsSetLaplaceStokesSubtype, &
@@ -3251,6 +3253,9 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype = & 
     & PROBLEM_COUPLED_SOURCE_DIFFUSION_ADVEC_DIFFUSION_SUBTYPE !<Coupled source diffusion & advection-diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
+  INTEGER(INTG), PARAMETER :: CMISSProblemQuasistaticFiniteElasticitySubtype = PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE !<Quasistatic finite elasticity subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+
+
   !>@}
   !> \addtogroup OPENCMISS_ProblemControlLoopTypes OPENCMISS::Problem::ControlLoopTypes
   !> \brief Problem control loop type parameters
@@ -3330,6 +3335,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSProblemStandardElasticityDarcySubtype, CMISSProblemCoupledSourceDiffusionDiffusionSubtype, &
    & CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype
 
+  PUBLIC CMISSProblemQuasistaticFiniteElasticitySubtype
 !!==================================================================================================================================
 !!
 !! PROBLEM_ROUTINES
