@@ -1877,9 +1877,9 @@ CMISSError CMISSEquationsSetBoundaryConditionsGet(const CMISSEquationsSetType Eq
  *==================================================================================================================================
  */
 
-CMISSError CMISSErrorHanlingModeGet(int *ErrorHandlingMode);
+CMISSError CMISSErrorHandlingModeGet(int *ErrorHandlingMode);
 
-CMISSError CMISSErrorHanlingModeSet(int ErrorHandlingMode);
+CMISSError CMISSErrorHandlingModeSet(const int ErrorHandlingMode);
 
 CMISSError CMISSFinalise();
 
