@@ -1327,6 +1327,7 @@ $(OBJECT_DIR)/fluid_mechanics_routines.o	:	$(SOURCE_DIR)/fluid_mechanics_routine
 
 $(OBJECT_DIR)/fluid_mechanics_IO_routines.o	:	$(SOURCE_DIR)/fluid_mechanics_IO_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/types.o
 

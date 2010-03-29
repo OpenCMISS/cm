@@ -46,6 +46,7 @@
 MODULE FLUID_MECHANICS_IO_ROUTINES
 
  USE BASE_ROUTINES
+ USE EQUATIONS_SET_CONSTANTS
  USE FIELD_ROUTINES
  USE TYPES
  USE INPUT_OUTPUT 
@@ -176,6 +177,7 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePValue 
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeMUValue
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeRHOValue  
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeKappaValue  
 
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeUValue_analytic
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeVValue_analytic 
@@ -219,16 +221,18 @@ CONTAINS
   !
 
   !> Writes solution into cmgui formats exelem and exnode.
-  SUBROUTINE FLUID_MECHANICS_IO_WRITE_CMGUI(REGION, NAME, ERR, ERROR,*)
+  SUBROUTINE FLUID_MECHANICS_IO_WRITE_CMGUI(REGION, EQUATIONS_SET_GLOBAL_NUMBER, NAME, ERR, ERROR,*)
 
     !Argument variables
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to get the coordinate system for
 !     TYPE(VARYING_STRING), INTENT(IN) :: NAME !<the prefix name of file.
     CHARACTER(14) :: NAME !<the prefix name of file.
     INTEGER(INTG) :: ERR !<The error code
+    INTEGER(INTG) :: EQUATIONS_SET_GLOBAL_NUMBER !<The error code
     TYPE(VARYING_STRING):: ERROR !<The error string
     !Local Variables
     INTEGER(INTG):: I,J,K
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
 
     CALL ENTERS("FLUID_MECHANICS_IO_WRITE_CMGUI",ERR,ERROR,*999)
 
@@ -245,6 +249,7 @@ CONTAINS
     IF (ALLOCATED(NodePValue)) DEALLOCATE(NodePValue)
     IF (ALLOCATED(NodeMUValue)) DEALLOCATE(NodeMUValue)
     IF (ALLOCATED(NodeRHOValue)) DEALLOCATE(NodeRHOValue)
+    IF (ALLOCATED(NodeKappaValue)) DEALLOCATE(NodeKappaValue)
     IF (ALLOCATED(ElementNodesScales)) DEALLOCATE(ElementNodesScales)
     IF (ALLOCATED(ElementNodes)) DEALLOCATE(ElementNodes)
 
@@ -280,13 +285,16 @@ CONTAINS
       END DO
     END DO
 
+    EQUATIONS_SET => REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr
+
 !     NumberOfFields=REGION%fields%number_of_fields
 ! Hack for ALE... to be removed later
     NumberOfFields=3
     NumberOfDimensions=REGION%coordinate_system%number_of_dimensions
-    NumberOfVariableComponents=REGION%equations_sets%equations_sets(1)%ptr%dependent%dependent_field% &
+    NumberOfVariableComponents=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
       & variables(1)%number_of_components
-    NumberOfMaterialComponents=REGION%equations_sets%equations_sets(1)%ptr%materials%materials_field% &
+
+    NumberOfMaterialComponents=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
       & variables(1)%number_of_components
     NumberOfElements=REGION%meshes%meshes(1)%ptr%number_of_elements
     NumberOfMeshComponents=REGION%meshes%meshes(1)%ptr%number_of_components
@@ -315,6 +323,7 @@ CONTAINS
     IF(.NOT.ALLOCATED(NodePValue)) ALLOCATE(NodePValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeMUValue)) ALLOCATE(NodeMUValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeRHOValue)) ALLOCATE(NodeRHOValue(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeKappaValue)) ALLOCATE(NodeKappaValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(ElementNodesScales)) ALLOCATE(ElementNodesScales(NumberOfElements,NodesPerElement(1)))
     IF(.NOT.ALLOCATED(ElementNodes)) ALLOCATE(ElementNodes(NumberOfElements,NodesPerElement(1)))
 
@@ -331,7 +340,7 @@ CONTAINS
 
     CALL ENTERS("CMGUI OUTPUT",ERR,ERROR,*999)
 
-    FIELD=>REGION%equations_sets%equations_sets(1)%ptr%dependent%dependent_field
+    FIELD=>REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field
 
     NULLIFY(INTERPOLATION_PARAMETERS)
     NULLIFY(INTERPOLATED_POINT)
@@ -343,19 +352,19 @@ CONTAINS
     DO I=1,NumberOfElements
       DO J=1,NodesPerElement(1)
         ELEMENT_NUMBER=I
-        XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(1)%ptr%equations%interpolation% &
+        XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
           & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,1)-1.0)/(REGION%equations_sets% &
-          & equations_sets(1)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
+          & equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
           & %ptr%number_of_nodes_xi(1)-1.0)
-        XI_COORDINATES(2)=(REGION%equations_sets%equations_sets(1)%ptr%equations%interpolation% &
+        XI_COORDINATES(2)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
           & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,2)-1.0)/(REGION%equations_sets% &
-          & equations_sets(1)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
+          & equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
           & %ptr%number_of_nodes_xi(2)-1.0)
 
         IF(NumberOfDimensions==3)THEN
-          XI_COORDINATES(3)=(REGION%equations_sets%equations_sets(1)%ptr%equations%interpolation% &
+          XI_COORDINATES(3)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
             & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,3)-1.0)/(REGION%equations_sets% &
-            & equations_sets(1)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
+            & equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
             & %ptr%number_of_nodes_xi(3)-1.0)
         END IF
 
@@ -371,46 +380,59 @@ CONTAINS
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
           & INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
         CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,INTERPOLATED_POINT,ERR,ERROR,*999)
-        NodeXValue(K)=REGION%equations_sets%equations_sets(1)%ptr%geometry%geometric_field%variables(1) &
+        NodeXValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
           & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
-        NodeYValue(K)=REGION%equations_sets%equations_sets(1)%ptr%geometry%geometric_field%variables(1) &
+        NodeYValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
           & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
 
         IF(NumberOfDimensions==3)THEN
-          NodeZValue(K)=REGION%equations_sets%equations_sets(1)%ptr%geometry%geometric_field%variables(1) &
-            & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+          NodeZValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field% &
+            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
         END IF
 
-        NodeUValue(K)=REGION%equations_sets%equations_sets(1)%ptr%dependent%dependent_field%variables(1) &
+        NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field%variables(1) &
           & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
-        NodeVValue(K)=REGION%equations_sets%equations_sets(1)%ptr%dependent%dependent_field%variables(1) &
+        NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field%variables(1) &
           & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
 
         IF(NumberOfDimensions==3)THEN
-          NodeWValue(K)=REGION%equations_sets%equations_sets(1)%ptr%dependent%dependent_field%variables(1) &
-            & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+          NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
         END IF
 
 ! ! !       NodeUValue(K)=INTERPOLATED_POINT%VALUES(1,1)
 ! ! !       NodeVValue(K)=INTERPOLATED_POINT%VALUES(2,1)
 ! ! !       NodeWValue(K)=INTERPOLATED_POINT%VALUES(3,1)
 
-        IF(NumberOfDimensions==3)THEN
-          NodePValue(K)=INTERPOLATED_POINT%VALUES(4,1)
-        ELSE IF(NumberOfDimensions==2)THEN
-          NodePValue(K)=INTERPOLATED_POINT%VALUES(3,1)
+
+        IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS)THEN
+          IF(NumberOfDimensions==3)THEN
+            NodePValue(K)=INTERPOLATED_POINT%VALUES(4,1)
+          ELSE IF(NumberOfDimensions==2)THEN
+            NodePValue(K)=INTERPOLATED_POINT%VALUES(3,1)
+          END IF
         END IF
       END DO 
     END DO
 
-    NodeMUValue=REGION%equations_sets%equations_sets(1)%ptr%materials%materials_field%variables(1)% &
+    NodeMUValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field%variables(1)% &
       & parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(1)
-    NodeRHOValue=REGION%equations_sets%equations_sets(1)%ptr%materials%materials_field%variables(1)% &
+    NodeRHOValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field%variables(1)% &
       & parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(2)
+
+    IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS)THEN
+      IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE)THEN
+        IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE)THEN
+          NodeKappaValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(3)
+        END IF
+      END IF
+    END IF
+
 
     IF( NumberOfDimensions==3 )THEN
       !For 3D, the following call works ...
-      lagrange_simplex=REGION%equations_sets%equations_sets(1)%ptr%equations% &
+      lagrange_simplex=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations% &
         & interpolation%geometric_interp_parameters%bases(1)%ptr%type
 !         lagrange_simplex=2
     ELSE
@@ -436,7 +458,7 @@ CONTAINS
       END DO
     END DO
 
-    CALL FLUID_MECHANICS_IO_WRITE_NODES_CMGUI(NAME)
+    CALL FLUID_MECHANICS_IO_WRITE_NODES_CMGUI(NAME,EQUATIONS_SET)
     CALL FLUID_MECHANICS_IO_WRITE_ELEMENTS_CMGUI(NAME)
 
     CALL EXITS("FLUID_MECHANICS_IO_WRITE_CMGUI")
@@ -453,16 +475,19 @@ CONTAINS
   !  
 
   !> Writes solution into encas
-  SUBROUTINE FLUID_MECHANICS_IO_WRITE_ENCAS(REGION, NAME, ERR, ERROR,*)
+!   SUBROUTINE FLUID_MECHANICS_IO_WRITE_ENCAS(REGION, NAME, ERR, ERROR,*)
+  SUBROUTINE FLUID_MECHANICS_IO_WRITE_ENCAS(REGION, EQUATIONS_SET_GLOBAL_NUMBER, NAME, ERR, ERROR,*)
 
     !Argument variables
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to get the coordinate system for
 !     TYPE(VARYING_STRING), INTENT(IN) :: NAME !<the prefix name of file.
     CHARACTER(14) :: NAME !<the prefix name of file.
+    INTEGER(INTG) :: EQUATIONS_SET_GLOBAL_NUMBER !<The error code
     INTEGER(INTG) :: ERR !<The error code
     TYPE(VARYING_STRING):: ERROR !<The error string
     !Local Variables
     INTEGER(INTG):: I,J,K
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
 
     CALL ENTERS("FLUID_MECHANICS_IO_WRITE_ENCAS",ERR,ERROR,*999)
 
@@ -479,6 +504,7 @@ CONTAINS
     IF (ALLOCATED(NodePValue)) DEALLOCATE(NodePValue)
     IF (ALLOCATED(NodeMUValue)) DEALLOCATE(NodeMUValue)
     IF (ALLOCATED(NodeRHOValue)) DEALLOCATE(NodeRHOValue)
+    IF (ALLOCATED(NodeKappaValue)) DEALLOCATE(NodeKappaValue)
     IF (ALLOCATED(ElementNodesScales)) DEALLOCATE(ElementNodesScales)
     IF (ALLOCATED(ElementNodes)) DEALLOCATE(ElementNodes)
 
@@ -514,13 +540,15 @@ CONTAINS
       END DO
     END DO
 
+    EQUATIONS_SET => REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr
+
 !     NumberOfFields=REGION%fields%number_of_fields
 ! Hack for ALE... to be removed later
     NumberOfFields=3
     NumberOfDimensions=REGION%coordinate_system%number_of_dimensions
-    NumberOfVariableComponents=REGION%equations_sets%equations_sets(1)%ptr%dependent%dependent_field% &
+    NumberOfVariableComponents=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
       & variables(1)%number_of_components
-    NumberOfMaterialComponents=REGION%equations_sets%equations_sets(1)%ptr%materials%materials_field% &
+    NumberOfMaterialComponents=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
       & variables(1)%number_of_components
     NumberOfElements=REGION%meshes%meshes(1)%ptr%number_of_elements
     NumberOfMeshComponents=REGION%meshes%meshes(1)%ptr%number_of_components
@@ -549,6 +577,7 @@ CONTAINS
     IF(.NOT.ALLOCATED(NodePValue)) ALLOCATE(NodePValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeMUValue)) ALLOCATE(NodeMUValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeRHOValue)) ALLOCATE(NodeRHOValue(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeKappaValue)) ALLOCATE(NodeKappaValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(ElementNodesScales)) ALLOCATE(ElementNodesScales(NumberOfElements,NodesPerElement(1)))
     IF(.NOT.ALLOCATED(ElementNodes)) ALLOCATE(ElementNodes(NumberOfElements,NodesPerElement(1)))
 
@@ -565,7 +594,7 @@ CONTAINS
 
     CALL ENTERS("CMGUI OUTPUT",ERR,ERROR,*999)
 
-    FIELD=>REGION%equations_sets%equations_sets(1)%ptr%dependent%dependent_field
+    FIELD=>REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field
 
     NULLIFY(INTERPOLATION_PARAMETERS)
     NULLIFY(INTERPOLATED_POINT)
@@ -577,17 +606,17 @@ CONTAINS
     DO I=1,NumberOfElements
       DO J=1,NodesPerElement(1)
         ELEMENT_NUMBER=I
-        XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(1)%ptr%equations%interpolation% &
+        XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
           & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,1)-1.0)/(REGION%equations_sets% &
-          & equations_sets(1)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
+          & equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
           & %ptr%number_of_nodes_xi(1)-1.0)
-        XI_COORDINATES(2)=(REGION%equations_sets%equations_sets(1)%ptr%equations%interpolation% &
+        XI_COORDINATES(2)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
           & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,2)-1.0)/(REGION%equations_sets% &
-          & equations_sets(1)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
+          & equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
           & %ptr%number_of_nodes_xi(2)-1.0)
-        XI_COORDINATES(3)=(REGION%equations_sets%equations_sets(1)%ptr%equations%interpolation% &
+        XI_COORDINATES(3)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
           & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,3)-1.0)/(REGION%equations_sets% &
-          & equations_sets(1)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
+          & equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
           & %ptr%number_of_nodes_xi(3)-1.0)
         IF(NumberOfDimensions==2)THEN
           STOP 'Encas format only available for 3D hex and tets'
@@ -601,46 +630,58 @@ CONTAINS
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
           & INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
         CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,INTERPOLATED_POINT,ERR,ERROR,*999)
-        NodeXValue(K)=REGION%equations_sets%equations_sets(1)%ptr%geometry%geometric_field%variables(1) &
+        NodeXValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
           & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
-        NodeYValue(K)=REGION%equations_sets%equations_sets(1)%ptr%geometry%geometric_field%variables(1) &
+        NodeYValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
           & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
 
         IF(NumberOfDimensions==3)THEN
-          NodeZValue(K)=REGION%equations_sets%equations_sets(1)%ptr%geometry%geometric_field%variables(1) &
-            & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+          NodeZValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field% &
+            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
         END IF
 
-        NodeUValue(K)=REGION%equations_sets%equations_sets(1)%ptr%dependent%dependent_field%variables(1) &
+        NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field%variables(1) &
           & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
-        NodeVValue(K)=REGION%equations_sets%equations_sets(1)%ptr%dependent%dependent_field%variables(1) &
+        NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field%variables(1) &
           & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
 
         IF(NumberOfDimensions==3)THEN
-          NodeWValue(K)=REGION%equations_sets%equations_sets(1)%ptr%dependent%dependent_field%variables(1) &
-            & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+          NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
         END IF
 
 ! ! !       NodeUValue(K)=INTERPOLATED_POINT%VALUES(1,1)
 ! ! !       NodeVValue(K)=INTERPOLATED_POINT%VALUES(2,1)
 ! ! !       NodeWValue(K)=INTERPOLATED_POINT%VALUES(3,1)
 
-        IF(NumberOfDimensions==3)THEN
-          NodePValue(K)=INTERPOLATED_POINT%VALUES(4,1)
-        ELSE IF(NumberOfDimensions==2)THEN
-          NodePValue(K)=INTERPOLATED_POINT%VALUES(3,1)
+        IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS)THEN
+          IF(NumberOfDimensions==3)THEN
+            NodePValue(K)=INTERPOLATED_POINT%VALUES(4,1)
+          ELSE IF(NumberOfDimensions==2)THEN
+            NodePValue(K)=INTERPOLATED_POINT%VALUES(3,1)
+          END IF
         END IF
       END DO 
     END DO
 
-    NodeMUValue=REGION%equations_sets%equations_sets(1)%ptr%materials%materials_field%variables(1)% &
+    NodeMUValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field%variables(1)% &
       & parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(1)
-    NodeRHOValue=REGION%equations_sets%equations_sets(1)%ptr%materials%materials_field%variables(1)% &
+    NodeRHOValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field%variables(1)% &
       & parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(2)
+
+    IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS)THEN
+      IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE)THEN
+        IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE)THEN
+          NodeKappaValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(3)
+        END IF
+      END IF
+    END IF
+
 
     IF( NumberOfDimensions==3 )THEN
       !For 3D, the following call works ...
-      lagrange_simplex=REGION%equations_sets%equations_sets(1)%ptr%equations% &
+      lagrange_simplex=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations% &
         & interpolation%geometric_interp_parameters%bases(1)%ptr%type
 !         lagrange_simplex=2
     ELSE
@@ -666,7 +707,7 @@ CONTAINS
       END DO
     END DO
 
-    CALL FLUID_MECHANICS_IO_WRITE_DATA_ENCAS(NAME)
+    CALL FLUID_MECHANICS_IO_WRITE_DATA_ENCAS(NAME,EQUATIONS_SET)
 
 
     CALL EXITS("FLUID_MECHANICS_IO_WRITE_ENCAS")
@@ -683,12 +724,13 @@ CONTAINS
   !  
 
   !> Executes nodes writing process.
-  SUBROUTINE FLUID_MECHANICS_IO_WRITE_DATA_ENCAS(NAME)
+  SUBROUTINE FLUID_MECHANICS_IO_WRITE_DATA_ENCAS(NAME,EQUATIONS_SET)
 
     IMPLICIT NONE
     CHARACTER(14), INTENT(IN) :: NAME !<the prefix name of file.
     TYPE(VARYING_STRING) :: FILENAME !<the prefix name of file.
 !     CHARACTER :: FILENAME !<the prefix name of file.
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
     INTEGER:: I,K
     INTEGER(INTG) :: ERR
     TYPE(VARYING_STRING):: ERROR 
@@ -847,16 +889,18 @@ CONTAINS
     ENDIF
     CLOSE(80)
   !==================
-    FILENAME="./output/"//NAME//".scl1"
-    OPEN(UNIT=81, FILE=CHAR(FILENAME),STATUS='unknown')
-    WRITE(81,*)'Absolute Pressure' 
-    WRITE(81,*)'part'
-    WRITE(81,*)'        1'
-    WRITE(81,*)'coordinates'
-    DO I = 1,NodesPerMeshComponent(1)
-      WRITE(81,'(e12.5)')NodePValue(I)
-    ENDDO
-    CLOSE(81)
+    IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS)THEN
+      FILENAME="./output/"//NAME//".scl1"
+      OPEN(UNIT=81, FILE=CHAR(FILENAME),STATUS='unknown')
+      WRITE(81,*)'Absolute Pressure' 
+      WRITE(81,*)'part'
+      WRITE(81,*)'        1'
+      WRITE(81,*)'coordinates'
+      DO I = 1,NodesPerMeshComponent(1)
+        WRITE(81,'(e12.5)')NodePValue(I)
+      ENDDO
+      CLOSE(81)
+    ENDIF
  
   !==================
     FILENAME="./output/"//NAME//".scl2"
@@ -1003,16 +1047,18 @@ CONTAINS
   !  
 
   !> Writes solution into encas
-  SUBROUTINE FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK(REGION, NAME, ERR, ERROR,*)
+  SUBROUTINE FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK(REGION, EQUATIONS_SET_GLOBAL_NUMBER, NAME, ERR, ERROR,*)
 
     !Argument variables
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to get the coordinate system for
 !     TYPE(VARYING_STRING), INTENT(IN) :: NAME !<the prefix name of file.
     CHARACTER(14) :: NAME !<the prefix name of file.
+    INTEGER(INTG) :: EQUATIONS_SET_GLOBAL_NUMBER !<The error code
     INTEGER(INTG) :: ERR !<The error code
     TYPE(VARYING_STRING):: ERROR !<The error string
     !Local Variables
     INTEGER(INTG):: I,J,K
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
 
     CALL ENTERS("FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK",ERR,ERROR,*999)
 
@@ -1029,6 +1075,7 @@ CONTAINS
     IF (ALLOCATED(NodePValue)) DEALLOCATE(NodePValue)
     IF (ALLOCATED(NodeMUValue)) DEALLOCATE(NodeMUValue)
     IF (ALLOCATED(NodeRHOValue)) DEALLOCATE(NodeRHOValue)
+    IF (ALLOCATED(NodeKappaValue)) DEALLOCATE(NodeKappaValue)
     IF (ALLOCATED(ElementNodesScales)) DEALLOCATE(ElementNodesScales)
     IF (ALLOCATED(ElementNodes)) DEALLOCATE(ElementNodes)
 
@@ -1053,13 +1100,15 @@ CONTAINS
       END DO
     END DO
 
+    EQUATIONS_SET => REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr
+
 !     NumberOfFields=REGION%fields%number_of_fields
 ! Hack for ALE... to be removed later
     NumberOfFields=3
     NumberOfDimensions=REGION%coordinate_system%number_of_dimensions
-    NumberOfVariableComponents=REGION%equations_sets%equations_sets(1)%ptr%dependent%dependent_field% &
+    NumberOfVariableComponents=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
       & variables(1)%number_of_components
-    NumberOfMaterialComponents=REGION%equations_sets%equations_sets(1)%ptr%materials%materials_field% &
+    NumberOfMaterialComponents=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
       & variables(1)%number_of_components
     NumberOfElements=REGION%meshes%meshes(1)%ptr%number_of_elements
     NumberOfMeshComponents=REGION%meshes%meshes(1)%ptr%number_of_components
@@ -1088,12 +1137,13 @@ CONTAINS
     IF(.NOT.ALLOCATED(NodePValue)) ALLOCATE(NodePValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeMUValue)) ALLOCATE(NodeMUValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeRHOValue)) ALLOCATE(NodeRHOValue(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeKappaValue)) ALLOCATE(NodeKappaValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(ElementNodesScales)) ALLOCATE(ElementNodesScales(NumberOfElements,NodesPerElement(1)))
     IF(.NOT.ALLOCATED(ElementNodes)) ALLOCATE(ElementNodes(NumberOfElements,NodesPerElement(1)))
 
     CALL ENTERS("CMGUI OUTPUT",ERR,ERROR,*999)
 
-    FIELD=>REGION%equations_sets%equations_sets(1)%ptr%dependent%dependent_field
+    FIELD=>REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field
 
     NULLIFY(INTERPOLATION_PARAMETERS)
     NULLIFY(INTERPOLATED_POINT)
@@ -1105,17 +1155,17 @@ CONTAINS
     DO I=1,NumberOfElements
       DO J=1,NodesPerElement(1)
         ELEMENT_NUMBER=I
-        XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(1)%ptr%equations%interpolation% &
+        XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
           & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,1)-1.0)/(REGION%equations_sets% &
-          & equations_sets(1)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
+          & equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
           & %ptr%number_of_nodes_xi(1)-1.0)
-        XI_COORDINATES(2)=(REGION%equations_sets%equations_sets(1)%ptr%equations%interpolation% &
+        XI_COORDINATES(2)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
           & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,2)-1.0)/(REGION%equations_sets% &
-          & equations_sets(1)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
+          & equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
           & %ptr%number_of_nodes_xi(2)-1.0)
-        XI_COORDINATES(3)=(REGION%equations_sets%equations_sets(1)%ptr%equations%interpolation% &
+        XI_COORDINATES(3)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
           & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,3)-1.0)/(REGION%equations_sets% &
-          & equations_sets(1)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
+          & equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
           & %ptr%number_of_nodes_xi(3)-1.0)
         IF(NumberOfDimensions==2)THEN
           STOP 'Encas format only available for 3D hex and tets'
@@ -1129,23 +1179,23 @@ CONTAINS
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
           & INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
         CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,INTERPOLATED_POINT,ERR,ERROR,*999)
-        NodeXValue(K)=REGION%equations_sets%equations_sets(1)%ptr%geometry%geometric_field%variables(1) &
+        NodeXValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
           & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
-        NodeYValue(K)=REGION%equations_sets%equations_sets(1)%ptr%geometry%geometric_field%variables(1) &
+        NodeYValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
           & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
 
         IF(NumberOfDimensions==3)THEN
-          NodeZValue(K)=REGION%equations_sets%equations_sets(1)%ptr%geometry%geometric_field%variables(1) &
-            & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+          NodeZValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field% &
+            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
         END IF
 
-        NodeUValue(K)=REGION%equations_sets%equations_sets(1)%ptr%source%source_field%variables(1) &
+        NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field%variables(1) &
           & %parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K)
-        NodeVValue(K)=REGION%equations_sets%equations_sets(1)%ptr%source%source_field%variables(1) &
+        NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field%variables(1) &
           & %parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
 
         IF(NumberOfDimensions==3)THEN
-          NodeWValue(K)=REGION%equations_sets%equations_sets(1)%ptr%source%source_field%variables(1) &
+          NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field%variables(1) &
             & %parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
         END IF
 
@@ -1153,17 +1203,20 @@ CONTAINS
 ! ! !       NodeVValue(K)=INTERPOLATED_POINT%VALUES(2,1)
 ! ! !       NodeWValue(K)=INTERPOLATED_POINT%VALUES(3,1)
 
-        NodePValue(K)=REGION%equations_sets%equations_sets(1)%ptr%dependent%dependent_field%variables(1) &
-          & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
+        IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS)THEN
+          NodePValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
+        END IF
       END DO 
     END DO
 
     NodeMUValue=0.0_DP
     NodeRHOValue=0.0_DP
+    NodeKappaValue=0.0_DP
 
     IF( NumberOfDimensions==3 )THEN
       !For 3D, the following call works ...
-      lagrange_simplex=REGION%equations_sets%equations_sets(1)%ptr%equations% &
+      lagrange_simplex=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations% &
         & interpolation%geometric_interp_parameters%bases(1)%ptr%type
 !         lagrange_simplex=2
     ELSE
@@ -1197,7 +1250,7 @@ CONTAINS
 
 
 
-    CALL FLUID_MECHANICS_IO_WRITE_NODES_CMGUI(NAME)
+    CALL FLUID_MECHANICS_IO_WRITE_NODES_CMGUI(NAME,EQUATIONS_SET)
     CALL FLUID_MECHANICS_IO_WRITE_ELEMENTS_CMGUI(NAME)
     CALL FLUID_MECHANICS_IO_WRITE_DATA_ENCAS_BLOCK(NAME)
 
@@ -1255,13 +1308,14 @@ CONTAINS
   !
 
   !> Executes nodes writing process.
-  SUBROUTINE FLUID_MECHANICS_IO_WRITE_NODES_CMGUI(NAME)
+  SUBROUTINE FLUID_MECHANICS_IO_WRITE_NODES_CMGUI(NAME,EQUATIONS_SET)
 
     IMPLICIT NONE
 
     CHARACTER(14), INTENT(IN) :: NAME !<the prefix name of file.
     TYPE(VARYING_STRING) :: FILENAME !<the prefix name of file.
 !     CHARACTER :: FILENAME !<the prefix name of file.
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
     INTEGER(INTG):: I
     INTEGER(INTG) :: ERR
     TYPE(VARYING_STRING):: ERROR 
@@ -1349,9 +1403,20 @@ CONTAINS
         WRITE(14,'("    ", es25.16 )')NodeWValue(I)
       END IF
 
-      WRITE(14,'("    ", es25.16 )')NodePValue(I)
+      IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS)THEN
+        WRITE(14,'("    ", es25.16 )')NodePValue(I)
+      END IF
       WRITE(14,'("    ", es25.16 )')NodeMUValue(I)
       WRITE(14,'("    ", es25.16 )')NodeRHOValue(I)
+
+      IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS)THEN
+        IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE)THEN
+          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE)THEN
+            WRITE(14,'("    ", es25.16 )')NodeKappaValue(I)
+          END IF
+        END IF
+      END IF
+
 
       IF( ANALYTIC ) THEN
         WRITE(14,'("    ", es25.16 )')NodeUValue_analytic(I)
@@ -1359,14 +1424,18 @@ CONTAINS
         IF(NumberOfDimensions==3) THEN
           WRITE(14,'("    ", es25.16 )')NodeWValue_analytic(I)
         END IF
-        WRITE(14,'("    ", es25.16 )')NodePValue_analytic(I)
+        IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS)THEN
+          WRITE(14,'("    ", es25.16 )')NodePValue_analytic(I)
+        END IF
 
         WRITE(14,'("    ", es25.16 )')NodeUValue_error(I)
         WRITE(14,'("    ", es25.16 )')NodeVValue_error(I)
         IF(NumberOfDimensions==3) THEN
           WRITE(14,'("    ", es25.16 )')NodeWValue_error(I)
         END IF
-        WRITE(14,'("    ", es25.16 )')NodePValue_error(I)
+        IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS)THEN
+          WRITE(14,'("    ", es25.16 )')NodePValue_error(I)
+        END IF
       END IF
 
     END DO
@@ -2334,6 +2403,7 @@ CONTAINS
     REAL(DP), POINTER :: INPUT_VALUES(:)
     INTEGER(INTG):: NUMBER_OF_DIMENSIONS,INPUT_TYPE,TEST
     REAL(DP):: TIME, TIME_TOLERANCE, TIME_STEP_SIZE
+    REAL(DP) :: LENGTH_SCALE
 
     INTEGER(INTG):: ENDI,NUMBER_OF_TIME_STEPS,J, TIME_STEP
     CHARACTER(34) :: INPUT_FILE
@@ -2399,6 +2469,28 @@ CONTAINS
               OPEN(UNIT=J, FILE=INPUT_FILE,STATUS='unknown') 
               DO I=1,ENDI
                 READ(J,*) INPUT_VALUES(I)
+              ENDDO
+              CLOSE(J)
+            ENDIF
+          ENDDO
+        ELSE IF(INPUT_OPTION==2) THEN ! For Darcy, invoke the length scale (consistent with reading in the geometry data)
+          LENGTH_SCALE=1000.0_DP
+          TIME_STEP_SIZE=0.05_DP
+          NUMBER_OF_TIME_STEPS=22
+          TIME_TOLERANCE=0.00001_DP
+          ENDI=SIZE(INPUT_VALUES)
+          DO J=1,NUMBER_OF_TIME_STEPS
+            TIME_STEP=J
+            IF((TIME/TIME_STEP_SIZE<TIME_STEP+TIME_TOLERANCE).AND.(TIME/TIME_STEP_SIZE>TIME_STEP-TIME_TOLERANCE)) THEN
+              IF(J<10) THEN
+                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_0",I0,".dat")') J
+              ELSE IF(J<100) THEN
+                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_",I0,".dat")') J
+              ENDIF
+              OPEN(UNIT=J, FILE=INPUT_FILE,STATUS='unknown') 
+              DO I=1,ENDI
+                READ(J,*) INPUT_VALUES(I)
+                INPUT_VALUES(I) = LENGTH_SCALE * INPUT_VALUES(I)
               ENDDO
               CLOSE(J)
             ENDIF
