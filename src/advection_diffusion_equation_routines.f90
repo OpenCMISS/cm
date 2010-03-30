@@ -947,6 +947,7 @@ CONTAINS
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
+              WRITE(*,'(A)') "now check user specified field"
               !Check the user specified field
               CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
               CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DEPENDENT_TYPE,ERR,ERROR,*999)
@@ -1402,6 +1403,7 @@ CONTAINS
               IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_NO_SOURCE_ADVECTION_DIFFUSION_SUBTYPE .OR. &
                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_CONSTANT_SOURCE_ADVECTION_DIFFUSION_SUBTYPE .OR. &
                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE) THEN 
+                     WRITE(*,'(A)') "set time dependence"
                   CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_FIRST_ORDER_DYNAMIC,ERR,ERROR,*999)
               ELSEIF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_NO_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE .OR. &
                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_CONSTANT_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE .OR. &
@@ -1411,6 +1413,7 @@ CONTAINS
                 CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
               ENDIF
             ELSE
+                 WRITE(*,'(A)') "dependent field not finished"
               CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)

@@ -1134,6 +1134,7 @@ $(OBJECT_DIR)/diffusion_equation_routines.o	:	$(SOURCE_DIR)/diffusion_equation_r
 	$(OBJECT_DIR)/equations_matrices_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/fluid_mechanics_IO_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
