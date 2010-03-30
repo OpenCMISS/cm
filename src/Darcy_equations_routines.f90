@@ -2348,7 +2348,7 @@ CONTAINS
                 CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,2,SOLVER_ALE_DARCY,ERR,ERROR,*999)
 
 !---tob
-!                 IF(CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER>1) THEN
+                IF(CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER>1) THEN
                 !Since the solid's dependent field is initialized with the geometric field,
                 !this must not be read as the displacement field to move the mesh.
                 !This problem should only occur in the very beginning, i.e. first time step.
@@ -2356,7 +2356,7 @@ CONTAINS
                 !ALSO THIS DEPENDS ON THE ORDER IN WHICH SOLID AND DARCY ARE ADVANCED
                   !--- 1.1 Transfer solid displacement to Darcy geometric field
                   CALL DARCY_EQUATION_PRE_SOLVE_GET_SOLID_DISPLACEMENT(CONTROL_LOOP,SOLVER_ALE_DARCY,ERR,ERROR,*999)
-!                 END IF
+                END IF
 !---toe
 
                 !--- 1.2 Update the mesh (and calculate boundary velocities) PRIOR to solving for new material properties
@@ -4242,15 +4242,15 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                 END IF
 
 ! !===> This is just a test snippet of code to compare to former results. Will be removed shortly. ( \todo )
-                          GEOMETRIC_FIELD_DARCY=>EQUATIONS_SET_DARCY%GEOMETRY%GEOMETRIC_FIELD
-                          IF(ASSOCIATED(GEOMETRIC_FIELD_DARCY)) THEN
-                            ALPHA = 0.085_DP * sin( 2.0_DP * PI * CURRENT_TIME / 4.0_DP )
-
-                            CALL FIELD_PARAMETER_SETS_COPY(GEOMETRIC_FIELD_DARCY,FIELD_U_VARIABLE_TYPE, &
-                              & FIELD_INITIAL_VALUES_SET_TYPE,FIELD_MESH_DISPLACEMENT_SET_TYPE,ALPHA,ERR,ERROR,*999)
-                          ELSE
-                            CALL FLAG_ERROR("Geometric field is not associated.",ERR,ERROR,*999)
-                          ENDIF
+!                           GEOMETRIC_FIELD_DARCY=>EQUATIONS_SET_DARCY%GEOMETRY%GEOMETRIC_FIELD
+!                           IF(ASSOCIATED(GEOMETRIC_FIELD_DARCY)) THEN
+!                             ALPHA = 0.085_DP * sin( 2.0_DP * PI * CURRENT_TIME / 4.0_DP )
+! 
+!                             CALL FIELD_PARAMETER_SETS_COPY(GEOMETRIC_FIELD_DARCY,FIELD_U_VARIABLE_TYPE, &
+!                               & FIELD_INITIAL_VALUES_SET_TYPE,FIELD_MESH_DISPLACEMENT_SET_TYPE,ALPHA,ERR,ERROR,*999)
+!                           ELSE
+!                             CALL FLAG_ERROR("Geometric field is not associated.",ERR,ERROR,*999)
+!                           ENDIF
 ! !===<
 
                 IF(DIAGNOSTICS3) THEN
