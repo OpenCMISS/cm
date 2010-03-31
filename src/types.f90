@@ -851,6 +851,7 @@ MODULE TYPES
   TYPE FIELD_INTERPOLATION_PARAMETERS_TYPE
     TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to be interpolated.
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE !<A pointer to the field VARIABLE to be interpolated.
+    INTEGER(INTG) :: NUMBER_OF_XI !<The number of xi directions for the interpolation parameters.
     TYPE(BASIS_PTR_TYPE), ALLOCATABLE :: BASES(:) !<BASES(component_idx). An array to hold a pointer to the basis (if any) used for interpolating the component_idx'th component of the field variable.
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_PARAMETERS(:) !<NUMBER_OF_PARAMETERS(component_idx). The number of interpolation parameters used for interpolating the component_idx'th component of the field variable.
     REAL(DP), ALLOCATABLE :: PARAMETERS(:,:) !<PARAMETERS(ns,component_idx). The interpolation parameters used for interpolating the component_idx'th component of the field variable.
