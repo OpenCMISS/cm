@@ -4357,18 +4357,19 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: mesh_idx
+    INTEGER(INTG) :: DUMMY_ERR,mesh_idx
     TYPE(MESH_TYPE), POINTER :: NEW_MESH
     TYPE(MESH_PTR_TYPE), POINTER :: NEW_MESHES(:)
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
 
     NULLIFY(NEW_MESH)
     NULLIFY(NEW_MESHES)
 
-    CALL ENTERS("MESH_CREATE_START_GENERIC",ERR,ERROR,*999)
+    CALL ENTERS("MESH_CREATE_START_GENERIC",ERR,ERROR,*997)
 
     IF(ASSOCIATED(MESHES)) THEN
       IF(ASSOCIATED(MESH)) THEN
-        CALL FLAG_ERROR("Mesh is already associated.",ERR,ERROR,*998)
+        CALL FLAG_ERROR("Mesh is already associated.",ERR,ERROR,*997)
       ELSE
         CALL MESH_INITIALISE(NEW_MESH,ERR,ERROR,*999)
         !Set default mesh values
@@ -4393,15 +4394,15 @@ CONTAINS
         MESH=>NEW_MESH
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Meshes is not associated",ERR,ERROR,*998)
+      CALL FLAG_ERROR("Meshes is not associated.",ERR,ERROR,*997)
     ENDIF
       
     CALL EXITS("MESH_CREATE_START_GENERIC")
     RETURN
-999 IF(ASSOCIATED(NEW_MESH)) DEALLOCATE(NEW_MESH)
-    IF(ASSOCIATED(NEW_MESHES)) DEALLOCATE(NEW_MESHES)
+999 CALL MESH_FINALISE(NEW_MESH,DUMMY_ERR,DUMMY_ERROR,*998)
+998 IF(ASSOCIATED(NEW_MESHES)) DEALLOCATE(NEW_MESHES)
     NULLIFY(MESH)    
-998 CALL ERRORS("MESH_CREATE_START_GENERIC",ERR,ERROR)    
+997 CALL ERRORS("MESH_CREATE_START_GENERIC",ERR,ERROR)    
     CALL EXITS("MESH_CREATE_START_GENERIC")
     RETURN 1
    
@@ -4438,7 +4439,8 @@ CONTAINS
           CALL MESH_USER_NUMBER_FIND_GENERIC(USER_NUMBER,INTERFACE%MESHES,MESH,ERR,ERROR,*999)
           IF(ASSOCIATED(MESH)) THEN
             LOCAL_ERROR="Mesh number "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))// &
-              & " has already been created on interface number "//TRIM(NUMBER_TO_VSTRING(INTERFACE%USER_NUMBER,"*",ERR,ERROR))
+              & " has already been created on interface number "// &
+              & TRIM(NUMBER_TO_VSTRING(INTERFACE%USER_NUMBER,"*",ERR,ERROR))//"."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             IF(ASSOCIATED(INTERFACE%INTERFACES)) THEN
@@ -4448,15 +4450,15 @@ CONTAINS
                   IF(NUMBER_OF_DIMENSIONS>0) THEN
                     IF(NUMBER_OF_DIMENSIONS<=PARENT_REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS) THEN
                       CALL MESH_CREATE_START_GENERIC(INTERFACE%MESHES,USER_NUMBER,NUMBER_OF_DIMENSIONS,MESH,ERR,ERROR,*999)
-                      MESH%REGION=>PARENT_REGION
+                      MESH%INTERFACE=>INTERFACE
                     ELSE
                       LOCAL_ERROR="Number of mesh dimensions ("//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
                         & ") must be <= number of parent region dimensions ("// &
-                        & TRIM(NUMBER_TO_VSTRING(PARENT_REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))//")"
+                        & TRIM(NUMBER_TO_VSTRING(PARENT_REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))//")."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Number of mesh dimensions must be > 0",ERR,ERROR,*999)
+                    CALL FLAG_ERROR("Number of mesh dimensions must be > 0.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
                   CALL FLAG_ERROR("Parent region coordinate system is not associated.",ERR,ERROR,*999)
@@ -4475,7 +4477,7 @@ CONTAINS
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("MESH_CREATE_START_INTERFACE")
@@ -4516,7 +4518,7 @@ CONTAINS
           CALL MESH_USER_NUMBER_FIND_GENERIC(USER_NUMBER,REGION%MESHES,MESH,ERR,ERROR,*999)
           IF(ASSOCIATED(MESH)) THEN
             LOCAL_ERROR="Mesh number "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))// &
-              & " has already been created on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))
+              & " has already been created on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             IF(ASSOCIATED(REGION%COORDINATE_SYSTEM)) THEN
@@ -4527,15 +4529,15 @@ CONTAINS
                 ELSE
                   LOCAL_ERROR="Number of mesh dimensions ("//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
                     & ") must be <= number of region dimensions ("// &
-                    & TRIM(NUMBER_TO_VSTRING(REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))//")"
+                    & TRIM(NUMBER_TO_VSTRING(REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))//")."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Number of mesh dimensions must be > 0",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Number of mesh dimensions must be > 0.",ERR,ERROR,*999)
               ENDIF
             ELSE
               LOCAL_ERROR="The coordinate system on region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))// &
-                & " are not associated"
+                & " are not associated."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ENDIF
@@ -4546,7 +4548,7 @@ CONTAINS
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MESH_CREATE_START_REGION")
@@ -5677,9 +5679,10 @@ CONTAINS
     INTEGER(INTG) :: nn,NUMBER_OF_BAD_NODES,GLOBAL_NODE_NUMBER
     INTEGER(INTG), ALLOCATABLE :: GLOBAL_ELEMENT_NODES(:),BAD_NODES(:)
     LOGICAL :: ELEMENT_NODES_OK,NODE_EXISTS
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
     TYPE(NODES_TYPE), POINTER :: NODES
-    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION,REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET",ERR,ERROR,*999)
 
@@ -5689,49 +5692,73 @@ CONTAINS
       ELSE
         IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=ELEMENTS%NUMBER_OF_ELEMENTS) THEN
           IF(SIZE(USER_ELEMENT_NODES,1)==ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%BASIS%NUMBER_OF_NODES) THEN
-            IF(ASSOCIATED(ELEMENTS%MESH)) THEN
+            IF(ASSOCIATED(ELEMENTS%MESH)) THEN              
               REGION=>ELEMENTS%MESH%REGION
               IF(ASSOCIATED(REGION)) THEN
                 NODES=>REGION%NODES
-                IF(ASSOCIATED(NODES)) THEN
-                  ELEMENT_NODES_OK=.TRUE.
-                  ALLOCATE(GLOBAL_ELEMENT_NODES(ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%BASIS%NUMBER_OF_NODES),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global element nodes.",ERR,ERROR,*999)
-                  ALLOCATE(BAD_NODES(ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%BASIS%NUMBER_OF_NODES),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate bad nodes.",ERR,ERROR,*999)
-                  NUMBER_OF_BAD_NODES=0
-                  DO nn=1,ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%BASIS%NUMBER_OF_NODES
-                    CALL NODE_CHECK_EXISTS(NODES,USER_ELEMENT_NODES(nn),NODE_EXISTS,GLOBAL_NODE_NUMBER,ERR,ERROR,*999)
-                    IF(NODE_EXISTS) THEN
-                      GLOBAL_ELEMENT_NODES(nn)=GLOBAL_NODE_NUMBER
-                    ELSE
-                      NUMBER_OF_BAD_NODES=NUMBER_OF_BAD_NODES+1
-                      BAD_NODES(NUMBER_OF_BAD_NODES)=USER_ELEMENT_NODES(nn)
-                      ELEMENT_NODES_OK=.FALSE.
-                    ENDIF
-                  ENDDO !nn
-                  IF(ELEMENT_NODES_OK) THEN
-                    ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%USER_ELEMENT_NODES=USER_ELEMENT_NODES
-                    ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%GLOBAL_ELEMENT_NODES=GLOBAL_ELEMENT_NODES
+              ELSE
+                INTERFACE=>ELEMENTS%MESH%INTERFACE
+                IF(ASSOCIATED(INTERFACE)) THEN
+                  NODES=>INTERFACE%NODES
+                  PARENT_REGION=>INTERFACE%PARENT_REGION
+                  IF(.NOT.ASSOCIATED(PARENT_REGION)) CALL FLAG_ERROR("Mesh interface has no parent region.",ERR,ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("Elements mesh has no associated region or interface.",ERR,ERROR,*999)
+                ENDIF    
+              ENDIF
+              IF(ASSOCIATED(NODES)) THEN
+                ELEMENT_NODES_OK=.TRUE.
+                ALLOCATE(GLOBAL_ELEMENT_NODES(ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%BASIS%NUMBER_OF_NODES),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global element nodes.",ERR,ERROR,*999)
+                ALLOCATE(BAD_NODES(ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%BASIS%NUMBER_OF_NODES),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate bad nodes.",ERR,ERROR,*999)
+                NUMBER_OF_BAD_NODES=0
+                DO nn=1,ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%BASIS%NUMBER_OF_NODES
+                  CALL NODE_CHECK_EXISTS(NODES,USER_ELEMENT_NODES(nn),NODE_EXISTS,GLOBAL_NODE_NUMBER,ERR,ERROR,*999)
+                  IF(NODE_EXISTS) THEN
+                    GLOBAL_ELEMENT_NODES(nn)=GLOBAL_NODE_NUMBER
                   ELSE
-                    IF(NUMBER_OF_BAD_NODES==1) THEN
+                    NUMBER_OF_BAD_NODES=NUMBER_OF_BAD_NODES+1
+                    BAD_NODES(NUMBER_OF_BAD_NODES)=USER_ELEMENT_NODES(nn)
+                    ELEMENT_NODES_OK=.FALSE.
+                  ENDIF
+                ENDDO !nn
+                IF(ELEMENT_NODES_OK) THEN
+                  ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%USER_ELEMENT_NODES=USER_ELEMENT_NODES
+                  ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%GLOBAL_ELEMENT_NODES=GLOBAL_ELEMENT_NODES
+                ELSE
+                  IF(NUMBER_OF_BAD_NODES==1) THEN
+                    IF(ASSOCIATED(REGION)) THEN
                       LOCAL_ERROR="The element user node number of "//TRIM(NUMBER_TO_VSTRING(BAD_NODES(1),"*",ERR,ERROR))// &
                         & " is not defined in region "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
                     ELSE
-                      LOCAL_ERROR="The element user node number of "//TRIM(NUMBER_TO_VSTRING(BAD_NODES(1),"*",ERR,ERROR))
-                      DO nn=2,NUMBER_OF_BAD_NODES-1
-                        LOCAL_ERROR=LOCAL_ERROR//","//TRIM(NUMBER_TO_VSTRING(BAD_NODES(nn),"*",ERR,ERROR))
-                      ENDDO !nn
-                      LOCAL_ERROR=LOCAL_ERROR//" & "//TRIM(NUMBER_TO_VSTRING(BAD_NODES(NUMBER_OF_BAD_NODES),"*",ERR,ERROR))// &
-                        & " are not defined in region "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
+                      LOCAL_ERROR="The element user node number of "//TRIM(NUMBER_TO_VSTRING(BAD_NODES(1),"*",ERR,ERROR))// &
+                        & " is not defined in interface number "//TRIM(NUMBER_TO_VSTRING(INTERFACE%USER_NUMBER,"*",ERR,ERROR))// &
+                        & " of parent region number "//TRIM(NUMBER_TO_VSTRING(PARENT_REGION%USER_NUMBER,"*",ERR,ERROR))//"."
                     ENDIF
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ELSE
+                    LOCAL_ERROR="The element user node number of "//TRIM(NUMBER_TO_VSTRING(BAD_NODES(1),"*",ERR,ERROR))
+                    DO nn=2,NUMBER_OF_BAD_NODES-1
+                      LOCAL_ERROR=LOCAL_ERROR//","//TRIM(NUMBER_TO_VSTRING(BAD_NODES(nn),"*",ERR,ERROR))
+                    ENDDO !nn
+                    IF(ASSOCIATED(REGION)) THEN
+                      LOCAL_ERROR=LOCAL_ERROR//" & "//TRIM(NUMBER_TO_VSTRING(BAD_NODES(NUMBER_OF_BAD_NODES),"*",ERR,ERROR))// &
+                        & " are not defined in region number "//TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
+                    ELSE
+                      LOCAL_ERROR=LOCAL_ERROR//" & "//TRIM(NUMBER_TO_VSTRING(BAD_NODES(NUMBER_OF_BAD_NODES),"*",ERR,ERROR))// &
+                        & " are not defined in interface number "// &
+                        & TRIM(NUMBER_TO_VSTRING(INTERFACE%USER_NUMBER,"*",ERR,ERROR))//" of parent region number "// &
+                        &  TRIM(NUMBER_TO_VSTRING(PARENT_REGION%USER_NUMBER,"*",ERR,ERROR))//"."
+                    ENDIF
                   ENDIF
-                ELSE
-                  CALL FLAG_ERROR("The elements mesh region does not have any associated nodes.",ERR,ERROR,*999)
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The elements mesh region is not associated.",ERR,ERROR,*999)
+                IF(ASSOCIATED(REGION)) THEN
+                  CALL FLAG_ERROR("The elements mesh region does not have any associated nodes.",ERR,ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("The elements mesh interface does not have any associated nodes.",ERR,ERROR,*999) 
+                ENDIF
               ENDIF
             ELSE
               CALL FLAG_ERROR("The elements do not have an associated mesh.",ERR,ERROR,*999)
@@ -6470,9 +6497,11 @@ CONTAINS
     INTEGER(INTG) :: DUMMY_ERR,INSERT_STATUS,MESH_NUMBER,NUMBER_OF_MESH_NODES,ne,nn,np  
     INTEGER(INTG), POINTER :: MESH_NODES(:)
     TYPE(BASIS_TYPE), POINTER :: BASIS
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
     TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS
-    TYPE(MESH_NODES_TYPE), POINTER :: NODES
+    TYPE(MESH_NODES_TYPE), POINTER :: MESHNODES
+    TYPE(NODES_TYPE), POINTER :: NODES
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(TREE_TYPE), POINTER :: MESH_NODES_TREE
     TYPE(TREE_NODE_TYPE), POINTER :: TREE_NODE
@@ -6484,95 +6513,107 @@ CONTAINS
     CALL ENTERS("MESH_TOPOLOGY_NODES_CALCULATE",ERR,ERROR,*998)
 
     IF(ASSOCIATED(TOPOLOGY)) THEN
-      IF(ASSOCIATED(TOPOLOGY%ELEMENTS)) THEN
-        ELEMENTS=>TOPOLOGY%ELEMENTS
-        IF(ASSOCIATED(TOPOLOGY%NODES)) THEN
-          NODES=>TOPOLOGY%NODES
-          IF(ASSOCIATED(TOPOLOGY%MESH)) THEN
-            MESH=>TOPOLOGY%MESH
-            IF(ASSOCIATED(MESH%REGION)) THEN
-              REGION=>MESH%REGION
-              IF(ASSOCIATED(REGION%NODES)) THEN
-                IF(ASSOCIATED(TOPOLOGY%NODES%NODES)) THEN
-                  LOCAL_ERROR="Mesh number "//TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))// &
-                    & " already has associated mesh topology nodes"
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
-                ELSE
-                  !Work out what nodes are in the mesh
-                  CALL TREE_CREATE_START(MESH_NODES_TREE,ERR,ERROR,*999)
-                  CALL TREE_INSERT_TYPE_SET(MESH_NODES_TREE,TREE_NO_DUPLICATES_ALLOWED,ERR,ERROR,*999)
-                  CALL TREE_CREATE_FINISH(MESH_NODES_TREE,ERR,ERROR,*999)
-                  DO ne=1,ELEMENTS%NUMBER_OF_ELEMENTS
-                    BASIS=>ELEMENTS%ELEMENTS(ne)%BASIS
-                    DO nn=1,BASIS%NUMBER_OF_NODES
-                      np=ELEMENTS%ELEMENTS(ne)%GLOBAL_ELEMENT_NODES(nn)
-                      CALL TREE_ITEM_INSERT(MESH_NODES_TREE,np,np,INSERT_STATUS,ERR,ERROR,*999)
-                    ENDDO !nn
-                  ENDDO !ne
-                  CALL TREE_DETACH_AND_DESTROY(MESH_NODES_TREE,NUMBER_OF_MESH_NODES,MESH_NODES,ERR,ERROR,*999)
-                  !Set up the mesh nodes.
-                  ALLOCATE(NODES%NODES(NUMBER_OF_MESH_NODES),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate mesh topology nodes nodes.",ERR,ERROR,*999)
-                  CALL TREE_CREATE_START(NODES%NODES_TREE,ERR,ERROR,*999)
-                  CALL TREE_INSERT_TYPE_SET(NODES%NODES_TREE,TREE_NO_DUPLICATES_ALLOWED,ERR,ERROR,*999)
-                  CALL TREE_CREATE_FINISH(NODES%NODES_TREE,ERR,ERROR,*999) 
-                  DO np=1,NUMBER_OF_MESH_NODES
-                    CALL MESH_TOPOLOGY_NODE_INITIALISE(NODES%NODES(np),ERR,ERROR,*999)
-                    NODES%NODES(np)%MESH_NUMBER=np
-                    NODES%NODES(np)%GLOBAL_NUMBER=MESH_NODES(np)
-                    NODES%NODES(np)%USER_NUMBER=REGION%NODES%NODES(MESH_NODES(np))%USER_NUMBER
-                    CALL TREE_ITEM_INSERT(NODES%NODES_TREE,MESH_NODES(np),np,INSERT_STATUS,ERR,ERROR,*999)
-                  ENDDO !np
-                  NODES%NUMBER_OF_NODES=NUMBER_OF_MESH_NODES
-                  IF(ASSOCIATED(MESH_NODES)) DEALLOCATE(MESH_NODES)
-                  !Now recalculate the mesh element nodes
-                  DO ne=1,ELEMENTS%NUMBER_OF_ELEMENTS
-                    BASIS=>ELEMENTS%ELEMENTS(ne)%BASIS
-                    ALLOCATE(ELEMENTS%ELEMENTS(ne)%MESH_ELEMENT_NODES(BASIS%NUMBER_OF_NODES),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate mesh topology elements mesh element nodes.",ERR,ERROR,*999)
-                    DO nn=1,BASIS%NUMBER_OF_NODES
-                      np=ELEMENTS%ELEMENTS(ne)%GLOBAL_ELEMENT_NODES(nn)
-                      NULLIFY(TREE_NODE)
-                      CALL TREE_SEARCH(NODES%NODES_TREE,np,TREE_NODE,ERR,ERROR,*999)
-                      IF(ASSOCIATED(TREE_NODE)) THEN
-                        CALL TREE_NODE_VALUE_GET(NODES%NODES_TREE,TREE_NODE,MESH_NUMBER,ERR,ERROR,*999)
-                        ELEMENTS%ELEMENTS(ne)%MESH_ELEMENT_NODES(nn)=MESH_NUMBER
-                      ELSE
-                        LOCAL_ERROR="Could not find global node "//TRIM(NUMBER_TO_VSTRING(np,"*",ERR,ERROR))//" (user node "// &
-                          & TRIM(NUMBER_TO_VSTRING(REGION%NODES%NODES(np)%USER_NUMBER,"*",ERR,ERROR))//") in the mesh nodes."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                      ENDIF
-                    ENDDO !nn
-                  ENDDO !ne                  
-                ENDIF
+      ELEMENTS=>TOPOLOGY%ELEMENTS
+      IF(ASSOCIATED(ELEMENTS)) THEN
+        MESHNODES=>TOPOLOGY%NODES
+        IF(ASSOCIATED(MESHNODES)) THEN
+          MESH=>TOPOLOGY%MESH
+          IF(ASSOCIATED(MESH)) THEN
+            NULLIFY(INTERFACE)
+            REGION=>MESH%REGION
+            IF(ASSOCIATED(REGION)) THEN
+              NODES=>REGION%NODES
+            ELSE
+              INTERFACE=>MESH%INTERFACE
+              IF(ASSOCIATED(INTERFACE)) THEN
+                NODES=>INTERFACE%NODES
               ELSE
                 LOCAL_ERROR="Mesh number "//TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))// &
-                & " does not have any nodes associated with the mesh region"
+                  & " does not have an associated region or interface."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ENDIF
+            IF(ASSOCIATED(NODES)) THEN
+              IF(ASSOCIATED(MESHNODES%NODES)) THEN
+                LOCAL_ERROR="Mesh number "//TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))// &
+                  & " already has associated mesh topology nodes."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
+              ELSE
+                !Work out what nodes are in the mesh
+                CALL TREE_CREATE_START(MESH_NODES_TREE,ERR,ERROR,*999)
+                CALL TREE_INSERT_TYPE_SET(MESH_NODES_TREE,TREE_NO_DUPLICATES_ALLOWED,ERR,ERROR,*999)
+                CALL TREE_CREATE_FINISH(MESH_NODES_TREE,ERR,ERROR,*999)
+                DO ne=1,ELEMENTS%NUMBER_OF_ELEMENTS
+                  BASIS=>ELEMENTS%ELEMENTS(ne)%BASIS
+                  DO nn=1,BASIS%NUMBER_OF_NODES
+                    np=ELEMENTS%ELEMENTS(ne)%GLOBAL_ELEMENT_NODES(nn)
+                    CALL TREE_ITEM_INSERT(MESH_NODES_TREE,np,np,INSERT_STATUS,ERR,ERROR,*999)
+                  ENDDO !nn
+                ENDDO !ne
+                CALL TREE_DETACH_AND_DESTROY(MESH_NODES_TREE,NUMBER_OF_MESH_NODES,MESH_NODES,ERR,ERROR,*999)
+                !Set up the mesh nodes.
+                ALLOCATE(MESHNODES%NODES(NUMBER_OF_MESH_NODES),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate mesh topology nodes nodes.",ERR,ERROR,*999)
+                CALL TREE_CREATE_START(MESHNODES%NODES_TREE,ERR,ERROR,*999)
+                CALL TREE_INSERT_TYPE_SET(MESHNODES%NODES_TREE,TREE_NO_DUPLICATES_ALLOWED,ERR,ERROR,*999)
+                CALL TREE_CREATE_FINISH(MESHNODES%NODES_TREE,ERR,ERROR,*999) 
+                DO np=1,NUMBER_OF_MESH_NODES
+                  CALL MESH_TOPOLOGY_NODE_INITIALISE(MESHNODES%NODES(np),ERR,ERROR,*999)
+                  MESHNODES%NODES(np)%MESH_NUMBER=np
+                  MESHNODES%NODES(np)%GLOBAL_NUMBER=MESH_NODES(np)
+                  MESHNODES%NODES(np)%USER_NUMBER=NODES%NODES(MESH_NODES(np))%USER_NUMBER
+                  CALL TREE_ITEM_INSERT(MESHNODES%NODES_TREE,MESH_NODES(np),np,INSERT_STATUS,ERR,ERROR,*999)
+                ENDDO !np
+                MESHNODES%NUMBER_OF_NODES=NUMBER_OF_MESH_NODES
+                IF(ASSOCIATED(MESH_NODES)) DEALLOCATE(MESH_NODES)
+                !Now recalculate the mesh element nodes
+                DO ne=1,ELEMENTS%NUMBER_OF_ELEMENTS
+                  BASIS=>ELEMENTS%ELEMENTS(ne)%BASIS
+                  ALLOCATE(ELEMENTS%ELEMENTS(ne)%MESH_ELEMENT_NODES(BASIS%NUMBER_OF_NODES),STAT=ERR)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate mesh topology elements mesh element nodes.",ERR,ERROR,*999)
+                  DO nn=1,BASIS%NUMBER_OF_NODES
+                    np=ELEMENTS%ELEMENTS(ne)%GLOBAL_ELEMENT_NODES(nn)
+                    NULLIFY(TREE_NODE)
+                    CALL TREE_SEARCH(MESHNODES%NODES_TREE,np,TREE_NODE,ERR,ERROR,*999)
+                    IF(ASSOCIATED(TREE_NODE)) THEN
+                      CALL TREE_NODE_VALUE_GET(MESHNODES%NODES_TREE,TREE_NODE,MESH_NUMBER,ERR,ERROR,*999)
+                      ELEMENTS%ELEMENTS(ne)%MESH_ELEMENT_NODES(nn)=MESH_NUMBER
+                    ELSE
+                      LOCAL_ERROR="Could not find global node "//TRIM(NUMBER_TO_VSTRING(np,"*",ERR,ERROR))//" (user node "// &
+                        & TRIM(NUMBER_TO_VSTRING(NODES%NODES(np)%USER_NUMBER,"*",ERR,ERROR))//") in the mesh nodes."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                  ENDDO !nn
+                ENDDO !ne                  
               ENDIF
             ELSE
-              LOCAL_ERROR="Mesh number "//TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))// &
-                & " does not have an associated region"
+              IF(ASSOCIATED(REGION)) THEN
+                LOCAL_ERROR="Mesh number "//TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))// &
+                  & " does not have any nodes associated with the mesh region."
+              ELSE
+                LOCAL_ERROR="Mesh number "//TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))// &
+                  & " does not have any nodes associated with the mesh interface."
+              ENDIF
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Mesh topology mesh is not associated",ERR,ERROR,*998)
+            CALL FLAG_ERROR("Mesh topology mesh is not associated.",ERR,ERROR,*998)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Mesh topology nodes is not associated",ERR,ERROR,*998)
+          CALL FLAG_ERROR("Mesh topology nodes is not associated.",ERR,ERROR,*998)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Mesh topology elements is not associated",ERR,ERROR,*998)
+        CALL FLAG_ERROR("Mesh topology elements is not associated.",ERR,ERROR,*998)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Mesh topology is not associated",ERR,ERROR,*998)
+      CALL FLAG_ERROR("Mesh topology is not associated.",ERR,ERROR,*998)
     ENDIF
     
     IF(DIAGNOSTICS1) THEN
-      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Number of mesh global nodes = ",NODES%NUMBER_OF_NODES,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Number of mesh global nodes = ",MESHNODES%NUMBER_OF_NODES,ERR,ERROR,*999)
       DO np=1,NODES%NUMBER_OF_NODES
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Mesh global node number = ",np,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Global node number = ",NODES%NODES(np)%GLOBAL_NUMBER, &
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Global node number = ",MESHNODES%NODES(np)%GLOBAL_NUMBER, &
           & ERR,ERROR,*999)        
       ENDDO !np
     ENDIF
@@ -6918,7 +6959,7 @@ CONTAINS
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the mesh to find
-    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<The interface containing the mesh
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface containing the mesh
     TYPE(MESH_TYPE), POINTER :: MESH !<On return, a pointer to the mesh of the specified user number. In no mesh with the specified user number exists the pointer is returned NULL. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -6993,7 +7034,7 @@ CONTAINS
       ENDDO !mesh_idx
       DEALLOCATE(MESHES)
     ELSE
-      CALL FLAG_ERROR("Meshes is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Meshes is not associated.",ERR,ERROR,*999)
     ENDIF
  
     CALL EXITS("MESHES_FINALISE")
@@ -7016,21 +7057,26 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
 
-    CALL ENTERS("MESHES_INITIALISE_GENERIC",ERR,ERROR,*999)
+    CALL ENTERS("MESHES_INITIALISE_GENERIC",ERR,ERROR,*998)
 
     IF(ASSOCIATED(MESHES)) THEN
+      CALL FLAG_ERROR("Meshes is already associated.",ERR,ERROR,*998)
+    ELSE
+      ALLOCATE(MESHES,STAT=ERR)
+      IF(ERR/=0) CALL FLAG_ERROR("Meshes could not be allocated",ERR,ERROR,*999)
       NULLIFY(MESHES%REGION)
       NULLIFY(MESHES%INTERFACE)
       MESHES%NUMBER_OF_MESHES=0
       NULLIFY(MESHES%MESHES)
-    ELSE
-      CALL FLAG_ERROR("Meshes is not associated",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("MESHES_INITIALISE_GENERIC")
     RETURN
-999 CALL ERRORS("MESHES_INITIALISE_GENERIC",ERR,ERROR)
+999 CALL MESHES_FINALISE(MESHES,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("MESHES_INITIALISE_GENERIC",ERR,ERROR)
     CALL EXITS("MESHES_INITIALISE_GENERIC")
     RETURN 1
   END SUBROUTINE MESHES_INITIALISE_GENERIC
@@ -7057,8 +7103,6 @@ CONTAINS
           & " already has a mesh associated"
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ELSE
-        ALLOCATE(INTERFACE%MESHES,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Interface meshes could not be allocated",ERR,ERROR,*999)
         CALL MESHES_INITIALISE_GENERIC(INTERFACE%MESHES,ERR,ERROR,*999)
         INTERFACE%MESHES%INTERFACE=>INTERFACE
       ENDIF
@@ -7095,8 +7139,6 @@ CONTAINS
           & " already has a mesh associated"
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ELSE
-        ALLOCATE(REGION%MESHES,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Region meshes could not be allocated",ERR,ERROR,*999)
         CALL MESHES_INITIALISE_GENERIC(REGION%MESHES,ERR,ERROR,*999)
         REGION%MESHES%REGION=>REGION
       ENDIF

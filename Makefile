@@ -723,6 +723,11 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/Helmholtz_equations_routines.o \
 	$(OBJECT_DIR)/history_routines.o \
 	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/interface_routines.o \
+	$(OBJECT_DIR)/interface_conditions_routines.o \
+	$(OBJECT_DIR)/interface_equations_routines.o \
+	$(OBJECT_DIR)/interface_mapping_routines.o \
+	$(OBJECT_DIR)/interface_matrices_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/Laplace_equations_routines.o \
@@ -1310,11 +1315,50 @@ $(OBJECT_DIR)/history_routines.o	:	$(SOURCE_DIR)/history_routines.f90 \
 $(OBJECT_DIR)/interface_routines.o	:	$(SOURCE_DIR)/interface_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/generated_mesh_routines.o \
 	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/interface_conditions_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/mesh_routines.o \
 	$(OBJECT_DIR)/node_routines.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/interface_conditions_routines.o	:	$(SOURCE_DIR)/interface_conditions_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/interface_equations_routines.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/interface_equations_routines.o	:	$(SOURCE_DIR)/interface_equations_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/interface_mapping_routines.o \
+	$(OBJECT_DIR)/interface_matrices_routines.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/interface_mapping_routines.o	:	$(SOURCE_DIR)/interface_mapping_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/interface_matrices_routines.o	:	$(SOURCE_DIR)/interface_matrices_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/distributed_matrix_vector.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 
@@ -1539,7 +1583,9 @@ $(OBJECT_DIR)/region_routines.o	:	$(SOURCE_DIR)/region_routines.f90 \
 	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/equations_set_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/generated_mesh_routines.o \
 	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/interface_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/mesh_routines.o \

@@ -101,8 +101,6 @@ CONTAINS
 
     !Finalise the problems
     CALL PROBLEMS_FINALISE(ERR,ERROR,*999)
-    !Finalise the generated mesh
-    CALL GENERATED_MESHES_FINALISE(ERR,ERROR,*999)
     !Finalise the regions
     CALL REGIONS_FINALISE(ERR,ERROR,*999)
     !Finalise the coordinate systems
@@ -145,8 +143,6 @@ CONTAINS
       CALL COORDINATE_SYSTEMS_INITIALISE(ERR,ERROR,*999)
       !Initialise the regions 
       CALL REGIONS_INITIALISE(WORLD_REGION,ERR,ERROR,*999)
-      !Initialise the generated_mesh
-      CALL GENERATED_MESHES_INITIALISE(ERR,ERROR,*999)
       !Initialise the problems
       CALL PROBLEMS_INITIALISE(ERR,ERROR,*999)
       

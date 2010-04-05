@@ -390,7 +390,9 @@ MODULE SOLVER_ROUTINES
   
   PUBLIC SOLVER_EQUATIONS_EQUATIONS_SET_ADD
 
-  PUBLIC SOLVER_EQUATIONS_LINEARITY_TYPE_SET
+  PUBLIC SOLVER_EQUATIONS_INTERFACE_CONDITION_ADD
+
+ PUBLIC SOLVER_EQUATIONS_LINEARITY_TYPE_SET
 
   PUBLIC SOLVER_EQUATIONS_SPARSITY_TYPE_SET
   
@@ -4603,6 +4605,68 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE SOLVER_EQUATIONS_INITIALISE
+        
+  !
+  !================================================================================================================================
+  !
+
+  !>Adds an interface condition to the solver equations. \see OPENCMISS::CMISSSolverEquationsInterfaceConditionAdd
+  SUBROUTINE SOLVER_EQUATIONS_INTERFACE_CONDITION_ADD(SOLVER_EQUATIONS,INTERFACE_CONDITION,INTERFACE_CONDITION_INDEX,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer the solver equations to add the interface condition to.
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION !<A pointer to the interface condition to add
+    INTEGER(INTG), INTENT(OUT) :: INTERFACE_CONDITION_INDEX !<On exit, the index of the interface condition that has been added
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("SOLVER_EQUATIONS_INTERFACE_CONDITION_ADD",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+      IF(SOLVER_EQUATIONS%SOLVER_EQUATIONS_FINISHED) THEN
+        CALL FLAG_ERROR("Solver equations has already been finished.",ERR,ERROR,*999)
+      ELSE
+        SOLVER=>SOLVER_EQUATIONS%SOLVER
+        IF(ASSOCIATED(SOLVER)) THEN
+          IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
+            CALL FLAG_ERROR("Can not add an equations set for a solver that has been linked.",ERR,ERROR,*999)
+          ELSE
+            SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+            IF(ASSOCIATED(SOLVER_MAPPING)) THEN          
+              IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+                INTERFACE_EQUATIONS=>INTERFACE_CONDITION%INTERFACE_EQUATIONS
+                IF(ASSOCIATED(INTERFACE_EQUATIONS)) THEN
+                  CALL SOLVER_MAPPING_INTERFACE_CONDITION_ADD(SOLVER_MAPPING,INTERFACE_CONDITION,INTERFACE_CONDITION_INDEX, &
+                    & ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Interface condition interface equations is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Interface condition is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Solver equations solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("SOLVER_EQUATIONS_INTERFACE_CONDITION_ADD")
+    RETURN
+999 CALL ERRORS("SOLVER_EQUATIONS_INTERFACE_CONDITION_ADD",ERR,ERROR)    
+    CALL EXITS("SOLVER_EQUATIONS_INTERFACE_CONDITION_ADD")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_EQUATIONS_INTERFACE_CONDITION_ADD
         
   !
   !================================================================================================================================

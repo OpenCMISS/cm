@@ -234,6 +234,7 @@ CONTAINS
             ENDIF
           ELSE
             !Check the user number has not already been used for a field in this region.
+            NULLIFY(FIELD)
             CALL FIELD_USER_NUMBER_FIND(ANALYTIC_FIELD_USER_NUMBER,REGION,FIELD,ERR,ERROR,*999)
             IF(ASSOCIATED(FIELD)) THEN
               LOCAL_ERROR="The specified analytic field user number of "// &
@@ -2456,6 +2457,7 @@ CONTAINS
             ENDIF
           ELSE
             !Check the user number has not already been used for a field in this region.
+            NULLIFY(FIELD)
             CALL FIELD_USER_NUMBER_FIND(INDEPENDENT_FIELD_USER_NUMBER,REGION,FIELD,ERR,ERROR,*999)
             IF(ASSOCIATED(FIELD)) THEN
               LOCAL_ERROR="The specified independent field user number of "// &
@@ -2823,6 +2825,7 @@ CONTAINS
             ENDIF
           ELSE
             !Check the user number has not already been used for a field in this region.
+            NULLIFY(FIELD)
             CALL FIELD_USER_NUMBER_FIND(MATERIALS_FIELD_USER_NUMBER,REGION,FIELD,ERR,ERROR,*999)
             IF(ASSOCIATED(FIELD)) THEN
               LOCAL_ERROR="The specified materials field user number of "// &
@@ -3083,6 +3086,7 @@ CONTAINS
             ENDIF
           ELSE
             !Check the user number has not already been used for a field in this region.
+            NULLIFY(FIELD)
             CALL FIELD_USER_NUMBER_FIND(DEPENDENT_FIELD_USER_NUMBER,REGION,FIELD,ERR,ERROR,*999)
             IF(ASSOCIATED(FIELD)) THEN
               LOCAL_ERROR="The specified dependent field user number of "// &
@@ -3242,8 +3246,6 @@ CONTAINS
         CALL BIOELECTRIC_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_MODAL_CLASS)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE(EQUATIONS_SET_INTERFACE_CLASS)  ! <<>>
-        CALL INTERFACE_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)  ! <<>>
       CASE DEFAULT
         LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))//" is not valid."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -4462,6 +4464,7 @@ CONTAINS
             ENDIF
           ELSE
             !Check the user number has not already been used for a field in this region.
+            NULLIFY(FIELD)
             CALL FIELD_USER_NUMBER_FIND(SOURCE_FIELD_USER_NUMBER,REGION,FIELD,ERR,ERROR,*999)
             IF(ASSOCIATED(FIELD)) THEN
               LOCAL_ERROR="The specified source field user number of "// &
@@ -4680,8 +4683,6 @@ CONTAINS
           CALL BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_SET(EQUATIONS_SET,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
         CASE(EQUATIONS_SET_MODAL_CLASS)
           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-        CASE(EQUATIONS_SET_INTERFACE_CLASS)  ! <<>>
-          CALL INTERFACE_EQUATIONS_SET_CLASS_TYPE_SET(EQUATIONS_SET,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)   ! <<>>
         CASE DEFAULT
           LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_CLASS,"*",ERR,ERROR))//" is not valid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -4746,7 +4747,7 @@ CONTAINS
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("EQUATIONS_SET_USER_NUMBER_FIND")

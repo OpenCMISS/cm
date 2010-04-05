@@ -66,6 +66,9 @@ MODULE OPENCMISS
   USE GENERATED_MESH_ROUTINES
   USE HISTORY_ROUTINES
   USE INPUT_OUTPUT
+  USE INTERFACE_ROUTINES
+  USE INTERFACE_CONDITIONS_ROUTINES
+  USE INTERFACE_EQUATIONS_ROUTINES
   USE ISO_C_BINDING
   USE ISO_VARYING_STRING
   USE KINDS
@@ -152,6 +155,30 @@ MODULE OPENCMISS
     TYPE(HISTORY_TYPE), POINTER :: HISTORY
   END TYPE CMISSHistoryType
   
+  !>Contains information about an interface.
+  TYPE CMISSInterfaceType
+    PRIVATE
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+  END TYPE CMISSInterfaceType
+  
+  !>Contains information about an interface condition.
+  TYPE CMISSInterfaceConditionType
+    PRIVATE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+  END TYPE CMISSInterfaceConditionType
+  
+  !>Contains information about an interface condition.
+  TYPE CMISSInterfaceEquationsType
+    PRIVATE
+    TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS
+  END TYPE CMISSInterfaceEquationsType
+  
+  !>Contains information on an interfaces meshes connectivity.
+  TYPE CMISSInterfaceMeshesConnectivityType
+    PRIVATE
+    TYPE(INTERFACE_MESHES_CONNECTIVITY_TYPE), POINTER :: MESHES_CONNECTIVITY
+  END TYPE CMISSInterfaceMeshesConnectivityType
+
   !>Contains information on a mesh defined on a region.
   TYPE CMISSMeshType
     PRIVATE
@@ -237,6 +264,15 @@ MODULE OPENCMISS
   PUBLIC CMISSGeneratedMeshType,CMISSGeneratedMeshTypeFinalise,CMISSGeneratedMeshTypeInitialise
 
   PUBLIC CMISSHistoryType,CMISSHistoryTypeFinalise,CMISSHistoryTypeInitialise
+
+  PUBLIC CMISSInterfaceType,CMISSInterfaceTypeFinalise,CMISSInterfaceTypeInitialise
+
+  PUBLIC CMISSInterfaceConditionType,CMISSInterfaceConditionTypeFinalise,CMISSInterfaceConditionTypeInitialise
+
+  PUBLIC CMISSInterfaceEquationsType,CMISSInterfaceEquationsTypeFinalise,CMISSInterfaceEquationsTypeInitialise
+
+  PUBLIC CMISSInterfaceMeshesConnectivityType,CMISSInterfaceMeshesConnectivityTypeFinalise, &
+    & CMISSInterfaceMeshesConnectivityTypeInitialise
 
   PUBLIC CMISSMeshType,CMISSMeshTypeFinalise,CMISSMeshTypeInitialise
 
@@ -1891,7 +1927,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   !>Starts the creation of a field. \see OPENCMISS::CMISSFieldCreateFinish
   INTERFACE CMISSFieldCreateStart
     MODULE PROCEDURE CMISSFieldCreateStartNumber
-    MODULE PROCEDURE CMISSFieldCreateStartObj
+    MODULE PROCEDURE CMISSFieldCreateStartInterfaceObj
+    MODULE PROCEDURE CMISSFieldCreateStartRegionObj
   END INTERFACE !CMISSFieldCreateStart
 
   !>Returns the dependent type for a field.
@@ -2367,7 +2404,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   !>Starts the creation of a generated mesh. \see OPENCMISS::CMISSGeneratedMeshCreateFinish
   INTERFACE CMISSGeneratedMeshCreateStart
     MODULE PROCEDURE CMISSGeneratedMeshCreateStartNumber
-    MODULE PROCEDURE CMISSGeneratedMeshCreateStartObj
+    MODULE PROCEDURE CMISSGeneratedMeshCreateStartInterfaceObj
+    MODULE PROCEDURE CMISSGeneratedMeshCreateStartRegionObj
   END INTERFACE !CMISSGeneratedMeshCreateStart
 
   !>Destroys a generated mesh.
@@ -2448,6 +2486,233 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSGeneratedMeshGeometricParametersCalculate
   
+  
+!!==================================================================================================================================
+!!
+!! INTERFACE_ROUTINES
+!!
+!!==================================================================================================================================
+
+  !Module parameters
+
+  !Module types
+
+  !Module variables
+
+  !Interfaces
+  
+  !>Adds a mesh to an interface.
+  INTERFACE CMISSInterfaceMeshAdd
+    MODULE PROCEDURE CMISSInterfaceMeshAddNumber
+    MODULE PROCEDURE CMISSInterfaceMeshAddObj
+  END INTERFACE !CMISSInterfaceMeshAdd
+
+  !>Finishes the creation of an interface. \see OPENCMISS::CMISSInterfaceCreateStart
+  INTERFACE CMISSInterfaceCreateFinish
+    MODULE PROCEDURE CMISSInterfaceCreateFinishNumber
+    MODULE PROCEDURE CMISSInterfaceCreateFinishObj
+  END INTERFACE !CMISSInterfaceCreateStart
+
+  !>Starts the creation of an interface. \see OPENCMISS::CMISSInterfaceCreateFinish
+  INTERFACE CMISSInterfaceCreateStart
+    MODULE PROCEDURE CMISSInterfaceCreateStartNumber
+    MODULE PROCEDURE CMISSInterfaceCreateStartObj
+  END INTERFACE !CMISSInterfaceCreateStart
+
+  !>Destroys an interface. 
+  INTERFACE CMISSInterfaceDestroy
+    MODULE PROCEDURE CMISSInterfaceDestroyNumber
+    MODULE PROCEDURE CMISSInterfaceDestroyObj
+  END INTERFACE !CMISSInterfaceDestroy
+
+  !>Finishes the creation of an interface meshes connectivity. \see OPENCMISS::CMISSInterfaceMeshesConnectivityCreateStart
+  INTERFACE CMISSInterfaceMeshesConnectivityCreateFinish
+    MODULE PROCEDURE CMISSInterfaceMeshesConnectivityCreateFinishNumber
+    MODULE PROCEDURE CMISSInterfaceMeshesConnectivityCreateFinishObj
+  END INTERFACE !CMISSInterfaceMeshesConnectivityCreateStart
+
+  !>Starts the creation of an interface meshes connectivity. \see OPENCMISS::CMISSInterfaceMeshesConnectivityCreateFinish
+  INTERFACE CMISSInterfaceMeshesConnectivityCreateStart
+    MODULE PROCEDURE CMISSInterfaceMeshesConnectivityCreateStartNumber
+    MODULE PROCEDURE CMISSInterfaceMeshesConnectivityCreateStartObj
+  END INTERFACE !CMISSInterfaceMeshesConnectivityCreateStart
+
+  !>Destroys an interface meshes connectivity. 
+  INTERFACE CMISSInterfaceMeshesConnectivityDestroy
+    MODULE PROCEDURE CMISSInterfaceMeshesConnectivityDestroyNumber
+    MODULE PROCEDURE CMISSInterfaceMeshesConnectivityDestroyObj
+  END INTERFACE !CMISSInterfaceMeshesConnectivityDestroy
+
+  PUBLIC CMISSInterfaceMeshAdd
+  
+  PUBLIC CMISSInterfaceCreateFinish,CMISSInterfaceCreateStart
+
+  PUBLIC CMISSInterfaceDestroy
+ 
+  PUBLIC CMISSInterfaceMeshesConnectivityCreateFinish,CMISSInterfaceMeshesConnectivityCreateStart
+
+  PUBLIC CMISSInterfaceMeshesConnectivityDestroy
+ 
+!!==================================================================================================================================
+!!
+!! INTERFACE_CONDITION_ROUTINES
+!!
+!!==================================================================================================================================
+
+  !Module parameters
+
+  !> \addtogroup OPENCMISS_InterfaceConditionConstants OPENCMISS::InterfaceConditinos::Constants
+  !> \brief Interface conditions constants.
+  !>@{
+  !> \addtogroup OPENCMISS_InterfaceConditionOperators OPENCMISS::InterfaceConditions::Operators 
+  !> \brief Interface condition operator types.
+  !> \see OPENCMISS::InterfaceConditions,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISSInterfaceConditionTestOperator = INTERFACE_CONDITION_TEST_OPERATOR !<A test operator. \see OPENCMISS_InterfaceConditionOperators,OPENCMISS
+  !>@}
+  !> \addtogroup OPENCMISS_InterfaceConditionMethods OPENCMISS::InterfaceConditions::Methods
+  !> \brief Interface condition methods.
+  !> \see OPENCMISS::InterfaceConditions,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISSInterfaceConditionPointToPointMethod = INTERFACE_CONDITION_POINT_TO_POINT_METHOD !<Point to point interface condition method. \see OPENCMISS_InterfaceConditionMethods,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSInterfaceConditionLagrangeMultipliers = INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD !<Lagrange multipliers interface condition method. \see OPENCMISS_InterfaceConditionMethods,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSInterfaceConditionAugmentedLagrangeMethod = INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD !<Augmented Lagrange multiplers interface condition method. \see OPENCMISS_InterfaceConditionMethods,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSInterfaceConditionPenaltyMethod = INTERFACE_CONDITION_PENALTY_METHOD !<Penalty interface condition method. \see OPENCMISS_InterfaceConditionMethods,OPENCMISS
+  !>@}
+  !>@}
+
+  !Module types
+
+  !Module variables
+
+  !Interfaces
+  
+  !>Finishes the creation of an interface condition. \see OPENCMISS::CMISSInterfaceConditionCreateStart
+  INTERFACE CMISSInterfaceConditionCreateFinish
+    MODULE PROCEDURE CMISSInterfaceConditionCreateFinishNumber
+    MODULE PROCEDURE CMISSInterfaceConditionCreateFinishObj
+  END INTERFACE !CMISSInterfaceConditionCreateStart
+
+  !>Starts the creation of an interface condition. \see OPENCMISS::CMISSInterfaceConditionCreateFinish
+  INTERFACE CMISSInterfaceConditionCreateStart
+    MODULE PROCEDURE CMISSInterfaceConditionCreateStartNumber
+    MODULE PROCEDURE CMISSInterfaceConditionCreateStartObj
+  END INTERFACE !CMISSInterfaceConditionCreateStart
+
+  !>Destroys an interface condition. 
+  INTERFACE CMISSInterfaceConditionDestroy
+    MODULE PROCEDURE CMISSInterfaceConditionDestroyNumber
+    MODULE PROCEDURE CMISSInterfaceConditionDestroyObj
+  END INTERFACE !CMISSInterfaceConditionDestroy
+
+  !>Finishes the creation of equations for an interface condition. \see OPENCMISS::CMISSInterfaceConditionEquationsCreateStart
+  INTERFACE CMISSInterfaceConditionEquationsCreateFinish
+    MODULE PROCEDURE CMISSInterfaceConditionEquationsCreateFinishNumber
+    MODULE PROCEDURE CMISSInterfaceConditionEquationsCreateFinishObj
+  END INTERFACE !CMISSInterfaceConditionEquationsCreateStart
+
+  !>Starts the creation of equations for an interface condition. \see OPENCMISS::CMISSInterfaceConditionEquationsCreateFinish
+  INTERFACE CMISSInterfaceConditionEquationsCreateStart
+    MODULE PROCEDURE CMISSInterfaceConditionEquationsCreateStartNumber
+    MODULE PROCEDURE CMISSInterfaceConditionEquationsCreateStartObj
+  END INTERFACE !CMISSInterfaceConditionEquationsCreateStart
+  
+  !>Destroys the interface equations for an interface condition. 
+  INTERFACE CMISSInterfaceConditionEquationsDestroy
+    MODULE PROCEDURE CMISSInterfaceConditionEquationsDestroyNumber
+    MODULE PROCEDURE CMISSInterfaceConditionEquationsDestroyObj
+  END INTERFACE !CMISSInterfaceConditionEquationsDestroy
+
+  !>Finishes the creation of a Lagrange multipliers field for an interface condition. \see OPENCMISS::CMISSInterfaceConditionLagrangeFieldCreateStart
+  INTERFACE CMISSInterfaceConditionLagrangeFieldCreateFinish
+    MODULE PROCEDURE CMISSInterfaceConditionLagrangeFieldCreateFinishNumber
+    MODULE PROCEDURE CMISSInterfaceConditionLagrangeFieldCreateFinishObj
+  END INTERFACE !CMISSInterfaceConditionLagrangeFieldCreateFinish
+
+  !>Starts the creation of a Lagrange multipliers field for an interface condition. \see OPENCMISS::CMISSInterfaceConditionLagrangeFieldCreateFinish
+  INTERFACE CMISSInterfaceConditionLagrangeFieldCreateStart
+    MODULE PROCEDURE CMISSInterfaceConditionLagrangeFieldCreateStartNumber
+    MODULE PROCEDURE CMISSInterfaceConditionLagrangeFieldCreateStartObj
+  END INTERFACE !CMISSInterfaceConditionLagrangeFieldCreateStart
+
+  !>Adds in an equations set to an interface condition. 
+  INTERFACE CMISSInterfaceConditionEquationsSetAdd
+    MODULE PROCEDURE CMISSInterfaceConditionEquationsSetAddNumber
+    MODULE PROCEDURE CMISSInterfaceConditionEquationsSetAddObj
+  END INTERFACE !CMISSInterfaceConditionEquationsSetAdd
+
+  !>Returns the method for an interface condition. 
+  INTERFACE CMISSInterfaceConditionMethodGet
+    MODULE PROCEDURE CMISSInterfaceConditionMethodGetNumber
+    MODULE PROCEDURE CMISSInterfaceConditionMethodGetObj
+  END INTERFACE !CMISSInterfaceConditionMethodGet
+
+  !>Sets/changes the method for an interface condition. 
+  INTERFACE CMISSInterfaceConditionMethodSet
+    MODULE PROCEDURE CMISSInterfaceConditionMethodSetNumber
+    MODULE PROCEDURE CMISSInterfaceConditionMethodSetObj
+  END INTERFACE !CMISSInterfaceConditionMethodSet
+
+  !>Returns the operator for an interface condition. 
+  INTERFACE CMISSInterfaceConditionOperatorGet
+    MODULE PROCEDURE CMISSInterfaceConditionOperatorGetNumber
+    MODULE PROCEDURE CMISSInterfaceConditionOperatorGetObj
+  END INTERFACE !CMISSInterfaceConditionOperatorGet
+
+  !>Sets/changes the operator for an interface condition. 
+  INTERFACE CMISSInterfaceConditionOperatorSet
+    MODULE PROCEDURE CMISSInterfaceConditionOperatorSetNumber
+    MODULE PROCEDURE CMISSInterfaceConditionOperatorSetObj
+  END INTERFACE !CMISSInterfaceConditionOperatorSet
+
+  !>Returns the sparsity for interface equations. 
+  INTERFACE CMISSInterfaceEquationsSparsityGet
+    MODULE PROCEDURE CMISSInterfaceEquationsSparsityGetNumber
+    MODULE PROCEDURE CMISSInterfaceEquationsSparsityGetObj
+  END INTERFACE !CMISSInterfaceEquationsSparsityGet
+
+  !>Sets/changes the sparsity for interface equations. 
+  INTERFACE CMISSInterfaceEquationsSparsitySet
+    MODULE PROCEDURE CMISSInterfaceEquationsSparsitySetNumber
+    MODULE PROCEDURE CMISSInterfaceEquationsSparsitySetObj
+  END INTERFACE !CMISSInterfaceEquationsSparsitySet
+
+  !>Returns the output type for interface equations. 
+  INTERFACE CMISSInterfaceEquationsOutputTypeGet
+    MODULE PROCEDURE CMISSInterfaceEquationsOutputTypeGetNumber
+    MODULE PROCEDURE CMISSInterfaceEquationsOutputTypeGetObj
+  END INTERFACE !CMISSInterfaceEquationsOutputTypeGet
+
+  !>Sets/changes the output type for interface equations. 
+  INTERFACE CMISSInterfaceEquationsOutputTypeSet
+    MODULE PROCEDURE CMISSInterfaceEquationsOutputTypeSetNumber
+    MODULE PROCEDURE CMISSInterfaceEquationsOutputTypeSetObj
+  END INTERFACE !CMISSInterfaceEquationsOutputTypeSet
+
+  PUBLIC CMISSInterfaceConditionTestOperator
+
+  PUBLIC CMISSInterfaceConditionPointToPointMethod,CMISSInterfaceConditionLagrangeMultipliers, &
+    & CMISSInterfaceConditionAugmentedLagrangeMethod,CMISSInterfaceConditionPenaltyMethod
+
+  PUBLIC CMISSInterfaceConditionCreateFinish,CMISSInterfaceConditionCreateStart
+
+  PUBLIC CMISSInterfaceConditionDestroy
+
+  PUBLIC CMISSInterfaceConditionEquationsCreateFinish,CMISSInterfaceConditionEquationsCreateStart
+
+  PUBLIC CMISSInterfaceConditionEquationsDestroy
+
+  PUBLIC CMISSInterfaceConditionLagrangeFieldCreateFinish,CMISSInterfaceConditionLagrangeFieldCreateStart
+
+  PUBLIC CMISSInterfaceConditionEquationsSetAdd
+  
+  PUBLIC CMISSInterfaceConditionMethodGet,CMISSInterfaceConditionMethodSet
+  
+  PUBLIC CMISSInterfaceConditionOperatorGet,CMISSInterfaceConditionOperatorSet
+  
+  PUBLIC CMISSInterfaceEquationsSparsityGet,CMISSInterfaceEquationsSparsitySet
+
+  PUBLIC CMISSInterfaceEquationsOutputTypeGet,CMISSInterfaceEquationsOutputTypeSet
   
 !!==================================================================================================================================
 !!
@@ -3688,6 +3953,13 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSSolverEquationsEquationsSetAddObj
   END INTERFACE !CMISSSolverEquationsEquationsSetAdd
   
+  !>Adds an interface condition to solver equations.
+  INTERFACE CMISSSolverEquationsInterfaceConditionAdd
+    MODULE PROCEDURE CMISSSolverEquationsInterfaceConditionAddNumber0
+    MODULE PROCEDURE CMISSSolverEquationsInterfaceConditionAddNumber1
+    MODULE PROCEDURE CMISSSolverEquationsInterfaceConditionAddObj
+  END INTERFACE !CMISSSolverEquationsInterfaceConditionAdd
+  
   !>Sets/changes the sparsity type for solver equations.
   INTERFACE CMISSSolverEquationsSparsityTypeSet
     MODULE PROCEDURE CMISSSolverEquationsSparsityTypeSetNumber0
@@ -3817,10 +4089,10 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSSolverEquationsEquationsSetAdd
 
-  PUBLIC CMISSSolverEquationsSparsityTypeSet
+  PUBLIC CMISSSolverEquationsInterfaceConditionAdd
 
-  
-  
+  PUBLIC CMISSSolverEquationsSparsityTypeSet
+ 
 !!
 !!==================================================================================================================================
 !!
@@ -4456,6 +4728,210 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSGeneratedMeshTypeInitialise
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalises a CMISSInterfaceType object.
+  SUBROUTINE CMISSInterfaceTypeFinalise(CMISSInterface,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceType), INTENT(OUT) :: CMISSInterface !<The CMISSInterfaceType object to finalise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    
+    CALL ENTERS("CMISSInterfaceTypeFinalise",Err,ERROR,*999)
+    
+    IF(ASSOCIATED(CMISSInterface%INTERFACE))  &
+      & CALL INTERFACE_DESTROY(CMISSInterface%INTERFACE,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceTypeFinalise")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceTypeFinalise",Err,ERROR)
+    CALL EXITS("CMISSInterfaceTypeFinalise")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceTypeFinalise
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises a CMISSInterfaceType object.
+  SUBROUTINE CMISSInterfaceTypeInitialise(CMISSInterface,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceType), INTENT(OUT) :: CMISSInterface !<The CMISSInterfaceType object to initialise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSInterfaceTypeInitialise",Err,ERROR,*999)
+    
+    NULLIFY(CMISSInterface%Interface)
+
+    CALL EXITS("CMISSInterfaceTypeInitialise")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceTypeInitialise",Err,ERROR)
+    CALL EXITS("CMISSInterfaceTypeInitialise")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceTypeInitialise
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalises a CMISSInterfaceConditionType object.
+  SUBROUTINE CMISSInterfaceConditionTypeFinalise(CMISSInterfaceCondition,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(OUT) :: CMISSInterfaceCondition !<The CMISSInterfaceConditionType object to finalise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    
+    CALL ENTERS("CMISSInterfaceConditionTypeFinalise",Err,ERROR,*999)
+    
+    IF(ASSOCIATED(CMISSInterfaceCondition%INTERFACE_CONDITION))  &
+      & CALL INTERFACE_CONDITION_DESTROY(CMISSInterfaceCondition%INTERFACE_CONDITION,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceConditionTypeFinalise")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceTypeConditionFinalise",Err,ERROR)
+    CALL EXITS("CMISSInterfaceTypeConditionFinalise")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionTypeFinalise
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises a CMISSInterfaceConditionType object.
+  SUBROUTINE CMISSInterfaceConditionTypeInitialise(CMISSInterfaceCondition,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(OUT) :: CMISSInterfaceCondition !<The CMISSInterfaceConditionType object to initialise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSInterfaceConditionTypeInitialise",Err,ERROR,*999)
+    
+    NULLIFY(CMISSInterfaceCondition%INTERFACE_CONDITION)
+
+    CALL EXITS("CMISSInterfaceConditionTypeInitialise")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionTypeInitialise",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionTypeInitialise")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionTypeInitialise
+
+   !
+  !================================================================================================================================
+  !
+
+  !>Finalises a CMISSInterfaceEquationsType object.
+  SUBROUTINE CMISSInterfaceEquationsTypeFinalise(CMISSInterfaceEquations,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceEquationsType), INTENT(OUT) :: CMISSInterfaceEquations !<The CMISSInterfaceEquationsType object to finalise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    
+    CALL ENTERS("CMISSInterfaceEquationsTypeFinalise",Err,ERROR,*999)
+    
+    IF(ASSOCIATED(CMISSInterfaceEquations%INTERFACE_EQUATIONS))  &
+      & CALL INTERFACE_EQUATIONS_DESTROY(CMISSInterfaceEquations%INTERFACE_EQUATIONS,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceEquationsTypeFinalise")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceEquationsTypeFinalise",Err,ERROR)
+    CALL EXITS("CMISSInterfaceEquationsTypeFinalise")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceEquationsTypeFinalise
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises a CMISSInterfaceEquationsType object.
+  SUBROUTINE CMISSInterfaceEquationsTypeInitialise(CMISSInterfaceEquations,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceEquationsType), INTENT(OUT) :: CMISSInterfaceEquations !<The CMISSInterfaceEquationsType object to initialise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSInterfaceEquationsTypeInitialise",Err,ERROR,*999)
+    
+    NULLIFY(CMISSInterfaceEquations%INTERFACE_EQUATIONS)
+
+    CALL EXITS("CMISSInterfaceEquationsTypeInitialise")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceEquationsTypeInitialise",Err,ERROR)
+    CALL EXITS("CMISSInterfaceEquationsTypeInitialise")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceEquationsTypeInitialise
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalises a CMISSInterfaceMeshesConnectivityType object.
+  SUBROUTINE CMISSInterfaceMeshesConnectivityTypeFinalise(CMISSInterfaceMeshesConnectivity,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceMeshesConnectivityType), INTENT(OUT) :: CMISSInterfaceMeshesConnectivity !<The CMISSInterfaceMeshesConnectivityType object to finalise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    
+    CALL ENTERS("CMISSInterfaceMeshesConnectivityTypeFinalise",Err,ERROR,*999)
+    
+    IF(ASSOCIATED(CMISSInterfaceMeshesConnectivity%MESHES_CONNECTIVITY))  &
+      & CALL INTERFACE_MESHES_CONNECTIVITY_DESTROY(CMISSInterfaceMeshesConnectivity%MESHES_CONNECTIVITY,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceMeshesConnectivityTypeFinalise")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMeshesConnectivityTypeFinalise",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshesConnectivityTypeFinalise")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceMeshesConnectivityTypeFinalise
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises a CMISSInterfaceMeshesConnectivityType object.
+  SUBROUTINE CMISSInterfaceMeshesConnectivityTypeInitialise(CMISSInterfaceMeshesConnectivity,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceMeshesConnectivityType), INTENT(OUT) :: CMISSInterfaceMeshesConnectivity !<The CMISSInterfaceMeshesConnectivityType object to initialise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSInterfaceMeshesConnectivityTypeInitialise",Err,ERROR,*999)
+    
+    NULLIFY(CMISSInterfaceMeshesConnectivity%MESHES_CONNECTIVITY)
+
+    CALL EXITS("CMISSInterfaceMeshesConnectivityTypeInitialise")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMeshesConnectivityTypeInitialise",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshesConnectivityTypeInitialise")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceMeshesConnectivityTypeInitialise
 
   !
   !================================================================================================================================
@@ -14198,8 +14674,8 @@ CONTAINS
   SUBROUTINE CMISSFieldCreateStartNumber(FieldUserNumber,RegionUserNumber,Err)
   
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to start the creation of.
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to start the creation of.
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to start the creation of.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -14231,28 +14707,55 @@ CONTAINS
   !================================================================================================================================
   !  
  
-  !>Starts the creation of a field identified by an object.
-  SUBROUTINE CMISSFieldCreateStartObj(FieldUserNumber,Region,Field,Err)
+  !>Starts the creation of a field on an interface identified by an object.
+  SUBROUTINE CMISSFieldCreateStartInterfaceObj(FieldUserNumber,INTERFACE,Field,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to start the creation of.
+    TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to create the field on.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: Field !<On return, the created field.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSFieldCreateStartInterfaceObj",Err,ERROR,*999)
+ 
+    CALL FIELD_CREATE_START(FieldUserNumber,Interface%INTERFACE,Field%FIELD,Err,ERROR,*999)
+
+    CALL EXITS("CMISSFieldCreateStartInterfaceObj")
+    RETURN
+999 CALL ERRORS("CMISSFieldCreateStartInterfaceObj",Err,ERROR)
+    CALL EXITS("CMISSFieldCreateStartInterfaceObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldCreateStartInterfaceObj
+
+  !  
+  !================================================================================================================================
+  !   
+
+   !>Starts the creation of a field on a region identified by an object.
+  SUBROUTINE CMISSFieldCreateStartRegionObj(FieldUserNumber,Region,Field,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to start the creation of.
     TYPE(CMISSRegionType), INTENT(IN) :: Region !<The region to create the field on.
-    TYPE(CMISSFieldType), INTENT(IN) :: Field !<On return, the created field.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: Field !<On return, the created field.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
-    CALL ENTERS("CMISSFieldCreateStartObj",Err,ERROR,*999)
+    CALL ENTERS("CMISSFieldCreateStartRegionObj",Err,ERROR,*999)
  
     CALL FIELD_CREATE_START(FieldUserNumber,Region%REGION,Field%FIELD,Err,ERROR,*999)
 
-    CALL EXITS("CMISSFieldCreateStartObj")
+    CALL EXITS("CMISSFieldCreateStartRegionObj")
     RETURN
-999 CALL ERRORS("CMISSFieldCreateStartObj",Err,ERROR)
-    CALL EXITS("CMISSFieldCreateStartObj")
+999 CALL ERRORS("CMISSFieldCreateStartRegionObj",Err,ERROR)
+    CALL EXITS("CMISSFieldCreateStartRegionObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSFieldCreateStartObj
+  END SUBROUTINE CMISSFieldCreateStartRegionObj
 
   !  
   !================================================================================================================================
@@ -20454,36 +20957,46 @@ CONTAINS
 !!
 !!==================================================================================================================================
 
-  !>Returns the basis for a generated mesh identified by a user number.
-  SUBROUTINE CMISSGeneratedMeshBasisGetNumber(GeneratedMeshUserNumber,BasisUserNumber,Err)
+  !>Returns the basis for a generated mesh on a region identified by a user number.
+  SUBROUTINE CMISSGeneratedMeshBasisGetNumber(RegionUserNumber,GeneratedMeshUserNumber,BasisUserNumber,Err)
   
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to get the basis for.
     INTEGER(INTG), INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to get the basis for.
     INTEGER(INTG), INTENT(OUT) :: BasisUserNumber !<On return, the user number of the basis.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH
+    TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSGeneratedMeshBasisGetNumber",Err,ERROR,*999)
  
+    NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
     NULLIFY(BASIS)
-    CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,GENERATED_MESH,Err,ERROR,*999)
-    IF(ASSOCIATED(GENERATED_MESH)) THEN
-      CALL GENERATED_MESH_BASIS_GET(GENERATED_MESH,BASIS,Err,ERROR,*999)
-      IF(ASSOCIATED(BASIS)) THEN
-        BasisUserNumber=BASIS%USER_NUMBER
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,REGION,GENERATED_MESH,Err,ERROR,*999)
+      IF(ASSOCIATED(GENERATED_MESH)) THEN
+        CALL GENERATED_MESH_BASIS_GET(GENERATED_MESH,BASIS,Err,ERROR,*999)
+        IF(ASSOCIATED(BASIS)) THEN
+          BasisUserNumber=BASIS%USER_NUMBER
+        ELSE
+          LOCAL_ERROR="The basis is not associated for the generated mesh with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
       ELSE
-        LOCAL_ERROR="The basis is not associated for the generated mesh with a user number of "// &
-          & TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))//"."
+        LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
         CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
       ENDIF
     ELSE
-      LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
         & " does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)      
     ENDIF
 
     CALL EXITS("CMISSGeneratedMeshBasisGetNumber")
@@ -20525,38 +21038,48 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Sets/changes the basis for a generated mesh identified by a user number.
-  SUBROUTINE CMISSGeneratedMeshBasisSetNumber(GeneratedMeshUserNumber,BasisUserNumber,Err)
+  !>Sets/changes the basis for a generated mesh on a region identified by a user number.
+  SUBROUTINE CMISSGeneratedMeshBasisSetNumber(RegionUserNumber,GeneratedMeshUserNumber,BasisUserNumber,Err)
   
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to set the basis for.
     INTEGER(INTG), INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the basis for.
     INTEGER(INTG), INTENT(IN) :: BasisUserNumber !<The user number of the basis to set.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH
+    TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSGeneratedMeshBasisSetNumber",Err,ERROR,*999)
  
+    NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
     NULLIFY(BASIS)
-    CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,GENERATED_MESH,Err,ERROR,*999)
-    IF(ASSOCIATED(GENERATED_MESH)) THEN
-      CALL BASIS_USER_NUMBER_FIND(BasisUserNumber,BASIS,Err,ERROR,*999)
-      IF(ASSOCIATED(BASIS)) THEN
-        CALL GENERATED_MESH_BASIS_SET(GENERATED_MESH,BASIS,Err,ERROR,*999)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,REGION,GENERATED_MESH,Err,ERROR,*999)
+      IF(ASSOCIATED(GENERATED_MESH)) THEN
+        CALL BASIS_USER_NUMBER_FIND(BasisUserNumber,BASIS,Err,ERROR,*999)
+        IF(ASSOCIATED(BASIS)) THEN
+          CALL GENERATED_MESH_BASIS_SET(GENERATED_MESH,BASIS,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="A basis with an user number of "//TRIM(NUMBER_TO_VSTRING(BasisUserNumber,"*",Err,ERROR))// &
+            & " does not exist."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
       ELSE
-        LOCAL_ERROR="A basis with an user number of "//TRIM(NUMBER_TO_VSTRING(BasisUserNumber,"*",Err,ERROR))// &
-        & " does not exist."
+        LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
         CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
       ENDIF
     ELSE
-      LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
         & " does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)      
     ENDIF
-
+    
     CALL EXITS("CMISSGeneratedMeshBasisSetNumber")
     RETURN
 999 CALL ERRORS("CMISSGeneratedMeshBasisSetNumber",Err,ERROR)
@@ -20596,27 +21119,37 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Finishes the creation of a generated mesh identified by a user number.
-  SUBROUTINE CMISSGeneratedMeshCreateFinishNumber(GeneratedMeshUserNumber,MeshUserNumber,Err)
+  !>Finishes the creation of a generated mesh on a region identified by a user number.
+  SUBROUTINE CMISSGeneratedMeshCreateFinishNumber(RegionUserNumber,GeneratedMeshUserNumber,MeshUserNumber,Err)
   
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to finish the creation of.
     INTEGER(INTG), INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to finish the creation of.
     INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<The user number of the mesh to generate.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH
+    TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSGeneratedMeshCreateFinishNumber",Err,ERROR,*999)
  
+    NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
     NULLIFY(MESH)
-    CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,GENERATED_MESH,Err,ERROR,*999)
-    IF(ASSOCIATED(GENERATED_MESH)) THEN
-      CALL GENERATED_MESH_CREATE_FINISH(GENERATED_MESH,MeshUserNumber,MESH,Err,ERROR,*999)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,REGION,GENERATED_MESH,Err,ERROR,*999)
+      IF(ASSOCIATED(GENERATED_MESH)) THEN
+        CALL GENERATED_MESH_CREATE_FINISH(GENERATED_MESH,MeshUserNumber,MESH,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
     ELSE
-      LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -20661,7 +21194,7 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Starts the creation of a generated mesh identified by a user number.
+  !>Starts the creation of a generated mesh on a region identified by a user number.
   SUBROUTINE CMISSGeneratedMeshCreateStartNumber(GeneratedMeshUserNumber,RegionUserNumber,Err)
   
     !Argument variables
@@ -20699,8 +21232,35 @@ CONTAINS
   !================================================================================================================================
   !  
  
-  !>Starts the creation of a generated mesh identified by an object.
-  SUBROUTINE CMISSGeneratedMeshCreateStartObj(GeneratedMeshUserNumber,Region,GeneratedMesh,Err)
+  !>Starts the creation of a generated mesh on an interface identified by an object.
+  SUBROUTINE CMISSGeneratedMeshCreateStartInterfaceObj(GeneratedMeshUserNumber,INTERFACE,GeneratedMesh,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to create.
+    TYPE(CMISSInterfaceType), INTENT(INOUT) :: Interface !<The interface to created generated mesh in.
+    TYPE(CMISSGeneratedMeshType), INTENT(INOUT) :: GeneratedMesh !<On return, the created generated mesh.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSGeneratedMeshCreateStartInterfaceObj",Err,ERROR,*999)
+ 
+    CALL GENERATED_MESH_CREATE_START(GeneratedMeshUserNumber,Interface%INTERFACE,GeneratedMesh%GENERATED_MESH,Err,ERROR,*999)
+
+    CALL EXITS("CMISSGeneratedMeshCreateStartInterfaceObj")
+    RETURN
+999 CALL ERRORS("CMISSGeneratedMeshCreateStartInterfaceObj",Err,ERROR)
+    CALL EXITS("CMISSGeneratedMeshCreateStartInterfaceObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSGeneratedMeshCreateStartInterfaceObj
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Starts the creation of a generated mesh on a region identified by an object.
+  SUBROUTINE CMISSGeneratedMeshCreateStartRegionObj(GeneratedMeshUserNumber,Region,GeneratedMesh,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to create.
@@ -20709,41 +21269,51 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
-    CALL ENTERS("CMISSGeneratedMeshCreateStartObj",Err,ERROR,*999)
+    CALL ENTERS("CMISSGeneratedMeshCreateStartRegionObj",Err,ERROR,*999)
  
     CALL GENERATED_MESH_CREATE_START(GeneratedMeshUserNumber,REGION%Region,GeneratedMesh%GENERATED_MESH,Err,ERROR,*999)
 
-    CALL EXITS("CMISSGeneratedMeshCreateStartObj")
+    CALL EXITS("CMISSGeneratedMeshCreateStartRegionObj")
     RETURN
-999 CALL ERRORS("CMISSGeneratedMeshCreateStartObj",Err,ERROR)
-    CALL EXITS("CMISSGeneratedMeshCreateStartObj")
+999 CALL ERRORS("CMISSGeneratedMeshCreateStartRegionObj",Err,ERROR)
+    CALL EXITS("CMISSGeneratedMeshCreateStartRegionObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSGeneratedMeshCreateStartObj
+  END SUBROUTINE CMISSGeneratedMeshCreateStartRegionObj
 
   !  
   !================================================================================================================================
   !
   
-  !>Destroys a generated mesh identified by a user number.
-  SUBROUTINE CMISSGeneratedMeshDestroyNumber(GeneratedMeshUserNumber,Err)
+  !>Destroys a generated mesh on a region identified by a user number.
+  SUBROUTINE CMISSGeneratedMeshDestroyNumber(RegionUserNumber,GeneratedMeshUserNumber,Err)
   
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to destroy.
     INTEGER(INTG), INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to destroy.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH
+    TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSGeneratedMeshDestroyNumber",Err,ERROR,*999)
  
+    NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
-    CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,GENERATED_MESH,Err,ERROR,*999)
-    IF(ASSOCIATED(GENERATED_MESH)) THEN
-      CALL GENERATED_MESH_DESTROY(GENERATED_MESH,Err,ERROR,*999)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,REGION,GENERATED_MESH,Err,ERROR,*999)
+      IF(ASSOCIATED(GENERATED_MESH)) THEN
+        CALL GENERATED_MESH_DESTROY(GENERATED_MESH,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
     ELSE
-      LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -20786,25 +21356,35 @@ CONTAINS
   !================================================================================================================================
   !  
 
-  !>Returns the extent for a generated mesh identified by a user number.
-  SUBROUTINE CMISSGeneratedMeshExtentGetNumber(GeneratedMeshUserNumber,Extent,Err)
+  !>Returns the extent for a generated mesh on a region identified by a user number.
+  SUBROUTINE CMISSGeneratedMeshExtentGetNumber(RegionUserNumber,GeneratedMeshUserNumber,Extent,Err)
   
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to get the extent for.
     INTEGER(INTG), INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to get the extent for.
     REAL(DP), INTENT(OUT) :: Extent(:) !<Extent(i). On return, the extent for the i'th dimension of the generated mesh.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH
+    TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSGeneratedMeshExtentGetNumber",Err,ERROR,*999)
  
+    NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
-    CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,GENERATED_MESH,Err,ERROR,*999)
-    IF(ASSOCIATED(GENERATED_MESH)) THEN
-      CALL GENERATED_MESH_EXTENT_GET(GENERATED_MESH,Extent,Err,ERROR,*999)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,REGION,GENERATED_MESH,Err,ERROR,*999)
+      IF(ASSOCIATED(GENERATED_MESH)) THEN
+        CALL GENERATED_MESH_EXTENT_GET(GENERATED_MESH,Extent,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with a user number of "//TRIM(NUMBER_TO_VSTRING(rEGIONUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
     ELSE
-      LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(rEGIONUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -20848,25 +21428,35 @@ CONTAINS
   !================================================================================================================================
   !  
 
-  !>Sets/changes the extent for a generated mesh identified by a user number.
-  SUBROUTINE CMISSGeneratedMeshExtentSetNumber(GeneratedMeshUserNumber,Extent,Err)
+  !>Sets/changes the extent for a generated mesh on a region identified by a user number.
+  SUBROUTINE CMISSGeneratedMeshExtentSetNumber(RegionUserNumber,GeneratedMeshUserNumber,Extent,Err)
   
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to set the extent for.
     INTEGER(INTG), INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the extent for.
     REAL(DP), INTENT(IN) :: Extent(:) !<Extent(i). The extent for the i'th dimension of the generated mesh to set.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH
+    TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSGeneratedMeshExtentSetNumber",Err,ERROR,*999)
  
+    NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
-    CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,GENERATED_MESH,Err,ERROR,*999)
-    IF(ASSOCIATED(GENERATED_MESH)) THEN
-      CALL GENERATED_MESH_EXTENT_SET(GENERATED_MESH,Extent,Err,ERROR,*999)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,REGION,GENERATED_MESH,Err,ERROR,*999)
+      IF(ASSOCIATED(GENERATED_MESH)) THEN
+        CALL GENERATED_MESH_EXTENT_SET(GENERATED_MESH,Extent,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
     ELSE
-      LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -20910,25 +21500,35 @@ CONTAINS
   !================================================================================================================================
   !  
 
-  !>Returns the number of elements for a generated mesh identified by a user number.
-  SUBROUTINE CMISSGeneratedMeshNumberOfElementsGetNumber(GeneratedMeshUserNumber,NumberOfElements,Err)
+  !>Returns the number of elements for a generated mesh on a region identified by a user number.
+  SUBROUTINE CMISSGeneratedMeshNumberOfElementsGetNumber(RegionUserNumber,GeneratedMeshUserNumber,NumberOfElements,Err)
   
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to get the number of elements for.
     INTEGER(INTG), INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to get the number of elements for.
     INTEGER(INTG), INTENT(OUT) :: NumberOfElements(:) !<NumberOfElements(i). On return, the number of elements in the i'th dimension of the generated mesh.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH
+    TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSGeneratedMeshNumberOfElementsGetNumber",Err,ERROR,*999)
  
+    NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
-    CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,GENERATED_MESH,Err,ERROR,*999)
-    IF(ASSOCIATED(GENERATED_MESH)) THEN
-      CALL GENERATED_MESH_NUMBER_OF_ELEMENTS_GET(GENERATED_MESH,NumberOfElements,Err,ERROR,*999)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,REGION,GENERATED_MESH,Err,ERROR,*999)
+      IF(ASSOCIATED(GENERATED_MESH)) THEN
+        CALL GENERATED_MESH_NUMBER_OF_ELEMENTS_GET(GENERATED_MESH,NumberOfElements,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
     ELSE
-      LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -20972,25 +21572,35 @@ CONTAINS
   !================================================================================================================================
   !  
 
-  !>Sets/changes the number of elements for a generated mesh identified by a user number.
-  SUBROUTINE CMISSGeneratedMeshNumberOfElementsSetNumber(GeneratedMeshUserNumber,NumberOfElements,Err)
+  !>Sets/changes the number of elements for a generated mesh on a region identified by a user number.
+  SUBROUTINE CMISSGeneratedMeshNumberOfElementsSetNumber(RegionUserNumber,GeneratedMeshUserNumber,NumberOfElements,Err)
   
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to set the number of elements for.
     INTEGER(INTG), INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the number of elements for.
     INTEGER(INTG), INTENT(IN) :: NumberOfElements(:) !<NumberOfElements(i). The number of elements in the i'th dimension of the generated mesh to set.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH
+    TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSGeneratedMeshNumberOfElementsSetNumber",Err,ERROR,*999)
  
+    NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
-    CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,GENERATED_MESH,Err,ERROR,*999)
-    IF(ASSOCIATED(GENERATED_MESH)) THEN
-      CALL GENERATED_MESH_NUMBER_OF_ELEMENTS_SET(GENERATED_MESH,NumberOfElements,Err,ERROR,*999)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,REGION,GENERATED_MESH,Err,ERROR,*999)
+      IF(ASSOCIATED(GENERATED_MESH)) THEN
+        CALL GENERATED_MESH_NUMBER_OF_ELEMENTS_SET(GENERATED_MESH,NumberOfElements,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
     ELSE
-      LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -21034,25 +21644,35 @@ CONTAINS
   !================================================================================================================================
   !  
 
-  !>Returns the origin of a generated mesh identified by a user number.
-  SUBROUTINE CMISSGeneratedMeshOriginGetNumber(GeneratedMeshUserNumber,Origin,Err)
+  !>Returns the origin of a generated mesh on a region identified by a user number.
+  SUBROUTINE CMISSGeneratedMeshOriginGetNumber(RegionUserNumber,GeneratedMeshUserNumber,Origin,Err)
   
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to get the origin for.
     INTEGER(INTG), INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to get the origin for.
     REAL(DP), INTENT(OUT) :: Origin(:) !<Origin(i). On return, the origin of the i'th dimension of the generated mesh.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH
+    TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSGeneratedMeshOriginGetNumber",Err,ERROR,*999)
  
+    NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
-    CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,GENERATED_MESH,Err,ERROR,*999)
-    IF(ASSOCIATED(GENERATED_MESH)) THEN
-      CALL GENERATED_MESH_ORIGIN_GET(GENERATED_MESH,Origin,Err,ERROR,*999)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,REGION,GENERATED_MESH,Err,ERROR,*999)
+      IF(ASSOCIATED(GENERATED_MESH)) THEN
+        CALL GENERATED_MESH_ORIGIN_GET(GENERATED_MESH,Origin,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
     ELSE
-      LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -21096,25 +21716,35 @@ CONTAINS
   !================================================================================================================================
   !  
 
-  !>Sets/changes the origin of a generated mesh identified by a user number.
-  SUBROUTINE CMISSGeneratedMeshOriginSetNumber(GeneratedMeshUserNumber,Origin,Err)
+  !>Sets/changes the origin of a generated mesh on a region identified by a user number.
+  SUBROUTINE CMISSGeneratedMeshOriginSetNumber(RegionUserNumber,GeneratedMeshUserNumber,Origin,Err)
   
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to set the origin for.
     INTEGER(INTG), INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the origin for.
     REAL(DP), INTENT(IN) :: Origin(:) !<Origin(i). The origin of the i'th dimension of the generated mesh to set.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH
+    TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSGeneratedMeshOriginSetNumber",Err,ERROR,*999)
  
+    NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
-    CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,GENERATED_MESH,Err,ERROR,*999)
-    IF(ASSOCIATED(GENERATED_MESH)) THEN
-      CALL GENERATED_MESH_ORIGIN_SET(GENERATED_MESH,Origin,Err,ERROR,*999)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,REGION,GENERATED_MESH,Err,ERROR,*999)
+      IF(ASSOCIATED(GENERATED_MESH)) THEN
+        CALL GENERATED_MESH_ORIGIN_SET(GENERATED_MESH,Origin,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
     ELSE
-      LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -21158,25 +21788,35 @@ CONTAINS
   !================================================================================================================================
   !  
 
-  !>Returns the type of a generated mesh identified by a user number.
-  SUBROUTINE CMISSGeneratedMeshTypeGetNumber(GeneratedMeshUserNumber,GeneratedMeshType,Err)
+  !>Returns the type of a generated mesh on a region identified by a user number.
+  SUBROUTINE CMISSGeneratedMeshTypeGetNumber(RegionUserNumber,GeneratedMeshUserNumber,GeneratedMeshType,Err)
   
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to get the type for.
     INTEGER(INTG), INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to get the type for.
     INTEGER(INTG), INTENT(OUT) :: GeneratedMeshType !<On return, the type of the generated mesh. \see OPENCMISS_GeneratedMeshTypes
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH
+    TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSGeneratedMeshTypeGetNumber",Err,ERROR,*999)
  
+    NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
-    CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,GENERATED_MESH,Err,ERROR,*999)
-    IF(ASSOCIATED(GENERATED_MESH)) THEN
-      CALL GENERATED_MESH_TYPE_GET(GENERATED_MESH,GeneratedMeshType,Err,ERROR,*999)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,REGION,GENERATED_MESH,Err,ERROR,*999)
+      IF(ASSOCIATED(GENERATED_MESH)) THEN
+        CALL GENERATED_MESH_TYPE_GET(GENERATED_MESH,GeneratedMeshType,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
     ELSE
-      LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -21220,25 +21860,35 @@ CONTAINS
   !================================================================================================================================
   !  
 
-  !>Sets/changes the type of a generated mesh identified by a user number.
-  SUBROUTINE CMISSGeneratedMeshTypeSetNumber(GeneratedMeshUserNumber,GeneratedMeshType,Err)
+  !>Sets/changes the type of a generated mesh on a region identified by a user number.
+  SUBROUTINE CMISSGeneratedMeshTypeSetNumber(RegionUserNumber,GeneratedMeshUserNumber,GeneratedMeshType,Err)
   
     !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to set the type for.
     INTEGER(INTG), INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the type for.
     INTEGER(INTG), INTENT(IN) :: GeneratedMeshType !<The type of the generated mesh to set. \see OPENCMISS_GeneratedMeshTypes
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH
+    TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSGeneratedMeshTypeSetNumber",Err,ERROR,*999)
  
+    NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
-    CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,GENERATED_MESH,Err,ERROR,*999)
-    IF(ASSOCIATED(GENERATED_MESH)) THEN
-      CALL GENERATED_MESH_TYPE_SET(GENERATED_MESH,GeneratedMeshType,Err,ERROR,*999)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,REGION,GENERATED_MESH,Err,ERROR,*999)
+      IF(ASSOCIATED(GENERATED_MESH)) THEN
+        CALL GENERATED_MESH_TYPE_SET(GENERATED_MESH,GeneratedMeshType,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on a region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
     ELSE
-      LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
@@ -21305,7 +21955,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,GENERATED_MESH,Err,ERROR,*999)
+        CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,REGION,GENERATED_MESH,Err,ERROR,*999)
         IF(ASSOCIATED(GENERATED_MESH)) THEN
           CALL GENERATED_MESH_GEOMETRIC_PARAMETERS_CALCULATE(FIELD,GENERATED_MESH,Err,ERROR,*999)
         ELSE
@@ -21358,6 +22008,1998 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSGeneratedMeshGeometricParametersCalculateObj
+
+!!==================================================================================================================================
+!!
+!! INTERFACE_ROUTINES
+!!
+!!==================================================================================================================================
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finishes the creation of an interface identified by a user number.
+  SUBROUTINE CMISSInterfaceCreateFinishNumber(RegionUserNumber,InterfaceUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface to finish the interface for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface to finish creating.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceCreateFinishNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_CREATE_FINISH(INTERFACE,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceCreateFinishNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceCreateFinishNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceCreateFinishNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceCreateFinishNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finishes the creation of an interface identified by an object.
+  SUBROUTINE CMISSInterfaceCreateFinishObj(INTERFACE,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to finish creating.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceCreateFinishObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_CREATE_FINISH(Interface%INTERFACE,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceCreateFinishObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceCreateFinishObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceCreateFinishObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceCreateFinishObj
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Starts the creation of an interface identified by a user number.
+  SUBROUTINE CMISSInterfaceCreateStartNumber(InterfaceUserNumber,RegionUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface to start the creation of.
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface to start the creation of.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceCreateStartNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_CREATE_START(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceCreateStartNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceCreateStartNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceCreateStartNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Starts the creation of an interface identified by an object.
+  SUBROUTINE CMISSInterfaceCreateStartObj(InterfaceUserNumber,Region,Interface,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the field to start the creation of.
+    TYPE(CMISSRegionType), INTENT(IN) :: Region !<The region to create the interface on.
+    TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<On return, the created interface.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceCreateStartObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_CREATE_START(InterfaceUserNumber,Region%REGION,Interface%INTERFACE,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceCreateStartObj
+
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Destroys an interface identified by a user number.
+  SUBROUTINE CMISSInterfaceDestroyNumber(RegionUserNumber,InterfaceUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface to destroy.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface to destroy.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSFInterfaceDestroyNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_DESTROY(INTERFACE,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceDestroyNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceDestroyNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceDestroyNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceDestroyNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Destroys an interface identified by an object.
+  SUBROUTINE CMISSInterfaceDestroyObj(INTERFACE,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to destroy.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceDestroyObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_DESTROY(Interface%INTERFACE,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceDestroyObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceDestroyObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceDestroyObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceDestroyObj
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Adds a mesh to be coupled in an interface identified by a user number.
+  SUBROUTINE CMISSInterfaceMeshAddNumber(InterfaceRegionUserNumber,InterfaceUserNumber,MeshRegionUserNumber, &
+    & MeshUserNumber,MeshIndex,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: InterfaceRegionUserNumber !<The user number of the parent region containing the interface to add a coupled mesh to.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface to add a coupled mesh to.
+    INTEGER(INTG), INTENT(IN) :: MeshRegionUserNumber !<The user number of the region containing the mesh to add to the interface.
+    INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<The user number of the mesh to add to the interface.
+    INTEGER(INTG), INTENT(OUT) :: MeshIndex !<On return, the mesh index of the mesh in the list of coupled meshes in the interface.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(MESH_TYPE), POINTER :: MESH
+    TYPE(REGION_TYPE), POINTER :: MESH_REGION,PARENT_REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceMeshAddNumber",Err,ERROR,*999)
+ 
+    NULLIFY(PARENT_REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(MESH_REGION)
+    NULLIFY(MESH)
+    CALL REGION_USER_NUMBER_FIND(InterfaceRegionUserNumber,PARENT_REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(PARENT_REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,PARENT_REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL REGION_USER_NUMBER_FIND(MeshRegionUserNumber,MESH_REGION,Err,ERROR,*999)
+        IF(ASSOCIATED(MESH_REGION)) THEN
+          CALL MESH_USER_NUMBER_FIND(MeshUserNumber,MESH_REGION,MESH,Err,ERROR,*999)
+          IF(ASSOCIATED(MESH)) THEN          
+            CALL INTERFACE_MESH_ADD(INTERFACE,MESH,MeshIndex,Err,ERROR,*999)
+          ELSE
+            LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
+              & " does not exist on the region with an user number of "// &
+              & TRIM(NUMBER_TO_VSTRING(MeshRegionUserNumber,"*",Err,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The mesh region with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshRegionUserNumber,"*",Err,ERROR))// &
+            & " does not exist."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "// &
+          & TRIM(NUMBER_TO_VSTRING(InterfaceRegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="The interface parent region with an user number of "// &
+        & TRIM(NUMBER_TO_VSTRING(InterfaceRegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceMeshAddNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMeshAddNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshAddNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceMeshAddNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Adds a mesh to be coupled in an interface identified by an object.
+  SUBROUTINE CMISSInterfaceMeshAddObj(Interface,Mesh,MeshIndex,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to finish creating.
+    TYPE(CMISSMeshType), INTENT(IN) :: Mesh !<The mesh to add to the interface.
+    INTEGER(INTG), INTENT(OUT) :: MeshIndex !<On return, the mesh index of the mesh in the list of coupled meshes in the interface.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceMeshAddObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_MESH_ADD(Interface%INTERFACE,Mesh%MESH,MeshIndex,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceMeshAddObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMeshAddObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshAddObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceMeshAddObj
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finishes the creation of an interface coupled mesh connectivity identified by a user number.
+  SUBROUTINE CMISSInterfaceMeshesConnectivityCreateFinishNumber(RegionUserNumber,InterfaceUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface to finish the interface meshes connectivity for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface to finish creating the meshes connectivity.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceMeshesConnectivityCreateFinishNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_MESHES_CONNECTIVITY_CREATE_FINISH(INTERFACE%MESHES_CONNECTIVITY,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceMeshesConnectivityCreateFinishNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMeshesConnectivityCreateFinishNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshesConnectivityCreateFinishNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceMeshesConnectivityCreateFinishNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finishes the creation of an interface meshes connectivity identified by an object.
+  SUBROUTINE CMISSInterfaceMeshesConnectivityCreateFinishObj(InterfaceMeshesConnectivity,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceMeshesConnectivityType), INTENT(IN) :: InterfaceMeshesConnectivity !<The interface meshes connectivity to finish creating.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceMeshesConnectivityCreateFinishObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_MESHES_CONNECTIVITY_CREATE_FINISH(InterfaceMeshesConnectivity%MESHES_CONNECTIVITY,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceMeshesConnectivityCreateFinishObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMeshesConnectivityCreateFinishObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshesConnectivityCreateFinishObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceMeshesConnectivityCreateFinishObj
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Starts the creation of an interface meshes connectivity identified by a user number.
+  SUBROUTINE CMISSInterfaceMeshesConnectivityCreateStartNumber(RegionUserNumber,InterfaceUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface to start the creation of the meshes connectivity.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface to start the creation of the meshes connectivity for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_MESHES_CONNECTIVITY_TYPE), POINTER :: INTERFACE_MESHES_CONNECTIVITY
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceMeshesConnectivityCreateStartNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_MESHES_CONNECTIVITY)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_MESHES_CONNECTIVITY_CREATE_START(INTERFACE,INTERFACE_MESHES_CONNECTIVITY,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceMeshesConnectivityCreateStartNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMeshesConnectivityCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshesConnectivityCreateStartNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceMeshesConnectivityCreateStartNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Starts the creation of an interface meshes connectivity identified by an object.
+  SUBROUTINE CMISSInterfaceMeshesConnectivityCreateStartObj(Interface,InterfaceMeshesConnectivity,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to start the creation of the meshes connectivity for
+    TYPE(CMISSInterfaceMeshesConnectivityType), INTENT(IN) :: InterfaceMeshesConnectivity !<On return, the created interface meshes connectivity.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceMeshesConnectivityCreateStartObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_MESHES_CONNECTIVITY_CREATE_START(Interface%INTERFACE,InterfaceMeshesConnectivity%MESHES_CONNECTIVITY, &
+      & Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceMeshesConnectivityCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMeshesConnectivityCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshesConnectivityCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceMeshesConnectivityCreateStartObj
+
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Destroys an interface meshes connectivity identified by a user number.
+  SUBROUTINE CMISSInterfaceMeshesConnectivityDestroyNumber(RegionUserNumber,InterfaceUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface to destroy the meshes connectivity for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface to destroy the meshes connectivity for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSFInterfaceMeshesConnectivityDestroyNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_MESHES_CONNECTIVITY_DESTROY(INTERFACE%MESHES_CONNECTIVITY,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceMeshesConnectivityDestroyNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMeshesConnectivityDestroyNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshesConnectivityDestroyNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceMeshesConnectivityDestroyNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Destroys an interface meshes connectivity identified by an object.
+  SUBROUTINE CMISSInterfaceMeshesConnectivityDestroyObj(InterfaceMeshesConnectivity,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceMeshesConnectivityType), INTENT(IN) :: InterfaceMeshesConnectivity !<The interface meshes connectivity to destroy.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceMeshesConnectivityDestroyObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_MESHES_CONNECTIVITY_DESTROY(InterfaceMeshesConnectivity%MESHES_CONNECTIVITY,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceMeshesConnectivityDestroyObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMeshesConnectivityDestroyObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshesConnectivityDestroyObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceMeshesConnectivityDestroyObj
+
+!!==================================================================================================================================
+!!
+!! INTERFACE_CONDITIONS_ROUTINES
+!!
+!!==================================================================================================================================
+
+  !>Finishes the creation of an interface condition identified by an user number.
+  SUBROUTINE CMISSInterfaceConditionCreateFinishNumber(RegionUserNumber,InterfaceUserNumber,InterfaceConditionUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface to finish the interface condition for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface containg the interface condition to finish creating for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface condition to finish creating.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceConditionCreateFinishNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_CONDITION)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(InterfaceConditionUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
+        IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+          CALL INTERFACE_CONDITION_CREATE_FINISH(INTERFACE_CONDITION,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceConditionUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceConditionCreateFinishNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionCreateFinishNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionCreateFinishNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionCreateFinishNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finishes the creation of an interface condition identified by an object.
+  SUBROUTINE CMISSInterfaceConditionCreateFinishObj(InterfaceCondition,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: InterfaceCondition !<The interface condition to finish creating.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceConditionCreateFinishObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_CONDITION_CREATE_FINISH(InterfaceCondition%INTERFACE_CONDITION,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceConditionCreateFinishObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionCreateFinishObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionCreateFinishObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionCreateFinishObj
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Starts the creation of an interface condition identified by a user number.
+  SUBROUTINE CMISSInterfaceConditionCreateStartNumber(InterfaceConditionUserNumber,RegionUserNumber,InterfaceUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface condition to start the creation of.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface containing the interface condition to start the creation of.
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface to start the creation of the interface condition for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceConditionCreateStartNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_CONDITION)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN        
+        CALL INTERFACE_CONDITION_CREATE_START(InterfaceConditionUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceConditionCreateStartNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionCreateStartNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionCreateStartNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Starts the creation of an interface condition identified by an object.
+  SUBROUTINE CMISSInterfaceConditionCreateStartObj(InterfaceConditionUserNumber,INTERFACE,InterfaceCondition,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface conditon to start the creation of.
+    TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to create the interface on.
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: InterfaceCondition !<On return, the created interface condition.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceConditionCreateStartObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_CONDITION_CREATE_START(InterfaceConditionUserNumber,INTERFACE%INTERFACE,InterfaceCondition% &
+      & INTERFACE_CONDITION,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceConditionCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionCreateStartObj
+
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Destroys an interface condition identified by a user number.
+  SUBROUTINE CMISSInterfaceConditionDestroyNumber(RegionUserNumber,InterfaceUserNumber,InterfaceConditionUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface containing the interface condition to destroy.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface containing the interface condition to destroy.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface condition to destroy.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSFInterfaceConditionDestroyNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_CONDITION)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(InterfaceConditionUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
+        IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+          CALL INTERFACE_CONDITION_DESTROY(INTERFACE_CONDITION,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceConditionUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceConditionDestroyNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionDestroyNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionDestroyNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionDestroyNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Destroys an interface condition identified by an object.
+  SUBROUTINE CMISSInterfaceConditionDestroyObj(InterfaceCondition,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: InterfaceCondition !<The interface condition to destroy.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceConditionDestroyObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_CONDITION_DESTROY(InterfaceCondition%INTERFACE_CONDITION,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceConditionDestroyObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionDestroyObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionDestroyObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionDestroyObj
+
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Finishes the creation of equations for an interface condition identified by an user number.
+  SUBROUTINE CMISSInterfaceConditionEquationsCreateFinishNumber(RegionUserNumber,InterfaceUserNumber, &
+    & InterfaceConditionUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface to finish the interface equations for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface containg the interface condition to finish the interface equations for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface condition to finish creating the interface equations for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceConditionEquationsCreateFinishNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_CONDITION)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(InterfaceConditionUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
+        IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+          CALL INTERFACE_CONDITION_EQUATIONS_CREATE_FINISH(INTERFACE_CONDITION,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceConditionUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceConditionEquationsCreateFinishNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionEquationsCreateFinishNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionEquationsCreateFinishNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionEquationsCreateFinishNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finishes the creation of interface equations for an interface condition identified by an object.
+  SUBROUTINE CMISSInterfaceConditionEquationsCreateFinishObj(InterfaceCondition,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: InterfaceCondition !<The interface condition to finish creating the interface equations for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceConditionEquationsCreateFinishObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_CONDITION_EQUATIONS_CREATE_FINISH(InterfaceCondition%INTERFACE_CONDITION,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceConditionEquationsCreateFinishObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionEquationsCreateFinishObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionEquationsCreateFinishObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionEquationsCreateFinishObj
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Starts the creation of interface equations for an interface condition identified by a user number.
+  SUBROUTINE CMISSInterfaceConditionEquationsCreateStartNumber(RegionUserNumber,InterfaceUserNumber,InterfaceConditionUserNumber, &
+    & Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface and interface condition to start the creation of the interface equations for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface containing the interface condition to start the creation of the interface equations for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface condition to start the creation of the interface equations for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceConditionEquationsCreateStartNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_CONDITION)
+    NULLIFY(INTERFACE_EQUATIONS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(InterfaceConditionUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
+        IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+          CALL INTERFACE_CONDITION_EQUATIONS_CREATE_START(INTERFACE_CONDITION,INTERFACE_EQUATIONS,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceConditionUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceConditionEquationsCreateStartNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionEquationsCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionEquationsCreateStartNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionEquationsCreateStartNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Starts the creation of interface equations for an interface condition identified by an object.
+  SUBROUTINE CMISSInterfaceConditionEquationsCreateStartObj(InterfaceCondition,InterfaceEquations,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: InterfaceCondition !<The interface condition to start the creation of interface equations for
+    TYPE(CMISSInterfaceEquationsType), INTENT(IN) :: InterfaceEquations !<On return, the created interface equations.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceConditionEquationsCreateStartObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_CONDITION_EQUATIONS_CREATE_START(InterfaceCondition%INTERFACE_CONDITION,InterfaceEquations% &
+      & INTERFACE_EQUATIONS,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceConditionEquationsCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionEquationsCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionEquationsCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionEquationsCreateStartObj
+
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Destroys interface equations for an interface condition identified by a user number.
+  SUBROUTINE CMISSInterfaceConditionEquationsDestroyNumber(RegionUserNumber,InterfaceUserNumber,InterfaceConditionUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface and interface condition to destroy the interface equations for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface containing the interface condition to destroy the interface equations for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface condition to destroy the interface equations for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSFInterfaceConditionEquationsDestroyNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_CONDITION)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(InterfaceConditionUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
+        IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+          CALL INTERFACE_CONDITION_EQUATIONS_DESTROY(INTERFACE_CONDITION,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceConditionUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceConditionEquationsDestroyNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionEquationsDestroyNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionEquationsDestroyNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionEquationsDestroyNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Destroys the interface equations for an interface condition identified by an object.
+  SUBROUTINE CMISSInterfaceConditionEquationsDestroyObj(InterfaceCondition,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: InterfaceCondition !<The interface condition to destroy the interface equations for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceConditionEquationsDestroyObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_CONDITION_EQUATIONS_DESTROY(InterfaceCondition%INTERFACE_CONDITION,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceConditionEquationsDestroyObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionEquationsDestroyObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionEquationsDestroyObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionEquationsDestroyObj
+
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Adds an equations set to an interface condition identified by a user number.
+  SUBROUTINE CMISSInterfaceConditionEquationsSetAddNumber(InterfaceRegionUserNumber,InterfaceUserNumber, &
+    & InterfaceConditionUserNumber,MeshIndex,EquationsSetRegionUserNumber,EquationsSetUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: InterfaceRegionUserNumber !<The user number of the region containing the interface containing the interface condition to add the equations set.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface containing the interface condition to add the equations set.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface condition to add the equations set.
+    INTEGER(INTG), INTENT(IN) :: MeshIndex !<The mesh index of the interface condition interface for which the equations set is added.
+    INTEGER(INTG), INTENT(IN) :: EquationsSetRegionUserNumber !<The user number of the region containing the equations set to add.
+    INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of equations set to add.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(REGION_TYPE), POINTER :: EQUATIONS_SET_REGION,INTERFACE_REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceConditionEquationsSetAddNumber",Err,ERROR,*999)
+ 
+    NULLIFY(INTERFACE_REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_CONDITION)
+    NULLIFY(EQUATIONS_SET_REGION)
+    NULLIFY(EQUATIONS_SET)
+    CALL REGION_USER_NUMBER_FIND(InterfaceRegionUserNumber,INTERFACE_REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(INTERFACE_REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,INTERFACE_REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(InterfaceConditionUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
+        IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+          CALL REGION_USER_NUMBER_FIND(EquationsSetRegionuserNumber,EQUATIONS_SET_REGION,Err,ERROR,*999)
+          IF(ASSOCIATED(EQUATIONS_SET_REGION)) THEN
+            CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,EQUATIONS_SET_REGION,EQUATIONS_SET,Err,ERROR,*999)
+            IF(ASSOCIATED(EQUATIONS_SET)) THEN
+              CALL INTERFACE_CONDITION_EQUATIONS_SET_ADD(INTERFACE_CONDITION,MeshIndex,EQUATIONS_SET,Err,ERROR,*999)
+            ELSE
+              LOCAL_ERROR="An equations set with an user number of "// &
+                & TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
+                & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(EquationsSetRegionUserNumber,"*",Err,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The equations set region with an user number of "// &
+              & TRIM(NUMBER_TO_VSTRING(EquationsSetRegionUserNumber,"*",Err,ERROR))//" does not exist."
+            CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceConditionUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceRegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(InterfaceRegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="The interface region with an user number of "// &
+        & TRIM(NUMBER_TO_VSTRING(InterfaceRegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceConditionEquationsSetAddNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionEquationsSetAddNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionEquationsSetAddNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionEquationsSetAddNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Adds an equations set to an interface condition identified by an object.
+  SUBROUTINE CMISSInterfaceConditionEquationsSetAddObj(InterfaceCondition,MeshIndex,EquationsSet,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: InterfaceCondition !<The interface condition to add the equations set to.
+    INTEGER(INTG), INTENT(IN) :: MeshIndex !<The mesh index of the interface condition interface for which the equations set is added.
+    TYPE(CMISSEquationsSetType), INTENT(IN) :: EquationsSet !<The equations set to.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceConditionEquationsSetAddObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_CONDITION_EQUATIONS_SET_ADD(InterfaceCondition%INTERFACE_CONDITION,MeshIndex,EquationsSet%EQUATIONS_SET, &
+      & Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceConditionEquationsSetAddObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionEquationsSetAddObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionEquationsSetAddObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionEquationsSetAddObj
+
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Finishes the creation of a Lagrange Multiplier Field for an interface condition identified by an user number.
+  SUBROUTINE CMISSInterfaceConditionLagrangeFieldCreateFinishNumber(RegionUserNumber,InterfaceUserNumber, &
+    & InterfaceConditionUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface and interface condition to finish the Lagrange multiplier field for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface containg the interface condition to finish the Lagrange multiplier field for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface condition to finish creating the Lagrange multiplier field for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceConditionLagrangeFieldCreateFinishNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_CONDITION)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(InterfaceConditionUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
+        IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+          CALL INTERFACE_CONDITION_LAGRANGE_FIELD_CREATE_FINISH(INTERFACE_CONDITION,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceConditionUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceConditionLagrangeFieldCreateFinishNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionLagrangeFieldCreateFinishNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionLagrangeFieldCreateFinishNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionLagrangeFieldCreateFinishNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finishes the creation of a Lagrange multiplier field for an interface condition identified by an object.
+  SUBROUTINE CMISSInterfaceConditionLagrangeFieldCreateFinishObj(InterfaceCondition,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: InterfaceCondition !<The interface condition to finish creating the Lagrange multiplier field for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceConditionLagrangeFieldCreateFinishObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_CONDITION_LAGRANGE_FIELD_CREATE_FINISH(InterfaceCondition%INTERFACE_CONDITION,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceConditionLagrangeFieldCreateFinishObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionLagrangeFieldCreateFinishObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionLagrangeFieldCreateFinishObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionLagrangeFieldCreateFinishObj
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Starts the creation of a Lagrange multiplier field for an interface condition identified by a user number.
+  SUBROUTINE CMISSInterfaceConditionLagrangeFieldCreateStartNumber(RegionUserNumber,InterfaceUserNumber, &
+    & InterfaceConditionUserNumber,LagrangeFieldUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface and interface condition to start the creation of the Lagrange multiplier field for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface containing the interface condition to start the creation of the Lagrange multiplier field for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface condition to start the creation of the Lagrange multiplier field for.
+    INTEGER(INTG), INTENT(IN) :: LagrangeFieldUserNumber !<The user number of the Lagrange field.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: LAGRANGE_FIELD
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceConditionLagrangeFieldCreateStartNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_CONDITION)
+    NULLIFY(LAGRANGE_FIELD)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(InterfaceUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
+        IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+          CALL INTERFACE_CONDITION_LAGRANGE_FIELD_CREATE_START(INTERFACE_CONDITION,LagrangeFieldUserNumber,LAGRANGE_FIELD, &
+            & Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceConditionUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceConditionLagrangeFieldCreateStartNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionLagrangeFieldCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionLagrangeFieldCreateStartNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionLagrangeFieldCreateStartNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Starts the creation of a Lagrange multiplier field for an interface condition identified by an object.
+  SUBROUTINE CMISSInterfaceConditionLagrangeFieldCreateStartObj(InterfaceCondition,LagrangeFieldUserNumber,LagrangeField,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: InterfaceCondition !<The interface condition to start the creation of the Lagrange multiplier field for.
+    INTEGER(INTG), INTENT(IN) :: LagrangeFieldUserNumber !<The user number of the Lagrange field.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: LagrangeField !<If associated on entry, the user created Lagrange field which has the same user number as the specified Lagrange field user number. If not associated on entry, on return, the created Lagrange field for the interface condition.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceConditionLagrangeFieldCreateStartObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_CONDITION_LAGRANGE_FIELD_CREATE_START(InterfaceCondition%INTERFACE_CONDITION,LagrangeFieldUserNumber, &
+      & LagrangeField%FIELD,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceConditionLagrangeFieldCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionLagrangeFieldCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionLagrangeFieldCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionLagrangeFieldCreateStartObj
+
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Returns the method for an interface condition identified by a user number.
+  SUBROUTINE CMISSInterfaceConditionMethodGetNumber(RegionUserNumber,InterfaceUserNumber,InterfaceConditionUserNumber, &
+    & InterfaceConditionMethod,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface containing the interface condition to get the method for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface containing the interface condition to get the method for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface condition to get the method for.
+    INTEGER(INTG), INTENT(OUT) :: InterfaceConditionMethod !<On return, the interface condition method. \see OPENCMISS_InterfaceConditionMethods,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceConditionMethodGetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_CONDITION)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(InterfaceConditionUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
+        IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+          CALL INTERFACE_CONDITION_METHOD_GET(INTERFACE_CONDITION,InterfaceConditionMethod,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceConditionUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceConditionMethodGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionMethodGetNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionMethodGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionMethodGetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Gets the method for an interface condition identified by an object.
+  SUBROUTINE CMISSInterfaceConditionMethodGetObj(InterfaceCondition,InterfaceConditionMethod,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: InterfaceCondition !<The interface condition to get the method for.
+    INTEGER(INTG), INTENT(OUT) :: InterfaceConditionMethod !<On return, the interface condition method. \see OPENCMISS_InterfaceConditionMethods,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceConditionMethodGetObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_CONDITION_METHOD_GET(InterfaceCondition%INTERFACE_CONDITION,InterfaceConditionMethod,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceConditionMethodGetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionMethodGetObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionMethodGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionMethodGetObj
+
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Sets/changes the method for an interface condition identified by a user number.
+  SUBROUTINE CMISSInterfaceConditionMethodSetNumber(RegionUserNumber,InterfaceUserNumber,InterfaceConditionUserNumber, &
+    & InterfaceConditionMethod,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface containing the interface condition to set the method for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface containing the interface condition to set the method for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface condition to set the method for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionMethod !<The interface condition method to set. \see OPENCMISS_InterfaceConditionMethods,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceConditionMethodSetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_CONDITION)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(InterfaceConditionUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
+        IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+          CALL INTERFACE_CONDITION_METHOD_SET(INTERFACE_CONDITION,InterfaceConditionMethod,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceConditionUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceConditionMethodSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionMethodSetNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionMethodSetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionMethodSetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the method for an interface condition identified by an object.
+  SUBROUTINE CMISSInterfaceConditionMethodSetObj(InterfaceCondition,InterfaceConditionMethod,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: InterfaceCondition !<The interface condition to set the method for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionMethod !<The interface condition method to set. \see OPENCMISS_InterfaceConditionMethods,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceConditionMethodSetObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_CONDITION_METHOD_SET(InterfaceCondition%INTERFACE_CONDITION,InterfaceConditionMethod,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceConditionMethodSetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionMethodSetObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionMethodSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionMethodSetObj
+
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Returns the operator for an interface condition identified by a user number.
+  SUBROUTINE CMISSInterfaceConditionOperatorGetNumber(RegionUserNumber,InterfaceUserNumber,InterfaceConditionUserNumber, &
+    & InterfaceConditionOperator,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface containing the interface condition to get the operator for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface containing the interface condition to get the operator for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface condition to get the operator for.
+    INTEGER(INTG), INTENT(OUT) :: InterfaceConditionOperator !<On return, the interface condition operator. \see OPENCMISS_InterfaceConditionOperators,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceConditionOperatorGetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_CONDITION)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(InterfaceConditionUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
+        IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+          CALL INTERFACE_CONDITION_OPERATOR_GET(INTERFACE_CONDITION,InterfaceConditionOperator,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceConditionUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceConditionOperatorGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionOperatorGetNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionOperatorGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionOperatorGetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Gets the operator for an interface condition identified by an object.
+  SUBROUTINE CMISSInterfaceConditionOperatorGetObj(InterfaceCondition,InterfaceConditionOperator,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: InterfaceCondition !<The interface condition to get the operator for.
+    INTEGER(INTG), INTENT(OUT) :: InterfaceConditionOperator !<On return, the interface condition operator. \see OPENCMISS_InterfaceConditionOperator,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceConditionOperatorGetObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_CONDITION_OPERATOR_GET(InterfaceCondition%INTERFACE_CONDITION,InterfaceConditionOperator, &
+      & Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceConditionOperatorGetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionOperatorGetObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionOperatorGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionOperatorGetObj
+
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Sets/changes the operator for an interface condition identified by a user number.
+  SUBROUTINE CMISSInterfaceConditionOperatorSetNumber(RegionUserNumber,InterfaceUserNumber,InterfaceConditionUserNumber, &
+    & InterfaceConditionOperator,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface containing the interface condition to set the operator for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface containing the interface condition to set the operator for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface condition to set the operator for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionOperator !<The interface condition operator to set. \see OPENCMISS_InterfaceConditionOperators,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceConditionOperatorSetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_CONDITION)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(InterfaceConditionUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
+        IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+          CALL INTERFACE_CONDITION_OPERATOR_SET(INTERFACE_CONDITION,InterfaceConditionOperator,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceConditionUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceConditionOperatorSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionOperatorSetNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionOperatorSetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionOperatorSetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the operator for an interface condition identified by an object.
+  SUBROUTINE CMISSInterfaceConditionOperatorSetObj(InterfaceCondition,InterfaceConditionOperator,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: InterfaceCondition !<The interface condition to set the operator for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionOperator !<The interface condition operator to set. \see OPENCMISS_InterfaceConditionOperator,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceConditionOperatorSetObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_CONDITION_OPERATOR_SET(InterfaceCondition%INTERFACE_CONDITION,InterfaceConditionOperator, &
+      & Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceConditionOperatorSetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionOperatorSetObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionOperatorSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionOperatorSetObj
+
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Returns the output type for an interface equations identified by a user number.
+  SUBROUTINE CMISSInterfaceEquationsOutputTypeGetNumber(RegionUserNumber,InterfaceUserNumber,InterfaceConditionUserNumber, &
+    & OutputType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface, interface condition and interface equations to get the output type for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface, interface condition and interface equations to get the ouput type for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface condition and interface equation to get the output type for.
+    INTEGER(INTG), INTENT(OUT) :: OutputType !<On return, the interface equations output type. \see OPENCMISS_EquationsOutputType,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceEquationsOutputTypeGetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_CONDITION)
+    NULLIFY(INTERFACE_EQUATIONS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(InterfaceConditionUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
+        IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+          CALL INTERFACE_CONDITION_EQUATIONS_GET(INTERFACE_CONDITION,INTERFACE_EQUATIONS,Err,ERROR,*999)
+          CALL INTERFACE_EQUATIONS_OUTPUT_TYPE_GET(INTERFACE_EQUATIONS,OutputType,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceConditionUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceEquationsOutputTypeGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceEquationsOutputTypeGetNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceEquationsOutputTypeGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceEquationsOutputTypeGetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Gets the output type for an interface equations identified by an object.
+  SUBROUTINE CMISSInterfaceEquationsOutputTypeGetObj(InterfaceEquations,OutputType,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceEquationsType), INTENT(IN) :: InterfaceEquations !<The interface equations to get the output type for.
+    INTEGER(INTG), INTENT(OUT) :: OutputType !<On return, the interface equations output type. \see OPENCMISS_EquationsOutputType,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceEquationsOutputTypeGetObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_EQUATIONS_OUTPUT_TYPE_GET(InterfaceEquations%INTERFACE_EQUATIONS,OutputType,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceEquationsOutputTypeGetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceEquationsOutputTypeGetObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceEquationsOutputTypeGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceEquationsOutputTypeGetObj
+
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Sets/changes the output type for an interface equations identified by a user number.
+  SUBROUTINE CMISSInterfaceEquationsOutputTypeSetNumber(RegionUserNumber,InterfaceUserNumber,InterfaceConditionUserNumber, &
+    & OutputType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface, interface condition and interface equations to set the output type for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface, interface condition and interface equations to set the output type for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface condition and interface equations to set the output type for.
+    INTEGER(INTG), INTENT(IN) :: OutputType !<The interface equations output type to set. \see OPENCMISS_EquationsOutputTypes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceEquationsOutputTypeSetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_CONDITION)
+    NULLIFY(INTERFACE_EQUATIONS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(InterfaceConditionUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
+        IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+          CALL INTERFACE_CONDITION_EQUATIONS_GET(INTERFACE_CONDITION,INTERFACE_EQUATIONS,Err,ERROR,*999)
+          CALL INTERFACE_EQUATIONS_OUTPUT_TYPE_SET(INTERFACE_EQUATIONS,OutputType,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceConditionUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceEquationsOutputTypeSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceEquationsOutputTypeSetNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceEquationsOutputTypeSetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceEquationsOutputTypeSetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the output type for an interface equations identified by an object.
+  SUBROUTINE CMISSInterfaceEquationsOutputTypeSetObj(InterfaceEquations,OutputType,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceEquationsType), INTENT(IN) :: InterfaceEquations !<The interface equations to set the output type for.
+    INTEGER(INTG), INTENT(IN) :: OutputType !<The interface equations output type to set. \see OPENCMISS_EquationsOutputTypes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceEquationsOutputTypeSetObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_EQUATIONS_OUTPUT_TYPE_SET(InterfaceEquations%INTERFACE_EQUATIONS,OutputType,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceEquationsOutputTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceEquationsOutputTypeSetObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceEquationsOutputTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceEquationsOutputTypeSetObj
+
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Returns the sparsity type for an interface equations identified by a user number.
+  SUBROUTINE CMISSInterfaceEquationsSparsityGetNumber(RegionUserNumber,InterfaceUserNumber,InterfaceConditionUserNumber, &
+    & SparsityType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface, interface condition and interface equations to get the sparsity type for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface, interface condition and interface equations to get the sparsity type for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface condition and interface equation to get the sparsity type for.
+    INTEGER(INTG), INTENT(OUT) :: SparsityType !<On return, the interface equations sparsity type. \see OPENCMISS_EquationsSparsityType,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceEquationsSparsityGetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_CONDITION)
+    NULLIFY(INTERFACE_EQUATIONS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(InterfaceConditionUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
+        IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+          CALL INTERFACE_CONDITION_EQUATIONS_GET(INTERFACE_CONDITION,INTERFACE_EQUATIONS,Err,ERROR,*999)
+          CALL INTERFACE_EQUATIONS_SPARSITY_TYPE_GET(INTERFACE_EQUATIONS,SparsityType,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceConditionUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceEquationsSparsityGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceEquationsSparsityGetNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceEquationsSparsityGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceEquationsSparsityGetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Gets the sparsity type for an interface equations identified by an object.
+  SUBROUTINE CMISSInterfaceEquationsSparsityGetObj(InterfaceEquations,SparsityType,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceEquationsType), INTENT(IN) :: InterfaceEquations !<The interface equations to get the sparsity type for.
+    INTEGER(INTG), INTENT(OUT) :: SparsityType !<On return, the interface equations sparsity type. \see OPENCMISS_EquationsSparsityType,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceEquationsSparsityGetObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_EQUATIONS_SPARSITY_TYPE_GET(InterfaceEquations%INTERFACE_EQUATIONS,SparsityType,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceEquationsSparsityGetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceEquationsSparsityGetObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceEquationsSparsityGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceEquationsSparsityGetObj
+
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Sets/changes the sparsity type for an interface equations identified by a user number.
+  SUBROUTINE CMISSInterfaceEquationsSparsitySetNumber(RegionUserNumber,InterfaceUserNumber,InterfaceConditionUserNumber, &
+    & SparsityType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface, interface condition and interface equations to set the sparsity type for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface, interface condition and interface equations to set the sparsity type for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface condition and interface equations to set the sparsity type for.
+    INTEGER(INTG), INTENT(IN) :: SparsityType !<The interface equations sparsity type to set. \see OPENCMISS_EquationsSparsityTypes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceEquationsSparsitySetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_CONDITION)
+    NULLIFY(INTERFACE_EQUATIONS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(InterfaceConditionUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
+        IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+          CALL INTERFACE_CONDITION_EQUATIONS_GET(INTERFACE_CONDITION,INTERFACE_EQUATIONS,Err,ERROR,*999)
+          CALL INTERFACE_EQUATIONS_SPARSITY_TYPE_SET(INTERFACE_EQUATIONS,SparsityType,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceConditionUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceEquationsSparsitySetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceEquationsSparsitySetNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceEquationsSparsitySetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceEquationsSparsitySetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the sparsity type for an interface equations identified by an object.
+  SUBROUTINE CMISSInterfaceEquationsSparsitySetObj(InterfaceEquations,SparsityType,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceEquationsType), INTENT(IN) :: InterfaceEquations !<The interface equations to set the sparsity type for.
+    INTEGER(INTG), INTENT(IN) :: SparsityType !<The interface equations sparsity type to set. \see OPENCMISS_EquationsSparsityTypes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceEquationsSparsitySetObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_EQUATIONS_SPARSITY_TYPE_SET(InterfaceEquations%INTERFACE_EQUATIONS,SparsityType,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceEquationsSparsitySetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceEquationsSparsitySetObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceEquationsSparsitySetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceEquationsSparsitySetObj
 
 !!==================================================================================================================================
 !!
@@ -30760,6 +33402,193 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSSolverEquationsEquationsSetAddObj
+    
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Adds an interface condition to solver equations identified by an user number.
+  SUBROUTINE CMISSSolverEquationsInterfaceConditionAddNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex, &
+    & InterfaceRegionUserNumber,InterfaceUserNumber,InterfaceConditionUserNumber,InterfaceConditionIndex,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem with the solver to add the interface condition for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the solver to add the interface condition for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to add the interface condition for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceRegionUserNumber !<The user number of the region containing the interface and interface condition to add.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface containing the interface condition to add.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface condition to add.
+    INTEGER(INTG), INTENT(OUT) :: InterfaceConditionIndex !<On return, the index of the added interface condition in the solver equations.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(REGION_TYPE), POINTER :: INTERFACE_REGION
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverEquationsInterfaceConditionAddNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    NULLIFY(SOLVER_EQUATIONS)
+    NULLIFY(INTERFACE_REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_CONDITION)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SOLVER_EQUATIONS,Err,ERROR,*999)
+      CALL REGION_USER_NUMBER_FIND(InterfaceRegionUserNumber,INTERFACE_REGION,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE_REGION)) THEN
+        CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,INTERFACE_REGION,INTERFACE,Err,ERROR,*999)
+        IF(ASSOCIATED(INTERFACE)) THEN
+          CALL INTERFACE_CONDITION_USER_NUMBER_FIND(InterfaceConditionUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
+          IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+            CALL SOLVER_EQUATIONS_INTERFACE_CONDITION_ADD(SOLVER_EQUATIONS,INTERFACE_CONDITION,InterfaceConditionIndex, &
+              & Err,ERROR,*999)
+          ELSE
+            LOCAL_ERROR="An interface condition with an user number of "// &
+              & TRIM(NUMBER_TO_VSTRING(InterfaceConditionUserNumber,"*",Err,ERROR))// &
+              & " does not exist on interface number "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+              & " of parent region number "//TRIM(NUMBER_TO_VSTRING(InterfaceRegionUserNumber,"*",Err,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="An interface with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+            & " does not exist on parent region number "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceRegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceRegionUserNumber,"*",Err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverEquationsInterfaceConditionNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverEquationsInterfaceConditionAddNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverEquationsInterfaceConditionAddNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverEquationsInterfaceConditionAddNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Adds an interface condition to solver equations identified by an user number.
+  SUBROUTINE CMISSSolverEquationsInterfaceConditionAddNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+    & InterfaceRegionUserNumber,InterfaceUserNumber,InterfaceConditionUserNumber,InterfaceConditionIndex,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to add the interface condition for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to add the interface condition for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to add the interface condition for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceRegionUserNumber !<The user number of the region containing the interface and interface condition to add.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface containting the interface condition to add.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface conditions to add.
+    INTEGER(INTG), INTENT(OUT) :: InterfaceConditionIndex !<On return, the index of the added interface condition in the solver equations.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(REGION_TYPE), POINTER :: INTERFACE_REGION
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverEquationsInterfaceConditionAddNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    NULLIFY(SOLVER_EQUATIONS)
+    NULLIFY(INTERFACE_REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_CONDITION)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SOLVER_EQUATIONS,Err,ERROR,*999)
+      CALL REGION_USER_NUMBER_FIND(InterfaceRegionUserNumber,INTERFACE_REGION,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE_REGION)) THEN
+        CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,INTERFACE_REGION,INTERFACE,Err,ERROR,*999)
+        IF(ASSOCIATED(INTERFACE)) THEN          
+          CALL INTERFACE_CONDITION_USER_NUMBER_FIND(InterfaceConditionUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
+          IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+            CALL SOLVER_EQUATIONS_INTERFACE_CONDITION_ADD(SOLVER_EQUATIONS,INTERFACE_CONDITION,InterfaceConditionIndex, &
+              & Err,ERROR,*999)
+          ELSE
+            LOCAL_ERROR="An interface condition with an user number of "// &
+              & TRIM(NUMBER_TO_VSTRING(InterfaceConditionUserNumber,"*",Err,ERROR))// &
+              & " does not exist on interface number "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+              & " of parent region number "//TRIM(NUMBER_TO_VSTRING(InterfaceRegionUserNumber,"*",Err,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="An interface with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+            & " does not exist on parent region number "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceRegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceRegionUserNumber,"*",Err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverEquationsInterfaceConditionAddNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverEquationsInterfaceConditionAddNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverEquationsInterfaceConditionAddNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverEquationsInterfaceConditionAddNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Adds an interface condition to solver equations identified by an object.
+  SUBROUTINE CMISSSolverEquationsInterfaceConditionAddObj(SolverEquations,InterfaceCondition,InterfaceConditionIndex,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverEquationsType), INTENT(IN) :: SolverEquations !<The solver equations to add the equations set for.
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: InterfaceCondition !<The interface condition to add.
+    INTEGER(INTG), INTENT(OUT) :: InterfaceConditionIndex !<On return, the index of the added interface condition in the solver equations.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverEquationsInterfaceConditionAddObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_EQUATIONS_INTERFACE_CONDITION_ADD(SolverEquations%SOLVER_EQUATIONS,InterfaceCondition%INTERFACE_CONDITION, &
+      & InterfaceConditionIndex,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverEquationsInterfaceConditionAddObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverEquationsInterfaceConditionAddObj",Err,ERROR)
+    CALL EXITS("CMISSSolverEquationsInterfaceConditionAddObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverEquationsInterfaceConditionAddObj
     
   !  
   !================================================================================================================================

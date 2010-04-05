@@ -13816,18 +13816,19 @@ END FUNCTION CMISSFieldsTypeCreateC
 !!
 !!==================================================================================================================================
 
-  !>Returns the basis for a generated mesh identified by a user number for C.
-  FUNCTION CMISSGeneratedMeshBasisGetCNum(GeneratedMeshUserNumber,BasisUserNumber) BIND(C, NAME = &
+  !>Returns the basis for a generated mesh on a region identified by a user number for C.
+  FUNCTION CMISSGeneratedMeshBasisGetCNum(RegionUserNumber,GeneratedMeshUserNumber,BasisUserNumber) BIND(C, NAME = &
     & "CMISSGeneratedMeshBasisGetNum")
 
     !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to get the basis for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to get the basis for, for C.
     INTEGER(C_INT), INTENT(OUT) :: BasisUserNumber !<The user number of the basis to get, for C.
     !Function variable
     INTEGER(C_INT) :: CMISSGeneratedMeshBasisGetCNum !<Error Code.
     !Local variable
 
-    CALL CMISSGeneratedMeshBasisGet(GeneratedMeshUserNumber,BasisUserNumber,CMISSGeneratedMeshBasisGetCNum)
+    CALL CMISSGeneratedMeshBasisGet(RegionUserNumber,GeneratedMeshUserNumber,BasisUserNumber,CMISSGeneratedMeshBasisGetCNum)
 
     RETURN
 
@@ -13878,18 +13879,19 @@ END FUNCTION CMISSFieldsTypeCreateC
   !================================================================================================================================
   !
 
-  !>Sets/changes the basis for a generated mesh identified by a user number for C.
-  FUNCTION CMISSGeneratedMeshBasisSetCNum(GeneratedMeshUserNumber,BasisUserNumber) BIND(C, NAME = &
+  !>Sets/changes the basis for a generated mesh on a region identified by a user number for C.
+  FUNCTION CMISSGeneratedMeshBasisSetCNum(RegionUserNumber,GeneratedMeshUserNumber,BasisUserNumber) BIND(C, NAME = &
     & "CMISSGeneratedMeshBasisSetNum")
 
     !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to set the basis to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the basis to, for C.
     INTEGER(C_INT), INTENT(IN) :: BasisUserNumber !<The user number of the basis to set, for C.
     !Function variable
     INTEGER(C_INT) :: CMISSGeneratedMeshBasisSetCNum !<Error Code.
     !Local variable
 
-    CALL CMISSGeneratedMeshBasisSet(GeneratedMeshUserNumber,BasisUserNumber,CMISSGeneratedMeshBasisSetCNum)
+    CALL CMISSGeneratedMeshBasisSet(RegionUserNumber,GeneratedMeshUserNumber,BasisUserNumber,CMISSGeneratedMeshBasisSetCNum)
 
     RETURN
 
@@ -13940,18 +13942,19 @@ END FUNCTION CMISSFieldsTypeCreateC
   !================================================================================================================================
   !
 
-  !>Finishes the creation of a generated mesh identified by a user number for C.
-  FUNCTION CMISSGeneratedMeshCreateFinishCNum(GeneratedMeshUserNumber,MeshUserNumber) BIND(C, NAME = &
+  !>Finishes the creation of a generated mesh on a region identified by a user number for C.
+  FUNCTION CMISSGeneratedMeshCreateFinishCNum(RegionUserNumber,GeneratedMeshUserNumber,MeshUserNumber) BIND(C, NAME = &
     & "CMISSGeneratedMeshCreateFinishNum")
 
     !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to set the basis to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the basis to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: MeshUserNumber !<The user number of the mesh to generate, for C.
     !Function variable
     INTEGER(C_INT) :: CMISSGeneratedMeshCreateFinishCNum !<Error Code.
     !Local variable
 
-    CALL CMISSGeneratedMeshCreateFinish(GeneratedMeshUserNumber,MeshUserNumber,CMISSGeneratedMeshCreateFinishCNum)
+    CALL CMISSGeneratedMeshCreateFinish(RegionUserNumber,GeneratedMeshUserNumber,MeshUserNumber,CMISSGeneratedMeshCreateFinishCNum)
 
     RETURN
 
@@ -14083,16 +14086,17 @@ END FUNCTION CMISSFieldsTypeCreateC
   !================================================================================================================================
   !
 
-  !>Destroys a generated mesh identified by a user number for C.
-  FUNCTION CMISSGeneratedMeshDestroyCNum(GeneratedMeshUserNumber) BIND(C, NAME = "CMISSGeneratedMeshDestroyNum")
+  !>Destroys a generated mesh on a region identified by a user number for C.
+  FUNCTION CMISSGeneratedMeshDestroyCNum(RegionUserNumber,GeneratedMeshUserNumber) BIND(C, NAME = "CMISSGeneratedMeshDestroyNum")
 
     !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to destroy, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to destroy, for C.
     !Function variable
     INTEGER(C_INT) :: CMISSGeneratedMeshDestroyCNum !<Error Code.
     !Local variableC
 
-    CALL CMISSGeneratedMeshDestroy(GeneratedMeshUserNumber,CMISSGeneratedMeshDestroyCNum)
+    CALL CMISSGeneratedMeshDestroy(RegionUserNumber,GeneratedMeshUserNumber,CMISSGeneratedMeshDestroyCNum)
 
     RETURN
 
@@ -14137,11 +14141,12 @@ END FUNCTION CMISSFieldsTypeCreateC
   !================================================================================================================================
   !
 
-  !>Returns the extent for a generated mesh identified by a user number for C.
-  FUNCTION CMISSGeneratedMeshExtentGetCNum(GeneratedMeshUserNumber,ExtentSize,ExtentPtr) BIND(C, NAME = &
+  !>Returns the extent for a generated mesh on a region identified by a user number for C.
+  FUNCTION CMISSGeneratedMeshExtentGetCNum(RegionUserNumber,GeneratedMeshUserNumber,ExtentSize,ExtentPtr) BIND(C, NAME = &
     & "CMISSGeneratedMeshExtentGetNum")
 
     !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number, for C, of the region containing the generated mesh to get the extent for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number, for C, of the generated mesh to get the extent for.
     INTEGER(C_INT), INTENT(OUT) :: ExtentSize !<The size of the extent for C.
     TYPE(C_PTR), INTENT(OUT) :: ExtentPtr !<C pointer to the extent for the i'th dimension of the generated mesh.
@@ -14151,7 +14156,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     REAL(C_DOUBLE), POINTER :: Extent(:)
 
     CMISSGeneratedMeshExtentGetCNum = CMISSNoError
-    CALL CMISSGeneratedMeshExtentGet(GeneratedMeshUserNumber, Extent, CMISSGeneratedMeshExtentGetCNum)
+    CALL CMISSGeneratedMeshExtentGet(RegionUserNumber,GeneratedMeshUserNumber, Extent, CMISSGeneratedMeshExtentGetCNum)
     IF(ASSOCIATED(Extent)) THEN
       ExtentSize = Size(Extent)
       ExtentPtr = C_LOC(Extent(1))
@@ -14206,11 +14211,12 @@ END FUNCTION CMISSFieldsTypeCreateC
   !================================================================================================================================
   !
 
-  !>Sets/changes the extent for a generated mesh identified by a user number for C.
-  FUNCTION CMISSGeneratedMeshExtentSetCNum(GeneratedMeshUserNumber,ExtentSize,ExtentPtr) BIND(C, NAME = &
+  !>Sets/changes the extent for a generated mesh on a region identified by a user number for C.
+  FUNCTION CMISSGeneratedMeshExtentSetCNum(RegionUserNumber,GeneratedMeshUserNumber,ExtentSize,ExtentPtr) BIND(C, NAME = &
     & "CMISSGeneratedMeshExtentSetNum")
 
     !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number, for C, of the region containing  generated mesh to set the extent for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number, for C, of the generated mesh to set the extent for.
     INTEGER(C_INT), INTENT(IN) :: ExtentSize(1) !<The size of the extent to set for C.
     TYPE(C_PTR), VALUE, INTENT(IN) :: ExtentPtr !<C pointer to the extent for the i'th dimension of the generated mesh to set.
@@ -14223,7 +14229,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(ExtentPtr)) THEN
       CALL C_F_POINTER(ExtentPtr, Extent, ExtentSize)
       IF(ASSOCIATED(Extent)) THEN
-        CALL CMISSGeneratedMeshExtentSet(GeneratedMeshUserNumber, Extent, CMISSGeneratedMeshExtentSetCNum)
+        CALL CMISSGeneratedMeshExtentSet(RegionUserNumber,GeneratedMeshUserNumber, Extent, CMISSGeneratedMeshExtentSetCNum)
       ELSE
         CMISSGeneratedMeshExtentSetCNum = CMISSErrorConvertingPointer
       ENDIF
@@ -14282,11 +14288,12 @@ END FUNCTION CMISSFieldsTypeCreateC
   !================================================================================================================================
   !
 
-  !>Returns the number of elements for a generated mesh identified by a user number for C.
-  FUNCTION CMISSGeneratedMeshNumberOfElementsGetCNum(GeneratedMeshUserNumber,NumberOfElementsSize,NumberOfElementsPtr) BIND(C, &
-    & NAME = "CMISSGeneratedMeshNumberOfElementsGetNum")
+  !>Returns the number of elements for a generated mesh on a region identified by a user number for C.
+  FUNCTION CMISSGeneratedMeshNumberOfElementsGetCNum(RegionUserNumber,GeneratedMeshUserNumber,NumberOfElementsSize, &
+    & NumberOfElementsPtr) BIND(C,NAME = "CMISSGeneratedMeshNumberOfElementsGetNum")
 
     !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to get the number of elements for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to get the number of elements for, for C.
     INTEGER(C_INT), INTENT(OUT) :: NumberOfElementsSize !<The size of the number of elements for C.
     TYPE(C_PTR), INTENT(OUT) :: NumberOfElementsPtr !<C pointer to the number of elements in the i'th dimension of the generated mesh.
@@ -14296,7 +14303,8 @@ END FUNCTION CMISSFieldsTypeCreateC
     INTEGER(C_INT) , POINTER :: NumberOfElements(:)
 
     CMISSGeneratedMeshNumberOfElementsGetCNum = CMISSNoError
-    CALL CMISSGeneratedMeshNumberOfElementsGet(GeneratedMeshUserNumber, NumberOfElements, CMISSGeneratedMeshNumberOfElementsGetCNum)
+    CALL CMISSGeneratedMeshNumberOfElementsGet(RegionUserNumber,GeneratedMeshUserNumber, NumberOfElements, &
+      & CMISSGeneratedMeshNumberOfElementsGetCNum)
     IF(ASSOCIATED(NumberOfElements)) THEN
       NumberOfElementsSize = Size(NumberOfElements)
       NumberOfElementsPtr = C_LOC(NumberOfElements(1))
@@ -14353,11 +14361,12 @@ END FUNCTION CMISSFieldsTypeCreateC
   !================================================================================================================================
   !
 
-  !>Sets/changes the number of elements for a generated mesh identified by a user number for C.
-  FUNCTION CMISSGeneratedMeshNumberOfElementsSetCNum(GeneratedMeshUserNumber,NumberOfElementsSize,NumberOfElementsPtr)  BIND(C, &
-    & NAME = "CMISSGeneratedMeshNumberOfElementsSetNum")
+  !>Sets/changes the number of elements for a generated mesh on a region identified by a user number for C.
+  FUNCTION CMISSGeneratedMeshNumberOfElementsSetCNum(RegionUserNumber,GeneratedMeshUserNumber,NumberOfElementsSize, &
+    & NumberOfElementsPtr)  BIND(C,NAME = "CMISSGeneratedMeshNumberOfElementsSetNum")
 
     !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to set the number of elements for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the number of elements for, for C.
     INTEGER(C_INT), INTENT(IN) :: NumberOfElementsSize(1) !<The size of the number of elements to set for C.
     TYPE(C_PTR), INTENT(IN) :: NumberOfElementsPtr !<C pointer to the number of elements in the i'th dimension of the generated mesh to set.
@@ -14370,7 +14379,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(NumberOfElementsPtr)) THEN
       CALL C_F_POINTER(NumberOfElementsPtr, NumberOfElements,NumberOfElementsSize)
       IF(ASSOCIATED(NumberOfElements)) THEN
-        CALL CMISSGeneratedMeshNumberOfElementsSet(GeneratedMeshUserNumber, NumberOfElements, &
+        CALL CMISSGeneratedMeshNumberOfElementsSet(RegionUserNumber,GeneratedMeshUserNumber, NumberOfElements, &
           & CMISSGeneratedMeshNumberOfElementsSetCNum)
       ELSE
         CMISSGeneratedMeshNumberOfElementsSetCNum = CMISSErrorConvertingPointer
@@ -14431,11 +14440,12 @@ END FUNCTION CMISSFieldsTypeCreateC
   !================================================================================================================================
   !
 
-  !>Returns the origin of a generated mesh identified by a user number for C.
-  FUNCTION CMISSGeneratedMeshOriginGetCNum(GeneratedMeshUserNumber,OriginSize,OriginPtr)BIND(C,NAME = &
+  !>Returns the origin of a generated mesh on a region identified by a user number for C.
+  FUNCTION CMISSGeneratedMeshOriginGetCNum(RegionUserNumber,GeneratedMeshUserNumber,OriginSize,OriginPtr) BIND(C,NAME = &
     & "CMISSGeneratedMeshOriginGetNum")
 
     !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to get the origin for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to get the origin for, for C.
     INTEGER(C_INT), INTENT(OUT) :: OriginSize !<The size of the origin to get for C.
     TYPE(C_PTR), INTENT(OUT) :: OriginPtr !<C pointer to the origin of the i'th dimension of the generated mesh.
@@ -14445,7 +14455,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     REAL(C_DOUBLE) , POINTER :: Origin(:)
 
     CMISSGeneratedMeshOriginGetCNum = CMISSNoError
-    CALL CMISSGeneratedMeshOriginGet(GeneratedMeshUserNumber, Origin, CMISSGeneratedMeshOriginGetCNum)
+    CALL CMISSGeneratedMeshOriginGet(RegionUserNumber,GeneratedMeshUserNumber, Origin, CMISSGeneratedMeshOriginGetCNum)
     IF(ASSOCIATED(Origin)) THEN
       OriginSize = Size(Origin)
       OriginPtr = C_LOC(Origin(1))
@@ -14501,11 +14511,12 @@ END FUNCTION CMISSFieldsTypeCreateC
   !================================================================================================================================
   !
 
-  !>Sets/changes the origin of a generated mesh identified by a user number for C.
-  FUNCTION CMISSGeneratedMeshOriginSetCNum(GeneratedMeshUserNumber,OriginSize,OriginPtr) BIND(C,NAME = &
+  !>Sets/changes the origin of a generated mesh on a region identified by a user number for C.
+  FUNCTION CMISSGeneratedMeshOriginSetCNum(RegionUserNumber,GeneratedMeshUserNumber,OriginSize,OriginPtr) BIND(C,NAME = &
     & "CMISSGeneratedMeshOriginSetNum")
 
     !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to set the origin for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the origin for, for C.
     INTEGER(C_INT), INTENT(IN) :: OriginSize(1) !<The size of the origin to set for C.
     TYPE(C_PTR), INTENT(IN) :: OriginPtr !<C pointer to the origin of the i'th dimension of the generated mesh to set.
@@ -14518,7 +14529,7 @@ END FUNCTION CMISSFieldsTypeCreateC
     IF(C_ASSOCIATED(OriginPtr)) THEN
       CALL C_F_POINTER(OriginPtr, Origin, OriginSize)
       IF(ASSOCIATED(Origin)) THEN
-        CALL CMISSGeneratedMeshOriginSet(GeneratedMeshUserNumber, Origin, CMISSGeneratedMeshOriginSetCNum)
+        CALL CMISSGeneratedMeshOriginSet(RegionUserNumber,GeneratedMeshUserNumber,Origin,CMISSGeneratedMeshOriginSetCNum)
       ELSE
         CMISSGeneratedMeshOriginSetCNum = CMISSErrorConvertingPointer
       ENDIF
@@ -14577,18 +14588,19 @@ END FUNCTION CMISSFieldsTypeCreateC
   !================================================================================================================================
   !
 
-  !>Returns the type of a generated mesh identified by a user number for C.
-  FUNCTION CMISSGeneratedMeshTypeGetCNum(GeneratedMeshUserNumber,GeneratedMeshType) BIND(C, NAME = &
+  !>Returns the type of a generated mesh on a region identified by a user number for C.
+  FUNCTION CMISSGeneratedMeshTypeGetCNum(RegionUserNumber,GeneratedMeshUserNumber,GeneratedMeshType) BIND(C, NAME = &
     & "CMISSGeneratedMeshTypeGetNum")
 
     !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to get the type for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to get the type for, for C.
     INTEGER(C_INT), INTENT(OUT) :: GeneratedMeshType !<On return, the type of the generated mesh to get, for C. \see OPENCMISS_GeneratedMeshTypes
     !Function variable
     INTEGER(C_INT) :: CMISSGeneratedMeshTypeGetCNum !<Error Code.
     !Local variable
 
-    CALL CMISSGeneratedMeshTypeGet(GeneratedMeshUserNumber, GeneratedMeshType, CMISSGeneratedMeshTypeGetCNum)
+    CALL CMISSGeneratedMeshTypeGet(RegionUserNumber,GeneratedMeshUserNumber,GeneratedMeshType,CMISSGeneratedMeshTypeGetCNum)
 
     RETURN
 
@@ -14629,18 +14641,19 @@ END FUNCTION CMISSFieldsTypeCreateC
   !================================================================================================================================
   !
 
-  !>Sets/changes the type of a generated mesh identified by a user number for C.
-  FUNCTION CMISSGeneratedMeshTypeSetCNum(GeneratedMeshUserNumber,GeneratedMeshType) BIND(C, NAME = &
+  !>Sets/changes the type of a generated mesh on a region identified by a user number for C.
+  FUNCTION CMISSGeneratedMeshTypeSetCNum(RegionUserNumber,GeneratedMeshUserNumber,GeneratedMeshType) BIND(C, NAME = &
     & "CMISSGeneratedMeshTypeSetNum")
 
     !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to set the type to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the type to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshType !<On return, the type of the generated mesh to set, for C. \see OPENCMISS_GeneratedMeshTypes
     !Function variable
     INTEGER(C_INT) :: CMISSGeneratedMeshTypeSetCNum !<Error Code.
     !Local variable
 
-    CALL CMISSGeneratedMeshTypeSet(GeneratedMeshUserNumber, GeneratedMeshType, CMISSGeneratedMeshTypeSetCNum)
+    CALL CMISSGeneratedMeshTypeSet(RegionUserNumber,GeneratedMeshUserNumber, GeneratedMeshType, CMISSGeneratedMeshTypeSetCNum)
 
     RETURN
 
