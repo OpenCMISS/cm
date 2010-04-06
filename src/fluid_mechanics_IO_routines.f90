@@ -137,8 +137,8 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   TYPE (ARRAY_MESH) MESH_INFO(3)
   TYPE (DARCY_PARAMETERS) DARCY
   TYPE(FIELD_TYPE), POINTER :: FIELD
-  TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS
-  TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT
+  TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INTERPOLATION_PARAMETERS(:)
+  TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: INTERPOLATED_POINT(:)
 
 
   INTEGER(INTG), DIMENSION(:), ALLOCATABLE:: NodesPerElement
@@ -346,27 +346,27 @@ CONTAINS
     NULLIFY(INTERPOLATION_PARAMETERS)
     NULLIFY(INTERPOLATED_POINT)
     
-    CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(FIELD,FIELD_U_VARIABLE_TYPE,INTERPOLATION_PARAMETERS &
+    CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(FIELD,INTERPOLATION_PARAMETERS &
     & ,ERR,ERROR,*999)
-    CALL FIELD_INTERPOLATED_POINT_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
+    CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
 
     DO I=1,NumberOfElements
       DO J=1,NodesPerElement(1)
         ELEMENT_NUMBER=I
         XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
-          & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,1)-1.0)/(REGION%equations_sets% &
-          & equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
-          & %ptr%number_of_nodes_xi(1)-1.0)
+          & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,1)-1.0)/(REGION% &
+          & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
+          & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xi(1)-1.0)
         XI_COORDINATES(2)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
-          & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,2)-1.0)/(REGION%equations_sets% &
-          & equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
-          & %ptr%number_of_nodes_xi(2)-1.0)
+          & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,2)-1.0)/(REGION% &
+          & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
+          & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xi(2)-1.0)
 
         IF(NumberOfDimensions==3)THEN
           XI_COORDINATES(3)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
-            & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,3)-1.0)/(REGION%equations_sets% &
-            & equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
-            & %ptr%number_of_nodes_xi(3)-1.0)
+            & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,3)-1.0)/(REGION% &
+            & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
+            & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xi(3)-1.0)
         END IF
 
         !K is global node number
@@ -379,8 +379,8 @@ CONTAINS
         END IF
 
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
-          & INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-        CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,INTERPOLATED_POINT,ERR,ERROR,*999)
+          & INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%ptr,ERR,ERROR,*999)
+        CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr,ERR,ERROR,*999)
         NodeXValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
           & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
         NodeYValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
@@ -408,9 +408,9 @@ CONTAINS
 
         IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS)THEN
           IF(NumberOfDimensions==3)THEN
-            NodePValue(K)=INTERPOLATED_POINT%VALUES(4,1)
+            NodePValue(K)=INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(4,1)
           ELSE IF(NumberOfDimensions==2)THEN
-            NodePValue(K)=INTERPOLATED_POINT%VALUES(3,1)
+            NodePValue(K)=INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(3,1)
           END IF
         END IF
 
@@ -451,7 +451,7 @@ CONTAINS
     IF( NumberOfDimensions==3 )THEN
       !For 3D, the following call works ...
       lagrange_simplex=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations% &
-        & interpolation%geometric_interp_parameters%bases(1)%ptr%type
+        & interpolation%geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%type
 !         lagrange_simplex=2
     ELSE
       !chrm, 20.08.09:
@@ -618,25 +618,25 @@ CONTAINS
     NULLIFY(INTERPOLATION_PARAMETERS)
     NULLIFY(INTERPOLATED_POINT)
     
-    CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(FIELD,FIELD_U_VARIABLE_TYPE,INTERPOLATION_PARAMETERS &
+    CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(FIELD,INTERPOLATION_PARAMETERS &
     & ,ERR,ERROR,*999)
-    CALL FIELD_INTERPOLATED_POINT_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
+    CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
 
     DO I=1,NumberOfElements
       DO J=1,NodesPerElement(1)
         ELEMENT_NUMBER=I
         XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
-          & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,1)-1.0)/(REGION%equations_sets% &
-          & equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
-          & %ptr%number_of_nodes_xi(1)-1.0)
+          & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,1)-1.0)/(REGION% &
+          & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
+          & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xi(1)-1.0)
         XI_COORDINATES(2)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
-          & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,2)-1.0)/(REGION%equations_sets% &
-          & equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
-          & %ptr%number_of_nodes_xi(2)-1.0)
+          & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,2)-1.0)/(REGION% &
+          & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
+          & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xi(2)-1.0)
         XI_COORDINATES(3)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
-          & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,3)-1.0)/(REGION%equations_sets% &
-          & equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
-          & %ptr%number_of_nodes_xi(3)-1.0)
+          & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,3)-1.0)/(REGION% &
+          & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
+          & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xi(3)-1.0)
         IF(NumberOfDimensions==2)THEN
           STOP 'Encas format only available for 3D hex and tets'
         END IF
@@ -647,8 +647,8 @@ CONTAINS
         COORDINATES=(/1,1,1/)
 
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
-          & INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-        CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,INTERPOLATED_POINT,ERR,ERROR,*999)
+          & INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%ptr,ERR,ERROR,*999)
+        CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr,ERR,ERROR,*999)
         NodeXValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
           & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
         NodeYValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
@@ -675,9 +675,9 @@ CONTAINS
 
         IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS)THEN
           IF(NumberOfDimensions==3)THEN
-            NodePValue(K)=INTERPOLATED_POINT%VALUES(4,1)
+            NodePValue(K)=INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(4,1)
           ELSE IF(NumberOfDimensions==2)THEN
-            NodePValue(K)=INTERPOLATED_POINT%VALUES(3,1)
+            NodePValue(K)=INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(3,1)
           END IF
         END IF
 
@@ -719,7 +719,7 @@ CONTAINS
     IF( NumberOfDimensions==3 )THEN
       !For 3D, the following call works ...
       lagrange_simplex=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations% &
-        & interpolation%geometric_interp_parameters%bases(1)%ptr%type
+        & interpolation%geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%type
 !         lagrange_simplex=2
     ELSE
       !chrm, 20.08.09:
@@ -1185,25 +1185,24 @@ CONTAINS
     NULLIFY(INTERPOLATION_PARAMETERS)
     NULLIFY(INTERPOLATED_POINT)
     
-    CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(FIELD,FIELD_U_VARIABLE_TYPE,INTERPOLATION_PARAMETERS &
-    & ,ERR,ERROR,*999)
-    CALL FIELD_INTERPOLATED_POINT_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
+    CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(FIELD,INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+    CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
 
     DO I=1,NumberOfElements
       DO J=1,NodesPerElement(1)
         ELEMENT_NUMBER=I
         XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
-          & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,1)-1.0)/(REGION%equations_sets% &
-          & equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
-          & %ptr%number_of_nodes_xi(1)-1.0)
+          & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,1)-1.0)/(REGION% &
+          & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
+          & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xi(1)-1.0)
         XI_COORDINATES(2)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
-          & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,2)-1.0)/(REGION%equations_sets% &
-          & equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
-          & %ptr%number_of_nodes_xi(2)-1.0)
+          & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,2)-1.0)/(REGION% &
+          & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
+          & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xi(2)-1.0)
         XI_COORDINATES(3)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
-          & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,3)-1.0)/(REGION%equations_sets% &
-          & equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
-          & %ptr%number_of_nodes_xi(3)-1.0)
+          & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,3)-1.0)/(REGION% &
+          & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
+          & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xi(3)-1.0)
         IF(NumberOfDimensions==2)THEN
           STOP 'Encas format only available for 3D hex and tets'
         END IF
@@ -1214,8 +1213,8 @@ CONTAINS
         COORDINATES=(/1,1,1/)
 
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
-          & INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-        CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,INTERPOLATED_POINT,ERR,ERROR,*999)
+          & INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%ptr,ERR,ERROR,*999)
+        CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr,ERR,ERROR,*999)
         NodeXValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
           & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
         NodeYValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
@@ -1254,7 +1253,7 @@ CONTAINS
     IF( NumberOfDimensions==3 )THEN
       !For 3D, the following call works ...
       lagrange_simplex=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations% &
-        & interpolation%geometric_interp_parameters%bases(1)%ptr%type
+        & interpolation%geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%type
 !         lagrange_simplex=2
     ELSE
       !chrm, 20.08.09:

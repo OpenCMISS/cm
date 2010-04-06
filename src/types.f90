@@ -838,6 +838,10 @@ MODULE TYPES
     REAL(DP) :: JACOBIAN !<The Jacobian of the Xi to X coordinate system transformation. Old CMISS name RG.
     INTEGER(INTG) :: JACOBIAN_TYPE !<The type of Jacobian. \see COORDINATE_ROUTINES_JacobianType
   END TYPE FIELD_INTERPOLATED_POINT_METRICS_TYPE
+
+  TYPE FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: PTR
+  END TYPE FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE
   
   !>Contains the interpolated value (and the derivatives wrt xi) of a field at a point. Old CMISS name XG.
   TYPE FIELD_INTERPOLATED_POINT_TYPE
@@ -846,6 +850,10 @@ MODULE TYPES
     INTEGER(INTG) :: PARTIAL_DERIVATIVE_TYPE !<The type of the partial derivatives that have been interpolated. PARTIAL_DERIVATIVE_TYPE can be either NO_PART_DERIV, FIRST_PART_DERIV or SECOND_PART_DERIV depending on whether just the field value, the field value and all first derivatives (including cross derivatives) or the first value and all first and second derivatives have been interpolated.
     REAL(DP), ALLOCATABLE :: VALUES(:,:) !<VALUES(component_idx,nu). The interpolated field components and their partial derivatives.
   END TYPE FIELD_INTERPOLATED_POINT_TYPE
+
+  TYPE FIELD_INTERPOLATED_POINT_PTR_TYPE
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: PTR
+  END TYPE FIELD_INTERPOLATED_POINT_PTR_TYPE
   
   !>Contains the parameters required to interpolate a field variable within an element. Old CMISS name XE
   TYPE FIELD_INTERPOLATION_PARAMETERS_TYPE
@@ -857,6 +865,10 @@ MODULE TYPES
     REAL(DP), ALLOCATABLE :: PARAMETERS(:,:) !<PARAMETERS(ns,component_idx). The interpolation parameters used for interpolating the component_idx'th component of the field variable.
     REAL(DP), ALLOCATABLE :: SCALE_FACTORS(:,:) !<SCALE_FACTORS(ns,component_idx). The scale factors used for scaling then component_idx'th component of the field variable. 
   END TYPE FIELD_INTERPOLATION_PARAMETERS_TYPE
+
+  TYPE FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: PTR
+  END TYPE FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE
   
   !>Contains the geometric parameters (lines, faces, volumes etc.) for a geometric field decomposition.
   TYPE FIELD_GEOMETRIC_PARAMETERS_TYPE
@@ -1323,22 +1335,22 @@ MODULE TYPES
     TYPE(FIELD_TYPE), POINTER :: INDEPENDENT_FIELD !<A pointer to the independent field for the equations 
     TYPE(FIELD_TYPE), POINTER :: MATERIALS_FIELD !<A pointer to the material field for the equations (if one is defined).
     TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD !<A pointer to the source field for the equations (if one is defined).
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: GEOMETRIC_INTERP_PARAMETERS !<A pointer to the geometric interpolation parameters for the equations.
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: FIBRE_INTERP_PARAMETERS !<A pointer to the fibre interpolation parameters for the equations (if a fibre field is defined). 
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: DEPENDENT_INTERP_PARAMETERS !<A pointer to the dependent interpolation parameters for the equations. 
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INDEPENDENT_INTERP_PARAMETERS !<A pointer to the independent interpolation parameters for the equations. 
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: MATERIALS_INTERP_PARAMETERS !<A pointer to the material interpolation parameters for the equations (if a material field is defined). 
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: SOURCE_INTERP_PARAMETERS !<A pointer to the source interpolation parameters for the equations (if a source field is defined). 
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: GEOMETRIC_INTERP_POINT !<A pointer to the geometric interpolated point information for the equations. 
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: FIBRE_INTERP_POINT !<A pointer to the fibre interpolated point information for the equations (if a fibre field is defined). 
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: DEPENDENT_INTERP_POINT !<A pointer to the dependent interpolated point information for the equations. 
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INDEPENDENT_INTERP_POINT !<A pointer to the independent interpolated point information for the equations. 
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: MATERIALS_INTERP_POINT !<A pointer to the material interpolated point information for the equations (if a material field is defined). 
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: SOURCE_INTERP_POINT !<A pointer to the source interpolated point information for the equations (if a source field is defined).
-    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: DEPENDENT_INTERP_POINT_METRICS !<A pointer to the dependent interpolated point metrics information 
-    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: INDEPENDENT_INTERP_POINT_METRICS !<A pointer to the independent interpolated point metrics information 
-    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: GEOMETRIC_INTERP_POINT_METRICS !<A pointer to the geometric interpolated point metrics information 
-    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: FIBRE_INTERP_POINT_METRICS !<A pointer to the fibre interpolated point metrics information 
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: GEOMETRIC_INTERP_PARAMETERS(:) !<GEOMETRIC_INTERP_PARAMETERS(field_variable_type). A pointer to the field_variable_type'th geometric interpolation parameters for the equations.
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: FIBRE_INTERP_PARAMETERS(:) !<FIBRE_INTERP_PARAMETERS(field_variable_type). A pointer to the fibre interpolation parameters for the equations (if a fibre field is defined). 
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: DEPENDENT_INTERP_PARAMETERS(:) !<DEPENDENT_INTERP_PARAMETERS(field_variable_type). A pointer to the field_variable_type'th dependent interpolation parameters for the equations. 
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INDEPENDENT_INTERP_PARAMETERS(:) !<INDEPENDENT_INTERP_PARAMETERS(field_variable_type). A pointer to the field_variable_type'th independent interpolation parameters for the equations. 
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: MATERIALS_INTERP_PARAMETERS(:) !<MATERIALS_INTERP_PARAMETERS(field_variable_type). A pointer to the field_variable_type'th material interpolation parameters for the equations (if a material field is defined). 
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: SOURCE_INTERP_PARAMETERS(:) !<SOURCE_INTERP_PARAMETERS(field_variable_type). A pointer to the field_variable_type'th source interpolation parameters for the equations (if a source field is defined). 
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: GEOMETRIC_INTERP_POINT(:) !<GEOMETRIC_INTERP_POINT(field_variable_type). A pointer to the field_variable_type'th geometric interpolated point information for the equations. 
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: FIBRE_INTERP_POINT(:) !<FIBRE_INTERP_POINT(field_variable_type). A pointer to the field_variable_type'th fibre interpolated point information for the equations (if a fibre field is defined). 
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: DEPENDENT_INTERP_POINT(:) !<DEPENDENT_INTERP_POINT(field_variable_type). A pointer to the field_variable_type'th dependent interpolated point information for the equations. 
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: INDEPENDENT_INTERP_POINT(:) !<INDEPENDENT_INTERP_POINT(field_variable_type). A pointer to the field_variable_type'th independent interpolated point information for the equations. 
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: MATERIALS_INTERP_POINT(:) !<MATERIALS_INTERP_POINT(field_variable_type). A pointer to the field_variable_type'th material interpolated point information for the equations (if a material field is defined). 
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: SOURCE_INTERP_POINT(:) !<SOURCE_INTERP_POINT(field_variable_type). A pointer to the field_variable_type'th source interpolated point information for the equations (if a source field is defined).
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE), POINTER :: DEPENDENT_INTERP_POINT_METRICS(:) !<DEPENDENT_INTERP_POINT_METRICS(field_variable_type). A pointer to the field_variable_type'th dependent interpolated point metrics information 
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE), POINTER :: INDEPENDENT_INTERP_POINT_METRICS(:) !<INDEPENDENT_INTERP_POINT_METRICS(field_variable_type). A pointer to the field_variable_type'th independent interpolated point metrics information 
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE), POINTER :: GEOMETRIC_INTERP_POINT_METRICS(:) !<GEOMETRIC_INTERP_POINT_METRICS(field_variable_type). A pointer to the field_variable_type'th geometric interpolated point metrics information 
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE), POINTER :: FIBRE_INTERP_POINT_METRICS(:) !<FIBRE_INTERP_POINT_METRICS(field_variable_type). A pointer to the field_variable_type'th fibre interpolated point metrics information 
   END TYPE EQUATIONS_INTERPOLATION_TYPE
 
   !>Contains information about the equations in an equations set. \see OPENCMISS::CMISSEquationsType
