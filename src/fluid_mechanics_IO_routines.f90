@@ -174,7 +174,8 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeUValue 
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeVValue 
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeWValue 
-  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePValue 
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePValue
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePValue2  
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeMUValue
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeRHOValue  
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeKappaValue  
@@ -248,6 +249,7 @@ CONTAINS
     IF (ALLOCATED(NodeVValue)) DEALLOCATE(NodeVValue)
     IF (ALLOCATED(NodeWValue)) DEALLOCATE(NodeWValue)
     IF (ALLOCATED(NodePValue)) DEALLOCATE(NodePValue)
+    IF (ALLOCATED(NodePValue2)) DEALLOCATE(NodePValue2)
     IF (ALLOCATED(NodeMUValue)) DEALLOCATE(NodeMUValue)
     IF (ALLOCATED(NodeRHOValue)) DEALLOCATE(NodeRHOValue)
     IF (ALLOCATED(NodeKappaValue)) DEALLOCATE(NodeKappaValue)
@@ -322,6 +324,7 @@ CONTAINS
     IF(.NOT.ALLOCATED(NodeVValue)) ALLOCATE(NodeVValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeWValue)) ALLOCATE(NodeWValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodePValue)) ALLOCATE(NodePValue(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodePValue2)) ALLOCATE(NodePValue2(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeMUValue)) ALLOCATE(NodeMUValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeRHOValue)) ALLOCATE(NodeRHOValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeKappaValue)) ALLOCATE(NodeKappaValue(NodesPerMeshComponent(1)))
@@ -368,6 +371,74 @@ CONTAINS
             & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
             & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xi(3)-1.0)
         END IF
+
+!Start: This is a hack for 3D simplex elements
+        IF(NumberOfDimensions==2)THEN
+          IF (NodesPerElement(1)==3) THEN
+            IF(J==1)  XI_COORDINATES=(/0.0_DP,1.0_DP/)
+            IF(J==2)  XI_COORDINATES=(/1.0_DP,0.0_DP/)
+            IF(J==3)  XI_COORDINATES=(/1.0_DP,1.0_DP/)
+          ELSE IF (NodesPerElement(1)==6) THEN
+            IF(J==1)  XI_COORDINATES=(/0.0_DP,1.0_DP/)
+            IF(J==2)  XI_COORDINATES=(/1.0_DP,0.0_DP/)
+            IF(J==3)  XI_COORDINATES=(/1.0_DP,1.0_DP/)
+            IF(J==4)  XI_COORDINATES=(/0.5_DP,0.5_DP/)
+            IF(J==5)  XI_COORDINATES=(/1.0_DP,0.5_DP/)
+            IF(J==6)  XI_COORDINATES=(/0.5_DP,1.0_DP/)
+          ELSE IF (NodesPerElement(1)==10) THEN
+            IF(J==1)  XI_COORDINATES=(/0.0_DP,1.0_DP/)
+            IF(J==2)  XI_COORDINATES=(/1.0_DP,0.0_DP/)
+            IF(J==3)  XI_COORDINATES=(/1.0_DP,1.0_DP/)
+            IF(J==4)  XI_COORDINATES=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+            IF(J==5)  XI_COORDINATES=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
+            IF(J==6)  XI_COORDINATES=(/1.0_DP,1.0_DP/3.0_DP/)
+            IF(J==7)  XI_COORDINATES=(/1.0_DP,2.0_DP/3.0_DP/)
+            IF(J==8)  XI_COORDINATES=(/2.0_DP/3.0_DP,1.0_DP/)
+            IF(J==9)  XI_COORDINATES=(/1.0_DP/3.0_DP,1.0_DP/)
+            IF(J==10)  XI_COORDINATES=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+          ENDIF
+        ELSE IF(NumberOfDimensions==3)THEN
+          IF (NodesPerElement(1)==4) THEN
+            IF(J==1)  XI_COORDINATES=(/0.0_DP,1.0_DP,1.0_DP/)
+            IF(J==2)  XI_COORDINATES=(/1.0_DP,0.0_DP,1.0_DP/)
+            IF(J==3)  XI_COORDINATES=(/1.0_DP,1.0_DP,0.0_DP/)
+            IF(J==4)  XI_COORDINATES=(/1.0_DP,1.0_DP,1.0_DP/)
+          ELSE IF (NodesPerElement(1)==10) THEN
+            IF(J==1)  XI_COORDINATES=(/0.0_DP,1.0_DP,1.0_DP/)
+            IF(J==2)  XI_COORDINATES=(/1.0_DP,0.0_DP,1.0_DP/)
+            IF(J==3)  XI_COORDINATES=(/1.0_DP,1.0_DP,0.0_DP/)
+            IF(J==4)  XI_COORDINATES=(/1.0_DP,1.0_DP,1.0_DP/)
+            IF(J==5)  XI_COORDINATES=(/0.5_DP,0.5_DP,1.0_DP/)
+            IF(J==6)  XI_COORDINATES=(/0.5_DP,1.0_DP,0.5_DP/)
+            IF(J==7)  XI_COORDINATES=(/0.5_DP,1.0_DP,1.0_DP/)
+            IF(J==8)  XI_COORDINATES=(/1.0_DP,0.5_DP,0.5_DP/)
+            IF(J==9)  XI_COORDINATES=(/1.0_DP,1.0_DP,0.5_DP/)
+            IF(J==10)  XI_COORDINATES=(/1.0_DP,0.5_DP,1.0_DP/)
+          ELSE IF (NodesPerElement(1)==20) THEN
+            IF(J==1)  XI_COORDINATES=(/0.0_DP,1.0_DP,1.0_DP/)
+            IF(J==2)  XI_COORDINATES=(/1.0_DP,0.0_DP,1.0_DP/)
+            IF(J==3)  XI_COORDINATES=(/1.0_DP,1.0_DP,0.0_DP/)
+            IF(J==4)  XI_COORDINATES=(/1.0_DP,1.0_DP,1.0_DP/)
+            IF(J==5)  XI_COORDINATES=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
+            IF(J==6)  XI_COORDINATES=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP,1.0_DP/)
+            IF(J==7)  XI_COORDINATES=(/1.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
+            IF(J==8)  XI_COORDINATES=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/3.0_DP/)
+            IF(J==9)  XI_COORDINATES=(/1.0_DP/3.0_DP,1.0_DP,1.0_DP/)
+            IF(J==10)  XI_COORDINATES=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/)
+            IF(J==11)  XI_COORDINATES=(/1.0_DP,1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+            IF(J==12)  XI_COORDINATES=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
+            IF(J==13)  XI_COORDINATES=(/1.0_DP,1.0_DP,1.0_DP/3.0_DP/)
+            IF(J==14)  XI_COORDINATES=(/1.0_DP,1.0_DP,2.0_DP/3.0_DP/)
+            IF(J==15)  XI_COORDINATES=(/1.0_DP,1.0_DP/3.0_DP,1.0_DP/)
+            IF(J==16)  XI_COORDINATES=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/)
+            IF(J==17)  XI_COORDINATES=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+            IF(J==18)  XI_COORDINATES=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
+            IF(J==19)  XI_COORDINATES=(/2.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
+            IF(J==20)  XI_COORDINATES=(/1.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+          ENDIF
+        ENDIF
+
+!End: This is a hack for 3D simplex elements
 
         !K is global node number
         K=REGION%meshes%meshes(1)%ptr%topology(1)%ptr%elements%elements(I)%global_element_nodes(J)
@@ -447,6 +518,14 @@ CONTAINS
 
       END DO 
     END DO
+
+! output for DN only
+    DO K=1,NodesPerMeshComponent(2)
+      NodePValue2(K)=REGION%equations_sets%equations_sets(1)%ptr%dependent%dependent_field%variables(1) &
+        & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(3*NodesPerMeshComponent(1)+K)
+    ENDDO
+
+
 
     IF( NumberOfDimensions==3 )THEN
       !For 3D, the following call works ...
@@ -1483,6 +1562,22 @@ CONTAINS
       CALL FLUID_MECHANICS_IO_DARCY_EVAL_MAX_ERROR
     END IF
 
+!test output for DN only
+
+    FILENAME="./output/"//NAME//".davidn"
+    OPEN(UNIT=14, FILE=CHAR(FILENAME),STATUS='unknown')
+    WRITE(14,*) NodesPerMeshComponent(1),NodesPerMeshComponent(1),NodesPerMeshComponent(2)
+    DO I=1,NodesPerMeshComponent(1) 
+      WRITE(14,'(3("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I)
+    ENDDO
+    DO I=1,NodesPerMeshComponent(1) 
+      WRITE(14,'(6("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I),NodeUValue(I),NodeVValue(I),NodeWValue(I)
+    ENDDO
+    DO I=1,NodesPerMeshComponent(2) 
+      WRITE(14,'(6("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I),NodePValue2(I)
+    ENDDO
+    CLOSE(14)
+
     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Writing Nodes...",ERR,ERROR,*999)
     RETURN
 999 CALL ERRORS("FLUID_MECHANICS_IO_WRITE_NODES_CMGUI",ERR,ERROR)    
@@ -2384,9 +2479,9 @@ CONTAINS
         IF(OPTION==0) THEN
           !do nothing (default)    
         ELSE IF(OPTION==1) THEN
-          TIME_STEP_SIZE=0.05_DP
+          TIME_STEP_SIZE=0.05_DP*1000.0_DP
           TIME_TOLERANCE=0.00001_DP
-          NUMBER_OF_TIME_STEPS=19
+          NUMBER_OF_TIME_STEPS=20
           ENDI=SIZE(BOUNDARY_VALUES)
           DO J=1,NUMBER_OF_TIME_STEPS
             TIME_STEP=J
@@ -2400,6 +2495,8 @@ CONTAINS
               DO I=1,ENDI
                 READ(J,*) BOUNDARY_VALUES(I)
               ENDDO
+              BOUNDARY_VALUES=BOUNDARY_VALUES*1000.0_DP
+              WRITE(*,*)'1! BOUNDARY_VALUES=BOUNDARY_VALUES*1000.0_DP'
               CLOSE(J)
             ENDIF
           ENDDO
@@ -2411,6 +2508,14 @@ CONTAINS
           BOUNDARY_VALUES(ENDI+1:ENDI+ENDI)=-0.05_DP*COS(2.0_DP*PI*1.0_DP/40.0_DP*TIME)
           !W,Z COMPONENT
           BOUNDARY_VALUES(ENDI+ENDI+1:ENDI+ENDI+ENDI)=0.0_DP
+        ELSEIF(OPTION==3) THEN
+          ENDI=SIZE(BOUNDARY_VALUES)/NUMBER_OF_DIMENSIONS
+          !U,X COMPONENT
+          BOUNDARY_VALUES(1:ENDI)=-1.0_DP
+          !V,Y COMPONENT
+          BOUNDARY_VALUES(ENDI+1:ENDI+ENDI)=-1.0_DP
+          !W,Z COMPONENT
+          BOUNDARY_VALUES(ENDI+ENDI+1:ENDI+ENDI+ENDI)=-1.0_DP
         ELSE
           STOP 'Error during boundary input'
         ENDIF
@@ -2490,7 +2595,7 @@ CONTAINS
         IF(INPUT_OPTION==0) THEN
           !do nothing (default)    
         ELSE IF(INPUT_OPTION==1) THEN
-          TIME_STEP_SIZE=0.05_DP
+          TIME_STEP_SIZE=0.05_DP*1000.0_DP
           NUMBER_OF_TIME_STEPS=22
           TIME_TOLERANCE=0.00001_DP
           ENDI=SIZE(INPUT_VALUES)
@@ -2506,6 +2611,9 @@ CONTAINS
               DO I=1,ENDI
                 READ(J,*) INPUT_VALUES(I)
               ENDDO
+! ! TESTETSTEST
+              INPUT_VALUES=INPUT_VALUES*1000.0_DP
+              WRITE(*,*)'1! INPUT_VALUES=INPUT_VALUES*1000.0_DP'
               CLOSE(J)
             ENDIF
           ENDDO
