@@ -233,7 +233,13 @@ MODULE OPENCMISS
     PRIVATE
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
   END TYPE CMISSSolverEquationsType
-  
+
+  !>Contains information on a computational work group
+  TYPE CMISSComputationalWorkGroupType
+    PRIVATE
+    TYPE(COMPUTATIONAL_WORK_GROUP_TYPE), POINTER :: COMPUTATIONAL_WORK_GROUP
+  END TYPE CMISSComputationalWorkGroupType
+
   !Module variables
 
   TYPE(VARYING_STRING) :: ERROR
@@ -298,6 +304,8 @@ MODULE OPENCMISS
   PUBLIC CMISSSolverType,CMISSSolverTypeFinalise,CMISSSolverTypeInitialise
 
   PUBLIC CMISSSolverEquationsType,CMISSSolverEquationsTypeFinalise,CMISSSolverEquationsTypeInitialise
+
+  PUBLIC CMISSComputationalWorkGroupType
   
 
 !!==================================================================================================================================
@@ -1080,6 +1088,13 @@ MODULE OPENCMISS
   
   PUBLIC CMISSComputationalNumberOfNodesGet
 
+  PUBLIC CMISSComputationalWorkGroupCreateStart
+
+  PUBLIC CMISSComputationalWorkGroupCreateFinish
+
+  PUBLIC CMISSComputationalWorkGroupSubgroupAdd
+
+  PUBLIC CMISSDecompositionWorldWorkGroupSet
 !!==================================================================================================================================
 !!
 !! CONSTANTS
@@ -11524,6 +11539,104 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSComputationalNumberOfNodesGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>CREATE THE HIGHEST LEVEL WORK GROUP (DEFAULT: GROUP_WORLD)
+  SUBROUTINE CMISSComputationalWorkGroupCreateStart(WorldWorkGroup, NumberComputationalNodes, Err)  
+    !Argument Variables
+    TYPE(CMISSComputationalWorkGroupType), INTENT(INOUT) :: WorldWorkGroup
+    INTEGER(INTG),INTENT(IN) :: NumberComputationalNodes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code
+
+    CALL ENTERS("CMISSComputationalWorkGroupCreateStart",ERR,ERROR,*999)
+
+    NULLIFY(WorldWorkGroup%COMPUTATIONAL_WORK_GROUP)
+    CALL COMPUTATIONAL_WORK_GROUP_CREATE_START(WorldWorkGroup%COMPUTATIONAL_WORK_GROUP,NumberComputationalNodes, &
+      & Err,ERROR,*999)
+
+    CALL EXITS("CMISSComputationalWorkGroupCreateStart")
+    RETURN
+999 CALL ERRORS("CMISSComputationalWorkGroupCreateStart",Err,ERROR)
+    CALL EXITS("CMISSComputationalWorkGroupCreateStart")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSComputationalWorkGroupCreateStart
+
+  !
+  !================================================================================================================================
+  !
+
+  !>GENERATE THE HIERARCHY COMPUTATIONAL ENVIRONMENT BASED ON WORK GROUP TREE
+  SUBROUTINE CMISSComputationalWorkGroupCreateFinish(WorldWorkGroup, Err)  
+    !Argument Variables
+    TYPE(CMISSComputationalWorkGroupType), INTENT(INOUT) :: WorldWorkGroup
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code
+
+    CALL ENTERS("CMISSComputationalWorkGroupCreateFinish",ERR,ERROR,*999)
+
+    CALL COMPUTATIONAL_WORK_GROUP_CREATE_FINISH(WorldWorkGroup%COMPUTATIONAL_WORK_GROUP, Err,ERROR,*999)
+
+    CALL EXITS("CMISSComputationalWorkGroupCreateFinish")
+    RETURN
+999 CALL ERRORS("CMISSComputationalWorkGroupCreateFinish",Err,ERROR)
+    CALL EXITS("CMISSComputationalWorkGroupCreateFinish")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSComputationalWorkGroupCreateFinish
+
+  !
+  !================================================================================================================================
+  !
+
+  !>ADD WORK SUB-GROUP TO THE PARENT GROUP BASED ON THE COMPUTATIONAL REQUIREMENTS (CALLED BY THE USER)
+  SUBROUTINE CMISSComputationalWorkGroupSubgroupAdd(ParentWorkGroup, NumberComputationalNodes,AddedWorkGroup, Err)  
+    !Argument Variables
+    TYPE(CMISSComputationalWorkGroupType), INTENT(INOUT) :: ParentWorkGroup
+    TYPE(CMISSComputationalWorkGroupType), INTENT(INOUT) :: AddedWorkGroup
+    INTEGER(INTG),INTENT(IN) :: NumberComputationalNodes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code
+
+    CALL ENTERS("CMISSComputationalWorkGroupSubgroupAdd",ERR,ERROR,*999)
+
+    CALL COMPUTATIONAL_WORK_GROUP_SUBGROUP_ADD(ParentWorkGroup%COMPUTATIONAL_WORK_GROUP,NumberComputationalNodes, &
+    & AddedWorkGroup%COMPUTATIONAL_WORK_GROUP, Err,ERROR,*999)
+
+    CALL EXITS("CMISSComputationalWorkGroupSubgroupAdd")
+    RETURN
+999 CALL ERRORS("CMISSComputationalWorkGroupSubgroupAdd",Err,ERROR)
+    CALL EXITS("CMISSComputationalWorkGroupSubgroupAdd")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSComputationalWorkGroupSubgroupAdd  !
+  !================================================================================================================================
+  !
+
+  !>Set the working group tree in order to performe mesh decomposition
+  SUBROUTINE CMISSDecompositionWorldWorkGroupSet(Decomposition, WorldWorkGroup, Err)  
+    !Argument Variables
+    TYPE(cmissdecompositiontype), INTENT(INOUT) :: Decomposition
+    TYPE(CMISSComputationalWorkGroupType),INTENT(IN) :: WorldWorkGroup
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code
+
+    CALL ENTERS("CMISSDecompositionWorldWorkGroupSet",Err,ERROR,*999)
+
+    ! todo
+    CALL FLAG_ERROR('not implemented yet', Err,ERROR, *999)
+
+    CALL EXITS("CMISSDecompositionWorldWorkGroupSet")
+    RETURN
+999 CALL ERRORS("CMISSDecompositionWorldWorkGroupSet",Err,ERROR)
+    CALL EXITS("CMISSDecompositionWorldWorkGroupSet")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDecompositionWorldWorkGroupSet
 
 !!==================================================================================================================================
 !!
