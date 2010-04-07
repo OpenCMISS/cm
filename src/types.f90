@@ -1658,14 +1658,30 @@ MODULE TYPES
     TYPE(INTERFACE_MESHES_CONNECTIVITY_POINT_TYPE), POINTER :: PTR
   END TYPE INTERFACE_MESHES_CONNECTIVITY_POINT_PTR_TYPE
   
+
+
+  !>Contains information on a mesh connectivity point
+  TYPE INTERFACE_ELEMENT_CONNECTIVITY_MESH_TYPE
+    LOGICAL :: CONNECTIVITY_ELEMENTS_ADD_FINISHED
+    INTEGER(INTG) NUMBER_OF_MESH_CONNECTIVITY_ELEMENTS !<
+    INTEGER(INTG), POINTER :: GLOBAL_MESH_ELEMENT_NUMBERS(:) !<
+    REAL(DP), ALLOCATABLE :: XI(:,:,:) !<
+  END TYPE INTERFACE_ELEMENT_CONNECTIVITY_MESH_TYPE
+
+  !>Contains information on a mesh connectivity point
+  TYPE INTERFACE_ELEMENT_CONNECTIVITY_TYPE
+    TYPE(INTERFACE_ELEMENT_CONNECTIVITY_MESH_TYPE), ALLOCATABLE :: MESH_CONNECTIVITY(:) !<
+  END TYPE INTERFACE_ELEMENT_CONNECTIVITY_TYPE
+
   !>Contains information on the coupling between meshes in an interface
   TYPE INTERFACE_MESHES_CONNECTIVITY_TYPE
+    INTEGER(INTG) NUMBER_OF_MY_COUPLED_MESHES
+    INTEGER(INTG), ALLOCATABLE :: MY_COUPLED_MESHES(:)
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer back to the interface for the coupled mesh connectivity
     LOGICAL :: MESH_CONNECTIVITY_FINISHED !<Is .TRUE. if the coupled mesh connectivity has finished being created, .FALSE. if not.
-    INTEGER(INTG) :: NUMBER_OF_CONNECTIVITY_POINTS !<The number of connectivity points in the mesh connectivity
-    TYPE(INTERFACE_MESHES_CONNECTIVITY_POINT_PTR_TYPE), POINTER :: CONNECTIVITY_POINTS(:) !<CONNECTIVITY_POINTS(point_idx). CONNECTIVITY_POINT(point_idx)%PTR is the pointer to the point_idx'th connectivity point.
+    TYPE(INTERFACE_ELEMENT_CONNECTIVITY_TYPE), ALLOCATABLE :: ELEMENTS_CONNECTIVITY(:) !<
   END TYPE INTERFACE_MESHES_CONNECTIVITY_TYPE
-
+ 
   !>Contains information for the interface data.
   TYPE INTERFACE_TYPE
     INTEGER :: USER_NUMBER !<The user defined identifier for the interface. The user number must be unique.
@@ -1676,8 +1692,7 @@ MODULE TYPES
     TYPE(REGION_TYPE), POINTER :: PARENT_REGION !<A point to the parent region containing the interface.
     INTEGER(INTG) :: NUMBER_OF_COUPLED_MESHES !<The number of coupled meshes in the interface.
     TYPE(MESH_PTR_TYPE), POINTER :: COUPLED_MESHES(:) !<COUPLED_MESHES(mesh_idx). COUPLED_MESHES(mesh_idx)%PTR is the pointer to the mesh_idx'th mesh involved in the interface.
-    TYPE(INTERFACE_MESHES_CONNECTIVITY_TYPE), POINTER :: MESHES_CONNECTIVITY !<A pointer to the meshes connectivity the interface.
-    TYPE(INTERFACE_MAPPING_TYPE), POINTER :: INTERFACE_MAPPING !<A pointer to the mapping between the region meshes of the interface.
+    TYPE(INTERFACE_MESHES_CONNECTIVITY_TYPE), ALLOCATABLE :: MESHES_CONNECTIVITY(:) !<A pointer to the meshes connectivity the interface.
     TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes in an interface
     TYPE(MESHES_TYPE), POINTER :: MESHES !<A pointer to the mesh in an interface.
     TYPE(GENERATED_MESHES_TYPE), POINTER :: GENERATED_MESHES !<A pointer to the generated meshes in an interface.

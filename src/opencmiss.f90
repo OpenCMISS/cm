@@ -2915,12 +2915,6 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype 
     MODULE PROCEDURE CMISSInterfaceCreateStartObj
   END INTERFACE !CMISSInterfaceCreateStart
 
-  !>Destroys an interface. 
-  INTERFACE CMISSInterfaceDestroy
-    MODULE PROCEDURE CMISSInterfaceDestroyNumber
-    MODULE PROCEDURE CMISSInterfaceDestroyObj
-  END INTERFACE !CMISSInterfaceDestroy
-
   !>Finishes the creation of an interface meshes connectivity. \see OPENCMISS::CMISSInterfaceMeshesConnectivityCreateStart
   INTERFACE CMISSInterfaceMeshesConnectivityCreateFinish
     MODULE PROCEDURE CMISSInterfaceMeshesConnectivityCreateFinishNumber
@@ -2933,21 +2927,15 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype 
     MODULE PROCEDURE CMISSInterfaceMeshesConnectivityCreateStartObj
   END INTERFACE !CMISSInterfaceMeshesConnectivityCreateStart
 
-  !>Destroys an interface meshes connectivity. 
-  INTERFACE CMISSInterfaceMeshesConnectivityDestroy
-    MODULE PROCEDURE CMISSInterfaceMeshesConnectivityDestroyNumber
-    MODULE PROCEDURE CMISSInterfaceMeshesConnectivityDestroyObj
-  END INTERFACE !CMISSInterfaceMeshesConnectivityDestroy
-
   PUBLIC CMISSInterfaceMeshAdd
   
   PUBLIC CMISSInterfaceCreateFinish,CMISSInterfaceCreateStart
 
-  PUBLIC CMISSInterfaceDestroy
+!   PUBLIC CMISSInterfaceDestroy
  
   PUBLIC CMISSInterfaceMeshesConnectivityCreateFinish,CMISSInterfaceMeshesConnectivityCreateStart
 
-  PUBLIC CMISSInterfaceMeshesConnectivityDestroy
+!   PUBLIC CMISSInterfaceMeshesConnectivityDestroy
  
 !!==================================================================================================================================
 !!
@@ -25726,7 +25714,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
       IF(ASSOCIATED(INTERFACE)) THEN
-        CALL INTERFACE_MESHES_CONNECTIVITY_CREATE_FINISH(INTERFACE%MESHES_CONNECTIVITY,Err,ERROR,*999)
+        CALL INTERFACE_MESHES_CONNECTIVITY_CREATE_FINISH(Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
           & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -25752,16 +25740,16 @@ CONTAINS
   !  
  
   !>Finishes the creation of an interface meshes connectivity identified by an object.
-  SUBROUTINE CMISSInterfaceMeshesConnectivityCreateFinishObj(InterfaceMeshesConnectivity,Err)
+  SUBROUTINE CMISSInterfaceMeshesConnectivityCreateFinishObj(Err)
   
     !Argument variables
-    TYPE(CMISSInterfaceMeshesConnectivityType), INTENT(IN) :: InterfaceMeshesConnectivity !<The interface meshes connectivity to finish creating.
+!    TYPE(CMISSInterfaceMeshesConnectivityType), INTENT(IN) :: InterfaceMeshesConnectivity !<The interface meshes connectivity to finish creating.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
     CALL ENTERS("CMISSInterfaceMeshesConnectivityCreateFinishObj",Err,ERROR,*999)
  
-    CALL INTERFACE_MESHES_CONNECTIVITY_CREATE_FINISH(InterfaceMeshesConnectivity%MESHES_CONNECTIVITY,Err,ERROR,*999)
+    CALL INTERFACE_MESHES_CONNECTIVITY_CREATE_FINISH(Err,ERROR,*999)
 
     CALL EXITS("CMISSInterfaceMeshesConnectivityCreateFinishObj")
     RETURN
@@ -25798,7 +25786,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
       IF(ASSOCIATED(INTERFACE)) THEN
-        CALL INTERFACE_MESHES_CONNECTIVITY_CREATE_START(INTERFACE,INTERFACE_MESHES_CONNECTIVITY,Err,ERROR,*999)
+        CALL INTERFACE_MESHES_CONNECTIVITY_CREATE_START(INTERFACE,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
           & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -25834,8 +25822,7 @@ CONTAINS
   
     CALL ENTERS("CMISSInterfaceMeshesConnectivityCreateStartObj",Err,ERROR,*999)
  
-    CALL INTERFACE_MESHES_CONNECTIVITY_CREATE_START(Interface%INTERFACE,InterfaceMeshesConnectivity%MESHES_CONNECTIVITY, &
-      & Err,ERROR,*999)
+    CALL INTERFACE_MESHES_CONNECTIVITY_CREATE_START(Interface%INTERFACE,Err,ERROR,*999)
 
     CALL EXITS("CMISSInterfaceMeshesConnectivityCreateStartObj")
     RETURN
