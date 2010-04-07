@@ -2508,6 +2508,11 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype 
     MODULE PROCEDURE CMISSFieldParameterSetGetNodeLObj
   END INTERFACE !CMISSFieldParameterSetGetNode
 
+  !>Returns from the given parameter set a value for the specified element and Gauss point of a field variable component.
+  INTERFACE CMISSFieldParameterSetGetGaussPoint ! TODO: other versions
+    MODULE PROCEDURE CMISSFieldParameterSetGetGaussPointDPObj
+  END INTERFACE !CMISSFieldParameterSetGetGaussPoint
+
   !>Updates the given parameter set with the given value for the constant of a field variable component.
   INTERFACE CMISSFieldParameterSetUpdateConstant
     MODULE PROCEDURE CMISSFieldParameterSetUpdateConstantIntgNumber
@@ -2549,6 +2554,12 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype 
     MODULE PROCEDURE CMISSFieldParameterSetUpdateNodeLNumber
     MODULE PROCEDURE CMISSFieldParameterSetUpdateNodeLObj
   END INTERFACE !CMISSFieldParameterSetUpdateNode
+
+  !>Updates the given parameter set with the given value for a particular gauss point of a field variable component.
+  INTERFACE CMISSFieldParameterSetUpdateGaussPoint
+    MODULE PROCEDURE CMISSFieldParameterSetUpdateGaussPointDPObj
+  END INTERFACE !CMISSFieldParameterSetUpdateNode
+
 
   !>Starts the parameter set update for a field variable. \see OPENCMISS::CMISSFieldParameterSetUpdateFinish
   INTERFACE CMISSFieldParameterSetUpdateStart
@@ -2682,6 +2693,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype 
   PUBLIC CMISSFieldParameterSetGetConstant,CMISSFieldParameterSetGetElement,CMISSFieldParameterSetGetNode
 
   PUBLIC CMISSFieldParameterSetUpdateConstant,CMISSFieldParameterSetUpdateElement,CMISSFieldParameterSetUpdateNode
+  PUBLIC CMISSFieldParameterSetUpdateGaussPoint, CMISSFieldParameterSetGetGaussPoint
 
   PUBLIC CMISSFieldParameterSetUpdateFinish,CMISSFieldParameterSetUpdateStart
 
@@ -21957,6 +21969,39 @@ CONTAINS
   !================================================================================================================================
   !   
 
+  !>Returns from the given parameter set a double precision value for the specified element of a field variable component for a field identified by an object.
+  SUBROUTINE CMISSFieldParameterSetGetGaussPointDPObj(Field,VariableType,FieldSetType,&
+    & UserElementNumber,GaussPointNumber,ComponentNumber,Value,Err)
+  
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to get the element value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the element value from the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to get the element value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: UserElementNumber !<The user element number to get the value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: GaussPointNumber !<The gauss point number number to get the value from the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the element value from the field parameter set.
+    REAL(DP), INTENT(OUT) :: Value !<On return, the value from the field parameter set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSFieldParameterSetGetGaussPointDPObj",Err,ERROR,*999)
+ 
+    CALL FIELD_PARAMETER_SET_GET_GAUSS_POINT(Field%FIELD,VariableType,FieldSetType,UserElementNumber,GaussPointNumber,&
+    & ComponentNumber,Value, Err,ERROR,*999)
+
+    CALL EXITS("CMISSFieldParameterSetGetGaussPointDPObj")
+    RETURN
+999 CALL ERRORS("CMISSFieldParameterSetGetGaussPointDPObj",Err,ERROR)
+    CALL EXITS("CMISSFieldParameterSetGetGaussPointDPObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldParameterSetGetGaussPointDPObj
+  !  
+  !================================================================================================================================
+  !   
+
+
   !>Updates the given parameter set with the given integer value for the constant of the field variable component for a field identified by a user number.
   SUBROUTINE CMISSFieldParameterSetUpdateConstantIntgNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
     & ComponentNumber,Value,Err)
@@ -23013,6 +23058,38 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSFieldParameterSetUpdateNodeLObj
+
+  !  
+  !================================================================================================================================
+  !   
+  !>Updates the given parameter set with the given double precision value for the element gauss point of the field variable component for a field identified by an object.
+  SUBROUTINE CMISSFieldParameterSetUpdateGaussPointDPObj(Field,VariableType,FieldSetType,UserElementNumber,GaussPointNumber, &
+  & ComponentNumber, Value,Err)
+  
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to update the constant value for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to update the constant value for the field parameter set. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to update the constant value for. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: UserElementNumber !<The user element number of the field variable component to update for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: GaussPointNumber !<The user element number of the field variable component to update for the field parameter set.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the constant value for the field parameter set.
+    REAL(DP), INTENT(IN) :: VALUE !<The value for the field parameter set to update.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSFieldParameterSetUpdateGaussPointDPObj",Err,ERROR,*999)
+ 
+    CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(Field%FIELD,VariableType,FieldSetType,UserElementNumber,GaussPointNumber,&
+    & ComponentNumber,Value,  Err,ERROR,*999)
+
+    CALL EXITS("CMISSFieldParameterSetUpdateGaussPointDPObj")
+    RETURN
+999 CALL ERRORS("CMISSFieldParameterSetUpdateGaussPointDPObj",Err,ERROR)
+    CALL EXITS("CMISSFieldParameterSetUpdateGaussPointDPObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldParameterSetUpdateGaussPointDPObj
 
   !  
   !================================================================================================================================

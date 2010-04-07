@@ -342,6 +342,11 @@ MODULE FIELD_ROUTINES
     MODULE PROCEDURE FIELD_PARAMETER_SET_GET_NODE_DP
     MODULE PROCEDURE FIELD_PARAMETER_SET_GET_NODE_L
   END INTERFACE !FIELD_PARAMETER_SET_GET_NODE
+
+  !>Returns from the given parameter set a value for the specified element and Gauss point of a field variable component.  TODO: sp/int/l versions
+  INTERFACE FIELD_PARAMETER_SET_GET_GAUSS_POINT
+    MODULE PROCEDURE FIELD_PARAMETER_SET_GET_GAUSS_POINT_DP
+  END INTERFACE !FIELD_PARAMETER_SET_GET_GAUSS_POINT
   
   !>Updates the given parameter set with the given value for the constant of the field variable component.
   INTERFACE FIELD_PARAMETER_SET_UPDATE_CONSTANT
@@ -390,6 +395,12 @@ MODULE FIELD_ROUTINES
     MODULE PROCEDURE FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE_DP
     MODULE PROCEDURE FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE_L
   END INTERFACE !FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE
+
+  !>Updates the given parameter set with the given value for a particular element and gauss point of the field variable component. TODO: sp/int/l versions
+  INTERFACE FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT
+    MODULE PROCEDURE FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT_DP
+  END INTERFACE !FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT
+
 
   !>Finds and returns a field identified by a user number. If no field  with that number exits field is left nullified.
   INTERFACE FIELD_USER_NUMBER_FIND
@@ -505,7 +516,9 @@ MODULE FIELD_ROUTINES
     & FIELD_PARAMETER_SET_GET_CONSTANT,FIELD_PARAMETER_SET_GET_ELEMENT,FIELD_PARAMETER_SET_GET_NODE, &
     & FIELD_PARAMETER_SET_UPDATE_FINISH,FIELD_PARAMETER_SET_UPDATE_START,FIELD_PARAMETER_SET_UPDATE_CONSTANT, &
     & FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF,FIELD_PARAMETER_SET_UPDATE_ELEMENT,FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT, &
-    & FIELD_PARAMETER_SET_UPDATE_NODE,FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE,FIELD_PARAMETER_SET_VECTOR_GET
+    & FIELD_PARAMETER_SET_UPDATE_NODE,FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE,FIELD_PARAMETER_SET_VECTOR_GET, &
+    & FIELD_PARAMETER_SET_GET_GAUSS_POINT, FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT
+
 
   PUBLIC FIELD_SCALING_TYPE_CHECK,FIELD_SCALING_TYPE_GET,FIELD_SCALING_TYPE_SET,FIELD_SCALING_TYPE_SET_AND_LOCK
 
@@ -2295,7 +2308,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: element_idx,derivative_idx,field_dof,node_idx,partial_deriv_idx
+    INTEGER(INTG) :: element_idx,derivative_idx,field_dof,node_idx,partial_deriv_idx, gp, MAX_NGP
     REAL(DP), POINTER :: FIELD_PARAMETERS(:)
     TYPE(DOMAIN_TYPE), POINTER :: COMPONENT_DOMAIN
     TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
@@ -2406,7 +2419,30 @@ CONTAINS
                     CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                       CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                     CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      COMPONENT_DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
+                      IF(ASSOCIATED(COMPONENT_DOMAIN)) THEN
+                        DOMAIN_TOPOLOGY=>COMPONENT_DOMAIN%TOPOLOGY
+                        IF(ASSOCIATED(DOMAIN_TOPOLOGY)) THEN
+                          DOMAIN_ELEMENTS=>DOMAIN_TOPOLOGY%ELEMENTS
+                          IF(ASSOCIATED(DOMAIN_ELEMENTS)) THEN 
+                            !GAUSS_POINT_PARAM2DOF_MAP(gp,ne)=variable_local_ny
+                            MAX_NGP=SIZE(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP,1)
+                            DO element_idx=1,DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                            DO gp=1,MAX_NGP ! could be just element's gp
+                              field_dof=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                & GAUSS_POINT_PARAM2DOF_MAP(gp,element_idx)
+                              FIELD_PARAMETERS(field_dof)=VALUE
+                            ENDDO !gp
+                            ENDDO !element_idx
+                          ELSE
+                            CALL FLAG_ERROR("Domain topology elements is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                      ENDIF
                     CASE DEFAULT
                       LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -3281,7 +3317,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: COMP_NUMBER,DUMMY_ERR,ne,VARIABLE_TYPE
+    INTEGER(INTG) :: COMP_NUMBER,DUMMY_ERR,ne,VARIABLE_TYPE, NGP, MAXINTERP
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION    
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
@@ -3354,8 +3390,14 @@ CONTAINS
                 ENDDO !ne
               CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-              CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION) ! ?
+                MAXINTERP = -1
+                DO ne=1,DOMAIN%TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                  BASIS=>DOMAIN%TOPOLOGY%ELEMENTS%ELEMENTS(ne)%BASIS
+                  NGP = BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR%NUMBER_OF_GAUSS
+                  IF(NGP > MAXINTERP) MAXINTERP = NGP
+                ENDDO
+                FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS = MAXINTERP
               CASE DEFAULT
                 LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                   & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -6410,7 +6452,7 @@ CONTAINS
       & NUMBER_OF_LOCAL_VARIABLE_DOFS,TOTAL_NUMBER_OF_VARIABLE_DOFS,NUMBER_OF_DOMAINS,mesh_component_idx,variable_global_ny, &
       & variable_local_ny,domain_idx,domain_no,constant_nyy,element_ny,element_nyy,node_ny,node_nyy,grid_point_nyy, &
       & Gauss_point_nyy,MAX_NUMBER_OF_DERIVATIVES,ne,nk,np,ny,NUMBER_OF_COMPUTATIONAL_NODES,my_computational_node_number, &
-      & domain_type_stop,start_idx,stop_idx,element_idx,node_idx,NUMBER_OF_LOCAL
+      & domain_type_stop,start_idx,stop_idx,element_idx,node_idx,NUMBER_OF_LOCAL, NGP, MAX_NGP, gp
     INTEGER(INTG), ALLOCATABLE :: VARIABLE_LOCAL_DOFS_OFFSETS(:),VARIABLE_GHOST_DOFS_OFFSETS(:)
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
@@ -6420,6 +6462,7 @@ CONTAINS
     TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(MESH_TOPOLOGY_TYPE), POINTER :: MESH_TOPOLOGY
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(BASIS_TYPE), POINTER :: BASIS
 
     CALL ENTERS("FIELD_MAPPINGS_CALCULATE",ERR,ERROR,*999)
     
@@ -6468,8 +6511,22 @@ CONTAINS
             NUMBER_OF_GLOBAL_VARIABLE_DOFS=NUMBER_OF_GLOBAL_VARIABLE_DOFS+MESH_TOPOLOGY%DOFS%NUMBER_OF_DOFS
           CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-          CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+         CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+              DOMAIN=>FIELD_COMPONENT%DOMAIN
+              MESH=>DOMAIN%MESH
+              mesh_component_idx=DOMAIN%MESH_COMPONENT_NUMBER
+              MESH_TOPOLOGY=>MESH%TOPOLOGY(mesh_component_idx)%PTR
+              MAX_NGP = -1
+              DO ne=1,MESH_TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS ! global elts
+                BASIS=>MESH_TOPOLOGY%ELEMENTS%ELEMENTS(ne)%BASIS
+                NGP = BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR%NUMBER_OF_GAUSS
+                MAX_NGP = MAX(MAX_NGP,NGP)
+              ENDDO
+              DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
+              NUMBER_OF_GAUSS_POINT_DOFS=NUMBER_OF_GAUSS_POINT_DOFS+DOMAIN_TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS * MAX_NGP
+              NUMBER_OF_LOCAL_VARIABLE_DOFS=NUMBER_OF_LOCAL_VARIABLE_DOFS+DOMAIN_TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS * MAX_NGP
+              TOTAL_NUMBER_OF_VARIABLE_DOFS=TOTAL_NUMBER_OF_VARIABLE_DOFS+DOMAIN_TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS*MAX_NGP
+              NUMBER_OF_GLOBAL_VARIABLE_DOFS=NUMBER_OF_GLOBAL_VARIABLE_DOFS+MESH_TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS * MAX_NGP
           CASE DEFAULT
             LOCAL_ERROR="The interpolation type of "// &
               & TRIM(NUMBER_TO_VSTRING(FIELD%VARIABLES(variable_idx)%COMPONENTS(component_idx)%INTERPOLATION_TYPE, &
@@ -6801,7 +6858,124 @@ CONTAINS
               CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                DOMAIN=>FIELD_COMPONENT%DOMAIN
+                ELEMENTS_MAPPING=>DOMAIN%MAPPINGS%ELEMENTS
+                mesh_component_idx=DOMAIN%MESH_COMPONENT_NUMBER
+                MESH=>DOMAIN%MESH
+                MESH_TOPOLOGY=>MESH%TOPOLOGY(mesh_component_idx)%PTR
+                DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
+                DECOMPOSITION=>DOMAIN%DECOMPOSITION
+                IF(domain_type_idx==1) THEN ! domain_type_idx==1 -> non ghosts
+                  !Allocate parameter to dof map for this field variable component
+                  DOFS_MAPPING=>DOMAIN%MAPPINGS%ELEMENTS
+                  ! GAUSS_POINT_PARAM2DOF_MAP(ng,ne). The field variable dof number of ng'th Gauss point in the ne'th element based parameter for this field variable component. 
+                  ALLOCATE(FIELD_COMPONENT%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP(&
+                   & MAX_NGP,DOMAIN_TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS),STAT=ERR)
+
+
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field component parameter to dof element map.",ERR,ERROR,*999)
+                  ! this might be wasteful in worst case, but should generally be ok
+                  FIELD_COMPONENT%PARAM_TO_DOF_MAP%NUMBER_OF_GAUSS_POINT_PARAMETERS = &
+                  &  MAX_NGP * DOMAIN_TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                  !Handle global dofs domain mapping
+                  DO ny=1,ELEMENTS_MAPPING%NUMBER_OF_GLOBAL
+                   DO gp=1,MAX_NGP !
+ 
+                    !Handle field variable mappings
+                    IF(ASSOCIATED(FIELD_VARIABLE_DOFS_MAPPING)) THEN
+                      variable_global_ny= (ny-1) * MAX_NGP + gp + VARIABLE_GLOBAL_DOFS_OFFSET
+                      CALL DOMAIN_MAPPINGS_MAPPING_GLOBAL_INITIALISE(FIELD_VARIABLE_DOFS_MAPPING% &
+                        & GLOBAL_TO_LOCAL_MAP(variable_global_ny),ERR,ERROR,*999)
+                      NUMBER_OF_DOMAINS=DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS
+                      ALLOCATE(FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)% &
+                        & LOCAL_NUMBER(NUMBER_OF_DOMAINS),STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field variable dofs global to local map local number.", &
+                        & ERR,ERROR,*999)
+                      ALLOCATE(FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)% &
+                        & DOMAIN_NUMBER(NUMBER_OF_DOMAINS),STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field variable dofs global to local map domain number.", &
+                        & ERR,ERROR,*999)
+                      ALLOCATE(FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_TYPE(NUMBER_OF_DOMAINS), &
+                        & STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field variable dofs global to local map domain number.", &
+                        & ERR,ERROR,*999)
+                      FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%NUMBER_OF_DOMAINS=NUMBER_OF_DOMAINS
+
+                      DO domain_idx=1,NUMBER_OF_DOMAINS
+                        domain_no=DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(domain_idx)
+
+                        ! elt local number = 1 -> gp local = 1..max_ngp, etc
+                        FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_NUMBER(domain_idx)= &
+                          & (DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(domain_idx) - 1) * MAX_NGP + gp  &
+                          & + VARIABLE_LOCAL_DOFS_OFFSETS(domain_no)
+
+                        ! domain and type same as element
+                        FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%DOMAIN_NUMBER(domain_idx)= &
+                          & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(domain_idx)
+                        FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_TYPE(domain_idx)= &
+                          & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(domain_idx)
+                      ENDDO !domain_idx
+                    ENDIF
+                   ENDDO ! gp
+                  ENDDO !ny
+                  start_idx=1
+                  stop_idx=ELEMENTS_MAPPING%NUMBER_OF_LOCAL
+                  !Adjust the local and ghost offsets
+                  IF(component_idx>1) &
+                    & VARIABLE_GHOST_DOFS_OFFSETS=VARIABLE_GHOST_DOFS_OFFSETS + ELEMENTS_MAPPING%NUMBER_OF_DOMAIN_LOCAL * MAX_NGP
+                  VARIABLE_LOCAL_DOFS_OFFSETS=VARIABLE_LOCAL_DOFS_OFFSETS+&
+                    & (ELEMENTS_MAPPING%NUMBER_OF_DOMAIN_LOCAL+ELEMENTS_MAPPING%NUMBER_OF_DOMAIN_GHOST) * MAX_NGP
+                ELSE ! domain_type_idx == 2 -> ghosts
+                  !Handle global dofs domain mapping. For the second pass adjust the local dof numbers to ensure that the ghost
+                  !dofs are at the end of the local dofs.
+                  !Adjust the ghost offsets
+                  IF(component_idx>1) &
+                    VARIABLE_GHOST_DOFS_OFFSETS=VARIABLE_GHOST_DOFS_OFFSETS-ELEMENTS_MAPPING%NUMBER_OF_DOMAIN_LOCAL*MAX_NGP
+                  DO ny=1,ELEMENTS_MAPPING%NUMBER_OF_GLOBAL
+                   DO gp=1,MAX_NGP !
+
+                    !Adjust variable mapping local numbers
+                    IF(ASSOCIATED(FIELD_VARIABLE_DOFS_MAPPING)) THEN
+                      variable_global_ny= (ny-1) * MAX_NGP + gp + VARIABLE_GLOBAL_DOFS_OFFSET
+                      NUMBER_OF_DOMAINS=FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%NUMBER_OF_DOMAINS
+                      DO domain_idx=1,NUMBER_OF_DOMAINS
+                        domain_no=FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%DOMAIN_NUMBER(domain_idx)
+                        IF(FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_TYPE(domain_idx)== &
+                          & DOMAIN_LOCAL_GHOST) THEN
+                          FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_NUMBER(domain_idx)= &
+                            & FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_NUMBER(domain_idx)+ &
+                            & VARIABLE_GHOST_DOFS_OFFSETS(domain_no)
+                        ELSE
+                          FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_NUMBER(domain_idx)= &
+                            & FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_NUMBER(domain_idx)+ &
+                            & VARIABLE_LOCAL_DOFS_OFFSETS(domain_no)
+                        ENDIF
+                      ENDDO !domain_idx
+                    ENDIF
+                   ENDDO ! gp
+                  ENDDO !ny (global)
+                  start_idx=ELEMENTS_MAPPING%NUMBER_OF_LOCAL
+                  stop_idx=ELEMENTS_MAPPING%TOTAL_NUMBER_OF_LOCAL
+                  !Adjust the local offsets
+                  VARIABLE_LOCAL_DOFS_OFFSETS=VARIABLE_LOCAL_DOFS_OFFSETS - ELEMENTS_MAPPING%NUMBER_OF_DOMAIN_GHOST * MAX_NGP
+                ENDIF ! 2 passes for normal, ghost 
+                !Adjust the global offset
+                VARIABLE_GLOBAL_DOFS_OFFSET=VARIABLE_GLOBAL_DOFS_OFFSET + ELEMENTS_MAPPING%NUMBER_OF_GLOBAL * MAX_NGP
+                !Handle local dofs domain mapping
+                DO ne=start_idx,stop_idx
+                 DO gp=1,MAX_NGP !
+                  variable_local_ny= variable_local_ny+1
+                  Gauss_point_nyy  = Gauss_point_nyy+1
+                   !Setup dof to parameter map
+                  FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DOF_TYPE(1,variable_local_ny)=FIELD_GAUSS_POINT_DOF_TYPE
+                  FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DOF_TYPE(2,variable_local_ny)=Gauss_point_nyy
+                  FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%GAUSS_POINT_DOF2PARAM_MAP(1,Gauss_point_nyy)=gp
+                  FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%GAUSS_POINT_DOF2PARAM_MAP(2,Gauss_point_nyy)=ne
+                  FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%GAUSS_POINT_DOF2PARAM_MAP(3,Gauss_point_nyy)=component_idx
+                  !Setup reverse parameter to dof map
+                  FIELD_COMPONENT%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP(gp,ne)=variable_local_ny
+                 ENDDO !gp
+                ENDDO !ne
               CASE DEFAULT
                 LOCAL_ERROR="The interpolation type of "// &
                   & TRIM(NUMBER_TO_VSTRING(FIELD%VARIABLES(variable_idx)%COMPONENTS(component_idx)%INTERPOLATION_TYPE, &
@@ -15883,6 +16057,191 @@ CONTAINS
   !================================================================================================================================
   !
 
+ !>Returns from the given parameter set a double precision value for the specified gauss point of a field variable component. \see OPENCMISS::CMISSFieldParameterSetGetGaussPoint
+  SUBROUTINE FIELD_PARAMETER_SET_GET_GAUSS_POINT_DP(FIELD,VARIABLE_TYPE,FIELD_SET_TYPE,USER_ELEMENT_NUMBER,GAUSS_POINT_NUMBER, &
+    & COMPONENT_NUMBER, VALUE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to get the value for
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The field variable type to get the value for \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE !<The field parameter set identifier
+    INTEGER(INTG), INTENT(IN) :: USER_ELEMENT_NUMBER !<The element number to get the value for
+    INTEGER(INTG), INTENT(IN) :: GAUSS_POINT_NUMBER   !<The gauss point number to get the value for
+
+    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<The field variable component number to get the value for
+    REAL(DP), INTENT(OUT) :: VALUE !<On return, the value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DOMAIN_LOCAL_ELEMENT_NUMBER,MESH_COMPONENT,MESH_GLOBAL_ELEMENT_NUMBER,ny
+    LOGICAL :: LOCAL_EXISTS,MESH_ELEMENT_EXISTS
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
+    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    TYPE(MESH_TYPE), POINTER :: MESH
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("FIELD_PARAMETER_SET_GET_GAUSS_POINT_DP",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+      IF(FIELD%FIELD_FINISHED) THEN
+        IF(VARIABLE_TYPE>=1.AND.VARIABLE_TYPE<=FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
+          FIELD_VARIABLE=>FIELD%VARIABLE_TYPE_MAP(VARIABLE_TYPE)%PTR
+          IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+            IF(FIELD_VARIABLE%DATA_TYPE==FIELD_DP_TYPE) THEN
+              IF(FIELD_SET_TYPE>0.AND.FIELD_SET_TYPE<=FIELD_NUMBER_OF_SET_TYPES) THEN
+                PARAMETER_SET=>FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_SET_TYPE)%PTR
+                IF(ASSOCIATED(PARAMETER_SET)) THEN
+                  IF(COMPONENT_NUMBER>=1.AND.COMPONENT_NUMBER<=FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+                    SELECT CASE(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE)
+                    CASE(FIELD_CONSTANT_INTERPOLATION)
+                      LOCAL_ERROR="Can not get by gauss point for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has constant interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not get by gauss point for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has element based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_NODE_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not get by gauss point for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has node based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not get by gauss point for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has grid point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                      DECOMPOSITION=>FIELD%DECOMPOSITION
+                      IF(ASSOCIATED(DECOMPOSITION)) THEN
+                        MESH=>DECOMPOSITION%MESH
+                        IF(ASSOCIATED(MESH)) THEN
+                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
+                          CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_ELEMENT_NUMBER,MESH_ELEMENT_EXISTS, &
+                            & MESH_GLOBAL_ELEMENT_NUMBER,ERR,ERROR,*999)
+                          IF(MESH_ELEMENT_EXISTS) THEN
+                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
+                            IF(ASSOCIATED(DOMAIN)) THEN
+                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
+                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
+                                ELEMENTS_MAPPING=>DOMAIN_MAPPINGS%ELEMENTS
+                                IF(ASSOCIATED(ELEMENTS_MAPPING)) THEN
+                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(ELEMENTS_MAPPING,MESH_GLOBAL_ELEMENT_NUMBER, &
+                                    & LOCAL_EXISTS,DOMAIN_LOCAL_ELEMENT_NUMBER,ERR,ERROR,*999)
+                                  IF(LOCAL_EXISTS) THEN          
+                                   IF(GAUSS_POINT_NUMBER >= 1 .AND. GAUSS_POINT_NUMBER <= SIZE(FIELD_VARIABLE% & ! TODO: could check for actual # of gp
+                                   & COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP,1)) THEN
+                                    ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                      & GAUSS_POINT_PARAM2DOF_MAP(GAUSS_POINT_NUMBER,DOMAIN_LOCAL_ELEMENT_NUMBER)
+                                    CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
+                                   ELSE
+                                    LOCAL_ERROR="The specified gauss point number "// &
+                                      & TRIM(NUMBER_TO_VSTRING(GAUSS_POINT_NUMBER,"*",ERR,ERROR))// &
+                                      & " is not within the expected range"
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)                                     
+                                   ENDIF
+                                  ELSE
+                                    LOCAL_ERROR="The specified user element number of "// &
+                                      & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                                      & " is not part of this local domain."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  ENDIF
+                                ELSE
+                                  CALL FLAG_ERROR("Domain mappings elements mapping is not associated.",ERR,ERROR,*999)
+                                ENDIF
+                              ELSE
+                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
+                              ENDIF
+                            ELSE
+                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            LOCAL_ERROR="The specified user element number of "// &
+                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                              " does not exist in mesh component number "// &
+                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
+                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    CASE DEFAULT
+                      LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
+                        & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
+                        & " is invalid for component number "//TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
+                        & " of variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+                        & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    END SELECT
+                  ELSE
+                    LOCAL_ERROR="Component number "//TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
+                      & " is invalid for variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+                      & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
+                      & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%NUMBER_OF_COMPONENTS,"*",ERR,ERROR))//" components."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  LOCAL_ERROR="The field set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_SET_TYPE,"*",ERR,ERROR))// &
+                    & " has not been created on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                LOCAL_ERROR="The field set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_SET_TYPE,"*",ERR,ERROR))// &
+                  & " is invalid. The field set type must be between 1 and "// &
+                  & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_SET_TYPES,"*",ERR,ERROR))
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              LOCAL_ERROR="The field variable data type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%DATA_TYPE,"*",ERR,ERROR))// &
+                & " does not correspond to the double precision data type of the given value."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The specified field variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+              & " has not been defined on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The specified variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+            & " is invalid. The variable type must be between 1 and  "// &
+            & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+          & " has not been finished."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("FIELD_PARAMETER_SET_GET_GAUSS_POINT_DP")
+    RETURN
+999 CALL ERRORS("FIELD_PARAMETER_SET_GET_GAUSS_POINT_DP",ERR,ERROR)
+    CALL EXITS("FIELD_PARAMETER_SET_GET_GAUSS_POINT_DP")
+    RETURN 1
+  END SUBROUTINE FIELD_PARAMETER_SET_GET_GAUSS_POINT_DP
+
+
+  !
+  !================================================================================================================================
+  !
+
   !>Initialises the parameter set for a field.
   SUBROUTINE FIELD_PARAMETER_SET_INITIALISE(FIELD_PARAMETER_SET,ERR,ERROR,*)
 
@@ -19406,6 +19765,200 @@ CONTAINS
     CALL EXITS("FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE_L")
     RETURN 1
   END SUBROUTINE FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE_L
+
+  !
+  !================================================================================================================================
+  !
+
+
+
+  !>Updates the given parameter set with the given double precision value for a particular gauss point of the field variable component.  \see CMISSFieldParameterSetUpdateGaussPoint
+  SUBROUTINE FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT_DP(FIELD,VARIABLE_TYPE,FIELD_SET_TYPE,USER_ELEMENT_NUMBER,GAUSS_POINT_NUMBER,&
+  & COMPONENT_NUMBER, VALUE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to update
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The field variable type to update \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE !<The field parameter set identifier
+    INTEGER(INTG), INTENT(IN) :: USER_ELEMENT_NUMBER !<The element number to update
+    INTEGER(INTG), INTENT(IN) :: GAUSS_POINT_NUMBER !<The gauss point number to update
+    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<The field variable component to update
+    REAL(DP), INTENT(IN) :: VALUE !<The value to update to
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DOMAIN_LOCAL_ELEMENT_NUMBER,MESH_COMPONENT,MESH_GLOBAL_ELEMENT_NUMBER,ny
+    LOGICAL :: LOCAL_EXISTS,MESH_ELEMENT_EXISTS
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
+    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    TYPE(MESH_TYPE), POINTER :: MESH
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT_DP",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+      IF(FIELD%FIELD_FINISHED) THEN
+        IF(VARIABLE_TYPE>=1.AND.VARIABLE_TYPE<=FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
+          FIELD_VARIABLE=>FIELD%VARIABLE_TYPE_MAP(VARIABLE_TYPE)%PTR
+          IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+            IF(FIELD_VARIABLE%DATA_TYPE==FIELD_DP_TYPE) THEN
+              IF(FIELD_SET_TYPE>0.AND.FIELD_SET_TYPE<=FIELD_NUMBER_OF_SET_TYPES) THEN
+                PARAMETER_SET=>FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_SET_TYPE)%PTR
+                IF(ASSOCIATED(PARAMETER_SET)) THEN
+                  IF(COMPONENT_NUMBER>=1.AND.COMPONENT_NUMBER<=FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+                    SELECT CASE(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE)
+                    CASE(FIELD_CONSTANT_INTERPOLATION)
+                      LOCAL_ERROR="Can not update by element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has constant interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not update by element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has Gauss point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_NODE_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not update by element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has node based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                      LOCAL_ERROR="Can not update by element for component number "// &
+                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has grid point based interpolation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                      DECOMPOSITION=>FIELD%DECOMPOSITION
+                      IF(ASSOCIATED(DECOMPOSITION)) THEN
+                        MESH=>DECOMPOSITION%MESH
+                        IF(ASSOCIATED(MESH)) THEN
+                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
+                          CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_ELEMENT_NUMBER,MESH_ELEMENT_EXISTS, &
+                            & MESH_GLOBAL_ELEMENT_NUMBER,ERR,ERROR,*999)
+                          IF(MESH_ELEMENT_EXISTS) THEN
+                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
+                            IF(ASSOCIATED(DOMAIN)) THEN
+                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
+                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
+                                ELEMENTS_MAPPING=>DOMAIN_MAPPINGS%ELEMENTS
+                                IF(ASSOCIATED(ELEMENTS_MAPPING)) THEN
+                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(ELEMENTS_MAPPING,MESH_GLOBAL_ELEMENT_NUMBER, &
+                                    & LOCAL_EXISTS,DOMAIN_LOCAL_ELEMENT_NUMBER,ERR,ERROR,*999)
+                                  IF(LOCAL_EXISTS) THEN   
+                                   IF(GAUSS_POINT_NUMBER >= 1 .AND. GAUSS_POINT_NUMBER <= SIZE(FIELD_VARIABLE% & ! TODO: could check for actual # of gp
+
+                                   & COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP,1)) THEN
+
+                                    ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+
+                                      & GAUSS_POINT_PARAM2DOF_MAP(GAUSS_POINT_NUMBER,DOMAIN_LOCAL_ELEMENT_NUMBER)
+
+                                    CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
+                                   ELSE
+
+                                    LOCAL_ERROR="The specified gauss point number "// &
+
+                                      & TRIM(NUMBER_TO_VSTRING(GAUSS_POINT_NUMBER,"*",ERR,ERROR))// &
+
+                                      & " is not within the expected range"
+
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)                                     
+
+                                   ENDIF
+                                  ELSE
+                                    LOCAL_ERROR="The specified user element number of "// &
+                                      & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                                      & " is not part of this local domain."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  ENDIF
+                                ELSE
+                                  CALL FLAG_ERROR("Domain mappings elements mapping is not associated.",ERR,ERROR,*999)
+                                ENDIF
+                              ELSE
+                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
+                              ENDIF
+                            ELSE
+                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            LOCAL_ERROR="The specified user element number of "// &
+                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                              " does not exist in mesh component number "// &
+                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
+                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    CASE DEFAULT
+                      LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
+                        & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
+                        & " is invalid for component number "//TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
+                        & " of variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+                        & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    END SELECT
+                  ELSE
+                    LOCAL_ERROR="Component number "//TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
+                      & " is invalid for variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+                      & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
+                      & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%NUMBER_OF_COMPONENTS,"*",ERR,ERROR))//" components."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  LOCAL_ERROR="The field set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_SET_TYPE,"*",ERR,ERROR))// &
+                    & " has not been created on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                LOCAL_ERROR="The field set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_SET_TYPE,"*",ERR,ERROR))// &
+                  & " is invalid. The field set type must be between 1 and "// &
+                  & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_SET_TYPES,"*",ERR,ERROR))
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              LOCAL_ERROR="The field variable data type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%DATA_TYPE,"*",ERR,ERROR))// &
+                & " does not correspond to the double precision data type of the given value."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The specified field variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+              & " has not been defined on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The specified variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+            & " is invalid. The variable type must be between 1 and  "// &
+            & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+          & " has not been finished."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT_DP")
+    RETURN
+999 CALL ERRORS("FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT_DP",ERR,ERROR)
+    CALL EXITS("FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT_DP")
+    RETURN 1
+  END SUBROUTINE FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT_DP
 
   !
   !================================================================================================================================
