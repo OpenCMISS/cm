@@ -2803,7 +2803,7 @@ CONTAINS
                   DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                   IF(ASSOCIATED(DEPENDENT_FIELD)) THEN                 
                   !Check the residual variable type is not being used by other equations matrices or vectors
-                    IF(EQUATIONS%TIME_DEPENDENCE==EQUATIONS_STATIC) THEN
+                    IF(EQUATIONS%TIME_DEPENDENCE==EQUATIONS_STATIC .OR. EQUATIONS%TIME_DEPENDENCE==EQUATIONS_QUASISTATIC) THEN
                       IF(CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE==RESIDUAL_VARIABLE_TYPE) THEN
                         LOCAL_ERROR="The specified residual variable type of "// &
                           & TRIM(NUMBER_TO_VSTRING(RESIDUAL_VARIABLE_TYPE,"*",ERR,ERROR))// &

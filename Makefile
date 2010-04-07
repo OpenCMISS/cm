@@ -70,7 +70,7 @@ ifndef MPI
   MPI := mpich2
 endif
 
-ifndef USECELLMLL
+ifndef USECELLML
   USECELLML := false
 endif
 
@@ -629,6 +629,12 @@ ifeq ($(USECELLML),true)
   endif
 endif
 
+#TAU/PAPI
+ifeq ($(TAUPROF),true)
+  CPPFLAGS += -DTAUPROF
+  FPPFLAGS += -DTAUPROF
+endif
+
 #MPI
 MPI_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
@@ -660,6 +666,8 @@ EXTERNAL_INCLUDE_PATH = $(strip $(TAO_INCLUDE_PATH) $(PETSC_INCLUDE_PATH) $(SUND
 
 ifeq ($(USECELLML),true)
      EXTERNAL_INCLUDE_PATH += $(CELLML_INCLUDE_PATH)
+  FPPFLAGS += -DUSECELLML
+  CPPFLAGS += -DUSECELLML
 endif
 
 CPPFLAGS += $(EXTERNAL_INCLUDE_PATH)
@@ -701,6 +709,9 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/control_loop_routines.o \
 	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/Darcy_equations_routines.o \
+	$(OBJECT_DIR)/finite_elasticity_Darcy_routines.o \
+	$(OBJECT_DIR)/diffusion_advection_diffusion_routines.o \
+	$(OBJECT_DIR)/diffusion_diffusion_routines.o \
 	$(OBJECT_DIR)/diffusion_equation_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/distributed_matrix_vector_IO.o \
@@ -736,6 +747,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/maths.o \
 	$(OBJECT_DIR)/matrix_vector.o \
 	$(OBJECT_DIR)/mesh_routines.o \
+	$(OBJECT_DIR)/multi_physics_routines.o \
 	$(OBJECT_DIR)/Navier_Stokes_equations_routines.o \
 	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/opencmiss.o \
@@ -823,6 +835,7 @@ $(OBJECT_DIR)/advection_diffusion_equation_routines.o	:	$(SOURCE_DIR)/advection_
 	$(OBJECT_DIR)/equations_matrices_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/fluid_mechanics_IO_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -929,6 +942,7 @@ $(OBJECT_DIR)/classical_field_routines.o	:	$(SOURCE_DIR)/classical_field_routine
 $(OBJECT_DIR)/cmiss.o	:	$(SOURCE_DIR)/cmiss.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
+	$(CELLML_OBJECT) \
 	$(OBJECT_DIR)/computational_environment.o \
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/coordinate_routines.o \
@@ -1026,6 +1040,82 @@ $(OBJECT_DIR)/Darcy_equations_routines.o	:	$(SOURCE_DIR)/Darcy_equations_routine
 	$(OBJECT_DIR)/timer_f.o	\
 	$(OBJECT_DIR)/types.o
 
+$(OBJECT_DIR)/finite_elasticity_Darcy_routines.o	:	$(SOURCE_DIR)/finite_elasticity_Darcy_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/boundary_condition_routines.o \
+	$(OBJECT_DIR)/constants.o \
+	$(OBJECT_DIR)/control_loop_routines.o \
+	$(OBJECT_DIR)/Darcy_equations_routines.o \
+	$(OBJECT_DIR)/distributed_matrix_vector.o \
+	$(OBJECT_DIR)/domain_mappings.o \
+	$(OBJECT_DIR)/equations_routines.o \
+	$(OBJECT_DIR)/equations_mapping_routines.o \
+	$(OBJECT_DIR)/equations_matrices_routines.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/fluid_mechanics_IO_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o	\
+	$(OBJECT_DIR)/matrix_vector.o	\
+	$(OBJECT_DIR)/problem_constants.o	\
+	$(OBJECT_DIR)/strings.o	\
+	$(OBJECT_DIR)/solver_routines.o	\
+	$(OBJECT_DIR)/timer_f.o	\
+	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/diffusion_advection_diffusion_routines.o	:	$(SOURCE_DIR)/diffusion_advection_diffusion_routines.f90 \
+	$(OBJECT_DIR)/advection_diffusion_equation_routines.o \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/boundary_condition_routines.o \
+	$(OBJECT_DIR)/constants.o \
+	$(OBJECT_DIR)/control_loop_routines.o \
+	$(OBJECT_DIR)/diffusion_equation_routines.o \
+	$(OBJECT_DIR)/distributed_matrix_vector.o \
+	$(OBJECT_DIR)/domain_mappings.o \
+	$(OBJECT_DIR)/equations_routines.o \
+	$(OBJECT_DIR)/equations_mapping_routines.o \
+	$(OBJECT_DIR)/equations_matrices_routines.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/fluid_mechanics_IO_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o	\
+	$(OBJECT_DIR)/matrix_vector.o	\
+	$(OBJECT_DIR)/problem_constants.o	\
+	$(OBJECT_DIR)/strings.o	\
+	$(OBJECT_DIR)/solver_routines.o	\
+	$(OBJECT_DIR)/timer_f.o	\
+	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/diffusion_diffusion_routines.o	:	$(SOURCE_DIR)/diffusion_diffusion_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/boundary_condition_routines.o \
+	$(OBJECT_DIR)/constants.o \
+	$(OBJECT_DIR)/control_loop_routines.o \
+	$(OBJECT_DIR)/diffusion_equation_routines.o \
+	$(OBJECT_DIR)/distributed_matrix_vector.o \
+	$(OBJECT_DIR)/domain_mappings.o \
+	$(OBJECT_DIR)/equations_routines.o \
+	$(OBJECT_DIR)/equations_mapping_routines.o \
+	$(OBJECT_DIR)/equations_matrices_routines.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/fluid_mechanics_IO_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o	\
+	$(OBJECT_DIR)/matrix_vector.o	\
+	$(OBJECT_DIR)/problem_constants.o	\
+	$(OBJECT_DIR)/strings.o	\
+	$(OBJECT_DIR)/solver_routines.o	\
+	$(OBJECT_DIR)/timer_f.o	\
+	$(OBJECT_DIR)/types.o
+
 $(OBJECT_DIR)/diffusion_equation_routines.o	:	$(SOURCE_DIR)/diffusion_equation_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
@@ -1039,6 +1129,7 @@ $(OBJECT_DIR)/diffusion_equation_routines.o	:	$(SOURCE_DIR)/diffusion_equation_r
 	$(OBJECT_DIR)/equations_matrices_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/fluid_mechanics_IO_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -1152,6 +1243,7 @@ $(OBJECT_DIR)/equations_set_routines.o	:	$(SOURCE_DIR)/equations_set_routines.f9
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/lists.o \
 	$(OBJECT_DIR)/matrix_vector.o \
+	$(OBJECT_DIR)/multi_physics_routines.o \
 	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/timer_f.o \
@@ -1232,6 +1324,7 @@ $(OBJECT_DIR)/fluid_mechanics_routines.o	:	$(SOURCE_DIR)/fluid_mechanics_routine
 
 $(OBJECT_DIR)/fluid_mechanics_IO_routines.o	:	$(SOURCE_DIR)/fluid_mechanics_IO_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/types.o
 
@@ -1464,6 +1557,18 @@ $(OBJECT_DIR)/mesh_routines.o	:	$(SOURCE_DIR)/mesh_routines.f90 \
 	$(OBJECT_DIR)/trees.o \
 	$(OBJECT_DIR)/types.o
 
+$(OBJECT_DIR)/multi_physics_routines.o	:	$(SOURCE_DIR)/multi_physics_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/diffusion_advection_diffusion_routines.o \
+	$(OBJECT_DIR)/diffusion_diffusion_routines.o \
+	$(OBJECT_DIR)/finite_elasticity_Darcy_routines.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/problem_constants.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/types.o
+
 $(OBJECT_DIR)/Navier_Stokes_equations_routines.o	:	$(SOURCE_DIR)/Navier_Stokes_equations_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
@@ -1502,6 +1607,7 @@ $(OBJECT_DIR)/opencmiss.o	:	$(SOURCE_DIR)/opencmiss.f90 \
 	$(OBJECT_DIR)/basis_routines.o \
 	$(OBJECT_DIR)/boundary_condition_routines.o \
 	$(OBJECT_DIR)/cmiss.o \
+	$(CELLML_OBJECT) \
 	$(OBJECT_DIR)/cmiss_mpi.o \
 	$(OBJECT_DIR)/computational_environment.o \
 	$(OBJECT_DIR)/constants.o \
@@ -1567,10 +1673,12 @@ $(OBJECT_DIR)/problem_routines.o	:	$(SOURCE_DIR)/problem_routines.f90 \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/equations_set_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/finite_elasticity_routines.o \
 	$(OBJECT_DIR)/fluid_mechanics_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/multi_physics_routines.o \
 	$(OBJECT_DIR)/problem_constants.o \
 	$(OBJECT_DIR)/solver_routines.o \
 	$(OBJECT_DIR)/solver_matrices_routines.o \

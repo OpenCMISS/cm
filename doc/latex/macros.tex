@@ -292,6 +292,18 @@
 %
 \newcommand{\abs}[1]{\brac{|}{#1}{|}} % absolute value
 \newcommand{\bbrac}[1]{\brac{\{}{#1}{\}}} % Braces { bracket
+\newcommand{\christoffel}[3]{\ensuremath{ %
+    \Gamma_{#1#2}^{#3}
+    }} % Christoffel symbol e.g. \christoffel{i}{j}{k} => Gamma_{ij}^[k}
+\newcommand{\covarderiv}[2]{\ensuremath{ %
+    \brac{.}{#1}{|}_{#2}
+    }} % covariant derivative e.g. \covarderiv{i}{j} => i | _{j}
+\newcommand{\contraderiv}[2]{\ensuremath{ %
+    \brac{.}{#1}{|}^{#2}
+    }} % contravariant derivative e.g. \contraderiv{i}{j} => i | ^{j}
+\newcommand{\mixedderiv}[3]{\ensuremath{ %
+    \brac{.}{#1}{|}^{#2}_{#3}
+    }} % mixed derivative e.g. \mixedderiv{i}{j}{k} => i | ^{j}_{k}
 \newcommand{\conjugate}[1]{\ensuremath{ %
     \overline{#1} %                                _
     }} %% complex conjugate e.g. \conjugate{Z} => Z
@@ -509,6 +521,13 @@
 %
 % Basis functions and interpolation
 %
+\newcommand{\nodept}[2]{\ensuremath{ %
+    {#1}^{#2} %
+  }} % Nodal point (without derivative) e.g., \nodept{\psi}{n}=> nodal dof of \psi at node n.
+\newcommand{\nodedof}[3]{\ensuremath{ %
+  \nodept{#1}{#2}_{,#3} %
+}} % Nodal DOF e.g., \nodedof{\psi}{n}{u} => nodal dof of \psi at node n
+  % derivative u.
 \newcommand{\chbfnsymb}[2]{\ensuremath{ %
     \Psi_{#1}^{#2} %
     }} % Cubic Hermite basis function symbol
@@ -516,9 +535,6 @@
     \fnof{\chbfnsymb{#1}{#2}}{#3} %
     }} % \chbfn{n}{u}{xi} => cubic Hermite basis function at node n deriv u
        % evaluated at xi
-\newcommand{\christoffel}[3]{\ensuremath{ %
-    \Gamma_{#1#2}^{#3}
-    }} % Christoffel symbol e.g. \christoffel{i}{j}{k} => Gamma_{ij}^[k}
 \newcommand{\hsonebfnsymb}[1]{\ensuremath{ %
     \zeta_{#1} %
     }} % Hermite sector 1 basis function symbol

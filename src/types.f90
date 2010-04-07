@@ -415,6 +415,8 @@ MODULE TYPES
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function for the line.
     INTEGER(INTG), ALLOCATABLE :: NODES_IN_LINE(:) !<NODES_IN_LINE(nn). The local node number in the domain of the nn'th local node in the line. Old CMISS name NPL(2..5,nj,nl).
     INTEGER(INTG), ALLOCATABLE :: DERIVATIVES_IN_LINE(:,:) !<DERIVATIVES_IN_LINE(nk,nn). The global derivative number of the local derivative nk for the local node nn in the line. Old CMISS name NPL(4..5,nj,nl).
+    LOGICAL :: BOUNDARY_LINE !<Is .TRUE. if the line is on the boundary of the mesh for the domain, .FALSE. if not.
+    INTEGER(INTG) :: ELEMENT_NUMBER !<The element number of the element on which the line is on
   END TYPE DOMAIN_LINE_TYPE
 
   !>A buffer type to allow for an array of pointers to a DOMAIN_LINE_TYPE
@@ -437,6 +439,8 @@ MODULE TYPES
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function for the face.
     INTEGER(INTG), ALLOCATABLE :: NODES_IN_FACE(:) !<NODES_IN_FACE(nn). The local node number in the domain of the nn'th local node in the face. Old CMISS name NPNF(nn,nbf).
     INTEGER(INTG), ALLOCATABLE :: DERIVATIVES_IN_FACE(:,:) !<DERIVATIVES_IN_FACE(nk,nn). The global derivative number of the local derivative nk for the local node nn in the face.
+    LOGICAL :: BOUNDARY_FACE !<Is .TRUE. if the face is on the boundary of the mesh for the domain, .FALSE. if not.
+    INTEGER(INTG) :: ELEMENT_NUMBER !<The element number of the element on which the face is on
   END TYPE DOMAIN_FACE_TYPE
 
   !>A buffer type to allow for an array of pointers to a DOMAIN_FACE_TYPE.
@@ -670,7 +674,7 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_OF_DOMAINS !<The number of domains that the global number is mapped to a local number in.
     INTEGER(INTG), ALLOCATABLE :: LOCAL_NUMBER(:) !<LOCAL_NUMBER(domain_idx). The mapped local number for the domain_idx'th domain for the global number.
     INTEGER(INTG), ALLOCATABLE :: DOMAIN_NUMBER(:) !<DOMAIN_NUMBER(domain_idx). The domain number for the domain_idx'th domain for which the global number is mapped to a local number
-    INTEGER(INTG), ALLOCATABLE :: LOCAL_TYPE(:) !<LOCAL_TYPE(domain_idx). The type of local for the domain_idx'th domain for which the global number is mapped to a local number. The types depend on wether the mapped local number in the domain_idx'th domain is an internal, boundary or ghost local number. \see DOMAIN_MAPPINGS_DomainType
+    INTEGER(INTG), ALLOCATABLE :: LOCAL_TYPE(:) !<LOCAL_TYPE(domain_idx). The type of local for the domain_idx'th domain for which the global number is mapped to a local number. The types depend on whether the mapped local number in the domain_idx'th domain is an internal, boundary or ghost local number. \see DOMAIN_MAPPINGS_DomainType
   END TYPE DOMAIN_GLOBAL_MAPPING_TYPE
 
   !>Contains information on the domain mappings (i.e., local and global numberings).
@@ -757,6 +761,7 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: ELEMENT_FACES(:) !<ELEMENT_FACES(nel). The local arc number of the nel'th element that surrounds (uses) this face.
 !    INTEGER(INTG) :: ADJACENT_FACES(0:1) !<ADJACENT_FACES(0:1). The face number of adjacent faces. ADJACENT_FACES(0) is the face number adjacent in the -xi direction. ADJACENT_FACES(1) is the face number adjacent in the +xi direction. Old CMISS name NPL(2..3,0,nl).
     LOGICAL :: BOUNDARY_FACE !<Is .TRUE. if the face is on the boundary of the mesh for the domain, .FALSE. if not.
+    INTEGER(INTG) :: ELEMENT_NUMBER !<The element number of the element on which the face is on
   END TYPE DECOMPOSITION_FACE_TYPE
 
   !>Contains the topology information for the faces of a decomposition.
@@ -803,7 +808,7 @@ MODULE TYPES
     INTEGER(INTG) :: MESH_COMPONENT_NUMBER !<The component number (index) of the mesh component that this decomposition belongs to (i.e., was generated from).
     INTEGER(INTG) :: DECOMPOSITION_TYPE !<The type of the domain decomposition \see MESH_ROUTINES_DecompositionTypes.
     INTEGER(INTG) :: NUMBER_OF_DOMAINS !<The number of domains that this decomposition contains.
-    INTEGER(INTG) :: NUMBER_OF_EDGES_CUT !<For automatically calcualted decompositions, the number of edges of the mesh dual graph that were cut for the composition. It provides an indication of the optimally of the automatic decomposition.
+    INTEGER(INTG) :: NUMBER_OF_EDGES_CUT !<For automatically calculated decompositions, the number of edges of the mesh dual graph that were cut for the composition. It provides an indication of the optimally of the automatic decomposition.
     INTEGER(INTG), ALLOCATABLE :: ELEMENT_DOMAIN(:) !<ELEMENT_DOMAIN(ne). The domain number that the ne'th global element is in for the decomposition. Note: the domain numbers start at 0 and go up to the NUMBER_OF_DOMAINS-1.
     TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the topology for this decomposition.
     TYPE(DOMAIN_PTR_TYPE), POINTER :: DOMAIN(:) !<DOMAIN(mesh_component_idx). A pointer to the domain for mesh component for the domain associated with the computational node. \todo Change this to allocatable???
@@ -839,24 +844,37 @@ MODULE TYPES
     REAL(DP) :: JACOBIAN !<The Jacobian of the Xi to X coordinate system transformation. Old CMISS name RG.
     INTEGER(INTG) :: JACOBIAN_TYPE !<The type of Jacobian. \see COORDINATE_ROUTINES_JacobianType
   END TYPE FIELD_INTERPOLATED_POINT_METRICS_TYPE
+
+  TYPE FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: PTR
+  END TYPE FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE
   
   !>Contains the interpolated value (and the derivatives wrt xi) of a field at a point. Old CMISS name XG.
   TYPE FIELD_INTERPOLATED_POINT_TYPE
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS !<A pointer to the interpolation parameters of the field that is to be interpolated.
     INTEGER(INTG) :: MAX_PARTIAL_DERIVATIVE_INDEX !<The maximum number of partial derivatives that have been allocated for the values component.
-    INTEGER(INTG) :: PARTIAL_DERIVATIVE_TYPE !<The type of the partial derivatives that have been interpolated. PARTIAL_DERIVATIVE_TYPE can be either NO_PART_DERIV, FIRST_PART_DERIV or SECOND_PART_DERIV depending on wether just the field value, the field value and all first derivatives (including cross derivatives) or the first value and all first and second derivatives have been interpolated.
+    INTEGER(INTG) :: PARTIAL_DERIVATIVE_TYPE !<The type of the partial derivatives that have been interpolated. PARTIAL_DERIVATIVE_TYPE can be either NO_PART_DERIV, FIRST_PART_DERIV or SECOND_PART_DERIV depending on whether just the field value, the field value and all first derivatives (including cross derivatives) or the first value and all first and second derivatives have been interpolated.
     REAL(DP), ALLOCATABLE :: VALUES(:,:) !<VALUES(component_idx,nu). The interpolated field components and their partial derivatives.
   END TYPE FIELD_INTERPOLATED_POINT_TYPE
+
+  TYPE FIELD_INTERPOLATED_POINT_PTR_TYPE
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: PTR
+  END TYPE FIELD_INTERPOLATED_POINT_PTR_TYPE
   
   !>Contains the parameters required to interpolate a field variable within an element. Old CMISS name XE
   TYPE FIELD_INTERPOLATION_PARAMETERS_TYPE
     TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to be interpolated.
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE !<A pointer to the field VARIABLE to be interpolated.
+    INTEGER(INTG) :: NUMBER_OF_XI !<The number of xi directions for the interpolation parameters.
     TYPE(BASIS_PTR_TYPE), ALLOCATABLE :: BASES(:) !<BASES(component_idx). An array to hold a pointer to the basis (if any) used for interpolating the component_idx'th component of the field variable.
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_PARAMETERS(:) !<NUMBER_OF_PARAMETERS(component_idx). The number of interpolation parameters used for interpolating the component_idx'th component of the field variable.
     REAL(DP), ALLOCATABLE :: PARAMETERS(:,:) !<PARAMETERS(ns,component_idx). The interpolation parameters used for interpolating the component_idx'th component of the field variable.
     REAL(DP), ALLOCATABLE :: SCALE_FACTORS(:,:) !<SCALE_FACTORS(ns,component_idx). The scale factors used for scaling then component_idx'th component of the field variable. 
   END TYPE FIELD_INTERPOLATION_PARAMETERS_TYPE
+
+  TYPE FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: PTR
+  END TYPE FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE
   
   !>Contains the geometric parameters (lines, faces, volumes etc.) for a geometric field decomposition.
   TYPE FIELD_GEOMETRIC_PARAMETERS_TYPE
@@ -904,7 +922,7 @@ MODULE TYPES
   !>A type to hold the mapping from field parameters (nodes, elements, etc) to field dof numbers for a particular field variable component.
   TYPE FIELD_PARAM_TO_DOF_MAP_TYPE
     INTEGER(INTG) :: NUMBER_OF_CONSTANT_PARAMETERS !<The number of constant field parameters for this field variable component. Note: this is currently always 1 but is
-  !###      included for completness and to allow for multiple constants per field variable component in the future.
+  !###      included for completeness and to allow for multiple constants per field variable component in the future.
     INTEGER(INTG) :: NUMBER_OF_ELEMENT_PARAMETERS !<The number of element based field parameters for this field variable component.
     INTEGER(INTG) :: NUMBER_OF_NODE_PARAMETERS !<The number of node based field parameters for this field variable component.
     INTEGER(INTG) :: MAX_NUMBER_OF_DERIVATIVES !<The maximum number of derivatives for the node parameters for this field variable component. It is the size of the first index of the NODE_PARAM2DOF_MAP component of this type.
@@ -1325,22 +1343,22 @@ MODULE TYPES
     TYPE(FIELD_TYPE), POINTER :: INDEPENDENT_FIELD !<A pointer to the independent field for the equations 
     TYPE(FIELD_TYPE), POINTER :: MATERIALS_FIELD !<A pointer to the material field for the equations (if one is defined).
     TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD !<A pointer to the source field for the equations (if one is defined).
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: GEOMETRIC_INTERP_PARAMETERS !<A pointer to the geometric interpolation parameters for the equations.
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: FIBRE_INTERP_PARAMETERS !<A pointer to the fibre interpolation parameters for the equations (if a fibre field is defined). 
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: DEPENDENT_INTERP_PARAMETERS !<A pointer to the dependent interpolation parameters for the equations. 
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INDEPENDENT_INTERP_PARAMETERS !<A pointer to the independent interpolation parameters for the equations. 
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: MATERIALS_INTERP_PARAMETERS !<A pointer to the material interpolation parameters for the equations (if a material field is defined). 
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: SOURCE_INTERP_PARAMETERS !<A pointer to the source interpolation parameters for the equations (if a source field is defined). 
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: GEOMETRIC_INTERP_POINT !<A pointer to the geometric interpolated point information for the equations. 
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: FIBRE_INTERP_POINT !<A pointer to the fibre interpolated point information for the equations (if a fibre field is defined). 
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: DEPENDENT_INTERP_POINT !<A pointer to the dependent interpolated point information for the equations. 
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INDEPENDENT_INTERP_POINT !<A pointer to the independent interpolated point information for the equations. 
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: MATERIALS_INTERP_POINT !<A pointer to the material interpolated point information for the equations (if a material field is defined). 
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: SOURCE_INTERP_POINT !<A pointer to the source interpolated point information for the equations (if a source field is defined).
-    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: DEPENDENT_INTERP_POINT_METRICS !<A pointer to the dependent interpolated point metrics information 
-    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: INDEPENDENT_INTERP_POINT_METRICS !<A pointer to the independent interpolated point metrics information 
-    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: GEOMETRIC_INTERP_POINT_METRICS !<A pointer to the geometric interpolated point metrics information 
-    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: FIBRE_INTERP_POINT_METRICS !<A pointer to the fibre interpolated point metrics information 
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: GEOMETRIC_INTERP_PARAMETERS(:) !<GEOMETRIC_INTERP_PARAMETERS(field_variable_type). A pointer to the field_variable_type'th geometric interpolation parameters for the equations.
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: FIBRE_INTERP_PARAMETERS(:) !<FIBRE_INTERP_PARAMETERS(field_variable_type). A pointer to the fibre interpolation parameters for the equations (if a fibre field is defined). 
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: DEPENDENT_INTERP_PARAMETERS(:) !<DEPENDENT_INTERP_PARAMETERS(field_variable_type). A pointer to the field_variable_type'th dependent interpolation parameters for the equations. 
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INDEPENDENT_INTERP_PARAMETERS(:) !<INDEPENDENT_INTERP_PARAMETERS(field_variable_type). A pointer to the field_variable_type'th independent interpolation parameters for the equations. 
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: MATERIALS_INTERP_PARAMETERS(:) !<MATERIALS_INTERP_PARAMETERS(field_variable_type). A pointer to the field_variable_type'th material interpolation parameters for the equations (if a material field is defined). 
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: SOURCE_INTERP_PARAMETERS(:) !<SOURCE_INTERP_PARAMETERS(field_variable_type). A pointer to the field_variable_type'th source interpolation parameters for the equations (if a source field is defined). 
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: GEOMETRIC_INTERP_POINT(:) !<GEOMETRIC_INTERP_POINT(field_variable_type). A pointer to the field_variable_type'th geometric interpolated point information for the equations. 
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: FIBRE_INTERP_POINT(:) !<FIBRE_INTERP_POINT(field_variable_type). A pointer to the field_variable_type'th fibre interpolated point information for the equations (if a fibre field is defined). 
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: DEPENDENT_INTERP_POINT(:) !<DEPENDENT_INTERP_POINT(field_variable_type). A pointer to the field_variable_type'th dependent interpolated point information for the equations. 
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: INDEPENDENT_INTERP_POINT(:) !<INDEPENDENT_INTERP_POINT(field_variable_type). A pointer to the field_variable_type'th independent interpolated point information for the equations. 
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: MATERIALS_INTERP_POINT(:) !<MATERIALS_INTERP_POINT(field_variable_type). A pointer to the field_variable_type'th material interpolated point information for the equations (if a material field is defined). 
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: SOURCE_INTERP_POINT(:) !<SOURCE_INTERP_POINT(field_variable_type). A pointer to the field_variable_type'th source interpolated point information for the equations (if a source field is defined).
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE), POINTER :: DEPENDENT_INTERP_POINT_METRICS(:) !<DEPENDENT_INTERP_POINT_METRICS(field_variable_type). A pointer to the field_variable_type'th dependent interpolated point metrics information 
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE), POINTER :: INDEPENDENT_INTERP_POINT_METRICS(:) !<INDEPENDENT_INTERP_POINT_METRICS(field_variable_type). A pointer to the field_variable_type'th independent interpolated point metrics information 
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE), POINTER :: GEOMETRIC_INTERP_POINT_METRICS(:) !<GEOMETRIC_INTERP_POINT_METRICS(field_variable_type). A pointer to the field_variable_type'th geometric interpolated point metrics information 
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE), POINTER :: FIBRE_INTERP_POINT_METRICS(:) !<FIBRE_INTERP_POINT_METRICS(field_variable_type). A pointer to the field_variable_type'th fibre interpolated point metrics information 
   END TYPE EQUATIONS_INTERPOLATION_TYPE
 
   !>Contains information about the equations in an equations set. \see OPENCMISS::CMISSEquationsType
@@ -1372,9 +1390,13 @@ MODULE TYPES
   TYPE BOUNDARY_CONDITIONS_VARIABLE_TYPE
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<A pointer to the boundary conditions for this boundary conditions variable
     INTEGER(INTG) :: VARIABLE_TYPE !<The type of variable for this variable boundary conditions
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE !<A pointer to the field varaible for this boundary condition variable
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE !<A pointer to the field variable for this boundary condition variable
     INTEGER(INTG), ALLOCATABLE :: GLOBAL_BOUNDARY_CONDITIONS(:) !<GLOBAL_BOUNDARY_CONDITIONS(dof_idx). The global boundary condition for the dof_idx'th dof of the dependent field variable. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
     !TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: BOUNDARY_CONDITIONS_VALUES !<A pointer to the distributed vector containing the boundary conditions for the domain for this process.
+    TYPE(BOUNDARY_CONDITIONS_DIRICHLET_TYPE), POINTER :: DIRICHLET_BOUNDARY_CONDITIONS  !<A pointer to the dirichlet boundary condition type for this boundary condition variable
+    INTEGER(INTG) :: NUMBER_OF_DIRICHLET_CONDITIONS !<Stores the number of dirichlet conditions associated with this variable
+    TYPE(BOUNDARY_CONDITIONS_NEUMANN_TYPE), POINTER :: NEUMANN_BOUNDARY_CONDITIONS
+    INTEGER(INTG) :: NUMBER_OF_NEUMANN_BOUNDARIES
   END TYPE BOUNDARY_CONDITIONS_VARIABLE_TYPE
 
   !>A buffer type to allow for an array of pointers to a VARIABLE_BOUNDARY_CONDITIONS_TYPE \see TYPES::VARIABLE_BOUNDARY_CONDITIONS_TYPE
@@ -1388,6 +1410,54 @@ MODULE TYPES
     LOGICAL :: BOUNDARY_CONDITIONS_FINISHED !<Is .TRUE. if the boundary conditions for the equations set has finished being created, .FALSE. if not.
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_PTR_TYPE), ALLOCATABLE :: BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(:) !<BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type_idx). BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type_idx)%PTR is the pointer to the variable_type_idx'th BOUNDARY_CONDITIONS_VARIABLE
   END TYPE BOUNDARY_CONDITIONS_TYPE
+
+  !>A buffer type to allow for an array of pointers to a BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE \see TYPES::BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE
+  TYPE BOUNDARY_CONDITIONS_SPARSITY_INDICES_PTR_TYPE
+    TYPE(BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE), POINTER :: PTR !<A pointer to the boundary conditions sparsity indices type
+  END TYPE BOUNDARY_CONDITIONS_SPARSITY_INDICES_PTR_TYPE
+
+  !> Contains information on dofs with associated dirichlet conditions and corresponding non-zero elements in the equations matrices
+  TYPE BOUNDARY_CONDITIONS_DIRICHLET_TYPE
+    INTEGER(INTG), ALLOCATABLE :: DIRICHLET_DOF_INDICES(:)  !<DIRICHLET_DOF_INDICES(idx). Stores the dof_idx of the dofs which are subject to a dirichlet boundary condition \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
+    TYPE(BOUNDARY_CONDITIONS_SPARSITY_INDICES_PTR_TYPE), ALLOCATABLE :: LINEAR_SPARSITY_INDICES(:) !<LINEAR_SPARSITY_INDICES(equ_matrix_idx). Stores the indices of the non-zero elements of the 'equ_matrix_idx'th linear equation matrix in the columns corresponding to the dofs which are subject to a dirichlet boundary condition
+    TYPE(BOUNDARY_CONDITIONS_SPARSITY_INDICES_PTR_TYPE), ALLOCATABLE :: DYNAMIC_SPARSITY_INDICES(:) !<DYNAMIC_SPARSITY_INDICES(equ_matrix_idx). Stores the indices of the non-zero elements of the 'equ_matrix_idx'th dynamic equation matrix in the columns corresponding to the dofs which are subject to a dirichlet boundary condition
+  END TYPE BOUNDARY_CONDITIONS_DIRICHLET_TYPE
+
+  !> Contains information on indices of non-zero elements with associated dirichlet conditions
+  !> Indices stored in compressed column format without a values array
+  TYPE BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE
+    INTEGER(INTG), POINTER :: SPARSE_ROW_INDICES(:) !<SPARSE_ROW_INDICES(SPARSE_COLUMN_INDICES(column_idx)). Between SPARSE_COLUMN_INDICES(column_idx) and SPARSE_COLUMN_INDICES(column_idx+1)-1 are the row indices of non-zero elements of the 'column_idx'th column
+    INTEGER(INTG), ALLOCATABLE :: SPARSE_COLUMN_INDICES(:) !<SPARSE_COLUMN_INDICES(column_idx). Between SPARSE_COLUMN_INDICES(column_idx) and SPARSE_COLUMN_INDICES(column_idx+1)-1 are the row indices of non-zero elements of the 'column_idx'th column
+  END TYPE BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE
+
+  !>Contains the user set values for the Neumann boundary conditions
+  TYPE BOUNDARY_CONDITIONS_NEUMANN_VALUES_TYPE
+    INTEGER(INTG), ALLOCATABLE :: SET_DOF(:) !<Array of user-set DOFs on boundary
+    REAL(DP), ALLOCATABLE :: SET_DOF_VALUES(:) !<Array of user-set values of DOFs on boundary
+  END TYPE BOUNDARY_CONDITIONS_NEUMANN_VALUES_TYPE
+
+  !>A buffer type to allow for an array of pointers to BOUNDARY_CONDITIONS_NEUMANN_VALUES_TYPE
+  TYPE BOUNDARY_CONDITIONS_NEUMANN_VALUES_PTR_TYPE
+    TYPE(BOUNDARY_CONDITIONS_NEUMANN_VALUES_TYPE), POINTER :: PTR !<A pointer to the Neumann boundary conditions values type
+  END TYPE BOUNDARY_CONDITIONS_NEUMANN_VALUES_PTR_TYPE
+
+  !>Contains the arrays and mapping arrays used to calculate the Neumann boundary conditions
+  TYPE BOUNDARY_CONDITIONS_NEUMANN_TYPE
+    TYPE(BOUNDARY_CONDITIONS_NEUMANN_VALUES_PTR_TYPE), ALLOCATABLE :: NEUMANN_BOUNDARY_IDENTIFIER(:) !<Array of identifiers for user set Neumann boundaries
+    REAL(DP), ALLOCATABLE :: FACE_INTEGRATION_MATRIX(:,:) !<Array for results from face basis calculation for an individual face
+    INTEGER(INTG), ALLOCATABLE :: FACE_INTEGRATION_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of FACE_INTEGRATION_MATRIX
+    REAL(DP), ALLOCATABLE :: LINE_INTEGRATION_MATRIX(:,:) !<Array for results from line basis calculation for an individual line
+    INTEGER(INTG), ALLOCATABLE :: LINE_INTEGRATION_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of LINE_INTEGRATION_MATRIX
+    REAL(DP), ALLOCATABLE :: INTEGRATION_MATRIX(:,:) !<The INTEGRATION_MATRIX - array for conglomeration of FACE_INTEGRATION_MATRIX, the 'A' matrix
+    INTEGER(INTG), ALLOCATABLE :: INTEGRATION_MATRIX_MAPPING_X(:) !<Mapping array of domain nodes to X axis of INTEGRATION_MATRIX
+    INTEGER(INTG), ALLOCATABLE :: INTEGRATION_MATRIX_MAPPING_Y(:) !<Mapping array of domain nodes to Y axis of INTEGRATION_MATRIX
+    REAL(DP), ALLOCATABLE :: POINT_VALUES_VECTOR(:) !<The vector of set values, the 'x' vector
+    INTEGER(INTG), ALLOCATABLE :: POINT_VALUES_VECTOR_MAPPING(:) !<Mapping array of domain nodes in POINT_VALUES_VECTOR
+    REAL(DP), ALLOCATABLE :: INTEGRATED_VALUES_VECTOR(:) !<Vector for the storage of the integrated values, the 'b' vector of Ax=b 
+    INTEGER(INTG), ALLOCATABLE :: INTEGRATED_VALUES_VECTOR_MAPPING(:) !<Mapping array of domain nodes and components in INTEGRATED_VALUES_VECTOR
+    !REAL(DP), ALLOCATABLE :: INTEGRATED_VALUES(:) !<Vector for storing values from INTEGRATED_VALUES_VECTOR indexed by dof number
+    INTEGER(INTG) :: INTEGRATED_VALUES_VECTOR_SIZE !<Size of INTEGRATED_VALUES_VECTOR
+  END TYPE BOUNDARY_CONDITIONS_NEUMANN_TYPE
 
  
   !
@@ -2209,7 +2279,7 @@ MODULE TYPES
     TYPE(PROBLEM_TYPE), POINTER :: PTR !<The pointer to the problem.
   END TYPE PROBLEM_PTR_TYPE
        
-  !>Contains information on the problems defined on a region.
+  !>Contains information on the problems defined.
   TYPE PROBLEMS_TYPE
     INTEGER(INTG) :: NUMBER_OF_PROBLEMS !<The number of problems defined.
     TYPE(PROBLEM_PTR_TYPE), POINTER :: PROBLEMS(:) !<The array of pointers to the problems.
@@ -2254,7 +2324,7 @@ MODULE TYPES
   
   !> This type is a wrapper for the C_PTR which references the actual CellML model definition object.
   TYPE CELLML_MODEL_TYPE
-!      TYPE(C_PTR) :: PTR !< The handle for the actual C++ CellML model definition object
+     TYPE(C_PTR) :: PTR !< The handle for the actual C++ CellML model definition object
      INTEGER(INTG) :: USER_NUMBER !< The user defined identifier for this CellML model
      INTEGER(INTG) :: GLOBAL_NUMBER !< The global number of this CellML model within the parent CellML environment.
   END TYPE CELLML_MODEL_TYPE
@@ -2275,6 +2345,7 @@ MODULE TYPES
   TYPE CELLML_TYPE
      INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the CellML environment in the list of environments for a field.
      INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the CellML environment. The user number must be unique.
+     TYPE(CELLML_ENVIRONMENTS_TYPE), POINTER :: ENVIRONMENTS !<A pointer back to the CellML environments.
      LOGICAL :: CELLML_FINISHED !<Is .TRUE. if the environment has finished being created, .FALSE. if not.
      TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD !<The source field for this CellML environment
      TYPE(CELLML_MODELS_TYPE), POINTER :: MODELS !< A pointer to the models for this environment
@@ -2285,6 +2356,12 @@ MODULE TYPES
   TYPE CELLML_PTR_TYPE
      TYPE(CELLML_TYPE), POINTER :: PTR !< The pointer to the CellML environment.
   END TYPE CELLML_PTR_TYPE
+
+  !>Contains information on the CellML environments defined.
+  TYPE CELLML_ENVIRONMENTS_TYPE
+    INTEGER(INTG) :: NUMBER_OF_ENVIRONMENTS !<The number of environments defined.
+    TYPE(CELLML_PTR_TYPE), POINTER :: ENVIRONMENTS(:) !<The array of pointers to the CellML environments.
+  END TYPE CELLML_ENVIRONMENTS_TYPE
 
   !
   !================================================================================================================================

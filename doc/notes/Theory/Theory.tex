@@ -2,6 +2,288 @@
 \chapter{Theory}
 \label{cha:theory}
 
+\section{Tensor Analysis}
+
+\subsection{Base vectors}
+
+Now, if we have a vector, $\vect{v}$ we can write
+\begin{equation}
+\vect{v}=v^{i}\vect{g}_{i}=v_{i}\vect{g}^{i}
+\end{equation}
+where $v^{i}$ are the contravariant components of the vector, $v_{i}$ are
+the covariant components, $\vect{g}_{i}$ are the covariant base vectors and
+$\vect{g}^{i}$ are the contravariant base vectors. We now note that
+\begin{equation}
+  \vect{v}=v^{i}\vect{g}_{i}=v^{i}\sqrt{g_{ii}}\hat{\vect{g}_{i}}
+\end{equation}
+where $v^{i}\sqrt{g_{ii}}$ are the physical components of the vector and
+$\hat{\vect{g}_{i}}$ are the unit vectors given by
+\begin{equation}
+  \hat{\vect{g}_{i}}=\dfrac{\vect{g}_{i}}{\sqrt{g_{ii}}}
+\end{equation}
+
+\subsection{Metric Tensors}
+
+Metric tensors are the inner product of base vectors. If $\vect{g}_{i}$ are the
+covarient base vectors then the covarient metric tensor is given by
+\begin{equation}
+  g_{ij}=\dotprod{\vect{g}_{i}}{\vect{g}_{j}}
+\end{equation}
+
+Similarily if $\vect{g}^{i}$ are the contravarient base vectors then the
+contravarient metric tensor is given by 
+\begin{equation}
+  g^{ij}=\dotprod{\vect{g}^{i}}{\vect{g}^{j}}
+\end{equation}
+
+We can also form a mixed metric tensor from the dot product of a contravarient
+and a covariant base vector \ie
+\begin{equation}
+  g^{i}_{j}=\dotprod{\vect{g}^{i}}{\vect{g}_{j}}
+\end{equation}
+
+Note that the base vectors are all mutually orthogonal and constant then
+$\vect{g}_{i}=\vect{g}^{i}$ and $g_{ij}=g^{ij}$.
+
+The metric tensors generalise (Euclidean) distance \ie
+\begin{equation}
+  ds^{2}=g^{ij}dx^{i}dx^{j}
+\end{equation}
+
+Note that multiplying by the covarient metric tensor lowers indices \ie
+\begin{align}
+  g_{ij}\vect{A}^{j} &= \vect{A}_{i} \\
+  g_{ik}g_{jl}A^{kl} &= A_{ij}
+\end{align}
+and that multiplying by the contravariant metric tensor raises indices \ie
+\begin{align}
+  g^{ij}\vect{A}_{j} &= \vect{A}^{i} \\
+  g^{ik}g^{jl}A_{kl} &= A^{ij}
+\end{align}
+
+\subsection{Transformations}
+
+The transformation rules for tensors in going from a $\vect{\nu}$ coordinate
+system to a $\vect{\xi}$ coordinate system are as follows: 
+
+
+For a covariant vector (a rank (0,1) tensor)
+\begin{equation}
+  {a^{*}}_{i}=\delby{\nu^{j}}{\xi^{i}}a_{j}
+\end{equation}
+
+For a contravariant vector (a rank (1,0) tensor)
+\begin{equation}
+  {a^{*}}^{i}=\delby{\xi^{i}}{\nu^{j}}a^{j}
+\end{equation}
+
+For a covariant tensor (a rank (0,2) tensor)
+\begin{equation}
+  {A^{*}}_{ij}=\delby{\nu_{a}}{\xi_{i}}\delby{\nu_{b}}{\xi_{j}}A_{ab} 
+\end{equation}
+
+For a contravariant tensor (a rank (2,0) tensor)
+\begin{equation}
+  {A^{*}}^{ij}=\delby{\xi^{i}}{\nu^{a}}\delby{\xi^{j}}{\nu^{b}}A^{ab}
+\end{equation}
+
+and for Mixed tensor (a rank (1,1) tensor)
+\begin{equation}
+  {A^{*}}^{i}_{j}=\delby{\xi_{i}}{\nu_{a}}\delby{\nu^{b}}{\xi_{j}}A^{a}_{b}
+\end{equation}
+
+\subsection{Derivatives}
+
+\subsubsection{Scalars}
+
+We note that a scalar quantity $\fnof{u}{\vect{\xi}}$ has derivatives
+\begin{equation}
+  \delby{u}{\xi^{i}}=u_{,i}
+\end{equation}
+
+Or more formally, the covariant derivative ($\covarderiv{\cdot}{\cdot}$) of a
+rank 0 tensor $u$ is
+\begin{equation}
+  \covarderiv{u}{i}=\delby{u}{\xi^{i}}=u_{,i}
+\end{equation}
+
+\subsubsection{Vectors}
+
+The derivatives of a vector $\vect{v}$ are given by
+\begin{equation}
+  \begin{split}
+    \delby{\vect{v}}{\xi^{i}} &=
+    \delby{}{\xi^{i}}\pbrac{v^{k}\vect{g}_{k}} \\
+    &= \delby{v^{k}}{\xi^{i}}+v^{k}\delby{\vect{g}_{k}}{\xi^{i}} \\
+    &= v^{k}_{,i}\vect{g}_{k}+v^{k}\vect{g}_{k,i}
+  \end{split}
+\end{equation}
+
+Now let $\vect{g}_{k,i}=\christoffel{k}{i}{j}$ where $\christoffel{k}{i}{j}$ are
+the Christoffel symbols. Note that
+\begin{equation}
+  \begin{split}
+    \dotprod{\vect{g}_{i,j}}{\vect{g}^{k}} &=
+    \dotprod{\christoffel{i}{j}{l}\vect{g}_{l}}{\vect{g}^{k}} \\
+    &= \christoffel{i}{j}{l}g^{k}_{l} \\
+    & = \christoffel{i}{j}{k}
+  \end{split}
+\end{equation}
+
+The Christoffel symbols are also given by
+\begin{equation}
+  \christoffel{k}{l}{i}=\frac{1}{2}g^{im}\pbrac{\delby{g_{mk}}{\xi^{l}}+\delby{g_{ml}}{\xi^{k}}-\delby{g_{kl}}{\xi^{m}}}
+\end{equation}
+
+We can now write
+\begin{equation}
+  \begin{split}
+    \vect{v}_{,i}&=v^{k}_{,i}\vect{g}_{k}+\christoffel{k}{i}{j}v^{k}\vect{g}_{j}\\
+    &=v^{k}_{,i}\vect{g}_{k}+\christoffel{j}{i}{k}v^{j}\vect{g}_{k}\\
+    &=\pbrac{v^{k}_{,i}+\christoffel{j}{i}{k}v^{j}}\vect{g}_{k}\\
+    &=\covarderiv{v^{k}}{i}\vect{g}_{k}
+  \end{split}
+\end{equation}
+where $\covarderiv{v^{k}}{i}$ is the covariant derivative of $v^{k}$ . 
+
+The covariant derivative of a rank 1 contravarient tensor $v^{k}$ is
+\begin{equation}
+  \covarderiv{v^{k}}{i} =\delby{v^{k}}{\xi^{i}}+\christoffel{j}{i}{k}v^{j}
+\end{equation}
+and the covariant derivative of a rank 1 covarient tensor $v_{k}$ is
+\begin{equation}
+  \covarderiv{v_{k}}{i} =\delby{v_{k}}{\xi^{i}}-\christoffel{k}{i}{j}v_{j}
+\end{equation}
+
+\subsubsection{Tensors}
+
+The covariant derivative of a rank 2 contravariant tensor $W^{mn}$ is
+\begin{equation}
+  \covarderiv{W^{mn}}{i}=\delby{W^{mn}}{\xi^{i}}+\christoffel{j}{i}{m}W^{jn}+\christoffel{j}{i}{n}W^{mj}
+\end{equation}
+and the covariant derivative of a rank 2 covariant tensor $W_{mn}$ is
+\begin{equation}
+  \covarderiv{W_{mn}}{i}=\delby{W_{mn}}{\xi^{i}}-\christoffel{m}{i}{j}W_{jn}-\christoffel{n}{i}{j}W_{mj}
+\end{equation}
+and the covariant derivative of a rank 2 mixed tensor $W^{m}_{n}$ is
+\begin{equation}
+  \covarderiv{W^{m}_{n}}{i}=\delby{W^{m}_{n}}{\xi^{i}}+\christoffel{j}{i}{m}W^{j}_{n}-\christoffel{n}{i}{j}W^{m}_{j}
+\end{equation}
+
+\subsection{Common Operators}
+
+For tensor equations to hold in any coordinate system the equations must
+involve tensor quantities \ie covariant derivatives rather than partial derivatives.
+
+\subsubsection{Gradient}
+
+As the covariant derivative of a scalar is just the partial derivative the
+gradient of a scalar function $\phi$ using covariant derivatives is
+\begin{equation}
+  \text{grad } \phi = \grad{\phi}=\covarderiv{\phi}{i}\vect{g}^{i}=\phi_{,i}\vect{g}^{i}
+\end{equation}
+and
+\begin{equation}
+  \grad{\phi}=\phi_{,i}\vect{g}^{i}=\phi_{,i}g^{ij}\vect{g}_{j}
+\end{equation}
+
+\subsubsection{Divergence}
+
+The divergence of a vector using covariant derivatives is
+\begin{equation}
+  \text{div } \vect{\phi} = \diverg{\vect{\phi}}=\covarderiv{\phi^{i}}{i}=\frac{1}{\sqrt{\abs{g}}}\pbrac{\sqrt{\abs{g}}\phi^{i}}_{,i}
+\end{equation}
+where $g$ is the determinant of the covariant metrix tensor $g_{ij}$.
+
+\subsubsection{Curl}
+
+The curl of a vector using covariant derivatives is
+\begin{equation}
+  \text{curl } \vect{\phi} = \curl{\vect{\phi}}=\frac{1}{\sqrt{g}}\pbrac{\covarderiv{\phi_{j}}{i}-\covarderiv{\phi_{i}}{j}}\vect{g}_{k}
+\end{equation}
+where $g$ is the determinant of the covariant metrix tensor $g_{ij}$.
+
+\subsubsection{Laplacian}
+
+The Laplacian of a scalar using covariant derivatives is
+\begin{equation}
+  \laplacian{\phi}=\text{div}\pbrac{\text{grad }\phi}=\diverg{\grad\phi}=\mixedderiv{\phi}{i}{i}=\frac{1}{\sqrt{g}}\pbrac{\sqrt{g}g^{ij}\phi_{,j}}_{,i}
+\end{equation}
+where $g$ is the determinant of the covariant metrix tensor $g_{ij}$.
+
+\subsection{Coordinate Systems}
+
+\subsubsection{Rectangular Cartesian}
+
+The base vectors with respect to the global coordinate system are
+\begin{equation}
+  \vect{g}_{i}=\begin{bmatrix} 
+    \vect{i}_{1} \\ 
+    \vect{i}_{2} \\
+    \vect{i}_{3} 
+  \end{bmatrix}
+\end{equation}
+
+The covariant metric tensor is
+\begin{equation}
+  g_{ij}=\begin{bmatrix}
+    1 & 0 & 0 \\
+    0 & 1 & 0 \\
+    0 & 0 & 1
+  \end{bmatrix}
+\end{equation}
+and the contravariant metric tensor is
+\begin{equation}
+  g^{ij}=\begin{bmatrix}
+    1 & 0 & 0 \\
+    0 & 1 & 0 \\
+    0 & 0 & 1
+  \end{bmatrix}
+\end{equation}
+
+The Christoffel symbols are all zero \ie $\christoffel{i}{j}{k}=0$.
+
+\subsubsection{Cylindrical Polar}
+
+The base vectors with respect to the global coordinate system are
+\begin{equation}
+  \vect{g}_{i}=\begin{bmatrix} 
+    r\cos\theta\vect{i}_{1} + r\sin\theta\vect{i}_{2} \\ 
+    -r\sin\theta\vect{i}_{1}+ r\cos\theta\vect{i}_{2} \\
+    \vect{i}_{3} 
+  \end{bmatrix}
+\end{equation}
+
+The covariant metric tensor is
+\begin{equation}
+  g_{ij}=\begin{bmatrix}
+    1 & 0 & 0 \\
+    0 & r^{2} & 0 \\
+    0 & 0 & 1
+  \end{bmatrix}
+\end{equation}
+and the contravariant metric tensor is
+\begin{equation}
+  g^{ij}=\begin{bmatrix}
+    1 & 0 & 0 \\
+    0 & \frac{1}{r^{2}} & 0 \\
+    0 & 0 & 1
+  \end{bmatrix}
+\end{equation}
+
+The Christoffell symbols are
+\begin{align}
+  \christoffel{\theta}{\theta}{r}&=-r \\
+  \christoffel{r}{\theta}{\theta}&=\frac{1}{r}
+\end{align}
+with all other $\christoffel{i}{j}{k}=0$.
+
+\subsubsection{Spherical Polar}
+
+\subsubsection{Prolate Spheroidal}
+
+\subsubsection{Oblate Spheroidal}
+
 \section{Equation set types}
 
 \subsection{Static Equations}

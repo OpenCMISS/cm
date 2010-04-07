@@ -780,7 +780,9 @@ CONTAINS
             END SELECT
             
             !Calcualte the contravariant metric tensor
-            CALL INVERT(METRICS%GL,METRICS%GU,DET_GL,ERR,ERROR,*999)
+            CALL INVERT(METRICS%GL(1:METRICS%NUMBER_OF_XI_DIMENSIONS,1:METRICS%NUMBER_OF_XI_DIMENSIONS), &
+              & METRICS%GU(1:METRICS%NUMBER_OF_XI_DIMENSIONS,1:METRICS%NUMBER_OF_XI_DIMENSIONS),DET_GL, &
+              & ERR,ERROR,*999)
             
             !Calculate the derivatives of Xi with respect to X - DXI_DX
             IF(METRICS%NUMBER_OF_XI_DIMENSIONS==METRICS%NUMBER_OF_X_DIMENSIONS) THEN

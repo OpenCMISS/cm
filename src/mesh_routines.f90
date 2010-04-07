@@ -870,7 +870,7 @@ CONTAINS
           IF(MESH_COMPONENT_NUMBER>0.AND.MESH_COMPONENT_NUMBER<=DECOMPOSITION%MESH%NUMBER_OF_COMPONENTS) THEN
             DECOMPOSITION%MESH_COMPONENT_NUMBER=MESH_COMPONENT_NUMBER
           ELSE
-            LOCAL_ERROR="The speficied mesh component number of "//TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT_NUMBER,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The specified mesh component number of "//TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT_NUMBER,"*",ERR,ERROR))// &
               & "is invalid. The component number must be between 1 and "// &
               & TRIM(NUMBER_TO_VSTRING(DECOMPOSITION%MESH%NUMBER_OF_COMPONENTS,"*",ERR,ERROR))//"."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -1018,7 +1018,7 @@ CONTAINS
       !Calculate the line topology
       CALL DECOMPOSITION_TOPOLOGY_LINES_CALCULATE(TOPOLOGY,ERR,ERROR,*999)
       !Calculate the face topology
-      !CALL DECOMPOSITION_TOPOLOGY_FACES_CALCULATE(TOPOLOGY,ERR,ERROR,*999)
+!!      CALL DECOMPOSITION_TOPOLOGY_FACES_CALCULATE(TOPOLOGY,ERR,ERROR,*999)
     ELSE
       CALL FLAG_ERROR("Topology is not associated.",ERR,ERROR,*999)
     ENDIF
@@ -1208,7 +1208,7 @@ CONTAINS
                           NODE_POSITION_INDEX(ni)=NUMBER_OF_NODES_XI(ni)
                         ENDIF
                         !If the face is collapsed then don't look in this xi direction. The exception is if the opposite face is
-                        !also collpased. This may indicate that we have a funny element in non-rc coordinates that goes around the
+                        !also collapsed. This may indicate that we have a funny element in non-rc coordinates that goes around the
                         !central axis back to itself
                         IF(FACE_COLLAPSED(xi_direction).AND..NOT.FACE_COLLAPSED(-xi_direction)) THEN
                           !Do nothing - the match lists are already empty
@@ -1524,6 +1524,7 @@ CONTAINS
     IF(ASSOCIATED(DECOMPOSITION)) THEN
       CALL DECOMPOSITION_TOPOLOGY_ELEMENTS_FINALISE(DECOMPOSITION%TOPOLOGY,ERR,ERROR,*999)
       CALL DECOMPOSITION_TOPOLOGY_LINES_FINALISE(DECOMPOSITION%TOPOLOGY,ERR,ERROR,*999)
+!!      CALL DECOMPOSITION_TOPOLOGY_FACES_FINALISE(DECOMPOSITION%TOPOLOGY,ERR,ERROR,*999)
       DEALLOCATE(DECOMPOSITION%TOPOLOGY)
     ELSE
       CALL FLAG_ERROR("Decomposition is not associated.",ERR,ERROR,*999)
@@ -1562,9 +1563,11 @@ CONTAINS
         DECOMPOSITION%TOPOLOGY%DECOMPOSITION=>DECOMPOSITION
         NULLIFY(DECOMPOSITION%TOPOLOGY%ELEMENTS)
         NULLIFY(DECOMPOSITION%TOPOLOGY%LINES)
+!!        NULLIFY(DECOMPOSITION%TOPOLOGY%FACES)
         !Initialise the topology components
         CALL DECOMPOSITION_TOPOLOGY_ELEMENTS_INITIALISE(DECOMPOSITION%TOPOLOGY,ERR,ERROR,*999)
         CALL DECOMPOSITION_TOPOLOGY_LINES_INITIALISE(DECOMPOSITION%TOPOLOGY,ERR,ERROR,*999)
+!!        CALL DECOMPOSITION_TOPOLOGY_FACES_INITIALISE(DECOMPOSITION%TOPOLOGY,ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Decomposition is not associated.",ERR,ERROR,*999)
@@ -1626,7 +1629,8 @@ CONTAINS
     LINE%NUMBER_OF_SURROUNDING_ELEMENTS=0
     LINE%ADJACENT_LINES=0
     LINE%BOUNDARY_LINE=.TRUE.
-    
+!!    LINE%BOUNDARY_LINE=.FALSE.    
+
     CALL EXITS("DECOMPOSITION_TOPOLOGY_LINE_INITIALISE")
     RETURN
 999 CALL ERRORS("DECOMPOSITION_TOPOLOGY_LINE_INITIALISE",ERR,ERROR)
@@ -1811,6 +1815,7 @@ CONTAINS
                           IF(.NOT.ASSOCIATED(DOMAIN_LINE%BASIS)) THEN
                             DECOMPOSITION_LINE%NUMBER=LINE_NUMBER
                             DOMAIN_LINE%NUMBER=LINE_NUMBER
+!!                            DOMAIN_LINE%ELEMENT_NUMBER=ne !Needs checking
                             DECOMPOSITION_LINE%XI_DIRECTION=BASIS%LOCAL_LINE_XI_DIRECTION(nae)
                             DOMAIN_LINE%BASIS=>BASIS%LINE_BASES(DECOMPOSITION_LINE%XI_DIRECTION)%PTR
                             ALLOCATE(DOMAIN_LINE%NODES_IN_LINE(BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(nae)),STAT=ERR)
@@ -1836,7 +1841,10 @@ CONTAINS
                         DECOMPOSITION_LINE=>DECOMPOSITION_LINES%LINES(nl)
                         DOMAIN_LINE=>DOMAIN_LINES%LINES(nl)
                         BASIS=>DOMAIN_LINE%BASIS
-                        IF(DECOMPOSITION_LINE%NUMBER_OF_SURROUNDING_ELEMENTS==1) DECOMPOSITION_LINE%BOUNDARY_LINE=.TRUE.
+                        IF(DECOMPOSITION_LINE%NUMBER_OF_SURROUNDING_ELEMENTS==1) THEN
+                          DECOMPOSITION_LINE%BOUNDARY_LINE=.TRUE.
+!!                          DOMAIN_LINE%BOUNDARY_LINE=.TRUE.
+                        ENDIF
                         !Allocate the elements surrounding the line
                         ALLOCATE(DECOMPOSITION_LINE%SURROUNDING_ELEMENTS(DECOMPOSITION_LINE%NUMBER_OF_SURROUNDING_ELEMENTS), &
                           & STAT=ERR)
@@ -1956,6 +1964,7 @@ CONTAINS
                                 DOMAIN_LINE%NUMBER=nl
                                 DOMAIN_ELEMENT=>DOMAIN_ELEMENTS%ELEMENTS(ne)
                                 BASIS=>DOMAIN_ELEMENT%BASIS
+!!                                DOMAIN_LINE%ELEMENT_NUMBER=DOMAIN_ELEMENT%NUMBER
                                 DOMAIN_LINE%BASIS=>BASIS%LINE_BASES(DECOMPOSITION_LINE%XI_DIRECTION)%PTR
                                 ALLOCATE(DOMAIN_LINE%NODES_IN_LINE(BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(nae)),STAT=ERR)
                                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nodes in line.",ERR,ERROR,*999)
@@ -2149,6 +2158,598 @@ CONTAINS
     RETURN 1
   END SUBROUTINE DECOMPOSITION_TOPOLOGY_LINES_INITIALISE
   
+  !
+  !================================================================================================================================
+  !
+ 
+  !>Finalises a face in the given decomposition topology and deallocates all memory.
+  SUBROUTINE DECOMPOSITION_TOPOLOGY_FACE_FINALISE(FACE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DECOMPOSITION_FACE_TYPE) :: FACE !<The decomposition face to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("DECOMPOSITION_TOPOLOGY_FACE_FINALISE",ERR,ERROR,*999)
+
+    FACE%NUMBER=0
+    FACE%XI_DIRECTION=0
+    FACE%NUMBER_OF_SURROUNDING_ELEMENTS=0
+    IF(ALLOCATED(FACE%SURROUNDING_ELEMENTS)) DEALLOCATE(FACE%SURROUNDING_ELEMENTS)
+    IF(ALLOCATED(FACE%ELEMENT_FACES)) DEALLOCATE(FACE%ELEMENT_FACES)
+!    FACE%ADJACENT_FACES=0
+ 
+    CALL EXITS("DECOMPOSITION_TOPOLOGY_FACE_FINALISE")
+    RETURN
+999 CALL ERRORS("DECOMPOSITION_TOPOLOGY_FACE_FINALISE",ERR,ERROR)
+    CALL EXITS("DECOMPOSITION_TOPOLOGY_FACE_FINALISE")
+    RETURN 1   
+  END SUBROUTINE DECOMPOSITION_TOPOLOGY_FACE_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises the face data structure for a decomposition topology face.
+  SUBROUTINE DECOMPOSITION_TOPOLOGY_FACE_INITIALISE(FACE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DECOMPOSITION_FACE_TYPE) :: FACE !<The decomposition face to initialise.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("DECOMPOSITION_TOPOLOGY_FACE_INITIALISE",ERR,ERROR,*999)
+
+    FACE%NUMBER=0
+    FACE%XI_DIRECTION=0
+    FACE%NUMBER_OF_SURROUNDING_ELEMENTS=0
+!    FACE%ADJACENT_FACES=0
+    FACE%BOUNDARY_FACE=.FALSE. !.TRUE.
+    
+    CALL EXITS("DECOMPOSITION_TOPOLOGY_FACE_INITIALISE")
+    RETURN
+999 CALL ERRORS("DECOMPOSITION_TOPOLOGY_FACE_INITIALISE",ERR,ERROR)
+    CALL EXITS("DECOMPOSITION_TOPOLOGY_FACE_INITIALISE")
+    RETURN 1
+  END SUBROUTINE DECOMPOSITION_TOPOLOGY_FACE_INITIALISE
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculates the faces in the given decomposition topology.
+  SUBROUTINE DECOMPOSITION_TOPOLOGY_FACES_CALCULATE(TOPOLOGY,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the decomposition topology to calculate the faces for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: component_idx,ne,ne2,nae,nae2,nn,nnf,nk,nf,np,elem_idx,NODES_IN_FACE(16),NUMBER_OF_FACES, &
+      & MAX_NUMBER_OF_FACES,NEW_MAX_NUMBER_OF_FACES,FACE_NUMBER!,NODE_COUNT,node_idx1,node_idx2,node_idx3,node_idx4,nf2,np2
+    INTEGER(INTG), ALLOCATABLE :: NODES_NUMBER_OF_FACES(:)
+    INTEGER(INTG), POINTER :: TEMP_FACES(:,:),NEW_TEMP_FACES(:,:)
+    LOGICAL :: FOUND
+    TYPE(BASIS_TYPE), POINTER :: BASIS,BASIS2
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    TYPE(DECOMPOSITION_ELEMENT_TYPE), POINTER :: DECOMPOSITION_ELEMENT
+    TYPE(DECOMPOSITION_ELEMENTS_TYPE), POINTER :: DECOMPOSITION_ELEMENTS
+    TYPE(DECOMPOSITION_FACE_TYPE), POINTER :: DECOMPOSITION_FACE!,DECOMPOSITION_FACE2
+    TYPE(DECOMPOSITION_FACES_TYPE), POINTER :: DECOMPOSITION_FACES
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+    TYPE(DOMAIN_ELEMENT_TYPE), POINTER :: DOMAIN_ELEMENT
+    TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: DOMAIN_ELEMENTS
+    TYPE(DOMAIN_FACE_TYPE), POINTER :: DOMAIN_FACE!,DOMAIN_FACE2
+    TYPE(DOMAIN_FACES_TYPE), POINTER :: DOMAIN_FACES
+    TYPE(DOMAIN_NODE_TYPE), POINTER :: DOMAIN_NODE
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
+    TYPE(MESH_TYPE), POINTER :: MESH
+
+    NULLIFY(TEMP_FACES)
+    NULLIFY(NEW_TEMP_FACES)
+    
+    CALL ENTERS("DECOMPOSITION_TOPOLOGY_FACES_CALCULATE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(TOPOLOGY)) THEN
+      DECOMPOSITION_FACES=>TOPOLOGY%FACES
+      IF(ASSOCIATED(DECOMPOSITION_FACES)) THEN
+        DECOMPOSITION_ELEMENTS=>TOPOLOGY%ELEMENTS
+        IF(ASSOCIATED(DECOMPOSITION_ELEMENTS)) THEN
+          DECOMPOSITION=>TOPOLOGY%DECOMPOSITION
+          IF(ASSOCIATED(DECOMPOSITION)) THEN
+            !Process the mesh component number (component number the decomposition was calculated from) first to establish face
+            !topology then process the other mesh components.
+            DOMAIN=>DECOMPOSITION%DOMAIN(DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR
+            IF(ASSOCIATED(DOMAIN)) THEN
+              DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
+              IF(ASSOCIATED(DOMAIN_TOPOLOGY)) THEN
+                DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
+                IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                  DOMAIN_ELEMENTS=>DOMAIN_TOPOLOGY%ELEMENTS
+                  IF(ASSOCIATED(DOMAIN_ELEMENTS)) THEN
+                    !Guestimate the number of faces
+                    SELECT CASE(DOMAIN%NUMBER_OF_DIMENSIONS)
+                    CASE(1)
+                      ! Faces not calculated in 1D 
+                    CASE(2)
+                      ! Faces not calculated in 2D
+                    CASE(3)
+                      !This should give the maximum and will over estimate the number of faces for a "cube mesh" by approx 33%
+                      MAX_NUMBER_OF_FACES=NINT(((REAL(DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS,DP)*5.0_DP)+1.0_DP)&
+                                                                                                 & *(4.0_DP/3.0_DP),INTG)
+
+                      DOMAIN_FACES=>DOMAIN_TOPOLOGY%FACES
+                      IF(ASSOCIATED(DOMAIN_FACES)) THEN
+                        ALLOCATE(TEMP_FACES(16,MAX_NUMBER_OF_FACES),STAT=ERR)
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary faces array",ERR,ERROR,*999)
+                        ALLOCATE(NODES_NUMBER_OF_FACES(DOMAIN_NODES%TOTAL_NUMBER_OF_NODES),STAT=ERR)
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nodes number of faces array",ERR,ERROR,*999)
+                        NODES_NUMBER_OF_FACES=0
+                        NUMBER_OF_FACES=0
+                        TEMP_FACES=0
+                        !Loop over the elements in the topology and fill temp_faces with node numbers for each element
+                        DO ne=1,DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                          DOMAIN_ELEMENT=>DOMAIN_ELEMENTS%ELEMENTS(ne)
+                          DECOMPOSITION_ELEMENT=>DECOMPOSITION_ELEMENTS%ELEMENTS(ne)
+                          BASIS=>DOMAIN_ELEMENT%BASIS
+                          ALLOCATE(DECOMPOSITION_ELEMENT%ELEMENT_FACES(BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element faces of element",ERR,ERROR,*999)
+                          !Loop over the local faces of the element
+                          DO nae=1,BASIS%NUMBER_OF_LOCAL_FACES
+                            !Calculate the topology node numbers that make up the face
+                            NODES_IN_FACE=0
+                            !Check whether face has already been read out
+                            DO nnf=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(nae)
+                              !Read out node numbers of local face from ELEMENT_NODES
+                              NODES_IN_FACE(nnf)=DOMAIN_ELEMENT%ELEMENT_NODES(BASIS%NODE_NUMBERS_IN_LOCAL_FACE(nnf,nae))
+                            ENDDO !nnf
+                            !Try and find a previously created face that matches in the adjacent elements
+                            FOUND=.FALSE.
+                            np=NODES_IN_FACE(1)
+                            DO elem_idx=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_SURROUNDING_ELEMENTS
+                              ne2=DOMAIN_NODES%NODES(np)%SURROUNDING_ELEMENTS(elem_idx)
+                              IF(ne2/=ne) THEN
+                                IF(ALLOCATED(DECOMPOSITION_ELEMENTS%ELEMENTS(ne2)%ELEMENT_FACES)) THEN
+                                  BASIS2=>DOMAIN_ELEMENTS%ELEMENTS(ne2)%BASIS
+                                  DO nae2=1,BASIS2%NUMBER_OF_LOCAL_FACES
+                                    nf=DECOMPOSITION_ELEMENTS%ELEMENTS(ne2)%ELEMENT_FACES(nae2)
+                                    IF(ALL(NODES_IN_FACE(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(nae))== &
+                                      & TEMP_FACES(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(nae),nf))) THEN
+                                      FOUND=.TRUE.
+                                      EXIT
+                                    ENDIF
+                                  ENDDO !nae2
+                                  IF(FOUND) EXIT
+                                ENDIF
+                              ENDIF
+                            ENDDO !elem_idx
+                            IF(FOUND) THEN
+                              !Face has already been created
+                              DECOMPOSITION_ELEMENT%ELEMENT_FACES(nae)=nf
+                            ELSE
+                              !Face has not been created
+                              IF(NUMBER_OF_FACES==MAX_NUMBER_OF_FACES) THEN
+                                !We are at maximum. Reallocate the FACES array to be 20% bigger and try again.
+                                NEW_MAX_NUMBER_OF_FACES=NINT(1.20_DP*REAL(MAX_NUMBER_OF_FACES,DP),INTG)
+!HERE: Change 16 to a variable and above for NODES_IN_FACE
+                                ALLOCATE(NEW_TEMP_FACES(16,NEW_MAX_NUMBER_OF_FACES),STAT=ERR)
+                                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new number of faces",ERR,ERROR,*999)
+                                NEW_TEMP_FACES(:,1:NUMBER_OF_FACES)=TEMP_FACES(:,1:NUMBER_OF_FACES)
+                                NEW_TEMP_FACES(:,NUMBER_OF_FACES+1:NEW_MAX_NUMBER_OF_FACES)=0
+                                DEALLOCATE(TEMP_FACES)
+                                TEMP_FACES=>NEW_TEMP_FACES
+                                NULLIFY(NEW_TEMP_FACES)
+                                MAX_NUMBER_OF_FACES=NEW_MAX_NUMBER_OF_FACES
+                              ENDIF
+                              NUMBER_OF_FACES=NUMBER_OF_FACES+1
+                              TEMP_FACES(:,NUMBER_OF_FACES)=NODES_IN_FACE(:)
+                              DECOMPOSITION_ELEMENT%ELEMENT_FACES(nae)=NUMBER_OF_FACES
+                              DO nnf=1,SIZE(NODES_IN_FACE,1)
+                                IF(NODES_IN_FACE(nnf)/=0) &
+                                 & NODES_NUMBER_OF_FACES(NODES_IN_FACE(nnf))=NODES_NUMBER_OF_FACES(NODES_IN_FACE(nnf))+1
+                              ENDDO !nnf
+                            ENDIF
+                          ENDDO !nae
+                        ENDDO !ne
+
+                        !Allocate the face arrays and set them from the FACES and NODE_FACES arrays
+                        DO np=1,DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
+                          ALLOCATE(DOMAIN_NODES%NODES(np)%NODE_FACES(NODES_NUMBER_OF_FACES(np)),STAT=ERR)
+                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node faces array",ERR,ERROR,*999)
+                          DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_FACES=0
+                        ENDDO !np
+                        DEALLOCATE(NODES_NUMBER_OF_FACES)
+                        ALLOCATE(DECOMPOSITION_FACES%FACES(NUMBER_OF_FACES),STAT=ERR)
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate decomposition topology faces",ERR,ERROR,*999)
+                        DECOMPOSITION_FACES%NUMBER_OF_FACES=NUMBER_OF_FACES
+                        ALLOCATE(DOMAIN_FACES%FACES(NUMBER_OF_FACES),STAT=ERR)
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain topology faces",ERR,ERROR,*999)
+                        DOMAIN_FACES%NUMBER_OF_FACES=NUMBER_OF_FACES
+                        DO nf=1,DOMAIN_FACES%NUMBER_OF_FACES
+                          CALL DECOMPOSITION_TOPOLOGY_FACE_INITIALISE(DECOMPOSITION_FACES%FACES(nf),ERR,ERROR,*999)
+                          CALL DOMAIN_TOPOLOGY_FACE_INITIALISE(DOMAIN_FACES%FACES(nf),ERR,ERROR,*999)
+                          DO nnf=1,SIZE(TEMP_FACES,1)
+                            IF(TEMP_FACES(nnf,nf)/=0) THEN
+                              np=TEMP_FACES(nnf,nf)
+                              DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_FACES=DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_FACES+1
+                              DOMAIN_NODES%NODES(np)%NODE_FACES(DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_FACES)=nf
+                            ENDIF
+                          ENDDO !nnf  
+                        ENDDO !nf
+
+                        !Set nodes in face and derivatives of nodes in face for domain faces
+                        DO ne=1,DECOMPOSITION_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                          DECOMPOSITION_ELEMENT=>DECOMPOSITION_ELEMENTS%ELEMENTS(ne)
+                          DOMAIN_ELEMENT=>DOMAIN_ELEMENTS%ELEMENTS(ne)
+                          BASIS=>DOMAIN_ELEMENT%BASIS
+                          !Loop over local faces of element
+                          DO nae=1,BASIS%NUMBER_OF_LOCAL_FACES
+                            FACE_NUMBER=DECOMPOSITION_ELEMENT%ELEMENT_FACES(nae)
+                            DECOMPOSITION_FACE=>DECOMPOSITION_FACES%FACES(FACE_NUMBER)
+                            DOMAIN_FACE=>DOMAIN_FACES%FACES(FACE_NUMBER)
+                            DECOMPOSITION_FACE%NUMBER_OF_SURROUNDING_ELEMENTS=DECOMPOSITION_FACE%NUMBER_OF_SURROUNDING_ELEMENTS+1
+                            IF(.NOT.ASSOCIATED(DOMAIN_FACE%BASIS)) THEN
+                              DECOMPOSITION_FACE%NUMBER=FACE_NUMBER
+                              DOMAIN_FACE%NUMBER=FACE_NUMBER
+                              DOMAIN_FACE%ELEMENT_NUMBER=ne !! Needs checking
+!                              DECOMPOSITION_FACE%ELEMENT_NUMBER=DECOMPOSITION_ELEMENT%NUMBER
+!                              DOMAIN_FACE%ELEMENT_NUMBER=DOMAIN_ELEMENT%NUMBER
+                              DECOMPOSITION_FACE%XI_DIRECTION=BASIS%LOCAL_FACE_XI_DIRECTION(nae)
+                              DOMAIN_FACE%BASIS=>BASIS%FACE_BASES(DECOMPOSITION_FACE%XI_DIRECTION)%PTR
+                              ALLOCATE(DOMAIN_FACE%NODES_IN_FACE(BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(nae)),STAT=ERR)
+                              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate face nodes in face",ERR,ERROR,*999)
+                              ALLOCATE(DOMAIN_FACE%DERIVATIVES_IN_FACE(DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
+                                & BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(nae)),STAT=ERR)
+                              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate face derivatives in face",ERR,ERROR,*999)
+                              !Set nodes in face based upon face number
+                              DOMAIN_FACE%NODES_IN_FACE=TEMP_FACES(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(nae),FACE_NUMBER)
+                              !Set derivatives of nodes in domain face from derivatives of nodes in element
+                              DO nnf=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(nae)
+                                DOMAIN_FACE%DERIVATIVES_IN_FACE(1,nnf)=NO_GLOBAL_DERIV
+                                IF(DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES>1) THEN
+                                  nk=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(nnf,nae), &
+                                    & BASIS%NODE_NUMBERS_IN_LOCAL_FACE(nnf,nae))
+                                  DOMAIN_FACE%DERIVATIVES_IN_FACE(2,nnf)=nk
+                                ENDIF
+                              ENDDO !nn
+                            ENDIF
+                          ENDDO !nae
+                        ENDDO !ne
+
+                        DEALLOCATE(TEMP_FACES)
+! Note: Adjacency will be left out of faces calculation for the time being
+                        !Calculate adjacent faces and the surrounding elements for each face
+                        DO nf=1,DECOMPOSITION_FACES%NUMBER_OF_FACES
+                          DECOMPOSITION_FACE=>DECOMPOSITION_FACES%FACES(nf)
+                          DOMAIN_FACE=>DOMAIN_FACES%FACES(nf)
+                          BASIS=>DOMAIN_FACE%BASIS
+                          IF(DECOMPOSITION_FACE%NUMBER_OF_SURROUNDING_ELEMENTS==1) THEN
+                            DECOMPOSITION_FACE%BOUNDARY_FACE=.TRUE.
+                            DOMAIN_FACE%BOUNDARY_FACE=.TRUE.
+                          ENDIF
+                          !Allocate the elements surrounding the face
+                          ALLOCATE(DECOMPOSITION_FACE%SURROUNDING_ELEMENTS(DECOMPOSITION_FACE%NUMBER_OF_SURROUNDING_ELEMENTS), &
+                            & STAT=ERR)
+                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate face surrounding elements",ERR,ERROR,*999)
+
+                          ALLOCATE(DECOMPOSITION_FACE%ELEMENT_FACES(DECOMPOSITION_FACE%NUMBER_OF_SURROUNDING_ELEMENTS), &
+                            & STAT=ERR)
+                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate face element faces",ERR,ERROR,*999)
+!                          DECOMPOSITION_FACE%NUMBER_OF_SURROUNDING_ELEMENTS=0
+!                          DECOMPOSITION_FACE%ADJACENT_FACES=0
+
+                           !Loop over the nodes at each end of the face
+!                          DO node_idx1=0,1
+!                           DO node_idx2=0,1
+!                            FOUND=.FALSE.
+!                            np=DOMAIN_FACE%NODES_IN_FACE((node_idx2*BASIS%NUMBER_OF_NODES_IN_XI_DIRECTION*(BASIS%NUMBER_OF_FACES-1))&
+!                                                                             &+(node_idx1*(BASIS%NUMBER_OF_NODES_IN_XI_DIRECTION-1))+1)
+                             !Loop over the elements surrounding the node.
+!                            DO elem_idx=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_SURROUNDING_ELEMENTS
+!                              ne=DOMAIN_NODES%NODES(np)%SURROUNDING_ELEMENTS(elem_idx)
+!                              DECOMPOSITION_ELEMENT=>DECOMPOSITION_ELEMENTS%ELEMENTS(ne)
+!                              DOMAIN_ELEMENT=>DOMAIN_ELEMENTS%ELEMENTS(ne)
+                               !Loop over the local faces of the element
+!                              DO nae=1,DOMAIN_ELEMENT%BASIS%NUMBER_OF_LOCAL_FACES
+!                                nf2=DECOMPOSITION_ELEMENT%ELEMENT_FACES(nae)
+!                                IF(nf2/=nf) THEN
+!                                  DECOMPOSITION_FACE2=>DECOMPOSITION_FACES%FACES(nf2)
+!                                  DOMAIN_FACE2=>DOMAIN_FACES%FACES(nf2)
+                                   !Check whether XI of face have same direction
+!                                  IF ((OTHER_XI_DIRECTIONS3(BASIS%LOCAL_FACE_XI_DIRECTION(nae),2,1)==&
+!                                     &OTHER_XI_DIRECTIONS3(BASIS2%LOCAL_FACE_XI_DIRECTION(nae),2,1)).OR.&
+!                                     &(OTHER_XI_DIRECTIONS3(BASIS%LOCAL_FACE_XI_DIRECTION(nae),3,1)==&
+!                                     &OTHER_XI_DIRECTIONS3(BASIS2%LOCAL_FACE_XI_DIRECTION(nae),3,1))) THEN
+                                     !Loop over nodes in face of surrounding element
+!                                    BASIS2=>DOMAIN_FACE2%BASIS
+!                                    IF(BASIS2%INTERPOLATION_ORDER(1)==BASIS%INTERPOLATION_ORDER(1)) THEN
+!                                      NODE_COUNT=0
+!                                      DO node_idx3=1,BASIS%NUMBER_OF_NODES_IN_XI_DIRECTION
+!                                        DO node_idx4=1,BASIS%NUMBER_OF_NODES_IN_XI_DIRECTION
+!                                          np2=DOMAIN_FACE2%NODES_IN_FACE((node_idx4*(BASIS2%NUMBER_OF_FACES-1))&
+!                                                                      &+(node_idx3*(BASIS2%NUMBER_OF_NODES_IN_XI_DIRECTION-1))+1)
+!                                          IF(np2==np) NODE_COUNT=NODE_COUNT+1
+!                                        ENDDO !node_idx4
+!                                      ENDDO !node_idx3
+!                                      IF(NODE_COUNT<BASIS%NUMBER_OF_NODES) THEN
+!                                        FOUND=.TRUE.
+!                                        EXIT
+!                                      ENDIF
+!                                    ENDIF
+!                                  ENDIF
+!                                ENDIF
+!                              ENDDO !nae
+!                                IF(FOUND) EXIT
+!                            ENDDO !elem_idx
+!                            IF(FOUND) DECOMPOSITION_FACE%ADJACENT_FACES(node_idx2)=nf2
+!                           ENDDO !node_idx2
+!                           IF(FOUND) DECOMPOSITION_FACE%ADJACENT_FACES(node_idx1)=nf2
+!                          ENDDO !node_idx1
+                        ENDDO !nf
+
+                        !Set the surrounding elements
+                        DO ne=1,DECOMPOSITION_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                          DECOMPOSITION_ELEMENT=>DECOMPOSITION_ELEMENTS%ELEMENTS(ne)
+                          DOMAIN_ELEMENT=>DOMAIN_ELEMENTS%ELEMENTS(ne)
+                          BASIS=>DOMAIN_ELEMENT%BASIS
+                          DO nae=1,BASIS%NUMBER_OF_LOCAL_FACES
+                            FACE_NUMBER=DECOMPOSITION_ELEMENT%ELEMENT_FACES(nae)
+                            DECOMPOSITION_FACE=>DECOMPOSITION_FACES%FACES(FACE_NUMBER)
+                            DO nf=1,DECOMPOSITION_FACE%NUMBER_OF_SURROUNDING_ELEMENTS
+                              DECOMPOSITION_FACE%SURROUNDING_ELEMENTS(nf)=ne
+                              DECOMPOSITION_FACE%ELEMENT_FACES(nf)=nae
+                            ENDDO
+                          ENDDO !nae
+                        ENDDO !ne
+                      ELSE
+                        CALL FLAG_ERROR("Domain topology faces is not associated",ERR,ERROR,*999)
+                      ENDIF
+                    CASE DEFAULT
+                      CALL FLAG_ERROR("Invalid number of dimensions for a topology domain",ERR,ERROR,*999)
+                    END SELECT
+                 ELSE
+                    CALL FLAG_ERROR("Domain topology elements is not associated",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Domain topology nodes is not associated",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Topology decomposition domain topology is not associated",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Topology decomposition domain is not associated",ERR,ERROR,*999)
+            ENDIF
+            !Now loop over the other mesh components in the decomposition and calculate the domain faces
+            MESH=>DECOMPOSITION%MESH
+            IF(ASSOCIATED(MESH)) THEN
+              DO component_idx=1,MESH%NUMBER_OF_COMPONENTS
+                IF(component_idx/=DECOMPOSITION%MESH_COMPONENT_NUMBER) THEN
+                  DOMAIN=>DECOMPOSITION%DOMAIN(component_idx)%PTR
+                  IF(ASSOCIATED(DOMAIN)) THEN
+                    DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
+                    IF(ASSOCIATED(DOMAIN_TOPOLOGY)) THEN
+                      DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
+                      IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                        DOMAIN_ELEMENTS=>DOMAIN_TOPOLOGY%ELEMENTS
+                        IF(ASSOCIATED(DOMAIN_ELEMENTS)) THEN
+                          DOMAIN_FACES=>DOMAIN_TOPOLOGY%FACES                      
+                          IF(ASSOCIATED(DOMAIN_FACES)) THEN
+                            ALLOCATE(DOMAIN_FACES%FACES(DECOMPOSITION_FACES%NUMBER_OF_FACES),STAT=ERR)
+                            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain faces faces",ERR,ERROR,*999)
+                            DOMAIN_FACES%NUMBER_OF_FACES=DECOMPOSITION_FACES%NUMBER_OF_FACES
+                            ALLOCATE(NODES_NUMBER_OF_FACES(DOMAIN_NODES%TOTAL_NUMBER_OF_NODES),STAT=ERR)
+                            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nodes number of faces array",ERR,ERROR,*999)
+                            NODES_NUMBER_OF_FACES=0
+                            !Loop over the faces in the topology
+                            DO nf=1,DECOMPOSITION_FACES%NUMBER_OF_FACES
+                              DECOMPOSITION_FACE=>DECOMPOSITION_FACES%FACES(nf)
+                              DOMAIN_FACE=>DOMAIN_FACES%FACES(nf)
+                              IF(DECOMPOSITION_FACE%NUMBER_OF_SURROUNDING_ELEMENTS>0) THEN
+                                ne=DECOMPOSITION_FACE%SURROUNDING_ELEMENTS(1)
+                                nae=DECOMPOSITION_FACE%ELEMENT_FACES(1)
+                                CALL DOMAIN_TOPOLOGY_FACE_INITIALISE(DOMAIN_FACES%FACES(nf),ERR,ERROR,*999)
+                                DOMAIN_FACE%NUMBER=nf
+                                DOMAIN_ELEMENT=>DOMAIN_ELEMENTS%ELEMENTS(ne)
+                                BASIS=>DOMAIN_ELEMENT%BASIS
+                                DOMAIN_FACE%BASIS=>BASIS%FACE_BASES(DECOMPOSITION_FACE%XI_DIRECTION)%PTR
+                                ALLOCATE(DOMAIN_FACE%NODES_IN_FACE(BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(nae)),STAT=ERR)
+                                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nodes in face",ERR,ERROR,*999)
+                                ALLOCATE(DOMAIN_FACE%DERIVATIVES_IN_FACE(DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
+                                  & BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(nae)),STAT=ERR)
+                                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivatives in face",ERR,ERROR,*999)
+                                !Set derivatives of nodes in domain face from derivatives of nodes in element
+                                DO nnf=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(nae)
+                                  nn=BASIS%NODE_NUMBERS_IN_LOCAL_FACE(nnf,nae)
+                                  np=DOMAIN_ELEMENT%ELEMENT_NODES(nn)
+                                  DOMAIN_FACE%NODES_IN_FACE(nnf)=np
+                                  DOMAIN_FACE%DERIVATIVES_IN_FACE(1,nnf)=NO_GLOBAL_DERIV
+                                  IF(DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES>1) THEN
+                                    nk=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(nnf,nae),nn)
+                                    DOMAIN_FACE%DERIVATIVES_IN_FACE(2,nnf)=nk
+                                  ENDIF
+                                  NODES_NUMBER_OF_FACES(np)=NODES_NUMBER_OF_FACES(np)+1
+                                ENDDO !nnf
+                              ELSE
+                                CALL FLAG_ERROR("Face is not surrounded by any elements?",ERR,ERROR,*999)
+                              ENDIF                              
+                            ENDDO !nf
+                            DO np=1,DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
+                              ALLOCATE(DOMAIN_NODES%NODES(np)%NODE_FACES(NODES_NUMBER_OF_FACES(np)),STAT=ERR)
+                              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node faces",ERR,ERROR,*999)
+                              DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_FACES=0
+                            ENDDO !np
+                            DEALLOCATE(NODES_NUMBER_OF_FACES)
+                            DO nf=1,DOMAIN_FACES%NUMBER_OF_FACES
+                              DOMAIN_FACE=>DOMAIN_FACES%FACES(nf)
+                              BASIS=>DOMAIN_FACE%BASIS
+                              DO nnf=1,BASIS%NUMBER_OF_NODES
+                                np=DOMAIN_FACE%NODES_IN_FACE(nnf)
+                                DOMAIN_NODE=>DOMAIN_NODES%NODES(np)
+                                DOMAIN_NODE%NUMBER_OF_NODE_FACES=DOMAIN_NODE%NUMBER_OF_NODE_FACES+1
+                                !Set the face numbers a node is on
+                                DOMAIN_NODE%NODE_FACES(DOMAIN_NODE%NUMBER_OF_NODE_FACES)=nf
+                              ENDDO !nnf
+                            ENDDO !nf
+                          ELSE
+                            CALL FLAG_ERROR("Domain faces is not associated",ERR,ERROR,*999)
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("Domain elements is not associated",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Domain nodes is not associated",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("Domain topology is not associated",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Decomposition mesh is not associated",ERR,ERROR,*999)
+                  ENDIF
+                ENDIF
+              ENDDO !component_idx
+            ELSE
+              CALL FLAG_ERROR("Decomposition mesh is not associated",ERR,ERROR,*999)
+            ENDIF                        
+          ELSE
+            CALL FLAG_ERROR("Topology decomposition is not associated",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Topology decomposition elements is not associated",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Topology faces is not associated",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Topology is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    IF(DIAGNOSTICS1) THEN
+      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Decomposition topology faces:",ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of mesh components = ",MESH%NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of faces = ",DECOMPOSITION_FACES%NUMBER_OF_FACES,ERR,ERROR,*999)
+      DO nf=1,DECOMPOSITION_FACES%NUMBER_OF_FACES
+        DECOMPOSITION_FACE=>DECOMPOSITION_FACES%FACES(nf)
+        DOMAIN_FACE=>DOMAIN_FACES%FACES(nf)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Face number = ",DECOMPOSITION_FACE%NUMBER,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Xi direction (Normal to Face) = &
+                                                                         &",DECOMPOSITION_FACE%XI_DIRECTION,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of surrounding elements = ", &
+          & DECOMPOSITION_FACE%NUMBER_OF_SURROUNDING_ELEMENTS,ERR,ERROR,*999)
+        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DECOMPOSITION_FACE%NUMBER_OF_SURROUNDING_ELEMENTS,4,4, &
+          & DECOMPOSITION_FACE%SURROUNDING_ELEMENTS,'("      Surrounding elements :",4(X,I8))','(28X,4(X,I8))',ERR,ERROR,*999)
+        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DECOMPOSITION_FACE%NUMBER_OF_SURROUNDING_ELEMENTS,4,4, &
+          & DECOMPOSITION_FACE%ELEMENT_FACES,'("      Element faces        :",4(X,I8))','(28X,4(X,I8))',ERR,ERROR,*999)
+!        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,2,2,2,DECOMPOSITION_FACE%ADJACENT_FACES, &
+!          & '("      Adjacent faces       :",2(X,I8))','(28X,2(X,I8))',ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Boundary face = ",DECOMPOSITION_FACE%BOUNDARY_FACE,ERR,ERROR,*999)
+        DO component_idx=1,MESH%NUMBER_OF_COMPONENTS
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Mesh component : ",component_idx,ERR,ERROR,*999)
+          DOMAIN=>DECOMPOSITION%DOMAIN(component_idx)%PTR
+          DOMAIN_FACE=>DOMAIN%TOPOLOGY%FACES%FACES(nf)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Basis user number = ",DOMAIN_FACE%BASIS%USER_NUMBER, &
+            & ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Basis family number = ",DOMAIN_FACE%BASIS%FAMILY_NUMBER, &
+            & ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Basis interpolation type = ",DOMAIN_FACE%BASIS% &
+            & INTERPOLATION_TYPE(1),ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Basis interpolation order = ",DOMAIN_FACE%BASIS% &
+            & INTERPOLATION_ORDER(1),ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Number of nodes in faces = ",DOMAIN_FACE%BASIS%NUMBER_OF_NODES, &
+            & ERR,ERROR,*999)
+          CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DOMAIN_FACE%BASIS%NUMBER_OF_NODES,4,4,DOMAIN_FACE%NODES_IN_FACE, &
+            & '("        Nodes in face        :",4(X,I8))','(30X,4(X,I8))',ERR,ERROR,*999)
+          DO nnf=1,DOMAIN_FACE%BASIS%NUMBER_OF_NODES
+            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"          Node : ",nnf,ERR,ERROR,*999)
+            CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DOMAIN_FACE%BASIS%NUMBER_OF_DERIVATIVES(nnf),4,4,DOMAIN_FACE% &
+              & DERIVATIVES_IN_FACE(:,nnf),'("            Derivatives in face  :",4(X,I8))','(34X,4(X,I8))',ERR,ERROR,*999)
+          ENDDO !nnf
+        ENDDO !component_idx
+      ENDDO !nf
+    ENDIF
+
+    CALL EXITS("DECOMPOSITION_TOPOLOGY_FACES_CALCULATE")
+    RETURN
+999 IF(ASSOCIATED(TEMP_FACES)) DEALLOCATE(TEMP_FACES)
+    IF(ASSOCIATED(NEW_TEMP_FACES)) DEALLOCATE(NEW_TEMP_FACES)
+    IF(ALLOCATED(NODES_NUMBER_OF_FACES)) DEALLOCATE(NODES_NUMBER_OF_FACES)
+    CALL ERRORS("DECOMPOSITION_TOPOLOGY_FACES_CALCULATE",ERR,ERROR)
+    CALL EXITS("DECOMPOSITION_TOPOLOGY_FACES_CALCULATE")
+    RETURN 1   
+  END SUBROUTINE DECOMPOSITION_TOPOLOGY_FACES_CALCULATE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalises the faces in the given decomposition topology.
+  SUBROUTINE DECOMPOSITION_TOPOLOGY_FACES_FINALISE(TOPOLOGY,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the decomposition topology to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: nf
+    
+    CALL ENTERS("DECOMPOSITION_TOPOLOGY_FACES_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(TOPOLOGY)) THEN
+      IF(ASSOCIATED(TOPOLOGY%FACES)) THEN
+        DO nf=1,TOPOLOGY%FACES%NUMBER_OF_FACES
+          CALL DECOMPOSITION_TOPOLOGY_FACE_FINALISE(TOPOLOGY%FACES%FACES(nf),ERR,ERROR,*999)
+        ENDDO !nf
+        IF(ALLOCATED(TOPOLOGY%FACES%FACES)) DEALLOCATE(TOPOLOGY%FACES%FACES)
+        DEALLOCATE(TOPOLOGY%FACES)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Topology is not associated",ERR,ERROR,*999)
+    ENDIF
+ 
+    CALL EXITS("DECOMPOSITION_TOPOLOGY_FACES_FINALISE")
+    RETURN
+999 CALL ERRORS("DECOMPOSITION_TOPOLOGY_FACES_FINALISE",ERR,ERROR)
+    CALL EXITS("DECOMPOSITION_TOPOLOGY_FACES_FINALISE")
+    RETURN 1   
+  END SUBROUTINE DECOMPOSITION_TOPOLOGY_FACES_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises the face data structures for a decomposition topology.
+  SUBROUTINE DECOMPOSITION_TOPOLOGY_FACES_INITIALISE(TOPOLOGY,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the decomposition topology to initialise the faces for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("DECOMPOSITION_TOPOLOGY_FACES_INITIALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(TOPOLOGY)) THEN
+      IF(ASSOCIATED(TOPOLOGY%FACES)) THEN
+        CALL FLAG_ERROR("Decomposition already has topology faces associated",ERR,ERROR,*999)
+      ELSE
+        ALLOCATE(TOPOLOGY%FACES,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate topology faces",ERR,ERROR,*999)
+        TOPOLOGY%FACES%NUMBER_OF_FACES=0
+        TOPOLOGY%FACES%DECOMPOSITION=>TOPOLOGY%DECOMPOSITION
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Topology is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DECOMPOSITION_TOPOLOGY_FACES_INITIALISE")
+    RETURN
+999 CALL ERRORS("DECOMPOSITION_TOPOLOGY_FACES_INITIALISE",ERR,ERROR)
+    CALL EXITS("DECOMPOSITION_TOPOLOGY_FACES_INITIALISE")
+    RETURN 1
+  END SUBROUTINE DECOMPOSITION_TOPOLOGY_FACES_INITIALISE
+
   !
   !================================================================================================================================
   !
@@ -3870,6 +4471,7 @@ CONTAINS
       CALL DOMAIN_TOPOLOGY_DOFS_FINALISE(DOMAIN%TOPOLOGY,ERR,ERROR,*999)
       CALL DOMAIN_TOPOLOGY_ELEMENTS_FINALISE(DOMAIN%TOPOLOGY,ERR,ERROR,*999)
       CALL DOMAIN_TOPOLOGY_LINES_FINALISE(DOMAIN%TOPOLOGY,ERR,ERROR,*999)
+!!      CALL DOMAIN_TOPOLOGY_FACES_FINALISE(DOMAIN%TOPOLOGY,ERR,ERROR,*999)
       DEALLOCATE(DOMAIN%TOPOLOGY)
     ELSE
       CALL FLAG_ERROR("Domain is not associated",ERR,ERROR,*999)
@@ -3910,11 +4512,13 @@ CONTAINS
         NULLIFY(DOMAIN%TOPOLOGY%NODES)
         NULLIFY(DOMAIN%TOPOLOGY%DOFS)
         NULLIFY(DOMAIN%TOPOLOGY%LINES)
+!!        NULLIFY(DOMAIN%TOPOLOGY%FACES)
         !Initialise the topology components
         CALL DOMAIN_TOPOLOGY_ELEMENTS_INITIALISE(DOMAIN%TOPOLOGY,ERR,ERROR,*999)
         CALL DOMAIN_TOPOLOGY_NODES_INITIALISE(DOMAIN%TOPOLOGY,ERR,ERROR,*999)
         CALL DOMAIN_TOPOLOGY_DOFS_INITIALISE(DOMAIN%TOPOLOGY,ERR,ERROR,*999)
         CALL DOMAIN_TOPOLOGY_LINES_INITIALISE(DOMAIN%TOPOLOGY,ERR,ERROR,*999)
+!!        CALL DOMAIN_TOPOLOGY_FACES_INITIALISE(DOMAIN%TOPOLOGY,ERR,ERROR,*999)
         !Initialise the domain topology from the domain mappings and the mesh it came from
         CALL DOMAIN_TOPOLOGY_INITIALISE_FROM_MESH(DOMAIN,ERR,ERROR,*999)
         !Calculate the topological information.
@@ -4058,6 +4662,129 @@ CONTAINS
   !
   !================================================================================================================================
   !
+  !>Finalises a face in the given domain topology and deallocates all memory.
+  SUBROUTINE DOMAIN_TOPOLOGY_FACE_FINALISE(FACE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DOMAIN_FACE_TYPE) :: FACE !<The domain face to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("DOMAIN_TOPOLOGY_FACE_FINALISE",ERR,ERROR,*999)
+
+    FACE%NUMBER=0
+    NULLIFY(FACE%BASIS)
+    IF(ALLOCATED(FACE%NODES_IN_FACE)) DEALLOCATE(FACE%NODES_IN_FACE)
+    IF(ALLOCATED(FACE%DERIVATIVES_IN_FACE)) DEALLOCATE(FACE%DERIVATIVES_IN_FACE)
+ 
+    CALL EXITS("DOMAIN_TOPOLOGY_FACE_FINALISE")
+    RETURN
+999 CALL ERRORS("DOMAIN_TOPOLOGY_FACE_FINALISE",ERR,ERROR)
+    CALL EXITS("DOMAIN_TOPOLOGY_FACE_FINALISE")
+    RETURN 1
+   
+  END SUBROUTINE DOMAIN_TOPOLOGY_FACE_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises the face data structure for a domain topology face.
+  SUBROUTINE DOMAIN_TOPOLOGY_FACE_INITIALISE(FACE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DOMAIN_FACE_TYPE) :: FACE !<The domain face to initialise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("DOMAIN_TOPOLOGY_FACE_INITIALISE",ERR,ERROR,*999)
+
+    FACE%NUMBER=0
+    NULLIFY(FACE%BASIS)
+    
+    CALL EXITS("DOMAIN_TOPOLOGY_FACE_INITIALISE")
+    RETURN
+999 CALL ERRORS("DOMAIN_TOPOLOGY_FACE_INITIALISE",ERR,ERROR)
+    CALL EXITS("DOMAIN_TOPOLOGY_FACE_INITIALISE")
+    RETURN 1
+  END SUBROUTINE DOMAIN_TOPOLOGY_FACE_INITIALISE
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalises the faces in the given domain topology. \todo pass in domain faces
+  SUBROUTINE DOMAIN_TOPOLOGY_FACES_FINALISE(TOPOLOGY,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the domain topology to finalise the faces for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: nf
+    
+    CALL ENTERS("DOMAIN_TOPOLOGY_FACES_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(TOPOLOGY)) THEN
+      IF(ASSOCIATED(TOPOLOGY%FACES)) THEN
+        DO nf=1,TOPOLOGY%FACES%NUMBER_OF_FACES
+          CALL DOMAIN_TOPOLOGY_FACE_FINALISE(TOPOLOGY%FACES%FACES(nf),ERR,ERROR,*999)
+        ENDDO !nf
+        IF(ALLOCATED(TOPOLOGY%FACES%FACES)) DEALLOCATE(TOPOLOGY%FACES%FACES)
+        DEALLOCATE(TOPOLOGY%FACES)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Topology is not associated",ERR,ERROR,*999)
+    ENDIF
+ 
+    CALL EXITS("DOMAIN_TOPOLOGY_FACES_FINALISE")
+    RETURN
+999 CALL ERRORS("DOMAIN_TOPOLOGY_FACES_FINALISE",ERR,ERROR)
+    CALL EXITS("DOMAIN_TOPOLOGY_FACES_FINALISE")
+    RETURN 1
+   
+  END SUBROUTINE DOMAIN_TOPOLOGY_FACES_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises the face data structures for a domain topology. \todo finalise on error
+  SUBROUTINE DOMAIN_TOPOLOGY_FACES_INITIALISE(TOPOLOGY,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the domain topology to initialise the faces for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("DOMAIN_TOPOLOGY_FACES_INITIALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(TOPOLOGY)) THEN
+      IF(ASSOCIATED(TOPOLOGY%FACES)) THEN
+        CALL FLAG_ERROR("Decomposition already has topology faces associated",ERR,ERROR,*999)
+      ELSE
+        ALLOCATE(TOPOLOGY%FACES,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate topology faces",ERR,ERROR,*999)
+        TOPOLOGY%FACES%NUMBER_OF_FACES=0
+        TOPOLOGY%FACES%DOMAIN=>TOPOLOGY%DOMAIN
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Topology is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DOMAIN_TOPOLOGY_FACES_INITIALISE")
+    RETURN
+999 CALL ERRORS("DOMAIN_TOPOLOGY_FACES_INITIALISE",ERR,ERROR)
+    CALL EXITS("DOMAIN_TOPOLOGY_FACES_INITIALISE")
+    RETURN 1
+  END SUBROUTINE DOMAIN_TOPOLOGY_FACES_INITIALISE
+  
+  !
+  !================================================================================================================================
+  !
 
   !>Finalises the given domain topology node and deallocates all memory.
   SUBROUTINE DOMAIN_TOPOLOGY_NODE_FINALISE(NODE,ERR,ERROR,*)
@@ -4073,7 +4800,7 @@ CONTAINS
     IF(ALLOCATED(NODE%GLOBAL_DERIVATIVE_INDEX)) DEALLOCATE(NODE%GLOBAL_DERIVATIVE_INDEX)
     IF(ALLOCATED(NODE%PARTIAL_DERIVATIVE_INDEX)) DEALLOCATE(NODE%PARTIAL_DERIVATIVE_INDEX)
     IF(ASSOCIATED(NODE%SURROUNDING_ELEMENTS)) DEALLOCATE(NODE%SURROUNDING_ELEMENTS)
-    IF(ALLOCATED(NODE%NODE_Lines)) DEALLOCATE(NODE%NODE_LINES)
+    IF(ALLOCATED(NODE%NODE_LINES)) DEALLOCATE(NODE%NODE_LINES)
  
     CALL EXITS("DOMAIN_TOPOLOGY_NODE_FINALISE")
     RETURN
@@ -4766,7 +5493,7 @@ CONTAINS
       MESH%NUMBER_OF_EMBEDDED_MESHES=0
       NULLIFY(MESH%EMBEDDED_MESHES)
       MESH%NUMBER_OF_ELEMENTS=0
-      MESH%NUMBER_OF_FACES=0
+!!      MESH%NUMBER_OF_FACES=0
       MESH%NUMBER_OF_LINES=0
       NULLIFY(MESH%TOPOLOGY)
       NULLIFY(MESH%DECOMPOSITIONS)

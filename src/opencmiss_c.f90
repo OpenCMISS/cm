@@ -79,6 +79,8 @@ MODULE OPENCMISS_C
 
   PUBLIC CMISSBoundaryConditionsTypeFinaliseC, CMISSBoundaryConditionsTypeInitialiseC
 
+  PUBLIC CMISSCellMLTypeFinaliseC, CMISSCellMLTypeInitialiseC
+
   PUBLIC CMISSControlLoopTypeFinaliseC, CMISSControlLoopTypeInitialiseC
 
   PUBLIC CMISSCoordinateSystemTypeFinaliseC,CMISSCoordinateSystemTypeInitialiseC
@@ -122,6 +124,41 @@ MODULE OPENCMISS_C
  PUBLIC CMISSAnalyticAnalysisOutputCNum, CMISSAnalyticAnalysisOutputCPtr
 
  PUBLIC CMISSAnalyticAnalysisAbsoluteErrorGetNodeCNum, CMISSAnalyticAnalysisAbsoluteErrorGetNodeCPtr
+
+ PUBLIC CMISSAnalyticAnalysisPercentageErrorGetNodeCNum, CMISSAnalyticAnalysisPercentageErrorGetNodeCPtr
+
+ PUBLIC CMISSAnalyticAnalysisRelativeErrorGetNodeCNum, CMISSAnalyticAnalysisRelativeErrorGetNodeCPtr
+
+ PUBLIC CMISSAnalyticAnalysisAbsoluteErrorGetElementCNum, CMISSAnalyticAnalysisAbsoluteErrorGetElementCPtr
+
+ PUBLIC CMISSAnalyticAnalysisPercentageErrorGetElementCNum, CMISSAnalyticAnalysisPercentageErrorGetElementCPtr
+
+ PUBLIC CMISSAnalyticAnalysisRelativeErrorGetElementCNum, CMISSAnalyticAnalysisRelativeErrorGetElementCPtr
+
+ PUBLIC CMISSAnalyticAnalysisAbsoluteErrorGetConstantCNum, CMISSAnalyticAnalysisAbsoluteErrorGetConstantCPtr
+
+ PUBLIC CMISSAnalyticAnalysisPercentageErrorGetConstantCNum, CMISSAnalyticAnalysisPercentageErrorGetConstantCPtr
+
+ PUBLIC CMISSAnalyticAnalysisRelativeErrorGetConstantCNum, CMISSAnalyticAnalysisRelativeErrorGetConstantCPtr
+
+ PUBLIC CMISSAnalyticAnalysisRmsErrorGetNodeCNum, CMISSAnalyticAnalysisRmsErrorGetNodeCPtr
+
+ PUBLIC CMISSAnalyticAnalysisRmsErrorGetElementCNum, CMISSAnalyticAnalysisRmsErrorGetElementCPtr
+
+ PUBLIC CMISSAnalyticAnalysisIntegralNumericalValueGetCNum, CMISSAnalyticAnalysisIntegralNumericalValueGetCPtr
+
+ PUBLIC CMISSAnalyticAnalysisIntegralAnalyticValueGetCNum, CMISSAnalyticAnalysisIntegralAnalyticValueGetCPtr
+
+ PUBLIC CMISSAnalyticAnalysisIntegralPercentageErrorGetCNum, CMISSAnalyticAnalysisIntegralPercentageErrorGetCPtr
+
+ PUBLIC CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCNum, CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCPtr
+
+ PUBLIC CMISSAnalyticAnalysisIntegralRelativeErrorGetCNum, CMISSAnalyticAnalysisIntegralRelativeErrorGetCPtr
+
+ PUBLIC CMISSAnalyticAnalysisIntegralNidNumericalValueGetCNum, CMISSAnalyticAnalysisIntegralNidNumericalValueGetCPtr
+
+ PUBLIC CMISSAnalyticAnalysisIntegralNidErrorGetCNum, CMISSAnalyticAnalysisIntegralNidErrorGetCPtr
+
 
 !!==================================================================================================================================
 !!
@@ -203,6 +240,48 @@ MODULE OPENCMISS_C
 
 !!==================================================================================================================================
 !!
+!! CMISS
+!!
+!!==================================================================================================================================
+
+ PUBLIC CMISSErrorHandlingModeGetC,CMISSErrorHandlingModeSetC
+ 
+!!==================================================================================================================================
+!!
+!! CMISS_CELLML
+!!
+!!==================================================================================================================================
+
+ PUBLIC CMISSCellMLCreateFinishCNum,CMISSCellMLCreateFinishCPtr,CMISSCellMLCreateStartCNum,CMISSCellMLCreateStartCPtr
+
+ PUBLIC CMISSCellMLDestroyCNum,CMISSCellMLDestroyCPtr
+ 
+ PUBLIC CMISSCellMLModelsCreateFinishCNum,CMISSCellMLModelsCreateFinishCPtr,CMISSCellMLModelsCreateStartCNum, &
+   & CMISSCellMLModelsCreateStartCPtr,CMISSCellMLModelImportCNum,CMISSCellMLModelImportCPtr
+ 
+ PUBLIC CMISSCellMLModelsFieldCreateFinishCNum,CMISSCellMLModelsFieldCreateFinishCPtr,CMISSCellMLModelsFieldCreateStartCNum, &
+   & CMISSCellMLModelsFieldCreateStartCPtr,CMISSCellMLModelsFieldGetCNum,CMISSCellMLModelsFieldGetCPtr
+ 
+ PUBLIC CMISSCellMLStateFieldCreateFinishCNum,CMISSCellMLStateFieldCreateFinishCPtr,CMISSCellMLStateFieldCreateStartCNum, &
+   & CMISSCellMLStateFieldCreateStartCPtr,CMISSCellMLStateFieldGetCNum,CMISSCellMLStateFieldGetCPtr
+ 
+ PUBLIC CMISSCellMLFieldComponentGetCNum,CMISSCellMLFieldComponentGetCPtr
+ 
+ PUBLIC CMISSCellMLIntermediateFieldAddCNum,CMISSCellMLIntermediateFieldAddCPtr,CMISSCellMLIntermediateFieldCreateFinishCNum, &
+   & CMISSCellMLIntermediateFieldCreateFinishCPtr,CMISSCellMLIntermediateFieldCreateStartCNum, &
+   & CMISSCellMLIntermediateFieldCreateStartCPtr,CMISSCellMLIntermediateFieldGetCNum,CMISSCellMLIntermediateFieldGetCPtr
+ 
+ PUBLIC CMISSCellMLParameterAddCNum,CMISSCellMLParameterAddCPtr,CMISSCellMLParametersCreateFinishCNum, &
+   & CMISSCellMLParametersCreateFinishCPtr,CMISSCellMLParametersCreateStartCNum,CMISSCellMLParametersCreateStartCPtr
+ 
+ PUBLIC CMISSCellMLParametersFieldCreateFinishCNum,CMISSCellMLParametersFieldCreateFinishCPtr, &
+   & CMISSCellMLParametersFieldCreateStartCNum,CMISSCellMLParametersFieldCreateStartCPtr,CMISSCellMLParametersFieldGetCNum, &
+   & CMISSCellMLParametersFieldGetCPtr
+ 
+ PUBLIC CMISSCellMLGenerateCNum,CMISSCellMLGenerateCPtr
+  
+!!==================================================================================================================================
+!!
 !! COMP_ENVIRONMENT
 !!
 !!==================================================================================================================================
@@ -230,6 +309,8 @@ MODULE OPENCMISS_C
  PUBLIC CMISSControlLoopNumberOfSubLoopsSetCNum, CMISSControlLoopNumberOfSubLoopsSetCPtr
 
  PUBLIC CMISSControlLoopTimeOutputSetCNum, CMISSControlLoopTimeOutputSetCPtr
+
+ PUBLIC CMISSControlLoopTimeInputSetCNum, CMISSControlLoopTimeInputSetCPtr
 
  PUBLIC CMISSControlLoopTimesGetCNum, CMISSControlLoopTimesGetCPtr
 
@@ -519,6 +600,8 @@ MODULE OPENCMISS_C
 
  PUBLIC CMISSFieldParameterSetUpdateStartCNum, CMISSFieldParameterSetUpdateStartCPtr
 
+ PUBLIC CMISSFieldParametersToFieldParametersComponentCopyCNum, CMISSFieldParametersToFieldParametersComponentCopyCPtr
+
  PUBLIC CMISSFieldScalingTypeGetCNum, CMISSFieldScalingTypeGetCPtr
 
  PUBLIC CMISSFieldScalingTypeSetCNum, CMISSFieldScalingTypeSetCPtr
@@ -602,6 +685,8 @@ MODULE OPENCMISS_C
  PUBLIC CMISSDecompositionTypeGetCNum, CMISSDecompositionTypeGetCPtr
 
  PUBLIC CMISSDecompositionTypeSetCNum, CMISSDecompositionTypeSetCPtr
+
+ PUBLIC CMISSDecompositionNodeDomainGetCNum, CMISSDecompositionNodeDomainGetCPtr
 
  PUBLIC CMISSMeshCreateFinishCNum, CMISSMeshCreateFinishCPtr
 
@@ -1074,6 +1159,72 @@ CONTAINS
     RETURN
 
   END FUNCTION CMISSBoundaryConditionsTypeInitialiseC
+
+  !
+  !============================================================================
+  !
+
+  !>Finalises a CMISSCellMLType object for C.
+
+  FUNCTION CMISSCellMLTypeFinaliseC(CellMLTypePtr) BIND (C, NAME = "CMISSCellMLTypeFinalise")
+
+    !Argument Variables
+    TYPE (C_PTR), INTENT(INOUT) :: CellMLTypePtr !<C pointer to CMISSCellMLType object to finalise.
+    !Function Variable
+    INTEGER(C_INT) :: CMISSCellMLTypeFinaliseC !<Error Code.
+    !Local Variables
+    TYPE(CMISSCellMLType), POINTER :: CellMLType
+
+    CMISSCellMLTypeFinaliseC = CMISSNoError
+    IF (C_ASSOCIATED(CellMLTypePtr)) THEN
+      CALL C_F_POINTER (CellMLTypePtr, CellMLType)
+      IF(ASSOCIATED(CellMLType)) THEN
+        CALL CMISSCellMLTypeFinalise (CellMLType, CMISSCellMLTypeFinaliseC)
+        DEALLOCATE (CellMLType)
+        CellMLTypePtr = C_NULL_PTR
+      ELSE
+         CMISSCellMLTypeFinaliseC = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+       CMISSCellMLTypeFinaliseC = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLTypeFinaliseC
+
+  !
+  !============================================================================
+  !
+
+  !>Initialises a CMISSCellMLType object for C.
+
+  FUNCTION CMISSCellMLTypeInitialiseC (CellMLTypePtr) BIND (C, NAME = &
+  & "CMISSCellMLTypeInitialise")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT (INOUT) :: CellMLTypePtr !<C pointer to the CMISSCellMLType object to be initialised.
+    !Function variables
+    INTEGER(C_INT) :: CMISSCellMLTypeInitialiseC !<Error Code.
+    !Local Variables
+    INTEGER(C_INT) :: Err
+    TYPE(CMISSCellMLType), POINTER :: CellMLType
+
+    IF (C_ASSOCIATED(CellMLTypePtr)) THEN
+      CMISSCellMLTypeInitialiseC = CMISSPointerNotNull
+    ELSE
+      NULLIFY (CellMLType)
+      ALLOCATE(CellMLType, STAT = Err)
+      IF (Err /= 0) THEN
+        CMISSCellMLTypeInitialiseC = CMISSCouldNotAllocatePointer
+      ELSE
+        CALL CMISSCellMLTypeInitialise(CellMLType, CMISSCellMLTypeInitialiseC)
+      ENDIF
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLTypeInitialiseC
 
   !
   !===========================================================================
@@ -2347,6 +2498,1065 @@ END FUNCTION CMISSFieldsTypeCreateC
     RETURN
 
   END FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetNodeCPtr
+
+  !
+  !================================================================================================================================
+  ! 
+
+  !>Get percentage error value for the node in a field specified by a user number compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisPercentageErrorGetNodeCNum(RegionUserNumber,FieldUserNumber,VariableType,DerivativeNumber, & 
+    & NodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSAnalyticAnalysisPercentageErrorGetNodeNum")
+
+  !Argument Variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NodeNumber !<The node number, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type, for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the percentage error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisPercentageErrorGetNodeCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisPercentageErrorGetNode(RegionUserNumber, FieldUserNumber, DerivativeNumber, NodeNumber, &
+      & ComponentNumber, VariableType, Value, CMISSAnalyticAnalysisPercentageErrorGetNodeCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisPercentageErrorGetNodeCNum
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Get percentage error value for the node in a field identified by an object compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisPercentageErrorGetNodeCPtr(FieldPtr,DerivativeNumber,NodeNumber,ComponentNumber,VariableType,Value)&
+    & BIND(C, NAME = "CMISSAnalyticAnalysisPercentageErrorGetNode")
+  
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NodeNumber !<The node number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the percentage error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisPercentageErrorGetNodeCPtr !<Error Code.
+    !Local variable
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisPercentageErrorGetNodeCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisPercentageErrorGetNode(Field,DerivativeNumber,NodeNumber,ComponentNumber,VariableType, &
+          & Value, CMISSAnalyticAnalysisPercentageErrorGetNodeCPtr)
+      ELSE
+        CMISSAnalyticAnalysisPercentageErrorGetNodeCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisPercentageErrorGetNodeCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisPercentageErrorGetNodeCPtr
+
+  !
+  !================================================================================================================================
+  ! 
+
+  !>Get relative error value for the node in a field specified by a user number compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisRelativeErrorGetNodeCNum(RegionUserNumber,FieldUserNumber,VariableType,DerivativeNumber, & 
+    & NodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSAnalyticAnalysisRelativeErrorGetNodeNum")
+  
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NodeNumber !<The node number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the relative error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisRelativeErrorGetNodeCNum !<Error code.
+
+    CALL CMISSAnalyticAnalysisRelativeErrorGetNode(RegionUserNumber, FieldUserNumber, DerivativeNumber, NodeNumber, &
+      & ComponentNumber, VariableType, Value, CMISSAnalyticAnalysisRelativeErrorGetNodeCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisRelativeErrorGetNodeCNum
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Get relative error value for the node in a field identified by an object compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisRelativeErrorGetNodeCPtr(FieldPtr,VariableType,DerivativeNumber,NodeNumber,ComponentNumber,Value)&
+    & BIND(C, NAME = "CMISSAnalyticAnalysisRelativeErrorGetNode")
+  
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NodeNumber !<The node number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the relative error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisRelativeErrorGetNodeCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisRelativeErrorGetNodeCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisRelativeErrorGetNode(Field,DerivativeNumber,NodeNumber,ComponentNumber,VariableType, &
+          & Value, CMISSAnalyticAnalysisRelativeErrorGetNodeCPtr)
+      ELSE
+        CMISSAnalyticAnalysisRelativeErrorGetNodeCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisRelativeErrorGetNodeCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisRelativeErrorGetNodeCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get absolute error value for the element in a field specified by a user number compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetElementCNum(RegionUserNumber,FieldUserNumber,VariableType,ElementNumber, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSAnalyticAnalysisAbsoluteErrorGetElementNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ElementNumber !<The element number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the absolute error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisAbsoluteErrorGetElementCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisAbsoluteErrorGetElement(RegionUserNumber, FieldUserNumber, ElementNumber, ComponentNumber, &
+      & VariableType, Value, CMISSAnalyticAnalysisAbsoluteErrorGetElementCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetElementCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get absolute error value for the element in a field identified by an object compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetElementCPtr(FieldPtr,VariableType,ElementNumber,ComponentNumber,Value) BIND(C, &
+    & NAME = "CMISSAnalyticAnalysisAbsoluteErrorGetElement")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ElementNumber !<The element number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the absolute error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisAbsoluteErrorGetElementCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisAbsoluteErrorGetElementCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisAbsoluteErrorGetElement(Field,ElementNumber,ComponentNumber,VariableType, Value, &
+          & CMISSAnalyticAnalysisAbsoluteErrorGetElementCPtr)
+      ELSE
+        CMISSAnalyticAnalysisAbsoluteErrorGetElementCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisAbsoluteErrorGetElementCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetElementCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get percentage error value for the element in a field specified by a user number compared to the analytic value, for C.
+  FUNCTION CMISSAnalyticAnalysisPercentageErrorGetElementCNum(RegionUserNumber,FieldUserNumber,VariableType,ElementNumber, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSAnalyticAnalysisPercentageErrorGetElementNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ElementNumber !<The element number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the percentage error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisPercentageErrorGetElementCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisPercentageErrorGetElement(RegionUserNumber, FieldUserNumber, ElementNumber, ComponentNumber, &
+      & VariableType, Value, CMISSAnalyticAnalysisPercentageErrorGetElementCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisPercentageErrorGetElementCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get percentage error value for the element in a field identified by an object compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisPercentageErrorGetElementCPtr(FieldPtr,VariableType,ElementNumber,ComponentNumber,Value) BIND(C, &
+    & NAME = "CMISSAnalyticAnalysisPercentageErrorGetElement")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ElementNumber !<The element number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the percentage error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisPercentageErrorGetElementCPtr !<Error Code.
+    !Local variable
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisPercentageErrorGetElementCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisPercentageErrorGetElement(Field,ElementNumber,ComponentNumber,VariableType, Value, &
+          & CMISSAnalyticAnalysisPercentageErrorGetElementCPtr)
+      ELSE
+        CMISSAnalyticAnalysisPercentageErrorGetElementCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisPercentageErrorGetElementCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisPercentageErrorGetElementCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get relative error value for the element in a field specified by a user number compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisRelativeErrorGetElementCNum(RegionUserNumber,FieldUserNumber,VariableType,ElementNumber, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSAnalyticAnalysisRelativeErrorGetElementNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ElementNumber !<The element number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the relative error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisRelativeErrorGetElementCNum !<Error code.
+    !Local variable
+
+    CALL CMISSAnalyticAnalysisRelativeErrorGetElement(RegionUserNumber, FieldUserNumber, ElementNumber, ComponentNumber, &
+      & VariableType, Value, CMISSAnalyticAnalysisRelativeErrorGetElementCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisRelativeErrorGetElementCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get relative error value for the element in a field identified by an object compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisRelativeErrorGetElementCPtr(FieldPtr,VariableType,ElementNumber,ComponentNumber,Value) BIND(C, &
+    & NAME = "CMISSAnalyticAnalysisRelativeErrorGetElement")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ElementNumber !<The element number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the relative error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisRelativeErrorGetElementCPtr !<Error code.
+    !Local variable
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisRelativeErrorGetElementCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisRelativeErrorGetElement(Field,ElementNumber,ComponentNumber,VariableType, Value, &
+          & CMISSAnalyticAnalysisRelativeErrorGetElementCPtr)
+      ELSE
+        CMISSAnalyticAnalysisRelativeErrorGetElementCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisRelativeErrorGetElementCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisRelativeErrorGetElementCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get absolute error value for the constant in a field specified by a user number compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetConstantCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & Value) BIND(C, NAME = "CMISSAnalyticAnalysisAbsoluteErrorGetConstantNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the absolute error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisAbsoluteErrorGetConstantCNum !<Error code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisAbsoluteErrorGetConstant(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, Value, &
+      & CMISSAnalyticAnalysisAbsoluteErrorGetConstantCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetConstantCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get absolute error value for the constant in a field identified by an object compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetConstantCPtr(FieldPtr,VariableType,ComponentNumber,Value) BIND(C, NAME = &
+    & "CMISSAnalyticAnalysisAbsoluteErrorGetConstant")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the absolute error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisAbsoluteErrorGetConstantCPtr !<Error code.
+    !Local variable
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisAbsoluteErrorGetConstantCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisAbsoluteErrorGetConstant(Field,ComponentNumber,VariableType, Value, &
+          & CMISSAnalyticAnalysisAbsoluteErrorGetConstantCPtr)
+      ELSE
+        CMISSAnalyticAnalysisAbsoluteErrorGetConstantCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisAbsoluteErrorGetConstantCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetConstantCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get percentage error value for the constant in a field specified by a user number compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisPercentageErrorGetConstantCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & Value) BIND(C, NAME = "CMISSAnalyticAnalysisPercentageErrorGetConstantNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the percentage error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisPercentageErrorGetConstantCNum !<Error code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisPercentageErrorGetConstant(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, Value, &
+      & CMISSAnalyticAnalysisPercentageErrorGetConstantCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisPercentageErrorGetConstantCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get percentage error value for the constant in a field identified by an object compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisPercentageErrorGetConstantCPtr(FieldPtr,VariableType,ComponentNumber,Value) BIND(C, NAME = &
+    & "CMISSAnalyticAnalysisPercentageErrorGetConstant")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the percentage error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisPercentageErrorGetConstantCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisPercentageErrorGetConstantCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisPercentageErrorGetConstant(Field,ComponentNumber,VariableType, Value, &
+          & CMISSAnalyticAnalysisPercentageErrorGetConstantCPtr)
+      ELSE
+        CMISSAnalyticAnalysisPercentageErrorGetConstantCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisPercentageErrorGetConstantCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisPercentageErrorGetConstantCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get relative error value for the constant in a field specified by a user number compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisRelativeErrorGetConstantCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & Value) BIND(C, NAME = "CMISSAnalyticAnalysisRelativeErrorGetConstantNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the relative error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisRelativeErrorGetConstantCNum !<Error code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisRelativeErrorGetConstant(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, Value, &
+      & CMISSAnalyticAnalysisRelativeErrorGetConstantCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisRelativeErrorGetConstantCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get relative error value for the constant in a field identified by an object compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisRelativeErrorGetConstantCPtr(FieldPtr,VariableType,ComponentNumber,Value) BIND(C, NAME = &
+    & "CMISSAnalyticAnalysisRelativeErrorGetConstant")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: Value !<On return, the relative error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisRelativeErrorGetConstantCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisRelativeErrorGetConstantCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisRelativeErrorGetConstant(Field,ComponentNumber,VariableType, Value, &
+          & CMISSAnalyticAnalysisRelativeErrorGetConstantCPtr)
+      ELSE
+        CMISSAnalyticAnalysisRelativeErrorGetConstantCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisRelativeErrorGetConstantCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisRelativeErrorGetConstantCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get rms error value for nodes in a field compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisRmsErrorGetNodeCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, ErrorType, &
+    & LocalValue,LocalGhostValue,GlobalValue) BIND(C, NAME = "CMISSAnalyticAnalysisRmsErrorGetNodeNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ErrorType !<The error type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: LocalValue(8) !<On return, the local error for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: LocalGhostValue(8) !<On return, the local ghost error for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GlobalValue(8) !<On return, the global error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisRmsErrorGetNodeCNum
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisRmsErrorGetNode(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, ErrorType, &
+      & LocalValue, LocalGhostValue, GlobalValue, CMISSAnalyticAnalysisRmsErrorGetNodeCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisRmsErrorGetNodeCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get rms error value for nodes in a field identified by an object compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisRmsErrorGetNodeCPtr(FieldPtr,VariableType,ComponentNumber,ErrorType,LocalValue,LocalGhostValue, &
+    & GlobalValue) BIND(C, NAME = "CMISSAnalyticAnalysisRmsErrorGetNode")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ErrorType !<The error type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: LocalValue(8) !<On return, the local error for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: LocalGhostValue(8) !<On return, the local ghost error for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GlobalValue(8) !<On return, the global error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisRmsErrorGetNodeCPtr
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisRmsErrorGetNodeCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisRmsErrorGetNode(Field, ComponentNumber, VariableType, ErrorType, &
+          & LocalValue, LocalGhostValue, GlobalValue, CMISSAnalyticAnalysisRmsErrorGetNodeCPtr)
+      ELSE
+        CMISSAnalyticAnalysisRmsErrorGetNodeCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisRmsErrorGetNodeCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisRmsErrorGetNodeCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get rms error value for elements in a field compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisRmsErrorGetElementCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & ErrorType,LocalValue,LocalGhostValue,GlobalValue) BIND(C, NAME = "CMISSAnalyticAnalysisRmsErrorGetElementNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ErrorType !<The error type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: LocalValue !<On return, the local error for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: LocalGhostValue !<On return, the local ghost error for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GlobalValue !<On return, the global error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisRmsErrorGetElementCNum !<Error code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisRmsErrorGetElement(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, ErrorType, &
+      & LocalValue, LocalGhostValue, GlobalValue, CMISSAnalyticAnalysisRmsErrorGetElementCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisRmsErrorGetElementCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get relative error value for the constant in a field identified by an object compared to the analytic value for C.
+  FUNCTION CMISSAnalyticAnalysisRmsErrorGetElementCPtr(FieldPtr,VariableType,ComponentNumber,ErrorType,LocalValue,LocalGhostValue, &
+    & GlobalValue) BIND(C, NAME = "CMISSAnalyticAnalysisRmsErrorGetElement")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ErrorType !<The error type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: LocalValue !<On return, the local error for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: LocalGhostValue !<On return, the local ghost error for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GlobalValue !<On return, the global error for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisRmsErrorGetElementCPtr !<Error Code.
+    !Local variable
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisRmsErrorGetElementCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisRmsErrorGetElement(Field, ComponentNumber, VariableType, ErrorType, &
+          & LocalValue, LocalGhostValue, GlobalValue, CMISSAnalyticAnalysisRmsErrorGetElementCPtr)
+      ELSE
+        CMISSAnalyticAnalysisRmsErrorGetElementCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisRmsErrorGetElementCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisRmsErrorGetElementCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the numerical values for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralNumericalValueGetCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & IntegralValue,GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralNumericalValueGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralNumericalValueGetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisIntegralNumericalValueGet(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, &
+      & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralNumericalValueGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralNumericalValueGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the numerical values for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralNumericalValueGetCPtr(FieldPtr,VariableType,ComponentNumber,IntegralValue, &
+    & GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralNumericalValueGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralNumericalValueGetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisIntegralNumericalValueGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisIntegralNumericalValueGet(Field, ComponentNumber, VariableType, &
+          & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralNumericalValueGetCPtr)
+      ELSE
+        CMISSAnalyticAnalysisIntegralNumericalValueGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisIntegralNumericalValueGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralNumericalValueGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the analytic values for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralAnalyticValueGetCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & IntegralValue,GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralAnalyticValueGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralAnalyticValueGetCNum !<Error code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisIntegralAnalyticValueGet(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, &
+      & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralAnalyticValueGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralAnalyticValueGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the analytic values for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralAnalyticValueGetCPtr(FieldPtr,VariableType,ComponentNumber,IntegralValue, &
+    & GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralAnalyticValueGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralAnalyticValueGetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisIntegralAnalyticValueGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisIntegralAnalyticValueGet(Field, ComponentNumber, VariableType, &
+          & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralAnalyticValueGetCPtr)
+      ELSE
+        CMISSAnalyticAnalysisIntegralAnalyticValueGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisIntegralAnalyticValueGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralAnalyticValueGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the percentage errors for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralPercentageErrorGetCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & IntegralValue,GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralPercentageErrorGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralPercentageErrorGetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisIntegralPercentageErrorGet(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, &
+      & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralPercentageErrorGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralPercentageErrorGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the percentage errors for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralPercentageErrorGetCPtr(FieldPtr,VariableType,ComponentNumber,IntegralValue, &
+    & GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralPercentageErrorGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralPercentageErrorGetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisIntegralPercentageErrorGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisIntegralPercentageErrorGet(Field, ComponentNumber, VariableType, &
+          & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralPercentageErrorGetCPtr)
+      ELSE
+        CMISSAnalyticAnalysisIntegralPercentageErrorGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisIntegralPercentageErrorGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralPercentageErrorGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the absolute errors for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & IntegralValue,GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralAbsoluteErrorGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCNum !<Error code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisIntegralAbsoluteErrorGet(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, &
+      & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the absolute errors for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCPtr(FieldPtr,VariableType,ComponentNumber,IntegralValue, &
+    & GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralAbsoluteErrorGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisIntegralAbsoluteErrorGet(Field, ComponentNumber, VariableType, &
+          & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCPtr)
+      ELSE
+        CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralAbsoluteErrorGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the relative error for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralRelativeErrorGetCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & IntegralValue,GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralRelativeErrorGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralRelativeErrorGetCNum !<Error code.
+    !Local variable
+
+    CALL CMISSAnalyticAnalysisIntegralRelativeErrorGet(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, &
+      & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralRelativeErrorGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralRelativeErrorGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the relative error for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralRelativeErrorGetCPtr(FieldPtr,VariableType,ComponentNumber,IntegralValue, &
+    & GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralRelativeErrorGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralRelativeErrorGetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisIntegralRelativeErrorGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisIntegralRelativeErrorGet(Field, ComponentNumber, VariableType, &
+          & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralRelativeErrorGetCPtr)
+      ELSE
+        CMISSAnalyticAnalysisIntegralRelativeErrorGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisIntegralRelativeErrorGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralRelativeErrorGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the nid numerical for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralNidNumericalValueGetCNum(RegionUserNumber,FieldUserNumber,VariableType, &
+    & ComponentNumber,IntegralValue,GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralNidNumericalValueGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralNidNumericalValueGetCNum !<Error code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisIntegralNidNumericalValueGet(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, &
+      & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralNidNumericalValueGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralNidNumericalValueGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the nid numerical for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralNidNumericalValueGetCPtr(FieldPtr,VariableType,ComponentNumber,IntegralValue, &
+    & GhostIntegralValue) BIND(C, NAME = "CMISSAnalyticAnalysisIntegralNidNumericalValueGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralNidNumericalValueGetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisIntegralNidNumericalValueGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisIntegralNidNumericalValueGet(Field, ComponentNumber, VariableType, &
+          & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralNidNumericalValueGetCPtr)
+      ELSE
+        CMISSAnalyticAnalysisIntegralNidNumericalValueGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisIntegralNidNumericalValueGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralNidNumericalValueGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the nid error for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralNidErrorGetCNum(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & IntegralValue,GhostIntegralValue)
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<variable type
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralNidErrorGetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSAnalyticAnalysisIntegralNidErrorGet(RegionUserNumber, FieldUserNumber, ComponentNumber, VariableType, IntegralValue, &
+      & GhostIntegralValue, CMISSAnalyticAnalysisIntegralNidErrorGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralNidErrorGetCNum
+
+!
+  !================================================================================================================================
+  !
+
+  !>Get integral value for the nid error for C.
+  FUNCTION CMISSAnalyticAnalysisIntegralNidErrorGetCPtr(FieldPtr,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue) &
+    & BIND(C, NAME = "CMISSAnalyticAnalysisIntegralNidErrorGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value for C.
+    REAL(C_DOUBLE), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSAnalyticAnalysisIntegralNidErrorGetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSAnalyticAnalysisIntegralNidErrorGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr, Field)
+      IF(ASSOCIATED(Field)) THEN
+        CALL CMISSAnalyticAnalysisIntegralNidErrorGet(Field, ComponentNumber, VariableType, &
+          & IntegralValue, GhostIntegralValue, CMISSAnalyticAnalysisIntegralNidErrorGetCPtr)
+      ELSE
+        CMISSAnalyticAnalysisIntegralNidErrorGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSAnalyticAnalysisIntegralNidErrorGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSAnalyticAnalysisIntegralNidErrorGetCPtr
 
 
 !!==================================================================================================================================
@@ -3640,7 +4850,7 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   END FUNCTION CMISSBoundaryConditionsDestroyCNum
 
-    !
+  !
   !================================================================================================================================
   !
 
@@ -4130,6 +5340,1385 @@ END FUNCTION CMISSFieldsTypeCreateC
 
 !!==================================================================================================================================
 !!
+!! CMISS
+!!
+!!==================================================================================================================================
+
+  !>Returns the error handling mode for C.
+  FUNCTION CMISSErrorHandlingModeGetC(ErrorHandlingMode)  BIND(C, NAME = "CMISSErrorHandlingModeGet")
+
+    !Argument variables
+    INTEGER(C_INT), INTENT(OUT) :: ErrorHandlingMode !<On return, the error handling mode.
+    !Function variable
+    INTEGER(C_INT) :: CMISSErrorHandlingModeGetC !<Error Code.
+    !Local variables
+
+    CALL CMISSErrorHandlingModeGet(ErrorHandlingMode,CMISSErrorHandlingModeGetC)
+
+    RETURN
+
+  END FUNCTION CMISSErrorHandlingModeGetC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the error handling mode for C.
+  FUNCTION CMISSErrorHandlingModeSetC(ErrorHandlingMode)  BIND(C, NAME = "CMISSErrorHandlingModeSet")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ErrorHandlingMode !<The error handling mode to set
+    !Function variable
+    INTEGER(C_INT) :: CMISSErrorHandlingModeSetC !<Error Code.
+    !Local variables
+
+    CALL CMISSErrorHandlingModeSet(ErrorHandlingMode,CMISSErrorHandlingModeSetC)
+
+    RETURN
+
+  END FUNCTION CMISSErrorHandlingModeSetC
+  
+!!==================================================================================================================================
+!!
+!! CMISS_CELLML
+!!
+!!==================================================================================================================================
+
+  !>Finishes the creation of a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLCreateFinishCNum(CellMLUserNumber)  BIND(C, NAME = "CMISSCellMLCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to finish creating.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLCreateFinishCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLCreateFinish(CellMLUserNumber,CMISSCellMLCreateFinishCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the creation of a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLCreateFinishCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to finish creating.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLCreateFinishCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLCreateFinishCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSCellMLCreateFinish(CellML,CMISSCellMLCreateFinishCPtr )
+      ELSE
+        CMISSCellMLCreateFinishCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLCreateFinishCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the creation of a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLCreateStartCNum(CellMLUserNumber,RegionUserNumber,FieldUserNumber) BIND(C, NAME = "CMISSCellMLCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to start creating.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to create the CellML environment for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to create the CellML environment for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLCreateStartCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLCreateStart(CellMLUserNumber,RegionUserNumber,FieldUserNumber,CMISSCellMLCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the creation of a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLCreateStartCPtr(CellMLUserNumber,FieldPtr,CellMLPtr) BIND(C, NAME = "CMISSCellMLCreateStart")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to create.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<A C pointer to the field to create the CellML environment.
+    TYPE(C_PTR), INTENT(INOUT) :: CellMLPtr !<On return, the created C pointer to the CellML environment.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLCreateStartCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSCellMLCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FieldPtr)) THEN
+      CALL C_F_POINTER(FieldPtr,Field )
+      IF(ASSOCIATED(Field)) THEN
+        IF(C_ASSOCIATED(CellMLPtr)) THEN
+          CMISSCellMLCreateStartCPtr = CMISSPointerNotNULL
+        ELSE
+          NULLIFY(CellML)
+          CALL CMISSCellMLCreateStart(CellMLUserNumber,Field,CellML,CMISSCellMLCreateStartCPtr )          
+          CellMLPtr = C_LOC(CellML)
+        ENDIF
+      ELSE
+        CMISSCellMLCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroys a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLDestroyCNum(CellMLUserNumber)  BIND(C, NAME = "CMISSCellMLDestroyNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to destroy.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLDestroyCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLDestroy(CellMLUserNumber,CMISSCellMLDestroyCNum)
+
+    RETURN
+    
+  END FUNCTION CMISSCellMLDestroyCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroys a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLDestroyCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLDestroy")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to destroy.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLDestroyCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLDestroyCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSCellMLDestroy(CellML,CMISSCellMLDestroyCPtr)
+      ELSE
+        CMISSCellMLDestroyCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLDestroyCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLDestroyCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Finishes the creation of CellML models for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLModelsCreateFinishCNum(CellMLUserNumber)  BIND(C, NAME = "CMISSCellMLModelsCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to finish creating the models for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelsCreateFinishCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLModelsCreateFinish(CellMLUserNumber,CMISSCellMLModelsCreateFinishCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelsCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the creation of CellML models for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLModelsCreateFinishCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLModelsCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to finish creating the models for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelsCreateFinishCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLModelsCreateFinishCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSCellMLModelsCreateFinish(CellML,CMISSCellMLModelsCreateFinishCPtr )
+      ELSE
+        CMISSCellMLModelsCreateFinishCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLModelsCreateFinishCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelsCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Starts the creation of CellML models for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLModelsCreateStartCNum(CellMLUserNumber)  BIND(C, NAME = "CMISSCellMLModelsCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to start creating the models for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelsCreateStartCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLModelsCreateStart(CellMLUserNumber,CMISSCellMLModelsCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelsCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the creation of CellML models for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLModelsCreateStartCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLModelsCreateStart")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to start creating the models for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelsCreateStartCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLModelsCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSCellMLModelsCreateStart(CellML,CMISSCellMLModelsCreateStartCPtr )
+      ELSE
+        CMISSCellMLModelsCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLModelsCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelsCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Imports a specified CellML model as specified by a character URI into a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLModelImportCNum(CellMLModelUserNumber,CellMLUserNumber,URISize,URI) &
+    & BIND(C, NAME = "CMISSCellMLModelImportNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLModelUserNumber !<The user number of the imported CellML model.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to import a model for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: URISize !<URI size for the character string URI for C.
+    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: URI(URISize) !< The URI of the CellML model to import
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelImportCNum !<Error Code.
+    !Local variables
+    CHARACTER(LEN=URISize-1) :: FURI
+
+    CALL CMISSC2FString(URI,FURI)
+    CALL CMISSCellMLModelImport(CellMLModelUserNumber,CellMLUserNumber,FURI,CMISSCellMLModelImportCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelImportCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Imports a specified CellML model as specified by a character URI into a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLModelImportCPtr(CellMLModelUserNumber,CellMLPtr,URISize,URI) BIND(C, NAME = "CMISSCellMLModelImport")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLModelUserNumber !<The user number of the imported CellML model.
+    TYPE(C_PTR), INTENT(INOUT) :: CellMLPtr !<A pointer to the CellML environment to import a model for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: URISize !<URI size for the character string URI for C.
+    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: URI(URISize) !< The URI of the CellML model to import
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelImportCPtr !<Error Code.
+    !Local variables
+    CHARACTER(LEN=URISize-1) :: FURI
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLModelImportCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML)
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSC2FString(URI,FURI)
+        CALL CMISSCellMLModelImport(CellMLModelUserNumber,CellML,FURI,CMISSCellMLModelImportCPtr)
+        IF(ASSOCIATED(CellML)) THEN
+          CellMLPtr = C_LOC(CellML)
+        ELSE
+          CMISSCellMLModelImportCPtr = CMISSPointerIsNULL
+        ENDIF
+          
+      ELSE
+        CMISSCellMLModelImportCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLModelImportCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelImportCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Finishes the creation of CellML models field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLModelsFieldCreateFinishCNum(CellMLUserNumber) BIND(C, NAME = "CMISSCellMLModelsFieldCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to finish creating the models field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelsFieldCreateFinishCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLModelsFieldCreateFinish(CellMLUserNumber,CMISSCellMLModelsFieldCreateFinishCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelsFieldCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the creation of CellML models field for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLModelsFieldCreateFinishCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLModelsFieldCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to finish creating the models field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelsFieldCreateFinishCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLModelsFieldCreateFinishCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSCellMLModelsFieldCreateFinish(CellML,CMISSCellMLModelsFieldCreateFinishCPtr )
+      ELSE
+        CMISSCellMLModelsFieldCreateFinishCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLModelsFieldCreateFinishCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelsFieldCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Starts the creation of a CellML models field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLModelsFieldCreateStartCNum(CellMLModelsFieldUserNumber,CellMLUserNumber) &
+    & BIND(C, NAME = "CMISSCellMLModelsFieldCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLModelsFieldUserNumber !<The user number of the CellML models field to start creating.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to start creating the models field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelsFieldCreateStartCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLModelsFieldCreateStart(CellMLModelsFieldUserNumber,CellMLUserNumber,CMISSCellMLModelsFieldCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelsFieldCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the creation of a CellML models field for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLModelsFieldCreateStartCPtr(CellMLModelsFieldUserNumber,CellMLPtr,FieldPtr) &
+    & BIND(C, NAME = "CMISSCellMLModelsFieldCreateStart")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLModelsFieldUserNumber !<The user number of the CellML models field to start creating.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to start creating the models field for.
+    TYPE(C_PTR), INTENT(INOUT) :: FieldPtr !<On return, a C pointer to the created models field. Must be NULL on entry.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelsFieldCreateStartCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSCellMLModelsFieldCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        IF(C_ASSOCIATED(FieldPtr)) THEN
+          CMISSCellMLModelsFieldCreateStartCPtr = CMISSPointerNotNULL
+        ELSE
+          NULLIFY(Field)
+          CALL CMISSCellMLModelsFieldCreateStart(CellMLModelsFieldUserNumber,CellML,Field,CMISSCellMLModelsFieldCreateStartCPtr )
+          FieldPtr = C_LOC(Field)
+        ENDIF
+      ELSE
+        CMISSCellMLModelsFieldCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLModelsFieldCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelsFieldCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Returns the CellML models field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLModelsFieldGetCNum(CellMLUserNumber,CellMLModelsFieldUserNumber) &
+    & BIND(C, NAME = "CMISSCellMLModelsFieldGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to get the models field for.
+    INTEGER(C_INT), INTENT(OUT) :: CellMLModelsFieldUserNumber !<On return, the user number of the CellML models field.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelsFieldGetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLModelsFieldGet(CellMLUserNumber,CellMLModelsFieldUserNumber,CMISSCellMLModelsFieldGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelsFieldGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the CellML models field for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLModelsFieldGetCPtr(CellMLPtr,FieldPtr) BIND(C, NAME = "CMISSCellMLModelsFieldGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to get the models field for.
+    TYPE(C_PTR), INTENT(INOUT) :: FieldPtr !<On return, a C pointer to the CellML environment models field. Must be NULL on entry.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLModelsFieldGetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSCellMLModelsFieldGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        IF(C_ASSOCIATED(FieldPtr)) THEN
+          CMISSCellMLModelsFieldGetCPtr = CMISSPointerNotNULL
+        ELSE
+          NULLIFY(Field)
+          CALL CMISSCellMLModelsFieldGet(CellML,Field,CMISSCellMLModelsFieldGetCPtr )
+          FieldPtr = C_LOC(Field)
+        ENDIF
+      ELSE
+        CMISSCellMLModelsFieldGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLModelsFieldGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLModelsFieldGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Finishes the creation of CellML state field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLStateFieldCreateFinishCNum(CellMLUserNumber) BIND(C, NAME = "CMISSCellMLStateFieldCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to finish creating the state field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLStateFieldCreateFinishCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLStateFieldCreateFinish(CellMLUserNumber,CMISSCellMLStateFieldCreateFinishCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLStateFieldCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the creation of CellML state field for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLStateFieldCreateFinishCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLStateFieldCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to finish creating the state field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLStateFieldCreateFinishCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLStateFieldCreateFinishCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSCellMLStateFieldCreateFinish(CellML,CMISSCellMLStateFieldCreateFinishCPtr )
+      ELSE
+        CMISSCellMLStateFieldCreateFinishCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLStateFieldCreateFinishCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLStateFieldCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Starts the creation of a CellML state field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLStateFieldCreateStartCNum(CellMLStateFieldUserNumber,CellMLUserNumber) &
+    & BIND(C, NAME = "CMISSCellMLStateFieldCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLStateFieldUserNumber !<The user number of the CellML state field to start creating.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to start creating the state field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLStateFieldCreateStartCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLStateFieldCreateStart(CellMLStateFieldUserNumber,CellMLUserNumber,CMISSCellMLStateFieldCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLStateFieldCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the creation of a CellML state field for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLStateFieldCreateStartCPtr(CellMLStateFieldUserNumber,CellMLPtr,FieldPtr) &
+    & BIND(C, NAME = "CMISSCellMLStateFieldCreateStart")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLStateFieldUserNumber !<The user number of the CellML state field to start creating.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to start creating the state field for.
+    TYPE(C_PTR), INTENT(INOUT) :: FieldPtr !<On return, a C pointer to the created state field. Must be NULL on entry.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLStateFieldCreateStartCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSCellMLStateFieldCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        IF(C_ASSOCIATED(FieldPtr)) THEN
+          CMISSCellMLStateFieldCreateStartCPtr = CMISSPointerNotNULL
+        ELSE
+          NULLIFY(Field)
+          CALL CMISSCellMLStateFieldCreateStart(CellMLStateFieldUserNumber,CellML,Field,CMISSCellMLStateFieldCreateStartCPtr )
+          FieldPtr = C_LOC(Field)
+        ENDIF
+      ELSE
+        CMISSCellMLStateFieldCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLStateFieldCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLStateFieldCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Returns the CellML state field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLStateFieldGetCNum(CellMLUserNumber,CellMLStateFieldUserNumber) &
+    & BIND(C, NAME = "CMISSCellMLStateFieldGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to get the state field for.
+    INTEGER(C_INT), INTENT(OUT) :: CellMLStateFieldUserNumber !<On return, the user number of the CellML state field.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLStateFieldGetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLStateFieldGet(CellMLUserNumber,CellMLStateFieldUserNumber,CMISSCellMLStateFieldGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLStateFieldGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the CellML models state for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLStateFieldGetCPtr(CellMLPtr,FieldPtr) BIND(C, NAME = "CMISSCellMLStateFieldGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to get the state field for.
+    TYPE(C_PTR), INTENT(INOUT) :: FieldPtr !<On return, a C pointer to the CellML environment state field. Must be NULL on entry.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLStateFieldGetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSCellMLStateFieldGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        IF(C_ASSOCIATED(FieldPtr)) THEN
+          CMISSCellMLStateFieldGetCPtr = CMISSPointerNotNULL
+        ELSE
+          NULLIFY(Field)
+          CALL CMISSCellMLStateFieldGet(CellML,Field,CMISSCellMLStateFieldGetCPtr )
+          FieldPtr = C_LOC(Field)
+        ENDIF
+      ELSE
+        CMISSCellMLStateFieldGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLStateFieldGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLStateFieldGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Imports a specified CellML model as specified by a character URI into a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLFieldComponentGetCNum(CellMLUserNumber,CellMLFieldType,URISize,URI,FieldComponent) &
+    & BIND(C, NAME = "CMISSCellMLFieldComponentGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to get the component for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLFieldType !<The type of CellML field to get the component for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: URISize !<URI size for the character string URI for C.
+    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: URI(URISize) !< The URI of the CellML model variable to get the corresponding component for.
+    INTEGER(C_INT), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the URI.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLFieldComponentGetCNum !<Error Code.
+    !Local variables
+    CHARACTER(LEN=URISize-1) :: FURI
+
+    CALL CMISSC2FString(URI,FURI)
+    CALL CMISSCellMLFieldComponentGet(CellMLUserNumber,CellMLFieldType,FURI,FieldComponent,CMISSCellMLFieldComponentGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLFieldComponentGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Imports a specified CellML model as specified by a character URI into a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLFieldComponentGetCPtr(CellMLPtr,CellMLFieldType,URISize,URI,FieldComponent)  &
+    & BIND(C, NAME = "CMISSCellMLFieldComponentGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<A pointer to the CellML environment to import a model for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLFieldType !<The type of CellML field to get the component for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: URISize !<URI size for the character string URI for C.
+    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: URI(URISize) !< The URI of the CellML model variable to get the corresponding component for.
+    INTEGER(C_INT), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the URI.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLFieldComponentGetCPtr !<Error Code.
+    !Local variables
+    CHARACTER(LEN=URISize-1) :: FURI
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLFieldComponentGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSC2FString(URI,FURI)
+        CALL CMISSCellMLFieldComponentGet(CellML,CellMLFieldType,FURI,FieldComponent,CMISSCellMLFieldComponentGetCPtr )
+      ELSE
+        CMISSCellMLFieldComponentGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+       CMISSCellMLFieldComponentGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLFieldComponentGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Adds a specific variable to a CellML intermediate field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLIntermediateFieldAddCNum(CellMLUserNumber,CellMLModelUserNumber,URISize,URI) &
+    & BIND(C, NAME = "CMISSCellMLIntermediateFieldAddNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to the intermediate field for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add to the intermediate field.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: URISize !<URI size for the character string URI for C.
+    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: URI(URISize) !< The URI of the CellML variable to add.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLIntermediateFieldAddCNum !<Error Code.
+    !Local variables
+    CHARACTER(LEN=URISize-1) :: FURI
+
+    CALL CMISSC2FString(URI,FURI)
+    CALL CMISSCellMLIntermediateFieldAdd(CellMLUserNumber,CellMLModelUserNumber,FURI,CMISSCellMLIntermediateFieldAddCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLIntermediateFieldAddCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Adds a specific variable to a CellML intermediate field for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLIntermediateFieldAddCPtr(CellMLPtr,CellMLModelUserNumber,URISize,URI) &
+    & BIND(C, NAME = "CMISSCellMLIntermediateFieldAdd")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<A pointer to the CellML environment to add to the intermediate field for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add to the intermediate field.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: URISize !<URI size for the character string URI for C.
+    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: URI(URISize) !< The URI of the CellML variable to add.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLIntermediateFieldAddCPtr !<Error Code.
+    !Local variables
+    CHARACTER(LEN=URISize-1) :: FURI
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLIntermediateFieldAddCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSC2FString(URI,FURI)
+        CALL CMISSCellMLIntermediateFieldAdd(CellML,CellMLModelUserNumber,FURI,CMISSCellMLIntermediateFieldAddCPtr)
+      ELSE
+        CMISSCellMLIntermediateFieldAddCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLIntermediateFieldAddCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLIntermediateFieldAddCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Finishes the creation of CellML intermediate field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLIntermediateFieldCreateFinishCNum(CellMLUserNumber) &
+    & BIND(C, NAME = "CMISSCellMLIntermediateFieldCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to finish creating the intermediate field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLIntermediateFieldCreateFinishCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLIntermediateFieldCreateFinish(CellMLUserNumber,CMISSCellMLIntermediateFieldCreateFinishCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLIntermediateFieldCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the creation of CellML intermediate field for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLIntermediateFieldCreateFinishCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLIntermediateFieldCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to finish creating the intermediate field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLIntermediateFieldCreateFinishCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLIntermediateFieldCreateFinishCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSCellMLIntermediateFieldCreateFinish(CellML,CMISSCellMLIntermediateFieldCreateFinishCPtr )
+      ELSE
+        CMISSCellMLIntermediateFieldCreateFinishCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLIntermediateFieldCreateFinishCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLIntermediateFieldCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Starts the creation of a CellML intermediate field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLIntermediateFieldCreateStartCNum(CellMLIntermediateFieldUserNumber,CellMLUserNumber) &
+    & BIND(C, NAME = "CMISSCellMLIntermediateFieldCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLIntermediateFieldUserNumber !<The user number of the CellML intermediate field to start creating.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to start creating the intermediate field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLIntermediateFieldCreateStartCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLIntermediateFieldCreateStart(CellMLIntermediateFieldUserNumber,CellMLUserNumber, &
+      & CMISSCellMLIntermediateFieldCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLIntermediateFieldCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the creation of a CellML intermediate field for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLIntermediateFieldCreateStartCPtr(CellMLIntermediateFieldUserNumber,CellMLPtr,FieldPtr) &
+    & BIND(C, NAME = "CMISSCellMLIntermeidateFieldCreateStart")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLIntermediateFieldUserNumber !<The user number of the CellML intermediate field to start creating.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to start creating the intermediate field for.
+    TYPE(C_PTR), INTENT(INOUT) :: FieldPtr !<On return, a C pointer to the created intermediate field. Must be NULL on entry.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLIntermediateFieldCreateStartCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSCellMLIntermediateFieldCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        IF(C_ASSOCIATED(FieldPtr)) THEN
+          CMISSCellMLIntermediateFieldCreateStartCPtr = CMISSPointerNotNULL
+        ELSE
+          NULLIFY(Field)
+          CALL CMISSCellMLIntermediateFieldCreateStart(CellMLIntermediateFieldUserNumber,CellML,Field, &
+            & CMISSCellMLIntermediateFieldCreateStartCPtr )
+          FieldPtr = C_LOC(Field)
+        ENDIF
+      ELSE
+        CMISSCellMLIntermediateFieldCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLIntermediateFieldCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLIntermediateFieldCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Returns the CellML intermediate field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLIntermediateFieldGetCNum(CellMLUserNumber,CellMLIntermediateFieldUserNumber) &
+    & BIND(C, NAME = "CMISSCellMLIntermediateFieldGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to get the intermediate field for.
+    INTEGER(C_INT), INTENT(OUT) :: CellMLIntermediateFieldUserNumber !<On return, the user number of the CellML intermediate field.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLIntermediateFieldGetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLIntermediateFieldGet(CellMLUserNumber,CellMLIntermediateFieldUserNumber,CMISSCellMLIntermediateFieldGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLIntermediateFieldGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the CellML models intermediate for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLIntermediateFieldGetCPtr(CellMLPtr,FieldPtr) BIND(C, NAME = "CMISSCellMLIntermediateFieldGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to get the intermediate field for.
+    TYPE(C_PTR), INTENT(INOUT) :: FieldPtr !<On return, a C pointer to the CellML environment intermediate field. Must be NULL on entry.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLIntermediateFieldGetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSCellMLIntermediateFieldGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        IF(C_ASSOCIATED(FieldPtr)) THEN
+          CMISSCellMLIntermediateFieldGetCPtr = CMISSPointerNotNULL
+        ELSE
+          NULLIFY(Field)
+          CALL CMISSCellMLStateFieldGet(CellML,Field,CMISSCellMLIntermediateFieldGetCPtr )
+          FieldPtr = C_LOC(Field)
+        ENDIF
+      ELSE
+        CMISSCellMLIntermediateFieldGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLIntermediateFieldGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLIntermediateFieldGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Override a specific parameter variable from a model in a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLParameterAddCNum(CellMLUserNumber,CellMLModelUserNumber,URISize,URI) &
+    & BIND(C, NAME = "CMISSCellMLParameterAddNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to add the parameter for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add the parameter for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: URISize !<URI size for the character string URI for C.
+    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: URI(URISize) !< The URI of the CellML variable to add.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParameterAddCNum !<Error Code.
+    !Local variables
+    CHARACTER(LEN=URISize-1) :: FURI
+
+    CALL CMISSC2FString(URI,FURI)
+    CALL CMISSCellMLParameterAdd(CellMLUserNumber,CellMLModelUserNumber,FURI,CMISSCellMLParameterAddCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParameterAddCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Override a specific parameter variable from a model in a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLParameterAddCPtr(CellMLPtr,CellMLModelUserNumber,URISize,URI) BIND(C, NAME = "CMISSCellMLParameterAdd")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<A pointer to the CellML environment to add to the parameters for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add to the parameters.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: URISize !<URI size for the character string URI for C.
+    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: URI(URISize) !< The URI of the CellML variable to add.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParameterAddCPtr !<Error Code.
+    !Local variables
+    CHARACTER(LEN=URISize-1) :: FURI
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLParameterAddCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSC2FString(URI,FURI)
+        CALL CMISSCellMLParameterAdd(CellML,CellMLModelUserNumber,FURI,CMISSCellMLParameterAddCPtr )
+      ELSE
+       CMISSCellMLParameterAddCPtr  = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLParameterAddCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParameterAddCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the creation of parameters for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLParametersCreateFinishCNum(CellMLUserNumber)  BIND(C, NAME = "CMISSCellMLParametersCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to finish creating the parameters for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParametersCreateFinishCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLParametersCreateFinish(CellMLUserNumber,CMISSCellMLParametersCreateFinishCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParametersCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the creation of parameters for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLParametersCreateFinishCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLParametersCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to finish creating the parameters for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParametersCreateFinishCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLParametersCreateFinishCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSCellMLParametersCreateFinish(CellML,CMISSCellMLParametersCreateFinishCPtr )
+      ELSE
+        CMISSCellMLParametersCreateFinishCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLParametersCreateFinishCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParametersCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the creation of parameters for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLParametersCreateStartCNum(CellMLUserNumber) BIND(C, NAME = "CMISSCellMLParametersCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to start creating the parameters for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParametersCreateStartCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLParametersCreateStart(CellMLUserNumber,CMISSCellMLParametersCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParametersCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the creation of parameters for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLParametersCreateStartCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLParametersCreateStart")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<The  C pointer to the CellML environment to create the parameters for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParametersCreateStartCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLParametersCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSCellMLParametersCreateStart(CellML,CMISSCellMLParametersCreateStartCPtr )          
+      ELSE
+        CMISSCellMLParametersCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLParametersCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParametersCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Finishes the creation of CellML parameters field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLParametersFieldCreateFinishCNum(CellMLUserNumber) BIND(C, NAME = "CMISSCellMLParametersFieldCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to finish creating the parameters field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParametersFieldCreateFinishCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLParametersFieldCreateFinish(CellMLUserNumber,CMISSCellMLParametersFieldCreateFinishCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParametersFieldCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the creation of CellML parameters field for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLParametersFieldCreateFinishCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLParametersFieldCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to finish creating the parameters field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParametersFieldCreateFinishCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLParametersFieldCreateFinishCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSCellMLParametersFieldCreateFinish(CellML,CMISSCellMLParametersFieldCreateFinishCPtr )
+      ELSE
+        CMISSCellMLParametersFieldCreateFinishCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLParametersFieldCreateFinishCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParametersFieldCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Starts the creation of a CellML parameters field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLParametersFieldCreateStartCNum(CellMLParametersFieldUserNumber,CellMLUserNumber) &
+    & BIND(C, NAME = "CMISSCellMLParametersFieldCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLParametersFieldUserNumber !<The user number of the CellML parameters field to start creating.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to start creating the parameters field for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParametersFieldCreateStartCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLParametersFieldCreateStart(CellMLParametersFieldUserNumber,CellMLUserNumber, &
+      & CMISSCellMLParametersFieldCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParametersFieldCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the creation of a CellML parameters field for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLParametersFieldCreateStartCPtr(CellMLParametersFieldUserNumber,CellMLPtr,FieldPtr) &
+    & BIND(C, NAME = "CMISSCellMLParametersFieldCreateStart")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLParametersFieldUserNumber !<The user number of the CellML parameters field to start creating.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to start creating the parameters field for.
+    TYPE(C_PTR), INTENT(INOUT) :: FieldPtr !<On return, a C pointer to the created parameters field. Must be NULL on entry.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParametersFieldCreateStartCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSCellMLParametersFieldCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        IF(C_ASSOCIATED(FieldPtr)) THEN
+          CMISSCellMLParametersFieldCreateStartCPtr = CMISSPointerNotNULL
+        ELSE
+          NULLIFY(Field)
+          CALL CMISSCellMLParametersFieldCreateStart(CellMLParametersFieldUserNumber,CellML,Field, &
+            & CMISSCellMLParametersFieldCreateStartCPtr )
+          FieldPtr = C_LOC(Field)
+        ENDIF
+      ELSE
+        CMISSCellMLParametersFieldCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLParametersFieldCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParametersFieldCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Returns the CellML parameters field for a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLParametersFieldGetCNum(CellMLUserNumber,CellMLParametersFieldUserNumber) &
+    & BIND(C, NAME = "CMISSCellMLParametersFieldGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to get the parameters field for.
+    INTEGER(C_INT), INTENT(OUT) :: CellMLParametersFieldUserNumber !<On return, the user number of the CellML parameters field.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParametersFieldGetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLParametersFieldGet(CellMLUserNumber,CellMLParametersFieldUserNumber,CMISSCellMLParametersFieldGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParametersFieldGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the CellML models parameters for a CellML environment identified by a pointer for C.
+  FUNCTION CMISSCellMLParametersFieldGetCPtr(CellMLPtr,FieldPtr) BIND(C, NAME = "CMISSCellMLParametersFieldGet")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to get the parameters field for.
+    TYPE(C_PTR), INTENT(INOUT) :: FieldPtr !<On return, a C pointer to the CellML environment parameters field. Must be NULL on entry.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLParametersFieldGetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+    TYPE(CMISSFieldType), POINTER :: Field
+
+    CMISSCellMLParametersFieldGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        IF(C_ASSOCIATED(FieldPtr)) THEN
+          CMISSCellMLParametersFieldGetCPtr = CMISSPointerNotNULL
+        ELSE
+          NULLIFY(Field)
+          CALL CMISSCellMLParametersFieldGet(CellML,Field,CMISSCellMLParametersFieldGetCPtr )
+          FieldPtr = C_LOC(Field)
+        ENDIF
+      ELSE
+        CMISSCellMLParametersFieldGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLParametersFieldGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLParametersFieldGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Validiate and instantiate a CellML environment identified by a user number for C.
+  FUNCTION CMISSCellMLGenerateCNum(CellMLUserNumber)  BIND(C, NAME = "CMISSCellMLGenerateNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to generate.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLGenerateCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSCellMLGenerate(CellMLUserNumber,CMISSCellMLGenerateCNum)
+
+    RETURN
+
+  END FUNCTION CMISSCellMLGenerateCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>
+
+  !>Validiate and instantiate a CellML environment identified by a POINTER for C.
+  FUNCTION CMISSCellMLGenerateCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLGenerate")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to generate.
+    !Function variable
+    INTEGER(C_INT) :: CMISSCellMLGenerateCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSCellMLGenerateCPtr = CMISSNoError
+    IF(C_ASSOCIATED(CellMLPtr)) THEN
+      CALL C_F_POINTER(CellMLPtr,CellML )
+      IF(ASSOCIATED(CellML)) THEN
+        CALL CMISSCellMLParametersCreateFinish(CellML,CMISSCellMLGenerateCPtr )
+      ELSE
+        CMISSCellMLGenerateCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSCellMLGenerateCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSCellMLGenerateCPtr
+
+
+!!==================================================================================================================================
+!!
 !! COMP_ENVIRONMENT
 !!
 !!==================================================================================================================================
@@ -4152,7 +6741,7 @@ END FUNCTION CMISSFieldsTypeCreateC
   !================================================================================================================================
   !
 
-  FUNCTION CMISSComputationalNumberOfNodesGetC(NumberOfNodes) BIND(C, NAME = "CMISSComputationalNumberOfNodesGet")
+  FUNCTION CMISSComputationalNumberOfNodesGetC(NumberOfNodes) BIND(C, NAME = "CMISSComputationalNodesNumberGet")
 
     !Argument variables
     INTEGER(C_INT), INTENT(OUT) :: NumberOfNodes !<The Number of Nodes for C.
@@ -4767,6 +7356,72 @@ END FUNCTION CMISSFieldsTypeCreateC
     RETURN
 
   END FUNCTION CMISSControlLoopTimeOutputSetCPtr
+
+  !
+  !================================================================================================================================
+  !  
+  
+  !>Sets/changes the input parameters for a time control loop identified by user numbers for C.
+  FUNCTION CMISSControlLoopTimeInputSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize, ControlLoopIdentifiersPtr,InputOption)&
+    & BIND(C, NAME = "CMISSControlLoopTimeInputSetNum")
+  
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the output parameters for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers, for C.
+    TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: InputOption !<The output frequency modulo to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSControlLoopTimeInputSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSControlLoopTimeInputSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSControlLoopTimeInputSet(ProblemUserNumber,ControlLoopIdentifiers,InputOption,CMISSControlLoopTimeInputSetCNum)
+      ELSE
+        CMISSControlLoopTimeInputSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopTimeInputSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopTimeInputSetCNum
+
+  !
+  !================================================================================================================================
+  !  
+  
+  !>Sets/changes the input parameters for a time control loop identified by an object for C.
+  FUNCTION CMISSControlLoopTimeInputSetCPtr(ControlLoopPtr,InputOption) BIND(C, NAME = "CMISSControlLoopTimeInputSet")
+  
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: ControlLoopPtr !<C pointer to the control loop to set the output parameters for.
+    INTEGER(C_INT), VALUE, INTENT(IN) ::  InputOption !<The output frequency modulo to set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSControlLoopTimeInputSetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSControlLoopType), POINTER :: ControlLoop
+
+    CMISSControlLoopTimeInputSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopPtr)) THEN
+      CALL C_F_POINTER(ControlLoopPtr, ControlLoop)
+      IF(ASSOCIATED(ControlLoop)) THEN
+        CALL CMISSControlLoopTimeInputSet(ControlLoop,InputOption,CMISSControlLoopTimeInputSetCPtr)
+      ELSE
+        CMISSControlLoopTimeInputSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopTimeInputSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopTimeInputSetCPtr
+
 
   !
   !================================================================================================================================
@@ -13242,6 +15897,91 @@ END FUNCTION CMISSFieldsTypeCreateC
 
   END FUNCTION CMISSFieldParameterSetUpdateStartCPtr
 
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Copy the parameters from the parameter set of a component of a field variable to the paramters of a parameter set of
+  !>a component of another field variable, where both fields are identified by user numbers, for C.
+  FUNCTION CMISSFieldParametersToFieldParametersComponentCopyCNum(FromRegionUserNumber,FromFieldUserNumber,FromVariableType, &
+      & FromParameterSetType, FromComponentNumber,ToRegionUserNumber,ToFieldUserNumber,ToVariableType,ToParameterSetType, &
+      & ToComponentNumber) BIND(C, NAME = "CMISSFieldParametersToFieldParametersComponentCopyNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FromRegionUserNumber !<The user number, for C, of the region containing the field to copy from.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FromFieldUserNumber !<The field, for C, to copy from.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FromVariableType !<The field variable type, for C, to copy from.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FromParameterSetType !<The field parameter set type, for C, to copy from.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FromComponentNumber !<The field variable component number, for C, to copy from.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ToRegionUserNumber !<The user number, for C, of the region containing the field to copy to.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ToFieldUserNumber !<The field, for C, to copy to.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ToVariableType !<The field variable type, for C, to copy to.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ToParameterSetType !<The parameter set type, for C, to copy to.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ToComponentNumber !<The field variable component, for C, to copy to.
+    !Function variable
+    INTEGER(C_INT) :: CMISSFieldParametersToFieldParametersComponentCopyCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSFieldParametersToFieldParametersComponentCopy(FromRegionUserNumber,FromFieldUserNumber,FromVariableType, &
+      & FromParameterSetType, FromComponentNumber,ToRegionUserNumber,ToFieldUserNumber,ToVariableType,ToParameterSetType, &
+      & ToComponentNumber, CMISSFieldParametersToFieldParametersComponentCopyCNum)
+
+    RETURN
+  
+  END FUNCTION CMISSFieldParametersToFieldParametersComponentCopyCNum
+
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Copy the parameters from the parameter set of a component of a field variable to the paramters of a parameter set of
+  !>a component of another field variable, where both fields are objects, for C.
+  FUNCTION CMISSFieldParametersToFieldParametersComponentCopyCPtr(FromFieldPtr,FromVariableType,FromParameterSetType, &
+    & FromComponentNumber,ToFieldPtr,ToVariableType,ToParameterSetType,ToComponentNumber) BIND(C, NAME = &
+    & "CMISSFieldParametersToFieldParametersComponentCopy")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FromFieldPtr !<C pointer to the field to copy from
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FromVariableType !<The field variable type, for C, to copy from
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FromParameterSetType !<The field parameter set type, for C, to copy from
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FromComponentNumber !<The field variable component number, for C, to copy from
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ToFieldPtr !<C pointer to the field to copy to
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ToVariableType !<The field variable type, for C, to copy to
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ToParameterSetType !<The parameter set type, for C, to copy to
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ToComponentNumber !<The field variable component, for C, to copy to
+    !Function variable
+    INTEGER(C_INT) :: CMISSFieldParametersToFieldParametersComponentCopyCPtr !<Error Code
+    !Local variables
+    TYPE(CMISSFieldType), POINTER :: FromField
+    TYPE(CMISSFieldType), POINTER :: ToField
+
+    CMISSFieldParametersToFieldParametersComponentCopyCPtr = CMISSNoError
+    IF(C_ASSOCIATED(FromFieldPtr)) THEN
+      CALL C_F_POINTER(FromFieldPtr, FromField)
+      IF(ASSOCIATED(FromField)) THEN
+        IF(C_ASSOCIATED(ToFieldPtr)) THEN
+          CALL C_F_POINTER(ToFieldPtr, ToField)
+          IF(ASSOCIATED(ToField)) THEN
+            CALL CMISSFieldParametersToFieldParametersComponentCopy(FromField,FromVariableType,FromParameterSetType, &
+              & FromComponentNumber,ToField,ToVariableType,ToParameterSetType,ToComponentNumber, &
+              & CMISSFieldParametersToFieldParametersComponentCopyCPtr)
+          ELSE
+            CMISSFieldParametersToFieldParametersComponentCopyCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSFieldParametersToFieldParametersComponentCopyCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSFieldParametersToFieldParametersComponentCopyCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSFieldParametersToFieldParametersComponentCopyCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSFieldParametersToFieldParametersComponentCopyCPtr
+
   !
   !================================================================================================================================
   !
@@ -15433,6 +18173,67 @@ END FUNCTION CMISSFieldsTypeCreateC
     RETURN
 
   END FUNCTION CMISSDecompositionTypeSetCPtr
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Returns the domain for a given node in a decomposition identified by a user number.
+  FUNCTION CMISSDecompositionNodeDomainGetCNum(RegionUserNumber,MeshUserNumber,DecompositionUserNumber, &
+    & NodeUserNumber,MeshComponentNumber,Domain) BIND(C, NAME = "CMISSDecompositionNodeDomainGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number, for C, of the region containing the mesh to get the node domain for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: MeshUserNumber !<The user number, for C, of the mesh to get the node domain for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: DecompositionUserNumber !<The user number, for C, of the decomposition to get the node domain for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NodeUserNumber !<The user number, for C, of the node to get the domain for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: MeshComponentNumber !<The user number, for C, of the mesh component to get the domain for.
+    INTEGER(C_INT), INTENT(OUT) :: Domain !<On return, the computational domain, for C, of the node.
+    !Function variable
+    INTEGER(C_INT) :: CMISSDecompositionNodeDomainGetCNum !<Error Code.
+    !Local variables
+
+    CALL CMISSDecompositionNodeDomainGet(RegionUserNumber, MeshUserNumber, DecompositionUserNumber, NodeUserNumber, &
+      & MeshComponentNumber, Domain, CMISSDecompositionNodeDomainGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSDecompositionNodeDomainGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the domain for a given node in a decomposition identified by an object. \todo Maybe swap Node and MeshComponent?
+  FUNCTION CMISSDecompositionNodeDomainGetCPtr(DecompositionPtr,NodeUserNumber,MeshComponentNumber,Domain) BIND(C, NAME = &
+    & "CMISSDecompositionNodeDomainGet")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(IN) :: DecompositionPtr !<C pointer to the decomposition to get the domain for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NodeUserNumber !<The user number, for C, of the node to get the domain for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: MeshComponentNumber !<The user number, for C, of the mesh component to get the domain for.
+    INTEGER(C_INT), INTENT(OUT) :: Domain !<On return, the computational domain, for C, of the node.
+    !Function variable
+    INTEGER(C_INT) :: CMISSDecompositionNodeDomainGetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSDecompositionType), POINTER :: Decomposition
+
+    CMISSDecompositionNodeDomainGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(DecompositionPtr)) THEN
+      CALL C_F_POINTER(DecompositionPtr, Decomposition)
+      IF(ASSOCIATED(Decomposition)) THEN
+        CALL CMISSDecompositionNodeDomainGet(Decomposition,NodeUserNumber,MeshComponentNumber,Domain, &
+          & CMISSDecompositionNodeDomainGetCPtr)
+      ELSE
+        CMISSDecompositionNodeDomainGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSDecompositionNodeDomainGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSDecompositionNodeDomainGetCPtr
 
   !
   !================================================================================================================================

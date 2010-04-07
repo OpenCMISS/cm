@@ -1,0 +1,299 @@
+/*!
+\page profiling_with_TAU Profiling with TAU
+
+\section important Important
+There are a few important points to note before you start using TAU.
+- The current version of PAPI (3.7.2) does not compile using Intel Compilers. Therefore, if you need TAU with PAPI, you will need to use GNU compilers.
+- PAPI requires you to be running a version of Linux with hardware counters built into the kernel. This means a kernel version of 2.6.31 or later (Ubuntu 9.10 or Fedora 12). Earlier kernels can be patched, for more information visit the link below.
+- PAPI also supports Windows XP/2000, although this has not been tested with OpenCMISS. Visit the link below for more information.
+- http://icl.cs.utk.edu/viewcvs/viewcvs.cgi/PAPI/papi/INSTALL.txt?view=markup&revision=1.37.2.2
+- This process was developed on the following setup, 64 bit Linux with kernel 2.6.32 using PAPI 3.7.2 and TAU 2.19. To avoid complications, try to proceed using a similar setup.
+
+Look through the following pages for information on the setup, use and implementation of TAU in OpenCMISS.
+- \subpage tausetup
+    - \ref compilePAPI
+    - \ref compileTAU
+- \subpage usingtau
+    - \ref build
+    - \ref tau_env_variables
+    - \ref run
+    - \ref visual
+- \subpage advancedtau
+    - \ref additional_implementation
+    - \ref dynamicphases
+    - \ref memory_tracking
+- \subpage future
+- \subpage tau_implemented
+
+\page tausetup Setup
+\section compilePAPI Compile PAPI
+The first step in setting up TAU with OpenCMISS is to compile PAPI. First, checkout the PAPI directory from the OpenCMISS Extras repository. If you havent already checked it out, run this command from your OpenCMISS Extras directory (\c $OPENCMISSEXTRAS_ROOT) in a terminal.
+
+\code
+  svn co https://svn.physiomeproject.org/svn/opencmissextras/cm/trunk/external/packages/PAPI cm/external/packages/PAPI
+\endcode
+
+Then change to the PAPI directory and envoke a make command.
+
+\code
+  cd $OPENCMISSEXTRAS_ROOT/cm/external/packages/PAPI
+  make COMPILER=gnu
+\endcode
+
+This process could take several minutes and will compile PAPI into the appropriate directories in your OpenCMISS Extras directory (most likely \c cm/external/x86_64-linux-debug/mpich2/gnu/). Note, PAPI needs to be compiled before compiling TAU. If any errors occur, check \c make.out and \c install.out in \c PAPI/papi-3.7.2/src for more information. 
+
+\section compileTAU Compile TAU
+
+If you want to compile TAU without PAPI, you will need to remove the <tt>-papi=\$(EXTERNAL_DIR)</tt> flag from \c TAU_CONFIG_OPTIONS in \c $OPENCMISSEXTRAS_ROOT/cm/external/packages/TAU/Makefile.
+
+Compiling TAU is very similar to compiling PAPI. First, checkout the TAU directory from the OpenCMISS Extras repository. If you havent already checked it out, run this command from your OpenCMISS Extras directory (\c $OPENCMISSEXTRAS_ROOT) in a terminal.
+
+\code
+  svn co https://svn.physiomeproject.org/svn/opencmissextras/cm/trunk/external/packages/TAU cm/external/packages/TAU
+\endcode
+
+Then change to the PAPI directory and envoke a make command.
+
+\code	
+  cd $OPENCMISSEXTRAS_ROOT/cm/external/packages/TAU
+  make COMPILER=gnu
+\endcode
+
+This process is very long and could take up to 30 minutes. Again, TAU will be built into the appropriate directories as done with PAPI. If any errors occur, check \c make.out and \c install.out in \c TAU/tau-2.19 for more information. 
+
+There are a few important files created during this process. If you have added the correct OpenCMISS Extras bin directory to your PATH, two new executables of note will now be available to you, \c papi_avail and \c paraprof.
+Running \c papi_avail will display the PAPI metrics (hardware level events like cache misses or branch mispredicts) available to you on your machine. 
+\c paraprof is a profiling visualisation tool which is needed to visualise data outputted by TAU. Running both of these programs is recommended at this point just to provide confirmation that both PAPI and TAU have compiled properly.
+
+TAU will also create library files with filenames which depend on the options used when compiling TAU. The TAU Makefile provided in the OpenCMISS Extras repository sets these options for you and this should result in a main TAU library file called \c libtau-phase-papi-mpi.a. 
+
+It is important to note that if you change any of the configure options in the provided TAU Makefile (i.e build TAU without PAPI) you will need to alter the \c NewExampleMakefile, otherwise the linker will not be able to find the TAU library file. The following line of \c NewExampleMakefile will need to be updated with the TAU library filename on your system.
+
+\code	
+  TAU_LIBRARIES += -ltau-phase-papi-mpi -l:libpapi.a -l:libpfm.a
+\endcode
+
+\page usingtau Using TAU
+\section build Build OpenCMISS and Your Problem
+To use TAU, OpenCMISS and your problem needs to be compiled with an extra stub variable, \c TAUPROF, set to true.
+
+\code	
+  make COMPILER=gnu TAUPROF=true
+\endcode
+
+Because PAPI currently only compiles under the GNU compiler, you will need to explicitly add \c COMPILER=gnu to your make command to build OpenCMISS and your problem. This will profile your code using the TAU API calls made throughout OpenCMISS and you will usually not need to make any changes to your code.
+
+\section tau_env_variables TAU Environmental Variables
+However, there are a few environmental variables you may like to set before running your TAU implemented code.
+- \c TAU_CALLPATH - Setting this to 1 will allow you to click through a hierarchical phase profile like the one which will be generated by your OpenCMISS example. This option is recommended.
+\code		
+  export TAU_CALLPATH=1
+\endcode
+or
+\code		
+  setenv TAU_CALLPATH 1
+\endcode
+
+- \c TAU_METRICS - Once you have used papi_avail to find out which PAPI counters are available, set this with the names of the PAPI counters you would like to capture (i.e \c PAPI_FP_OPS for floating point operations) separated by “\:”. The default metric is TIME, which just measures the time during a measurement interval. PAPI throws an error if you try measure more than 3 metrics at a time.
+\code		
+  export TAU_METRICS=TIME\:PAPI_FP_OPS
+\endcode
+or
+\code		
+  setenv TAU_METRICS TIME\:PAPI_FP_OPS
+\endcode
+
+- \c PROFILEDIR - Set this to the directory where you would like your profile files will written to. Otherwise, files will be saved to the working directory
+\code		
+  export PROFILEDIR=<path to directory to write profiles to>
+\endcode
+or
+\code		
+  setenv PROFILEDIR <path to directory to write profiles to>
+\endcode
+
+- \c TAU_VERBOSE - Setting this to 1 to see the steps the TAU measurement systems takes when your application is running.
+\code		
+  export TAU_VERBOSE=1
+\endcode
+or
+\code		
+  setenv TAU_VERBOSE 1
+\endcode
+
+\section run Run Your Problem
+You can now run your problem as you would usually. Once your problem is finished, TAU will create files with filenames of the form, “profile.x.0.0” , where x corresponds to the number of the computational node the data is associated with. If you ran your problem with several TAU metrics, the profile data files will be contained in folders with names relating to the metric.
+
+\section visual Visualisation
+To visualise this data, you simply run \c paraprof in the directory containing the “profile.x.0.0” files or the directory containing the directories corresponding to metrics.
+
+\code
+  paraprof
+\endcode
+
+The image below shows you the basic elements of \c paraprof for a single computational node problem.
+
+\image html TAUexample.jpg
+
+With more computational nodes, more bars will appear in the lower window as pictured below.
+
+\image html TAUmpiexample.jpg
+
+This image is courtesy of the University of Oregon, Performance Research Lab. For more information and help on ParaProf, visit this page in the TAU documentation.
+http://www.cs.uoregon.edu/research/tau/docs/newguide/bk03pt02.html
+
+\page advancedtau Advanced TAU
+\section additional_implementation Additional Implementation
+Using the TAU API, it is very simple to profile a block of code. This involves placing a pair of calls around the code you want to profile. An example is given below.
+
+\code
+    CALL TAU_STATIC_PHASE_START('CMISSGenericFunction')
+    CALL CMISSGenericFunction()
+    CALL TAU_STATIC_PHASE_STOP('CMISSGenericFunction')
+\endcode
+
+In the case of OpenCMISS, pairs of <tt>\#ifdef TAUPROF</tt> and \c #endif directives need to be added around every TAU call or group of TAU calls, so that the compiler knows to remove these if TAUPROF isnt set. An example of this is given below. An example of a profile start call in OpenCMISS can be found in CMISSInitialiseObj. Likewise, the corresponding profile stop call can be found in CMISSFinalise.
+
+\code
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('CMISSGenericFunction')
+#endif
+    CALL CMISSGenericFunction()
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('CMISSGenericFunction')
+#endif
+\endcode
+
+When calls are nested, a hierarchical structure forms and profile data can be view by viewing each phase as the sum of its child phases. However, be careful not to overlap these calls as this will cause errors within TAU. An example of this is given below.
+
+\code
+    CALL TAU_STATIC_PHASE_START('CMISSGenericFunction')
+    CALL TAU_STATIC_PHASE_START('Next Phase')
+    CALL CMISSGenericFunction()
+    CALL TAU_STATIC_PHASE_STOP('CMISSGenericFunction')
+    CALL TAU_STATIC_PHASE_STOP('Next Phase')
+\endcode
+
+About 150 calls of this format are currently present in OpenCMISS, but all scenarios have not been captured. If you encounter unallocated time (time allocated to the parent phase), this will likely be because functions you have used which have not been implemented with TAU and you will need to implement these types of TAU calls in these functions yourself (usually in opencmiss.f90).
+
+\section dynamicphases Dynamic Phases
+Dynamic phases allow the user to embed loop counters in the phase name. This is useful if you want to compare time spent in each loop or time spent in a routine across each iteration. An example of this is given below. An example of this can be found in OpenCMISS in LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE.
+
+\code
+    CHARACTER(13) :: CVAR
+    INTEGER :: LOOP_PHASE(2) = (/ 0, 0 /)
+    SAVE LOOP_PHASE
+
+    DO n=1,Total_Iterations
+      WRITE (CVAR,'(a11,i2)') 'Iteration ',n
+      CALL TAU_PHASE_CREATE_DYNAMIC(LOOP_PHASE,CVAR)
+      CALL TAU_PHASE_START(LOOP_PHASE)
+      CALL CMISSGenericFunction()
+      CALL TAU_PHASE_START(LOOP_PHASE)
+    ENDDO
+\endcode
+
+\section memory_tracking Memory Tracking
+TAU allows you to sample memory use at points within your code. Unfortunately, you can not label calls. This means that you can not view how your memory usage changes through your code. You can do this roughly however by just calling the memory tracking function once.
+\code
+  CALL TAU_TRACK_MEMORY_HERE()
+\endcode
+The memory information is found at the end of the \c pprof output. Run \c pprof in the same location you would run \c paraprof as described in the \ref visual section.
+\code
+  pprof
+\endcode
+
+\page future Future Development
+Listed below are a few ideas for future development of TAU within OpenCMISS
+- Separate TAU directory tree - Currently, there is no difference in directory structure between OpenCMISS built with or without TAU. This becomes inconvenient if you often switch between the two options as it usually requires a clean when switching. This may also result in a mismatch of TAUPROF setting between OpenCMISS and your example. Suggest moving OpenCMISS built with TAU into \c x86_64-tauprof or a similarly named folder and add \c tauprof into example executable filename.
+- More advanced Makefile linking for TAU library naming - The filename of the TAU library files depends on how TAU is compiled (i.e the flags set). Currently, the TAU library filename is hardcoded (libtau-phase-mpi-papi.a) in NewExampleMakefile. In the future, it would be more user friendly to have the Makefile search for the tau files and select one based on a set of rules.
+- Stricter phase naming conventions - Currently, naming is implemented in a rather unstructed manner developed for a select case. Perhaps a better, stricter naming structure would help new user jump into TAU.
+- More advanced profiling 
+   - Selective profiling - Have the ability to specify which functions to profile based on groupings. Maybe use an automated source instrumentor script like that supplied with TAU.
+   - Depth-based profiling - Have the ability to specify how deep you want to profile using some sort of specification similar to used in Diagnostics.
+   - Enter/Exit based profiling - Instrument Enter and Exit subroutines (which are called by every OpenCMISS function) with TAU and use some sort of function list file to select where to issue start and stop calls. This kind of file would hold pairs of function names which represent start and stop points (i.e a start call would be implemented in the enter of one function and the stop call would be implemented in the exit of another). This would need a intuitive, but strict format to avoid overlapping TAU calls. Inconsistent Enter/Exit arguments may cause problems with this approach. 
+
+\page tau_implemented TAU Implemented Functions
+
+\code
+SUBROUTINE CMISSFinalise
+FUNCTION CMISSFinaliseC
+SUBROUTINE CMISSInitialiseNumber
+SUBROUTINE CMISSInitialiseObj
+SUBROUTINE CMISSFieldsTypeFinalise
+SUBROUTINE CMISSFieldsTypeInitialise
+SUBROUTINE CMISSEquationsSetBoundaryConditionsAnalyticNumber
+SUBROUTINE CMISSEquationsSetBoundaryConditionsAnalyticObj
+SUBROUTINE CMISSBasisCreateFinishNumber
+SUBROUTINE CMISSBasisCreateFinishObj
+SUBROUTINE CMISSBasisCreateStartNumber
+SUBROUTINE CMISSBasisCreateStartObj
+SUBROUTINE CMISSCellMLCreateFinishNumber
+SUBROUTINE CMISSCellMLCreateFinishObj
+SUBROUTINE CMISSCellMLCreateStartNumber
+SUBROUTINE CMISSCellMLCreateStartObj
+SUBROUTINE CMISSCoordinateSystemCreateFinishNumber
+SUBROUTINE CMISSCoordinateSystemCreateFinishObj
+SUBROUTINE CMISSCoordinateSystemCreateStartNumber
+SUBROUTINE CMISSCoordinateSystemCreateStartObj
+SUBROUTINE CMISSEquationsSetIndependentCreateStartObj
+SUBROUTINE CMISSEquationsSetIndependentCreateFinishNumber
+SUBROUTINE CMISSEquationsSetIndependentCreateFinishObj
+SUBROUTINE CMISSEquationsSetIndependentCreateStartNumber
+SUBROUTINE CMISSEquationsSetDependentCreateFinishNumber
+SUBROUTINE CMISSEquationsSetDependentCreateFinishObj
+SUBROUTINE CMISSEquationsSetDependentCreateStartObj
+SUBROUTINE CMISSEquationsSetDependentCreateStartNumber
+SUBROUTINE CMISSEquationsSetBoundaryConditionsCreateFinishNumber
+SUBROUTINE CMISSEquationsSetBoundaryConditionsCreateFinishObj
+SUBROUTINE CMISSEquationsSetBoundaryConditionsCreateStartNumber
+SUBROUTINE CMISSEquationsSetBoundaryConditionsCreateStartObj
+SUBROUTINE CMISSEquationsSetCreateFinishNumber
+SUBROUTINE CMISSEquationsSetCreateFinishObj
+SUBROUTINE CMISSEquationsSetCreateStartNumber
+SUBROUTINE CMISSEquationsSetCreateStartObj
+SUBROUTINE CMISSFieldCreateFinishNumber
+SUBROUTINE CMISSFieldCreateFinishObj
+SUBROUTINE CMISSFieldCreateStartNumber
+SUBROUTINE CMISSFieldCreateStartObj
+SUBROUTINE CMISSGeneratedMeshCreateFinishNumber
+SUBROUTINE CMISSGeneratedMeshCreateFinishObj
+SUBROUTINE CMISSGeneratedMeshCreateStartNumber
+SUBROUTINE CMISSGeneratedMeshCreateStartObj
+SUBROUTINE CMISSDecompositionCreateFinishNumber
+SUBROUTINE CMISSDecompositionCreateFinishObj
+SUBROUTINE CMISSDecompositionCreateStartNumber
+SUBROUTINE CMISSDecompositionCreateStartObj
+SUBROUTINE CMISSMeshCreateFinishNumber
+SUBROUTINE CMISSMeshCreateFinishObj
+SUBROUTINE CMISSMeshCreateStartNumber
+SUBROUTINE CMISSMeshCreateStartObj
+SUBROUTINE CMISSNodesCreateFinishNumber
+SUBROUTINE CMISSNodesCreateFinishObj
+SUBROUTINE CMISSNodesCreateStartNumber
+SUBROUTINE CMISSNodesCreateStartObj
+SUBROUTINE CMISSProblemCreateFinishNumber
+SUBROUTINE CMISSProblemCreateFinishObj
+SUBROUTINE CMISSProblemCreateStartNumber
+SUBROUTINE CMISSProblemCreateStartObj
+SUBROUTINE CMISSProblemControlLoopCreateFinishNumber
+SUBROUTINE CMISSProblemControlLoopCreateFinishObj
+SUBROUTINE CMISSProblemControlLoopCreateStartNumber
+SUBROUTINE CMISSProblemControlLoopCreateStartObj
+SUBROUTINE CMISSProblemSolveNumber
+SUBROUTINE CMISSProblemSolveObj
+SUBROUTINE CMISSProblemSolverEquationsCreateFinishNumber
+SUBROUTINE CMISSProblemSolverEquationsCreateFinishObj
+SUBROUTINE CMISSProblemSolverEquationsCreateStartNumber
+SUBROUTINE CMISSProblemSolverEquationsCreateStartObj
+SUBROUTINE CMISSProblemSolversCreateFinishNumber
+SUBROUTINE CMISSProblemSolversCreateFinishObj
+SUBROUTINE CMISSProblemSolversCreateStartNumber
+SUBROUTINE CMISSProblemSolversCreateStartObj
+SUBROUTINE CMISSRegionCreateFinishNumber
+SUBROUTINE CMISSRegionCreateFinishObj
+SUBROUTINE CMISSRegionCreateStartNumber
+SUBROUTINE CMISSRegionCreateStartObj
+\endcode
+
+*/

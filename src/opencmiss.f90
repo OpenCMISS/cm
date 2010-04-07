@@ -54,6 +54,7 @@ MODULE OPENCMISS
   USE BASIS_ROUTINES
   USE BOUNDARY_CONDITIONS_ROUTINES
   USE CMISS
+  USE CMISS_CELLML
   USE COMP_ENVIRONMENT
   USE CONSTANTS
   USE CONTROL_LOOP_ROUTINES
@@ -69,7 +70,7 @@ MODULE OPENCMISS
   USE INTERFACE_ROUTINES
   USE INTERFACE_CONDITIONS_ROUTINES
   USE INTERFACE_EQUATIONS_ROUTINES
-  USE ISO_C_BINDING
+  !USE ISO_C_BINDING
   USE ISO_VARYING_STRING
   USE KINDS
   USE MESH_ROUTINES
@@ -100,6 +101,12 @@ MODULE OPENCMISS
     PRIVATE
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
   END TYPE CMISSBoundaryConditionsType
+
+  !>Contains information on a CellML environment.
+  TYPE CMISSCellMLType
+    PRIVATE
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+  END TYPE CMISSCellMLType
 
   !>Contains information on a control loop.
   TYPE CMISSControlLoopType
@@ -247,6 +254,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSBoundaryConditionsType,CMISSBoundaryConditionsTypeFinalise,CMISSBoundaryConditionsTypeInitialise
 
+  PUBLIC CMISSCellMLType,CMISSCellMLTypeFinalise,CMISSCellMLTypeInitialise
+
   PUBLIC CMISSControlLoopType,CMISSControlLoopTypeFinalise,CMISSControlLoopTypeInitialise
 
   PUBLIC CMISSCoordinateSystemType,CMISSCoordinateSystemTypeFinalise,CMISSCoordinateSystemTypeInitialise
@@ -376,6 +385,48 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSAnalyticAnalysisRmsErrorGetElementNumber
     MODULE PROCEDURE CMISSAnalyticAnalysisRmsErrorGetElementObj
   END INTERFACE !CMISSAnalyticAnalysisRmsErrorGetElement
+
+  !>Get integral of numerical values.
+  INTERFACE CMISSAnalyticAnalysisIntegralNumericalValueGet
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralNumericalValueGetNumber
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralNumericalValueGetObj
+  END INTERFACE !CMISSAnalyticAnalysisIntegralNumericalValueGet
+
+  !>Get integral of analytical values.
+  INTERFACE CMISSAnalyticAnalysisIntegralAnalyticValueGet
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralAnalyticValueGetNumber
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralAnalyticValueGetObj
+  END INTERFACE !CMISSAnalyticAnalysisIntegralAnalyticValueGet
+
+  !>Get integral of percentage errors.
+  INTERFACE CMISSAnalyticAnalysisIntegralPercentageErrorGet
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralPercentageErrorGetNumber
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralPercentageErrorGetObj
+  END INTERFACE !CMISSAnalyticAnalysisIntegralPercentageErrorGet
+
+  !>Get integral of absolute errors.
+  INTERFACE CMISSAnalyticAnalysisIntegralAbsoluteErrorGet
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralAbsoluteErrorGetNumber
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralAbsoluteErrorGetObj
+  END INTERFACE !CMISSAnalyticAnalysisIntegralAbsoluteErrorGet
+
+  !>Get integral of relative errors.
+  INTERFACE CMISSAnalyticAnalysisIntegralRelativeErrorGet
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralRelativeErrorGetNumber
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralRelativeErrorGetObj
+  END INTERFACE !CMISSAnalyticAnalysisIntegralRelativeErrorGet
+
+  !>Get integral of nid numerical errors.
+  INTERFACE CMISSAnalyticAnalysisIntegralNidNumericalValueGet
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralNidNumericalValueGetNumber
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralNidNumericalValueGetObj
+  END INTERFACE !CMISSAnalyticAnalysisIntegralNidNumericalValueGet
+
+  !>Get integral of nid errors.
+  INTERFACE CMISSAnalyticAnalysisIntegralNidErrorGet
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralNidErrorGetNumber
+    MODULE PROCEDURE CMISSAnalyticAnalysisIntegralNidErrorGetObj
+  END INTERFACE !CMISSAnalyticAnalysisIntegralNidErrorGet
   
   PUBLIC CMISSAnalyticAnalysisOutput
 
@@ -389,6 +440,11 @@ MODULE OPENCMISS
     & CMISSAnalyticAnalysisRelativeErrorGetConstant
 
   PUBLIC CMISSAnalyticAnalysisRmsErrorGetNode,CMISSAnalyticAnalysisRmsErrorGetElement
+
+  PUBLIC CMISSAnalyticAnalysisIntegralNumericalValueGet,CMISSAnalyticAnalysisIntegralAnalyticValueGet, &
+    & CMISSAnalyticAnalysisIntegralPercentageErrorGet,CMISSAnalyticAnalysisIntegralAbsoluteErrorGet, &
+    & CMISSAnalyticAnalysisIntegralRelativeErrorGet,CMISSAnalyticAnalysisIntegralNidNumericalValueGet, &
+    & CMISSAnalyticAnalysisIntegralNidErrorGet
  
 !!==================================================================================================================================
 !!
@@ -672,9 +728,15 @@ MODULE OPENCMISS
   !Temporary boundary flags (to be removed when general boundary object becomes available!)
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionFixedWall = BOUNDARY_CONDITION_FIXED_WALL
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionInletWall = BOUNDARY_CONDITION_FIXED_INLET
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionOutletWall = BOUNDARY_CONDITION_FIXED_OUTLET
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionMovedWall = BOUNDARY_CONDITION_MOVED_WALL
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionFreeWall = BOUNDARY_CONDITION_FREE_WALL
 
-
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionNeumann = BOUNDARY_CONDITION_NEUMANN
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionNeumannPoint = BOUNDARY_CONDITION_NEUMANN_POINT
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionDirichlet = BOUNDARY_CONDITION_DIRICHLET
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionCauchy = BOUNDARY_CONDITION_CAUCHY
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionRobin = BOUNDARY_CONDITION_ROBIN
 
   !>@}
   !>@}
@@ -727,6 +789,20 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSBoundaryConditionsSetNodeObj
   END INTERFACE !CMISSBoundaryConditionsSetNode
 
+!!  !>Add DOF and value to boundary condition object.
+!!  INTERFACE CMISSBoundaryConditionsAddDOFToBoundary
+!!    MODULE PROCEDURE CMISSBoundaryConditionsAddDOFToBoundaryNumber0
+!!    MODULE PROCEDURE CMISSBoundaryConditionsAddDOFToBoundaryNumber1
+!!    MODULE PROCEDURE CMISSBoundaryConditionsAddDOFToBoundaryObj0
+!!    MODULE PROCEDURE CMISSBoundaryConditionsAddDOFToBoundaryObj1
+!!  END INTERFACE !CMISSBoundaryConditionsAddDOFToBoundary
+
+!!  !>Sets the total number of Neumann boundaries.
+!!  INTERFACE CMISSBoundaryConditionsSetNumberOfBoundaries
+!!    MODULE PROCEDURE CMISSBoundaryConditionsSetNumberOfBoundariesNumber
+!!    MODULE PROCEDURE CMISSBoundaryConditionsSetNumberOfBoundariesObj
+!!  END INTERFACE !CMISSBoundaryConditionsSetNumberOfBoundaries
+
   !>Gets the boundary conditions for an equations set.
   INTERFACE CMISSEquationsSetBoundaryConditionsGet
     MODULE PROCEDURE CMISSEquationsSetBoundaryConditionsGetNumber
@@ -735,7 +811,11 @@ MODULE OPENCMISS
 
   PUBLIC CMISSBoundaryConditionNotFixed,CMISSBoundaryConditionFixed,CMISSBoundaryConditionMixed
   !Temporary boundary flags (to be removed when general boundary object becomes available!)
-  PUBLIC CMISSBoundaryConditionFixedWall,CMISSBoundaryConditionInletWall,CMISSBoundaryConditionMovedWall
+  PUBLIC CMISSBoundaryConditionFixedWall,CMISSBoundaryConditionInletWall,CMISSBoundaryConditionMovedWall, &
+    & CMISSBoundaryConditionFreeWall,CMISSBoundaryConditionOutletWall
+
+  PUBLIC CMISSBoundaryConditionNeumann,CMISSBoundaryConditionNeumannPoint,CMISSBoundaryConditionDirichlet
+  PUBLIC CMISSBoundaryConditionCauchy,CMISSBoundaryConditionRobin
 
   PUBLIC CMISSBoundaryConditionsDestroy
 
@@ -745,7 +825,242 @@ MODULE OPENCMISS
 
   PUBLIC CMISSBoundaryConditionsAddNode,CMISSBoundaryConditionsSetNode
 
-  PUBLIC CMISSEquationsSetBoundaryConditionsGet
+  PUBLIC CMISSEquationsSetBoundaryConditionsGet !!,CMISSBoundaryConditionsAddDOFToBoundary
+
+!!  PUBLIC CMISSBoundaryConditionsSetNumberOfBoundaries
+
+!!==================================================================================================================================
+!!
+!! CMISS
+!!
+!!==================================================================================================================================
+  
+  !Module parameters
+  !> \addtogroup OPENCMISS_CMISSConstants OPENCMISS::CMISS::Constants
+  !> \brief CMISS constants.
+  !>@{  
+  !> \addtogroup OPENCMISS_CMISSErrorHandlingModes OPENCMISS::CMISS::ErrorHandlingModes
+  !> \brief CMISS error handling mode parameters
+  !> \see OPENCMISS::CMISS,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISSReturnErrorCode = CMISS_RETURN_ERROR_CODE !<Just return the error code \see OPENCMISS_CMISSErrorHandlingModes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSOutputError = CMISS_OUTPUT_ERROR !<Output the error traceback and return the error code \see OPENCMISS_CMISSErrorHandlingModes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSTrapError = CMISS_TRAP_ERROR!<Trap the error by outputing the error traceback and stopping the program \see OPENCMISS_CMISSErrorHandlingModes,OPENCMISS
+  !>@}
+  !>@}
+ 
+  !Module types
+  
+  !Module variables
+  
+  !Interfaces
+
+  PUBLIC CMISSReturnErrorCode,CMISSOutputError,CMISSTrapError
+
+  PUBLIC CMISSErrorHandlingModeGet,CMISSErrorHandlingModeSet
+  
+!!==================================================================================================================================
+!!
+!! CMISS_CELLML
+!!
+!!==================================================================================================================================
+  
+  !Module parameters
+
+  !> \addtogroup OPENCMISS_CellMLConstants OPENCMISS::CellML::Constants
+  !> \brief CellML constants.
+  !>@{  
+  !> \addtogroup OPENCMISS_CellMLFieldTypes OPENCMISS::CellML::FieldTypes
+  !> \brief CellML field type parameters.
+  !> \see OPENCMISS::CellML,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISSCellMLModelsFieldType = CELLML_MODELS_FIELD_TYPE !<CellML models field type \see OPENCMISS_CellMLFieldTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSCellMLStateFieldType = CELLML_STATE_FIELD_TYPE !<CellML state field type \see OPENCMISS_CellMLFieldTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSCellMLIntermediateFieldType = CELLML_INTERMEDIATE_FIELD_TYPE !<CellML intermediate field type \see OPENCMISS_CellMLFieldTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSCellMLParametersFieldType = CELLML_PARAMETERS_FIELD_TYPE !<CellML parameters field type \see OPENCMISS_CellMLFieldTypes,OPENCMISS
+  !>@}
+  !>@}
+  
+  !Module types
+  
+  !Module variables
+  
+  !Interfaces
+    
+  !>Finishes the creation of a CellML environment. \see OPENCMISS::CMISSCellMLCreateStart
+  INTERFACE CMISSCellMLCreateFinish
+    MODULE PROCEDURE CMISSCellMLCreateFinishNumber
+    MODULE PROCEDURE CMISSCellMLCreateFinishObj
+  END INTERFACE !CMISSCellMLCreateFinish
+
+  !>Starts the creation of a CellML environment. \see OPENCMISS::CMISSCellMLCreateFinish
+  INTERFACE CMISSCellMLCreateStart
+    MODULE PROCEDURE CMISSCellMLCreateStartNumber
+    MODULE PROCEDURE CMISSCellMLCreateStartObj
+  END INTERFACE !CMISSCellMLCreateStart
+
+  !>Destroys a CellML environment.
+  INTERFACE CMISSCellMLDestroy
+    MODULE PROCEDURE CMISSCellMLDestroyNumber
+    MODULE PROCEDURE CMISSCellMLDestroyObj
+  END INTERFACE !CMISSCellMLDestroy
+
+  !>Finishes the creation of CellML models. \see OPENCMISS::CMISSCellMLModelsCreateStart
+  INTERFACE CMISSCellMLModelsCreateFinish
+    MODULE PROCEDURE CMISSCellMLModelsCreateFinishNumber
+    MODULE PROCEDURE CMISSCellMLModelsCreateFinishObj
+  END INTERFACE !CMISSCellMLModelsCreateFinish
+
+  !>Starts the creation of CellML models. \see OPENCMISS::CMISSCellMLModelsCreateFinish
+  INTERFACE CMISSCellMLModelsCreateStart
+    MODULE PROCEDURE CMISSCellMLModelsCreateStartNumber
+    MODULE PROCEDURE CMISSCellMLModelsCreateStartObj
+  END INTERFACE !CMISSCellMLModelsCreateStart
+
+  !>Imports the specified CellML model into a CellML models environment. 
+  INTERFACE CMISSCellMLModelImport
+    MODULE PROCEDURE CMISSCellMLModelImportNumberC
+    MODULE PROCEDURE CMISSCellMLModelImportObjC
+    MODULE PROCEDURE CMISSCellMLModelImportNumberVS
+    MODULE PROCEDURE CMISSCellMLModelImportObjVS
+  END INTERFACE !CMISSCellMLModelImport
+
+  !>Finishes the creation of CellML models field. \see OPENCMISS::CMISSCellMLModelsFieldCreateStart
+  INTERFACE CMISSCellMLModelsFieldCreateFinish
+    MODULE PROCEDURE CMISSCellMLModelsFieldCreateFinishNumber
+    MODULE PROCEDURE CMISSCellMLModelsFieldCreateFinishObj
+  END INTERFACE !CMISSCellMLModelsFieldCreateFinish
+
+  !>Starts the creation of CellML models field. \see OPENCMISS::CMISSCellMLModelsFieldCreateFinish
+  INTERFACE CMISSCellMLModelsFieldCreateStart
+    MODULE PROCEDURE CMISSCellMLModelsFieldCreateStartNumber
+    MODULE PROCEDURE CMISSCellMLModelsFieldCreateStartObj
+  END INTERFACE !CMISSCellMLModelsFieldCreateStart
+
+  !>Returns the CellML models field for a CellML environment. 
+  INTERFACE CMISSCellMLModelsFieldGet
+    MODULE PROCEDURE CMISSCellMLModelsFieldGetNumber
+    MODULE PROCEDURE CMISSCellMLModelsFieldGetObj
+  END INTERFACE !CMISSCellMLModelsFieldGet
+  
+  !>Finishes the creation of CellML state field. \see OPENCMISS::CMISSCellMLStateFieldCreateStart
+  INTERFACE CMISSCellMLStateFieldCreateFinish
+    MODULE PROCEDURE CMISSCellMLStateFieldCreateFinishNumber
+    MODULE PROCEDURE CMISSCellMLStateFieldCreateFinishObj
+  END INTERFACE !CMISSCellMLStateFieldCreateFinish
+
+  !>Starts the creation of CellML state field. \see OPENCMISS::CMISSCellMLStateFieldCreateFinish
+  INTERFACE CMISSCellMLStateFieldCreateStart
+    MODULE PROCEDURE CMISSCellMLStateFieldCreateStartNumber
+    MODULE PROCEDURE CMISSCellMLStateFieldCreateStartObj
+  END INTERFACE !CMISSCellMLStateFieldCreateStart
+
+  !>Returns the CellML state field for a CellML environment. 
+  INTERFACE CMISSCellMLStateFieldGet
+    MODULE PROCEDURE CMISSCellMLStateFieldGetNumber
+    MODULE PROCEDURE CMISSCellMLStateFieldGetObj
+  END INTERFACE !CMISSCellMLStateFieldGet
+
+  !>Returns the component for a given CellML field that corresponds to the speicifed CellML URI. 
+  INTERFACE CMISSCellMLFieldComponentGet
+    MODULE PROCEDURE CMISSCellMLFieldComponentGetNumberC
+    MODULE PROCEDURE CMISSCellMLFieldComponentGetObjC
+    MODULE PROCEDURE CMISSCellMLFieldComponentGetNumberVS
+    MODULE PROCEDURE CMISSCellMLFieldComponentGetObjVS
+  END INTERFACE !CMISSCellMLFieldComponentGet
+
+  !>Adds a specific variable to the CellML environments intermediate field.
+  INTERFACE CMISSCellMLIntermediateFieldAdd
+    MODULE PROCEDURE CMISSCellMLIntermediateFieldAddNumberC
+    MODULE PROCEDURE CMISSCellMLIntermediateFieldAddObjC
+    MODULE PROCEDURE CMISSCellMLIntermediateFieldAddNumberVS
+    MODULE PROCEDURE CMISSCellMLIntermediateFieldAddObjVS
+  END INTERFACE !CMISSCellMLIntermediateFieldAdd
+  
+  !>Finishes the creation of CellML intermediate field. \see OPENCMISS::CMISSCellMLIntermediateFieldCreateStart
+  INTERFACE CMISSCellMLIntermediateFieldCreateFinish
+    MODULE PROCEDURE CMISSCellMLIntermediateFieldCreateFinishNumber
+    MODULE PROCEDURE CMISSCellMLIntermediateFieldCreateFinishObj
+  END INTERFACE !CMISSCellMLIntermediateFieldCreateFinish
+
+  !>Starts the creation of CellML intermediate field. \see OPENCMISS::CMISSCellMLIntermediateFieldCreateFinish
+  INTERFACE CMISSCellMLIntermediateFieldCreateStart
+    MODULE PROCEDURE CMISSCellMLIntermediateFieldCreateStartNumber
+    MODULE PROCEDURE CMISSCellMLIntermediateFieldCreateStartObj
+  END INTERFACE !CMISSCellMLIntermediateFieldCreateStart
+
+  !>Returns the CellML intermediate field for a CellML environment. 
+  INTERFACE CMISSCellMLIntermediateFieldGet
+    MODULE PROCEDURE CMISSCellMLIntermediateFieldGetNumber
+    MODULE PROCEDURE CMISSCellMLIntermediateFieldGetObj
+  END INTERFACE !CMISSCellMLIntermediateFieldGet
+
+  !>Adds a specific variable to the CellML environments parameters.
+  INTERFACE CMISSCellMLParameterAdd
+    MODULE PROCEDURE CMISSCellMLParameterAddNumberC
+    MODULE PROCEDURE CMISSCellMLParameterAddObjC
+    MODULE PROCEDURE CMISSCellMLParameterAddNumberVS
+    MODULE PROCEDURE CMISSCellMLParameterAddObjVS
+  END INTERFACE !CMISSCellMLParameterAdd
+  
+  !>Finishes the creation of CellML parameters. \see OPENCMISS::CMISSCellMLParametersCreateStart
+  INTERFACE CMISSCellMLParametersCreateFinish
+    MODULE PROCEDURE CMISSCellMLParametersCreateFinishNumber
+    MODULE PROCEDURE CMISSCellMLParametersCreateFinishObj
+  END INTERFACE !CMISSCellMLParametersCreateFinish
+
+  !>Starts the creation of CellML parameters. \see OPENCMISS::CMISSCellMLParametersCreateFinish
+  INTERFACE CMISSCellMLParametersCreateStart
+    MODULE PROCEDURE CMISSCellMLParametersCreateStartNumber
+    MODULE PROCEDURE CMISSCellMLParametersCreateStartObj
+  END INTERFACE !CMISSCellMLParametersCreateStart
+
+  !>Finishes the creation of CellML parameters field. \see OPENCMISS::CMISSCellMLParametersFieldCreateStart
+  INTERFACE CMISSCellMLParametersFieldCreateFinish
+    MODULE PROCEDURE CMISSCellMLParametersFieldCreateFinishNumber
+    MODULE PROCEDURE CMISSCellMLParametersFieldCreateFinishObj
+  END INTERFACE !CMISSCellMLParametersFieldCreateFinish
+
+  !>Starts the creation of CellML parameters field. \see OPENCMISS::CMISSCellMLParametersFieldCreateFinish
+  INTERFACE CMISSCellMLParametersFieldCreateStart
+    MODULE PROCEDURE CMISSCellMLParametersFieldCreateStartNumber
+    MODULE PROCEDURE CMISSCellMLParametersFieldCreateStartObj
+  END INTERFACE !CMISSCellMLParametersFieldCreateStart
+
+  !>Returns the CellML parameters field for a CellML environment. 
+  INTERFACE CMISSCellMLParametersFieldGet
+    MODULE PROCEDURE CMISSCellMLParametersFieldGetNumber
+    MODULE PROCEDURE CMISSCellMLParametersFieldGetObj
+  END INTERFACE !CMISSCellMLParametersFieldGet
+
+  !>Validate and instantiate the specified CellML environment. 
+  INTERFACE CMISSCellMLGenerate
+    MODULE PROCEDURE CMISSCellMLGenerateNumber
+    MODULE PROCEDURE CMISSCellMLGenerateObj
+  END INTERFACE !CMISSCellMLGenerate
+
+  PUBLIC CMISSCellMLModelsFieldType,CMISSCellMLStateFieldType,CMISSCellMLIntermediateFieldType,CMISSCellMLParametersFieldType
+  
+  PUBLIC CMISSCellMLCreateFinish,CMISSCellMLCreateStart
+
+  PUBLIC CMISSCellMLDestroy
+
+  PUBLIC CMISSCellMLModelsCreateFinish,CMISSCellMLModelsCreateStart,CMISSCellMLModelImport
+
+  PUBLIC CMISSCellMLModelsFieldCreateFinish,CMISSCellMLModelsFieldCreateStart,CMISSCellMLModelsFieldGet
+
+  PUBLIC CMISSCellMLStateFieldCreateFinish,CMISSCellMLStateFieldCreateStart,CMISSCellMLStateFieldGet
+
+  PUBLIC CMISSCellMLFieldComponentGet
+
+  PUBLIC CMISSCellMLIntermediateFieldAdd,CMISSCellMLIntermediateFieldCreateFinish,CMISSCellMLIntermediateFieldCreateStart, &
+    & CMISSCellMLIntermediateFieldGet
+
+  PUBLIC CMISSCellMLParameterAdd,CMISSCellMLParametersCreateFinish,CMISSCellMLParametersCreateStart
+
+  PUBLIC CMISSCellMLParametersFieldCreateFinish,CMISSCellMLParametersFieldCreateStart,CMISSCellMLParametersFieldGet
+
+  PUBLIC CMISSCellMLGenerate
 
 !!==================================================================================================================================
 !!
@@ -1244,6 +1559,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetModalClass = EQUATIONS_SET_MODAL_CLASS !<Modal equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS     
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetFittingClass = EQUATIONS_SET_FITTING_CLASS !<Fitting equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS     
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetOptimisationClass = EQUATIONS_SET_OPTIMISATION_CLASS !<Optimisation equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS     
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiPhysicsClass = EQUATIONS_SET_MULTI_PHYSICS_CLASS !<Multi Physics equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS   
   !>@}
   !> \addtogroup OPENCMISS_EquationsSetTypes OPENCMISS::EquationsSet::Types
   !> \brief Equations set Types.
@@ -1270,6 +1586,12 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetBidomainEquationType = EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE !<Bidomain equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticModalType = EQUATIONS_SET_LINEAR_ELASTIC_MODAL_TYPE !<Linear elasticity modal equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetGalerkinProjectionEquationType = EQUATIONS_SET_GALERKIN_PROJECTION_EQUATION_TYPE !<Galerkin projection equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityDarcyType = EQUATIONS_SET_FINITE_ELASTICITY_DARCY_TYPE !<Finite Elasticity Darcy equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityStokesType = EQUATIONS_SET_FINITE_ELASTICITY_STOKES_TYPE !<Finite Elasticity Stokes equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityNavierStokesType = &
+    & EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_TYPE !<Finite Elasticity Navier Stokes equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDiffusionDiffusionType = EQUATIONS_SET_DIFFUSION_DIFFUSION_TYPE !<Diffusion Diffusion equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDiffusionAdvectionDiffusionType = EQUATIONS_SET_DIFFUSION_ADVECTION_DIFFUSION_TYPE !<Diffusion Advection Diffusion equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_EquationsSetSubtypes OPENCMISS::EquationsSet::Subtypes
   !> \brief Equations set subtypes.
@@ -1283,11 +1605,15 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetPlateSubtype = EQUATIONS_SET_PLATE_SUBTYPE !<Plate linear elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetShellSubtype = EQUATIONS_SET_SHELL_SUBTYPE !<Shell linear elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMooneyRivlinSubtype = EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE !< Mooney-Rivlin constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetActiveContractionSubtype =&
+    & EQUATIONS_SET_ACTIVECONTRACTION_SUBTYPE !< Active contraction/costa-based law with quasistatic time loop for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetIsotropicExponentialSubtype = EQUATIONS_SET_ISOTROPIC_EXPONENTIAL_SUBTYPE !< Isotropic exponential constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetTransverseIsotropicExponentialSubtype = &
     & EQUATIONS_SET_TRANSVERSE_ISOTROPIC_EXPONENTIAL_SUBTYPE !< Transverse isotropic exponential constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetOrthotropicMaterialCostaSubtype = &
     & EQUATIONS_SET_ORTHOTROPIC_MATERIAL_COSTA_SUBTYPE !< Orthotropic Costa constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetCompressibleFiniteElasticitySubtype= &
+    & EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE !<Compressible version for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStaticStokesSubtype = EQUATIONS_SET_STATIC_STOKES_SUBTYPE !<Static Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLaplaceStokesSubtype = EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE !<Laplace type Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetTransientStokesSubtype = EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE !<Transient Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -1307,7 +1633,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardLaplaceSubtype = EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE !<Standard Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetGeneralisedLaplaceSubtype = EQUATIONS_SET_GENERALISED_LAPLACE_SUBTYPE !<Generalised Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMovingMeshLaplaceSubtype = EQUATIONS_SET_MOVING_MESH_LAPLACE_SUBTYPE !<Moving mesh Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetVectorSourcePoissonSubtype = EQUATIONS_SET_VECTOR_SOURCE_POISSON_SUBTYPE !<Vector source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesPoissonSubtype = EQUATIONS_SET_STOKES_POISSON_SUBTYPE !<Vector source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesPoissonSubtype = EQUATIONS_SET_NAVIER_STOKES_POISSON_SUBTYPE !<Vector source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourcePoissonSubtype = EQUATIONS_SET_CONSTANT_SOURCE_POISSON_SUBTYPE !<Constant source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourcePoissonSubtype = EQUATIONS_SET_LINEAR_SOURCE_POISSON_SUBTYPE !<Linear source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuadraticSourcePoissonSubtype = EQUATIONS_SET_QUADRATIC_SOURCE_POISSON_SUBTYPE !<Quadratic source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -1319,6 +1646,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuadraticSourceDiffusionSubtype = EQUATIONS_SET_QUADRATIC_SOURCE_DIFFUSION_SUBTYPE !<Quadratic source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetExponentialSourceDiffusionSubtype = &
     & EQUATIONS_SET_EXPONENTIAL_SOURCE_DIFFUSION_SUBTYPE !<Exponential source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceAdvectionDiffusionSubtype = & 
     & EQUATIONS_SET_NO_SOURCE_ADVECTION_DIFFUSION_SUBTYPE !<No source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourceAdvectionDiffusionSubtype = &
@@ -1336,6 +1664,24 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & EQUATIONS_SET_CONSTANT_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE !<Constant source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourceStaticAdvecDiffSubtype = &
     & EQUATIONS_SET_LINEAR_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE !<Linear source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceAdvectionDiffSUPGSubtype = & 
+    & EQUATIONS_SET_NO_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE !<No source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourceAdvectionDiffSUPGSubtype = &
+    & EQUATIONS_SET_CONSTANT_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE !<Constant source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourceAdvectionDiffSUPGSubtype = &
+    & EQUATIONS_SET_LINEAR_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE !<Linear source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuadSourceAdvectionDiffSUPGSubtype = &
+    & EQUATIONS_SET_QUAD_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE !<Quadratic source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetExpSourceAdvectionDiffSUPGSubtype = &
+    & EQUATIONS_SET_EXP_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE !<Exponential source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+
+INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype = & 
+    & EQUATIONS_SET_NO_SOURCE_STATIC_ADVEC_DIFF_SUPG_SUBTYPE !<No source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourceStaticAdvecDiffSUPGSubtype = &
+    & EQUATIONS_SET_CONSTANT_SOURCE_STATIC_ADVEC_DIFF_SUPG_SUBTYPE !<Constant source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourceStaticAdvecDiffSUPGSubtype = &
+    & EQUATIONS_SET_LINEAR_SOURCE_STATIC_ADVEC_DIFF_SUPG_SUBTYPE !<Linear source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetFirstBidomainSubtype = EQUATIONS_SET_FIRST_BIDOMAIN_SUBTYPE !<First bidomain equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetSecondBidomainSubtype = EQUATIONS_SET_SECOND_BIDOMAIN_SUBTYPE !<Second bidomain equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -1345,6 +1691,13 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & EQUATIONS_SET_GENERALISED_GALERKIN_PROJECTION_SUBTYPE !<Generalised Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMatPropertiesGalerkinProjectionSubtype = &
     & EQUATIONS_SET_MAT_PROPERTIES_GALERKIN_PROJECTION_SUBTYPE !<Material Properties Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardElasticityDarcySubtype = EQUATIONS_SET_STANDARD_ELASTICITY_DARCY_SUBTYPE !<Standard Elasticity Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetCoupledSourceDiffusionDiffusionSubtype = &
+    & EQUATIONS_SET_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE !<Coupled source diffusion-diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetCoupledSourceDiffusionAdvecDiffusionSubtype = &
+    & EQUATIONS_SET_COUPLED_SOURCE_DIFFUSION_ADVEC_DIFFUSION_SUBTYPE !<Coupled source diffusion & advection-diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+
   !>@}
   !> \addtogroup OPENCMISS_EquationsSetSolutionMethods OPENCMISS::EquationsSet::SolutionMethods
   !> \brief The solution method parameters
@@ -1376,12 +1729,20 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{  
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonTwoDim1 = EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_1 !<u=ln(4/(x+y+1^2)) \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonTwoDim2 = EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonTwoDim3 = EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonThreeDim1 = EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_1 !<u=ln(6/(x+y+z+1^2)) \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonThreeDim2 = EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonThreeDim3 = EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSTestCase1 = TEST_CASE_1 !<Test case setup for testing of Neumann boundary conditions
   !>@}
   !> \addtogroup OPENCMISS_DiffusionAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Diffusion
   !> \brief The analytic function types for a diffusion equation.
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{  
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetDiffusionTwoDim1 = EQUATIONS_SET_DIFFUSION_EQUATION_TWO_DIM_1 !<u=exp(-kt)*sin(sqrt(k)*(x*cos(phi)+y*sin(phi))) \see OPENCMISS_EquationsSetDiffusionAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourceDiffusionThreeDim1 = &
+    & EQUATIONS_SET_LINEAR_SOURCE_DIFFUSION_EQUATION_THREE_DIM_1 
   !>@}
   !> \addtogroup OPENCMISS_AdvectionDiffusionAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::AdvectionDiffusion
   !> \brief The analytic function types for an advection-diffusion equation.
@@ -1443,7 +1804,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSEquationsSetNoClass,CMISSEquationsSetElasticityClass,CMISSEquationsSetFluidMechanicsClass, &
     & CMISSEquationsSetElectroMechanicsClass,CMISSEquationsSetClassicalFieldClass,CMISSEquationsSetBioelectricsClass, &
-    & CMISSEquationsSetModalClass,CMISSEquationsSetFittingClass,CMISSEquationsSetOptimisationClass
+    & CMISSEquationsSetModalClass,CMISSEquationsSetFittingClass,CMISSEquationsSetOptimisationClass, &
+    & CMISSEquationsSetMultiPhysicsClass
 
   PUBLIC CMISSEquationsSetNoType,CMISSEquationsSetLinearElasticityType,CMISSEquationsSetFiniteElasticityType, &
     & CMISSEquationsSetStokesEquationType,CMISSEquationsSetNavierStokesEquationType,CMISSEquationsSetDarcyEquationType, &
@@ -1454,11 +1816,16 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & CMISSEquationsSetMonodomainEquationType,CMISSEquationsSetBidomainEquationType,CMISSEquationsSetLinearElasticModalType, &
     & CMISSEquationsSetGalerkinProjectionEquationType
 
+  PUBLIC CMISSEquationsSetFiniteElasticityDarcyType, &
+    & CMISSEquationsSetFiniteElasticityStokesType, CMISSEquationsSetFiniteElasticityNavierStokesType, &
+    & CMISSEquationsSetDiffusionDiffusionType, CMISSEquationsSetDiffusionAdvectionDiffusionType
+
   PUBLIC CMISSEquationsSetNoSubtype,CMISSEquationsSetThreeDimensionalSubtype,CMISSEquationsSetPlaneStressSubtype, &
     & CMISSEquationsSetPlaneStrainSubtype,CMISSEquationsSetOneDimensionalSubtype,CMISSEquationsSetPlateSubtype, &
     & CMISSEquationsSetShellSubtype, &
-    & CMISSEquationsSetMooneyRivlinSubtype,CMISSEquationsSetIsotropicExponentialSubtype, &
-    & CMISSEquationsSetTransverseIsotropicExponentialSubtype, &
+    & CMISSEquationsSetMooneyRivlinSubtype,CMISSEquationsSetIsotropicExponentialSubtype,CMISSEquationsSetActiveContractionSubtype,&
+    & CMISSEquationsSetTransverseIsotropicExponentialSubtype, CMISSEquationsSetOrthotropicMaterialCostaSubtype, &
+    & CMISSEquationsSetCompressibleFiniteElasticitySubtype, &
     & CMISSEquationsSetStaticStokesSubtype, CMISSEquationsSetLaplaceStokesSubtype, &
     & CMISSEquationsSetTransientStokesSubtype,CMISSEquationsSetALEStokesSubtype,CMISSEquationsSetALENavierStokesSubtype, &
     & CMISSEquationsSetOptimisedStokesSubtype,CMISSEquationsSetStaticNavierStokesSubtype, &
@@ -1467,7 +1834,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & CMISSEquationsSetQuasistaticDarcySubtype,CMISSEquationsSetALEDarcySubtype,CMISSEquationsSetTransientDarcySubtype, &
     & CMISSEquationsSetStandardLaplaceSubtype,CMISSEquationsSetMovingMeshLaplaceSubtype, &
     & CMISSEquationsSetGeneralisedLaplaceSubtype,CMISSEquationsSetConstantSourcePoissonSubtype, &
-    & CMISSEquationsSetVectorSourcePoissonSubtype, &
+    & CMISSEquationsSetStokesPoissonSubtype, CMISSEquationsSetNavierStokesPoissonSubtype, &
     & CMISSEquationsSetLinearSourcePoissonSubtype,CMISSEquationsSetQuadraticSourcePoissonSubtype, &
     & CMISSEquationsSetExponentialSourcePoissonSubtype,CMISSEquationsSetNoSourceHelmholtzSubtype, &
     & CMISSEquationsSetNoSourceDiffusionSubtype,CMISSEquationsSetConstantSourceDiffusionSubtype, &
@@ -1476,10 +1843,16 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & CMISSEquationsSetConstantSourceAdvectionDiffusionSubtype,CMISSEquationsSetLinearSourceAdvectionDiffusionSubtype, &
     & CMISSEquationsSetQuadraticSourceAdvectionDiffusionSubtype,CMISSEquationsSetExponentialSourceAdvectionDiffusionSubtype, &
     & CMISSEquationsSetNoSourceStaticAdvecDiffSubtype, CMISSEquationsSetConstantSourceStaticAdvecDiffSubtype, &
-    & CMISSEquationsSetLinearSourceStaticAdvecDiffSubtype, CMISSEquationsSetPGMStokesSubtype, &
+    & CMISSEquationsSetLinearSourceStaticAdvecDiffSubtype, &
+    & CMISSEquationsSetNoSourceAdvectionDiffSUPGSubtype, CMISSEquationsSetConstantSourceAdvectionDiffSUPGSubtype, &
+    & CMISSEquationsSetLinearSourceAdvectionDiffSUPGSubtype, CMISSEquationsSetQuadSourceAdvectionDiffSUPGSubtype, &
+    & CMISSEquationsSetExpSourceAdvectionDiffSUPGSubtype, CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype, &
+    & CMISSEquationsSetConstantSourceStaticAdvecDiffSUPGSubtype, CMISSEquationsSetLinearSourceStaticAdvecDiffSUPGSubtype, &
+    & CMISSEquationsSetPGMStokesSubtype, &
     & CMISSEquationsSetFirstBidomainSubtype,CMISSEquationsSetSecondBidomainSubtype, &
     & CMISSEquationsSetStandardGalerkinProjectionSubtype,CMISSEquationsSetGeneralisedGalerkinProjectionSubtype, &
-    & CMISSEquationsSetMatPropertiesGalerkinProjectionSubtype,CMISSEquationsSetPGMNavierStokesSubtype
+    & CMISSEquationsSetMatPropertiesGalerkinProjectionSubtype,CMISSEquationsSetPGMNavierStokesSubtype, &
+    & CMISSEquationsSetCoupledSourceDiffusionDiffusionSubtype, CMISSEquationsSetCoupledSourceDiffusionAdvecDiffusionSubtype
 
   PUBLIC CMISSEquationsSetFEMSolutionMethod,CMISSEquationsSetBEMSolutionMethod,CMISSEquationsSetFDSolutionMethod, &
     & CMISSEquationsSetFVSolutionMethod,CMISSEquationsSetGFEMSolutionMethod,CMISSEquationsSetGFDSolutionMethod, &
@@ -1491,11 +1864,13 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSEquationsSetLinearElasticityEquationOneDim1,CMISSEquationsSetLinearElasticityEquationTwoDim1, &
     & CMISSEquationsSetLinearElasticityEquationThreeDim1
 
-  PUBLIC CMISSEquationsSetDiffusionTwoDim1
+  PUBLIC CMISSEquationsSetDiffusionTwoDim1,CMISSEquationsSetLinearSourceDiffusionThreeDim1
 
   PUBLIC CMISSEquationsSetAdvectionDiffusionTwoDim1
 
-  PUBLIC CMISSEquationsSetPoissonTwoDim1
+  PUBLIC CMISSEquationsSetPoissonTwoDim1,CMISSEquationsSetPoissonTwoDim2,CMISSEquationsSetPoissonTwoDim3
+  PUBLIC CMISSEquationsSetPoissonThreeDim1,CMISSEquationsSetPoissonThreeDim2,CMISSEquationsSetPoissonThreeDim3
+  PUBLIC CMISSTestCase1
 
   PUBLIC CMISSEquationsSetStokesTwoDim1,CMISSEquationsSetStokesTwoDim2,CMISSEquationsSetStokesTwoDim3
   PUBLIC CMISSEquationsSetStokesThreeDim1,CMISSEquationsSetStokesThreeDim2,CMISSEquationsSetStokesThreeDim3
@@ -1785,7 +2160,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSFieldUVariableType = FIELD_U_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldDelUDelNVariableType = FIELD_DELUDELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldDelUDelTVariableType = FIELD_DELUDELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDel2UDelT2VariableType = FIELD_DEL2UDELT2_VARIABLE_TYPE !<Second type derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldDel2UDelT2VariableType = FIELD_DEL2UDELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldVVariableType = FIELD_V_VARIABLE_TYPE !<Second standard variable type i.e., v \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldDelVDelNVariableType = FIELD_DELVDELN_VARIABLE_TYPE !<Second normal variable type i.e., dv/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
   !>@}
@@ -2200,12 +2575,6 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSFieldScalingTypeSetObj
   END INTERFACE !CMISSFieldScalingTypeSet
     
-  !>Sets/changes the scaling type for a field and locks it.  
-  INTERFACE CMISSFieldScalingTypeSetAndLock
-    MODULE PROCEDURE CMISSFieldScalingTypeSetAndLockNumber
-    MODULE PROCEDURE CMISSFieldScalingTypeSetAndLockObj
-  END INTERFACE !CMISSFieldScalingTypeSetAndLock
-    
   !>Returns the type for a field. 
   INTERFACE CMISSFieldTypeGet
     MODULE PROCEDURE CMISSFieldTypeGetNumber
@@ -2318,7 +2687,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSFieldParametersToFieldParametersComponentCopy
 
-  PUBLIC CMISSFieldScalingTypeGet,CMISSFieldScalingTypeSet,CMISSFieldScalingTypeSetAndLock
+  PUBLIC CMISSFieldScalingTypeGet,CMISSFieldScalingTypeSet
 
   PUBLIC CMISSFieldTypeGet,CMISSFieldTypeSet
 
@@ -3083,6 +3452,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSProblemModalClass = PROBLEM_MODAL_CLASS !<Modal problem class \see OPENCMISS_ProblemClasses,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemFittingClass = PROBLEM_FITTING_CLASS !<Fitting problem class \see OPENCMISS_ProblemClasses,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemOptimisationClass = PROBLEM_OPTIMISATION_CLASS !<Optimisation problem class \see OPENCMISS_ProblemClasses,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISSProblemMultiPhysicsClass = PROBLEM_MULTI_PHYSICS_CLASS !<Multi physics problem class \see OPENCMISS_ProblemClasses,OPENCMISS 
   !>@}
   !> \addtogroup OPENCMISS_ProblemTypes OPENCMISS::Problem::Types
   !> \brief Problem Types.
@@ -3109,6 +3479,11 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSProblemBidomainEquationType = PROBLEM_BIDOMAIN_EQUATION_TYPE !<Bidomain equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemLinearElasticModalType = PROBLEM_LINEAR_ELASTIC_MODAL_TYPE !<Linear elastic modal problem type \see OPENCMISS_ProblemTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemGalerkinProjectionType = PROBLEM_GALERKIN_PROJECTION_TYPE !<Galerkin projection problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISSProblemFiniteElasticityDarcyType = PROBLEM_FINITE_ELASTICITY_DARCY_TYPE !<Finite Elasticity Darcy problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISSProblemFiniteElasticityStokesType = PROBLEM_FINITE_ELASTICITY_STOKES_TYPE !<Finite Elasticity Stokes problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISSProblemFiniteElasticityNavierStokesType = PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_TYPE !<Finite Elasticity NavierStokes problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISSProblemDiffusionDiffusionType = PROBLEM_DIFFUSION_DIFFUSION_TYPE !<Diffusion Diffusion problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISSProblemDiffusionAdvectionDiffusionType = PROBLEM_DIFFUSION_ADVECTION_DIFFUSION_TYPE !<Diffusion Advection Diffusion problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   !>@}
   !> \addtogroup OPENCMISS_ProblemSubTypes OPENCMISS::Problem::Subtypes
   !> \brief Problem Subtypes.
@@ -3131,10 +3506,12 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSProblemQuasistaticDarcySubtype = PROBLEM_QUASISTATIC_DARCY_SUBTYPE !<Quasistatic Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemALEDarcySubtype = PROBLEM_ALE_DARCY_SUBTYPE !<ALE Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemTransientDarcySubtype = PROBLEM_TRANSIENT_DARCY_SUBTYPE !<Transient Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemPGMDarcySubtype = PROBLEM_PGM_DARCY_SUBTYPE !<PGM Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemStandardLaplaceSubtype = PROBLEM_STANDARD_LAPLACE_SUBTYPE !<Standard Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemGeneralisedLaplaceSubtype = PROBLEM_GENERALISED_LAPLACE_SUBTYPE !<Generalised Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemLinearSourcePoissonSubtype = PROBLEM_LINEAR_SOURCE_POISSON_SUBTYPE !<Linear source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemVectorSourcePoissonSubtype = PROBLEM_VECTOR_SOURCE_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemStokesPoissonSubtype = PROBLEM_STOKES_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemNavierStokesPoissonSubtype = PROBLEM_NAVIER_STOKES_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemNonlinearSourcePoissonSubtype = PROBLEM_NONLINEAR_SOURCE_POISSON_SUBTYPE !<Nonlinear source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemNoSourceHelmholtzSubtype = PROBLEM_NO_SOURCE_HELMHOLTZ_SUBTYPE !<No source Helmholtz problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemNoSourceDiffusionSubtype = PROBLEM_NO_SOURCE_DIFFUSION_SUBTYPE !<No source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -3158,6 +3535,17 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & PROBLEM_GENERALISED_GALERKIN_PROJECTION_SUBTYPE !<Generalised Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemMatPropertiesGalerkinProjectionSubtype = &
     & PROBLEM_MAT_PROPERTIES_GALERKIN_PROJECTION_SUBTYPE !<Material Properties Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+
+  INTEGER(INTG), PARAMETER :: CMISSProblemStandardElasticityDarcySubtype = PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE !<Standard Elasticity Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemPGMElasticityDarcySubtype = PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE !<PGM Elasticity Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemCoupledSourceDiffusionDiffusionSubtype = & 
+    & PROBLEM_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE !<Coupled source diffusion-diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype = & 
+    & PROBLEM_COUPLED_SOURCE_DIFFUSION_ADVEC_DIFFUSION_SUBTYPE !<Coupled source diffusion & advection-diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+
+  INTEGER(INTG), PARAMETER :: CMISSProblemQuasistaticFiniteElasticitySubtype = PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE !<Quasistatic finite elasticity subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+
+
   !>@}
   !> \addtogroup OPENCMISS_ProblemControlLoopTypes OPENCMISS::Problem::ControlLoopTypes
   !> \brief Problem control loop type parameters
@@ -3178,7 +3566,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSProblemNoClass,CMISSProblemElasticityClass,CMISSProblemFluidMechanicsClass,CMISSProblemElectromagneticsClass, &
     & CMISSProblemClassicalFieldClass,CMISSProblemBioelectricsClass,CMISSProblemModalClass,CMISSProblemFittingClass, &
-    & CMISSProblemOptimisationClass
+    & CMISSProblemOptimisationClass,CMISSProblemMultiPhysicsClass
 
   PUBLIC CMISSProblemNoType
 
@@ -3198,6 +3586,10 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSProblemGalerkinProjectionType
 
+  PUBLIC CMISSProblemFiniteElasticityDarcyType, &
+    & CMISSProblemFiniteElasticityStokesType, CMISSProblemFiniteElasticityNavierStokesType, &
+    & CMISSProblemDiffusionDiffusionType, CMISSProblemDiffusionAdvectionDiffusionType 
+
   PUBLIC CMISSProblemNoSubtype
 
   PUBLIC CMISSProblemStaticStokesSubtype,CMISSProblemLaplaceStokesSubtype,CMISSProblemTransientStokesSubtype, &
@@ -3207,11 +3599,12 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & CMISSProblemOptimisedNavierStokesSubtype,CMISSProblemALENavierStokesSubtype,CMISSProblemPGMNavierStokesSubtype
 
   PUBLIC CMISSProblemStandardDarcySubtype,CMISSProblemQuasistaticDarcySubtype,CMISSProblemALEDarcySubtype, &
-    & CMISSProblemTransientDarcySubtype
+    & CMISSProblemTransientDarcySubtype,CMISSProblemPGMDarcySubtype
 
   PUBLIC CMISSProblemStandardLaplaceSubtype,CMISSProblemGeneralisedLaplaceSubtype
 
-  PUBLIC CMISSProblemLinearSourcePoissonSubtype,CMISSProblemNonlinearSourcePoissonSubtype,CMISSProblemVectorSourcePoissonSubtype
+  PUBLIC CMISSProblemLinearSourcePoissonSubtype,CMISSProblemNonlinearSourcePoissonSubtype,CMISSProblemStokesPoissonSubtype, &
+    & CMISSProblemNavierStokesPoissonSubtype
 
   PUBLIC CMISSProblemNoSourceHelmholtzSubtype
 
@@ -3229,6 +3622,10 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSProblemControlSimpleType,CMISSProblemControlFixedLoopType,CMISSProblemControlTimeLoopType, &
     & CMISSProblemControlWhileLoopType
 
+  PUBLIC CMISSProblemStandardElasticityDarcySubtype, CMISSProblemPGMElasticityDarcySubtype, &
+   & CMISSProblemCoupledSourceDiffusionDiffusionSubtype, CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype
+
+  PUBLIC CMISSProblemQuasistaticFiniteElasticitySubtype
 !!==================================================================================================================================
 !!
 !! PROBLEM_ROUTINES
@@ -3511,7 +3908,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSSolverIterativeRichardson = SOLVER_ITERATIVE_RICHARDSON !<Richardson iterative solver type. \see  OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverIterativeChebychev = SOLVER_ITERATIVE_CHEBYCHEV !<Chebychev iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverIterativeConjugateGradient = SOLVER_ITERATIVE_CONJUGATE_GRADIENT !<Conjugate gradient iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverIterativeBiconjugateGradinet = SOLVER_ITERATIVE_BICONJUGATE_GRADIENT !<Bi-conjugate gradient iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverIterativeBiconjugateGradient = SOLVER_ITERATIVE_BICONJUGATE_GRADIENT !<Bi-conjugate gradient iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverIterativeGMRES = SOLVER_ITERATIVE_GMRES !<Generalised minimum residual iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverIterativeBiCGSTAB = SOLVER_ITERATIVE_BiCGSTAB !<Stabalised bi-conjugate gradient iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverConjgradSquared = SOLVER_ITERATIVE_CONJGRAD_SQUARED !<Conjugate gradient squared iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
@@ -3600,14 +3997,14 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSSolverDynamicNewmark3Scheme = SOLVER_DYNAMIC_NEWMARK3_SCHEME !<3rd Newmark dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDynamicThirdDegreeGearScheme = SOLVER_DYNAMIC_THIRD_DEGREE_GEAR_SCHEME !<3rd degree Gear dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDynamicThirdDegreeLiniger1Scheme = SOLVER_DYNAMIC_THIRD_DEGREE_LINIGER1_SCHEME !<1st 3rd degree Liniger dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicThirdDegreeLiniger3Scheme = SOLVER_DYNAMIC_THIRD_DEGREE_LINIGER2_SCHEME !<2nd 3rd degree Liniger dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicThirdDegreeLiniger2Scheme = SOLVER_DYNAMIC_THIRD_DEGREE_LINIGER2_SCHEME !<2nd 3rd degree Liniger dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDynamicHouboltScheme = SOLVER_DYNAMIC_HOUBOLT_SCHEME !<Houbolt dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDynamicWilsonScheme = SOLVER_DYNAMIC_WILSON_SCHEME !<Wilson dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDynamicBossakNewmark1Scheme = SOLVER_DYNAMIC_BOSSAK_NEWMARK1_SCHEME !<1st Bossak-Newmark dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDynamicBossakNewmark2Scheme = SOLVER_DYNAMIC_BOSSAK_NEWMARK2_SCHEME !<2nd Bossak-Newmark dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDynamicHilbertHughesTaylor1Scheme = SOLVER_DYNAMIC_HILBERT_HUGHES_TAYLOR1_SCHEME !<1st Hilbert-Hughes-Taylor dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDynamicHilbertHughesTaylor2Scheme = SOLVER_DYNAMIC_HILBERT_HUGHES_TAYLOR2_SCHEME !<1st Hilbert-Hughes-Taylor dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicUserDefiniedScheme = SOLVER_DYNAMIC_USER_DEFINED_SCHEME !<User specified degree and theta dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicUserDefinedScheme = SOLVER_DYNAMIC_USER_DEFINED_SCHEME !<User specified degree and theta dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_DAETypes OPENCMISS::Solver::DAETypes
   !> \brief The type of differential-algebraic equation.
@@ -3778,6 +4175,13 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSSolverLibraryTypeSetObj
   END INTERFACE !CMISSSolverLibraryTypeSet
   
+  !>Sets/changes the type of direct linear solver.
+  INTERFACE CMISSSolverLinearDirectTypeSet
+    MODULE PROCEDURE CMISSSolverLinearDirectTypeSetNumber0
+    MODULE PROCEDURE CMISSSolverLinearDirectTypeSetNumber1
+    MODULE PROCEDURE CMISSSolverLinearDirectTypeSetObj
+  END INTERFACE !CMISSSolverLinearDirectTypeSet
+  
   !>Sets/changes the absolute tolerance for an iterative linear solver.
   INTERFACE CMISSSolverLinearIterativeAbsoluteToleranceSet
     MODULE PROCEDURE CMISSSolverLinearIterativeAbsoluteToleranceSetNumber0
@@ -3932,6 +4336,13 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSSolverNewtonTypeSetObj
   END INTERFACE !CMISSSolverNewtonTypeSet
   
+  !>Sets/changes the type of nonlinear solver.
+  INTERFACE CMISSSolverNonlinearTypeSet
+    MODULE PROCEDURE CMISSSolverNonlinearTypeSetNumber0
+    MODULE PROCEDURE CMISSSolverNonlinearTypeSetNumber1
+    MODULE PROCEDURE CMISSSolverNonlinearTypeSetObj
+  END INTERFACE !CMISSSolverNonlinearTypeSet
+  
   !>Sets/changes the output type for a solver.
   INTERFACE CMISSSolverOutputTypeSet
     MODULE PROCEDURE CMISSSolverOutputTypeSetNumber0
@@ -3976,7 +4387,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSSolverLinearDirectSolveType,CMISSSolverLinearIterativeSolveType
 
   PUBLIC CMISSSolverIterativeRichardson,CMISSSolverIterativeChebychev,CMISSSolverIterativeConjugateGradient, &
-    & CMISSSolverIterativeBiconjugateGradinet,CMISSSolverIterativeGMRES,CMISSSolverIterativeBiCGSTAB,CMISSSolverConjgradSquared
+    & CMISSSolverIterativeBiconjugateGradient,CMISSSolverIterativeGMRES,CMISSSolverIterativeBiCGSTAB,CMISSSolverConjgradSquared
 
   PUBLIC CMISSSolverIterativeNoPreconditioner,CMISSSolverIterativeJacobiPreconditioner, &
     & CMISSSolverIterativeBlockJacobiPreconditioner,CMISSSolverIterativeSORPreconditioner, &
@@ -4004,9 +4415,9 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & CMISSSolverDynamicSecondDegreeLiniger1Scheme,CMISSSolverDynamicSecondDegreeLiniger2Scheme, &
     & CMISSSolverDynamicNewmark1Scheme,CMISSSolverDynamicNewmark2Scheme,CMISSSolverDynamicNewmark3Scheme, &
     & CMISSSolverDynamicThirdDegreeGearScheme,CMISSSolverDynamicThirdDegreeLiniger1Scheme, &
-    & CMISSSolverDynamicThirdDegreeLiniger3Scheme,CMISSSolverDynamicHouboltScheme,CMISSSolverDynamicWilsonScheme, &
+    & CMISSSolverDynamicThirdDegreeLiniger2Scheme,CMISSSolverDynamicHouboltScheme,CMISSSolverDynamicWilsonScheme, &
     & CMISSSolverDynamicBossakNewmark1Scheme,CMISSSolverDynamicBossakNewmark2Scheme,CMISSSolverDynamicHilbertHughesTaylor1Scheme, &
-    & CMISSSolverDynamicHilbertHughesTaylor2Scheme,CMISSSolverDynamicUserDefiniedScheme
+    & CMISSSolverDynamicHilbertHughesTaylor2Scheme,CMISSSolverDynamicUserDefinedScheme
 
   PUBLIC CMISSSolverDAEDifferentialOnly,CMISSSolverDAEIndex1,CMISSSolverDAEIndex2,CMISSSolverDAEIndex3
 
@@ -4021,7 +4432,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSSolverEquationsSparseMatrices,CMISSSolverEquationsFullMatrices
 
-  PUBLIC CMISSSolverDAEEulerSolverTypeSet
+  PUBLIC CMISSSolverDAEEulerSolverTypeGet, CMISSSolverDAEEulerSolverTypeSet
 
   PUBLIC CMISSSolverDAESolverTypeGet,CMISSSolverDAESolverTypeSet
 
@@ -4040,6 +4451,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSSolverDynamicTimesSet
 
   PUBLIC CMISSSolverLibraryTypeGet,CMISSSolverLibraryTypeSet
+
+  PUBLIC CMISSSolverLinearDirectTypeSet
 
   PUBLIC CMISSSolverLinearIterativeAbsoluteToleranceSet
 
@@ -4073,6 +4486,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSSolverNewtonMaximumFunctionEvaluationsSet
 
+  PUBLIC CMISSSolverNewtonMaximumIterationsSet
+
   PUBLIC CMISSSolverNewtonRelativeToleranceSet
 
   PUBLIC CMISSSolverNewtonSolutionToleranceSet
@@ -4082,6 +4497,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSSolverNewtonTrustRegionToleranceSet
 
   PUBLIC CMISSSolverNewtonTypeSet
+
+  PUBLIC CMISSSolverNonlinearTypeSet
 
   PUBLIC CMISSSolverOutputTypeSet
 
@@ -4110,8 +4527,12 @@ CONTAINS
     !Argument variables
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
- 
+
     CALL CMISS_FINALISE(Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('OpenCMISS World Phase')
+#endif
 
     RETURN
 999 CALL CMISS_HANDLE_ERROR(Err,ERROR)
@@ -4133,6 +4554,10 @@ CONTAINS
 
     CALL CMISSFinalise(CMISSFinaliseC)
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('OpenCMISS World Phase')
+#endif
+
     RETURN
     
   END FUNCTION CMISSFinaliseC
@@ -4151,6 +4576,10 @@ CONTAINS
     !Local variables
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: WORLD_COORDINATE_SYSTEM
     TYPE(REGION_TYPE), POINTER :: WORLD_REGION
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('OpenCMISS World Phase')
+#endif
 
     NULLIFY(WORLD_COORDINATE_SYSTEM)
     NULLIFY(WORLD_REGION)
@@ -4178,6 +4607,10 @@ CONTAINS
     TYPE(CMISSRegionType), INTENT(INOUT) :: WorldRegion !<On return, the world region.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('OpenCMISS World Phase')
+#endif
 
     CALL CMISSCoordinateSystemTypeInitialise(WorldCoordinateSystem,Err)
     CALL CMISSRegionTypeInitialise(WorldRegion,Err)
@@ -4294,6 +4727,56 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finalises a CMISSCellMLType object.
+  SUBROUTINE CMISSCellMLTypeFinalise(CMISSCellML,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(OUT) :: CMISSCellML !<The CMISSCellMLType object to finalise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    
+    CALL ENTERS("CMISSCellMLTypeFinalise",Err,ERROR,*999)
+    
+    IF(ASSOCIATED(CMISSCellML%CELLML))  &
+      & CALL CELLML_DESTROY(CMISSCellML%CELLML,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLTypeFinalise")
+    RETURN
+999 CALL ERRORS("CMISSCellMLTypeFinalise",Err,ERROR)
+    CALL EXITS("CMISSCellMLTypeFinalise")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLTypeFinalise
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises a CMISSCellMLType object.
+  SUBROUTINE CMISSCellMLTypeInitialise(CMISSCellML,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(OUT) :: CMISSCellML !<The CMISSCellMLType object to initialise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSCellMLTypeInitialise",Err,ERROR,*999)
+    
+    NULLIFY(CMISSCellML%CELLML)
+
+    CALL EXITS("CMISSCellMLTypeInitialise")
+    RETURN
+999 CALL ERRORS("CMISSCellMLTypeInitialise",Err,ERROR)
+    CALL EXITS("CMISSCellMLTypeInitialise")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLTypeInitialise
+
+  !
+  !================================================================================================================================
+  !
+
   !>Finalises a CMISSControlLoopType object.
   SUBROUTINE CMISSControlLoopTypeFinalise(CMISSControlLoop,Err)
   
@@ -4376,6 +4859,7 @@ CONTAINS
     TYPE(CMISSCoordinateSystemType), INTENT(OUT) :: CMISSCoordinateSystem !<The CMISSCoordinateSystemType object to initialise.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
+
 
     CALL ENTERS("CMISSCoordinateSystemTypeInitialise",Err,ERROR,*999)
     
@@ -4644,6 +5128,10 @@ CONTAINS
     
     NULLIFY(CMISSFields%FIELDS)
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Fields Type')
+#endif
+
     CALL EXITS("CMISSFieldsTypeFinalise")
     RETURN
 999 CALL ERRORS("CMISSFieldsTypeFinalise",Err,ERROR)
@@ -4667,6 +5155,10 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldsTypeInitialise",Err,ERROR,*999)
     
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Fields Type')
+#endif
+
     NULLIFY(CMISSFields%FIELDS)
 
     CALL EXITS("CMISSFieldsTypeInitialise")
@@ -6360,6 +6852,580 @@ CONTAINS
     
   END SUBROUTINE CMISSAnalyticAnalysisRmsErrorGetElementObj
 
+  !
+  !================================================================================================================================
+  ! 
+
+  !>Get integral value for the numerical values.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralNumericalValueGetNumber(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, & 
+    & IntegralValue,GhostIntegralValue,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
+    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralNumericalValueGetNumber",Err,ERROR,*999)
+    
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL ANALYTIC_ANALYSIS_INTEGRAL_NUMERICAL_VALUE_GET(FIELD,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue, &
+          & ERR,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNumericalValueGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralNumericalValueGetNumber",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNumericalValueGetNumber")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralNumericalValueGetNumber
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Get integral value for the numerical values.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralNumericalValueGetObj(Field,VariableType,ComponentNumber,IntegralValue, &
+    & GhostIntegralValue,Err)
+  
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralNumericalValueGetObj",Err,ERROR,*999)
+    
+    CALL ANALYTIC_ANALYSIS_INTEGRAL_NUMERICAL_VALUE_GET(Field%FIELD,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue, &
+          & ERR,ERROR,*999)
+
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNumericalValueGetObj")
+
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralNumericalValueGetObj",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNumericalValueGetObj")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralNumericalValueGetObj
+
+  !
+  !================================================================================================================================
+  ! 
+
+  !>Get integral value for the analytic values.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralAnalyticValueGetNumber(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, & 
+    & IntegralValue,GhostIntegralValue,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
+    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralAnalyticValueGetNumber",Err,ERROR,*999)
+    
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL ANALYTIC_ANALYSIS_INTEGRAL_ANALYTIC_VALUE_GET(FIELD,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue, &
+          & ERR,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSAnalyticAnalysisIntegralAnalyticValueGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralAnalyticValueGetNumber",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralAnalyticValueGetNumber")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralAnalyticValueGetNumber
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Get integral value for the analytic values.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralAnalyticValueGetObj(Field,VariableType,ComponentNumber,IntegralValue, &
+    & GhostIntegralValue,Err)
+  
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralAnalyticValueGetObj",Err,ERROR,*999)
+    
+    CALL ANALYTIC_ANALYSIS_INTEGRAL_ANALYTIC_VALUE_GET(Field%FIELD,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue, &
+          & ERR,ERROR,*999)
+
+    CALL EXITS("CMISSAnalyticAnalysisIntegralAnalyticValueGetObj")
+
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralAnalyticValueGetObj",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralAnalyticValueGetObj")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralAnalyticValueGetObj
+
+  !
+  !================================================================================================================================
+  ! 
+
+  !>Get integral value for the percentage errors.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralPercentageErrorGetNumber(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, & 
+    & IntegralValue,GhostIntegralValue,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
+    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralPercentageErrorGetNumber",Err,ERROR,*999)
+    
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL ANALYTIC_ANALYSIS_INTEGRAL_PERCENTAGE_ERROR_GET(FIELD,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue, &
+          & ERR,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSAnalyticAnalysisIntegralPercentageErrorGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralPercentageErrorGetNumber",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralPercentageErrorGetNumber")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralPercentageErrorGetNumber
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Get integral value for the percentage errors.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralPercentageErrorGetObj(Field,VariableType,ComponentNumber,IntegralValue, &
+    & GhostIntegralValue,Err)
+  
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralPercentageErrorGetObj",Err,ERROR,*999)
+    
+    CALL ANALYTIC_ANALYSIS_INTEGRAL_PERCENTAGE_ERROR_GET(Field%FIELD,VariableType,ComponentNumber,IntegralValue, & 
+      & GhostIntegralValue,ERR,ERROR,*999)
+
+    CALL EXITS("CMISSAnalyticAnalysisIntegralPercentageErrorGetObj")
+
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralPercentageErrorGetObj",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralPercentageErrorGetObj")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralPercentageErrorGetObj
+
+  !
+  !================================================================================================================================
+  ! 
+
+  !>Get integral value for the absolute errors.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralAbsoluteErrorGetNumber(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, & 
+    & IntegralValue,GhostIntegralValue,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
+    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetNumber",Err,ERROR,*999)
+    
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL ANALYTIC_ANALYSIS_INTEGRAL_ABSOLUTE_ERROR_GET(FIELD,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue, &
+          & ERR,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetNumber",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetNumber")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralAbsoluteErrorGetNumber
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Get integral value for the absolute errors.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralAbsoluteErrorGetObj(Field,VariableType,ComponentNumber,IntegralValue, &
+    & GhostIntegralValue,Err)
+  
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetObj",Err,ERROR,*999)
+    
+    CALL ANALYTIC_ANALYSIS_INTEGRAL_ABSOLUTE_ERROR_GET(Field%FIELD,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue, &
+          & ERR,ERROR,*999)
+
+    CALL EXITS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetObj")
+
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetObj",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetObj")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralAbsoluteErrorGetObj
+
+  !
+  !================================================================================================================================
+  ! 
+
+  !>Get integral value for the relative error.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralRelativeErrorGetNumber(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, & 
+    & IntegralValue,GhostIntegralValue,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
+    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralRelativeErrorGetNumber",Err,ERROR,*999)
+    
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL ANALYTIC_ANALYSIS_INTEGRAL_RELATIVE_ERROR_GET(FIELD,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue, &
+          & ERR,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSAnalyticAnalysisIntegralRelativeErrorGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralRelativeErrorGetNumber",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralRelativeErrorGetNumber")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralRelativeErrorGetNumber
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Get integral value for the relative error.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralRelativeErrorGetObj(Field,VariableType,ComponentNumber,IntegralValue, & 
+    & GhostIntegralValue,Err)
+  
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralRelativeErrorGetObj",Err,ERROR,*999)
+    
+    CALL ANALYTIC_ANALYSIS_INTEGRAL_RELATIVE_ERROR_GET(Field%FIELD,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue, &
+      & ERR,ERROR,*999)
+
+    CALL EXITS("CMISSAnalyticAnalysisIntegralRelativeErrorGetObj")
+
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralRelativeErrorGetObj",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralRelativeErrorGetObj")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralRelativeErrorGetObj
+
+  !
+  !================================================================================================================================
+  ! 
+
+  !>Get integral value for the nid numerical.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralNidNumericalValueGetNumber(RegionUserNumber,FieldUserNumber,VariableType, &
+    & ComponentNumber,IntegralValue,GhostIntegralValue,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
+    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetNumber",Err,ERROR,*999)
+    
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL ANALYTIC_ANALYSIS_INTEGRAL_NID_NUMERICAL_VALUE_GET(FIELD,VariableType,ComponentNumber,IntegralValue, &
+          & GhostIntegralValue,ERR,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetNumber",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetNumber")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralNidNumericalValueGetNumber
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Get integral value for the nid numerical.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralNidNumericalValueGetObj(Field,VariableType,ComponentNumber,IntegralValue, & 
+    & GhostIntegralValue,Err)
+  
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetObj",Err,ERROR,*999)
+    
+    CALL ANALYTIC_ANALYSIS_INTEGRAL_NID_NUMERICAL_VALUE_GET(Field%FIELD,VariableType,ComponentNumber,IntegralValue, &
+      & GhostIntegralValue,ERR,ERROR,*999)
+
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetObj")
+
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetObj",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetObj")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralNidNumericalValueGetObj
+
+  !
+  !================================================================================================================================
+  ! 
+
+  !>Get integral value for the nid error.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralNidErrorGetNumber(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & IntegralValue,GhostIntegralValue,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
+    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralNidErrorGetNumber",Err,ERROR,*999)
+    
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL ANALYTIC_ANALYSIS_INTEGRAL_NID_ERROR_GET(FIELD,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue,ERR, &
+          & ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNidErrorGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralNidErrorGetNumber",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNidErrorGetNumber")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralNidErrorGetNumber
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Get integral value for the nid error.
+  SUBROUTINE CMISSAnalyticAnalysisIntegralNidErrorGetObj(Field,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue,Err)
+  
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
+    INTEGER(INTG), INTENT(IN) :: VariableType !<variable type
+    REAL(DP), INTENT(OUT) :: IntegralValue(2) !<On return, the integral value
+    REAL(DP), INTENT(OUT) :: GhostIntegralValue(2) !<On return, ghost integral value
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSAnalyticAnalysisIntegralNidErrorGetObj",Err,ERROR,*999)
+    
+    CALL ANALYTIC_ANALYSIS_INTEGRAL_NID_ERROR_GET(Field%FIELD,VariableType,ComponentNumber,IntegralValue,GhostIntegralValue,ERR, &
+      & ERROR,*999)
+
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNidErrorGetObj")
+
+    RETURN
+999 CALL ERRORS("CMISSAnalyticAnalysisIntegralNidErrorGetObj",Err,ERROR)
+    CALL EXITS("CMISSAnalyticAnalysisIntegralNidErrorGetObj")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSAnalyticAnalysisIntegralNidErrorGetObj
+
+
 
 
 !!==================================================================================================================================
@@ -6689,6 +7755,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF      
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Basis Create')
+#endif
+
     CALL EXITS("CMISSBasisCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSBasisCreateFinishNumber",Err,ERROR)
@@ -6714,6 +7784,10 @@ CONTAINS
 
     CALL BASIS_CREATE_FINISH(Basis%BASIS,Err,ERROR,*999)
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Basis Create')
+#endif
+
     CALL EXITS("CMISSBasisCreateFinishObj")
     RETURN
 999 CALL ERRORS("CMISSBasisCreateFinishObj",Err,ERROR)
@@ -6738,6 +7812,10 @@ CONTAINS
 
     CALL ENTERS("CMISSBasisCreateStartNumber",Err,ERROR,*999)
     
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Basis Create')
+#endif
+
     NULLIFY(BASIS)
     CALL BASIS_CREATE_START(UserNumber,BASIS,Err,ERROR,*999)
 
@@ -6765,6 +7843,10 @@ CONTAINS
 
     CALL ENTERS("CMISSBasisCreateStartObj",Err,ERROR,*999)
     
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Basis Create')
+#endif
+
     CALL BASIS_CREATE_START(UserNumber,Basis%BASIS,Err,ERROR,*999)
 
     CALL EXITS("CMISSBasisCreateStartObj")
@@ -8220,6 +9302,253 @@ CONTAINS
   !
   !================================================================================================================================
   !
+!! 
+!!   !>Sets the total number of Neumann boundaries.
+!!   SUBROUTINE CMISSBoundaryConditionsSetNumberOfBoundariesNumber &
+!!                            & (RegionUserNumber,EquationsSetUserNumber,VariableType,NumberOfNeumann,Err)
+!!   
+!!     !Argument variables
+!!     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the equations set for the boundary.
+!!     INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set for the boundary.
+!!     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent field for the boundary.
+!!     INTEGER(INTG), INTENT(IN) :: NumberOfNeumann !<The number of user-set Neumann boundaries.
+!!     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+!!     !Local variables
+!!     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
+!!     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+!!     TYPE(REGION_TYPE), POINTER :: REGION
+!!     TYPE(VARYING_STRING) :: LOCAL_ERROR
+!! 
+!!     CALL ENTERS("CMISSBoundaryConditionsSetNumberOfBoundariesNumber",Err,ERROR,*999)
+!! 
+!!     NULLIFY(REGION)
+!!     NULLIFY(EQUATIONS_SET)
+!!     NULLIFY(BOUNDARY_CONDITIONS)
+!!     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+!!     IF(ASSOCIATED(REGION)) THEN
+!!       CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
+!!       IF(ASSOCIATED(EQUATIONS_SET)) THEN
+!!         CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,Err,ERROR,*999)
+!!         CALL BOUNDARY_CONDITIONS_BOUNDARY_SET_NUMBER_OF_BOUNDARIES &
+!!                  & (BOUNDARY_CONDITIONS,VariableType,NumberOfNeumann,Err,ERROR,*999)
+!!       ELSE
+!!         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
+!!           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+!!         CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+!!       ENDIF
+!!     ELSE
+!!       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+!!       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+!!     ENDIF
+!! 
+!!     CALL EXITS("CMISSBoundaryConditionsSetNumberOfBoundariesNumber")
+!!     RETURN
+!! 999 CALL ERRORS("CMISSBoundaryConditionsSetNumberOfBoundariesNumber",Err,ERROR)
+!!     CALL EXITS("CMISSBoundaryConditionsSetNumberOfBoundariesNumber")
+!!     CALL CMISS_HANDLE_ERROR(Err,ERROR)
+!!     RETURN
+!!     
+!!   END SUBROUTINE CMISSBoundaryConditionsSetNumberOfBoundariesNumber
+!!   
+!!   !
+!!   !================================================================================================================================
+!!   !
+!!   
+!!   !>Sets the total number of Neumann boundaries.
+!!   SUBROUTINE CMISSBoundaryConditionsSetNumberOfBoundariesObj(BoundaryConditions,VariableType,NumberOfNeumann,Err)
+!!   
+!!     !Argument variables
+!!     TYPE(CMISSBoundaryConditionsType), INTENT(OUT) :: BoundaryConditions !<The boundary conditions for the boundary.
+!!     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent field for the boundary. 
+!!     INTEGER(INTG), INTENT(IN) :: NumberOfNeumann !<The number of user-set Neumann boundaries.
+!!     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+!!     !Local variables
+!!     
+!!     CALL ENTERS("CMISSBoundaryConditionsSetNumberOfBoundariesObj",ERR,ERROR,*999)
+!! 
+!!     CALL BOUNDARY_CONDITIONS_BOUNDARY_SET_NUMBER_OF_BOUNDARIES &
+!!                    & (BoundaryConditions%BOUNDARY_CONDITIONS,VariableType,NumberOfNeumann,Err,ERROR,*999)
+!! 
+!!     CALL EXITS("CMISSBoundaryConditionsSetNumberOfBoundariesObj")
+!!     RETURN
+!! 999 CALL ERRORS("CMISSBoundaryConditionsSetNumberOfBoundariesObj",Err,ERROR)
+!!     CALL EXITS("CMISSBoundaryConditionsSetNumberOfBoundariesObj")
+!!     CALL CMISS_HANDLE_ERROR(Err,ERROR)
+!!     RETURN
+!!     
+!!   END SUBROUTINE CMISSBoundaryConditionsSetNumberOfBoundariesObj
+!! 
+!!   !
+!!   !================================================================================================================================
+!!   !
+!! 
+!!   !>Sets the value of the specified dof as a boundary condition on the specified dof for boundary conditions identified by a user number.
+!!   SUBROUTINE CMISSBoundaryConditionsAddDOFToBoundaryNumber0(RegionUserNumber,EquationsSetUserNumber,&
+!!                                                                    & VariableType,DOFNumber,Value,Condition,Id,Err)
+!! 
+!!     !Argument variables
+!!     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the equations set to add the boundary conditions for.
+!!     INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to add the boundary conditions for.
+!!     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent field to add the boundary condition for.
+!!     INTEGER(INTG), INTENT(IN) :: DOFNumber !<The global number of the dof to add the boundary conditions for.
+!!     REAL(DP), INTENT(IN) :: Value !<The value of the boundary condition to add.
+!!     INTEGER(INTG), INTENT(IN) :: Condition !<The boundary condition type to set \see OPENCMISS_BoundaryConditions,OPENCMISS
+!!     INTEGER(INTG), INTENT(IN) :: Id !<Identifier for the Neumann boundary condition
+!!     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+!!     !Local variables
+!!     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
+!!     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+!!     TYPE(REGION_TYPE), POINTER :: REGION
+!!     TYPE(VARYING_STRING) :: LOCAL_ERROR
+!!   
+!!     CALL ENTERS("CMISSBoundaryConditionsAddDOFToBoundaryNumber0",Err,ERROR,*999)
+!! 
+!!     NULLIFY(REGION)
+!!     NULLIFY(EQUATIONS_SET)
+!!     NULLIFY(BOUNDARY_CONDITIONS)
+!!     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+!!     IF(ASSOCIATED(REGION)) THEN
+!!       CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
+!!       IF(ASSOCIATED(EQUATIONS_SET)) THEN
+!!         CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,Err,ERROR,*999)
+!!         CALL BOUNDARY_CONDITIONS_BOUNDARY_ADD_DOF(BOUNDARY_CONDITIONS,VariableType,DOFNumber,Value,Condition,Id,Err,ERROR,*999)
+!!       ELSE
+!!         LOCAL_ERROR="An equations set with a user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
+!!           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+!!         CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+!!       ENDIF
+!!     ELSE
+!!       LOCAL_ERROR="A region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+!!       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+!!     ENDIF
+!! 
+!!     CALL EXITS("CMISSBoundaryConditionsAddDOFToBoundaryNumber0")
+!!     RETURN
+!! 999 CALL ERRORS("CMISSBoundaryConditionsAddDOFToBoundaryNumber0",Err,ERROR)
+!!     CALL EXITS("CMISSBoundaryConditionsAddDOFToBoundaryNumber0")
+!!     CALL CMISS_HANDLE_ERROR(Err,ERROR)
+!!     RETURN
+!!     
+!!   END SUBROUTINE CMISSBoundaryConditionsAddDOFToBoundaryNumber0
+!!  
+!!   !
+!!   !================================================================================================================================
+!!   !
+!! 
+!!   !>Sets the value of the specified dof as a boundary condition on the specified dof for boundary conditions identified by a user number.
+!!   SUBROUTINE CMISSBoundaryConditionsAddDOFToBoundaryNumber1(RegionUserNumber,EquationsSetUserNumber,&
+!!                                                                    & VariableType,DOFNumber,Value,Condition,Id,Err)
+!! 
+!!     !Argument variables
+!!     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the equations set to add the boundary conditions for.
+!!     INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to add the boundary conditions for.
+!!     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent field to add the boundary condition for.
+!!     INTEGER(INTG), INTENT(IN) :: DOFNumber(:) !<The global number of the dof to add the boundary conditions for.
+!!     REAL(DP), INTENT(IN) :: Value(:) !<The value of the boundary condition to add.
+!!     INTEGER(INTG), INTENT(IN) :: Condition(:) !<The boundary condition type to set \see OPENCMISS_BoundaryConditions,OPENCMISS
+!!     INTEGER(INTG), INTENT(IN) :: Id !<Identifier for the Neumann boundary condition
+!!     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+!!     !Local variables
+!!     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
+!!     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+!!     TYPE(REGION_TYPE), POINTER :: REGION
+!!     TYPE(VARYING_STRING) :: LOCAL_ERROR
+!!   
+!!     CALL ENTERS("CMISSBoundaryConditionsAddDOFToBoundaryNumber1",Err,ERROR,*999)
+!! 
+!!     NULLIFY(REGION)
+!!     NULLIFY(EQUATIONS_SET)
+!!     NULLIFY(BOUNDARY_CONDITIONS)
+!!     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+!!     IF(ASSOCIATED(REGION)) THEN
+!!       CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
+!!       IF(ASSOCIATED(EQUATIONS_SET)) THEN
+!!         CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,Err,ERROR,*999)
+!!         CALL BOUNDARY_CONDITIONS_BOUNDARY_ADD_DOF(BOUNDARY_CONDITIONS,VariableType,DOFNumber,Value,Condition,Id,Err,ERROR,*999)
+!!       ELSE
+!!         LOCAL_ERROR="An equations set with a user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
+!!           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+!!         CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+!!       ENDIF
+!!     ELSE
+!!       LOCAL_ERROR="A region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+!!       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+!!     ENDIF
+!! 
+!!     CALL EXITS("CMISSBoundaryConditionsAddDOFToBoundaryNumber1")
+!!     RETURN
+!! 999 CALL ERRORS("CMISSBoundaryConditionsAddDOFToBoundaryNumber1",Err,ERROR)
+!!     CALL EXITS("CMISSBoundaryConditionsAddDOFToBoundaryNumber1")
+!!     CALL CMISS_HANDLE_ERROR(Err,ERROR)
+!!     RETURN
+!!     
+!!   END SUBROUTINE CMISSBoundaryConditionsAddDOFToBoundaryNumber1
+!!  
+!!   !
+!!   !================================================================================================================================
+!!   !
+!! 
+!!   !>Sets the value of the specified dof and sets this as a boundary condition on the specified dof for boundary conditions identified by an object.
+!!   SUBROUTINE CMISSBoundaryConditionsAddDOFToBoundaryObj0(BoundaryConditions,VariableType,DOFNumber,Value,Condition,Id,Err)
+!!   
+!!     !Argument variables
+!!     TYPE(CMISSBoundaryConditionsType), INTENT(IN) :: BoundaryConditions !<The boundary conditions to add the node to.
+!!     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent field to set the boundary condition at. 
+!!     INTEGER(INTG), INTENT(IN) :: DOFNumber !<The number of the dof to set the boundary conditions for.
+!!     REAL(DP), INTENT(IN) :: Value !<The value of the boundary condition to add.
+!!     INTEGER(INTG), INTENT(IN) :: Condition !<The boundary condition type to set \see OPENCMISS_BoundaryConditions,OPENCMISS
+!!     INTEGER(INTG), INTENT(IN) :: Id !<Identifier for the Neumann boundary condition
+!!     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+!!     !Local variables
+!!   
+!!     CALL ENTERS("CMISSBoundaryConditionsAddDOFToBoundaryObj0",Err,ERROR,*999)
+!! 
+!!     CALL BOUNDARY_CONDITIONS_BOUNDARY_ADD_DOF(BoundaryConditions%BOUNDARY_CONDITIONS,VariableType,DOFNumber,Value,&
+!!                                                                                               & Condition,Id,Err,ERROR,*999)
+!! 
+!!     CALL EXITS("CMISSBoundaryConditionsAddDOFToBoundaryObj0")
+!!     RETURN
+!! 999 CALL ERRORS("CMISSBoundaryConditionsAddDOFToBoundaryObj0",Err,ERROR)
+!!     CALL EXITS("CMISSBoundaryConditionsAddDOFToBoundaryObj0")
+!!     CALL CMISS_HANDLE_ERROR(Err,ERROR)
+!!     RETURN
+!!     
+!!   END SUBROUTINE CMISSBoundaryConditionsAddDOFToBoundaryObj0
+!! 
+!!   !
+!!   !================================================================================================================================
+!!   !
+!! 
+!!   !>Sets the value of the specified dof and sets this as a boundary condition on the specified dof for boundary conditions identified by an object.
+!!   SUBROUTINE CMISSBoundaryConditionsAddDOFToBoundaryObj1(BoundaryConditions,VariableType,DOFNumber,Value,Condition,Id,Err)
+!!   
+!!     !Argument variables
+!!     TYPE(CMISSBoundaryConditionsType), INTENT(IN) :: BoundaryConditions !<The boundary conditions to add the node to.
+!!     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent field to set the boundary condition at. 
+!!     INTEGER(INTG), INTENT(IN) :: DOFNumber(:) !<The number of the dof to set the boundary conditions for.
+!!     REAL(DP), INTENT(IN) :: Value(:) !<The value of the boundary condition to add.
+!!     INTEGER(INTG), INTENT(IN) :: Condition(:) !<The boundary condition type to set \see OPENCMISS_BoundaryConditions,OPENCMISS
+!!     INTEGER(INTG), INTENT(IN) :: Id !<Identifier for the Neumann boundary condition
+!!     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+!!     !Local variables
+!!   
+!!     CALL ENTERS("CMISSBoundaryConditionsAddDOFToBoundaryObj1",Err,ERROR,*999)
+!! 
+!!     CALL BOUNDARY_CONDITIONS_BOUNDARY_ADD_DOF(BoundaryConditions%BOUNDARY_CONDITIONS,VariableType,DOFNumber,Value,&
+!!                                                                                            & Condition,Id,Err,ERROR,*999)
+!! 
+!!     CALL EXITS("CMISSBoundaryConditionsAddDOFToBoundaryObj1")
+!!     RETURN
+!! 999 CALL ERRORS("CMISSBoundaryConditionsAddDOFToBoundaryObj1",Err,ERROR)
+!!     CALL EXITS("CMISSBoundaryConditionsAddDOFToBoundaryObj1")
+!!     CALL CMISS_HANDLE_ERROR(Err,ERROR)
+!!     RETURN
+!!     
+!!   END SUBROUTINE CMISSBoundaryConditionsAddDOFToBoundaryObj1
+!! 
+!!   !
+!!   !================================================================================================================================
+!!   !
 
   !>Gets the boundary conditions for an equations set identified by a user number. 
   SUBROUTINE CMISSEquationsSetBoundaryConditionsGetNumber(RegionUserNumber,EquationsSetUserNumber,BoundaryConditions,Err)
@@ -8287,6 +9616,1850 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSEquationsSetBoundaryConditionsGetObj
+
+!!==================================================================================================================================
+!!
+!! CMISS
+!!
+!!==================================================================================================================================
+
+  !>Returns the error handling mode for OpenCMISS
+  SUBROUTINE CMISSErrorHandlingModeGet(ErrorHandlingMode,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(OUT) :: ErrorHandlingMode !<On return, the error handling mode. \see OPENCMISS_CMISSErrorHandlingModes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    
+    CALL ENTERS("CMISSErrorHandlingModeGet",Err,ERROR,*999)
+
+    CALL CMISS_ERROR_HANDLING_MODE_GET(ErrorHandlingMode,Err,ERROR,*999)
+    
+    CALL EXITS("CMISSErrorHandlingModeGet")
+    RETURN
+999 CALL ERRORS("CMISSErrorHandlingModeGet",Err,ERROR)
+    CALL EXITS("CMISSErrorHandlingModeGet")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSErrorHandlingModeGet
+
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets the error handling mode for OpenCMISS
+  SUBROUTINE CMISSErrorHandlingModeSet(ErrorHandlingMode,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ErrorHandlingMode !<The error handling mode to set. \see OPENCMISS_CMISSErrorHandlingModes,OPENCMISS
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    
+    CALL ENTERS("CMISSErrorHandlingModeSet",Err,ERROR,*999)
+
+    CALL CMISS_ERROR_HANDLING_MODE_SET(ErrorHandlingMode,Err,ERROR,*999)
+    
+    CALL EXITS("CMISSErrorHandlingModeSet")
+    RETURN
+999 CALL ERRORS("CMISSErrorHandlingModeSet",Err,ERROR)
+    CALL EXITS("CMISSErrorHandlingModeSet")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSErrorHandlingModeSet
+
+
+!!==================================================================================================================================
+!!
+!! CMISS_CELLML
+!!
+!!==================================================================================================================================
+
+  !>Finishes the creation of a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLCreateFinishNumber(CellMLUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to finish creating.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLCreateFinishNumber",Err,ERROR,*999)
+ 
+    NULLIFY(CELLML)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_CREATE_FINISH(CELLML,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('CellML Create')
+#endif
+
+    CALL EXITS("CMISSCellMLCreateFinishNumber")
+    RETURN
+999 CALL ERRORS("CMISSCellMLCreateFinishNumber",Err,ERROR)
+    CALL EXITS("CMISSCellMLCreateFinishNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLCreateFinishNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finish the creation of a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLCreateFinishObj(CellML,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to finish the creation of.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLCreateFinishObj",Err,ERROR,*999)
+ 
+    CALL CELLML_CREATE_FINISH(CellML%CELLML,Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('CellML Create')
+#endif
+
+    CALL EXITS("CMISSCellMLCreateFinishObj")
+    RETURN
+999 CALL ERRORS("CMISSCellMLCreateFinishObj",Err,ERROR)
+    CALL EXITS("CMISSCellMLCreateFinishObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLCreateFinishObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Starts the creation of a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLCreateStartNumber(CellMLUserNumber,RegionUserNumber,FieldUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to start creating.
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the field to start the CellML enviroment creation on.
+    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the Field to start the CellML enviroment creation on.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLCreateStartNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('CellML Create')
+#endif
+ 
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    NULLIFY(CELLML)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL CELLML_CREATE_START(CellMLUserNumber,FIELD,CELLML,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
+          & " does not exist in region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLCreateStartNumber")
+    RETURN
+999 CALL ERRORS("CMISSCellMLCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSCellMLCreateStartNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLCreateStartNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Start the creation of a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLCreateStartObj(CellMLUserNumber,Field,CellML,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to start creating.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: Field !<The (source) field to set up the CellML environment for.
+    TYPE(CMISSCellMLType), INTENT(OUT) :: CellML !<On return, the created CellML environment.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLCreateStartObj",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('CellML Create')
+#endif
+ 
+    CALL CELLML_CREATE_START(CellMLUserNumber,Field%FIELD,CellML%CELLML,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSCellMLCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSCellMLCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLCreateStartObj
+
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Destroys a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLDestroyNumber(CellMLUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to destroy.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLDestroyNumber",Err,ERROR,*999)
+ 
+    NULLIFY(CELLML)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_DESTROY(CELLML,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLDestroyNumber")
+    RETURN
+999 CALL ERRORS("CMISSCellMLDestroyNumber",Err,ERROR)
+    CALL EXITS("CMISSCellMLDestroyNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLDestroyNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Destroy a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLDestroyObj(CellML,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to destroy.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLDestroyObj",Err,ERROR,*999)
+ 
+    CALL CELLML_DESTROY(CellML%CELLML,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLDestroyObj")
+    RETURN
+999 CALL ERRORS("CMISSCellMLDestroyObj",Err,ERROR)
+    CALL EXITS("CMISSCellMLDestroyObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLDestroyObj
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finishes the creation of CellML modesl for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLModelsCreateFinishNumber(CellMLUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to finish creating the models for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLModelsCreateFinishNumber",Err,ERROR,*999)
+ 
+    NULLIFY(CELLML)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_MODELS_CREATE_FINISH(CELLML,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLModelsCreateFinishNumber")
+    RETURN
+999 CALL ERRORS("CMISSCellMLModelsCreateFinishNumber",Err,ERROR)
+    CALL EXITS("CMISSCellMLModelsCreateFinishNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLModelsCreateFinishNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finish the creation of CellML models for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLModelsCreateFinishObj(CellML,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to finish the creation of the models for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLModelsCreateFinishObj",Err,ERROR,*999)
+ 
+    CALL CELLML_MODELS_CREATE_FINISH(CellML%CELLML,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLModelsCreateFinishObj")
+    RETURN
+999 CALL ERRORS("CMISSCellMLModelsCreateFinishObj",Err,ERROR)
+    CALL EXITS("CMISSCellMLModelsCreateFinishObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLModelsCreateFinishObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Starts the creation of CellML models for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLModelsCreateStartNumber(CellMLUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to start creating the models for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLModelsCreateStartNumber",Err,ERROR,*999)
+ 
+    NULLIFY(CELLML)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_MODELS_CREATE_START(CELLML,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLModelsCreateStartNumber")
+    RETURN
+999 CALL ERRORS("CMISSCellMLModelsCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSCellMLModelsCreateStartNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLModelsCreateStartNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Start the creation of CellML models for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLModelsCreateStartObj(CellML,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to start the creation of models for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLModelsCreateStartObj",Err,ERROR,*999)
+
+ 
+    CALL CELLML_MODELS_CREATE_START(CellML%CELLML,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLModelsCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSCellMLModelsCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSCellMLModelsCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLModelsCreateStartObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Imports a specified CellML model as specified by a character URI into a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLModelImportNumberC(CellMLModelUserNumber,CellMLUserNumber,URI,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to import.
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to import the model into.
+    CHARACTER(LEN=*), INTENT(IN) :: URI !<The URI of the CellML model to import.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLModelImportNumberC",Err,ERROR,*999)
+ 
+    NULLIFY(CELLML)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_MODEL_IMPORT(CellMLModelUserNumber,CELLML,URI,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLModelImportNumberC")
+    RETURN
+999 CALL ERRORS("CMISSCellMLModelImportNumberC",Err,ERROR)
+    CALL EXITS("CMISSCellMLModelImportNumberC")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLModelImportNumberC
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Imports a specified CellML model as specified by a character URI into a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLModelImportObjC(CellMLModelUserNumber,CellML,URI,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to import.
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to import the model into.
+    CHARACTER(LEN=*), INTENT(IN) :: URI !<The URI of the CellML model to import.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLModelImportObjC",Err,ERROR,*999)
+ 
+    CALL CELLML_MODEL_IMPORT(CellMLModelUserNumber,CellML%CELLML,URI,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLModelImportObjC")
+    RETURN
+999 CALL ERRORS("CMISSCellMLModelImportObjC",Err,ERROR)
+    CALL EXITS("CMISSCellMLModelImportObjC")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLModelImportObjC
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Imports a specified CellML model as specified by a varying string URI into a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLModelImportNumberVS(CellMLModelUserNumber,CellMLUserNumber,URI,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to import.
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to import the model into.
+    TYPE(VARYING_STRING), INTENT(IN) :: URI !<The URI of the CellML model to import.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLModelImportNumberVS",Err,ERROR,*999)
+ 
+    NULLIFY(CELLML)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_MODEL_IMPORT(CellMLModelUserNumber,CELLML,CHAR(URI),Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLModelImportNumberVS")
+    RETURN
+999 CALL ERRORS("CMISSCellMLModelImportNumberVS",Err,ERROR)
+    CALL EXITS("CMISSCellMLModelImportNumberVS")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLModelImportNumberVS
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Imports a specified CellML model as specified by a varying string URI into a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLModelImportObjVS(CellMLModelUserNumber,CellML,URI,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to import.
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to import the model into.
+    TYPE(VARYING_STRING), INTENT(IN) :: URI !<The URI of the CellML model to import.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLModelImportObjVS",Err,ERROR,*999)
+ 
+    CALL CELLML_MODEL_IMPORT(CellMLModelUserNumber,CellML%CELLML,CHAR(URI),Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLModelImportObjVS")
+    RETURN
+999 CALL ERRORS("CMISSCellMLModelImportObjVS",Err,ERROR)
+    CALL EXITS("CMISSCellMLModelImportObjVS")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLModelImportObjVS
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finishes the creation of CellML models field for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLModelsFieldCreateFinishNumber(CellMLUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to finish creating the models field for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLModelsFieldCreateFinishNumber",Err,ERROR,*999)
+ 
+    NULLIFY(CELLML)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_MODELS_FIELD_CREATE_FINISH(CELLML,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLModelsFieldCreateFinishNumber")
+    RETURN
+999 CALL ERRORS("CMISSCellMLModelsFieldCreateFinishNumber",Err,ERROR)
+    CALL EXITS("CMISSCellMLModelsFieldCreateFinishNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLModelsFieldCreateFinishNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finish the creation of CellML models field for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLModelsFieldCreateFinishObj(CellML,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to finish the creation of the models field for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLModelsFieldCreateFinishObj",Err,ERROR,*999)
+ 
+    CALL CELLML_MODELS_FIELD_CREATE_FINISH(CellML%CELLML,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLModelsFieldCreateFinishObj")
+    RETURN
+999 CALL ERRORS("CMISSCellMLModelsFieldCreateFinishObj",Err,ERROR)
+    CALL EXITS("CMISSCellMLModelsFieldCreateFinishObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLModelsFieldCreateFinishObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Starts the creation of CellML models field for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLModelsFieldCreateStartNumber(CellMLModelsFieldUserNumber,CellMLUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLModelsFieldUserNumber !<The user number of the CellML models field to start creating.
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to start creating the models field for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLModelsFieldCreateStartNumber",Err,ERROR,*999)
+ 
+    NULLIFY(FIELD)
+    NULLIFY(CELLML)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_MODELS_FIELD_CREATE_START(CellMLModelsFieldUserNumber,CELLML,FIELD,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLModelsFieldCreateStartNumber")
+    RETURN
+999 CALL ERRORS("CMISSCellMLModelsFieldCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSCellMLModelsFieldCreateStartNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLModelsFieldCreateStartNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Start the creation of CellML models field for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLModelsFieldCreateStartObj(CellMLModelsFieldUserNumber,CellML,Field,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLModelsFieldUserNumber !<The user number of the CellML models field to start creating.
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to start the creation of models field for.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: Field !<On return, the created CellML models field.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLModelsFieldCreateStartObj",Err,ERROR,*999)
+ 
+    CALL CELLML_MODELS_FIELD_CREATE_START(CellMLModelsFieldUserNumber,CellML%CELLML,Field%FIELD,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLModelsFieldCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSCellMLModelsFieldCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSCellMLModelsFieldCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLModelsFieldCreateStartObj
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the CellML models field for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLModelsFieldGetNumber(CellMLUserNumber,CellMLModelsFieldUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to get the CellML models field for.
+    INTEGER(INTG), INTENT(OUT) :: CellMLModelsFieldUserNumber !<On return, the user number of the CellML models field.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLModelsFieldGetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(CELLML)
+    NULLIFY(FIELD)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_MODELS_FIELD_GET(CELLML,FIELD,Err,ERROR,*999)
+      CellMLModelsFieldUserNumber = FIELD%USER_NUMBER
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLModelsFieldGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSCellMLModelsFieldGetNumber",Err,ERROR)
+    CALL EXITS("CMISSCellMLModelsFieldGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLModelsFieldGetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the CellML models field for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLModelsFieldGetObj(CellML,Field,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to get the models field for.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: Field !<On return, the CellML models field. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLModelsFieldGetObj",Err,ERROR,*999)
+ 
+    CALL CELLML_MODELS_FIELD_GET(CellML%CELLML,Field%FIELD,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLModelsFieldGetObj")
+    RETURN
+999 CALL ERRORS("CMISSCellMLModelsFieldGetObj",Err,ERROR)
+    CALL EXITS("CMISSCellMLModelsFieldGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLModelsFieldGetObj
+ 
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finishes the creation of CellML state field for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLStateFieldCreateFinishNumber(CellMLUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to finish creating the state field for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLStateFieldCreateFinishNumber",Err,ERROR,*999)
+ 
+    NULLIFY(CELLML)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_STATE_FIELD_CREATE_FINISH(CELLML,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLStateFieldCreateFinishNumber")
+    RETURN
+999 CALL ERRORS("CMISSCellMLStateFieldCreateFinishNumber",Err,ERROR)
+    CALL EXITS("CMISSCellMLStateFieldCreateFinishNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLStateFieldCreateFinishNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finish the creation of CellML state field for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLStateFieldCreateFinishObj(CellML,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to finish the creation of the state field for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLStateFieldCreateFinishObj",Err,ERROR,*999)
+ 
+    CALL CELLML_STATE_FIELD_CREATE_FINISH(CellML%CELLML,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLStateFieldCreateFinishObj")
+    RETURN
+999 CALL ERRORS("CMISSCellMLStateFieldCreateFinishObj",Err,ERROR)
+    CALL EXITS("CMISSCellMLStateFieldCreateFinishObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLStateFieldCreateFinishObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Starts the creation of CellML state field for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLStateFieldCreateStartNumber(CellMLStateFieldUserNumber,CellMLUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLStateFieldUserNumber !<The user number of the CellML state field to start creating.
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to start creating the state field for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLStateFieldCreateStartNumber",Err,ERROR,*999)
+ 
+    NULLIFY(FIELD)
+    NULLIFY(CELLML)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_STATE_FIELD_CREATE_START(CellMLStateFieldUserNumber,CELLML,FIELD,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLStateFieldCreateStartNumber")
+    RETURN
+999 CALL ERRORS("CMISSCellMLStateFieldCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSCellMLStateFieldCreateStartNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLStateFieldCreateStartNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Start the creation of CellML state field for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLStateFieldCreateStartObj(CellMLStateFieldUserNumber,CellML,Field,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLStateFieldUserNumber !<The user number of the CellML state field to start creating.
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to start the creation of state field for.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: Field !<On return, the created CellML state field.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLStateFieldCreateStartObj",Err,ERROR,*999)
+ 
+    CALL CELLML_STATE_FIELD_CREATE_START(CellMLStateFieldUserNumber,CellML%CELLML,Field%FIELD,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLStateFieldCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSCellMLStateFieldCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSCellMLStateFieldCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLStateFieldCreateStartObj
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the CellML state field for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLStateFieldGetNumber(CellMLUserNumber,CellMLStateFieldUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to get the CellML state field for.
+    INTEGER(INTG), INTENT(OUT) :: CellMLStateFieldUserNumber !<On return, the user number of the CellML state field.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLStateFieldGetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(CELLML)
+    NULLIFY(FIELD)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_STATE_FIELD_GET(CELLML,FIELD,Err,ERROR,*999)
+      CellMLStateFieldUserNumber = FIELD%USER_NUMBER
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLStateFieldGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSCellMLStateFieldGetNumber",Err,ERROR)
+    CALL EXITS("CMISSCellMLStateFieldGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLStateFieldGetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the CellML state field for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLStateFieldGetObj(CellML,Field,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to get the state field for.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: Field !<On return, the CellML state field.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLStateFieldGetObj",Err,ERROR,*999)
+ 
+    CALL CELLML_STATE_FIELD_GET(CellML%CELLML,Field%FIELD,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLStateFieldGetObj")
+    RETURN
+999 CALL ERRORS("CMISSCellMLStateFieldGetObj",Err,ERROR)
+    CALL EXITS("CMISSCellMLStateFieldGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLStateFieldGetObj
+ 
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the field component number that corresponds to a character string URI for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLFieldComponentGetNumberC(CellMLUserNumber,CellMLFieldType,URI,FieldComponent,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to get the field component for.
+    INTEGER(INTG), INTENT(IN) :: CellMLFieldType !<The type of CellML field to get the component for. \see OPENCMISS_CellMLFieldTypes,OPENCMISS
+    CHARACTER(LEN=*), INTENT(IN) :: URI !<The URI to get the corresponding field component for.
+    INTEGER(INTG), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the URI.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLFieldComponentGetNumberC",Err,ERROR,*999)
+ 
+    NULLIFY(CELLML)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_FIELD_COMPONENT_GET(CELLML,CellMLFieldType,URI,FieldComponent,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLFieldComponentGetNumberC")
+    RETURN
+999 CALL ERRORS("CMISSCellMLFieldComponentGetNumberC",Err,ERROR)
+    CALL EXITS("CMISSCellMLFieldComponentGetNumberC")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLFieldComponentGetNumberC
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the field component number that corresponds to a character string URI for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLFieldComponentGetObjC(CellML,CellMLFieldType,URI,FieldComponent,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to get the field component for.
+    INTEGER(INTG), INTENT(IN) :: CellMLFieldType !<The type of CellML field to get the component for. \see OPENCMISS_CellMLFieldTypes,OPENCMISS
+    CHARACTER(LEN=*), INTENT(IN) :: URI !<The URI to get the corresponding field component for.
+    INTEGER(INTG), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the URI.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLFieldComponentGetObjC",Err,ERROR,*999)
+ 
+    CALL CELLML_FIELD_COMPONENT_GET(CellML%CELLML,CellMLFieldType,URI,FieldComponent,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLFieldComponentGetObjC")
+    RETURN
+999 CALL ERRORS("CMISSCellMLFieldComponentGetObjC",Err,ERROR)
+    CALL EXITS("CMISSCellMLFieldComponentGetObjC")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLFieldComponentGetObjC
+ 
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the field component number that corresponds to a varying string URI for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLFieldComponentGetNumberVS(CellMLUserNumber,CellMLFieldType,URI,FieldComponent,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to get the field component for.
+    INTEGER(INTG), INTENT(IN) :: CellMLFieldType !<The type of CellML field to get the component for. \see OPENCMISS_CellMLFieldTypes,OPENCMISS
+    TYPE(VARYING_STRING), INTENT(IN) :: URI !<The URI to get the corresponding field component for.
+    INTEGER(INTG), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the URI.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLFieldComponentGetNumberVS",Err,ERROR,*999)
+ 
+    NULLIFY(CELLML)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_FIELD_COMPONENT_GET(CELLML,CellMLFieldType,URI,FieldComponent,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLFieldComponentGetNumberVS")
+    RETURN
+999 CALL ERRORS("CMISSCellMLFieldComponentGetNumberVS",Err,ERROR)
+    CALL EXITS("CMISSCellMLFieldComponentGetNumberVS")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLFieldComponentGetNumberVS
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the field component number that corresponds to a varying string URI for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLFieldComponentGetObjVS(CellML,CellMLFieldType,URI,FieldComponent,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to get the field component for.
+    INTEGER(INTG), INTENT(IN) :: CellMLFieldType !<The type of CellML field to get the component for. \see OPENCMISS_CellMLFieldTypes,OPENCMISS
+    TYPE(VARYING_STRING), INTENT(IN) :: URI !<The URI to get the corresponding field component for.
+    INTEGER(INTG), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the URI.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLFieldComponentGetObjVS",Err,ERROR,*999)
+ 
+    CALL CELLML_FIELD_COMPONENT_GET(CellML%CELLML,CellMLFieldType,URI,FieldComponent,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLFieldComponentGetObjVS")
+    RETURN
+999 CALL ERRORS("CMISSCellMLFieldComponentGetObjVS",Err,ERROR)
+    CALL EXITS("CMISSCellMLFieldComponentGetObjVS")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLFieldComponentGetObjVS
+ 
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Adds a specific variable to a CellML intermediate field for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLIntermediateFieldAddNumberC(CellMLUserNumber,CellMLModelUserNumber,URI,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to add to the intermediate field for.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add to the intermediate field for
+    CHARACTER(LEN=*), INTENT(IN) :: URI !<The URI of the model variable to add to the intermediate field for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLIntermediateFieldAddNumberC",Err,ERROR,*999)
+ 
+    NULLIFY(CELLML)
+     CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_INTERMEDIATE_FIELD_ADD(CELLML,CellMLModelUserNumber,URI,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLIntermediateFieldAddNumberC")
+    RETURN
+999 CALL ERRORS("CMISSCellMLIntermediateFieldAddNumberC",Err,ERROR)
+    CALL EXITS("CMISSCellMLIntermediateFieldAddNumberC")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLIntermediateFieldAddNumberC
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Adds a specific variable to a CellML intermediate field for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLIntermediateFieldAddObjC(CellML,CellMLModelUserNumber,URI,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to add to the intermediate field for.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add to the intermediate field for
+    CHARACTER(LEN=*), INTENT(IN) :: URI !<The URI of the model variable to add to the intermediate field for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLIntermediateFieldAddObjC",Err,ERROR,*999)
+ 
+    CALL CELLML_INTERMEDIATE_FIELD_ADD(CellML%CELLML,CellMLModelUserNumber,URI,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLIntermediateFieldAddObjC")
+    RETURN
+999 CALL ERRORS("CMISSCellMLIntermediateFieldAddObjC",Err,ERROR)
+    CALL EXITS("CMISSCellMLIntermediateFieldAddObjC")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLIntermediateFieldAddObjC
+ 
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Adds a specific variable to a CellML intermediate field for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLIntermediateFieldAddNumberVS(CellMLUserNumber,CellMLModelUserNumber,URI,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to add to the intermediate field for.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add to the intermediate field for
+    TYPE(VARYING_STRING), INTENT(IN) :: URI !<The URI of the model variable to add to the intermediate field for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLIntermediateFieldAddNumberVS",Err,ERROR,*999)
+ 
+    NULLIFY(CELLML)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_INTERMEDIATE_FIELD_ADD(CELLML,CellMLModelUserNumber,URI,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLIntermediateFieldAddNumberVS")
+    RETURN
+999 CALL ERRORS("CMISSCellMLIntermediateFieldAddNumberVS",Err,ERROR)
+    CALL EXITS("CMISSCellMLIntermediateFieldAddNumberVS")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLIntermediateFieldAddNumberVS
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Adds a specific variable to a CellML intermediate field for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLIntermediateFieldAddObjVS(CellML,CellMLModelUserNumber,URI,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to add to the intermediate field for.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add to the intermediate field for
+    TYPE(VARYING_STRING), INTENT(IN) :: URI !<The URI of the model variable to add to the intermediate field for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLIntermediateFieldAddObjVS",Err,ERROR,*999)
+ 
+    CALL CELLML_INTERMEDIATE_FIELD_ADD(CellML%CELLML,CellMLModelUserNumber,URI,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLIntermediateFieldAddObjVS")
+    RETURN
+999 CALL ERRORS("CMISSCellMLIntermediateFieldAddObjVS",Err,ERROR)
+    CALL EXITS("CMISSCellMLIntermediateFieldAddObjVS")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLIntermediateFieldAddObjVS
+ 
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finishes the creation of CellML intermediate field for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLIntermediateFieldCreateFinishNumber(CellMLUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to finish creating the intermediate field for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLIntermediateFieldCreateFinishNumber",Err,ERROR,*999)
+ 
+    NULLIFY(CELLML)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_INTERMEDIATE_FIELD_CREATE_FINISH(CELLML,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLIntermediateFieldCreateFinishNumber")
+    RETURN
+999 CALL ERRORS("CMISSCellMLIntermediateFieldCreateFinishNumber",Err,ERROR)
+    CALL EXITS("CMISSCellMLIntermediateFieldCreateFinishNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLIntermediateFieldCreateFinishNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finish the creation of CellML intermediate field for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLIntermediateFieldCreateFinishObj(CellML,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to finish the creation of the intermediate field for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLIntermediateFieldCreateFinishObj",Err,ERROR,*999)
+ 
+    CALL CELLML_INTERMEDIATE_FIELD_CREATE_FINISH(CellML%CELLML,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLIntermediateFieldCreateFinishObj")
+    RETURN
+999 CALL ERRORS("CMISSCellMLIntermediateFieldCreateFinishObj",Err,ERROR)
+    CALL EXITS("CMISSCellMLIntermediateFieldCreateFinishObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLIntermediateFieldCreateFinishObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Starts the creation of CellML intermediate field for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLIntermediateFieldCreateStartNumber(CellMLIntermediateFieldUserNumber,CellMLUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLIntermediateFieldUserNumber !<The user number of the CellML intermediate field to start creating.
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to start creating the intermediate field for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLIntermediateFieldCreateStartNumber",Err,ERROR,*999)
+ 
+    NULLIFY(FIELD)
+    NULLIFY(CELLML)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_INTERMEDIATE_FIELD_CREATE_START(CellMLIntermediateFieldUserNumber,CELLML,FIELD,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLIntermediateFieldCreateStartNumber")
+    RETURN
+999 CALL ERRORS("CMISSCellMLIntermediateFieldCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSCellMLIntermediateFieldCreateStartNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLIntermediateFieldCreateStartNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Start the creation of CellML intermediate field for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLIntermediateFieldCreateStartObj(CellMLIntermediateFieldUserNumber,CellML,Field,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLIntermediateFieldUserNumber !<The user number of the CellML intermediate field to start creating.
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to start the creation of intermediate field for.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: Field !<On return, the created CellML intermediate field.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLIntermediateFieldCreateStartObj",Err,ERROR,*999)
+ 
+    CALL CELLML_INTERMEDIATE_FIELD_CREATE_START(CellMLIntermediateFieldUserNumber,CellML%CELLML,Field%FIELD,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLIntermediateFieldCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSCellMLIntermediateFieldCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSCellMLIntermediateFieldCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLIntermediateFieldCreateStartObj
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the CellML intermediate field for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLIntermediateFieldGetNumber(CellMLUserNumber,CellMLIntermediateFieldUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to get the CellML intermediate field for.
+    INTEGER(INTG), INTENT(OUT) :: CellMLIntermediateFieldUserNumber !<On return, the user number of the CellML intermediate field.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLIntermediateFieldGetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(CELLML)
+    NULLIFY(FIELD)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_INTERMEDIATE_FIELD_GET(CELLML,FIELD,Err,ERROR,*999)
+      CellMLIntermediateFieldUserNumber = FIELD%USER_NUMBER
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLIntermediateFieldGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSCellMLIntermediateFieldGetNumber",Err,ERROR)
+    CALL EXITS("CMISSCellMLIntermediateFieldGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLIntermediateFieldGetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the CellML intermediate field for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLIntermediateFieldGetObj(CellML,Field,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to get the intermediate field for.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: Field !<On return, the CellML intermediate field.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLIntermediateFieldGetObj",Err,ERROR,*999)
+ 
+    CALL CELLML_INTERMEDIATE_FIELD_GET(CellML%CELLML,Field%FIELD,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLIntermediateFieldGetObj")
+    RETURN
+999 CALL ERRORS("CMISSCellMLIntermediateFieldGetObj",Err,ERROR)
+    CALL EXITS("CMISSCellMLIntermediateFieldGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLIntermediateFieldGetObj
+ 
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Override a specific parameter variable from a model in a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLParameterAddNumberC(CellMLUserNumber,CellMLModelUserNumber,URI,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to add to the parameters for.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add to the parameters for
+    CHARACTER(LEN=*), INTENT(IN) :: URI !<The URI of the parameter variable to add.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLParameterAddNumberC",Err,ERROR,*999)
+ 
+    NULLIFY(CELLML)
+     CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_PARAMETER_ADD(CELLML,CellMLModelUserNumber,URI,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLParameterAddNumberC")
+    RETURN
+999 CALL ERRORS("CMISSCellMLParameterAddNumberC",Err,ERROR)
+    CALL EXITS("CMISSCellMLParameterAddNumberC")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLParameterAddNumberC
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Override a specific parameter variable from a model in a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLParameterAddObjC(CellML,CellMLModelUserNumber,URI,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to add the parameter for.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add to the parameters for
+    CHARACTER(LEN=*), INTENT(IN) :: URI !<The URI of the parameter variable to add.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLParameterAddObjC",Err,ERROR,*999)
+ 
+    CALL CELLML_PARAMETER_ADD(CellML%CELLML,CellMLModelUserNumber,URI,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLParameterAddObjC")
+    RETURN
+999 CALL ERRORS("CMISSCellMLParameterAddObjC",Err,ERROR)
+    CALL EXITS("CMISSCellMLParameterAddObjC")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLParameterAddObjC
+ 
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Override a specific parameter variable from a model in a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLParameterAddNumberVS(CellMLUserNumber,CellMLModelUserNumber,URI,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to add to the parameters for.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add to the parameters for
+    TYPE(VARYING_STRING), INTENT(IN) :: URI !<The URI of the parameter variable to add.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLParameterAddNumberVS",Err,ERROR,*999)
+ 
+    NULLIFY(CELLML)
+     CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_PARAMETER_ADD(CELLML,CellMLModelUserNumber,URI,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLParameterAddNumberVS")
+    RETURN
+999 CALL ERRORS("CMISSCellMLParameterAddNumberVS",Err,ERROR)
+    CALL EXITS("CMISSCellMLParameterAddNumberVS")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLParameterAddNumberVS
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Override a specific parameter variable from a model in a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLParameterAddObjVS(CellML,CellMLModelUserNumber,URI,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to add the parameter for.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add to the parameters for
+    TYPE(VARYING_STRING), INTENT(IN) :: URI !<The URI of the parameter variable to add.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLParameterAddObjVS",Err,ERROR,*999)
+ 
+    CALL CELLML_PARAMETER_ADD(CellML%CELLML,CellMLModelUserNumber,URI,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLParameterAddObjVS")
+    RETURN
+999 CALL ERRORS("CMISSCellMLParameterAddObjVS",Err,ERROR)
+    CALL EXITS("CMISSCellMLParameterAddObjVS")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLParameterAddObjVS
+ 
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finishes the creation of CellML parameters for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLParametersCreateFinishNumber(CellMLUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to finish creating the parameters for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLParametersCreateFinishNumber",Err,ERROR,*999)
+ 
+    NULLIFY(CELLML)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_PARAMETERS_CREATE_FINISH(CELLML,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLParametersCreateFinishNumber")
+    RETURN
+999 CALL ERRORS("CMISSCellMLParametersCreateFinishNumber",Err,ERROR)
+    CALL EXITS("CMISSCellMLParametersCreateFinishNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLParametersCreateFinishNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finish the creation of CellML parameters for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLParametersCreateFinishObj(CellML,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to finish the creation of the parameters for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLParametersCreateFinishObj",Err,ERROR,*999)
+ 
+    CALL CELLML_PARAMETERS_CREATE_FINISH(CellML%CELLML,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLParametersCreateFinishObj")
+    RETURN
+999 CALL ERRORS("CMISSCellMLParametersCreateFinishObj",Err,ERROR)
+    CALL EXITS("CMISSCellMLParametersCreateFinishObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLParametersCreateFinishObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Starts the creation of CellML parameters for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLParametersCreateStartNumber(CellMLUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to start creating the parameters for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLParametersCreateStartNumber",Err,ERROR,*999)
+ 
+    NULLIFY(CELLML)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_PARAMETERS_CREATE_START(CELLML,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLParametersCreateStartNumber")
+    RETURN
+999 CALL ERRORS("CMISSCellMLParametersCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSCellMLParametersCreateStartNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLParametersCreateStartNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Start the creation of CellML parameters for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLParametersCreateStartObj(CellML,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to start the creation of parameters for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLParametersCreateStartObj",Err,ERROR,*999)
+ 
+    CALL CELLML_PARAMETERS_CREATE_START(CellML%CELLML,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLParametersCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSCellMLParametersCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSCellMLParametersCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLParametersCreateStartObj
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finishes the creation of CellML parameters field for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLParametersFieldCreateFinishNumber(CellMLUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to finish creating the parameters field for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLParametersFieldCreateFinishNumber",Err,ERROR,*999)
+ 
+    NULLIFY(CELLML)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_PARAMETERS_FIELD_CREATE_FINISH(CELLML,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLParametersFieldCreateFinishNumber")
+    RETURN
+999 CALL ERRORS("CMISSCellMLParametersFieldCreateFinishNumber",Err,ERROR)
+    CALL EXITS("CMISSCellMLParametersFieldCreateFinishNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLParametersFieldCreateFinishNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finish the creation of CellML parameters field for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLParametersFieldCreateFinishObj(CellML,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to finish the creation of the parameters field for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLParametersFieldCreateFinishObj",Err,ERROR,*999)
+ 
+    CALL CELLML_PARAMETERS_FIELD_CREATE_FINISH(CellML%CELLML,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLParametersFieldCreateFinishObj")
+    RETURN
+999 CALL ERRORS("CMISSCellMLParametersFieldCreateFinishObj",Err,ERROR)
+    CALL EXITS("CMISSCellMLParametersFieldCreateFinishObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLParametersFieldCreateFinishObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Starts the creation of CellML parameters field for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLParametersFieldCreateStartNumber(CellMLParametersFieldUserNumber,CellMLUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLParametersFieldUserNumber !<The user number of the CellML parameters field to start creating.
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to start creating the parameters field for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLParametersFieldCreateStartNumber",Err,ERROR,*999)
+ 
+    NULLIFY(FIELD)
+    NULLIFY(CELLML)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_PARAMETERS_FIELD_CREATE_START(CellMLParametersFieldUserNumber,CELLML,FIELD,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLParametersFieldCreateStartNumber")
+    RETURN
+999 CALL ERRORS("CMISSCellMLParametersFieldCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSCellMLParametersFieldCreateStartNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLParametersFieldCreateStartNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Start the creation of CellML parameters field for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLParametersFieldCreateStartObj(CellMLParametersFieldUserNumber,CellML,Field,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLParametersFieldUserNumber !<The user number of the CellML parameters field to start creating.
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to start the creation of parameters field for.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: Field !<On return, the created CellML parameters field.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLParametersFieldCreateStartObj",Err,ERROR,*999)
+ 
+    CALL CELLML_PARAMETERS_FIELD_CREATE_START(CellMLParametersFieldUserNumber,CellML%CELLML,Field%FIELD,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLParametersFieldCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSCellMLParametersFieldCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSCellMLParametersFieldCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLParametersFieldCreateStartObj
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the CellML parameters field for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLParametersFieldGetNumber(CellMLUserNumber,CellMLParametersFieldUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to get the CellML parameters field for.
+    INTEGER(INTG), INTENT(OUT) :: CellMLParametersFieldUserNumber !<On return, the user number of the CellML parameters field.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLParametersFieldGetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(CELLML)
+    NULLIFY(FIELD)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_PARAMETERS_FIELD_GET(CELLML,FIELD,Err,ERROR,*999)
+      CellMLParametersFieldUserNumber = FIELD%USER_NUMBER
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLParametersFieldGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSCellMLParametersFieldGetNumber",Err,ERROR)
+    CALL EXITS("CMISSCellMLParametersFieldGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLParametersFieldGetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the CellML parameters field for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLParametersFieldGetObj(CellML,Field,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to get the parameters field for.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: Field !<On return, the CellML parameters field.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLParametersFieldGetObj",Err,ERROR,*999)
+ 
+    CALL CELLML_PARAMETERS_FIELD_GET(CellML%CELLML,Field%FIELD,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLParametersFieldGetObj")
+    RETURN
+999 CALL ERRORS("CMISSCellMLParametersFieldGetObj",Err,ERROR)
+    CALL EXITS("CMISSCellMLParametersFieldGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLParametersFieldGetObj
+ 
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Validiate and instantiate a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLGenerateNumber(CellMLUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to generate.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLGenerateNumber",Err,ERROR,*999)
+ 
+    NULLIFY(CELLML)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL CELLML_GENERATE(CELLML,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLGenerateNumber")
+    RETURN
+999 CALL ERRORS("CMISSCellMLGenerateNumber",Err,ERROR)
+    CALL EXITS("CMISSCellMLGenerateNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLGenerateNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Validiate and instantiate a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLGenerateObj(CellML,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to generate.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLGenerateObj",Err,ERROR,*999)
+ 
+    CALL CELLML_GENERATE(CellML%CELLML,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLGenerateObj")
+    RETURN
+999 CALL ERRORS("CMISSCellMLGenerateObj",Err,ERROR)
+    CALL EXITS("CMISSCellMLGenerateObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLGenerateObj
+ 
 
 !!==================================================================================================================================
 !!
@@ -9753,6 +12926,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Coordinate System Create')
+#endif
+
     CALL EXITS("CMISSCoordinateSystemCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystemCreateFinishNumber",Err,ERROR)
@@ -9778,6 +12955,10 @@ CONTAINS
  
     CALL COORDINATE_SYSTEM_CREATE_FINISH(CoordinateSystem%COORDINATE_SYSTEM,Err,ERROR,*999)
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Coordinate System Create')
+#endif
+
     CALL EXITS("CMISSCoordinateSystemCreateFinishObj")
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystemCreateFinishObj",Err,ERROR)
@@ -9801,6 +12982,10 @@ CONTAINS
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
 
     CALL ENTERS("CMISSCoordinateSystemCreateStartNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Coordinate System Create')
+#endif
  
     NULLIFY(COORDINATE_SYSTEM)
     CALL COORDINATE_SYSTEM_CREATE_START(CoordinateSystemUserNumber,COORDINATE_SYSTEM,Err,ERROR,*999)
@@ -9828,6 +13013,10 @@ CONTAINS
     !Local variables
  
     CALL ENTERS("CMISSCoordinateSystemCreateStartObj",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Coordinate System Create')
+#endif
  
     CALL COORDINATE_SYSTEM_CREATE_START(CoordinateSystemUserNumber,CoordinateSystem%COORDINATE_SYSTEM,Err,ERROR,*999)
 
@@ -11548,7 +14737,11 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("CMISSEquationsSetBoundaryConditionsAnalyticNumber",Err,ERROR,*999)
- 
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Analytic Boundary Conditions Create')
+#endif
+
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
@@ -11565,6 +14758,10 @@ CONTAINS
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Analytic Boundary Conditions Create')
+#endif
 
     CALL EXITS("CMISSEquationsSetBoundaryConditionsAnalyticNumber")
     RETURN
@@ -11588,9 +14785,17 @@ CONTAINS
     !Local variables
  
     CALL ENTERS("CMISSEquationsSetBoundaryConditionsAnalyticObj",Err,ERROR,*999)
- 
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Analytic Boundary Conditions Create')
+#endif
+
     CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_ANALYTIC(EquationsSet%EQUATIONS_SET,Err,ERROR,*999)
     
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Analytic Boundary Conditions Create')
+#endif
+
     CALL EXITS("CMISSEquationsSetBoundaryConditionsAnalyticObj")
     RETURN
 999 CALL ERRORS("CMISSEquationsSetBoundaryConditionsAnalyticObj",Err,ERROR)
@@ -11635,6 +14840,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Boundary Conditions Create')
+#endif
+
     CALL EXITS("CMISSEquationsSetBoundaryConditionsCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSEquationsSetBoundaryConditionsCreateFinishNumber",Err,ERROR)
@@ -11659,6 +14868,10 @@ CONTAINS
     CALL ENTERS("CMISSEquationsSetBoundaryConditionsCreateFinishObj",Err,ERROR,*999)
  
     CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_CREATE_FINISH(EquationsSet%EQUATIONS_SET,Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Boundary Conditions Create')
+#endif
 
     CALL EXITS("CMISSEquationsSetBoundaryConditionsCreateFinishObj")
     RETURN
@@ -11687,6 +14900,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("CMISSEquationsSetBoundaryConditionsCreateStartNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Boundary Conditions Create')
+#endif
  
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -11729,6 +14946,10 @@ CONTAINS
     !Local variables
  
     CALL ENTERS("CMISSEquationsSetBoundaryConditionsCreateStartObj",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Boundary Conditions Create')
+#endif
  
     CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_CREATE_START(EquationsSet%EQUATIONS_SET,BoundaryConditions%BOUNDARY_CONDITIONS, &
       & Err,ERROR,*999)
@@ -11846,6 +15067,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Equations Set Create')
+#endif
+
     CALL EXITS("CMISSEquationsSetCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSEquationsSetCreateFinishNumber",Err,ERROR)
@@ -11870,6 +15095,10 @@ CONTAINS
     CALL ENTERS("CMISSEquationsSetCreateFinishObj",Err,ERROR,*999)
  
     CALL EQUATIONS_SET_CREATE_FINISH(EquationsSet%EQUATIONS_SET,Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Equations Set Create')
+#endif
 
     CALL EXITS("CMISSEquationsSetCreateFinishObj")
     RETURN
@@ -11899,6 +15128,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("CMISSEquationsSetCreateStartNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Equations Set Create')
+#endif
  
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -11943,6 +15176,10 @@ CONTAINS
     !Local variables
  
     CALL ENTERS("CMISSEquationsSetCreateStartObj",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Equations Set Create')
+#endif
  
     CALL EQUATIONS_SET_CREATE_START(EquationsSetUserNumber,Region%REGION,GeomFibreField%FIELD,EquationsSet%EQUATIONS_SET, &
       & Err,ERROR,*999)
@@ -14632,6 +17869,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Field Create')
+#endif
+
     CALL EXITS("CMISSFieldCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSFieldCreateFinishNumber",Err,ERROR)
@@ -14656,6 +17897,10 @@ CONTAINS
     CALL ENTERS("CMISSFieldCreateFinishObj",Err,ERROR,*999)
  
     CALL FIELD_CREATE_FINISH(Field%FIELD,Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Field Create')
+#endif
 
     CALL EXITS("CMISSFieldCreateFinishObj")
     RETURN
@@ -14683,6 +17928,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSFieldCreateStartNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Field Create')
+#endif
  
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -14745,6 +17994,10 @@ CONTAINS
     !Local variables
   
     CALL ENTERS("CMISSFieldCreateStartRegionObj",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Field Create')
+#endif
  
     CALL FIELD_CREATE_START(FieldUserNumber,Region%REGION,Field%FIELD,Err,ERROR,*999)
 
@@ -20088,77 +23341,6 @@ CONTAINS
   !================================================================================================================================
   !   
 
-  !>Sets/changes the scaling type for a field identified by a user number, and locks it so that no further changes can be made.
-  SUBROUTINE CMISSFieldScalingTypeSetAndLockNumber(RegionUserNumber,FieldUserNumber,ScalingType,Err)
-  
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to set the scaling type for.
-    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to set the scaling type for.
-    INTEGER(INTG), INTENT(IN) :: ScalingType !<The field scaling type to set. \see OPENCMISS_FieldScalingTypes
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-    TYPE(FIELD_TYPE), POINTER :: FIELD
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("CMISSFieldScalingTypeSetAndLockNumber",Err,ERROR,*999)
- 
-    NULLIFY(REGION)
-    NULLIFY(FIELD)
-    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
-      IF(ASSOCIATED(FIELD)) THEN
-        CALL FIELD_SCALING_TYPE_SET_AND_LOCK(FIELD,ScalingType,Err,ERROR,*999)
-      ELSE
-        LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
-          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-      ENDIF
-    ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("CMISSFieldScalingTypeSetAndLockNumber")
-    RETURN
-999 CALL ERRORS("CMISSFieldScalingTypeSetAndLockNumber",Err,ERROR)
-    CALL EXITS("CMISSFieldScalingTypeSetAndLockNumber")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSFieldScalingTypeSetAndLockNumber
-
-  !  
-  !================================================================================================================================
-  !  
- 
-  !>Sets/changes the scaling type for a field identified by an object, and locks it so that no further changes can be made.
-  SUBROUTINE CMISSFieldScalingTypeSetAndLockObj(Field,ScalingType,Err)
-  
-    !Argument variables
-    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to set the scaling type for.
-    INTEGER(INTG), INTENT(IN) :: ScalingType !<The field scaling type to set. \see OPENCMISS_FieldScalingTypes
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-  
-    CALL ENTERS("CMISSFieldScalingTypeSetAndLockObj",Err,ERROR,*999)
- 
-    CALL FIELD_SCALING_TYPE_SET_AND_LOCK(Field%FIELD,ScalingType,Err,ERROR,*999)
-
-    CALL EXITS("CMISSFieldScalingTypeSetAndLockObj")
-    RETURN
-999 CALL ERRORS("CMISSFieldScalingTypeSetAndLockObj",Err,ERROR)
-    CALL EXITS("CMISSFieldScalingTypeSetAndLockObj")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSFieldScalingTypeSetAndLockObj
-
-  !  
-  !================================================================================================================================
-  !   
-
   !>Returns the field type for a field identified by a user number.
   SUBROUTINE CMISSFieldTypeGetNumber(RegionUserNumber,FieldUserNumber,FieldType,Err)
   
@@ -21154,6 +24336,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Generated Mesh Create')
+#endif
+
     CALL EXITS("CMISSGeneratedMeshCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSGeneratedMeshCreateFinishNumber",Err,ERROR)
@@ -21181,6 +24367,10 @@ CONTAINS
  
     CALL GENERATED_MESH_CREATE_FINISH(GeneratedMesh%GENERATED_MESH,MeshUserNumber,Mesh%MESH,Err,ERROR,*999)
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Generated Mesh Create')
+#endif
+
     CALL EXITS("CMISSGeneratedMeshCreateFinishObj")
     RETURN
 999 CALL ERRORS("CMISSGeneratedMeshCreateFinishObj",Err,ERROR)
@@ -21207,6 +24397,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSGeneratedMeshCreateStartNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Generated Mesh Create')
+#endif
  
     NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
@@ -21270,6 +24464,10 @@ CONTAINS
     !Local variables
   
     CALL ENTERS("CMISSGeneratedMeshCreateStartRegionObj",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Generated Mesh Create')
+#endif
  
     CALL GENERATED_MESH_CREATE_START(GeneratedMeshUserNumber,REGION%Region,GeneratedMesh%GENERATED_MESH,Err,ERROR,*999)
 
@@ -24049,6 +27247,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Decomposition Create')
+#endif
+
     CALL EXITS("CMISSDecompositionCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSDecompositionCreateFinishNumber",Err,ERROR)
@@ -24073,6 +27275,10 @@ CONTAINS
     CALL ENTERS("CMISSDecompositionCreateFinishObj",Err,ERROR,*999)
  
     CALL DECOMPOSITION_CREATE_FINISH(Decomposition%DECOMPOSITION,Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Decomposition Create')
+#endif
 
     CALL EXITS("CMISSDecompositionCreateFinishObj")
     RETURN
@@ -24102,6 +27308,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSDecompositionCreateStartNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Decomposition Create')
+#endif
  
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -24146,6 +27356,10 @@ CONTAINS
     !Local variables
   
     CALL ENTERS("CMISSDecompositionCreateStartObj",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Decomposition Create')
+#endif
  
     CALL DECOMPOSITION_CREATE_START(DecompositionUserNumber,Mesh%MESH,Decomposition%DECOMPOSITION,Err,ERROR,*999)
 
@@ -25107,6 +28321,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Mesh Create')
+#endif
+
     CALL EXITS("CMISSMeshCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSMeshCreateFinishNumber",Err,ERROR)
@@ -25131,6 +28349,10 @@ CONTAINS
     CALL ENTERS("CMISSMeshCreateFinishObj",Err,ERROR,*999)
  
     CALL MESH_CREATE_FINISH(Mesh%MESH,Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Mesh Create')
+#endif
 
     CALL EXITS("CMISSMeshCreateFinishObj")
     RETURN
@@ -25159,6 +28381,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSMeshCreateStartNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Mesh Create')
+#endif
  
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -25197,6 +28423,10 @@ CONTAINS
   
     CALL ENTERS("CMISSMeshCreateStartObj",Err,ERROR,*999)
  
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Mesh Create')
+#endif
+
     CALL MESH_CREATE_START(MeshUserNumber,Region%REGION,NumberOfDimensions,Mesh%MESH,Err,ERROR,*999)
 
     CALL EXITS("CMISSMeshCreateStartObj")
@@ -26254,6 +29484,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Nodes Create')
+#endif
+
     CALL EXITS("CMISSNodesCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSNodesCreateFinishNumber",Err,ERROR)
@@ -26278,6 +29512,10 @@ CONTAINS
     CALL ENTERS("CMISSNodesCreateFinishObj",Err,ERROR,*999)
  
     CALL NODES_CREATE_FINISH(Nodes%NODES,Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Nodes Create')
+#endif
 
     CALL EXITS("CMISSNodesCreateFinishObj")
     RETURN
@@ -26305,6 +29543,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSNodesCreateStartNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Nodes Create')
+#endif
  
     NULLIFY(REGION)
     NULLIFY(NODES)
@@ -26341,7 +29583,11 @@ CONTAINS
     !Local variables
   
     CALL ENTERS("CMISSNodesCreateStartObj",Err,ERROR,*999)
- 
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Nodes Create')
+#endif
+
     CALL NODES_CREATE_START(Region%REGION,NumberOfNodes,Nodes%NODES,Err,ERROR,*999)
 
     CALL EXITS("CMISSNodesCreateStartObj")
@@ -26846,6 +30092,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Problem Create')
+#endif
+
     CALL EXITS("CMISSProblemCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSProblemCreateFinishNumber",Err,ERROR)
@@ -26871,6 +30121,10 @@ CONTAINS
  
     CALL PROBLEM_CREATE_FINISH(Problem%PROBLEM,Err,ERROR,*999)
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Problem Create')
+#endif
+
     CALL EXITS("CMISSProblemCreateFinishObj")
     RETURN
 999 CALL ERRORS("CMISSProblemCreateFinishObj",Err,ERROR)
@@ -26894,6 +30148,10 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     
     CALL ENTERS("CMISSProblemCreateStartNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Problem Create')
+#endif
  
     CALL PROBLEM_CREATE_START(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
 
@@ -26920,6 +30178,10 @@ CONTAINS
     !Local variables
   
     CALL ENTERS("CMISSProblemCreateStartObj",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Problem Create')
+#endif
  
     CALL PROBLEM_CREATE_START(ProblemUserNumber,Problem%PROBLEM,Err,ERROR,*999)
 
@@ -27018,6 +30280,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Problem Control Loop Create')
+#endif
+
     CALL EXITS("CMISSProblemControlLoopCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSProblemControlLoopCreateFinishNumber",Err,ERROR)
@@ -27043,6 +30309,10 @@ CONTAINS
  
     CALL PROBLEM_CONTROL_LOOP_CREATE_FINISH(Problem%PROBLEM,Err,ERROR,*999)
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Problem Control Loop Create')
+#endif
+
     CALL EXITS("CMISSProblemControlLoopCreateFinishObj")
     RETURN
 999 CALL ERRORS("CMISSProblemControlLoopCreateFinishObj",Err,ERROR)
@@ -27067,7 +30337,11 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSProblemControlLoopCreateStartNumber",Err,ERROR,*999)
- 
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Problem Control Loop Create')
+#endif
+
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
@@ -27101,6 +30375,10 @@ CONTAINS
   
     CALL ENTERS("CMISSProblemControlLoopCreateStartObj",Err,ERROR,*999)
  
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Problem Control Loop Create')
+#endif
+
     CALL PROBLEM_CONTROL_LOOP_CREATE_START(Problem%PROBLEM,Err,ERROR,*999)
 
     CALL EXITS("CMISSProblemControlLoopCreateStartObj")
@@ -27313,6 +30591,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSProblemSolveNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Problem Solve')
+#endif
  
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
@@ -27323,6 +30605,10 @@ CONTAINS
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Problem Solve')
+#endif
 
     CALL EXITS("CMISSProblemSolveNumber")
     RETURN
@@ -27346,9 +30632,17 @@ CONTAINS
     !Local variables
     
     CALL ENTERS("CMISSProblemSolveObj",Err,ERROR,*999)
- 
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Problem Solve')
+#endif
+
     CALL PROBLEM_SOLVE(Problem%PROBLEM,Err,ERROR,*999)
- 
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Problem Solve')
+#endif
+
     CALL EXITS("CMISSProblemSolveObj")
     RETURN
 999 CALL ERRORS("CMISSProblemSolveObj",Err,ERROR)
@@ -27503,7 +30797,11 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSProblemSolverEquationsCreateFinishNumber",Err,ERROR,*999)
- 
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Solver Equations Create')
+#endif
+
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
@@ -27539,6 +30837,10 @@ CONTAINS
  
     CALL PROBLEM_SOLVER_EQUATIONS_CREATE_FINISH(Problem%PROBLEM,Err,ERROR,*999)
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Solver Equations Create')
+#endif
+
     CALL EXITS("CMISSProblemSolverEquationsCreateFinishObj")
     RETURN
 999 CALL ERRORS("CMISSProblemSolverEquationsCreateFinishObj",Err,ERROR)
@@ -27564,6 +30866,10 @@ CONTAINS
     
     CALL ENTERS("CMISSProblemSolverEquationsCreateStartNumber",Err,ERROR,*999)
  
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Solver Equations Create')
+#endif
+
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
@@ -27596,7 +30902,11 @@ CONTAINS
     !Local variables
   
     CALL ENTERS("CMISSProblemSolverEquationsCreateStartObj",Err,ERROR,*999)
- 
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Solver Equations Create')
+#endif
+
     CALL PROBLEM_SOLVER_EQUATIONS_CREATE_START(Problem%PROBLEM,Err,ERROR,*999)
 
     CALL EXITS("CMISSProblemSolverEquationsCreateStartObj")
@@ -27815,7 +31125,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSProblemSolversCreateFinishNumber",Err,ERROR,*999)
- 
+
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
@@ -27825,6 +31135,10 @@ CONTAINS
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Problem Solvers Create')
+#endif
 
     CALL EXITS("CMISSProblemSolversCreateFinishNumber")
     RETURN
@@ -27851,6 +31165,10 @@ CONTAINS
  
     CALL PROBLEM_SOLVERS_CREATE_FINISH(Problem%PROBLEM,Err,ERROR,*999)
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Problem Solvers Create')
+#endif
+
     CALL EXITS("CMISSProblemSolversCreateFinishObj")
     RETURN
 999 CALL ERRORS("CMISSProblemSolversCreateFinishObj",Err,ERROR)
@@ -27875,6 +31193,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSProblemSolversCreateStartNumber",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Problem Solvers Create')
+#endif
  
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
@@ -27909,6 +31231,10 @@ CONTAINS
   
     CALL ENTERS("CMISSProblemSolversCreateStartObj",Err,ERROR,*999)
  
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Problem Solvers Create')
+#endif
+
     CALL PROBLEM_SOLVERS_CREATE_START(Problem%PROBLEM,Err,ERROR,*999)
 
     CALL EXITS("CMISSProblemSolversCreateStartObj")
@@ -28282,6 +31608,10 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Region Create')
+#endif
+
     CALL EXITS("CMISSRegionCreateFinishNumber")
     RETURN
 999 CALL ERRORS("CMISSRegionCreateFinishNumber",Err,ERROR)
@@ -28306,6 +31636,10 @@ CONTAINS
     CALL ENTERS("CMISSRegionCreateFinishObj",Err,ERROR,*999)
  
     CALL REGION_CREATE_FINISH(Region%REGION,Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Region Create')
+#endif
 
     CALL EXITS("CMISSRegionCreateFinishObj")
     RETURN
@@ -28332,7 +31666,11 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSRegionCreateStartNumber",Err,ERROR,*999)
- 
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Region Create')
+#endif
+
     NULLIFY(PARENT_REGION)
     NULLIFY(REGION)
     CALL REGION_USER_NUMBER_FIND(ParentRegionUserNumber,PARENT_REGION,Err,ERROR,*999)
@@ -28368,7 +31706,11 @@ CONTAINS
     !Local variables
   
     CALL ENTERS("CMISSRegionCreateStartObj",Err,ERROR,*999)
- 
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Region Create')
+#endif
+
     CALL REGION_CREATE_START(RegionUserNumber,ParentRegion%REGION,Region%REGION,Err,ERROR,*999)
 
     CALL EXITS("CMISSRegionCreateStartObj")
@@ -30522,7 +33864,7 @@ CONTAINS
   !  
  
   !>Sets/changes the type of direct linear solver for a solver identified by an object.
-  SUBROUTINE CMISSSolverLinearDirectSetObj(Solver,DirectSolverType,Err)
+  SUBROUTINE CMISSSolverLinearDirectTypeSetObj(Solver,DirectSolverType,Err)
   
     !Argument variables
     TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to set the library type for.
@@ -30530,18 +33872,18 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
-    CALL ENTERS("CMISSSolverLinearDirectSetObj",Err,ERROR,*999)
+    CALL ENTERS("CMISSSolverLinearDirectTypeSetObj",Err,ERROR,*999)
  
     CALL SOLVER_LINEAR_DIRECT_TYPE_SET(Solver%SOLVER,DirectSolverType,Err,ERROR,*999)
 
-    CALL EXITS("CMISSSolverLinearDirectSetObj")
+    CALL EXITS("CMISSSolverLinearDirectTypeSetObj")
     RETURN
-999 CALL ERRORS("CMISSSolverLinearDirectSetObj",Err,ERROR)
-    CALL EXITS("CMISSSolverLinearDirectSetObj")
+999 CALL ERRORS("CMISSSolverLinearDirectTypeSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverLinearDirectTypeSetObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
 
-  END SUBROUTINE CMISSSolverLinearDirectSetObj
+  END SUBROUTINE CMISSSolverLinearDirectTypeSetObj
     
   !  
   !================================================================================================================================

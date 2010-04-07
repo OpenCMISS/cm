@@ -8,6 +8,7 @@
 - \subpage library_commands  
 - \subpage code_style 
 - \subpage tools
+- \subpage profiling_with_TAU
 .
 Development notes:
 - \subpage opencmiss_cellml
