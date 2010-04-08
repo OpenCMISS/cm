@@ -52,65 +52,14 @@ MODULE COMP_ENVIRONMENT
   USE MPI
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
+  USE TYPES
  
   IMPLICIT NONE
  
 
   !Module parameters
 
-  !Module types
-  
-  !>!>pointer type to COMPUTATIONAL_WORK_GROUP_TYPE
-  TYPE, PUBLIC :: COMPUTATIONAL_WORK_GROUP_PTR_TYPE
-     TYPE(COMPUTATIONAL_WORK_GROUP_TYPE), POINTER :: PTR
-  END TYPE COMPUTATIONAL_WORK_GROUP_PTR_TYPE
-  
-  !>Contains information on logical working groups (added by Robert on 01/04/2010)
-  TYPE, PUBLIC :: COMPUTATIONAL_WORK_GROUP_TYPE
-    INTEGER(INTG) :: NUMBER_COMPUTATIONAL_NODES !<size of the total compurational nodes belonging to this group
-    INTEGER(INTG) :: NUMBER_SUB_WORK_GROUPS !<size of sub working grous
-    TYPE(COMPUTATIONAL_WORK_GROUP_TYPE), POINTER:: PARENT !<Parent of this working groups
-    TYPE(COMPUTATIONAL_WORK_GROUP_PTR_TYPE), ALLOCATABLE:: SUB_WORK_GROUPS(:) !<non-leaf node: The sub working groups
-    
-    TYPE(COMPUTATIONAL_ENVIRONMENT_TYPE), POINTER :: COMP_ENV !<pointer to the actual working environment
-    LOGICAL :: COMP_ENV_FINISHED !<!<Is .TURE. if the actual working environment has been generated, .FALSE. if not
-  END TYPE COMPUTATIONAL_WORK_GROUP_TYPE
-
-  PRIVATE
-
-  !>Contains information on a cache heirarchy
-  TYPE CACHE_TYPE
-    INTEGER(INTG) :: NUMBER_LEVELS !<The number of levels in the cache hierarchy
-    INTEGER(INTG),ALLOCATABLE :: SIZE(:) !<SIZE(level_idx). The size of the level_idx'th cache level.
-  END TYPE CACHE_TYPE
-
-  !>Contains information on a computational node containing a number of processors
-  TYPE COMPUTATIONAL_NODE_TYPE
-    INTEGER(INTG) :: NUMBER_PROCESSORS !<The number of processors for this computational node
-    INTEGER(INTG) :: RANK !<The MPI rank of this computational node
-   !TYPE(CACHE_TYPE) :: CACHE 
-    INTEGER(INTG) :: NODE_NAME_LENGTH !<The length of the name of the computational node
-    CHARACTER(LEN=MPI_MAX_PROCESSOR_NAME) :: NODE_NAME !<The name of the computational node
-  END TYPE COMPUTATIONAL_NODE_TYPE
-
-  PUBLIC COMPUTATIONAL_NODE_TYPE
-
-  !>Contains information on the MPI type to transfer information about a computational node
-  TYPE MPI_COMPUTATIONAL_NODE_TYPE
-    INTEGER(INTG) :: MPI_TYPE !<The MPI data type
-    INTEGER(INTG) :: NUM_BLOCKS !<The number of blocks in the MPI data type. This will be equal to 4.
-    INTEGER(INTG) :: BLOCK_LENGTHS(4) !<The length of each block.
-    INTEGER(INTG) :: TYPES(4) !<The data types of each block.
-    INTEGER(MPI_ADDRESS_KIND) :: DISPLACEMENTS(4) !<The address displacements to each block.
-  END TYPE MPI_COMPUTATIONAL_NODE_TYPE
-
-  !>Contains information on the computational environment the program is running in.
-  TYPE COMPUTATIONAL_ENVIRONMENT_TYPE
-    INTEGER(INTG) :: MPI_COMM !<The MPI communicator for cmiss
-    INTEGER(INTG) :: NUMBER_COMPUTATIONAL_NODES !<The number of computational nodes
-    INTEGER(INTG) :: MY_COMPUTATIONAL_NODE_NUMBER !<The index of the running process
-    TYPE(COMPUTATIONAL_NODE_TYPE), ALLOCATABLE :: COMPUTATIONAL_NODES(:) !<COMPUTATIONAL_NODES(node_idx). Contains information on the node_idx'th computational node. 
-  END TYPE COMPUTATIONAL_ENVIRONMENT_TYPE
+  !Module types  
 
   !Module variables
 
@@ -119,22 +68,54 @@ MODULE COMP_ENVIRONMENT
 
   !Interfaces
   ! Access specifiers for subroutines and interfaces(if any)
-  PUBLIC COMPUTATIONAL_ENVIRONMENT_TYPE
   PUBLIC COMPUTATIONAL_ENVIRONMENT
   PUBLIC COMPUTATIONAL_ENVIRONMENT_INITIALISE,COMPUTATIONAL_ENVIRONMENT_FINALISE,COMPUTATIONAL_NODES_NUMBER_GET, &
     & COMPUTATIONAL_NODE_NUMBER_GET
   PUBLIC COMPUTATIONAL_WORK_GROUP_SUBGROUP_ADD, COMPUTATIONAL_WORK_GROUP_CREATE_START, COMPUTATIONAL_WORK_GROUP_CREATE_FINISH
 
 CONTAINS
+
+
+  !================================================================================================================================
+  !
+  !>
+  !>CREATE THE COMMINCATOR OF THIS WORK GROUP (DEFAULT: MPI_COMM FOR WORLD WORLD GROUP)
+  !>
+  FUNCTION COMPUTATIONAL_WORK_GROUP_COMMUNICATOR_GET(WORK_GROUP,ERR,ERROR)
+    !Argument Variables
+    TYPE(COMPUTATIONAL_WORK_GROUP_TYPE),POINTER, INTENT(IN) :: WORK_GROUP
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function variable
+     INTEGER(INTG) :: COMPUTATIONAL_WORK_GROUP_COMMUNICATOR_GET !<The MPI communicator ID
+
+    IF(ASSOCIATED(WORK_GROUP)) THEN 
+	IF(WORK_GROUP%COMP_ENV_FINISHED) THEN
+	  COMPUTATIONAL_WORK_GROUP_COMMUNICATOR_GET = WORK_GROUP%COMP_ENV%MPI_COMM  
+	ELSE
+	  CALL FLAG_ERROR('computational environment of this work group has not finished', ERR, ERROR, *999)
+	ENDIF
+    ELSE
+     CALL FLAG_ERROR('WORK_GROUP is not associated', ERR, ERROR, *999)
+    ENDIF
+    
+    CALL EXITS("COMPUTATIONAL_WORK_GROUP_COMMUNICATOR_GET")
+    RETURN
+999 CALL ERRORS("COMPUTATIONAL_WORK_GROUP_COMMUNICATOR_GET",ERR,ERROR)
+    CALL EXITS("COMPUTATIONAL_WORK_GROUP_COMMUNICATOR_GET")
+    RETURN 
+  END FUNCTION COMPUTATIONAL_WORK_GROUP_COMMUNICATOR_GET
+
   !
   !================================================================================================================================
   !
   !>
   !>ADD WORK SUB-GROUP TO THE PARENT GROUP BASED ON THE COMPUTATIONAL REQUIREMENTS (CALLED BY THE USER)
   !>
-  SUBROUTINE COMPUTATIONAL_WORK_GROUP_SUBGROUP_ADD(PARENT_WORK_GROUP, NUMBER_COMPUTATIONAL_NODES, &
+  SUBROUTINE COMPUTATIONAL_WORK_GROUP_SUBGROUP_ADD(USER_NUMBER_ADDED_GROUP, PARENT_WORK_GROUP, NUMBER_COMPUTATIONAL_NODES, &
    & ADDED_WORK_GROUP,ERR,ERROR,*)
     !Argument Variables
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER_ADDED_GROUP !<The user number of the WorkGroup to ADD
     TYPE(COMPUTATIONAL_WORK_GROUP_TYPE),POINTER, INTENT(INOUT) :: PARENT_WORK_GROUP
     TYPE(COMPUTATIONAL_WORK_GROUP_TYPE),POINTER, INTENT(INOUT) :: ADDED_WORK_GROUP
     INTEGER(INTG),INTENT(IN) :: NUMBER_COMPUTATIONAL_NODES
@@ -197,8 +178,9 @@ CONTAINS
   !>
   !>CREATE THE HIGHEST LEVEL WORK GROUP (DEFAULT: GROUP_WORLD)
   !>
-  SUBROUTINE COMPUTATIONAL_WORK_GROUP_CREATE_START(WORLD_WORK_GROUP,NUMBER_COMPUTATIONAL_NODES,ERR,ERROR,*)
+  SUBROUTINE COMPUTATIONAL_WORK_GROUP_CREATE_START(USER_NUMBER, WORLD_WORK_GROUP,NUMBER_COMPUTATIONAL_NODES,ERR,ERROR,*)
     !Argument Variables
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the WORLD WorkGroup to start the creation of.
     TYPE(COMPUTATIONAL_WORK_GROUP_TYPE),POINTER, INTENT(INOUT) :: WORLD_WORK_GROUP
     INTEGER(INTG),INTENT(IN) :: NUMBER_COMPUTATIONAL_NODES
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code

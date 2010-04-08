@@ -71,6 +71,7 @@ MODULE TYPES
   USE CMISS_PETSC_TYPES
   USE CONSTANTS
   USE KINDS
+!  USE MPI !for mpi constants in mpif.h
   USE ISO_C_BINDING
   USE ISO_VARYING_STRING
   USE TREES
@@ -657,6 +658,62 @@ MODULE TYPES
   !
   !================================================================================================================================
   !
+  ! Computational environment types
+  !
+
+  !>!>pointer type to COMPUTATIONAL_WORK_GROUP_TYPE
+  TYPE :: COMPUTATIONAL_WORK_GROUP_PTR_TYPE
+     TYPE(COMPUTATIONAL_WORK_GROUP_TYPE), POINTER :: PTR
+  END TYPE COMPUTATIONAL_WORK_GROUP_PTR_TYPE
+  
+  !>Contains information on logical working groups (added by Robert on 01/04/2010)
+  TYPE :: COMPUTATIONAL_WORK_GROUP_TYPE
+    INTEGER(INTG) :: NUMBER_COMPUTATIONAL_NODES !<size of the total compurational nodes belonging to this group
+    INTEGER(INTG) :: NUMBER_SUB_WORK_GROUPS !<size of sub working grous
+    TYPE(COMPUTATIONAL_WORK_GROUP_TYPE), POINTER:: PARENT !<Parent of this working groups
+    TYPE(COMPUTATIONAL_WORK_GROUP_PTR_TYPE), ALLOCATABLE:: SUB_WORK_GROUPS(:) !<non-leaf node: The sub working groups
+    
+    TYPE(COMPUTATIONAL_ENVIRONMENT_TYPE), POINTER :: COMP_ENV !<pointer to the actual working environment
+    LOGICAL :: COMP_ENV_FINISHED !<!<Is .TURE. if the actual working environment has been generated, .FALSE. if not
+  END TYPE COMPUTATIONAL_WORK_GROUP_TYPE
+
+  !>Contains information on a cache heirarchy
+  TYPE CACHE_TYPE
+    INTEGER(INTG) :: NUMBER_LEVELS !<The number of levels in the cache hierarchy
+    INTEGER(INTG),ALLOCATABLE :: SIZE(:) !<SIZE(level_idx). The size of the level_idx'th cache level.
+  END TYPE CACHE_TYPE
+
+  !>Contains information on a computational node containing a number of processors
+  TYPE COMPUTATIONAL_NODE_TYPE
+    INTEGER(INTG) :: NUMBER_PROCESSORS !<The number of processors for this computational node
+    INTEGER(INTG) :: RANK !<The MPI rank of this computational node
+   !TYPE(CACHE_TYPE) :: CACHE 
+    INTEGER(INTG) :: NODE_NAME_LENGTH !<The length of the name of the computational node
+    !CHARACTER(LEN=MPI_MAX_PROCESSOR_NAME) :: NODE_NAME !<The name of the computational node
+    CHARACTER(LEN=MAXSTRLEN) :: NODE_NAME !<The name of the computational node. (hacked, sort out later)
+  END TYPE COMPUTATIONAL_NODE_TYPE
+
+  !>Contains information on the MPI type to transfer information about a computational node
+  TYPE MPI_COMPUTATIONAL_NODE_TYPE
+    INTEGER(INTG) :: MPI_TYPE !<The MPI data type
+    INTEGER(INTG) :: NUM_BLOCKS !<The number of blocks in the MPI data type. This will be equal to 4.
+    INTEGER(INTG) :: BLOCK_LENGTHS(4) !<The length of each block.
+    INTEGER(INTG) :: TYPES(4) !<The data types of each block.
+    !INTEGER(MPI_ADDRESS_KIND) :: DISPLACEMENTS(4) !<The address displacements to each block.
+    INTEGER(8) :: DISPLACEMENTS(4) !<The address displacements to each block. (hacked, sort out later)
+  END TYPE MPI_COMPUTATIONAL_NODE_TYPE
+
+  !>Contains information on the computational environment the program is running in.
+  TYPE COMPUTATIONAL_ENVIRONMENT_TYPE
+    INTEGER(INTG) :: MPI_COMM !<The MPI communicator for cmiss
+    INTEGER(INTG) :: NUMBER_COMPUTATIONAL_NODES !<The number of computational nodes
+    INTEGER(INTG) :: MY_COMPUTATIONAL_NODE_NUMBER !<The index of the running process
+    TYPE(COMPUTATIONAL_NODE_TYPE), ALLOCATABLE :: COMPUTATIONAL_NODES(:) !<COMPUTATIONAL_NODES(node_idx). Contains information on the node_idx'th computational node. 
+  END TYPE COMPUTATIONAL_ENVIRONMENT_TYPE
+
+  !
+  !================================================================================================================================
+  !
   ! Domain mapping types
   !
   
@@ -812,6 +869,7 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: ELEMENT_DOMAIN(:) !<ELEMENT_DOMAIN(ne). The domain number that the ne'th global element is in for the decomposition. Note: the domain numbers start at 0 and go up to the NUMBER_OF_DOMAINS-1.
     TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the topology for this decomposition.
     TYPE(DOMAIN_PTR_TYPE), POINTER :: DOMAIN(:) !<DOMAIN(mesh_component_idx). A pointer to the domain for mesh component for the domain associated with the computational node. \todo Change this to allocatable???
+    TYPE(COMPUTATIONAL_WORK_GROUP_TYPE), POINTER :: WORK_GROUP !<A pointer to the work group that this rank belongs to
   END TYPE DECOMPOSITION_TYPE
 
   !>A buffer type to allow for an array of pointers to a DECOMPOSITION_TYPE.
