@@ -73,7 +73,7 @@ MODULE COMP_ENVIRONMENT
     TYPE(COMPUTATIONAL_WORK_GROUP_PTR_TYPE), ALLOCATABLE:: SUB_WORK_GROUPS(:) !<non-leaf node: The sub working groups
     
     TYPE(COMPUTATIONAL_ENVIRONMENT_TYPE), POINTER :: COMP_ENV !<pointer to the actual working environment
-    LOGICAL :: COMP_ENV_FINISHED !<!<Is .TURE. if the actual working environment has been generated, .FALSE. if not
+    LOGICAL :: COMP_ENV_FINISHED !<Is .TURE. if the actual working environment has been generated, .FALSE. if not
   END TYPE COMPUTATIONAL_WORK_GROUP_TYPE
 
   PRIVATE
@@ -114,7 +114,7 @@ MODULE COMP_ENVIRONMENT
 
   !Module variables
 
-  TYPE(COMPUTATIONAL_ENVIRONMENT_TYPE),TARGET :: COMPUTATIONAL_ENVIRONMENT !<The computational environment the program is running in.
+  TYPE(COMPUTATIONAL_ENVIRONMENT_TYPE), TARGET :: COMPUTATIONAL_ENVIRONMENT !<The computational environment the program is running in.
   TYPE(MPI_COMPUTATIONAL_NODE_TYPE) :: MPI_COMPUTATIONAL_NODE_TYPE_DATA !<The MPI data on the computational nodes.
 
   !Interfaces

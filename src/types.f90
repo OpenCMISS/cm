@@ -1591,12 +1591,34 @@ MODULE TYPES
     TYPE(INTERFACE_MATRIX_PTR_TYPE), ALLOCATABLE :: MATRICES(:) !<MATRICES(matrix_idx)%PTR contains the information on the matrix_idx'th  interface matrix.
   END TYPE INTERFACE_MATRICES_TYPE
 
+  TYPE INTERFACE_MATRIX_TO_VAR_MAP_TYPE
+    INTEGER(INTG) :: MATRIX_NUMBER !<The interface matrix number
+    TYPE(INTERFACE_MATRIX_TYPE), POINTER :: INTERFACE_MATRIX !<A pointer to the interface matrix
+    INTEGER(INTG) :: VARIABLE_TYPE !<The dependent variable type mapped to this interface matrix
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE !<A pointer to the field variable that is mapped to this interface matrix
+    INTEGER(INTG) :: NUMBER_OF_ROWCOLUMNS !<The number of rows or columns in this equations matrix.
+    REAL(DP) :: MATRIX_COEFFICIENT !<The multiplicative coefficent for the matrix.    
+  END TYPE INTERFACE_MATRIX_TO_VAR_MAP_TYPE
+
+  TYPE INTERFACE_MAPPING_CREATE_VALUES_CACHE_TYPE
+    INTEGER(INTG) :: NUMBER_OF_INTERFACE_MATRICES
+    REAL(DP), ALLOCATABLE :: MATRIX_COEFFICIENTS(:)
+    INTEGER(INTG), ALLOCATABLE :: MATRIX_ROW_FIELD_INDEXES(:)
+    INTEGER(INTG), ALLOCATABLE :: MATRIX_COL_FIELD_INDEXES(:)
+    INTEGER(INTG), ALLOCATABLE :: MATRIX_ROW_VARIABLE_TYPES(:)
+    INTEGER(INTG), ALLOCATABLE :: MATRIX_COL_VARIABLE_TYPES(:)
+  END TYPE INTERFACE_MAPPING_CREATE_VALUES_CACHE_TYPE
+  
   !>Contains information on an interface mapping.
   TYPE INTERFACE_MAPPING_TYPE  
     TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS  !<A pointer to the interface equations for this interface mapping
     LOGICAL :: INTERFACE_MAPPING_FINISHED !<Is .TRUE. if the interface mapping has finished being created, .FALSE. if not.
     INTEGER(INTG) :: LAGRANGE_VARIABLE_TYPE !<The variable type of the mapped Lagrange field variable.
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: LAGRANGE_VARIABLE !<A pointer to the variable that is mapped to the Lagrange multiplier field variable.
+    INTEGER(INTG) :: NUMBER_OF_INTERFACE_MATRICES !<The number of interface matrices that the mapping is set up for.
+    TYPE(INTERFACE_MATRIX_TO_VAR_MAP_TYPE), ALLOCATABLE :: INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(:)
+    TYPE(INTERFACE_MATRIX_TO_VAR_MAP_TYPE), ALLOCATABLE :: INTERFACE_MATRIX_COLS_TO_VAR_MAPS(:)
+    TYPE(INTERFACE_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE
   END TYPE INTERFACE_MAPPING_TYPE
 
   !>Contains information about the interface equations for an interface condition. 
@@ -1626,7 +1648,11 @@ MODULE TYPES
     TYPE(INTERFACE_CONDITIONS_TYPE), POINTER :: INTERFACE_CONDITIONS !<A pointer back to the interface conditions
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer back to the interface.
     INTEGER(INTG) :: METHOD !<An integer which denotes the interface condition method. \see INTERFACE_CONDITIONS_Methods,INTERFACE_CONDITIONS
+    INTEGER(INTG) :: SOLUTION_METHOD !<The solution method for the equations set \see INTERFACE_CONDITIONS_SolutionMethods 
     INTEGER(INTG) :: OPERATOR !<An integer which denotes whether type of interface operator. \see INTERFACE_CONDITIONS_Operator,INTERFACE_CONDITIONS
+    INTEGER(INTG) :: NUMBER_OF_EQUATIONS_SETS !<The number of equations sets in the interface condition
+    TYPE(EQUATIONS_SET_PTR_TYPE), POINTER :: EQUATIONS_SETS(:) !<EQUATIONS_SETS(equations_set_idx). The pointer to the equations_set_idx'th equations set in the interface condition.
+    INTEGER(INTG), POINTER :: EQUATIONS_SETS_MESH_INDEXES(:) !<EQUATIONS_SETS_MESH_INDEXES(equations_set_idx). The mesh index of the equations_set_idx'th equations set in the interface condition.
     TYPE(INTERFACE_LAGRANGE_TYPE), POINTER :: LAGRANGE !<A pointer to the interface condition Lagrange multipler information if there are any for this interface condition.
     TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS !<A pointer to the interface equations if there are any for this interface condition
   END TYPE INTERFACE_CONDITION_TYPE
@@ -1659,27 +1685,27 @@ MODULE TYPES
   END TYPE INTERFACE_MESHES_CONNECTIVITY_POINT_PTR_TYPE
   
 
-
-  !>Contains information on a mesh connectivity point
-  TYPE INTERFACE_ELEMENT_CONNECTIVITY_MESH_TYPE
-    LOGICAL :: CONNECTIVITY_ELEMENTS_ADD_FINISHED
-    INTEGER(INTG) NUMBER_OF_MESH_CONNECTIVITY_ELEMENTS !<
-    INTEGER(INTG), POINTER :: GLOBAL_MESH_ELEMENT_NUMBERS(:) !<
-    REAL(DP), ALLOCATABLE :: XI(:,:,:) !<
-  END TYPE INTERFACE_ELEMENT_CONNECTIVITY_MESH_TYPE
-
   !>Contains information on a mesh connectivity point
   TYPE INTERFACE_ELEMENT_CONNECTIVITY_TYPE
-    TYPE(INTERFACE_ELEMENT_CONNECTIVITY_MESH_TYPE), ALLOCATABLE :: MESH_CONNECTIVITY(:) !<
+    INTEGER(INTG) NUMBER_OF_COUPLED_MESH_ELEMENTS !<
+    INTEGER(INTG), ALLOCATABLE :: COUPLED_MESH_ELEMENT_NUMBERS(:) !<GLOBAL_MESH_ELEMENT_NUMBERS(connectivity_point_idx)
+    REAL(DP), ALLOCATABLE :: XI(:,:,:) !<XI(xi_idx,connectivity_point_idx,local_node_idx)
   END TYPE INTERFACE_ELEMENT_CONNECTIVITY_TYPE
 
   !>Contains information on the coupling between meshes in an interface
-  TYPE INTERFACE_MESHES_CONNECTIVITY_TYPE
-    INTEGER(INTG) NUMBER_OF_MY_COUPLED_MESHES
-    INTEGER(INTG), ALLOCATABLE :: MY_COUPLED_MESHES(:)
+  TYPE INTERFACE_MESH_CONNECTIVITY_TYPE
+    INTEGER(INTG) :: GLOBAL_NUMBER
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer back to the interface for the coupled mesh connectivity
     LOGICAL :: MESH_CONNECTIVITY_FINISHED !<Is .TRUE. if the coupled mesh connectivity has finished being created, .FALSE. if not.
-    TYPE(INTERFACE_ELEMENT_CONNECTIVITY_TYPE), ALLOCATABLE :: ELEMENTS_CONNECTIVITY(:) !<
+    INTEGER(INTG) :: NUMBER_OF_MY_COUPLED_MESHES
+    INTEGER(INTG), ALLOCATABLE :: MY_COUPLED_MESHES(:)
+    TYPE(INTERFACE_ELEMENT_CONNECTIVITY_TYPE), ALLOCATABLE :: ELEMENTS_CONNECTIVITY(:,:) !<ELEMENTS_CONNECTIVITY(element_idx,coupled_mesh_idx)
+  END TYPE INTERFACE_MESH_CONNECTIVITY_TYPE
+
+  TYPE INTERFACE_MESHES_CONNECTIVITY_TYPE
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer back to the interface object.    
+    LOGICAL :: MESH_CONNECTIVITY_FINISHED !<Is .TRUE. if the coupled mesh connectivity has finished being created, .FALSE. if not.
+    TYPE(INTERFACE_MESH_CONNECTIVITY_TYPE), ALLOCATABLE :: MESH_CONNECTIVITY(:) !<MESH_CONNECTIVITY(interface_mesh_idx). A pointer to the meshes connectivity for the interface_mesh_idx'th mesh in the interface.
   END TYPE INTERFACE_MESHES_CONNECTIVITY_TYPE
  
   !>Contains information for the interface data.
@@ -1692,7 +1718,7 @@ MODULE TYPES
     TYPE(REGION_TYPE), POINTER :: PARENT_REGION !<A point to the parent region containing the interface.
     INTEGER(INTG) :: NUMBER_OF_COUPLED_MESHES !<The number of coupled meshes in the interface.
     TYPE(MESH_PTR_TYPE), POINTER :: COUPLED_MESHES(:) !<COUPLED_MESHES(mesh_idx). COUPLED_MESHES(mesh_idx)%PTR is the pointer to the mesh_idx'th mesh involved in the interface.
-    TYPE(INTERFACE_MESHES_CONNECTIVITY_TYPE), ALLOCATABLE :: MESHES_CONNECTIVITY(:) !<A pointer to the meshes connectivity the interface.
+    TYPE(INTERFACE_MESHES_CONNECTIVITY_TYPE), POINTER :: MESHES_CONNECTIVITY !<A pointer to the meshes connectivity the interface.
     TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes in an interface
     TYPE(MESHES_TYPE), POINTER :: MESHES !<A pointer to the mesh in an interface.
     TYPE(GENERATED_MESHES_TYPE), POINTER :: GENERATED_MESHES !<A pointer to the generated meshes in an interface.

@@ -153,7 +153,7 @@ CONTAINS
                             DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
                               SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
                               CASE(EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_1)
-                                !u=ln(4/(x+y+1^2))
+                                !u=ln(4/(x+y+1)^2)
                                 SELECT CASE(variable_type)
                                 CASE(FIELD_U_VARIABLE_TYPE)
                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
