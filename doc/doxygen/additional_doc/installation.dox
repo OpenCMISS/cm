@@ -5,15 +5,15 @@ To obtain the OpenCMISS source you need to check it out from the subversion repo
 There are two parts to OpenCMISS to obtain - OpenCMISS itself and the various libraries it needs.
 In your root OpenCMISS directory, make the opencmiss and opencmissextras directories. Within the opencmiss and opencmissextras directories there are two parts - cm and cellml.
 \subsection obtain_the_code Obtain the Code
-The OpenCMISS cm repository is at https://opencmiss.svn.sourceforge.net/svnroot/opencmiss/cm
+The OpenCMISS cm repository is at https://opencmiss.svn.sourceforge.net/svnroot/opencmiss/cm .
 To check out the main trunk of OpenCMISS issue the following command in the opencmiss directory:
 \code svn co https://opencmiss.svn.sourceforge.net/svnroot/opencmiss/cm/trunk cm \endcode
-If you are not familar with subversion, have a look at http://svnbook.red-bean.com.
-The OpenCMISS cellml repository is at https://opencmiss.svn.sourceforge.net/svnroot/opencmiss/cellml
+If you are not familar with subversion, have a look at http://svnbook.red-bean.com .
+The OpenCMISS cellml repository is at https://opencmiss.svn.sourceforge.net/svnroot/opencmiss/cellml . 
 To check out the main trunk of OpenCMISS issue the following command in the opencmiss directory:
 \code svn co https://opencmiss.svn.sourceforge.net/svnroot/opencmiss/cellml/trunk cellml \endcode
 \subsection obtain_the_libraries Obtain the Libraries
-The OpenCMISS libraries cm repository is at https://svn.physiomeproject.org/svn/opencmissextras/cm/
+The OpenCMISS libraries cm repository is at https://svn.physiomeproject.org/svn/opencmissextras/cm/ .
 To check out the main trunk of the various cm libraries required with OpenCMISS issue the following command in the opencmissextras directory:
 \code svn co https://svn.physiomeproject.org/svn/opencmissextras/cm/trunk/external/architecture cm/external/architecture \endcode
 where architecture is the appropriate architecture for the machine. Possible architectures are:
@@ -21,24 +21,45 @@ where architecture is the appropriate architecture for the machine. Possible arc
 - i386-win32-debug
 - i686-linux
 - i686-linux-debug
-- x86_64-linux
-- x86_64-linux-debug
+- ppc-64-linux
+- ppc-64-linux-debug
 - rs6000-32-aix
 - rs6000-32-aix-debug
+- x86_64-linux
+- x86_64-linux-debug
+- x86_64-linux-debug-gnu
+- x86_64-linux-debug-intel
+- x86_64-linux-debug-mpiprof-intel
+- x86_64-linux-gnu
+- x86_64-linux-intel
+- x86_64-linux-mpiprof
+- x86_64-linux-mpiprof-gnu
+- x86_64-linux-prof
+- x86_64-linux-prof-gnu
+- x86_64-linux-prof-intel
 .
+Furthermore, a number of external packages can be checked out from https://svn.physiomeproject.org/svn/opencmissextras/cm/ . To check out the packages from the code repository issue the following command in the opencmissextras directory:
+\code svn co https://svn.physiomeproject.org/svn/opencmissextras/cm/trunk/external/packages cm/external/packages \endcode
 To check out the main trunk of the various cellml libraries required with OpenCMISS issue the following command in the opencmissextras directory:
 \code svn co https://svn.physiomeproject.org/svn/opencmissextras/cellml/trunk/architecture cellml/architecture \endcode
-where architecture is the appropriate architecture for the machine. 
+where architecture is the appropriate architecture for the machine. Currently, the list of possible achitectures comprehends:
+- x86_64-linux
+- x86_64-linux-debug
+- i386-win32-debug
+.
+There is also a packages directory for cellml in the code repository. To check it out issue the following command in the opencmissextras directory:
+\code svn co https://svn.physiomeproject.org/svn/opencmissextras/cellml/trunk/packages cellml/packages \endcode
+.
 -For Auckland users, you may find libraries on hpc. Go to \\bioengsmb\cmiss\opencmissextras\cm (Windows) or /hpc/cmiss/opencmissextras/cm and copy the necessary files. 
 The folder structure is the same as svn repository. 
 \subsection makefile_structure Makefile Structure
-The top level makefile will eventually build a library. 
-In the examples directory there are separate compilable "applications" with individual makefiles. 
-However, the library stuff isn't there as we need to code the bindings. 
+The top level makefile (located in "<path to your root OpenCMISS directory>/opencmiss/cm/") will build the external libraries and eventually build the OpenCMISS library. Issue the following commands in the ".../opencmiss/cm/" directory:
+\code make \endcode or, if you want to use the GNU compiler (Version 4.4 or greater) \code make COMPILER=gnu \endcode
+In the examples directory there are separate compilable "applications" with individual makefiles, e.g. in ".../opencmiss/cm/examples/ClassicalField/NewLaplace". How to compile the examples will be explained further below.
 \section programmer_documentation Programmer documentation
-This programmer documentation is written using DocBook with the source located in the opencmiss/cm/doc/programmer_documentation/ folder. The source XML code can be transformed into either chunked or combined documents in PDF or HTML format. The Makefile can be used to perform the transformation using make single or make chunk in the above folder.
-PDFs can be generated using make fo
-Doxygen can be included .
+This programmer documentation is written using doxygen with the source located in the ".../opencmiss/cm/doc/doxygen/additional_doc/" folder. The source XML code can be transformed into documents in HTML format. Issue the following command into the ".../opencmiss/cm/doc/doxygen/" directory:
+\code doxygen Doxyfile \endcode
+It will build a number of html pages in the ".../opencmiss/cm/doc/doxygen/Programmer/html" directory, which can be read by opening the "index.html" file in a web browser. 
 \section project_setup Project Setup
 \subsection project_setup_aix On AIX 5.3 (HPC)
 \subsubsection project_setup_hpc_environment Set environment
@@ -56,67 +77,45 @@ Change directory to examples/<example>
 Use gmake.
 This should result in a binary that you can run in the bin/rs6000-32-aix folder.
 
-\subsection project_setup_linux On Ubuntu 8.04
+\subsection project_setup_linux On Ubuntu 9.10
 \subsubsection project_setup_linux_environment Set environment
-Set environment variable to point to opencmiss
-\code setenv OPENCMISS_ROOT <path to your opencmiss folder> \endcode or \code export OPENCMISS_ROOT=<path to your opencmiss folder> \endcode
-Set environment variable to point to OpenCMISS-extras
-\code setenv OPENCMISSEXTRAS_ROOT <path to your opencmissextras folder> \endcode or \code export OPENCMISSEXTRAS_ROOT=<path to your opencmissextras folder> \endcode
-It is also helpful to add the following
-\code setenv PATH ${OPENCMISSEXTRAS_ROOT}/cm/external/${archname}/bin:${PATH}
-
-setenv PATH ${OPENCMISS_ROOT}/cm/bin/${archname}:${PATH} \endcode
-where ${archname} is the appropriate architecture e.g., i686-linux, x86_64-linux.
+Set the environment variable to point to opencmiss and opencmissextras. If you use the bash shell you can do this by adding the following lines to your "~/.bashrc" file:
+\code export OPENCMISS_ROOT=<path to your opencmiss folder>
+ export OPENCMISSEXTRAS_ROOT=<path to your opencmissextras folder>
+ PATH=$OPENCMISS_ROOT:$OPENCMISSEXTRAS_ROOT:$PATH ; export PATH \endcode
+If you use a shell different from the bash, it might be
+\code setenv OPENCMISS_ROOT <path to your opencmiss folder> 
+ setenv OPENCMISSEXTRAS_ROOT <path to your opencmissextras folder> 
+ setenv PATH ${OPENCMISSEXTRAS_ROOT}:${OPENCMISS_ROOT}:${PATH} \endcode 
 If you are using totalview you will also need to add
+\code export LM_LICENSE_FILES=<path-to-the-flex-directory> \endcode respectively, 
 \code setenv LM_LICENSE_FILES <path-to-the-flex-directory> \endcode
 \subsubsection project_setup_linux_compiler Install Compilers
 There are two options for compilers under Linux - Intel or gnu compilers.
 
-For the Intel compiler:
+For the Intel compilers:
 
-Download Intel Fotran Compiler from here.
-Extract the file and follow the install.htm to install
+Download the Intel Fotran Compiler (e.g. Version 11.1).
+Extract the file and follow the install.htm to install. 
 
 For the GNU comilers:
 
-Currently, only gfortran version 4.4 or greater will work. As at 1/3/09 the 4.4 compilers had not been released and thus you need to download the trunk binaries. The steps are
-
-1. Download either
-
-http://users.physik.fu-berlin.de/~tburnus/gcc-trunk/i686/gcc-trunk-i686.tar.gz
-
-or
-
-http://users.physik.fu-berlin.de/~tburnus/gcc-trunk/gcc-trunk-x86_64.tar.gz
-
-Dependending on the type of your system.
-
-2. Follow the instructions at
-
-http://gcc.gnu.org/wiki/GFortranBinaries32Linux
-
-or
-
-http://gcc.gnu.org/wiki/GFortranBinaries64Linux
-
-Depending on the type of your system.
-
+Currently, only gfortran version 4.4 or greater will work. Download and install it (for Ubuntu 9.10, it can be downloaded from the Ubuntu software repositories). 
 \subsubsection project_setup_linux_compile Compile
-To build an example project:
+To build an example project issue the following command into the ".../opencmiss/cm/examples/<example>/<sub-example>" directory:
 \code make \endcode
 
-Note: that the default is the intel compilers (if installed). To explicitly use the gnu compilers use
-\code make COMPILER=gnu\endcode
+Note, the default is the intel compiler. To explicitly use the gnu compiler use
+\code make COMPILER=gnu \endcode
 or set the COMPILER environment variable to be gnu.
 
-To run the example project:
-\code mpd & mpirun -n 2 path/to/the/execution/file \endcode
-To debug the project using TotalView:
-\code mpd & mpirun -tv 2 path/to/the/execution/file \endcode
-
-\subsection project_setup_windows_vs2005 On Windows XP (Visual Studio 2005)
+To run the example project issue the following command into the directory where the executable is found (e.g. ".../opencmiss/cm/examples/ClassicalField/NewLaplace/bin/x86_64-linux/mpich2/intel", depending on your example, sub-example, architecture, MPI library, and compiler):
+\code mpd & mpirun -n 2 ./<executable> \endcode
+to run the executable on two processors. To debug the project using TotalView:
+\code mpd & mpirun -tv 2 ./<executable> \endcode
+section project_setup_windows_vs2005 On Windows XP (Visual Studio 2005)
 \subsubsection project_setup_windows_vs2005_compiler Install Compilers
-Download Intel Fortran Compiler from here.
+Download Intel Fortran Compiler.
 Execute the exe file and follow the installation wizard.
 \subsubsection project_setup_windows_vs2005_mpi Install MPI
 Download MPICH2 from here.
