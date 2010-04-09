@@ -59,6 +59,7 @@ MODULE OPENCMISS
   USE CONSTANTS
   USE CONTROL_LOOP_ROUTINES
   USE COORDINATE_ROUTINES
+  USE DATA_POINT_ROUTINES
   USE EQUATIONS_ROUTINES
   USE EQUATIONS_SET_CONSTANTS
   USE EQUATIONS_SET_ROUTINES
@@ -120,6 +121,12 @@ MODULE OPENCMISS
     PRIVATE
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
   END TYPE CMISSCoordinateSystemType
+  
+  !>Contains information on the data points defined on a region.
+  TYPE CMISSDataPointsType
+    PRIVATE
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+  END TYPE CMISSDataPointsType  
 
   !>Contains information on the mesh decomposition.
   TYPE CMISSDecompositionType
@@ -1413,7 +1420,103 @@ MODULE OPENCMISS
   PUBLIC CMISSCoordinateSystemOriginGet,CMISSCoordinateSystemOriginSet
 
   PUBLIC CMISSCoordinateSystemOrientationGet,CMISSCoordinateSystemOrientationSet
-  
+
+!!==================================================================================================================================
+!!
+!! DATA_POINT_ROUTINES
+!!
+!!==================================================================================================================================
+
+  !Module parameters
+
+  !Module types
+
+  !Module variables
+
+  !Interfaces
+
+  !>Finishes the process of creating data points in a region. \see OPENCMISS::CMISSDataPointsCreateStart
+  INTERFACE CMISSDataPointsCreateFinish
+    MODULE PROCEDURE CMISSDataPointsCreateFinishNumber
+    MODULE PROCEDURE CMISSDataPointsCreateFinishObj
+  END INTERFACE !CMISSDataPointsCreateFinish
+
+  !>Starts the process of creating data points in a region. \see OPENCMISS::CMISSDataPointsCreateFinish
+  INTERFACE CMISSDataPointsCreateStart
+    MODULE PROCEDURE CMISSDataPointsCreateStartNumber
+    MODULE PROCEDURE CMISSDataPointsCreateStartObj
+  END INTERFACE !CMISSDataPointsCreateFinish
+
+  !>Destroys data points.
+  INTERFACE CMISSDataPointsDestroy
+    MODULE PROCEDURE CMISSDataPointsDestroyNumber
+    MODULE PROCEDURE CMISSDataPointsDestroyObj
+  END INTERFACE !CMISSDataPointsDestroy
+
+  !>Returns the label for a data point identified by a given global number. \todo should this be a user number?
+  INTERFACE CMISSDataPointsLabelGet
+    MODULE PROCEDURE CMISSDataPointsLabelGetCNumber
+    MODULE PROCEDURE CMISSDataPointsLabelGetCObj
+    MODULE PROCEDURE CMISSDataPointsLabelGetVSNumber
+    MODULE PROCEDURE CMISSDataPointsLabelGetVSObj
+  END INTERFACE !CMISSDataPointsLabelGet
+
+  !>Sets/changes the label for a data point identified by a given global number. \todo should this be a user number?
+  INTERFACE CMISSDataPointsLabelSet
+    MODULE PROCEDURE CMISSDataPointsLabelSetCNumber
+    MODULE PROCEDURE CMISSDataPointsLabelSetCObj
+    MODULE PROCEDURE CMISSDataPointsLabelSetVSNumber
+    MODULE PROCEDURE CMISSDataPointsLabelSetVSObj
+  END INTERFACE !CMISSDataPointsLabelSet
+
+  !>Returns the user number for a data point identified by a given global number.
+  INTERFACE CMISSDataPointsUserNumberGet
+    MODULE PROCEDURE CMISSDataPointsUserNumberGetNumber
+    MODULE PROCEDURE CMISSDataPointsUserNumberGetObj
+  END INTERFACE !CMISSDataPointsUserNumberGet
+
+  !>Sets/changes the user number for a data point identified by a given global number.
+  INTERFACE CMISSDataPointsUserNumberSet
+    MODULE PROCEDURE CMISSDataPointsUserNumberSetNumber
+    MODULE PROCEDURE CMISSDataPointsUserNumberSetObj
+  END INTERFACE !CMISSDataPointsUserNumberSet
+
+  !>Returns the values for a data point identified by a given global number. \todo should this be a user number?
+  INTERFACE CMISSDataPointsValuesGet
+    MODULE PROCEDURE CMISSDataPointsValuesGetNumber
+    MODULE PROCEDURE CMISSDataPointsValuesGetObj
+  END INTERFACE !CMISSDataPointsValuesGet
+
+  !>Sets/changes the values for a data point identified by a given global number. \todo should this be a user number?
+  INTERFACE CMISSDataPointsValuesSet
+    MODULE PROCEDURE CMISSDataPointsValuesSetNumber
+    MODULE PROCEDURE CMISSDataPointsValuesSetObj
+  END INTERFACE !CMISSDataPointsValuesSet
+
+  !>Returns the weights for a data point identified by a given global number. \todo should this be a user number?
+  INTERFACE CMISSDataPointsWeightsGet
+    MODULE PROCEDURE CMISSDataPointsWeightsGetNumber
+    MODULE PROCEDURE CMISSDataPointsWeightsGetObj
+  END INTERFACE !CMISSDataPointsWeightsGet
+
+  !>Sets/changes the weights for a data point identified by a given global number. \todo should this be a user number?
+  INTERFACE CMISSDataPointsWeightsSet
+    MODULE PROCEDURE CMISSDataPointsWeightsSetNumber
+    MODULE PROCEDURE CMISSDataPointsWeightsSetObj
+  END INTERFACE !CMISSDataPointsWeightsSet
+
+  PUBLIC CMISSDataPointsCreateFinish,CMISSDataPointsCreateStart
+
+  PUBLIC CMISSDataPointsDestroy
+
+  PUBLIC CMISSDataPointsLabelGet,CMISSDataPointsLabelSet
+
+  PUBLIC CMISSDataPointsValuesGet,CMISSDataPointsValuesSet
+
+  PUBLIC CMISSDataPointsUserNumberGet,CMISSDataPointsUserNumberSet
+
+  PUBLIC CMISSDataPointsWeightsGet,CMISSDataPointsWeightsSet
+
 !!==================================================================================================================================
 !!
 !! EQUATIONS_ROUTINES
@@ -4901,6 +5004,57 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSCoordinateSystemTypeInitialise
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalises a CMISSDataPointsType object.
+  SUBROUTINE CMISSDataPointsTypeFinalise(CMISSDataPoints,Err)
+  
+    !Argument variables
+    TYPE(CMISSDataPointsType), INTENT(OUT) :: CMISSDataPoints !<The CMISSDataPointsType object to finalise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    
+    CALL ENTERS("CMISSDataPointsTypeFinalise",Err,ERROR,*999)
+    
+    IF(ASSOCIATED(CMISSDataPoints%DATA_POINTS))  &
+      & CALL DATA_POINTS_DESTROY(CMISSDataPoints%DATA_POINTS,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDataPointsTypeFinalise")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsTypeFinalise",Err,ERROR)
+    CALL EXITS("CMISSDataPointsTypeFinalise")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsTypeFinalise
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises a CMISSDataPointsType object.
+  SUBROUTINE CMISSDataPointsTypeInitialise(CMISSDataPoints,Err)
+  
+    !Argument variables
+    TYPE(CMISSDataPointsType), INTENT(OUT) :: CMISSDataPoints !<The CMISSDataPointsType object to initialise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataPointsTypeInitialise",Err,ERROR,*999)
+    
+    NULLIFY(CMISSDataPoints%DATA_POINTS)
+
+    CALL EXITS("CMISSDataPointsTypeInitialise")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsTypeInitialise",Err,ERROR)
+    CALL EXITS("CMISSDataPointsTypeInitialise")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsTypeInitialise
 
   !
   !================================================================================================================================
@@ -13958,6 +14112,869 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSCoordinateSystemOrientationSetObj
+  
+!!==================================================================================================================================
+!!
+!! DATA_POINT_ROUTINES
+!!
+!!==================================================================================================================================
+
+  !>Finishes the process of creating data points in a region for data points identified by user number.
+  SUBROUTINE CMISSDataPointsCreateFinishNumber(RegionUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the data points to finish the creation of.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSDataPointsCreateFinishNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,Err,ERROR,*999)
+      CALL DATA_POINTS_CREATE_FINISH(DATA_POINTS,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataPointsCreateFinishNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsCreateFinishNumber",Err,ERROR)
+    CALL EXITS("CMISSDataPointsCreateFinishNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsCreateFinishNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finishes the creation of a data points in a region for data points identified by an object.
+  SUBROUTINE CMISSDataPointsCreateFinishObj(DataPoints,Err)
+  
+    !Argument variables
+    TYPE(CMISSDataPointsType), INTENT(IN) :: DataPoints !<The data points to finish creating.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSDataPointsCreateFinishObj",Err,ERROR,*999)
+ 
+    CALL DATA_POINTS_CREATE_FINISH(DataPoints%DATA_POINTS,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDataPointsCreateFinishObj")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsCreateFinishObj",Err,ERROR)
+    CALL EXITS("CMISSDataPointsCreateFinishObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsCreateFinishObj
+
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Starts the process of creating data points in a region for data points identified by user number.
+  SUBROUTINE CMISSDataPointsCreateStartNumber(RegionUserNumber,NumberOfDataPoints,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the data points to start the creation of.
+    INTEGER(INTG), INTENT(IN) :: NumberOfDataPoints !<The number of data points to create.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSDataPointsCreateStartNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL DATA_POINTS_CREATE_START(REGION,NumberOfDataPoints,DATA_POINTS,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataPointsCreateStartNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSDataPointsCreateStartNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsCreateStartNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Starts the creation of a data points in a region for data points identified by an object.
+  SUBROUTINE CMISSDataPointsCreateStartObj(Region,NumberOfDataPoints,DataPoints,Err)
+  
+    !Argument variables
+    TYPE(CMISSRegionType), INTENT(IN) :: Region !<The region to start the creation of data points on.
+    INTEGER(INTG), INTENT(IN) :: NumberOfDataPoints !<The number of data points to create.
+    TYPE(CMISSDataPointsType), INTENT(IN) :: DataPoints !<On return, the created data points.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSDataPointsCreateStartObj",Err,ERROR,*999)
+ 
+    CALL DATA_POINTS_CREATE_START(Region%REGION,NumberOfDataPoints,DataPoints%DATA_POINTS,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDataPointsCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSDataPointsCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsCreateStartObj
+
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Destroys the data points in a region for data points identified by user number.
+  SUBROUTINE CMISSDataPointsDestroyNumber(RegionUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the data points to destroy.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSDataPointsDestroyNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,Err,ERROR,*999)
+      CALL DATA_POINTS_DESTROY(DATA_POINTS,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataPointsDestroyNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsDestroyNumber",Err,ERROR)
+    CALL EXITS("CMISSDataPointsDestroyNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsDestroyNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Destroys the data points in a region for data points identified by an object.
+  SUBROUTINE CMISSDataPointsDestroyObj(DataPoints,Err)
+  
+    !Argument variables
+    TYPE(CMISSDataPointsType), INTENT(IN) :: DataPoints !<The data points to destroy.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSDataPointsDestroyObj",Err,ERROR,*999)
+ 
+    CALL DATA_POINTS_DESTROY(DataPoints%DATA_POINTS,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDataPointsDestroyObj")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsDestroyObj",Err,ERROR)
+    CALL EXITS("CMISSDataPointsDestroyObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsDestroyObj
+
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Returns the character label for a data point in a set of data points identified by user number.
+  SUBROUTINE CMISSDataPointsLabelGetCNumber(RegionUserNumber,DataPointGlobalNumber,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the data points to get the label for.
+    INTEGER(INTG), INTENT(IN) :: DataPointGlobalNumber !<The global number of the data points to get the label for.
+    CHARACTER(LEN=*), INTENT(OUT) :: Label !<On return, the label for the data point.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSDataPointsLabelGetCNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,Err,ERROR,*999)
+      CALL DATA_POINTS_LABEL_GET(DATA_POINTS,DataPointGlobalNumber,Label,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataPointsLabelGetCNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsLabelGetCNumber",Err,ERROR)
+    CALL EXITS("CMISSDataPointsLabelGetCNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsLabelGetCNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the character label for a data point in a set of data points identified by an object.
+  SUBROUTINE CMISSDataPointsLabelGetCObj(DataPoints,DataPointGlobalNumber,Label,Err)
+  
+    !Argument variables
+    TYPE(CMISSDataPointsType), INTENT(IN) :: DataPoints !<The data points to get the label for.
+    INTEGER(INTG), INTENT(IN) :: DataPointGlobalNumber !<The global number of the data points to get the label for.
+    CHARACTER(LEN=*), INTENT(OUT) :: Label !<On return, the label for the data point.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSDataPointsLabelGetCObj",Err,ERROR,*999)
+ 
+    CALL DATA_POINTS_LABEL_GET(DataPoints%DATA_POINTS,DataPointGlobalNumber,Label,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDataPointsLabelGetCObj")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsLabelGetCObj",Err,ERROR)
+    CALL EXITS("CMISSDataPointsLabelGetCObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsLabelGetCObj
+
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Returns the varying string label for a data point in a set of data points identified by user number.
+  SUBROUTINE CMISSDataPointsLabelGetVSNumber(RegionUserNumber,DataPointGlobalNumber,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the data points to get the label for.
+    INTEGER(INTG), INTENT(IN) :: DataPointGlobalNumber !<The global number of the data points to get the label for.
+    TYPE(VARYING_STRING), INTENT(OUT) :: Label !<On return, the label for the data point.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSDataPointsLabelGetVSNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,Err,ERROR,*999)
+      CALL DATA_POINTS_LABEL_GET(DATA_POINTS,DataPointGlobalNumber,Label,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataPointsLabelGetVSNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsLabelGetVSNumber",Err,ERROR)
+    CALL EXITS("CMISSDataPointsLabelGetVSNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsLabelGetVSNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the varying string label for a data point in a set of data points identified by an object.
+  SUBROUTINE CMISSDataPointsLabelGetVSObj(DataPoints,DataPointGlobalNumber,Label,Err)
+  
+    !Argument variables
+    TYPE(CMISSDataPointsType), INTENT(IN) :: DataPoints !<The data points to get the label for.
+    INTEGER(INTG), INTENT(IN) :: DataPointGlobalNumber !<The global number of the data points to get the label for.
+    TYPE(VARYING_STRING), INTENT(OUT) :: Label !<On return, the label for the data point.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSDataPointsLabelGetVSObj",Err,ERROR,*999)
+ 
+    CALL DATA_POINTS_LABEL_GET(DataPoints%DATA_POINTS,DataPointGlobalNumber,Label,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDataPointsLabelGetVSObj")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsLabelGetVSObj",Err,ERROR)
+    CALL EXITS("CMISSDataPointsLabelGetVSObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsLabelGetVSObj
+
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the character label for a data point in a set of data points identified by user number.
+  SUBROUTINE CMISSDataPointsLabelSetCNumber(RegionUserNumber,DataPointGlobalNumber,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the data points to set the label for.
+    INTEGER(INTG), INTENT(IN) :: DataPointGlobalNumber !<The global number of the data points to set the label for.
+    CHARACTER(LEN=*), INTENT(IN) :: Label !<The label for the data point to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSDataPointsLabelSetCNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,Err,ERROR,*999)
+      CALL DATA_POINTS_LABEL_SET(DATA_POINTS,DataPointGlobalNumber,Label,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataPointsLabelSetCNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsLabelSetCNumber",Err,ERROR)
+    CALL EXITS("CMISSDataPointsLabelSetCNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsLabelSetCNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the character label for a data point in a set of data points identified by an object.
+  SUBROUTINE CMISSDataPointsLabelSetCObj(DataPoints,DataPointGlobalNumber,Label,Err)
+  
+    !Argument variables
+    TYPE(CMISSDataPointsType), INTENT(IN) :: DataPoints !<The data points to set the label for.
+    INTEGER(INTG), INTENT(IN) :: DataPointGlobalNumber !<The global number of the data points to set the label for.
+    CHARACTER(LEN=*), INTENT(IN) :: Label !<The label for the data point to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSDataPointsLabelSetCObj",Err,ERROR,*999)
+ 
+    CALL DATA_POINTS_LABEL_SET(DataPoints%DATA_POINTS,DataPointGlobalNumber,Label,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDataPointsLabelSetCObj")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsLabelSetCObj",Err,ERROR)
+    CALL EXITS("CMISSDataPointsLabelSetCObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsLabelSetCObj
+
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the varying string label for a data point in a set of data points identified by user number.
+  SUBROUTINE CMISSDataPointsLabelSetVSNumber(RegionUserNumber,DataPointGlobalNumber,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the data points to set the label for.
+    INTEGER(INTG), INTENT(IN) :: DataPointGlobalNumber !<The global number of the data points to set the label for.
+    TYPE(VARYING_STRING), INTENT(IN) :: Label !<The label for the data point to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSDataPointsLabelSetVSNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,Err,ERROR,*999)
+      CALL DATA_POINTS_LABEL_SET(DATA_POINTS,DataPointGlobalNumber,Label,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataPointsLabelSetVSNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsLabelSetVSNumber",Err,ERROR)
+    CALL EXITS("CMISSDataPointsLabelSetVSNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsLabelSetVSNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the varying string label for a data point in a set of data points identified by an object.
+  SUBROUTINE CMISSDataPointsLabelSetVSObj(DataPoints,DataPointGlobalNumber,Label,Err)
+  
+    !Argument variables
+    TYPE(CMISSDataPointsType), INTENT(IN) :: DataPoints !<The data points to set the label for.
+    INTEGER(INTG), INTENT(IN) :: DataPointGlobalNumber !<The global number of the data points to set the label for.
+    TYPE(VARYING_STRING), INTENT(IN) :: Label !<The label for the data point to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSDataPointsLabelSetVSObj",Err,ERROR,*999)
+ 
+    CALL DATA_POINTS_LABEL_SET(DataPoints%DATA_POINTS,DataPointGlobalNumber,Label,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDataPointsLabelSetVSObj")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsLabelSetVSObj",Err,ERROR)
+    CALL EXITS("CMISSDataPointsLabelSetVSObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsLabelSetVSObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Returns the user number for a data point in a set of data points identified by user number.
+  SUBROUTINE CMISSDataPointsUserNumberGetNumber(RegionUserNumber,DataPointGlobalNumber,DataPointUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the data points to get the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: DataPointGlobalNumber !<The global number of the data points to get the data point user number for.
+    INTEGER(INTG), INTENT(OUT) :: DataPointUserNumber !<On return, the user number for the data point.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSDataPointsUserNumberGetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,Err,ERROR,*999)
+      CALL DATA_POINTS_USER_NUMBER_GET(DATA_POINTS,DataPointGlobalNumber,DataPointUserNumber,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataPointsUserNumberGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsUserNumberGetNumber",Err,ERROR)
+    CALL EXITS("CMISSDataPointsUserNumberGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsUserNumberGetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the user number for a data point in a set of data points identified by an object.
+  SUBROUTINE CMISSDataPointsUserNumberGetObj(DataPoints,DataPointGlobalNumber,DataPointUserNumber,Err)
+  
+    !Argument variables
+    TYPE(CMISSDataPointsType), INTENT(IN) :: DataPoints !<The data points to get the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: DataPointGlobalNumber !<The global number of the data points to get the data point user number for.
+    INTEGER(INTG), INTENT(OUT) :: DataPointUserNumber !<On return, the user number for the data point.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSDataPointsUserNumberGetObj",Err,ERROR,*999)
+ 
+    CALL DATA_POINTS_USER_NUMBER_GET(DataPoints%DATA_POINTS,DataPointGlobalNumber,DataPointUserNumber,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDataPointsUserNumberGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsUserNumberGetObj",Err,ERROR)
+    CALL EXITS("CMISSDataPointsUserNumberGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsUserNumberGetObj
+
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the user number for a data point in a set of data points identified by user number.
+  SUBROUTINE CMISSDataPointsUserNumberSetNumber(RegionUserNumber,DataPointGlobalNumber,DataPointUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the data points to set the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: DataPointGlobalNumber !<The global number of the data points to set the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: DataPointUserNumber !<The user number for the data point to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSDataPointsUserNumberSetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,Err,ERROR,*999)
+      CALL DATA_POINTS_USER_NUMBER_SET(DATA_POINTS,DataPointGlobalNumber,DataPointUserNumber,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataPointsUserNumberSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsUserNumberSetNumber",Err,ERROR)
+    CALL EXITS("CMISSDataPointsUserNumberSetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsUserNumberSetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the user number for a data point in a set of data points identified by an object.
+  SUBROUTINE CMISSDataPointsUserNumberSetObj(DataPoints,DataPointGlobalNumber,DataPointUserNumber,Err)
+  
+    !Argument variables
+    TYPE(CMISSDataPointsType), INTENT(IN) :: DataPoints !<The data points to set the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: DataPointGlobalNumber !<The global number of the data points to set the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: DataPointUserNumber !<The user number for the data point to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSDataPointsUserNumberSetObj",Err,ERROR,*999)
+ 
+    CALL DATA_POINTS_USER_NUMBER_SET(DataPoints%DATA_POINTS,DataPointGlobalNumber,DataPointUserNumber,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDataPointsUserNumberSetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsUserNumberSetObj",Err,ERROR)
+    CALL EXITS("CMISSDataPointsUserNumberSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsUserNumberSetObj
+  
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Returns the values for a data point in a set of data points identified by user number.
+  SUBROUTINE CMISSDataPointsValuesGetNumber(RegionUserNumber,DataPointGlobalNumber,DataPointValues,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the data points to get the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: DataPointGlobalNumber !<The global number of the data points to get the data point values for.
+    REAL(DP), ALLOCATABLE, INTENT(OUT) :: DataPointValues(:) !<On return, the values for the data point.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSDataPointsValuesGetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,Err,ERROR,*999)
+      CALL DATA_POINTS_VALUES_GET(DATA_POINTS,DataPointGlobalNumber,DataPointValues,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataPointsValuesGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsValuesGetNumber",Err,ERROR)
+    CALL EXITS("CMISSDataPointsValuesGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsValuesGetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the values for a data point in a set of data points identified by an object.
+  SUBROUTINE CMISSDataPointsValuesGetObj(DataPoints,DataPointGlobalNumber,DataPointValues,Err)
+  
+    !Argument variables
+    TYPE(CMISSDataPointsType), INTENT(IN) :: DataPoints !<The data points to get the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: DataPointGlobalNumber !<The global number of the data points to get the data point user number for.
+    REAL(DP), ALLOCATABLE, INTENT(OUT) :: DataPointValues(:) !<On return, the values for the data point.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSDataPointsValuesGetObj",Err,ERROR,*999)
+ 
+    CALL DATA_POINTS_VALUES_GET(DataPoints%DATA_POINTS,DataPointGlobalNumber,DataPointValues,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDataPointsValuesGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsValuesGetObj",Err,ERROR)
+    CALL EXITS("CMISSDataPointsValuesGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsValuesGetObj
+
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the values for a data point in a set of data points identified by user number.
+  SUBROUTINE CMISSDataPointsValuesSetNumber(RegionUserNumber,DataPointGlobalNumber,DataPointValues,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the data points to set the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: DataPointGlobalNumber !<The global number of the data points to set the data point user number for.
+    REAL(DP), INTENT(IN) :: DataPointValues(:) !<The values for the data point to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSDataPointsValuesSetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,Err,ERROR,*999)
+      CALL DATA_POINTS_VALUES_SET(DATA_POINTS,DataPointGlobalNumber,DataPointValues,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataPointsValuesSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsValuesSetNumber",Err,ERROR)
+    CALL EXITS("CMISSDataPointsValuesSetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsValuesSetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the values for a data point in a set of data points identified by an object.
+  SUBROUTINE CMISSDataPointsValuesSetObj(DataPoints,DataPointGlobalNumber,DataPointValues,Err)
+  
+    !Argument variables
+    TYPE(CMISSDataPointsType), INTENT(IN) :: DataPoints !<The data points to set the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: DataPointGlobalNumber !<The global number of the data points to set the data point user number for.
+    REAL(DP), INTENT(IN) :: DataPointValues(:) !<The values for the data point to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSDataPointsValuesSetObj",Err,ERROR,*999)
+ 
+    CALL DATA_POINTS_VALUES_SET(DataPoints%DATA_POINTS,DataPointGlobalNumber,DataPointValues,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDataPointsValuesSetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsValuesSetObj",Err,ERROR)
+    CALL EXITS("CMISSDataPointsValuesSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsValuesSetObj  
+  
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Returns the weights for a data point in a set of data points identified by user number.
+  SUBROUTINE CMISSDataPointsWeightsGetNumber(RegionUserNumber,DataPointGlobalNumber,DataPointWeights,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the data points to get the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: DataPointGlobalNumber !<The global number of the data points to get the data point user number for.
+    REAL(DP), ALLOCATABLE, INTENT(OUT) :: DataPointWeights(:) !<On return, the weights for the data point.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSDataPointsWeightsGetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,Err,ERROR,*999)
+      CALL DATA_POINTS_WEIGHTS_GET(DATA_POINTS,DataPointGlobalNumber,DataPointWeights,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataPointsWeightsGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsWeightsGetNumber",Err,ERROR)
+    CALL EXITS("CMISSDataPointsWeightsGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsWeightsGetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the weights for a data point in a set of data points identified by an object.
+  SUBROUTINE CMISSDataPointsWeightsGetObj(DataPoints,DataPointGlobalNumber,DataPointWeights,Err)
+  
+    !Argument variables
+    TYPE(CMISSDataPointsType), INTENT(IN) :: DataPoints !<The data points to get the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: DataPointGlobalNumber !<The global number of the data points to get the data point user number for.
+    REAL(DP), ALLOCATABLE, INTENT(OUT) :: DataPointWeights(:) !<On return, the weights for the data point.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSDataPointsWeightsGetObj",Err,ERROR,*999)
+ 
+    CALL DATA_POINTS_WEIGHTS_GET(DataPoints%DATA_POINTS,DataPointGlobalNumber,DataPointWeights,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDataPointsWeightsGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsWeightsGetObj",Err,ERROR)
+    CALL EXITS("CMISSDataPointsWeightsGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsWeightsGetObj
+
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the weights for a data point in a set of data points identified by user number.
+  SUBROUTINE CMISSDataPointsWeightsSetNumber(RegionUserNumber,DataPointGlobalNumber,DataPointWeights,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the data points to set the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: DataPointGlobalNumber !<The global number of the data points to set the data point user number for.
+    REAL(DP), INTENT(IN) :: DataPointWeights(:) !<The weights for the data point to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSDataPointsWeightsSetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,Err,ERROR,*999)
+      CALL DATA_POINTS_WEIGHTS_SET(DATA_POINTS,DataPointGlobalNumber,DataPointWeights,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataPointsWeightsSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsWeightsSetNumber",Err,ERROR)
+    CALL EXITS("CMISSDataPointsWeightsSetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsWeightsSetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the weights for a data point in a set of data points identified by an object.
+  SUBROUTINE CMISSDataPointsWeightsSetObj(DataPoints,DataPointGlobalNumber,DataPointWeights,Err)
+  
+    !Argument variables
+    TYPE(CMISSDataPointsType), INTENT(IN) :: DataPoints !<The data points to set the data point user number for.
+    INTEGER(INTG), INTENT(IN) :: DataPointGlobalNumber !<The global number of the data points to set the data point user number for.
+    REAL(DP), INTENT(IN) :: DataPointWeights(:) !<The weights for the data point to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSDataPointsWeightsSetObj",Err,ERROR,*999)
+ 
+    CALL DATA_POINTS_WEIGHTS_SET(DataPoints%DATA_POINTS,DataPointGlobalNumber,DataPointWeights,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDataPointsWeightsSetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsWeightsSetObj",Err,ERROR)
+    CALL EXITS("CMISSDataPointsWeightsSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsWeightsSetObj 
 
 !!==================================================================================================================================
 !!

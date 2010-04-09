@@ -84,6 +84,8 @@ MODULE REGION_ROUTINES
   PUBLIC REGION_COORDINATE_SYSTEM_GET,REGION_COORDINATE_SYSTEM_SET
 
   PUBLIC REGION_CREATE_START,REGION_CREATE_FINISH
+  
+  PUBLIC REGION_DATA_POINTS_GET
 
   PUBLIC REGION_DESTROY
 
@@ -310,6 +312,45 @@ CONTAINS
     RETURN 1
   END SUBROUTINE REGION_CREATE_START
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns a pointer to the data points for a region. \see OPENCMISS::CMISSRegionDataPointsGet
+  SUBROUTINE REGION_DATA_POINTS_GET(REGION,DATA_POINTS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to get the data points for
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<On exit, a pointer to the data points for the region. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("REGION_DATA_POINTS_GET",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(REGION)) THEN
+      IF(REGION%REGION_FINISHED) THEN 
+        IF(ASSOCIATED(DATA_POINTS)) THEN
+          CALL FLAG_ERROR("Data points is already associated.",ERR,ERROR,*998)
+        ELSE
+          DATA_POINTS=>REGION%DATA_POINTS
+          IF(.NOT.ASSOCIATED(DATA_POINTS)) CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Region has not been finished.",ERR,ERROR,*998)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*998)
+    ENDIF
+       
+    CALL EXITS("REGION_DATA_POINTS_GET")
+    RETURN
+999 NULLIFY(DATA_POINTS)
+998 CALL ERRORS("REGION_DATA_POINTS_GET",ERR,ERROR)
+    CALL EXITS("REGION_DATA_POINTS_GET")
+    RETURN 1
+    
+  END SUBROUTINE REGION_DATA_POINTS_GET  
 
 
   !

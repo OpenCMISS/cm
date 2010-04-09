@@ -216,6 +216,30 @@ MODULE TYPES
   !
   !================================================================================================================================
   !
+  ! Data point types
+  !
+
+  !>Contains information about a data point.
+  TYPE DATA_POINT_TYPE
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of data point. 
+    INTEGER(INTG) :: USER_NUMBER !<The user defined number of data point. 
+    TYPE(VARYING_STRING) :: LABEL !<A string label for the data point.
+    REAL(DP), ALLOCATABLE :: VALUES(:) !Values of the data point specifying the spatial position in the region, has the size of region dimension the data point belongs to.
+    REAL(DP), ALLOCATABLE :: WEIGHTS(:) !Weights of the data point, has the size of region dimension the data point belongs to.
+  END TYPE DATA_POINT_TYPE
+
+  !>Contains information on the data points defined on a region. \see OPENCMISS::CMISSDataPointsType
+  TYPE DATA_POINTS_TYPE
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the data points.
+    LOGICAL :: DATA_POINTS_FINISHED !<Is .TRUE. if the data points have finished being created, .FALSE. if not.
+    INTEGER(INTG) :: NUMBER_OF_DATA_POINTS !<The number of data points defined on the region.
+    TYPE(DATA_POINT_TYPE), ALLOCATABLE :: DATA_POINTS(:) !<DATA_POINTS(data_points_idx). The data point information for the data_points_idx'th global data point.
+    TYPE(TREE_TYPE), POINTER :: DATA_POINTS_TREE !<The tree for user to global data point mapping
+  END TYPE DATA_POINTS_TYPE  
+  
+  !
+  !================================================================================================================================
+  !
   ! Node types
   !
 
@@ -2342,6 +2366,7 @@ MODULE TYPES
     LOGICAL :: REGION_FINISHED !<Is .TRUE. if the region has finished being created, .FALSE. if not.
     TYPE(VARYING_STRING) :: LABEL !<A user defined label for the region.
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<A pointer to the coordinate system used by the region.
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS  !<A pointer to the data points defined on the region.          
     TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes defined on the region.
     TYPE(MESHES_TYPE), POINTER :: MESHES !<A pointer to the meshes defined on the region.
     TYPE(GENERATED_MESHES_TYPE), POINTER :: GENERATED_MESHES !<A pointer to the generated meshes defined on the region.
