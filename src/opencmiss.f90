@@ -189,10 +189,10 @@ MODULE OPENCMISS
   END TYPE CMISSInterfaceEquationsType
   
    !>Contains information on an interfaces meshes connectivity.
-  TYPE CMISSInterfaceMeshesConnectivityType
+  TYPE CMISSInterfaceMeshConnectivityType
     PRIVATE
-    TYPE(INTERFACE_MESHES_CONNECTIVITY_TYPE), POINTER :: MESHES_CONNECTIVITY
-  END TYPE CMISSInterfaceMeshesConnectivityType
+    TYPE(INTERFACE_MESH_CONNECTIVITY_TYPE), POINTER :: MESH_CONNECTIVITY
+  END TYPE CMISSInterfaceMeshConnectivityType
   
   !>Contains information on a mesh defined on a region.
   TYPE CMISSMeshType
@@ -294,8 +294,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSInterfaceEquationsType,CMISSInterfaceEquationsTypeFinalise,CMISSInterfaceEquationsTypeInitialise
 
-   PUBLIC CMISSInterfaceMeshesConnectivityType,CMISSInterfaceMeshesConnectivityTypeFinalise, &
-     & CMISSInterfaceMeshesConnectivityTypeInitialise
+   PUBLIC CMISSInterfaceMeshConnectivityType,CMISSInterfaceMeshConnectivityTypeFinalise, &
+     & CMISSInterfaceMeshConnectivityTypeInitialise
 
   PUBLIC CMISSMeshType,CMISSMeshTypeFinalise,CMISSMeshTypeInitialise
 
@@ -3025,23 +3025,35 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype 
     MODULE PROCEDURE CMISSInterfaceDestroyObj
   END INTERFACE !CMISSInterfaceDestroy
 
-  !>Finishes the creation of an interface meshes connectivity. \see OPENCMISS::CMISSInterfaceMeshesConnectivityCreateStart
-  INTERFACE CMISSInterfaceMeshesConnectivityCreateFinish
-    MODULE PROCEDURE CMISSInterfaceMeshesConnectivityCreateFinishNumber
-    MODULE PROCEDURE CMISSInterfaceMeshesConnectivityCreateFinishObj
-  END INTERFACE !CMISSInterfaceMeshesConnectivityCreateStart
+  !>Finishes the creation of an interface meshes connectivity. \see OPENCMISS::CMISSInterfaceMeshConnectivityCreateStart
+  INTERFACE CMISSInterfaceMeshConnectivityCreateFinish
+    MODULE PROCEDURE CMISSInterfaceMeshConnectivityCreateFinishNumber
+    MODULE PROCEDURE CMISSInterfaceMeshConnectivityCreateFinishObj
+  END INTERFACE !CMISSInterfaceMeshConnectivityCreateFinish
 
-  !>Starts the creation of an interface meshes connectivity. \see OPENCMISS::CMISSInterfaceMeshesConnectivityCreateFinish
-  INTERFACE CMISSInterfaceMeshesConnectivityCreateStart
-    MODULE PROCEDURE CMISSInterfaceMeshesConnectivityCreateStartNumber
-    MODULE PROCEDURE CMISSInterfaceMeshesConnectivityCreateStartObj
-  END INTERFACE !CMISSInterfaceMeshesConnectivityCreateStart
+  !>Starts the creation of an interface meshes connectivity.
+  INTERFACE CMISSInterfaceMeshConnectivityCreateStart
+    MODULE PROCEDURE CMISSInterfaceMeshConnectivityCreateStartNumber
+    MODULE PROCEDURE CMISSInterfaceMeshConnectivityCreateStartObj
+  END INTERFACE !CMISSInterfaceMeshConnectivityCreateStart
+
+  !>Sets the element xi values for the mesh connectivity between an element in the interface mesh and an element in a region mesh
+  INTERFACE CMISSInterfaceMeshConnectivityElementXiSet
+    MODULE PROCEDURE CMISSInterfaceMeshConnectivityElementXiSetNumber
+    MODULE PROCEDURE CMISSInterfaceMeshConnectivityElementXiSetObj
+  END INTERFACE !CMISSInterfaceMeshConnectivityElementXiSet <<>>
+
+  !>Sets the number of elements coupled through a given interface mesh element
+  INTERFACE CMISSInterfaceMeshConnectivityElementNumberElementsSet
+    MODULE PROCEDURE CMISSInterfaceMeshConnectivityElementNumberElementsSetNumber
+    MODULE PROCEDURE CMISSInterfaceMeshConnectivityElementNumberElementsSetObj
+  END INTERFACE !CMISSInterfaceMeshConnectivityElementNumberElementsSet <<>>
 
   !>Destroys an interface meshes connectivity.
-  INTERFACE CMISSInterfaceMeshesConnectivityDestroy
-    MODULE PROCEDURE CMISSInterfaceMeshesConnectivityDestroyNumber
-    MODULE PROCEDURE CMISSInterfaceMeshesConnectivityDestroyObj
-  END INTERFACE !CMISSInterfaceMeshesConnectivityDestroy
+  INTERFACE CMISSInterfaceMeshConnectivityDestroy
+    MODULE PROCEDURE CMISSInterfaceMeshConnectivityDestroyNumber
+    MODULE PROCEDURE CMISSInterfaceMeshConnectivityDestroyObj
+  END INTERFACE !CMISSInterfaceMeshConnectivityDestroy
 
   PUBLIC CMISSInterfaceMeshAdd
   
@@ -3049,9 +3061,9 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype 
   
   PUBLIC CMISSInterfaceDestroy
   
-  PUBLIC CMISSInterfaceMeshesConnectivityCreateFinish,CMISSInterfaceMeshesConnectivityCreateStart
+  PUBLIC CMISSInterfaceMeshConnectivityCreateFinish,CMISSInterfaceMeshConnectivityCreateStart
   
-  PUBLIC CMISSInterfaceMeshesConnectivityDestroy
+  PUBLIC CMISSInterfaceMeshConnectivityDestroy
  
 !!==================================================================================================================================
 !!
@@ -5560,52 +5572,52 @@ CONTAINS
   !================================================================================================================================
   !
 
-   !>Finalises a CMISSInterfaceMeshesConnectivityType object.
-   SUBROUTINE CMISSInterfaceMeshesConnectivityTypeFinalise(CMISSInterfaceMeshesConnectivity,Err)
+   !>Finalises a CMISSInterfaceMeshConnectivityType object.
+   SUBROUTINE CMISSInterfaceMeshConnectivityTypeFinalise(CMISSInterfaceMeshConnectivity,Err)
    
      !Argument variables
-     TYPE(CMISSInterfaceMeshesConnectivityType), INTENT(OUT) :: CMISSInterfaceMeshesConnectivity !<The CMISSInterfaceMeshesConnectivityType object to finalise.
+     TYPE(CMISSInterfaceMeshConnectivityType), INTENT(OUT) :: CMISSInterfaceMeshConnectivity !<The CMISSInterfaceMeshConnectivityType object to finalise.
      INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
      !Local variables
      
-     CALL ENTERS("CMISSInterfaceMeshesConnectivityTypeFinalise",Err,ERROR,*999)
+     CALL ENTERS("CMISSInterfaceMeshConnectivityTypeFinalise",Err,ERROR,*999)
      
-     IF(ASSOCIATED(CMISSInterfaceMeshesConnectivity%MESHES_CONNECTIVITY)) & 
-       & CALL INTERFACE_MESHES_CONNECTIVITY_DESTROY(CMISSInterfaceMeshesConnectivity%MESHES_CONNECTIVITY,Err,ERROR,*999)
+     IF(ASSOCIATED(CMISSInterfaceMeshConnectivity%MESH_CONNECTIVITY)) & 
+       & CALL INTERFACE_MESH_CONNECTIVITY_DESTROY(CMISSInterfaceMeshConnectivity%MESH_CONNECTIVITY,Err,ERROR,*999)
  
-     CALL EXITS("CMISSInterfaceMeshesConnectivityTypeFinalise")
+     CALL EXITS("CMISSInterfaceMeshConnectivityTypeFinalise")
      RETURN
- 999 CALL ERRORS("CMISSInterfaceMeshesConnectivityTypeFinalise",Err,ERROR)
-     CALL EXITS("CMISSInterfaceMeshesConnectivityTypeFinalise")    
+ 999 CALL ERRORS("CMISSInterfaceMeshConnectivityTypeFinalise",Err,ERROR)
+     CALL EXITS("CMISSInterfaceMeshConnectivityTypeFinalise")    
      CALL CMISS_HANDLE_ERROR(Err,ERROR)
      RETURN
      
-   END SUBROUTINE CMISSInterfaceMeshesConnectivityTypeFinalise
+   END SUBROUTINE CMISSInterfaceMeshConnectivityTypeFinalise
   
   !
   !================================================================================================================================
   !
 
-   !>Initialises a CMISSInterfaceMeshesConnectivityType object.
-   SUBROUTINE CMISSInterfaceMeshesConnectivityTypeInitialise(CMISSInterfaceMeshesConnectivity,Err)
+   !>Initialises a CMISSInterfaceMeshConnectivityType object.
+   SUBROUTINE CMISSInterfaceMeshConnectivityTypeInitialise(CMISSInterfaceMeshConnectivity,Err)
    
      !Argument variables
-     TYPE(CMISSInterfaceMeshesConnectivityType), INTENT(OUT) :: CMISSInterfaceMeshesConnectivity !<The CMISSInterfaceMeshesConnectivityType object to initialise.
+     TYPE(CMISSInterfaceMeshConnectivityType), INTENT(OUT) :: CMISSInterfaceMeshConnectivity !<The CMISSInterfaceMeshConnectivityType object to initialise.
      INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
      !Local variables
  
-     CALL ENTERS("CMISSInterfaceMeshesConnectivityTypeInitialise",Err,ERROR,*999)
+     CALL ENTERS("CMISSInterfaceMeshConnectivityTypeInitialise",Err,ERROR,*999)
      
-     NULLIFY(CMISSInterfaceMeshesConnectivity%MESHES_CONNECTIVITY)
+     NULLIFY(CMISSInterfaceMeshConnectivity%MESH_CONNECTIVITY)
  
-     CALL EXITS("CMISSInterfaceMeshesConnectivityTypeInitialise")
+     CALL EXITS("CMISSInterfaceMeshConnectivityTypeInitialise")
      RETURN
- 999 CALL ERRORS("CMISSInterfaceMeshesConnectivityTypeInitialise",Err,ERROR)
-     CALL EXITS("CMISSInterfaceMeshesConnectivityTypeInitialise")    
+ 999 CALL ERRORS("CMISSInterfaceMeshConnectivityTypeInitialise",Err,ERROR)
+     CALL EXITS("CMISSInterfaceMeshConnectivityTypeInitialise")    
      CALL CMISS_HANDLE_ERROR(Err,ERROR)
      RETURN
      
-   END SUBROUTINE CMISSInterfaceMeshesConnectivityTypeInitialise
+   END SUBROUTINE CMISSInterfaceMeshConnectivityTypeInitialise
 
   !
   !================================================================================================================================
@@ -26725,7 +26737,7 @@ CONTAINS
   !  
  
   !>Finishes the creation of an interface coupled mesh connectivity identified by a user number.
-  SUBROUTINE CMISSInterfaceMeshesConnectivityCreateFinishNumber(RegionUserNumber,InterfaceUserNumber,Err)
+  SUBROUTINE CMISSInterfaceMeshConnectivityCreateFinishNumber(RegionUserNumber,InterfaceUserNumber,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface to finish the interface meshes connectivity for.
@@ -26736,7 +26748,7 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("CMISSInterfaceMeshesConnectivityCreateFinishNumber",Err,ERROR,*999)
+    CALL ENTERS("CMISSInterfaceMeshConnectivityCreateFinishNumber",Err,ERROR,*999)
  
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -26744,7 +26756,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
       IF(ASSOCIATED(INTERFACE)) THEN
-        CALL INTERFACE_MESHES_CONNECTIVITY_CREATE_FINISH(INTERFACE%MESHES_CONNECTIVITY,Err,ERROR,*999)
+        CALL INTERFACE_MESH_CONNECTIVITY_CREATE_FINISH(INTERFACE%MESH_CONNECTIVITY,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
           & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -26756,46 +26768,48 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
-    CALL EXITS("CMISSInterfaceMeshesConnectivityCreateFinishNumber")
+    CALL EXITS("CMISSInterfaceMeshConnectivityCreateFinishNumber")
     RETURN
-999 CALL ERRORS("CMISSInterfaceMeshesConnectivityCreateFinishNumber",Err,ERROR)
-    CALL EXITS("CMISSInterfaceMeshesConnectivityCreateFinishNumber")
+999 CALL ERRORS("CMISSInterfaceMeshConnectivityCreateFinishNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshConnectivityCreateFinishNumber")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSInterfaceMeshesConnectivityCreateFinishNumber
+  END SUBROUTINE CMISSInterfaceMeshConnectivityCreateFinishNumber
 
   !  
   !================================================================================================================================
   !  
  
   !>Finishes the creation of an interface meshes connectivity identified by an object.
-  SUBROUTINE CMISSInterfaceMeshesConnectivityCreateFinishObj(InterfaceMeshesConnectivity,Err)
+  SUBROUTINE CMISSInterfaceMeshConnectivityCreateFinishObj(InterfaceMeshConnectivity,Err)
   
     !Argument variables
-    TYPE(CMISSInterfaceMeshesConnectivityType), INTENT(IN) :: InterfaceMeshesConnectivity !<The interface meshes connectivity to finish creating.
+    TYPE(CMISSInterfaceMeshConnectivityType), INTENT(IN) :: InterfaceMeshConnectivity !<The interface meshes connectivity to finish creating.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
-    CALL ENTERS("CMISSInterfaceMeshesConnectivityCreateFinishObj",Err,ERROR,*999)
+    CALL ENTERS("CMISSInterfaceMeshConnectivityCreateFinishObj",Err,ERROR,*999)
  
-    CALL INTERFACE_MESHES_CONNECTIVITY_CREATE_FINISH(InterfaceMeshesConnectivity%MESHES_CONNECTIVITY,Err,ERROR,*999)
+    CALL INTERFACE_MESH_CONNECTIVITY_CREATE_FINISH(InterfaceMeshConnectivity%MESH_CONNECTIVITY,Err,ERROR,*999)
 
-    CALL EXITS("CMISSInterfaceMeshesConnectivityCreateFinishObj")
+    CALL EXITS("CMISSInterfaceMeshConnectivityCreateFinishObj")
     RETURN
-999 CALL ERRORS("CMISSInterfaceMeshesConnectivityCreateFinishObj",Err,ERROR)
-    CALL EXITS("CMISSInterfaceMeshesConnectivityCreateFinishObj")
+999 CALL ERRORS("CMISSInterfaceMeshConnectivityCreateFinishObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshConnectivityCreateFinishObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSInterfaceMeshesConnectivityCreateFinishObj
+  END SUBROUTINE CMISSInterfaceMeshConnectivityCreateFinishObj
+
+
 
   !  
   !================================================================================================================================
   !  
  
   !>Starts the creation of an interface meshes connectivity identified by a user number.
-  SUBROUTINE CMISSInterfaceMeshesConnectivityCreateStartNumber(RegionUserNumber,InterfaceUserNumber,Err)
+  SUBROUTINE CMISSInterfaceMeshConnectivityCreateStartNumber(RegionUserNumber,InterfaceUserNumber,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface to start the creation of the meshes connectivity.
@@ -26803,20 +26817,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
-    TYPE(INTERFACE_MESHES_CONNECTIVITY_TYPE), POINTER :: INTERFACE_MESHES_CONNECTIVITY
+    TYPE(INTERFACE_MESH_CONNECTIVITY_TYPE), POINTER :: INTERFACE_MESH_CONNECTIVITY
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("CMISSInterfaceMeshesConnectivityCreateStartNumber",Err,ERROR,*999)
+    CALL ENTERS("CMISSInterfaceMeshConnectivityCreateStartNumber",Err,ERROR,*999)
  
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
-    NULLIFY(INTERFACE_MESHES_CONNECTIVITY)
+    NULLIFY(INTERFACE_MESH_CONNECTIVITY)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
       IF(ASSOCIATED(INTERFACE)) THEN
-        CALL INTERFACE_MESHES_CONNECTIVITY_CREATE_START(INTERFACE,INTERFACE_MESHES_CONNECTIVITY,Err,ERROR,*999)
+        CALL INTERFACE_MESH_CONNECTIVITY_CREATE_START(INTERFACE,INTERFACE_MESH_CONNECTIVITY,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
           & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -26828,48 +26842,217 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
-    CALL EXITS("CMISSInterfaceMeshesConnectivityCreateStartNumber")
+    CALL EXITS("CMISSInterfaceMeshConnectivityCreateStartNumber")
     RETURN
-999 CALL ERRORS("CMISSInterfaceMeshesConnectivityCreateStartNumber",Err,ERROR)
-    CALL EXITS("CMISSInterfaceMeshesConnectivityCreateStartNumber")
+999 CALL ERRORS("CMISSInterfaceMeshConnectivityCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshConnectivityCreateStartNumber")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSInterfaceMeshesConnectivityCreateStartNumber
+  END SUBROUTINE CMISSInterfaceMeshConnectivityCreateStartNumber
 
   !  
   !================================================================================================================================
   !  
  
   !>Starts the creation of an interface meshes connectivity identified by an object.
-  SUBROUTINE CMISSInterfaceMeshesConnectivityCreateStartObj(INTERFACE,InterfaceMeshesConnectivity,Err)
+  SUBROUTINE CMISSInterfaceMeshConnectivityCreateStartObj(INTERFACE,InterfaceMeshConnectivity,Err)
   
     !Argument variables
     TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to start the creation of the meshes connectivity for
-    TYPE(CMISSInterfaceMeshesConnectivityType), INTENT(OUT) :: InterfaceMeshesConnectivity !<On return, the created meshes connectivity
+    TYPE(CMISSInterfaceMeshConnectivityType), INTENT(OUT) :: InterfaceMeshConnectivity !<On return, the created meshes connectivity
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
-    CALL ENTERS("CMISSInterfaceMeshesConnectivityCreateStartObj",Err,ERROR,*999)
+    CALL ENTERS("CMISSInterfaceMeshConnectivityCreateStartObj",Err,ERROR,*999)
  
-    CALL INTERFACE_MESHES_CONNECTIVITY_CREATE_START(INTERFACE%INTERFACE,InterfaceMeshesConnectivity%MESHES_CONNECTIVITY, &
+    CALL INTERFACE_MESH_CONNECTIVITY_CREATE_START(INTERFACE%INTERFACE,InterfaceMeshConnectivity%MESH_CONNECTIVITY, &
       & Err,ERROR,*999)
 
-    CALL EXITS("CMISSInterfaceMeshesConnectivityCreateStartObj")
+    CALL EXITS("CMISSInterfaceMeshConnectivityCreateStartObj")
     RETURN
-999 CALL ERRORS("CMISSInterfaceMeshesConnectivityCreateStartObj",Err,ERROR)
-    CALL EXITS("CMISSInterfaceMeshesConnectivityCreateStartObj")
+999 CALL ERRORS("CMISSInterfaceMeshConnectivityCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshConnectivityCreateStartObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSInterfaceMeshesConnectivityCreateStartObj
+  END SUBROUTINE CMISSInterfaceMeshConnectivityCreateStartObj
+
+
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Sets the number of coupled mesh elements which are linked to a specific interface element.
+  SUBROUTINE CMISSInterfaceMeshConnectivityElementNumberElementsSetNumber(RegionUserNumber,InterfaceUserNumber, &
+     &  InterfaceElementNumber,CoupledMeshIndexNumber,NumberOfElements,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface to start the creation of the meshes connectivity.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface to start the creation of the meshes connectivity for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceElementNumber !<The element number of the interface mesh
+    INTEGER(INTG), INTENT(IN) :: CoupledMeshIndexNumber !<The index number to the coupled mesh
+    INTEGER(INTG), INTENT(IN) :: NumberOfElements !<The number of elements
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceMeshConnectivityElementNumberElementsSetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_MESH_CONNECTIVITY_ELEMENT_NUMBER_ELEMENTS_SET(INTERFACE%MESH_CONNECTIVITY,InterfaceElementNumber, &
+         & CoupledMeshIndexNumber,NumberOfElements,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceMeshConnectivityElementNumberElementsSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMeshConnectivityElementNumberElementsSetNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshConnectivityElementNumberElementsSetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceMeshConnectivityElementNumberElementsSetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+
+  !>Sets the xi coordinate mapping between the interface and xi coordinates in a coupled region mesh
+  SUBROUTINE CMISSInterfaceMeshConnectivityElementXiSetNumber(RegionUserNumber,InterfaceUserNumber,InterfaceElementNumber, & 
+     &  CoupledMeshIndexNumber,CoupledMeshElementNumber,LocalNodeNumber,ComponentNumber,Xi,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface to start the creation of the meshes connectivity.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface to start the creation of the meshes connectivity for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceElementNumber !<The element number of the interface mesh
+    INTEGER(INTG), INTENT(IN) :: CoupledMeshIndexNumber !<The index number to the coupled mesh
+    INTEGER(INTG), INTENT(IN) :: CoupledMeshElementNumber !<The number of elements
+    INTEGER(INTG), INTENT(IN) :: LocalNodeNumber !<The number of elements
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The number of elements
+    REAL(DP), INTENT(IN) :: Xi(:)
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceMeshConnectivityElementXiSetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_MESH_CONNECTIVITY_ELEMENT_XI_SET(INTERFACE%MESH_CONNECTIVITY,InterfaceElementNumber, &
+         & CoupledMeshIndexNumber,CoupledMeshElementNumber,LocalNodeNumber,ComponentNumber,Xi,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceMeshConnectivityElementXiSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMeshConnectivityElementXiSetNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshConnectivityElementXiSetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceMeshConnectivityElementXiSetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets the xi coordinate mapping between the interface and xi coordinates in a coupled region mesh
+  SUBROUTINE CMISSInterfaceMeshConnectivityElementXiSetObj(InterfaceMeshConnectivity,InterfaceElementNumber, & 
+     &  CoupledMeshIndexNumber,CoupledMeshElementNumber,LocalNodeNumber,ComponentNumber,Xi,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceMeshConnectivityType), INTENT(IN) :: InterfaceMeshConnectivity !<The interface to start the creation of the meshes connectivity for
+    INTEGER(INTG), INTENT(IN) :: InterfaceElementNumber !<The element number of the interface mesh
+    INTEGER(INTG), INTENT(IN) :: CoupledMeshIndexNumber !<The index number to the coupled mesh
+    INTEGER(INTG), INTENT(IN) :: CoupledMeshElementNumber !<The number of elements
+    INTEGER(INTG), INTENT(IN) :: LocalNodeNumber !<The number of elements
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The number of elements
+    REAL(DP), INTENT(IN) :: Xi(:)
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceMeshConnectivityElementXiSetObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_MESH_CONNECTIVITY_ELEMENT_XI_SET(InterfaceMeshConnectivity%MESH_CONNECTIVITY,InterfaceElementNumber, &
+         & CoupledMeshIndexNumber,CoupledMeshElementNumber,LocalNodeNumber,ComponentNumber,Xi,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceMeshConnectivityElementXiSetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMeshConnectivityElementXiSetObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshConnectivityElementXiSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceMeshConnectivityElementXiSetObj
+
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Sets the number of coupled mesh elements which are linked to a specific interface element.
+  SUBROUTINE CMISSInterfaceMeshConnectivityElementNumberElementsSetObj(InterfaceMeshConnectivity,InterfaceElementNumber, & 
+     &  CoupledMeshIndexNumber,NumberOfElements,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceMeshConnectivityType), INTENT(IN) :: InterfaceMeshConnectivity !<The interface to start the creation of the meshes connectivity for
+    INTEGER(INTG), INTENT(IN) :: InterfaceElementNumber !<The element number of the interface mesh
+    INTEGER(INTG), INTENT(IN) :: CoupledMeshIndexNumber !<The index number to the coupled mesh
+    INTEGER(INTG), INTENT(IN) :: NumberOfElements !<The number of elements
+
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceMeshConnectivityElementNumberElementsSetObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_MESH_CONNECTIVITY_ELEMENT_NUMBER_ELEMENTS_SET(InterfaceMeshConnectivity%MESH_CONNECTIVITY, &
+         & InterfaceElementNumber,CoupledMeshIndexNumber,NumberOfElements,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceMeshConnectivityElementNumberElementsSetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMeshConnectivityElementNumberElementsSetObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshConnectivityElementNumberElementsSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceMeshConnectivityElementNumberElementsSetObj
 
   !  
   !================================================================================================================================
   !   
 
   !>Destroys an interface meshes connectivity identified by a user number.
-  SUBROUTINE CMISSInterfaceMeshesConnectivityDestroyNumber(RegionUserNumber,InterfaceUserNumber,Err)
+  SUBROUTINE CMISSInterfaceMeshConnectivityDestroyNumber(RegionUserNumber,InterfaceUserNumber,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface and interface condition to destroy the meshes connectivity for.
@@ -26880,7 +27063,7 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("CMISSFInterfaceMeshesConnectivityDestroyNumber",Err,ERROR,*999)
+    CALL ENTERS("CMISSFInterfaceMeshConnectivityDestroyNumber",Err,ERROR,*999)
  
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -26888,7 +27071,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
       IF(ASSOCIATED(INTERFACE)) THEN
-        CALL INTERFACE_MESHES_CONNECTIVITY_DESTROY(INTERFACE%MESHES_CONNECTIVITY,Err,ERROR,*999)
+        CALL INTERFACE_MESH_CONNECTIVITY_DESTROY(INTERFACE%MESH_CONNECTIVITY,Err,ERROR,*999)
      ELSE
         LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -26899,40 +27082,40 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
-    CALL EXITS("CMISSInterfaceMeshesConnectivityDestroyNumber")
+    CALL EXITS("CMISSInterfaceMeshConnectivityDestroyNumber")
     RETURN
-999 CALL ERRORS("CMISSInterfaceMeshesConnectivityDestroyNumber",Err,ERROR)
-    CALL EXITS("CMISSInterfaceMeshesConnectivityDestroyNumber")
+999 CALL ERRORS("CMISSInterfaceMeshConnectivityDestroyNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshConnectivityDestroyNumber")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSInterfaceMeshesConnectivityDestroyNumber
+  END SUBROUTINE CMISSInterfaceMeshConnectivityDestroyNumber
 
   !  
   !================================================================================================================================
   !  
  
   !>Destroys an interface meshes connectivity identified by an object.
-  SUBROUTINE CMISSInterfaceMeshesConnectivityDestroyObj(InterfaceMeshesConnectivity,Err)
+  SUBROUTINE CMISSInterfaceMeshConnectivityDestroyObj(InterfaceMeshConnectivity,Err)
   
     !Argument variables
-    TYPE(CMISSInterfaceMeshesConnectivityType), INTENT(IN) :: InterfaceMeshesConnectivity !<The interface meshes connectivity to destroy.
+    TYPE(CMISSInterfaceMeshConnectivityType), INTENT(IN) :: InterfaceMeshConnectivity !<The interface meshes connectivity to destroy.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
-    CALL ENTERS("CMISSInterfaceMeshesConnectivityDestroyObj",Err,ERROR,*999)
+    CALL ENTERS("CMISSInterfaceMeshConnectivityDestroyObj",Err,ERROR,*999)
  
-    IF(ASSOCIATED(InterfaceMeshesConnectivity%MESHES_CONNECTIVITY)) &
-      &  CALL INTERFACE_MESHES_CONNECTIVITY_DESTROY(InterfaceMeshesConnectivity%MESHES_CONNECTIVITY,Err,ERROR,*999)
+    IF(ASSOCIATED(InterfaceMeshConnectivity%MESH_CONNECTIVITY)) &
+      &  CALL INTERFACE_MESH_CONNECTIVITY_DESTROY(InterfaceMeshConnectivity%MESH_CONNECTIVITY,Err,ERROR,*999)
 
-    CALL EXITS("CMISSInterfaceMeshesConnectivityDestroyObj")
+    CALL EXITS("CMISSInterfaceMeshConnectivityDestroyObj")
     RETURN
-999 CALL ERRORS("CMISSInterfaceMeshesConnectivityDestroyObj",Err,ERROR)
-    CALL EXITS("CMISSInterfaceMeshesConnectivityDestroyObj")
+999 CALL ERRORS("CMISSInterfaceMeshConnectivityDestroyObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshConnectivityDestroyObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSInterfaceMeshesConnectivityDestroyObj
+  END SUBROUTINE CMISSInterfaceMeshConnectivityDestroyObj
 
 !!==================================================================================================================================
 !!
