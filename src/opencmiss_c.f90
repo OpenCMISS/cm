@@ -11724,7 +11724,7 @@ CONTAINS
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber  !<The user number of the field to start the creation of, for C.
     TYPE(C_PTR), INTENT(IN) :: RegionPtr !<C pointer to the region to create the field on.
-    TYPE(C_PTR), INTENT(IN) :: FieldPtr !<C pointer to the created field.
+    TYPE(C_PTR), INTENT(OUT) :: FieldPtr !<C pointer to the created field.
     !Function variable
     INTEGER(C_INT) :: CMISSFieldCreateStartCPtr !<Error Code.
     !Local variable
@@ -11735,14 +11735,9 @@ CONTAINS
     IF(C_ASSOCIATED(RegionPtr)) THEN
       CALL C_F_POINTER(RegionPtr, Region)
       IF(ASSOCIATED(Region)) THEN
-        IF(C_ASSOCIATED(FieldPtr)) THEN
-          CMISSFieldCreateStartCPtr = CMISSPointerNotNULL
-        ELSE
-          IF(ASSOCIATED(Field)) THEN
-            CALL CMISSFieldCreateStart(FieldUserNumber, Region, Field, CMISSFieldCreateStartCPtr)
-          ELSE
-            CMISSFieldCreateStartCPtr = CMISSErrorConvertingPointer
-          ENDIF
+        CALL CMISSFieldCreateStart(FieldUserNumber, Region, Field, CMISSFieldCreateStartCPtr)
+        IF(ASSOCIATED(Field)) THEN
+          FieldPtr = C_LOC(Field)
         ELSE
           CMISSFieldCreateStartCPtr = CMISSPointerIsNULL
         ENDIF
@@ -20801,7 +20796,7 @@ CONTAINS
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region to start the creation of for C.
     TYPE(C_PTR), VALUE, INTENT(IN) :: ParentRegionPtr !<C pointer to the parent region to start the creation of the region in.
-    TYPE(C_PTR), INTENT(OUT) :: RegionPtr !<On return, C pointer to the created region.
+    TYPE(C_PTR), INTENT(OUT) :: RegionPtr !<On return, C pointer to the created region. Must be NULL on entry
     !Function variable
     INTEGER(C_INT) :: CMISSRegionCreateStartCPtr !<Error Code.
     !Local variables
