@@ -294,7 +294,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSInterfaceEquationsType,CMISSInterfaceEquationsTypeFinalise,CMISSInterfaceEquationsTypeInitialise
 
-   PUBLIC CMISSInterfaceMeshConnectivityType,CMISSInterfaceMeshConnectivityTypeFinalise, &
+  PUBLIC CMISSInterfaceMeshConnectivityType,CMISSInterfaceMeshConnectivityTypeFinalise, &
      & CMISSInterfaceMeshConnectivityTypeInitialise
 
   PUBLIC CMISSMeshType,CMISSMeshTypeFinalise,CMISSMeshTypeInitialise
