@@ -1656,12 +1656,19 @@ MODULE TYPES
     TYPE(INTERFACE_MATRICES_TYPE), POINTER :: INTERFACE_MATRICES !<A pointer to the interface equations matrices and vectors used for the interface equations.
   END TYPE INTERFACE_EQUATIONS_TYPE
   
+  !>Contains information on the geometry for an interface condition
+  TYPE INTERFACE_GEOMETRY_TYPE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION !<A pointer to the interface condition.
+    TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<The geometric field for this equations set.
+  END TYPE INTERFACE_GEOMETRY_TYPE
+
   !>Contains information about the Lagrange field information for an interface condition. 
   TYPE INTERFACE_LAGRANGE_TYPE
     TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION !<A pointer to the interface condition
     LOGICAL :: LAGRANGE_FINISHED !<Is .TRUE. if the interface Lagrange field has finished being created, .FALSE. if not.
     LOGICAL :: LAGRANGE_FIELD_AUTO_CREATED !<Is .TRUE. if the Lagrange field has been auto created, .FALSE. if not.
     TYPE(FIELD_TYPE), POINTER :: LAGRANGE_FIELD !<A pointer to the lagrange field.
+    INTEGER(INTG) :: NUMBER_OF_COMPONENTS !<The number of components in the Lagrange field.
   END TYPE INTERFACE_LAGRANGE_TYPE
 
   !>Contains information for the interface condition data.
@@ -1672,11 +1679,11 @@ MODULE TYPES
     TYPE(INTERFACE_CONDITIONS_TYPE), POINTER :: INTERFACE_CONDITIONS !<A pointer back to the interface conditions
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer back to the interface.
     INTEGER(INTG) :: METHOD !<An integer which denotes the interface condition method. \see INTERFACE_CONDITIONS_Methods,INTERFACE_CONDITIONS
-    INTEGER(INTG) :: SOLUTION_METHOD !<The solution method for the equations set \see INTERFACE_CONDITIONS_SolutionMethods 
     INTEGER(INTG) :: OPERATOR !<An integer which denotes whether type of interface operator. \see INTERFACE_CONDITIONS_Operator,INTERFACE_CONDITIONS
-    INTEGER(INTG) :: NUMBER_OF_EQUATIONS_SETS !<The number of equations sets in the interface condition
-    TYPE(EQUATIONS_SET_PTR_TYPE), POINTER :: EQUATIONS_SETS(:) !<EQUATIONS_SETS(equations_set_idx). The pointer to the equations_set_idx'th equations set in the interface condition.
-    INTEGER(INTG), POINTER :: EQUATIONS_SETS_MESH_INDEXES(:) !<EQUATIONS_SETS_MESH_INDEXES(equations_set_idx). The mesh index of the equations_set_idx'th equations set in the interface condition.
+    INTEGER(INTG) :: NUMBER_OF_DEPENDENT_VARIABLES !<The number of dependent variables in the interface condition
+    TYPE(FIELD_VARIABLE_PTR_TYPE), POINTER :: FIELD_VARIABLES(:) !<FIELD_VARIABLES(variable_idx). The pointer to the variable_idx'th dependent variable in the interface condition.
+    INTEGER(INTG), POINTER :: VARIABLE_MESH_INDEXES(:) !<VARIABLE_MESH_INDEXES(variable_idx). The mesh index of the variable_idx'th dependent variable in the interface condition.
+    TYPE(INTERFACE_GEOMETRY_TYPE) :: GEOMETRY !<The geometry information for the interface condition.
     TYPE(INTERFACE_LAGRANGE_TYPE), POINTER :: LAGRANGE !<A pointer to the interface condition Lagrange multipler information if there are any for this interface condition.
     TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS !<A pointer to the interface equations if there are any for this interface condition
   END TYPE INTERFACE_CONDITION_TYPE

@@ -203,14 +203,14 @@ CONTAINS
             !Set the default interface mapping in the create values cache          
             !First calculate how many interface matrices we have and set the variable types
             SELECT CASE(INTERFACE_CONDITION%METHOD)
-            CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD)
-              INTERFACE_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES=INTERFACE_CONDITION%NUMBER_OF_EQUATIONS_SETS
-              
+              INTERFACE_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES= &
+                INTERFACE_CONDITION%NUMBER_OF_DEPENDENT_VARIABLES          
             CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)           
             CASE(INTERFACE_CONDITION_PENALTY_METHOD)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The interface equations method of "// &

@@ -1066,30 +1066,30 @@ CONTAINS
   !
 
   !>Initialises a CMISSBasisType object for C.
+  FUNCTION CMISSBasisTypeInitialiseC(BasisTypePtr) BIND(C, NAME = "CMISSBasisTypeInitialise")
 
-  FUNCTION CMISSBasisTypeInitialiseC (BasisTypePtr) BIND(C, NAME = "CMISSBasisTypeInitialise")
-
-	!Argument variables
-  TYPE(C_PTR), INTENT(INOUT) :: BasisTypePtr !<C pointer to CMISSBasisType object to initialise.
-	!Function variable
-  INTEGER(C_INT) :: CMISSBasisTypeInitialiseC !<Error code.
-	!Local Variables
-  INTEGER(C_INT) :: Err
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: BasisTypePtr !<C pointer to CMISSBasisType object to initialise.
+    !Function variable
+    INTEGER(C_INT) :: CMISSBasisTypeInitialiseC !<Error code.
+    !Local Variables
+    INTEGER(C_INT) :: Err
     TYPE (CMISSBasisType), POINTER :: BasisType
 
     IF(C_ASSOCIATED(BasisTypePtr)) THEN
       CMISSBasisTypeInitialiseC = CMISSPointerNotNULL
     ELSE
-      NULLIFY (BasisType)
-      ALLOCATE (BasisType, STAT = Err)
-      IF (Err /= 0) THEN
-        CMISSBasisTypeInitialiseC =CMISSCouldNotAllocatePointer
+      NULLIFY(BasisType)
+      ALLOCATE(BasisType, STAT = Err)
+      IF(Err /= 0) THEN
+        CMISSBasisTypeInitialiseC=CMISSCouldNotAllocatePointer
       ELSE
-        CALL CMISSBasisTypeInitialise (BasisType,CMISSBasisTypeInitialiseC)
-        BasisTypePtr = C_LOC (BasisType)
-        CMISSBasisTypeInitialiseC = CMISSNoError
+        CALL CMISSBasisTypeInitialise(BasisType,CMISSBasisTypeInitialiseC)
+        BasisTypePtr=C_LOC(BasisType)
+        CMISSBasisTypeInitialiseC=CMISSNoError
       ENDIF
     ENDIF
+    
     RETURN
 
   END FUNCTION CMISSBasisTypeInitialiseC
@@ -1099,7 +1099,6 @@ CONTAINS
   !
 
   !>Finalises a CMISSBoundaryConditionsType object for C.
-
   FUNCTION CMISSBoundaryConditionsTypeFinaliseC(BoundaryConditionsTypePtr) BIND (C, NAME = "CMISSBoundaryConditionsTypeFinalise")
 
     !Argument Variables
@@ -1622,46 +1621,45 @@ CONTAINS
   !>Creates a pointer to a CMISSFieldsType object for an object reference for C.
   FUNCTION CMISSFieldsTypeCreateC(RegionPtr, FieldsPtr) BIND(C, NAME="CMISSFieldsTypeCreate")
 
-  !Argument variables
-  TYPE(C_PTR), INTENT(IN) :: RegionPtr !<C pointer to the region to get the fields from.
-  TYPE(C_PTR), INTENT(INOUT) :: FieldsPtr !<C pointer to the fields attached to the specified region.
-  !Function variable
-  INTEGER(C_INT) :: CMISSFieldsTypeCreateC !<Error Code.
-  !Local variables
-  INTEGER(C_INT) :: Err
-  TYPE(CMISSRegionType), POINTER :: Region
-  TYPE(CMISSFieldsType), POINTER :: Fields
-
-  IF(C_ASSOCIATED(RegionPtr)) THEN
-    IF (C_ASSOCIATED(FieldsPtr)) THEN
-      CMISSFieldsTypeCreateC = CMISSPointerNotNULL
-    ELSE
-      NULLIFY(Fields)
-      ALLOCATE(Fields, STAT= Err)
-      IF(Err/=0) THEN
-        CMISSFieldsTypeCreateC = CMISSCouldNotAllocatePointer
+    !Argument variables
+    TYPE(C_PTR), INTENT(IN) :: RegionPtr !<C pointer to the region to get the fields from.
+    TYPE(C_PTR), INTENT(INOUT) :: FieldsPtr !<C pointer to the fields attached to the specified region.
+    !Function variable
+    INTEGER(C_INT) :: CMISSFieldsTypeCreateC !<Error Code.
+    !Local variables
+    INTEGER(C_INT) :: Err
+    TYPE(CMISSRegionType), POINTER :: Region
+    TYPE(CMISSFieldsType), POINTER :: Fields
+    
+    IF(C_ASSOCIATED(RegionPtr)) THEN
+      IF (C_ASSOCIATED(FieldsPtr)) THEN
+        CMISSFieldsTypeCreateC = CMISSPointerNotNULL
       ELSE
-        CALL C_F_POINTER (RegionPtr, Region)
-        IF(ASSOCIATED(Region)) THEN
-          CALL CMISSFieldsTypeCreate(Region, Fields, CMISSFieldsTypeCreateC)
-          FieldsPtr = C_LOC(Fields)
+        NULLIFY(Fields)
+        ALLOCATE(Fields, STAT= Err)
+        IF(Err/=0) THEN
+          CMISSFieldsTypeCreateC = CMISSCouldNotAllocatePointer
         ELSE
-          CMISSFieldsTypeCreateC = CMISSErrorConvertingPointer
+          CALL C_F_POINTER (RegionPtr, Region)
+          IF(ASSOCIATED(Region)) THEN
+            CALL CMISSFieldsTypeCreate(Region, Fields, CMISSFieldsTypeCreateC)
+            FieldsPtr = C_LOC(Fields)
+          ELSE
+            CMISSFieldsTypeCreateC = CMISSErrorConvertingPointer
+          ENDIF
         ENDIF
       ENDIF
     ENDIF
-  ENDIF
+    
+    RETURN
 
-  RETURN
-
-END FUNCTION CMISSFieldsTypeCreateC
-
+  END FUNCTION CMISSFieldsTypeCreateC
+  
   !
   !================================================================================================================================
   !
 
   !>Finalises a CMISSFieldsType object for C.
-
   FUNCTION CMISSFieldsTypeFinaliseC (FieldsTypePtr) BIND(C,NAME="CMISSFieldsTypeFinalise")
 
     !Argument variables
@@ -1694,7 +1692,6 @@ END FUNCTION CMISSFieldsTypeCreateC
   !
 
   !>Initialises a CMISSFieldsType object for C.
-
   FUNCTION CMISSFieldsTypeInitialiseC(FieldsTypePtr) BIND(C,NAME = "CMISSFieldsTypeInitialise")
 
     !Argument variables
@@ -1925,7 +1922,6 @@ END FUNCTION CMISSFieldsTypeCreateC
   !
 
   !>Finalises a CMISSMeshElementsType object for C.
-
   FUNCTION CMISSMeshElementsTypeFinaliseC(MeshElementsTypePtr) BIND(C, NAME="CMISSMeshElementsTypeFinalise")
 
     !Argument variable
@@ -11686,11 +11682,6 @@ END FUNCTION CMISSFieldsTypeCreateC
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
         CALL CMISSFieldCreateFinish(Field,CMISSFieldCreateFinishCPtr)
-        IF(ASSOCIATED(Field)) THEN
-          FieldPtr = C_LOC(Field)
-        ELSE
-          CMISSFieldCreateFinishCPtr = CMISSPointerIsNULL
-        ENDIF
       ELSE
         CMISSFieldCreateFinishCPtr = CMISSErrorConvertingPointer
       ENDIF
@@ -11745,7 +11736,8 @@ END FUNCTION CMISSFieldsTypeCreateC
       CALL C_F_POINTER(RegionPtr, Region)
       IF(ASSOCIATED(Region)) THEN
         IF(C_ASSOCIATED(FieldPtr)) THEN
-          CALL C_F_POINTER(FieldPtr, Field)
+          CMISSFieldCreateStartCPtr = CMISSPointerNotNULL
+        ELSE
           IF(ASSOCIATED(Field)) THEN
             CALL CMISSFieldCreateStart(FieldUserNumber, Region, Field, CMISSFieldCreateStartCPtr)
           ELSE
