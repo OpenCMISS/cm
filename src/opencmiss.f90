@@ -1106,6 +1106,8 @@ MODULE OPENCMISS
   
   PUBLIC CMISSComputationalNumberOfNodesGet
 
+!  PUBLIC CMISSComputationalWorkGroupGet
+
   PUBLIC CMISSComputationalWorkGroupTypeInitialise
 
   PUBLIC CMISSComputationalWorkGroupCreateStart
@@ -1114,7 +1116,10 @@ MODULE OPENCMISS
 
   PUBLIC CMISSComputationalWorkGroupCreateFinish
 
+  PUBLIC CMISSComputationalWorkGroupGetLocalGroup
+  
   PUBLIC CMISSDecompositionWorkGroupSet !move it to Decomposition block later
+  
 !!==================================================================================================================================
 !!
 !! CONSTANTS
@@ -11672,6 +11677,33 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSDecompositionWorkGroupSet
+
+  !================================================================================================================================
+  !
+
+  !>Get the local working group(s) that this rank belongs to (current restriction: one rank can only belong to one local work group)
+  SUBROUTINE CMISSComputationalWorkGroupGetLocalGroup(MyLocalWorkGroup, Err)  
+    !Argument Variables
+    TYPE(CMISSComputationalWorkGroupType),INTENT(INOUT) :: MyLocalWorkGroup
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code
+
+    CALL ENTERS("CMISSComputationalWorkGroupGetLocalGroup",Err,Error,*999)
+
+     IF(ASSOCIATED(MyLocalWorkGroup%COMPUTATIONAL_WORK_GROUP)) THEN
+	CALL FLAG_ERROR('MyLocalWorkGroup IS ALREADY ASSOCIATED', Err,Error, *999)
+     ELSE
+	NULLIFY(MyLocalWorkGroup%COMPUTATIONAL_WORK_GROUP)
+	CALL COMPUTATIONAL_WORK_GROUP_GET_LOCAL_WORK_GROUP(MyLocalWorkGroup%COMPUTATIONAL_WORK_GROUP,Err,Error,*999)
+     ENDIF
+
+    CALL EXITS("CMISSComputationalWorkGroupGetLocalGroup")
+    RETURN
+999 CALL ERRORS("CMISSComputationalWorkGroupGetLocalGroup",Err,Error)
+    CALL EXITS("CMISSComputationalWorkGroupGetLocalGroup")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSComputationalWorkGroupGetLocalGroup
 
 !!==================================================================================================================================
 !!
