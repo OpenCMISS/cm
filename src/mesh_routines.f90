@@ -486,9 +486,9 @@ CONTAINS
 
           component_idx=DECOMPOSITION%MESH_COMPONENT_NUMBER
           
-          number_computational_nodes=COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)
+          number_computational_nodes=COMPUTATIONAL_NODES_NUMBER_GET(DECOMPOSITION%WORK_GROUP, ERR,ERROR)
           IF(ERR/=0) GOTO 999
-          my_computational_node_number=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
+          my_computational_node_number=COMPUTATIONAL_NODE_NUMBER_GET(DECOMPOSITION%WORK_GROUP, ERR,ERROR)
           IF(ERR/=0) GOTO 999
           
           SELECT CASE(DECOMPOSITION%DECOMPOSITION_TYPE)          
@@ -500,7 +500,7 @@ CONTAINS
             IF(DECOMPOSITION%NUMBER_OF_DOMAINS==1) THEN
               DECOMPOSITION%ELEMENT_DOMAIN=0
             ELSE
-              number_computational_nodes=COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)
+              number_computational_nodes=COMPUTATIONAL_NODES_NUMBER_GET(DECOMPOSITION%WORK_GROUP, ERR,ERROR)
               IF(ERR/=0) GOTO 999
               
               NUMBER_ELEMENTS_PER_NODE=REAL(MESH%NUMBER_OF_ELEMENTS,DP)/REAL(number_computational_nodes,DP)
@@ -686,7 +686,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: DOMAIN_NUMBER !<On return, the domain of the global element.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables`
+    !Local Variables
     TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(MESH_TOPOLOGY_TYPE), POINTER :: MESH_TOPOLOGY
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -776,7 +776,7 @@ CONTAINS
           MESH_TOPOLOGY=>MESH%TOPOLOGY(DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR
           IF(ASSOCIATED(MESH_TOPOLOGY)) THEN
             IF(GLOBAL_ELEMENT_NUMBER>0.AND.GLOBAL_ELEMENT_NUMBER<=MESH_TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS) THEN
-              number_computational_nodes=COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)
+              number_computational_nodes=COMPUTATIONAL_NODES_NUMBER_GET(DECOMPOSITION%WORK_GROUP, ERR,ERROR)
               IF(ERR/=0) GOTO 999
               IF(DOMAIN_NUMBER>=0.AND.DOMAIN_NUMBER<number_computational_nodes) THEN
                 DECOMPOSITION%ELEMENT_DOMAIN(GLOBAL_ELEMENT_NUMBER)=DOMAIN_NUMBER
@@ -1002,7 +1002,7 @@ CONTAINS
             !wolfye???<=?
             IF(NUMBER_OF_DOMAINS<=DECOMPOSITION%MESH%NUMBER_OF_ELEMENTS) THEN
               !Get the number of computational nodes
-              NUMBER_COMPUTATIONAL_NODES=COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)
+              NUMBER_COMPUTATIONAL_NODES=COMPUTATIONAL_NODES_NUMBER_GET(DECOMPOSITION%WORK_GROUP, ERR,ERROR)
               IF(ERR/=0) GOTO 999
               !!TODO: relax this later
               !IF(NUMBER_OF_DOMAINS==NUMBER_COMPUTATIONAL_NODES) THEN
@@ -3187,7 +3187,7 @@ CONTAINS
             IF(ASSOCIATED(DOMAIN%MESH)) THEN
               MESH=>DOMAIN%MESH
               component_idx=DOMAIN%MESH_COMPONENT_NUMBER
-              my_computational_node_number=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
+              my_computational_node_number=COMPUTATIONAL_NODE_NUMBER_GET(DECOMPOSITION%WORK_GROUP, ERR,ERROR)
               IF(ERR/=0) GOTO 999        
               
               !Calculate the local and global numbers and set up the mappings
@@ -3567,9 +3567,9 @@ CONTAINS
                   component_idx=DOMAIN%MESH_COMPONENT_NUMBER
                   MESH_TOPOLOGY=>MESH%TOPOLOGY(component_idx)%PTR
                   
-                  number_computational_nodes=COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)
+                  number_computational_nodes=COMPUTATIONAL_NODES_NUMBER_GET(DECOMPOSITION%WORK_GROUP, ERR,ERROR)
                   IF(ERR/=0) GOTO 999
-                  my_computational_node_number=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
+                  my_computational_node_number=COMPUTATIONAL_NODE_NUMBER_GET(DECOMPOSITION%WORK_GROUP, ERR,ERROR)
                   IF(ERR/=0) GOTO 999
                   
                   !Calculate the local and global numbers and set up the mappings

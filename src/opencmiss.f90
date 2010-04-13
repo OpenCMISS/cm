@@ -1106,6 +1106,8 @@ MODULE OPENCMISS
   
   PUBLIC CMISSComputationalNumberOfNodesGet
 
+  PUBLIC CMISSComputationalWorkGroupWait
+
 !  PUBLIC CMISSComputationalWorkGroupGet
 
   PUBLIC CMISSComputationalWorkGroupTypeInitialise
@@ -11552,6 +11554,28 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSComputationalNumberOfNodesGet
+
+  !
+  !================================================================================================================================
+  !
+  !>Set a barrier 
+  SUBROUTINE CMISSComputationalWorkGroupWait(Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    
+    CALL ENTERS("CMISSComputationalWorkGroupWait",Err,ERROR,*999)
+
+    CALL COMPUTATIONAL_WORK_GROUP_WAIT(Err,ERROR)
+
+    CALL EXITS("CMISSComputationalWorkGroupWait")
+    RETURN
+999 CALL ERRORS("CMISSComputationalWorkGroupWait",Err,ERROR)
+    CALL EXITS("CMISSComputationalWorkGroupWait")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSComputationalWorkGroupWait
 
   !
   !================================================================================================================================

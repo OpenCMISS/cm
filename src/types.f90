@@ -1,4 +1,4 @@
-!> \file
+! !> \file
 !> $Id$
 !> \author Chris Bradley
 !> \brief This module contains all type definitions in order to avoid cyclic module references.
@@ -71,7 +71,7 @@ MODULE TYPES
   USE CMISS_PETSC_TYPES
   USE CONSTANTS
   USE KINDS
-!  USE MPI !for mpi constants in mpif.h
+  USE MPI !for mpi constants in mpif.h
   USE ISO_C_BINDING
   USE ISO_VARYING_STRING
   USE TREES
@@ -671,7 +671,7 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_COMPUTATIONAL_NODES !<size of the total compurational nodes belonging to this group
     INTEGER(INTG) :: NUMBER_SUB_WORK_GROUPS !<size of sub working grous
     TYPE(COMPUTATIONAL_WORK_GROUP_TYPE), POINTER:: PARENT !<Parent of this working groups
-    TYPE(COMPUTATIONAL_WORK_GROUP_PTR_TYPE), ALLOCATABLE:: SUB_WORK_GROUPS(:) !<non-leaf node: The sub working groups
+    TYPE(COMPUTATIONAL_WORK_GROUP_PTR_TYPE), ALLOCATABLE:: SUB_WORK_GROUPS(:) !<The sub working groups
     
     TYPE(COMPUTATIONAL_ENVIRONMENT_TYPE), POINTER :: COMP_ENV !<pointer to the actual working environment
     LOGICAL :: COMP_ENV_FINISHED !<!<Is .TURE. if the actual working environment has been generated, .FALSE. if not
@@ -689,8 +689,8 @@ MODULE TYPES
     INTEGER(INTG) :: RANK !<The MPI rank of this computational node
    !TYPE(CACHE_TYPE) :: CACHE 
     INTEGER(INTG) :: NODE_NAME_LENGTH !<The length of the name of the computational node
-    !CHARACTER(LEN=MPI_MAX_PROCESSOR_NAME) :: NODE_NAME !<The name of the computational node
-    CHARACTER(LEN=MAXSTRLEN) :: NODE_NAME !<The name of the computational node. (hacked, sort out later)
+    CHARACTER(LEN=MPI_MAX_PROCESSOR_NAME) :: NODE_NAME !<The name of the computational node
+    !CHARACTER(LEN=MAXSTRLEN) :: NODE_NAME !<The name of the computational node. (hacked, sort out later)
   END TYPE COMPUTATIONAL_NODE_TYPE
 
   !>Contains information on the MPI type to transfer information about a computational node
@@ -699,15 +699,15 @@ MODULE TYPES
     INTEGER(INTG) :: NUM_BLOCKS !<The number of blocks in the MPI data type. This will be equal to 4.
     INTEGER(INTG) :: BLOCK_LENGTHS(4) !<The length of each block.
     INTEGER(INTG) :: TYPES(4) !<The data types of each block.
-    !INTEGER(MPI_ADDRESS_KIND) :: DISPLACEMENTS(4) !<The address displacements to each block.
-    INTEGER(8) :: DISPLACEMENTS(4) !<The address displacements to each block. (hacked, sort out later)
+    INTEGER(MPI_ADDRESS_KIND) :: DISPLACEMENTS(4) !<The address displacements to each block.
+    !INTEGER(8) :: DISPLACEMENTS(4) !<damn it , hard coding to be 8 breaks up in types.f90!! But why??
   END TYPE MPI_COMPUTATIONAL_NODE_TYPE
 
   !>Contains information on the computational environment the program is running in.
   TYPE COMPUTATIONAL_ENVIRONMENT_TYPE
     INTEGER(INTG) :: MPI_COMM !<The MPI communicator for cmiss
     INTEGER(INTG) :: NUMBER_COMPUTATIONAL_NODES !<The number of computational nodes
-    INTEGER(INTG) :: MY_COMPUTATIONAL_NODE_NUMBER !<The index of the running process
+    INTEGER(INTG) :: MY_COMPUTATIONAL_NODE_NUMBER !<The (LOCAL) rank of the running process WITHIN MPI_COMM
     TYPE(COMPUTATIONAL_NODE_TYPE), ALLOCATABLE :: COMPUTATIONAL_NODES(:) !<COMPUTATIONAL_NODES(node_idx). Contains information on the node_idx'th computational node. 
   END TYPE COMPUTATIONAL_ENVIRONMENT_TYPE
 
