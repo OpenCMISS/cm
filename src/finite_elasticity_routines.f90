@@ -317,11 +317,6 @@ CONTAINS
             & GEOMETRIC_INTERPOLATED_POINT,FIBRE_INTERPOLATED_POINT,NUMBER_OF_DIMENSIONS, &
             & NUMBER_OF_XI,DZDNU,Jxxi,ERR,ERROR,*999)
 
-    print *, 'DZDNU'
-    print *, DZDNU(1,1),',',DZDNU(1,2),',',DZDNU(1,3)
-    print *, DZDNU(2,1),',',DZDNU(2,2),',',DZDNU(2,3)
-    print *, DZDNU(3,1),',',DZDNU(3,2),',',DZDNU(3,3)
-
           CALL FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR(EQUATIONS_SET%SUBTYPE,DEPENDENT_INTERPOLATED_POINT, &
             & MATERIALS_INTERPOLATED_POINT,CAUCHY_TENSOR,Jznu,DZDNU,ERR,ERROR,*999)
 
@@ -536,7 +531,8 @@ CONTAINS
     !Argument variables
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: DEPENDENT_INTERPOLATED_POINT,GEOMETRIC_INTERPOLATED_POINT, &
       & FIBRE_INTERPOLATED_POINT
-    REAL(DP) :: DZDNU(3,3),DZDNU_TEMP(DIM,DIM),Jxxi  !DZDNU - Deformation Gradient Tensor,
+    REAL(DP), INTENT(OUT) :: DZDNU(3,3) !DZDNU - Deformation Gradient Tensor,
+    REAL(DP) :: DZDNU_TEMP(DIM,DIM),Jxxi
     INTEGER(INTG), INTENT(IN) :: DIM
     INTEGER(INTG), INTENT(IN) :: NUMBER_OF_XI
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -584,11 +580,6 @@ CONTAINS
     ELSE
         DZDNU = DZDNU_TEMP
     ENDIF
-
-    print *, 'DZDNU'
-    print *, DZDNU(1,1),',',DZDNU(1,2),',',DZDNU(1,3)
-    print *, DZDNU(2,1),',',DZDNU(2,2),',',DZDNU(2,3)
-    print *, DZDNU(3,1),',',DZDNU(3,2),',',DZDNU(3,3)
 
     CALL EXITS("FINITE_ELASTICITY_GAUSS_DEFORMATION_GRADIENT_TENSOR")
     RETURN
@@ -658,6 +649,8 @@ CONTAINS
         ! Assume Mooney-Rivlin constitutive relation
         P = -1*((C(1) + C(2) * (AZL(1,1) + AZL(2,2))) * AZL(3,3))
         ! Assume stress normal to the surface is neglible i.e. PIOLA_TENSOR(:,3) = 0,PIOLA_TENSOR(3,:) = 0
+        PIOLA_TENSOR(:,3) = 0.0_DP
+        PIOLA_TENSOR(3,:) = 0.0_DP
       ENDIF
         PIOLA_TENSOR(1,1)=2.0_DP*(C(1)+C(2)*(AZL(2,2)+AZL(3,3))+P*AZU(1,1))
         PIOLA_TENSOR(1,2)=2.0_DP*(       C(2)*(-AZL(2,1))        +P*AZU(1,2))
