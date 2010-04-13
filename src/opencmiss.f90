@@ -1887,6 +1887,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype 
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesTwoDim1 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesTwoDim2 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesTwoDim3 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesTwoDim4 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesTwoDim5 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesThreeDim1 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesThreeDim2 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesThreeDim3 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
@@ -1996,6 +1998,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype 
   PUBLIC CMISSEquationsSetStokesThreeDim1,CMISSEquationsSetStokesThreeDim2,CMISSEquationsSetStokesThreeDim3
 
   PUBLIC CMISSEquationsSetNavierStokesTwoDim1,CMISSEquationsSetNavierStokesTwoDim2,CMISSEquationsSetNavierStokesTwoDim3
+  PUBLIC CMISSEquationsSetNavierStokesTwoDim4,CMISSEquationsSetNavierStokesTwoDim5
   PUBLIC CMISSEquationsSetNavierStokesThreeDim1,CMISSEquationsSetNavierStokesThreeDim2,CMISSEquationsSetNavierStokesThreeDim3
   
   PUBLIC CMISSEquationsSetDarcyTwoDim1,CMISSEquationsSetDarcyTwoDim2,CMISSEquationsSetDarcyTwoDim3

@@ -567,6 +567,7 @@ static int CMISSEquationsSetNavierStokesTwoDim3 = 3;
 static int CMISSEquationsSetNavierStokesThreeDim1 = 4;
 static int CMISSEquationsSetNavierStokesThreeDim2 = 5;
 static int CMISSEquationsSetNavierStokesThreeDim3 = 6;
+static int CMISSEquationsSetNavierStokesTwoDim4 = 7;
 /* >@}
  * >@}
  * >@}
