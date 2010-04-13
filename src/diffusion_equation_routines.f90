@@ -1251,7 +1251,7 @@ CONTAINS
     ENDIF
 
     IF( UPDATE_BOUNDARY_CONDITIONS ) THEN
-      !CALL DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+      CALL DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("DIFFUSION_EQUATION_PRE_SOLVE")
@@ -1288,7 +1288,7 @@ CONTAINS
 !    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
 !    REAL(DP), POINTER :: BOUNDARY_VALUES(:)
     REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
-    INTEGER(INTG) :: NUMBER_OF_DIMENSIONS!,BOUNDARY_CONDITION_CHECK_VARIABLE
+    INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_CHECK_VARIABLE
 
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
     REAL(DP) :: VALUE,X(3) !<The value to add
@@ -1364,6 +1364,14 @@ CONTAINS
                                                 & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
                                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
+                                              BOUNDARY_CONDITION_CHECK_VARIABLE=EQUATIONS_SET%BOUNDARY_CONDITIONS% & 
+                                                & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR% & 
+                                                & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+                                              IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN
+                                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
+                                                 & variable_type,FIELD_VALUES_SET_TYPE,local_ny, & 
+                                                 & VALUE,ERR,ERROR,*999)
+                                              ENDIF
 !                                              IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
 !                                                IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
                                                   !If we are a boundary node then set the analytic value on the boundary
@@ -1390,6 +1398,10 @@ CONTAINS
                                  & FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
                                 CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type, &
                                  & FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type, &
+                                 & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type, &
+                                 & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                               ELSE
                                 CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
                               ENDIF
@@ -1472,6 +1484,14 @@ CONTAINS
                                                 & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
                                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
+                                              BOUNDARY_CONDITION_CHECK_VARIABLE=EQUATIONS_SET%BOUNDARY_CONDITIONS% & 
+                                                & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR% & 
+                                                & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+                                              IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN
+                                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
+                                                 & variable_type,FIELD_VALUES_SET_TYPE,local_ny, & 
+                                                 & VALUE,ERR,ERROR,*999)
+                                              ENDIF
 !                                              IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
 !                                                IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
                                                   !If we are a boundary node then set the analytic value on the boundary
@@ -1498,6 +1518,10 @@ CONTAINS
                                  & FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
                                 CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type, &
                                  & FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type, &
+                                 & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type, &
+                                 & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                               ELSE
                                 CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
                               ENDIF
