@@ -1632,7 +1632,7 @@ CONTAINS
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                     !Create analytic field if required
-                    !Set analtyic function type
+                    !Set analytic function type
                     EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_2
                   CASE(EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_1)
                     !Check that we are in 3D
@@ -1645,7 +1645,7 @@ CONTAINS
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                     !Create analytic field if required
-                    !Set analtyic function type
+                    !Set analytic function type
                     EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_1
                   CASE(EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_2)
                     !Check that we are in 3D
@@ -1658,7 +1658,7 @@ CONTAINS
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                     !Create analytic field if required
-                    !Set analtyic function type
+                    !Set analytic function type
                     EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_2
                   CASE DEFAULT
                     LOCAL_ERROR="The specified analytic function type of "// &
@@ -1692,10 +1692,10 @@ CONTAINS
                 IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED) THEN
                   CALL LAPLACE_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*999)
                 ELSE
-                  CALL FLAG_ERROR("Equations set analtyic has not been finished.",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Equations set analytic has not been finished.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations set analtyic is not associated.",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
               CALL FLAG_ERROR("Equations set dependent has not been finished.",ERR,ERROR,*999)
