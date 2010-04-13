@@ -43,6 +43,7 @@
 !>This module handles all diffusion equation routines.
 MODULE DIFFUSION_EQUATION_ROUTINES
 
+  USE ANALYTIC_ANALYSIS_ROUTINES
   USE BASE_ROUTINES
   USE BASIS_ROUTINES
   USE BOUNDARY_CONDITIONS_ROUTINES
@@ -69,7 +70,8 @@ MODULE DIFFUSION_EQUATION_ROUTINES
 
   IMPLICIT NONE
 
-  PRIVATE DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS
+  PRIVATE DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS, &
+    & DIFFUSION_EQUATION_POST_SOLVE_OUTPUT_DATA
   !Module parameters
 
   !Module types
@@ -82,7 +84,7 @@ MODULE DIFFUSION_EQUATION_ROUTINES
     & DIFFUSION_EQUATION_EQUATIONS_SET_SUBTYPE_SET,DIFFUSION_EQUATION_FINITE_ELEMENT_CALCULATE, &
     & DIFFUSION_EQUATION_PROBLEM_SUBTYPE_SET,DIFFUSION_EQUATION_PROBLEM_SETUP, &
     & DIFFUSION_EQUATION_PRE_SOLVE, DIFFUSION_EQUATION_PRE_SOLVE_GET_SOURCE_VALUE, &
-    & DIFFUSION_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLUTION
+    & DIFFUSION_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLUTION, DIFFUSION_EQUATION_POST_SOLVE
   
 CONTAINS
 
@@ -1840,7 +1842,163 @@ CONTAINS
   !   
   !================================================================================================================================
   !
+  !>Sets up the diffusion problem post solve.
+  SUBROUTINE DIFFUSION_EQUATION_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER!<A pointer to the solver
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER2 !<A pointer to the solver
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("DIFFUSION_EQUATION_POST_SOLVE",ERR,ERROR,*999)
+    NULLIFY(SOLVER2)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(ASSOCIATED(SOLVER)) THEN
+        IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            CASE(PROBLEM_NO_SOURCE_DIFFUSION_SUBTYPE,PROBLEM_LINEAR_SOURCE_DIFFUSION_SUBTYPE)
+              CALL DIFFUSION_EQUATION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            CASE(PROBLEM_NONLINEAR_SOURCE_DIFFUSION_SUBTYPE)
+              ! do nothing ???
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE DEFAULT
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                & " is not valid for a diffusion type of a classical field problem class."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("DIFFUSION_EQUATION_POST_SOLVE")
+    RETURN
+999 CALL ERRORS("DIFFUSION_EQUATION_POST_SOLVE",ERR,ERROR)
+    CALL EXITS("DIFFUSION_EQUATION_POST_SOLVE")
+    RETURN 1
+  END SUBROUTINE DIFFUSION_EQUATION_POST_SOLVE
+  !   
+  !================================================================================================================================
+  !
+ !>Output data post solve
+  SUBROUTINE DIFFUSION_EQUATION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
+    INTEGER(INTG) :: EQUATIONS_SET_IDX,CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER
+
+    LOGICAL :: EXPORT_FIELD
+    TYPE(VARYING_STRING) :: METHOD!,FILE
+    CHARACTER(14) :: FILE
+    CHARACTER(14) :: OUTPUT_FILE
+
+    CALL ENTERS("DIFFUSION_EQUATION_POST_SOLVE_OUTPUT_DATA",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+!       write(*,*)'CURRENT_TIME = ',CURRENT_TIME
+!       write(*,*)'TIME_INCREMENT = ',TIME_INCREMENT
+      IF(ASSOCIATED(SOLVER)) THEN
+        IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            CASE(PROBLEM_NO_SOURCE_DIFFUSION_SUBTYPE,PROBLEM_LINEAR_SOURCE_DIFFUSION_SUBTYPE)
+              CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                  !Make sure the equations sets are up to date
+                  DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                    EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+
+                    CURRENT_LOOP_ITERATION=CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER
+                    OUTPUT_ITERATION_NUMBER=CONTROL_LOOP%TIME_LOOP%OUTPUT_NUMBER
+
+                    IF(OUTPUT_ITERATION_NUMBER/=0) THEN
+                      IF(CONTROL_LOOP%TIME_LOOP%CURRENT_TIME<=CONTROL_LOOP%TIME_LOOP%STOP_TIME) THEN
+                        IF(CURRENT_LOOP_ITERATION<10) THEN
+                          WRITE(OUTPUT_FILE,'("TIME_STEP_000",I0)') CURRENT_LOOP_ITERATION
+                        ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
+                          WRITE(OUTPUT_FILE,'("TIME_STEP_00",I0)') CURRENT_LOOP_ITERATION
+                        ELSE IF(CURRENT_LOOP_ITERATION<1000) THEN
+                          WRITE(OUTPUT_FILE,'("TIME_STEP_0",I0)') CURRENT_LOOP_ITERATION
+                        ELSE IF(CURRENT_LOOP_ITERATION<10000) THEN
+                          WRITE(OUTPUT_FILE,'("TIME_STEP_",I0)') CURRENT_LOOP_ITERATION
+                        END IF
+                        FILE=OUTPUT_FILE
+  !          FILE="TRANSIENT_OUTPUT"
+!!!!!!!!ADAPT THIS TO WORK WITH DIFFUSION AND NOT JUST FLUID MECHANICS
+!                         METHOD="FORTRAN"
+!                         EXPORT_FIELD=.TRUE.
+!                         IF(EXPORT_FIELD) THEN          
+!                           IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
+!                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+!                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields... ",ERR,ERROR,*999)
+!                             CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
+!                               & ERR,ERROR,*999)
+!                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+!                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+!                           ENDIF
+!                         ENDIF 
+
+                        IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+                          IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_DIFFUSION_EQUATION_TWO_DIM_1 .OR. &
+                            & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE== &
+                            & EQUATIONS_SET_LINEAR_SOURCE_DIFFUSION_EQUATION_THREE_DIM_1) THEN
+                            CALL ANALYTIC_ANALYSIS_OUTPUT(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FILE,ERR,ERROR,*999)
+                          ENDIF
+                        ENDIF
+                      ENDIF 
+                    ENDIF
+                  ENDDO
+                ENDIF
+              ENDIF
+            CASE(PROBLEM_NONLINEAR_SOURCE_DIFFUSION_SUBTYPE)
+              ! do nothing ???
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE DEFAULT
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                & " is not valid for a diffusion equation type of a classical field problem class."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+    CALL EXITS("DIFFUSION_EQUATION_POST_SOLVE_OUTPUT_DATA")
+    RETURN
+999 CALL ERRORS("DIFFUSION_EQUATION_POST_SOLVE_OUTPUT_DATA",ERR,ERROR)
+    CALL EXITS("DIFFUSION_EQUATION_POST_SOLVE_OUTPUT_DATA")
+    RETURN 1
+  END SUBROUTINE DIFFUSION_EQUATION_POST_SOLVE_OUTPUT_DATA
+
+  !
+  !================================================================================================================================
+  !
   !>Calculates the element stiffness matrices and RHS for a diffusion equation finite element equations set.
   SUBROUTINE DIFFUSION_EQUATION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
 
