@@ -1765,10 +1765,10 @@ CONTAINS
 
     LENGTH=L2NORM(A)
     IF(ABS(LENGTH)<ZERO_TOLERANCE_SP) THEN
-      NORMALISE_SP=A/LENGTH
+        NORMALISE_SP=A
+        CALL FLAG_ERROR("Length of vector to normalise is zero",ERR,ERROR,*999)
     ELSE
-      NORMALISE_SP=A
-      CALL FLAG_ERROR("Length of vector to normalise is zero",ERR,ERROR,*999)
+	    NORMALISE_SP=A/LENGTH
     ENDIF
 
     CALL EXITS("NORMALISE_SP")
@@ -1798,10 +1798,10 @@ CONTAINS
 
     LENGTH=L2NORM(A)
     IF(ABS(LENGTH)<ZERO_TOLERANCE) THEN
-      NORMALISE_DP=A/LENGTH
-    ELSE
       NORMALISE_DP=A
       CALL FLAG_ERROR("Length of vector to normalise is zero",ERR,ERROR,*999)
+    ELSE
+      NORMALISE_DP=A/LENGTH
     ENDIF
 
     CALL EXITS("NORMALISE_DP")
