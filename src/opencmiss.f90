@@ -26815,14 +26815,16 @@ CONTAINS
   !  
  
   !>Starts the creation of an interface meshes connectivity identified by a user number.
-  SUBROUTINE CMISSInterfaceMeshConnectivityCreateStartNumber(RegionUserNumber,InterfaceUserNumber,Err)
+  SUBROUTINE CMISSInterfaceMeshConnectivityCreateStartNumber(RegionUserNumber,InterfaceUserNumber,MeshNumber,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface to start the creation of the meshes connectivity.
     INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface to start the creation of the meshes connectivity for.
+    INTEGER(INTG), INTENT(IN) :: MeshNumber !<The user number of the interface mesh
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(INTERFACE_MESH_CONNECTIVITY_TYPE), POINTER :: INTERFACE_MESH_CONNECTIVITY
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -26836,7 +26838,14 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
       IF(ASSOCIATED(INTERFACE)) THEN
-        CALL INTERFACE_MESH_CONNECTIVITY_CREATE_START(INTERFACE,INTERFACE_MESH_CONNECTIVITY,Err,ERROR,*999)
+        CALL MESH_USER_NUMBER_FIND(MeshNumber,INTERFACE,MESH,ERR,ERROR,*999)
+        IF(ASSOCIATED(MESH)) THEN
+          CALL INTERFACE_MESH_CONNECTIVITY_CREATE_START(INTERFACE,MESH,INTERFACE_MESH_CONNECTIVITY,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+           & " does not exist on the interface with user number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        END IF
       ELSE
         LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
           & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -26862,18 +26871,19 @@ CONTAINS
   !  
  
   !>Starts the creation of an interface meshes connectivity identified by an object.
-  SUBROUTINE CMISSInterfaceMeshConnectivityCreateStartObj(INTERFACE,InterfaceMeshConnectivity,Err)
+  SUBROUTINE CMISSInterfaceMeshConnectivityCreateStartObj(INTERFACE,INTERFACE_MESH,InterfaceMeshConnectivity,Err)
   
     !Argument variables
     TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to start the creation of the meshes connectivity for
+    TYPE(CMISSMeshType), INTENT(IN) :: INTERFACE_MESH
     TYPE(CMISSInterfaceMeshConnectivityType), INTENT(OUT) :: InterfaceMeshConnectivity !<On return, the created meshes connectivity
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
-  
+
     CALL ENTERS("CMISSInterfaceMeshConnectivityCreateStartObj",Err,ERROR,*999)
- 
-    CALL INTERFACE_MESH_CONNECTIVITY_CREATE_START(INTERFACE%INTERFACE,InterfaceMeshConnectivity%MESH_CONNECTIVITY, &
-      & Err,ERROR,*999)
+
+    CALL INTERFACE_MESH_CONNECTIVITY_CREATE_START(INTERFACE%INTERFACE,INTERFACE_MESH%MESH, &
+      & InterfaceMeshConnectivity%MESH_CONNECTIVITY,Err,ERROR,*999)
 
     CALL EXITS("CMISSInterfaceMeshConnectivityCreateStartObj")
     RETURN

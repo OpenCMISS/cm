@@ -1699,25 +1699,10 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_OF_INTERFACE_CONDITIONS !<The number of interface conditions
     TYPE(INTERFACE_CONDITION_PTR_TYPE), POINTER :: INTERFACE_CONDITIONS(:) !<INTERFACE_CONDITIONS(interface_condition_idx). A pointer to the interface_condition_idx'th interface condition.
   END TYPE INTERFACE_CONDITIONS_TYPE
-
-  !>Contains information on a mesh connectivity point
-  TYPE INTERFACE_MESHES_CONNECTIVITY_POINT_TYPE
-    INTEGER(INTG) :: MESH1_INDEX !<The mesh index of the first connectivity point
-    INTEGER(INTG) :: MESH1_ELEMENT !<The mesh element number of the first connectivity point
-    REAL(DP), ALLOCATABLE :: XI1(:) !<XI1(ni). The xi position of the first connectivity point
-    INTEGER(INTG) :: MESH2_INDEX !<The mesh index of the second connectivity point
-    INTEGER(INTG) :: MESH2_ELEMENT !<The mesh element number of the second connectivity point
-    REAL(DP), ALLOCATABLE :: XI2(:) !<XI1(ni). The xi position of the second connectivity point
-  END TYPE INTERFACE_MESHES_CONNECTIVITY_POINT_TYPE
-
-  !>A buffer type to allow for an array of pointers to a INTERFACE_MESHES_CONNECTIVITY_POINT_TYPE
-  TYPE INTERFACE_MESHES_CONNECTIVITY_POINT_PTR_TYPE
-    TYPE(INTERFACE_MESHES_CONNECTIVITY_POINT_TYPE), POINTER :: PTR
-  END TYPE INTERFACE_MESHES_CONNECTIVITY_POINT_PTR_TYPE
   
   !>Contains information on a mesh connectivity point
   TYPE INTERFACE_ELEMENT_CONNECTIVITY_TYPE
-    INTEGER(INTG) NUMBER_OF_COUPLED_MESH_ELEMENTS !<
+    INTEGER(INTG) :: NUMBER_OF_COUPLED_MESH_ELEMENTS !<
     INTEGER(INTG), ALLOCATABLE :: COUPLED_MESH_ELEMENT_NUMBERS(:) !<GLOBAL_MESH_ELEMENT_NUMBERS(connectivity_point_idx)
     REAL(DP), ALLOCATABLE :: XI(:,:,:) !<XI(xi_idx,connectivity_point_idx,local_node_idx)
   END TYPE INTERFACE_ELEMENT_CONNECTIVITY_TYPE
@@ -1727,6 +1712,8 @@ MODULE TYPES
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer back to the interface for the coupled mesh connectivity
     TYPE(MESH_TYPE), POINTER :: INTERFACE_MESH
     LOGICAL :: MESH_CONNECTIVITY_FINISHED !<Is .TRUE. if the coupled mesh connectivity has finished being created, .FALSE. if not.
+    INTEGER(INTG) :: NUMBER_INT_ELEM !<Is the number of elements within the interface mesh
+    INTEGER(INTG) :: NUMBER_INT_DOM !<Is the number of domains coupled via the interface
     TYPE(INTERFACE_ELEMENT_CONNECTIVITY_TYPE), ALLOCATABLE :: ELEMENTS_CONNECTIVITY(:,:) !<ELEMENTS_CONNECTIVITY(element_idx,coupled_mesh_idx)
   END TYPE INTERFACE_MESH_CONNECTIVITY_TYPE
  
