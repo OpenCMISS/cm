@@ -1766,6 +1766,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuadraticSourceDiffusionSubtype = EQUATIONS_SET_QUADRATIC_SOURCE_DIFFUSION_SUBTYPE !<Quadratic source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetExponentialSourceDiffusionSubtype = &
     & EQUATIONS_SET_EXPONENTIAL_SOURCE_DIFFUSION_SUBTYPE !<Exponential source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompTransportDiffusionSubtype = &
+    & EQUATIONS_SET_MULTI_COMP_TRANSPORT_DIFFUSION_SUBTYPE !<Multi-compartment transport diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceAdvectionDiffusionSubtype = & 
     & EQUATIONS_SET_NO_SOURCE_ADVECTION_DIFFUSION_SUBTYPE !<No source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -1796,12 +1798,17 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetExpSourceAdvectionDiffSUPGSubtype = &
     & EQUATIONS_SET_EXP_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE !<Exponential source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
-INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype = & 
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype = & 
     & EQUATIONS_SET_NO_SOURCE_STATIC_ADVEC_DIFF_SUPG_SUBTYPE !<No source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourceStaticAdvecDiffSUPGSubtype = &
     & EQUATIONS_SET_CONSTANT_SOURCE_STATIC_ADVEC_DIFF_SUPG_SUBTYPE !<Constant source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourceStaticAdvecDiffSUPGSubtype = &
     & EQUATIONS_SET_LINEAR_SOURCE_STATIC_ADVEC_DIFF_SUPG_SUBTYPE !<Linear source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompTransportAdvecDiffSubtype = &
+    & EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUBTYPE !<Multi-component transport advection-diffusion equations set \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompTransportAdvecDiffSUPGSubtype = & 
+    & EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUPG_SUBTYPE !<Multi-component transport advection-diffusion equations set using SUPG scheme \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetFirstBidomainSubtype = EQUATIONS_SET_FIRST_BIDOMAIN_SUBTYPE !<First bidomain equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetSecondBidomainSubtype = EQUATIONS_SET_SECOND_BIDOMAIN_SUBTYPE !<Second bidomain equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -1961,7 +1968,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype 
     & CMISSEquationsSetExponentialSourcePoissonSubtype,CMISSEquationsSetNoSourceHelmholtzSubtype, &
     & CMISSEquationsSetNoSourceDiffusionSubtype,CMISSEquationsSetConstantSourceDiffusionSubtype, &
     & CMISSEquationsSetLinearSourceDiffusionSubtype,CMISSEquationsSetQuadraticSourceDiffusionSubtype, &
-    & CMISSEquationsSetExponentialSourceDiffusionSubtype,CMISSEquationsSetNoSourceAdvectionDiffusionSubtype, &
+    & CMISSEquationsSetExponentialSourceDiffusionSubtype,CMISSEquationsSetMultiCompTransportDiffusionSubtype, &
+    & CMISSEquationsSetNoSourceAdvectionDiffusionSubtype, &
     & CMISSEquationsSetConstantSourceAdvectionDiffusionSubtype,CMISSEquationsSetLinearSourceAdvectionDiffusionSubtype, &
     & CMISSEquationsSetQuadraticSourceAdvectionDiffusionSubtype,CMISSEquationsSetExponentialSourceAdvectionDiffusionSubtype, &
     & CMISSEquationsSetNoSourceStaticAdvecDiffSubtype, CMISSEquationsSetConstantSourceStaticAdvecDiffSubtype, &
@@ -1970,6 +1978,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype 
     & CMISSEquationsSetLinearSourceAdvectionDiffSUPGSubtype, CMISSEquationsSetQuadSourceAdvectionDiffSUPGSubtype, &
     & CMISSEquationsSetExpSourceAdvectionDiffSUPGSubtype, CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype, &
     & CMISSEquationsSetConstantSourceStaticAdvecDiffSUPGSubtype, CMISSEquationsSetLinearSourceStaticAdvecDiffSUPGSubtype, &
+    & CMISSEquationsSetMultiCompTransportAdvecDiffSubtype, CMISSEquationsSetMultiCompTransportAdvecDiffSUPGSubtype, & 
     & CMISSEquationsSetPGMStokesSubtype, &
     & CMISSEquationsSetFirstBidomainSubtype,CMISSEquationsSetSecondBidomainSubtype, &
     & CMISSEquationsSetStandardGalerkinProjectionSubtype,CMISSEquationsSetGeneralisedGalerkinProjectionSubtype, &
@@ -3636,6 +3645,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype 
   INTEGER(INTG), PARAMETER :: CMISSProblemFiniteElasticityNavierStokesType = PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_TYPE !<Finite Elasticity NavierStokes problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemDiffusionDiffusionType = PROBLEM_DIFFUSION_DIFFUSION_TYPE !<Diffusion Diffusion problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemDiffusionAdvectionDiffusionType = PROBLEM_DIFFUSION_ADVECTION_DIFFUSION_TYPE !<Diffusion Advection Diffusion problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISSProblemMultiCompartmentTransportType = PROBLEM_MULTI_COMPARTMENT_TRANSPORT_TYPE !<Multi-compartment transport problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   !>@}
   !> \addtogroup OPENCMISS_ProblemSubTypes OPENCMISS::Problem::Subtypes
   !> \brief Problem Subtypes.
@@ -3694,6 +3704,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype 
     & PROBLEM_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE !<Coupled source diffusion-diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype = & 
     & PROBLEM_COUPLED_SOURCE_DIFFUSION_ADVEC_DIFFUSION_SUBTYPE !<Coupled source diffusion & advection-diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemStandardMultiCompartmentTransportSubtype = & 
+    & PROBLEM_STANDARD_MULTI_COMPARTMENT_TRANSPORT_SUBTYPE !<Standard multi-compartment transport problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
   INTEGER(INTG), PARAMETER :: CMISSProblemQuasistaticFiniteElasticitySubtype = PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE !<Quasistatic finite elasticity subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
@@ -3740,7 +3752,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype 
 
   PUBLIC CMISSProblemFiniteElasticityDarcyType, &
     & CMISSProblemFiniteElasticityStokesType, CMISSProblemFiniteElasticityNavierStokesType, &
-    & CMISSProblemDiffusionDiffusionType, CMISSProblemDiffusionAdvectionDiffusionType 
+    & CMISSProblemDiffusionDiffusionType, CMISSProblemDiffusionAdvectionDiffusionType, &
+    & CMISSProblemMultiCompartmentTransportType 
 
   PUBLIC CMISSProblemNoSubtype
 
@@ -3775,7 +3788,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype 
     & CMISSProblemControlWhileLoopType
 
   PUBLIC CMISSProblemStandardElasticityDarcySubtype, CMISSProblemPGMElasticityDarcySubtype, &
-   & CMISSProblemCoupledSourceDiffusionDiffusionSubtype, CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype
+   & CMISSProblemCoupledSourceDiffusionDiffusionSubtype, CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype, &
+   & CMISSProblemStandardMultiCompartmentTransportSubtype
 
   PUBLIC CMISSProblemQuasistaticFiniteElasticitySubtype
 !!==================================================================================================================================
