@@ -166,7 +166,9 @@ CONTAINS
         CALL FLAG_ERROR("Boundary conditions have already been finished.",ERR,ERROR,*999)        
       ELSE
         IF(ALLOCATED(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP)) THEN
-          IF(COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES>0) THEN
+!          IF(COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES>0) THEN
+          IF(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(1)%PTR%VARIABLE%FIELD%DECOMPOSITION%COM_ENVIRONMENT% &
+            & NUMBER_COMPUTATIONAL_NODES>0) THEN
             !Transfer all the boundary conditions to all the computational nodes.
  !!TODO \todo Look at this. ?????
             DO variable_type_idx=1,FIELD_NUMBER_OF_VARIABLE_TYPES
@@ -180,7 +182,9 @@ CONTAINS
 !!This operation is a little expensive as we are doing an unnecessary sum across all the ranks in order to combin
 !!the data from each rank into all ranks. We will see how this goes for now.
                     CALL MPI_ALLREDUCE(MPI_IN_PLACE,BOUNDARY_CONDITION_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS, &
-                      & SEND_COUNT,MPI_INTEGER,MPI_SUM,COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
+!                      & SEND_COUNT,MPI_INTEGER,MPI_SUM,COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
+                       & SEND_COUNT,MPI_INTEGER,MPI_SUM,BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP( &
+                       & variable_type_idx)%PTR%VARIABLE%FIELD%DECOMPOSITION%COM_ENVIRONMENT%MPI_COMM,MPI_IERROR)
                     CALL MPI_ERROR_CHECK("MPI_ALLREDUCE",MPI_IERROR,ERR,ERROR,*999)
                   ELSE
                     LOCAL_ERROR="Field variable domain mapping is not associated for variable type "// &

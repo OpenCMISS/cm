@@ -673,7 +673,7 @@ MODULE TYPES
     TYPE(COMPUTATIONAL_WORK_GROUP_TYPE), POINTER:: PARENT !<Parent of this working groups
     TYPE(COMPUTATIONAL_WORK_GROUP_PTR_TYPE), ALLOCATABLE:: SUB_WORK_GROUPS(:) !<The sub working groups
     
-    TYPE(COMPUTATIONAL_ENVIRONMENT_TYPE), POINTER :: COMP_ENV !<pointer to the actual working environment
+    TYPE(COMPUTATIONAL_ENVIRONMENT_TYPE), POINTER :: COMP_ENVIRONMENT !<pointer to the actual working environment
     LOGICAL :: COMP_ENV_FINISHED !<!<Is .TURE. if the actual working environment has been generated, .FALSE. if not
   END TYPE COMPUTATIONAL_WORK_GROUP_TYPE
 
@@ -758,6 +758,8 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: ADJACENT_DOMAINS_PTR(:) !<ADJACENT_DOMAINS_PTR(domain_no). The pointer to the list of adjacent domains for domain_no. ADJACENT_DOMAINS_PTR(domain_no) gives the starting position in ADJACENT_DOMAINS_LIST for the first adjacent domain number for domain number domain_no. ADJACENT_DOMAINS_PTR(domain_no+1) gives the last+1 position in ADJACENT_DOMAINS_LIST for the last adjacent domain number for domain number domain_no. NOTE: the index for ADJACENT_DOMAINS_PTR varies from 0 to the number of domains+1.
     INTEGER(INTG), ALLOCATABLE :: ADJACENT_DOMAINS_LIST(:) !<ADJACENT_DOMAINS_LIST(i). The list of adjacent domains for each domain. The start and end positions for the list for domain number domain_no are given by ADJACENT_DOMAIN_PTR(domain_no) and ADJACENT_DOMAIN_PTR(domain_no+1)-1 respectively.
     TYPE(DOMAIN_ADJACENT_DOMAIN_TYPE), ALLOCATABLE :: ADJACENT_DOMAINS(:) !<ADJACENT_DOMAINS(adjacent_domain_idx). The adjacent domain information for the adjacent_domain_idx'th adjacent domain to this domain. 
+   
+    !TYPE(COMPUTATIONAL_WORK_GROUP_TYPE), POINTER :: WORK_GROUP !<A pointer to the work group that this rank belongs to
   END TYPE DOMAIN_MAPPING_TYPE
 
   !>Contains information on the domain decomposition mappings.
@@ -778,6 +780,7 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: NODE_DOMAIN(:) !<NODE_DOMAIN(np). The domain number that the np'th global node is in for the domain decomposition. Note: the domain numbers start at 0 and go up to the NUMBER_OF_DOMAINS-1.
     TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: MAPPINGS !<Pointer to the mappings for the domain  e.g., global to local and local to global maps
     TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<Pointer to the topology for the domain.
+    !TYPE(COMPUTATIONAL_WORK_GROUP_TYPE), POINTER :: WORK_GROUP !<A pointer to the work group that this rank belongs to
   END TYPE DOMAIN_TYPE
 
   !>A buffer type to allow for an array of pointers to a DOMAIN_TYPE.
@@ -2345,6 +2348,8 @@ MODULE TYPES
     INTEGER(INTG) :: SUBTYPE !<The problem specification subtype identifier
     
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop informaton for the problem.
+
+    TYPE(COMPUTATIONAL_WORK_GROUP_TYPE), POINTER :: WORK_GROUP !<A pointer to the work group that this rank belongs to
   END TYPE PROBLEM_TYPE
   
   !>A buffer type to allow for an array of pointers to a PROBLEM_TYPE \see TYPES:PROBLEM_TYPE

@@ -144,7 +144,9 @@ CONTAINS
           !
           !Calculate the row mappings.
           !We do not have any couplings defined at the moment there is only a 1-1 mapping.
-          myrank=COMPUTATIONAL_ENVIRONMENT%MY_COMPUTATIONAL_NODE_NUMBER
+          !myrank=COMPUTATIONAL_ENVIRONMENT%MY_COMPUTATIONAL_NODE_NUMBER
+          myrank=SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR%DEPENDENT%DEPENDENT_FIELD%DECOMPOSITION%WORK_GROUP%COMP_ENVIRONMENT &
+            & %MY_COMPUTATIONAL_NODE_NUMBER
           NUMBER_OF_GLOBAL_SOLVER_ROWS=0
           NUMBER_OF_LOCAL_SOLVER_ROWS=0                                 
           DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
