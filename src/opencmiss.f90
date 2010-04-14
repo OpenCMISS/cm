@@ -3077,6 +3077,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSInterfaceMeshConnectivityCreateFinish,CMISSInterfaceMeshConnectivityCreateStart
   
   PUBLIC CMISSInterfaceMeshConnectivityDestroy
+
+  PUBLIC CMISSInterfaceMeshConnectivityElementNumberElementsSet, CMISSInterfaceMeshConnectivityElementXiSet
  
 !!==================================================================================================================================
 !!
