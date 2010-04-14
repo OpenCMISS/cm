@@ -480,26 +480,26 @@ CONTAINS
   !>Evaluates the deformation gradient tensor at a given Gauss point
   !> Jznu is not used if IS_2D_ELEMENT_IN_3D_SPACE is true
   SUBROUTINE FINITE_ELASTICITY_GAUSS_DEFORMATION_GRADIENT_TENSOR(DEPENDENT_INTERPOLATED_POINT,GEOMETRIC_INTERPOLATED_POINT,&
-    & FIBRE_INTERPOLATED_POINT,DIM,NUMBER_OF_XI,DZDNU,Jxxi,ERR,ERROR,*)
+    & FIBRE_INTERPOLATED_POINT,DIMEN,NUMBER_OF_XI,DZDNU,Jxxi,ERR,ERROR,*)
 
     !Argument variables
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: DEPENDENT_INTERPOLATED_POINT,GEOMETRIC_INTERPOLATED_POINT, &
       & FIBRE_INTERPOLATED_POINT
     REAL(DP), INTENT(OUT) :: DZDNU(3,3) !DZDNU - Deformation Gradient Tensor,
-    REAL(DP) :: DZDNU_TEMP(DIM,DIM),Jxxi
-    INTEGER(INTG), INTENT(IN) :: DIM
+    INTEGER(INTG), INTENT(IN) :: DIMEN
+    REAL(DP) :: DZDNU_TEMP(DIMEN,DIMEN),Jxxi
     INTEGER(INTG), INTENT(IN) :: NUMBER_OF_XI
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: derivative_idx,component_idx,xi_idx
-    REAL(DP) :: DNUDX(DIM,DIM),DNUDXI(DIM,DIM)
-    REAL(DP) :: DXDNU(DIM,DIM),DXIDNU(DIM,DIM)
-    REAL(DP) :: DXDXI(DIM,DIM),DZDXI(DIM,DIM),Jnuxi
+    REAL(DP) :: DNUDX(DIMEN,DIMEN),DNUDXI(DIMEN,DIMEN)
+    REAL(DP) :: DXDNU(DIMEN,DIMEN),DXIDNU(DIMEN,DIMEN)
+    REAL(DP) :: DXDXI(DIMEN,DIMEN),DZDXI(DIMEN,DIMEN),Jnuxi
 
     CALL ENTERS("FINITE_ELASTICITY_GAUSS_DEFORMATION_GRADIENT_TENSOR",ERR,ERROR,*999)
 
-    DO component_idx=1,DIM
+    DO component_idx=1,DIMEN
       DO xi_idx=1,NUMBER_OF_XI
         derivative_idx=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(xi_idx) !2,4,7
         DXDXI(component_idx,xi_idx)=GEOMETRIC_INTERPOLATED_POINT%VALUES(component_idx,derivative_idx) !dx/dxi
@@ -509,7 +509,7 @@ CONTAINS
 
     ! Populate the third vector (orthogonal to first and second vector).  This approach requires less modification to the rest of
     ! the code (cleaner), but will have a propagation of error of 10^-4 compare with using non-square (2 x 3) matrices
-    IF (DIM == 3 .AND. NUMBER_OF_XI == 2) THEN
+    IF (DIMEN == 3 .AND. NUMBER_OF_XI == 2) THEN
         CALL CROSS_PRODUCT(DXDXI(:,1),DXDXI(:,2),DXDXI(:,3),ERR,ERROR,*999)
         DXDXI(:,3) = NORMALISE(DXDXI(:,3),ERR,ERROR)
         CALL CROSS_PRODUCT(DZDXI(:,1),DZDXI(:,2),DZDXI(:,3),ERR,ERROR,*999)
@@ -527,7 +527,7 @@ CONTAINS
 
     Jxxi=DETERMINANT(DXDXI,ERR,ERROR)
     
-    IF (DIM == 2) THEN
+    IF (DIMEN == 2) THEN
         DZDNU(1,:) = (/DZDNU_TEMP(1,1),DZDNU_TEMP(1,2),0.0_DP/)
         DZDNU(2,:) = (/DZDNU_TEMP(2,1),DZDNU_TEMP(2,2),0.0_DP/)
         DZDNU(3,:) = (/0.0_DP,0.0_DP,1.0_DP/)
