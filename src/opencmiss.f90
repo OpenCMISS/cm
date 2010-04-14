@@ -261,6 +261,11 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSInitialiseObj
   END INTERFACE !CMISSInitialise
 
+  INTERFACE CMISSFieldsTypeCreate
+    MODULE PROCEDURE CMISSFieldsTypeCreateInterface
+    MODULE PROCEDURE CMISSFieldsTypeCreateRegion
+  END INTERFACE !CMISSFieldsTypeCreate
+
   !PUBLIC CMISS_Finalise,CMISS_Initialise
   PUBLIC CMISSFinalise,CMISSInitialise
 
@@ -5301,8 +5306,42 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Creates a CMISSFieldsType object for an object reference.
-  SUBROUTINE CMISSFieldsTypeCreate(Region,Fields,Err)
+  !>Creates a CMISSFieldsType object for an inteface by an object reference.
+  SUBROUTINE CMISSFieldsTypeCreateInterface(INTERFACE,Fields,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to get the fields from
+    TYPE(CMISSFieldsType), INTENT(INOUT) :: Fields !<On return, the fields attached to the specified interface. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSFieldsTypeCreateInterface",Err,ERROR,*999)
+
+    IF(ASSOCIATED(Interface%INTERFACE)) THEN
+      IF(ASSOCIATED(Fields%FIELDS)) THEN
+        CALL FLAG_ERROR("Fields is already associated.",ERR,ERROR,*999)
+      ELSE
+        Fields%FIELDS=>Interface%INTERFACE%FIELDS
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("The interface is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSFieldsTypeCreateInterface")
+    RETURN
+999 CALL ERRORS("CMISSFieldsTypeCreateInterface",Err,ERROR)
+    CALL EXITS("CMISSFieldsTypeCreateInterface")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldsTypeCreateInterface
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Creates a CMISSFieldsType object for a region by an object reference.
+  SUBROUTINE CMISSFieldsTypeCreateRegion(Region,Fields,Err)
   
     !Argument variables
     TYPE(CMISSRegionType), INTENT(IN) :: Region !<The region to get the fields from
@@ -5310,7 +5349,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSFieldsTypeCreate",Err,ERROR,*999)
+    CALL ENTERS("CMISSFieldsTypeCreateRegion",Err,ERROR,*999)
 
     IF(ASSOCIATED(Region%REGION)) THEN
       IF(ASSOCIATED(Fields%FIELDS)) THEN
@@ -5322,16 +5361,16 @@ CONTAINS
       CALL FLAG_ERROR("The region is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("CMISSFieldsTypeCreate")
+    CALL EXITS("CMISSFieldsTypeCreateRegion")
     RETURN
-999 CALL ERRORS("CMISSFieldsTypeCreate",Err,ERROR)
-    CALL EXITS("CMISSFieldsTypeCreate")    
+999 CALL ERRORS("CMISSFieldsTypeCreateRegion",Err,ERROR)
+    CALL EXITS("CMISSFieldsTypeCreateRegion")    
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSFieldsTypeCreate
+  END SUBROUTINE CMISSFieldsTypeCreateRegion
 
-   !
+  !
   !================================================================================================================================
   !
 

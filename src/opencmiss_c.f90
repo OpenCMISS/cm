@@ -3585,11 +3585,11 @@ CONTAINS
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: DiagType !<The type of diagnostics to set on for C. \see OPENCMISS_DiagnosticTypes.
-    INTEGER(C_INT), INTENT(IN) :: LevelListSize(1) !<The size of the list of diagnostic levels for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: LevelListSize !<The size of the list of diagnostic levels for C.
     TYPE(C_PTR), VALUE, INTENT(IN) :: LevelListPtr !<C pointer to the list of diagnostic levels to set on.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DiagFilenameSize !<The size of the name of the file for C to output the diagnostic information to.
     CHARACTER(LEN=1, KIND= C_CHAR), INTENT(IN) :: DiagFilename(DiagFilenameSize) !<If present the name of the file for C to output diagnostic information to. If omitted the diagnostic output is sent to the screen.
-    INTEGER(C_INT), INTENT(IN) :: RoutineListSize(1) !<Size of the list of routines for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RoutineListSize !<Size of the list of routines for C.
     TYPE(C_PTR), INTENT(IN) :: RoutineListPtr !<C pointer the list of routines to set diagnostics on in.
     !Function variable
     INTEGER(C_INT) :: CMISSDiagnosticsSetOnC !<Error Code.
@@ -3600,10 +3600,10 @@ CONTAINS
 
     CMISSDiagnosticsSetOnC = CMISSNoError
     IF(C_ASSOCIATED(LevelListPtr)) THEN
-      CALL C_F_POINTER(LevelListPtr, LevelList, LevelListSize)
+      CALL C_F_POINTER(LevelListPtr, LevelList,(/LevelListSize/))
       IF(ASSOCIATED(LevelList)) THEN
         IF(C_ASSOCIATED(RoutineListPtr)) THEN
-          CALL C_F_POINTER(RoutineListPtr, RoutineList, RoutineListSize)
+          CALL C_F_POINTER(RoutineListPtr, RoutineList,(/RoutineListSize/))
           IF(ASSOCIATED(RoutineList)) THEN
             CALL CMISSC2FString(DiagFileName, FDiagFilename)
             CALL CMISSDiagnosticsSetOn(DiagType,LevelList,FDiagFilename,RoutineList,CMISSDiagnosticsSetOnC)
@@ -3695,7 +3695,7 @@ CONTAINS
     INTEGER(C_INT), INTENT(IN) :: TimingSummaryFlag !<.TRUE. if the C timing information will be output with subsequent OPENCMISS::CMISSTimingSummaryOutput calls, .FALSE. if the C timing information will be output every time the routine exits.
     INTEGER(C_INT), VALUE, INTENT(IN) :: TimingFilenameSize !<The size of the name of the file for C to output timing information to.
     CHARACTER(LEN=1, KIND=C_CHAR), INTENT(IN) :: TimingFilename(TimingFilenameSize) !<If present the name of the file for C to output timing information to. If omitted the timing output is sent to the screen.
-    INTEGER(C_INT), INTENT(IN) :: RoutineListSize(1) !<The size of the list of routines for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RoutineListSize !<The size of the list of routines for C.
     TYPE(C_PTR), INTENT(IN) :: RoutineListPtr !<C pointer to the list of routines to set diagnostics on in.
     !Function variable
     INTEGER(C_INT) :: CMISSTimingSetOnC !<Error code.
@@ -3706,7 +3706,7 @@ CONTAINS
     CMISSTimingSetOnC = CMISSNoError
     CALL CMISSC2FString(TimingFilename, FTimingFilename)
     IF(C_ASSOCIATED(RoutineListPtr)) THEN
-      CALL C_F_POINTER(RoutineListPtr, RoutineList, RoutineListSize)
+      CALL C_F_POINTER(RoutineListPtr, RoutineList,(/RoutineListSize/))
       IF(ASSOCIATED(RoutineList)) THEN
         CALL CMISSTimingSetOn(TimingType,TimingSummaryFlag==CMISSTrue,FTimingFilename,RoutineList,CMISSTimingSetOnC)
       ELSE
@@ -3751,18 +3751,21 @@ CONTAINS
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNumber !<The user number, for C, of the basis to get the collapsed Xi flags for.
-    INTEGER(C_INT), INTENT(OUT) :: CollapsedXiSize !<The size of the collapsed Xi parameter for C.
-    TYPE(C_PTR), INTENT(OUT) :: CollapsedXiPtr !<C pointer to the collapsed Xi parameter for the ni'th Xi direction. \see OPENCMISS_XiCollapse
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CollapsedXiSize !<The size of the supplied collapsed Xi parameter for C.
+    TYPE(C_PTR), INTENT(OUT) :: CollapsedXiPtr !<On return, C pointer to the collapsed Xi parameter for the ni'th Xi direction. \see OPENCMISS_XiCollapse
     !Function variable
     INTEGER(C_INT) :: CMISSBasisCollapsedXiGetCNum !<Error Code.
     !Local variable
-    INTEGER(C_INT), POINTER :: CollapsedXi (:)
+    INTEGER(C_INT), POINTER :: CollapsedXi(:)
 
     CMISSBasisCollapsedXiGetCNum = CMISSNoError
-    CALL CMISSBasisCollapsedXiGet(UserNumber, CollapsedXi, CMISSBasisCollapsedXiGetCNum)
-    IF(ASSOCIATED(CollapsedXi)) THEN
-      CollapsedXiSize = Size(CollapsedXi)
-      CollapsedXiPtr = C_LOC(CollapsedXi(1))
+    IF(C_ASSOCIATED(CollapsedXiPtr)) THEN
+      CALL C_F_POINTER(CollapsedXiPtr,CollapsedXi,(/CollapsedXiSize/))
+      IF(ASSOCIATED(CollapsedXi)) THEN
+        CALL CMISSBasisCollapsedXiGet(UserNumber, CollapsedXi, CMISSBasisCollapsedXiGetCNum)
+      ELSE
+        CMISSBasisCollapsedXiGetCNum = CMISSErrorConvertingPointer
+      ENDIF
     ELSE
       CMISSBasisCollapsedXiGetCNum = CMISSPointerIsNULL
     ENDIF
@@ -3780,8 +3783,8 @@ CONTAINS
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: BasisPtr !<The basis for C to get the collapsed Xi flags for.
-    INTEGER(C_INT), INTENT(OUT) :: CollapsedXiSize !<The size of the collapsed Xi parameter for C.
-    TYPE(C_PTR), INTENT(OUT) :: CollapsedXiPtr !<C pointer to the collapsed Xi parameter for the ni'th Xi direction. \see OPENCMISS_XiCollapse
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CollapsedXiSize !<The size of the supplied collapsed Xi parameter for C.
+    TYPE(C_PTR), INTENT(INOUT) :: CollapsedXiPtr !<C pointer to the collapsed Xi parameter for the ni'th Xi direction. \see OPENCMISS_XiCollapse
     !Function variables
     INTEGER(C_INT) :: CMISSBasisCollapsedXiGetCPtr !<Error Code.
     !Local variables
@@ -3792,10 +3795,13 @@ CONTAINS
     IF(C_ASSOCIATED(BasisPtr)) THEN
       CALL C_F_POINTER(BasisPtr, Basis)
       IF(ASSOCIATED(Basis)) THEN
-        CALL CMISSBasisCollapsedXiGet(Basis, CollapsedXi, CMISSBasisCollapsedXiGetCPtr)
-        IF(ASSOCIATED(CollapsedXi)) THEN
-          CollapsedXiSize = Size(CollapsedXi)
-          CollapsedXiPtr = C_LOC(CollapsedXi(1))
+        IF(C_ASSOCIATED(CollapsedXiPtr)) THEN
+          CALL C_F_POINTER(CollapsedXiPtr,CollapsedXi,(/CollapsedXiSize/))
+          IF(ASSOCIATED(CollapsedXi)) THEN
+            CALL CMISSBasisCollapsedXiGet(Basis, CollapsedXi, CMISSBasisCollapsedXiGetCPtr)
+          ELSE
+            CMISSBasisCollapsedXiGetCPtr = CMISSErrorConvertingPointer
+          ENDIF
         ELSE
           CMISSBasisCollapsedXiGetCPtr = CMISSPointerIsNULL
         ENDIF
@@ -3819,8 +3825,8 @@ CONTAINS
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNumber !<The user number, for C, of the basis to set the collapsed Xi flags for.
-    INTEGER(C_INT), INTENT(IN) :: CollapsedXiSize(1) !<The size of the collapsed Xi parameter for C.
-    TYPE(C_PTR), VALUE, INTENT(IN) :: CollapsedXiPtr !<C pointer to the collapsed Xi parameter for the ni'th Xi direction to set. \see OPENCMISS_XiCollapse
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CollapsedXiSize !<The size of the supplied collapsed Xi parameter for C.
+    TYPE(C_PTR), INTENT(INOUT) :: CollapsedXiPtr !<On exit, a C pointer to the collapsed Xi parameter for the ni'th Xi direction to set. \see OPENCMISS_XiCollapse
     !Function variable
     INTEGER(C_INT) :: CMISSBasisCollapsedXiSetCNum !<Error Code.
     !Local variables
@@ -3828,7 +3834,7 @@ CONTAINS
 
     CMISSBasisCollapsedXiSetCNum = CMISSNoError
     IF(C_ASSOCIATED(CollapsedXiPtr)) THEN
-      CALL C_F_POINTER(CollapsedXiPtr,CollapsedXi, CollapsedXiSize)
+      CALL C_F_POINTER(CollapsedXiPtr,CollapsedXi, (/CollapsedXiSize/))
       IF(ASSOCIATED(CollapsedXi)) THEN
         CALL CMISSBasisCollapsedXiSet(UserNumber, CollapsedXi, CMISSBasisCollapsedXiSetCNum)
       ELSE
@@ -3851,8 +3857,8 @@ CONTAINS
 
     !Argument variables
     TYPE(C_PTR), INTENT(INOUT) :: BasisPtr !<C pointer to the basis to set the collapsed Xi flags for.
-    INTEGER(C_INT), INTENT(IN) :: CollapsedXiSize(1) !<The size of the collapsed Xi parameter for C.
-    TYPE(C_PTR), INTENT(IN) :: CollapsedXiPtr !<C pointer to the collapsed Xi parameter for the ni'th Xi direction. \see OPENCMISS_XiCollapse
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CollapsedXiSize !<The size of the supplied collapsed Xi parameter for C.
+    TYPE(C_PTR), INTENT(INOUT) :: CollapsedXiPtr !<C pointer to the collapsed Xi parameter for the ni'th Xi direction. \see OPENCMISS_XiCollapse
     !Function variables
     INTEGER(C_INT) :: CMISSBasisCollapsedXiSetCPtr !<Error Code.
     !Local variables
@@ -3864,7 +3870,7 @@ CONTAINS
       CALL C_F_POINTER(BasisPtr, Basis)
       IF(ASSOCIATED(Basis)) THEN
         IF(C_ASSOCIATED(CollapsedXiPtr)) THEN
-          CALL C_F_POINTER(CollapsedXiPtr, CollapsedXi,CollapsedXiSize)
+          CALL C_F_POINTER(CollapsedXiPtr, CollapsedXi,(/CollapsedXiSize/))
           IF(ASSOCIATED(CollapsedXi)) THEN
             CALL CMISSBasisCollapsedXiSet(Basis, CollapsedXi, CMISSBasisCollapsedXiSetCPtr)
             IF(ASSOCIATED(Basis)) THEN
@@ -4062,7 +4068,7 @@ CONTAINS
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNumber !<The user number, for C, of the basis to get the interpolation xi for.
-    INTEGER(C_INT), INTENT(OUT) :: InterpolationXiSize !<The size of the interpolation Xi parameter, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: InterpolationXiSize !<The size of the supplied interpolation Xi parameter, for C.
     TYPE(C_PTR), INTENT(OUT) :: InterpolationXiPtr !<C pointer to the interpolation xi parameters for each Xi direction \see OPENCMISS_InterpolationSpecifications.
     !Function variable
     INTEGER(C_INT) :: CMISSBasisInterpolationXiGetCNum !<Error code.
@@ -4070,10 +4076,13 @@ CONTAINS
     INTEGER(C_INT), POINTER :: InterpolationXi(:)
 
     CMISSBasisInterpolationXiGetCNum = CMISSNoError
-    CALL CMISSBasisInterpolationXiGet(UserNumber, InterpolationXi, CMISSBasisInterpolationXiGetCNum)
-    IF(ASSOCIATED(InterpolationXi)) THEN
-      InterpolationXiSize = Size(InterpolationXi)
-      InterpolationXiPtr = C_LOC(InterpolationXi(1))
+    IF(C_ASSOCIATED(InterpolationXiPtr)) THEN
+      CALL C_F_POINTER(InterpolationXiPtr,InterpolationXi,(/InterpolationXiSize/))
+      IF(ASSOCIATED(InterpolationXi)) THEN
+        CALL CMISSBasisInterpolationXiGet(UserNumber, InterpolationXi, CMISSBasisInterpolationXiGetCNum)
+      ELSE
+        CMISSBasisInterpolationXiGetCNum = CMISSErrorConvertingPointer
+      ENDIF
     ELSE
       CMISSBasisInterpolationXiGetCNum = CMISSPointerIsNULL
     ENDIF
@@ -4092,8 +4101,8 @@ CONTAINS
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: BasisPtr !<The basis for C to get the interpolation Xi flags for.
-    INTEGER(C_INT), INTENT(OUT) :: InterpolationXiSize !<The size of the interpolation Xi parameter for C.
-    TYPE(C_PTR), INTENT(OUT) :: InterpolationXiPtr !<C pointer to the interpolation Xi parameter for the ni'th Xi direction. \see OPENCMISS_XiCollapse
+    INTEGER(C_INT), VALUE, INTENT(IN) :: InterpolationXiSize !<The size of the supplied interpolation Xi parameter for C.
+    TYPE(C_PTR), INTENT(INOUT) :: InterpolationXiPtr !<C pointer to the interpolation Xi parameter for the ni'th Xi direction. \see OPENCMISS_XiCollapse
     !Function variables
     INTEGER(C_INT) :: CMISSBasisInterpolationXiGetCPtr !<Error Code.
     !Local variables
@@ -4104,10 +4113,13 @@ CONTAINS
     IF(C_ASSOCIATED(BasisPtr)) THEN
       CALL C_F_POINTER(BasisPtr, Basis)
       IF(ASSOCIATED(Basis)) THEN
-        CALL CMISSBasisInterpolationXiGet(Basis, InterpolationXi, CMISSBasisInterpolationXiGetCPtr)
-        IF(ASSOCIATED(InterpolationXi)) THEN
-          InterpolationXiSize = Size(InterpolationXi)
-          InterpolationXiPtr = C_LOC(InterpolationXi(1))
+        IF(C_ASSOCIATED(InterpolationXiPtr)) THEN
+          CALL C_F_POINTER(InterpolationXiPtr,InterpolationXi,(/InterpolationXiSize/))
+          IF(ASSOCIATED(InterpolationXi)) THEN
+            CALL CMISSBasisInterpolationXiGet(Basis, InterpolationXi, CMISSBasisInterpolationXiGetCPtr)
+          ELSE
+            CMISSBasisInterpolationXiGetCPtr = CMISSErrorConvertingPointer
+          ENDIF
         ELSE
           CMISSBasisInterpolationXiGetCPtr = CMISSPointerIsNULL
         ENDIF
@@ -4132,8 +4144,8 @@ CONTAINS
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNumber !<The user number, for C, of the basis to set the interpolation Xi flags for.
-    INTEGER(C_INT), INTENT(IN) :: InterpolationXiSize(1) !<The size of the interpolation Xi parameter for C.
-    TYPE(C_PTR), VALUE, INTENT(IN) :: InterpolationXiPtr !<C pointer to the interpolation Xi parameter for the ni'th Xi direction to set. \see OPENCMISS_XiCollapse
+    INTEGER(C_INT), VALUE, INTENT(IN) :: InterpolationXiSize !<The size of the supplied interpolation Xi parameter for C.
+    TYPE(C_PTR), INTENT(INOUT) :: InterpolationXiPtr !<C pointer to the interpolation Xi parameter for the ni'th Xi direction to set. \see OPENCMISS_XiCollapse
     !Function variable
     INTEGER(C_INT) :: CMISSBasisInterpolationXiSetCNum !<Error Code.
     !Local variables
@@ -4141,7 +4153,7 @@ CONTAINS
 
     CMISSBasisInterpolationXiSetCNum = CMISSNoError
     IF(C_ASSOCIATED(InterpolationXiPtr)) THEN
-      CALL C_F_POINTER(InterpolationXiPtr,InterpolationXi, InterpolationXiSize)
+      CALL C_F_POINTER(InterpolationXiPtr,InterpolationXi, (/InterpolationXiSize/))
       IF(ASSOCIATED(InterpolationXi)) THEN
         CALL CMISSBasisInterpolationXiSet(UserNumber, InterpolationXi, CMISSBasisInterpolationXiSetCNum)
       ELSE
@@ -4165,7 +4177,7 @@ CONTAINS
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: BasisPtr !<C pointer to the basis to set the interpolation Xi flags for.
-    INTEGER(C_INT), INTENT(IN) :: InterpolationXiSize(1) !<The size of the interpolation Xi parameter for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: InterpolationXiSize !<The size of the supplied interpolation Xi parameter for C.
     TYPE(C_PTR), INTENT(IN) :: InterpolationXiPtr !<C pointer to the interpolation Xi parameter for the ni'th Xi direction. \see OPENCMISS_XiCollapse
     !Function variables
     INTEGER(C_INT) :: CMISSBasisInterpolationXiSetCPtr !<Error Code.
@@ -4178,7 +4190,7 @@ CONTAINS
       CALL C_F_POINTER(BasisPtr, Basis)
       IF(ASSOCIATED(Basis)) THEN
         IF(C_ASSOCIATED(InterpolationXiPtr)) THEN
-          CALL C_F_POINTER(InterpolationXiPtr, InterpolationXi,InterpolationXiSize)
+          CALL C_F_POINTER(InterpolationXiPtr, InterpolationXi,(/InterpolationXiSize/))
           IF(ASSOCIATED(InterpolationXi)) THEN
             CALL CMISSBasisInterpolationXiSet(Basis, InterpolationXi, CMISSBasisInterpolationXiSetCPtr)
           ELSE
@@ -4366,18 +4378,21 @@ CONTAINS
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNumber !<The user number, for C, of the basis to get the number of Gauss Xi for.
-    INTEGER(C_INT), INTENT(OUT) :: NumberOfGaussXiSize !<The size of the array of Gauss points for C.
-    TYPE(C_PTR), INTENT(OUT) :: NumberOfGaussXiPtr !<C pointer to the number of Gauss points in each Xi directions in the specified basis.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NumberOfGaussXiSize !<The size of the supplied array of Gauss points for C.
+    TYPE(C_PTR), INTENT(INOUT) :: NumberOfGaussXiPtr !<C pointer to the number of Gauss points in each Xi directions in the specified basis.
     !Function variable
     INTEGER(C_INT) :: CMISSBasisQuadratureNumberOfGaussXiGetCNum !<Error code.
     !Local variable
     INTEGER(C_INT), POINTER :: NumberOfGaussXi(:)
 
     CMISSBasisQuadratureNumberOfGaussXiGetCNum = CMISSNoError
-    CALL CMISSBasisQuadratureNumberOfGaussXiGet(UserNumber, NumberOfGaussXi, CMISSBasisQuadratureNumberOfGaussXiGetCNum)
-    IF(ASSOCIATED(NumberOfGaussXi)) THEN
-      NumberOfGaussXiSize = Size(NumberOfGaussXi)
-      NumberOfGaussXiPtr = C_LOC(NumberOfGaussXi(1))
+    IF(C_ASSOCIATED(NumberOfGaussXiPtr)) THEN
+      CALL C_F_POINTER(NumberOfGaussXiPtr,NumberOfGaussXi,(/NumberOfGaussXiSize/))
+      IF(ASSOCIATED(NumberOfGaussXi)) THEN
+        CALL CMISSBasisQuadratureNumberOfGaussXiGet(UserNumber, NumberOfGaussXi, CMISSBasisQuadratureNumberOfGaussXiGetCNum)
+      ELSE
+        CMISSBasisQuadratureNumberOfGaussXiGetCNum = CMISSErrorConvertingPointer
+      ENDIF
     ELSE
       CMISSBasisQuadratureNumberOfGaussXiGetCNum = CMISSPointerIsNULL
     ENDIF
@@ -4396,8 +4411,8 @@ CONTAINS
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: BasisPtr !<C pointer to the basis to get the number of Gauss Xi for.
-    INTEGER(C_INT), INTENT(OUT) :: NumberOfGaussXiSize !<The size of the array of Gauss points for C.
-    TYPE(C_PTR), INTENT(OUT) :: NumberOfGaussXiPtr !<C pointer to the number of Gauss points in each Xi directions in the specified basis.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NumberOfGaussXiSize !<The size of the supplied array of Gauss points for C.
+    TYPE(C_PTR), INTENT(INOUT) :: NumberOfGaussXiPtr !<C pointer to the number of Gauss points in each Xi directions in the specified basis.
     !Function variables
     INTEGER(C_INT) :: CMISSBasisQuadratureNumberOfGaussXiGetCPtr !<Error Code.
     !Local variables
@@ -4408,10 +4423,13 @@ CONTAINS
     IF(C_ASSOCIATED(BasisPtr)) THEN
       CALL C_F_POINTER(BasisPtr, Basis)
       IF(ASSOCIATED(Basis)) THEN
-        CALL CMISSBasisQuadratureNumberOfGaussXiGet(Basis, NumberOfGaussXi, CMISSBasisQuadratureNumberOfGaussXiGetCPtr)
-        IF(ASSOCIATED(NumberOfGaussXi)) THEN
-          NumberOfGaussXiSize = Size(NumberOfGaussXi)
-          NumberOfGaussXiPtr = C_LOC(NumberOfGaussXi(1))
+        IF(C_ASSOCIATED(NumberOfGaussXiPtr)) THEN
+          CALL C_F_POINTER(NumberOfGaussXiPtr,NumberOfGaussXi,(/NumberOfGaussXiSize/))
+          IF(ASSOCIATED(NumberOfGaussXi)) THEN
+            CALL CMISSBasisQuadratureNumberOfGaussXiGet(Basis, NumberOfGaussXi, CMISSBasisQuadratureNumberOfGaussXiGetCPtr)
+          ELSE
+            CMISSBasisQuadratureNumberOfGaussXiGetCPtr = CMISSErrorConvertingPointer
+          ENDIF
         ELSE
           CMISSBasisQuadratureNumberOfGaussXiGetCPtr = CMISSPointerIsNULL
         ENDIF
@@ -4437,8 +4455,8 @@ CONTAINS
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNumber !<The user number, for C, of the basis to get the number of Gauss Xi for.
-    INTEGER(C_INT), INTENT(IN) :: NumberOfGaussXiSize(1) !<The size of the array of Gauss points for C.
-    TYPE(C_PTR), VALUE, INTENT(IN) :: NumberOfGaussXiPtr !<C pointer to the number of Gauss points in each Xi directions in the specified basis.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NumberOfGaussXiSize !<The size of the supplied array of Gauss points for C.
+    TYPE(C_PTR), INTENT(INOUT) :: NumberOfGaussXiPtr !<C pointer to the number of Gauss points in each Xi directions in the specified basis.
     !Function variable
     INTEGER(C_INT) :: CMISSBasisQuadratureNumberOfGaussXiSetCNum !<Error Code.
     !Local variables
@@ -4446,7 +4464,7 @@ CONTAINS
 
     CMISSBasisQuadratureNumberOfGaussXiSetCNum = CMISSNoError
     IF(C_ASSOCIATED(NumberOfGaussXiPtr)) THEN
-      CALL C_F_POINTER(NumberOfGaussXiPtr,NumberOfGaussXi, NumberOfGaussXiSize)
+      CALL C_F_POINTER(NumberOfGaussXiPtr,NumberOfGaussXi, (/NumberOfGaussXiSize/))
       IF(ASSOCIATED(NumberOfGaussXi)) THEN
         CALL CMISSBasisQuadratureNumberOfGaussXiSet(UserNumber, NumberOfGaussXi, CMISSBasisQuadratureNumberOfGaussXiSetCNum)
       ELSE
@@ -4469,8 +4487,8 @@ CONTAINS
     & "CMISSBasisQuadratureNumberOfGaussXiSet")
 
     !Argument variables
-    TYPE(C_PTR), INTENT(INOUT) :: BasisPtr !<C pointer to the basis to set the interpolation Xi flags for.
-    INTEGER(C_INT), INTENT(IN) :: NumberOfGaussXiSize(1) !<The size of the interpolation Xi parameter for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: BasisPtr !<C pointer to the basis to set the interpolation Xi flags for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NumberOfGaussXiSize !<The size of the interpolation Xi parameter for C.
     TYPE(C_PTR), INTENT(IN) :: NumberOfGaussXiPtr !<C pointer to the interpolation Xi parameter for the ni'th Xi direction. \see OPENCMISS_XiCollapse
     !Function variables
     INTEGER(C_INT) :: CMISSBasisQuadratureNumberOfGaussXiSetCPtr !<Error Code.
@@ -4483,14 +4501,9 @@ CONTAINS
       CALL C_F_POINTER(BasisPtr, Basis)
       IF(ASSOCIATED(Basis)) THEN
         IF(C_ASSOCIATED(NumberOfGaussXiPtr)) THEN
-          CALL C_F_POINTER(NumberOfGaussXiPtr, NumberOfGaussXi,NumberOfGaussXiSize)
+          CALL C_F_POINTER(NumberOfGaussXiPtr, NumberOfGaussXi, (/NumberOfGaussXiSize/))
           IF(ASSOCIATED(NumberOfGaussXi)) THEN
             CALL CMISSBasisQuadratureNumberOfGaussXiSet(Basis, NumberOfGaussXi, CMISSBasisQuadratureNumberOfGaussXiSetCPtr)
-            IF(ASSOCIATED(Basis)) THEN
-              BasisPtr = C_LOC(Basis)
-            ELSE
-              CMISSBasisQuadratureNumberOfGaussXiSetCPtr = CMISSPointerIsNULL
-            ENDIF
           ELSE
             CMISSBasisQuadratureNumberOfGaussXiSetCPtr = CMISSErrorConvertingPointer
           ENDIF
@@ -6764,7 +6777,7 @@ CONTAINS
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the control loop for, for C.
-    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ControlLoopIdentifiersSize !<Size of the control loop identifiers, for C.
     TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifier to get the control loop for.
     REAL(C_DOUBLE), INTENT(OUT) :: CurrentTime !<The current time of the time control loop, for C.
     REAL(C_DOUBLE), INTENT(OUT) :: TimeIncrement !<The current time increment of the time control loop,  for C.
@@ -6775,7 +6788,7 @@ CONTAINS
 
     CMISSControlLoopCurrentTimesGetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,(/ControlLoopIdentifiersSize/))
       IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
         CALL CMISSControlLoopCurrentTimesGet(ProblemUserNumber,ControlLoopIdentifiers,CurrentTime,TimeIncrement, &
           & CMISSControlLoopCurrentTimesGetCNum)
@@ -6901,9 +6914,9 @@ CONTAINS
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the control loop for, for C.
-    INTEGER(C_INT), INTENT(IN) :: ControlLoopRootIdentifiersSize(1) !<Size of the root control loop identifiers for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ControlLoopRootIdentifiersSize !<Size of the root control loop identifiers for C.
     TYPE(C_PTR), INTENT(IN) :: ControlLoopRootIdentifiersPtr !<C pointer to the root control loop identifiers.
-    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ControlLoopIdentifiersSize !<Size of the control loop identifiers for C.
     TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers.
     TYPE(C_PTR), INTENT(OUT) :: ControlLoopPtr !<C pointer to the specified control loop.
     !Function variable
@@ -6915,10 +6928,10 @@ CONTAINS
 
     CMISSControlLoopGetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopRootIdentifiersPtr)) THEN
-      CALL C_F_POINTER(ControlLoopRootIdentifiersPtr, ControlLoopRootIdentifiers,ControlLoopRootIdentifiersSize)
+      CALL C_F_POINTER(ControlLoopRootIdentifiersPtr, ControlLoopRootIdentifiers,(/ControlLoopRootIdentifiersSize/))
       IF(ASSOCIATED(ControlLoopRootIdentifiers)) THEN
         IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-          CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+          CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,(/ControlLoopIdentifiersSize/))
           IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
             CALL CMISSControlLoopGet(ProblemUserNumber,ControlLoopRootIdentifiers,ControlLoopIdentifiers,ControlLoop, &
               & CMISSControlLoopGetCNum)
@@ -6954,7 +6967,7 @@ CONTAINS
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopRootPtr !<C pointer to the root control loop.
-    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers array for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ControlLoopIdentifiersSize !<Size of the supplied control loop identifiers array for C.
     TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers.
     TYPE(C_PTR), INTENT(OUT) :: ControlLoopPtr !<C pointer to the specified control loop.
     !Function variable
@@ -6969,7 +6982,7 @@ CONTAINS
       CALL C_F_POINTER(ControlLoopRootPtr, ControlLoopRoot)
       IF(ASSOCIATED(ControlLoopRoot)) THEN
         IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-          CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+          CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,(/ControlLoopIdentifiersSize/))
           IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
             CALL CMISSControlLoopGet(ControlLoopRoot,ControlLoopIdentifiers,ControlLoop, CMISSControlLoopGetCPtr)
             IF(ASSOCIATED(ControlLoop)) THEN
@@ -7004,7 +7017,7 @@ CONTAINS
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the iteration parameters for, for C.
-    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers array for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ControlLoopIdentifiersSize !<Size of the supplied control loop identifiers array for C.
     TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers.
     INTEGER(C_INT), VALUE, INTENT(IN) :: StartIteration !<The start iteration of the fixed control loop to set for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: StopIteration !<The stop iteration of the fixed control loop to set for C.
@@ -7016,7 +7029,7 @@ CONTAINS
 
     CMISSControlLoopIterationsSetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers, (/ControlLoopIdentifiersSize/))
       IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
         CALL CMISSControlLoopIterationsSet(ProblemUserNumber,ControlLoopIdentifiers,StartIteration,&
           &StopIteration,IterationIncrement, CMISSControlLoopIterationsSetCNum)
@@ -7081,7 +7094,7 @@ CONTAINS
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the maximum iterations for, for C.
-    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ControlLoopIdentifiersSize !<Size of the control loop identifiers, for C.
     TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers.
     INTEGER(C_INT), VALUE, INTENT(IN) :: MaximumIterations !<The maximum iterations of the while control loop to set, for C.
     !Function variable
@@ -7091,7 +7104,7 @@ CONTAINS
 
     CMISSControlLoopMaximumIterationsSetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,(/ControlLoopIdentifiersSize/))
       IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
         CALL CMISSControlLoopMaximumIterationsSet(ProblemUserNumber,ControlLoopIdentifiers,MaximumIterations,&
           & CMISSControlLoopMaximumIterationsSetCNum)
@@ -7153,7 +7166,7 @@ CONTAINS
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the number of sub loops for, for C.
-    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ControlLoopIdentifiersSize !<Size of the control loop identifiers, for C.
     TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers.
     INTEGER(C_INT), INTENT(OUT) :: NumberOfSubLoops !<The number of sub loops for the specified control loop, for C.
     !Function variable
@@ -7163,7 +7176,7 @@ CONTAINS
 
     CMISSControlLoopNumberOfSubLoopsGetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,(/ControlLoopIdentifiersSize/))
       IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
         CALL CMISSControlLoopNumberOfSubLoopsGet(ProblemUserNumber,ControlLoopIdentifiers,NumberOfSubLoops,&
           & CMISSControlLoopNumberOfSubLoopsGetCNum)
@@ -7220,7 +7233,7 @@ CONTAINS
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the number of sub loops for, for C.
-    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ControlLoopIdentifiersSize !<Size of the supplied control loop identifiers, for C.
     TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers.
     INTEGER(C_INT), VALUE, INTENT(IN) :: NumberOfSubLoops !<The number of sub loops for the specified control loop to set, for C.
     !Function variable
@@ -7230,7 +7243,7 @@ CONTAINS
 
     CMISSControlLoopNumberOfSubLoopsSetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,(/ControlLoopIdentifiersSize/))
       IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
         CALL CMISSControlLoopNumberOfSubLoopsSet(ProblemUserNumber,ControlLoopIdentifiers,NumberOfSubLoops,&
           & CMISSControlLoopNumberOfSubLoopsSetCNum)
@@ -7292,7 +7305,7 @@ CONTAINS
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the output parameters for, for C.
-    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ControlLoopIdentifiersSize !<Size of the supplied control loop identifiers, for C.
     TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers.
     INTEGER(C_INT), VALUE, INTENT(IN) :: OutputFrequency !<The output frequency modulo to set, for C.
     !Function variables
@@ -7302,7 +7315,7 @@ CONTAINS
 
     CMISSControlLoopTimeOutputSetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,(/ControlLoopIdentifiersSize/))
       IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
         CALL CMISSControlLoopTimeOutputSet(ProblemUserNumber,ControlLoopIdentifiers,OutputFrequency,&
           & CMISSControlLoopTimeOutputSetCNum)
@@ -7363,7 +7376,7 @@ CONTAINS
   
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the output parameters for, for C.
-    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ControlLoopIdentifiersSize !<Size of the control loop identifiers, for C.
     TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers.
     INTEGER(C_INT), VALUE, INTENT(IN) :: InputOption !<The output frequency modulo to set for C.
     !Function variable
@@ -7373,7 +7386,7 @@ CONTAINS
 
     CMISSControlLoopTimeInputSetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,(/ControlLoopIdentifiersSize/))
       IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
         CALL CMISSControlLoopTimeInputSet(ProblemUserNumber,ControlLoopIdentifiers,InputOption,CMISSControlLoopTimeInputSetCNum)
       ELSE
@@ -7429,7 +7442,7 @@ CONTAINS
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the time parameters for, for C.
-    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ControlLoopIdentifiersSize !<Size of the control loop identifiers, for C.
     TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers.
     REAL(C_DOUBLE), INTENT(OUT) :: StartTime !<On return, the start time for the time control loop, for C.
     REAL(C_DOUBLE), INTENT(OUT) :: StopTime !<On return, the stop time for the time control loop, for C.
@@ -7442,7 +7455,7 @@ CONTAINS
 
     CMISSControlLoopTimesGetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,(/ControlLoopIdentifiersSize/))
       IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
         CALL CMISSControlLoopTimesGet(ProblemUserNumber,ControlLoopIdentifiers,StartTime,StopTime,TimeIncrement,CurrentTime, &
           & CMISSControlLoopTimesGetCNum)
@@ -7501,8 +7514,8 @@ CONTAINS
     & TimeIncrement) BIND(C, NAME = "CMISSControlLoopTimesSetNum")
 
     !Argument variables
-    INTEGER(C_INT), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the time parameters for for.
-    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the time parameters for for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ControlLoopIdentifiersSize !<Size of the supplied control loop identifiers, for C.
     TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers.
     REAL(C_DOUBLE), VALUE, INTENT(IN) :: StartTime !<The start time for the time control loop to set for C.
     REAL(C_DOUBLE), VALUE, INTENT(IN) :: StopTime !<The stop time for the time control loop to set for C.
@@ -7514,7 +7527,7 @@ CONTAINS
 
     CMISSControlLoopTimesSetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,(/ControlLoopIdentifiersSize/))
       IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
         CALL CMISSControlLoopTimesSet(ProblemUserNumber,ControlLoopIdentifiers,StartTime,StopTime,TimeIncrement, &
           & CMISSControlLoopTimesSetCNum)
@@ -7577,7 +7590,7 @@ CONTAINS
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the loop type for, for C.
-    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ControlLoopIdentifiersSize !<Size of the supplied control loop identifiers, for C.
     TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers.
     INTEGER(C_INT), VALUE, INTENT(IN) :: LoopType !<The type of control loop to set for C. \see OPENCMISS_ProblemControlLoopTypes
     !Function variable
@@ -7587,7 +7600,7 @@ CONTAINS
 
     CMISSControlLoopTypeSetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,(/ControlLoopIdentifiersSize/))
       IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
         CALL CMISSControlLoopTypeSet(ProblemUserNumber,ControlLoopIdentifiers,LoopType,CMISSControlLoopTypeSetCNum)
       ELSE
@@ -8255,18 +8268,21 @@ CONTAINS
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to get the origin for.
-    INTEGER(C_INT), INTENT(OUT) :: OriginSize(1) !<Size of the origin of the coordinate system for C.
-    TYPE(C_PTR), INTENT(OUT) :: OriginPtr !<C pointer to the origin of the coordinate system.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: OriginSize !<Size of the supplied origin of the coordinate system for C.
+    TYPE(C_PTR), INTENT(INOUT) :: OriginPtr !<C pointer to the origin of the coordinate system.
     !Function variable
     INTEGER(C_INT) :: CMISSCoordinateSystemOriginGetCNum !<Error Code.
     !Local variables
     REAL(C_DOUBLE), POINTER :: Origin(:)
 
     CMISSCoordinateSystemOriginGetCNum = CMISSNoError
-    CALL CMISSCoordinateSystemOriginGet(CoordinateSystemUserNumber, Origin, CMISSCoordinateSystemOriginGetCNum)
-    IF(ASSOCIATED(Origin)) THEN
-      OriginSize = Size(Origin)
-      OriginPtr = C_LOC(Origin(1))
+    IF(C_ASSOCIATED(OriginPtr)) THEN
+      CALL C_F_POINTER(OriginPtr,Origin,(/OriginSize/))
+      IF(ASSOCIATED(Origin)) THEN
+        CALL CMISSCoordinateSystemOriginGet(CoordinateSystemUserNumber, Origin, CMISSCoordinateSystemOriginGetCNum)
+      ELSE
+        CMISSCoordinateSystemOriginGetCNum = CMISSErrorConvertingPointer
+      ENDIF
     ELSE
       CMISSCoordinateSystemOriginGetCNum = CMISSPointerIsNULL
     ENDIF
@@ -8285,8 +8301,8 @@ CONTAINS
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: CoordinateSystemPtr !<C pointer to the coordinate system to get the origin for.
-    INTEGER(C_INT), INTENT(OUT) :: OriginSize(1) !<Size of the origin of the coordinate system for C.
-    TYPE(C_PTR), INTENT(OUT) :: OriginPtr !<C pointer to the origin of the coordinate system.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: OriginSize !<Size of the supplied origin of the coordinate system for C.
+    TYPE(C_PTR), INTENT(INOUT) :: OriginPtr !<C pointer to the origin of the coordinate system.
     !Function variables
     INTEGER(C_INT) :: CMISSCoordinateSystemOriginGetCPtr !<Error code.
     !Function variables
@@ -8297,10 +8313,13 @@ CONTAINS
     IF(C_ASSOCIATED(CoordinateSystemPtr)) THEN
       CALL C_F_POINTER(CoordinateSystemPtr, CoordinateSystem)
       IF(ASSOCIATED(CoordinateSystem)) THEN
-        CALL CMISSCoordinateSystemOriginGet(CoordinateSystem, Origin, CMISSCoordinateSystemOriginGetCPtr)
-        IF(ASSOCIATED(Origin)) THEN
-          OriginSize = Size(Origin)
-          OriginPtr = C_LOC(Origin(1))
+        IF(C_ASSOCIATED(OriginPtr)) THEN
+          CALL C_F_POINTER(OriginPtr,Origin,(/OriginSize/))
+          IF(ASSOCIATED(Origin)) THEN
+            CALL CMISSCoordinateSystemOriginGet(CoordinateSystem, Origin, CMISSCoordinateSystemOriginGetCPtr)
+          ELSE
+            CMISSCoordinateSystemOriginGetCPtr = CMISSErrorConvertingPointer
+          ENDIF
         ELSE
           CMISSCoordinateSystemOriginGetCPtr = CMISSPointerIsNULL
         ENDIF
@@ -8325,8 +8344,8 @@ CONTAINS
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to set the origin for, for C.
-    INTEGER(C_INT), INTENT(IN) :: OriginSize(1) !<Size of the origin of the coordinate system to set for C.
-    TYPE(C_PTR), VALUE, INTENT(IN) :: OriginPtr!<C pointer to the origin of the coordinate system to set.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: OriginSize !<Size of the supplied origin of the coordinate system to set for C.
+    TYPE(C_PTR), INTENT(INOUT) :: OriginPtr!<C pointer to the origin of the coordinate system to set.
     !Function variable
     INTEGER(C_INT) :: CMISSCoordinateSystemOriginSetCNum !<Error Code.
     !Local variables
@@ -8334,11 +8353,11 @@ CONTAINS
 
     CMISSCoordinateSystemOriginSetCNum = CMISSNoError
     IF(C_ASSOCIATED(OriginPtr)) THEN
-      CALL C_F_POINTER(OriginPtr,Origin,OriginSize)
+      CALL C_F_POINTER(OriginPtr,Origin,(/OriginSize/))
       IF(ASSOCIATED(Origin)) THEN
         CALL CMISSCoordinateSystemOriginSet(CoordinateSystemUserNumber, Origin, CMISSCoordinateSystemOriginSetCNum)
       ELSE
-      CMISSCoordinateSystemOriginSetCNum = CMISSErrorConvertingPointer
+        CMISSCoordinateSystemOriginSetCNum = CMISSErrorConvertingPointer
       ENDIF
     ELSE
       CMISSCoordinateSystemOriginSetCNum = CMISSPointerIsNULL
@@ -8358,8 +8377,8 @@ CONTAINS
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: CoordinateSystemPtr !<C pointer to the coordinate system to set the origin for.
-    INTEGER(C_INT), INTENT(IN) :: OriginSize(1) !<Size of the origin of the coordinate system to set for C.
-    TYPE(C_PTR), VALUE, INTENT(IN) :: OriginPtr !<C pointer to the origin of the coordinate system to set.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: OriginSize !<Size of the supplied origin of the coordinate system to set for C.
+    TYPE(C_PTR), INTENT(INOUT) :: OriginPtr !<C pointer to the origin of the coordinate system to set.
     !Function variable
     INTEGER(C_INT) :: CMISSCoordinateSystemOriginSetCPtr !<Error Code.
     !Local variables
@@ -8371,7 +8390,7 @@ CONTAINS
       CALL C_F_POINTER(CoordinateSystemPtr, CoordinateSystem)
       IF(ASSOCIATED(CoordinateSystem)) THEN
         IF(C_ASSOCIATED(OriginPtr)) THEN
-          CALL C_F_POINTER(OriginPtr, Origin, OriginSize)
+          CALL C_F_POINTER(OriginPtr, Origin, (/OriginSize/))
           IF(ASSOCIATED(Origin)) THEN
             CALL CMISSCoordinateSystemOriginSet(CoordinateSystem, Origin, CMISSCoordinateSystemOriginSetCPtr)
           ELSE
@@ -8396,12 +8415,13 @@ CONTAINS
   !
 
   !>Returns the orientation of a coordinate system identified by a user number, for C.
-  FUNCTION CMISSCoordinateSystemOrientationGetCNum(CoordinateSystemUserNumber,OrientationSize,OrientationPtr) BIND(C, NAME = &
-    & "CMISSCoordinateSystemOrientationGetNum")
+  FUNCTION CMISSCoordinateSystemOrientationGetCNum(CoordinateSystemUserNumber,OrientationSize1,OrientationSize2,OrientationPtr) &
+    & BIND(C, NAME = "CMISSCoordinateSystemOrientationGetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to get the orientation for, for C.
-    INTEGER(C_INT), INTENT(OUT) :: OrientationSize(1) !<Size of the orientation of the coordinate system, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: OrientationSize1 !<Size of the rows of the supplied coordinate system pointer, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: OrientationSize2 !<Size of the columns of the supplied coordinate system pointer, for C.
     TYPE(C_PTR), INTENT(OUT) :: OrientationPtr !<C pointer to the orientation of the coordinate system.
     !Function variable
     INTEGER(C_INT) :: CMISSCoordinateSystemOrientationGetCNum !<Error Code.
@@ -8409,10 +8429,13 @@ CONTAINS
     REAL(C_DOUBLE), POINTER :: Orientation(:,:)
 
     CMISSCoordinateSystemOrientationGetCNum = CMISSNoError
-    CALL CMISSCoordinateSystemOrientationGet(CoordinateSystemUserNumber, Orientation, CMISSCoordinateSystemOrientationGetCNum)
-    IF(ASSOCIATED(Orientation)) THEN
-      OrientationSize = Size(Orientation)
-      OrientationPtr = C_LOC(Orientation(1,1))
+    IF(C_ASSOCIATED(OrientationPtr)) THEN
+      CALL C_F_POINTER(OrientationPtr,Orientation,(/OrientationSize1,OrientationSize2/))
+      IF(ASSOCIATED(Orientation)) THEN
+        CALL CMISSCoordinateSystemOrientationGet(CoordinateSystemUserNumber, Orientation, CMISSCoordinateSystemOrientationGetCNum)
+      ELSE
+        CMISSCoordinateSystemOrientationGetCNum = CMISSErrorConvertingPointer
+      ENDIF
     ELSE
       CMISSCoordinateSystemOrientationGetCNum = CMISSPointerIsNULL
     ENDIF
@@ -8426,13 +8449,14 @@ CONTAINS
   !
 
   !>Returns the orientation of a coordinate system identified by an object for C.
-  FUNCTION CMISSCoordinateSystemOrientationGetCPtr(CoordinateSystemPtr,OrientationSize, OrientationPtr) BIND(C, NAME = &
-    & "CMISSCoordinateSystemOrientationGetCPtr")
+  FUNCTION CMISSCoordinateSystemOrientationGetCPtr(CoordinateSystemPtr,OrientationSize1,OrientationSize2,OrientationPtr) &
+    & BIND(C, NAME = "CMISSCoordinateSystemOrientationGetCPtr")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: CoordinateSystemPtr !<The coordinate system to get the orientation for, for C.
-    INTEGER(C_INT), INTENT(OUT) :: OrientationSize(1) !<Size of the orientation of the coordinate system, for C.
-    TYPE(C_PTR), INTENT(OUT) :: OrientationPtr !<C pointer to  the orientation of the coordinate system.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: OrientationSize1 !<The number of rows of the supplied orientation array, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: OrientationSize2 !<The number of columns of the supplied orientation array, for C.
+    TYPE(C_PTR), INTENT(INOUT) :: OrientationPtr !<C pointer to  the orientation of the coordinate system.
     !Function variable
     INTEGER(C_INT) :: CMISSCoordinateSystemOrientationGetCPtr !<Error Code.
     !Local variables
@@ -8443,10 +8467,13 @@ CONTAINS
     IF(C_ASSOCIATED(CoordinateSystemPtr)) THEN
       CALL C_F_POINTER(CoordinateSystemPtr, CoordinateSystem)
       IF(ASSOCIATED(CoordinateSystem)) THEN
-        CALL CMISSCoordinateSystemOrientationGet(CoordinateSystem, Orientation, CMISSCoordinateSystemOrientationGetCPtr)
-        IF(ASSOCIATED(Orientation)) THEN
-          OrientationSize = Size(Orientation)
-          OrientationPtr = C_LOC(Orientation(1,1))
+        IF(C_ASSOCIATED(OrientationPtr)) THEN
+          CALL C_F_POINTER(OrientationPtr,Orientation,(/OrientationSize1,OrientationSize2/))
+          IF(ASSOCIATED(Orientation)) THEN
+            CALL CMISSCoordinateSystemOrientationGet(CoordinateSystem, Orientation, CMISSCoordinateSystemOrientationGetCPtr)
+          ELSE
+            CMISSCoordinateSystemOrientationGetCPtr = CMISSErrorConvertingPointer
+          ENDIF
         ELSE
           CMISSCoordinateSystemOrientationGetCPtr = CMISSPointerIsNULL
         ENDIF
@@ -8466,13 +8493,14 @@ CONTAINS
   !
 
   !>Sets/changes the orientation of a coordinate system identified by a user number for C.
-  FUNCTION CMISSCoordinateSystemOrientationSetCNum(CoordinateSystemUserNumber,OrientationSize,OrientationPtr) BIND(C, NAME = &
-    & "CMISSCoordinateSystemOrientationSetNum")
+  FUNCTION CMISSCoordinateSystemOrientationSetCNum(CoordinateSystemUserNumber,OrientationSize1,OrientationSize2,OrientationPtr) &
+    & BIND(C, NAME = "CMISSCoordinateSystemOrientationSetNum")
 
     !Argument variables
-    INTEGER(C_INT), INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to set the orientation to, for C.
-    INTEGER(C_INT), INTENT(IN) :: OrientationSize(1) !<Size of the orientation of the coordinate system, for C.
-    TYPE(C_PTR), VALUE, INTENT(IN) :: OrientationPtr !<C pointer to the orientation of the coordinate system to set.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to set the orientation to, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: OrientationSize1 !<The number of rows in the supplied orientation array, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: OrientationSize2 !<The number of columns in the supplied orientation array, for C.
+    TYPE(C_PTR), INTENT(INOUT) :: OrientationPtr !<C pointer to the orientation of the coordinate system to set.
     !Function variable
     INTEGER(C_INT) :: CMISSCoordinateSystemOrientationSetCNum !<Error Code.
     !Local variable
@@ -8480,7 +8508,7 @@ CONTAINS
 
     CMISSCoordinateSystemOrientationSetCNum = CMISSNoError
     IF(C_ASSOCIATED(OrientationPtr)) THEN
-      CALL C_F_POINTER(OrientationPtr, Orientation, OrientationSize)
+      CALL C_F_POINTER(OrientationPtr, Orientation, (/OrientationSize1,OrientationSize2/))
       IF(ASSOCIATED(Orientation)) THEN
         CALL CMISSCoordinateSystemOrientationSet(CoordinateSystemUserNumber, Orientation, CMISSCoordinateSystemOrientationSetCNum)
       ELSE
@@ -8499,12 +8527,13 @@ CONTAINS
   !
 
   !>Sets/changes the orientation of a coordinate system identified by an object for C.
-  FUNCTION CMISSCoordinateSystemOrientationSetCPtr(CoordinateSystemPtr,OrientationSize, OrientationPtr) BIND(C, NAME = &
-    & "CMISSCoordinateSystemOrientationSetCPtr")
+  FUNCTION CMISSCoordinateSystemOrientationSetCPtr(CoordinateSystemPtr,OrientationSize1,OrientationSize2,OrientationPtr) &
+    & BIND(C, NAME = "CMISSCoordinateSystemOrientationSetCPtr")
 
     !Argument variables
-    TYPE(C_PTR), INTENT(INOUT) :: CoordinateSystemPtr !<The coordinate system to set the orientation to, for C.
-    INTEGER(C_INT), INTENT(IN) :: OrientationSize(1) !<Size of the orientation of the coordinate system, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CoordinateSystemPtr !<The coordinate system to set the orientation to, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: OrientationSize1 !<The number of rows in the supplied orientation array, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: OrientationSize2 !<The number of columns in the supplied orientation array, for C.
     TYPE(C_PTR), INTENT(IN) :: OrientationPtr !<C pointer to  the orientation of the coordinate system to set.
     !Function variable
     INTEGER(C_INT) :: CMISSCoordinateSystemOrientationSetCPtr !<Error Code.
@@ -8517,14 +8546,9 @@ CONTAINS
       CALL C_F_POINTER(CoordinateSystemPtr, CoordinateSystem)
       IF(ASSOCIATED(CoordinateSystem)) THEN
         IF(C_ASSOCIATED(OrientationPtr)) THEN
-          CALL C_F_POINTER(OrientationPtr,Orientation,OrientationSize)
+          CALL C_F_POINTER(OrientationPtr,Orientation,(/OrientationSize1,OrientationSize2/))
           IF(ASSOCIATED(Orientation)) THEN
             CALL CMISSCoordinateSystemOrientationSet(CoordinateSystem, Orientation, CMISSCoordinateSystemOrientationSetCPtr)
-            IF(ASSOCIATED(CoordinateSystem)) THEN
-              CoordinateSystemPtr = C_LOC(CoordinateSystem)
-            ELSE
-              CMISSCoordinateSystemOrientationSetCPtr = CMISSPointerIsNULL
-            ENDIF
           ELSE
             CMISSCoordinateSystemOrientationSetCPtr = CMISSErrorConvertingPointer
           ENDIF
@@ -16875,18 +16899,21 @@ CONTAINS
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number, for C, of the region containing the generated mesh to get the extent for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number, for C, of the generated mesh to get the extent for.
-    INTEGER(C_INT), INTENT(OUT) :: ExtentSize !<The size of the extent for C.
-    TYPE(C_PTR), INTENT(OUT) :: ExtentPtr !<C pointer to the extent for the i'th dimension of the generated mesh.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ExtentSize !<The size of the supplied extent array for C.
+    TYPE(C_PTR), INTENT(INOUT) :: ExtentPtr !<C pointer to the extent for the i'th dimension of the generated mesh.
     !Function variable
     INTEGER(C_INT) :: CMISSGeneratedMeshExtentGetCNum !<Error Code
     !LOcal variable
     REAL(C_DOUBLE), POINTER :: Extent(:)
 
     CMISSGeneratedMeshExtentGetCNum = CMISSNoError
-    CALL CMISSGeneratedMeshExtentGet(RegionUserNumber,GeneratedMeshUserNumber, Extent, CMISSGeneratedMeshExtentGetCNum)
-    IF(ASSOCIATED(Extent)) THEN
-      ExtentSize = Size(Extent)
-      ExtentPtr = C_LOC(Extent(1))
+    IF(C_ASSOCIATED(ExtentPtr)) THEN
+      CALL C_F_POINTER(ExtentPtr,Extent,(/ExtentSize/))
+      IF(ASSOCIATED(Extent)) THEN
+        CALL CMISSGeneratedMeshExtentGet(RegionUserNumber,GeneratedMeshUserNumber, Extent, CMISSGeneratedMeshExtentGetCNum)
+      ELSE
+        CMISSGeneratedMeshExtentGetCNum = CMISSErrorConvertingPointer
+      ENDIF
     ELSE
       CMISSGeneratedMeshExtentGetCNum = CMISSPointerIsNULL
     ENDIF
@@ -16903,8 +16930,8 @@ CONTAINS
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: GeneratedMeshPtr !<C pointer to the generated mesh to get the extent for.
-    INTEGER(C_INT), INTENT(OUT) :: ExtentSize !<The size of the extent for C.
-    TYPE(C_PTR), INTENT(OUT) :: ExtentPtr!<C pointer to the extent for the i'th dimension of the generated mesh.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ExtentSize !<The size of the supplied extent array for C.
+    TYPE(C_PTR), INTENT(INOUT) :: ExtentPtr!<C pointer to the extent for the i'th dimension of the generated mesh.
     !Function variables
     INTEGER(C_INT) :: CMISSGeneratedMeshExtentGetCPtr !<Error Code.
     !Local variables
@@ -16916,10 +16943,13 @@ CONTAINS
     IF(C_ASSOCIATED(GeneratedMeshPtr)) THEN
       CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
       IF(ASSOCIATED(GeneratedMesh)) THEN
-        CALL CMISSGeneratedMeshExtentGet(GeneratedMesh, Extent, CMISSGeneratedMeshExtentGetCPtr)
-        IF(ASSOCIATED(Extent)) THEN
-          ExtentSize = Size(Extent)
-          ExtentPtr = C_LOC(Extent(1))
+        IF(C_ASSOCIATED(ExtentPtr)) THEN
+          CALL C_F_POINTER(ExtentPtr,Extent,(/ExtentSize/))
+          IF(ASSOCIATED(Extent)) THEN
+            CALL CMISSGeneratedMeshExtentGet(GeneratedMesh, Extent, CMISSGeneratedMeshExtentGetCPtr)
+          ELSE
+            CMISSGeneratedMeshExtentGetCPtr = CMISSErrorConvertingPointer
+          ENDIF
         ELSE
           CMISSGeneratedMeshExtentGetCPtr = CMISSPointerIsNULL
         ENDIF
@@ -16945,8 +16975,8 @@ CONTAINS
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number, for C, of the region containing  generated mesh to set the extent for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number, for C, of the generated mesh to set the extent for.
-    INTEGER(C_INT), INTENT(IN) :: ExtentSize(1) !<The size of the extent to set for C.
-    TYPE(C_PTR), VALUE, INTENT(IN) :: ExtentPtr !<C pointer to the extent for the i'th dimension of the generated mesh to set.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ExtentSize !<The size of the supplied extent array for C.
+    TYPE(C_PTR), INTENT(INOUT) :: ExtentPtr !<C pointer to the extent for the i'th dimension of the generated mesh to set.
     !Function variable
     INTEGER(C_INT) :: CMISSGeneratedMeshExtentSetCNum !<Error Code
     !LOcal variable
@@ -16954,7 +16984,7 @@ CONTAINS
 
     CMISSGeneratedMeshExtentSetCNum = CMISSNoError
     IF(C_ASSOCIATED(ExtentPtr)) THEN
-      CALL C_F_POINTER(ExtentPtr, Extent, ExtentSize)
+      CALL C_F_POINTER(ExtentPtr, Extent, (/ExtentSize/))
       IF(ASSOCIATED(Extent)) THEN
         CALL CMISSGeneratedMeshExtentSet(RegionUserNumber,GeneratedMeshUserNumber, Extent, CMISSGeneratedMeshExtentSetCNum)
       ELSE
@@ -16977,8 +17007,8 @@ CONTAINS
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: GeneratedMeshPtr !<C pointer to the generated mesh to set the extent for.
-    INTEGER(C_INT), INTENT(IN) :: ExtentSize(1) !<The size of the extent to set for C.
-    TYPE(C_PTR), VALUE, INTENT(IN) :: ExtentPtr!<C pointer to the extent for the i'th dimension of the generated mesh to set.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ExtentSize !<The size of the supplied extent array for C.
+    TYPE(C_PTR), INTENT(INOUT) :: ExtentPtr!<C pointer to the extent for the i'th dimension of the generated mesh to set.
     !Function variables
     INTEGER(C_INT) :: CMISSGeneratedMeshExtentSetCPtr !<Error Code.
     !Local variables
@@ -16991,7 +17021,7 @@ CONTAINS
       CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
       IF(ASSOCIATED(GeneratedMesh)) THEN
         IF(C_ASSOCIATED(ExtentPtr)) THEN
-          CALL C_F_POINTER(ExtentPtr,Extent,ExtentSize)
+          CALL C_F_POINTER(ExtentPtr,Extent,(/ExtentSize/))
           IF(ASSOCIATED(Extent)) THEN
             CALL CMISSGeneratedMeshExtentSet(GeneratedMesh, Extent, CMISSGeneratedMeshExtentSetCPtr)
           ELSE
@@ -17022,7 +17052,7 @@ CONTAINS
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to get the number of elements for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to get the number of elements for, for C.
-    INTEGER(C_INT), INTENT(OUT) :: NumberOfElementsSize !<The size of the number of elements for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NumberOfElementsSize !<The size of the supplied number of elements array for C.
     TYPE(C_PTR), INTENT(OUT) :: NumberOfElementsPtr !<C pointer to the number of elements in the i'th dimension of the generated mesh.
     !Function variable
     INTEGER(C_INT) :: CMISSGeneratedMeshNumberOfElementsGetCNum !<Error Code
@@ -17030,11 +17060,14 @@ CONTAINS
     INTEGER(C_INT) , POINTER :: NumberOfElements(:)
 
     CMISSGeneratedMeshNumberOfElementsGetCNum = CMISSNoError
-    CALL CMISSGeneratedMeshNumberOfElementsGet(RegionUserNumber,GeneratedMeshUserNumber, NumberOfElements, &
-      & CMISSGeneratedMeshNumberOfElementsGetCNum)
-    IF(ASSOCIATED(NumberOfElements)) THEN
-      NumberOfElementsSize = Size(NumberOfElements)
-      NumberOfElementsPtr = C_LOC(NumberOfElements(1))
+    IF(C_ASSOCIATED(NumberOfElementsPtr)) THEN
+      CALL C_F_POINTER(NumberOfElementsPtr,NumberOfElements,(/NumberOfElementsSize/))
+      IF(ASSOCIATED(NumberOfElements)) THEN
+        CALL CMISSGeneratedMeshNumberOfElementsGet(RegionUserNumber,GeneratedMeshUserNumber, NumberOfElements, &
+          & CMISSGeneratedMeshNumberOfElementsGetCNum)
+      ELSE
+        CMISSGeneratedMeshNumberOfElementsGetCNum = CMISSErrorConvertingPointer
+      ENDIF
     ELSE
       CMISSGeneratedMeshNumberOfElementsGetCNum = CMISSPointerIsNULL
     ENDIF
@@ -17053,8 +17086,8 @@ CONTAINS
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: GeneratedMeshPtr !<C pointer to the generated mesh to get the number of elements for.
-    INTEGER(C_INT), INTENT(OUT) :: NumberOfElementsSize !<The size of the number of elements for C.
-    TYPE(C_PTR), INTENT(OUT) :: NumberOfElementsPtr!<C pointer to the number of elements in the i'th dimension of the generated mesh.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NumberOfElementsSize !<The size of the supplied number of elements array for C.
+    TYPE(C_PTR), INTENT(OUT) :: NumberOfElementsPtr !<C pointer to the number of elements in the i'th dimension of the generated mesh.
     !Function variables
     INTEGER(C_INT) :: CMISSGeneratedMeshNumberOfElementsGetCPtr !<Error Code.
     !Local variables
@@ -17066,10 +17099,13 @@ CONTAINS
     IF(C_ASSOCIATED(GeneratedMeshPtr)) THEN
       CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
       IF(ASSOCIATED(GeneratedMesh)) THEN
-        CALL CMISSGeneratedMeshNumberOfElementsGet(GeneratedMesh, NumberOfElements, CMISSGeneratedMeshNumberOfElementsGetCPtr)
-        IF(ASSOCIATED(NumberOfElements)) THEN
-          NumberOfElementsSize = Size(NumberOfElements)
-          NumberOfElementsPtr = C_LOC(NumberOfElements(1))
+        IF(C_ASSOCIATED(NumberOfElementsPtr)) THEN
+          CALL C_F_POINTER(NumberOfElementsPtr,NumberOfElements,(/NumberOfElementsSize/))
+          IF(ASSOCIATED(NumberOfElements)) THEN
+            CALL CMISSGeneratedMeshNumberOfElementsGet(GeneratedMesh, NumberOfElements, CMISSGeneratedMeshNumberOfElementsGetCPtr)
+          ELSE
+            CMISSGeneratedMeshNumberOfElementsGetCPtr = CMISSErrorConvertingPointer
+          ENDIF
         ELSE
           CMISSGeneratedMeshNumberOfElementsGetCPtr = CMISSPointerIsNULL
         ENDIF
@@ -17095,8 +17131,8 @@ CONTAINS
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to set the number of elements for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the number of elements for, for C.
-    INTEGER(C_INT), INTENT(IN) :: NumberOfElementsSize(1) !<The size of the number of elements to set for C.
-    TYPE(C_PTR), INTENT(IN) :: NumberOfElementsPtr !<C pointer to the number of elements in the i'th dimension of the generated mesh to set.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NumberOfElementsSize !<The size of the supplied number of elements array for C.
+    TYPE(C_PTR), INTENT(INOUT) :: NumberOfElementsPtr !<C pointer to the number of elements in the i'th dimension of the generated mesh to set.
     !Function variable
     INTEGER(C_INT) :: CMISSGeneratedMeshNumberOfElementsSetCNum !<Error Code
     !LOcal variable
@@ -17104,7 +17140,7 @@ CONTAINS
 
     CMISSGeneratedMeshNumberOfElementsSetCNum = CMISSNoError
     IF(C_ASSOCIATED(NumberOfElementsPtr)) THEN
-      CALL C_F_POINTER(NumberOfElementsPtr, NumberOfElements,NumberOfElementsSize)
+      CALL C_F_POINTER(NumberOfElementsPtr, NumberOfElements,(/NumberOfElementsSize/))
       IF(ASSOCIATED(NumberOfElements)) THEN
         CALL CMISSGeneratedMeshNumberOfElementsSet(RegionUserNumber,GeneratedMeshUserNumber, NumberOfElements, &
           & CMISSGeneratedMeshNumberOfElementsSetCNum)
@@ -17129,8 +17165,8 @@ CONTAINS
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: GeneratedMeshPtr !<C pointer to the generated mesh to set the number of elements for.
-    INTEGER(C_INT), INTENT(IN) :: NumberOfElementsSize(1) !<The size of the number of elements to set for C.
-    TYPE(C_PTR), VALUE, INTENT(IN) :: NumberOfElementsPtr!<C pointer to the number of elements in the i'th dimension of the generated mesh to set.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: NumberOfElementsSize !<The size of the supplied number of elements array for C.
+    TYPE(C_PTR), INTENT(INOUT) :: NumberOfElementsPtr!<C pointer to the number of elements in the i'th dimension of the generated mesh to set.
     !Function variables
     INTEGER(C_INT) :: CMISSGeneratedMeshNumberOfElementsSetCPtr !<Error Code.
     !Local variables
@@ -17143,7 +17179,7 @@ CONTAINS
       CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
       IF(ASSOCIATED(GeneratedMesh)) THEN
         IF(C_ASSOCIATED(NumberOfElementsPtr)) THEN
-          CALL C_F_POINTER(NumberOfElementsPtr,NumberOfElements,NumberOfElementsSize)
+          CALL C_F_POINTER(NumberOfElementsPtr,NumberOfElements,(/NumberOfElementsSize/))
           IF(ASSOCIATED(NumberOfElements)) THEN
             CALL CMISSGeneratedMeshNumberOfElementsSet(GeneratedMesh, NumberOfElements, CMISSGeneratedMeshNumberOfElementsSetCPtr)
           ELSE
@@ -17174,18 +17210,21 @@ CONTAINS
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to get the origin for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to get the origin for, for C.
-    INTEGER(C_INT), INTENT(OUT) :: OriginSize !<The size of the origin to get for C.
-    TYPE(C_PTR), INTENT(OUT) :: OriginPtr !<C pointer to the origin of the i'th dimension of the generated mesh.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: OriginSize !<The size of the supplied origin array for C.
+    TYPE(C_PTR), INTENT(INOUT) :: OriginPtr !<C pointer to the origin of the i'th dimension of the generated mesh.
     !Function variable
     INTEGER(C_INT) :: CMISSGeneratedMeshOriginGetCNum !<Error Code
     !LOcal variable
     REAL(C_DOUBLE) , POINTER :: Origin(:)
 
     CMISSGeneratedMeshOriginGetCNum = CMISSNoError
-    CALL CMISSGeneratedMeshOriginGet(RegionUserNumber,GeneratedMeshUserNumber, Origin, CMISSGeneratedMeshOriginGetCNum)
-    IF(ASSOCIATED(Origin)) THEN
-      OriginSize = Size(Origin)
-      OriginPtr = C_LOC(Origin(1))
+    IF(C_ASSOCIATED(OriginPtr)) THEN
+      CALL C_F_POINTER(OriginPtr,Origin,(/OriginSize/))
+      IF(ASSOCIATED(Origin)) THEN
+        CALL CMISSGeneratedMeshOriginGet(RegionUserNumber,GeneratedMeshUserNumber,Origin,CMISSGeneratedMeshOriginGetCNum)
+      ELSE
+        CMISSGeneratedMeshOriginGetCNum = CMISSErrorConvertingPointer
+      ENDIF
     ELSE
       CMISSGeneratedMeshOriginGetCNum = CMISSPointerIsNULL
     ENDIF
@@ -17199,28 +17238,30 @@ CONTAINS
   !
 
   !>Returns the origin of a generated mesh identified by an object for C.
-  FUNCTION CMISSGeneratedMeshOriginGetCPtr(GeneratedMeshPtr,OriginSize,OriginPtr)BIND(C, NAME = "CMISSGeneratedMeshOriginGet")
+  FUNCTION CMISSGeneratedMeshOriginGetCPtr(GeneratedMeshPtr,OriginSize,OriginPtr) BIND(C, NAME = "CMISSGeneratedMeshOriginGet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: GeneratedMeshPtr !<C pointer to the generated mesh to get the number of elements for.
-    INTEGER(C_INT), INTENT(OUT) :: OriginSize !<The size of the number of elements for C.
-    TYPE(C_PTR), INTENT(OUT) :: OriginPtr!<C pointer to the number of elements in the i'th dimension of the generated mesh.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: OriginSize !<The size of the supplied number of elements array for C.
+    TYPE(C_PTR), INTENT(INOUT) :: OriginPtr !<C pointer to the number of elements in the i'th dimension of the generated mesh.
     !Function variables
     INTEGER(C_INT) :: CMISSGeneratedMeshOriginGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSGeneratedMeshType), POINTER :: GeneratedMesh
     REAL(C_DOUBLE), POINTER :: Origin(:)
 
-
     CMISSGeneratedMeshOriginGetCPtr = CMISSNoError
     IF(C_ASSOCIATED(GeneratedMeshPtr)) THEN
       CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
       IF(ASSOCIATED(GeneratedMesh)) THEN
-        CALL CMISSGeneratedMeshOriginGet(GeneratedMesh, Origin, CMISSGeneratedMeshOriginGetCPtr)
-        IF(ASSOCIATED(Origin)) THEN
-          OriginSize = Size(Origin)
-          OriginPtr = C_LOC(Origin(1))
-        ELSE
+        IF(C_ASSOCIATED(OriginPtr)) THEN
+         CALL C_F_POINTER(OriginPtr,Origin,(/OriginSize/))
+         IF(ASSOCIATED(Origin)) THEN
+           CALL CMISSGeneratedMeshOriginGet(GeneratedMesh,Origin,CMISSGeneratedMeshOriginGetCPtr)
+         ELSE
+           CMISSGeneratedMeshOriginGetCPtr = CMISSErrorConvertingPointer
+         ENDIF
+       ELSE
           CMISSGeneratedMeshOriginGetCPtr = CMISSPointerIsNULL
         ENDIF
       ELSE
@@ -17245,8 +17286,8 @@ CONTAINS
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to set the origin for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the origin for, for C.
-    INTEGER(C_INT), INTENT(IN) :: OriginSize(1) !<The size of the origin to set for C.
-    TYPE(C_PTR), INTENT(IN) :: OriginPtr !<C pointer to the origin of the i'th dimension of the generated mesh to set.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: OriginSize !<The size of the supplied origin array for C.
+    TYPE(C_PTR), INTENT(INOUT) :: OriginPtr !<C pointer to the origin of the i'th dimension of the generated mesh to set.
     !Function variable
     INTEGER(C_INT) :: CMISSGeneratedMeshOriginSetCNum !<Error Code
     !LOcal variable
@@ -17254,7 +17295,7 @@ CONTAINS
 
     CMISSGeneratedMeshOriginSetCNum = CMISSNoError
     IF(C_ASSOCIATED(OriginPtr)) THEN
-      CALL C_F_POINTER(OriginPtr, Origin, OriginSize)
+      CALL C_F_POINTER(OriginPtr, Origin, (/OriginSize/))
       IF(ASSOCIATED(Origin)) THEN
         CALL CMISSGeneratedMeshOriginSet(RegionUserNumber,GeneratedMeshUserNumber,Origin,CMISSGeneratedMeshOriginSetCNum)
       ELSE
@@ -17277,8 +17318,8 @@ CONTAINS
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: GeneratedMeshPtr !<C pointer to the generated mesh to set the number of elements for.
-    INTEGER(C_INT), INTENT(IN) :: OriginSize(1) !<The size of the number of elements to set for C.
-    TYPE(C_PTR), INTENT(IN) :: OriginPtr!<C pointer to the number of elements in the i'th dimension of the generated mesh to set.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: OriginSize !<The size of the origin array for C.
+    TYPE(C_PTR), INTENT(INOUT) :: OriginPtr !<C pointer to the number of elements in the i'th dimension of the generated mesh to set.
     !Function variables
     INTEGER(C_INT) :: CMISSGeneratedMeshOriginSetCPtr !<Error Code.
     !Local variables
@@ -17291,7 +17332,7 @@ CONTAINS
       CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
       IF(ASSOCIATED(GeneratedMesh)) THEN
         IF(C_ASSOCIATED(OriginPtr)) THEN
-          CALL C_F_POINTER(OriginPtr,Origin,OriginSize)
+          CALL C_F_POINTER(OriginPtr,Origin,(/OriginSize/))
           IF(ASSOCIATED(Origin)) THEN
             CALL CMISSGeneratedMeshOriginSet(GeneratedMesh, Origin, CMISSGeneratedMeshOriginSetCPtr)
           ELSE

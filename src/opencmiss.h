@@ -979,6 +979,23 @@ static int CMISSSolverDAEType = 4;
 static int CMISSSolverEigenproblemType = 5;
 static int CMISSSolverOptimiserType = 6;
 /* >@}
+ * > \addtogroup OPENCMISS_SolverLibraries OPENCMISS::Solver::SolverLibraries
+ * > \brief The types of solver libraries
+ * > \see OPENCMISS::Solver::Constants,OPENCMISS
+ * >@{
+ */
+static int CMISSSolverCMISSLibrary = 1;
+static int CMISSSolverPETScLibrary = 2;
+static int CMISSSolverMUMPSLibrary = 3;
+static int CMISSSolverSuperLULibrary = 4;
+static int CMISSSolverSPOOLESLibrary = 5;
+static int CMISSSolverUMFPackLibrary = 6;
+static int CMISSSolverLUSolLibrary = 7;
+static int CMISSSolverESSLLibrary = 8;
+static int CMISSSolverLAPACKLibrary = 9;
+static int CMISSSolverTAOLibrary = 10;
+static int CMISSSolverHypreLibrary = 11;
+/* >@}
  * > \addtogroup OPENCMISS_LinearSolverTypes OPENCMISS::Solver::LinearSolverTypes
  * > \brief The types of linear solvers.
  * > \see OPENCMISS::Solver::Constants,OPENCMISS
@@ -1429,7 +1446,7 @@ CMISSError CMISSAnalyticAnalysisAbsoluteErrorGetElementNum(const int RegionUserN
 		const int ElementNumber,
 		const int ComponentNumber,
 		const int VariableType,
-		doulbe *Value);
+		double *Value);
 
 CMISSError CMISSAnalyticAnalysisAbsoluteErrorGetElement(const CMISSFieldType Field,
 		const int ElementNumber,
@@ -1502,7 +1519,7 @@ CMISSError CMISSAnalyticAnalysisRmsErrorGetNodeNum(const int RegionUserNumber,
 		const int VariableType,
 		const int ErrorType,
 		double *LocalValue,
-		double *LocalGhostValue)
+		double *LocalGhostValue,
 		double *GlobalValue);
 
 CMISSError CMISSAnalyticAnalysisRmsErrorGetNode(const CMISSFieldType Field,
@@ -1519,7 +1536,7 @@ CMISSError CMISSAnalyticAnalysisRmsErrorGetElementNumber(const int RegionUserNum
 		const int VariableType,
 		const int ErrorType,
 		double *LocalValue,
-		double *LocalGhostValue)
+		double *LocalGhostValue,
 		double *GlobalValue);
 
 CMISSError CMISSAnalyticAnalysisRmsErrorGetElement(const CMISSFieldType Field,
@@ -1632,11 +1649,11 @@ CMISSError CMISSAnalyticAnalysisIntegralNidErrorGet(const CMISSFieldType Field,
 CMISSError CMISSDiagnosticsSetOff();
 
 CMISSError CMISSDiagnosticsSetOn(const int DiagType,
-		const int LevelListSize[1],
+		const int LevelListSize,
 		const int *LevelList,
 		const int DiagFilenameSize,
 		const char *DiagFilename,
-		const int RoutineListSize[1],
+		const int RoutineListSize,
 		const char *RoutineList);
 
 CMISSError CMISSOutputSetOff();
@@ -1649,7 +1666,7 @@ CMISSError CMISSTimingSetOff();
 CMISSError CMISSTimingSetOn(const int TimingType,
 		const int TimingSummaryFlag,
 		const char *TimingFilename,
-		const int RoutineListSize[1],
+		const int RoutineListSize,
 		const char *RoutineList);
 
 CMISSError CMISSTimingSummaryOutput();
@@ -1663,24 +1680,24 @@ CMISSError CMISSTimingSummaryOutput();
  */
 
 CMISSError CMISSBasisCollapsedXiGetNum(const int UserNumber,
-		int *CollapsedXiSize,
+		const int CollapsedXiSize,
 		int *CollapsedXi);
 
 CMISSError CMISSBasisCollapsedXiGet(const CMISSBasisType Basis,
-		int *CollapsedXiSize,
+		const int CollapsedXiSize,
 		int *CollapsedXi);
 
 CMISSError CMISSBasisCollapsedXiSetNum(const int UserNumber,
-		const int CollapsedXiSize[1],
+		const int CollapsedXiSize,
 		const int *CollapsedXi);
 
-CMISSError CMISSBasisCollapsedXiSet(CMISSBasisType *Basis,
-		const int CollapsedXiSize[1],
+CMISSError CMISSBasisCollapsedXiSet(const CMISSBasisType Basis,
+		const int CollapsedXiSize,
 		const int *CollapsedXi);
 
 CMISSError CMISSBasisCreateFinishNum(const int UserNumber);
 
-CMISSError CMISSBasisCreateFinish(CMISSBasisType *Basis);
+CMISSError CMISSBasisCreateFinish(const CMISSBasisType Basis);
 
 CMISSError CMISSBasisCreateStartNum(const int UserNumber);
 
@@ -1692,19 +1709,19 @@ CMISSError CMISSBasisDestroyNum(const int UserNumber);
 CMISSError CMISSBasisDestroy(CMISSBasisType *Basis);
 
 CMISSError CMISSBasisInterpolationXiGetNum(const int UserNumber,
-		int *InterpolationXiSize,
+		const int InterpolationXiSize,
 		int *InterpolationXi);
 
 CMISSError CMISSBasisInterpolationXiGet(const CMISSBasisType Basis,
-		int *InterpolationXiSize,
+		const int InterpolationXiSize,
 		int *InterpolationXi);
 
 CMISSError CMISSBasisInterpolationXiSetNum(const int UserNumber,
-		const int InterpolationXiSize[1],
+		const int InterpolationXiSize,
 		const int *InterpolationXi);
 
 CMISSError CMISSBasisInterpolationXiSet(const CMISSBasisType Basis,
-		const int InterpolationXiSize[1],
+		const int InterpolationXiSize,
 		const int *InterpolationXi);
 
 CMISSError CMISSBasisNumberOfLocalNodesGetNum(const int UserNumber,
@@ -1722,23 +1739,23 @@ CMISSError CMISSBasisNumberOfXiGet(const CMISSBasisType Basis,
 CMISSError CMISSBasisNumberOfXiSetNum(const int UserNumber,
 		const int NumberOfXi);
 
-CMISSError CMISSBasisNumberOfXiSet(CMISSBasisType *Basis,
+CMISSError CMISSBasisNumberOfXiSet(const CMISSBasisType Basis,
 		const int NumberOfXi);
 
 CMISSError CMISSBasisQuadratureNumberOfGaussXiGetNum(const int UserNumber,
-		int *NumberOfGaussXiSize,
+		const int NumberOfGaussXiSize,
 		int *NumberOfGaussXi);
 
 CMISSError CMISSBasisQuadratureNumberOfGaussXiGet(const CMISSBasisType Basis,
-		int *NumberOfGaussXiSize,
+		const int NumberOfGaussXiSize,
 		int *NumberOfGaussXi);
 
 CMISSError CMISSBasisQuadratureNumberOfGaussXiSetNum(const int UserNumber,
-		const int NumberOfGaussXiSize[1],
-		const int *NumberOfGaussXi);
+		const int NumberOfGaussXiSize,
+		int *NumberOfGaussXi);
 
-CMISSError CMISSBasisQuadratureNumberOfGaussXiSet(CMISSBasisType *Basis,
-		const int NumberOfGaussXiSize[1],
+CMISSError CMISSBasisQuadratureNumberOfGaussXiSet(const CMISSBasisType Basis,
+		const int NumberOfGaussXiSize,
 		const int *NumberOfGaussXi);
 
 CMISSError CMISSBasisQuadratureOrderGetNum(const int UserNumber,
@@ -1920,7 +1937,7 @@ CMISSError CMISSInitialise(CMISSCoordinateSystemType *WorldCoordinateSystem,
 
 CMISSError CMISSCellMLCreateFinishNum(const int CellMLUserNumber);
 
-CMISSError CMISSCellMLCreateFinish(CMISSCellMLType *CellML)
+CMISSError CMISSCellMLCreateFinish(CMISSCellMLType *CellML);
 
 CMISSError CMISSCellMLCreateStartNum(const int CellMLUserNumber,
 		const int RegionUserNumber,
@@ -2057,7 +2074,7 @@ CMISSError CMISSCellMLParametersFieldCreateStart(const int CellMLParametersField
 CMISSError CMISSCellMLParametersFieldGetNum(const int CellMLUserNumber,
 		int *CellMLParametersFieldUserNumber);
 
-CMISSError CMISSCellMLParametersFieldGet(CMISSCellMLType *CellML.
+CMISSError CMISSCellMLParametersFieldGet(CMISSCellMLType *CellML,
 		CMISSFieldType *Field);
 
 CMISSError CMISSCellMLGenerateNum(const int CellMLUserNumber);
@@ -2085,7 +2102,7 @@ CMISSError CMISSComputationalNumberOfNodesGet(int *NumberOfNodes);
  */
 
 CMISSError CMISSControlLoopCurrentTimesGetNum(const int ProblemUserNumber,
-		const int ControlLoopIdentifiersSize[1],
+		const int ControlLoopIdentifiersSize,
 		const int *ControlLoopIdentifiers,
 		double *CurrentTime,
 		double *TimeIncrement);
@@ -2095,25 +2112,25 @@ CMISSError CMISSControlLoopCurrentTimesGet(const CMISSControlLoopType ControlLoo
 		double *TimeIncrement);
 
 CMISSError CMISSControlLoopDestroyNum(const int ProblemUserNumber,
-		const int ControlLoopIdentifitersSize[1],
+		const int ControlLoopIdentifitersSize,
 		const int *ControlLoopIdentifiers);
 
 CMISSError CMISSControlLoopDestroy(CMISSControlLoopType *ControlLoop);
 
 CMISSError CMISSControlLoopGetNum(const int ProblemUserNumber,
-		const int ControlLoopRootIdentifiersSize[1],
+		const int ControlLoopRootIdentifiersSize,
 		const int *ControlLoopRootIdentifiers,
-		const int ControlLoopIdentifiersSize[1],
+		const int ControlLoopIdentifiersSize,
 		const int *ControlLoopIdentifiers,
 		CMISSControlLoopType *ControlLoop);
 
 CMISSError CMISSControlLoopGet(const CMISSControlLoopType ControlLoopRoot,
-		const int ControlLoopIdentifiersSize[1],
+		const int ControlLoopIdentifiersSize,
 		const int *ControlLoopIdentifiers,
 		CMISSControlLoopType *ControlLoop);
 
 CMISSError CMISSControlLoopIterationsSetNum(const int ProblemUserNumber,
-		const int ControlLoopIdentifiersSize[1],
+		const int ControlLoopIdentifiersSize,
 		const int *ControlLoopIdentifiers,
 		const int StartIteration,
 		const int StopIteration,
@@ -2125,7 +2142,7 @@ CMISSError CMISSControlLoopIterationsSet(CMISSControlLoopType *ControlLoop,
 		const int IterationIncrement);
 
 CMISSError CMISSControlLoopMaximumIterationsSetNum(const int ProblemUserNumber,
-		const int ControlLoopIdentifiersSize[1],
+		const int ControlLoopIdentifiersSize,
 		const int *ControlLoopIdentifiers,
 		const int MaximumIterations);
 
@@ -2133,7 +2150,7 @@ CMISSError CMISSControlLoopMaximumIterationsSet(CMISSControlLoopType *ControlLoo
 		const int MaximumIterations);
 
 CMISSError CMISSControlLoopNumberOfSubLoopsGetNum(const int ProblemUserNumber,
-		const int ControlLoopIdentifiersSize[1],
+		const int ControlLoopIdentifiersSize,
 		const int *ControlLoopIdentifiers,
 		int *NumberOfSubLoops);
 
@@ -2141,7 +2158,7 @@ CMISSError CMISSControlLoopNumberOfSubLoopsGet(const CMISSControlLoopType Contro
 		int *NumberOfSubLoops);
 
 CMISSError CMISSControlLoopNumberOfSubLoopsSetNum(const int ProblemUserNumber,
-		const int ControlLoopIdentifiersSize[1],
+		const int ControlLoopIdentifiersSize,
 		const int *ControlLoopIdentifiers,
 		const int NumberOfSubLoops);
 
@@ -2149,7 +2166,7 @@ CMISSError CMISSControlLoopNumberOfSubLoopsSet(CMISSControlLoopType *ControlLoop
 		const int NumberOfSubLoops);
 
 CMISSError CMISSControlLoopTimeOutputSetNum(const int ProblemUserNumber,
-		const int ControlLoopIdentifiersSize[1],
+		const int ControlLoopIdentifiersSize,
 		const int *ControlLoopIdentifiers,
 		const int OutputFrequency);
 
@@ -2157,7 +2174,7 @@ CMISSError CMISSControlLoopTimeOutputSet(CMISSControlLoopType *ControlLoop,
 		const int OutputFrequency);
 
 CMISSError CMISSControlLoopTimeInputSetNum(const int ProblemUserNumber,
-		const int ControlLoopIdentifiersSize[1],
+		const int ControlLoopIdentifiersSize,
 		const int *ControlLoopIdentifiers,
 		const int InputOption);
 
@@ -2165,7 +2182,7 @@ CMISSError CMISSControlLoopTimeInputSet(CMISSControlLoopType *ControlLoop,
 		const int InputOption);
 
 CMISSError CMISSControlLoopTimesGetNum(const int ProblemUserNumber,
-		const int ControlLoopIdentifiersSize[1],
+		const int ControlLoopIdentifiersSize,
 		const int *ControlLoopIdentifiers,
 		double *StartTime,
 		double *StopTime,
@@ -2179,7 +2196,7 @@ CMISSError CMISSControlLoopTimesGet(const CMISSControlLoopType ControlLoop,
 		double *CurrentTime);
 
 CMISSError CMISSControlLoopTimesSetNum(const int ProblemUserNumber,
-		const int ControlLoopIdentifiersSize[1],
+		const int ControlLoopIdentifiersSize,
 		const int *ControlLoopIdentifiers,
 		const double StartTime,
 		const double StopTime,
@@ -2191,7 +2208,7 @@ CMISSError CMISSControlLoopTimesSet(CMISSControlLoopType *ControlLoop,
 		const double TimeIncrement);
 
 CMISSError CMISSControlLoopTypeSetNum(const int ProblemUserNumber,
-		const int ControlLoopIdentifiersSize[1],
+		const int ControlLoopIdentifiersSize,
 		const int *ControlLoopIdentifiers,
 		const int LoopType);
 
@@ -2208,7 +2225,7 @@ CMISSError CMISSControlLoopTypeSet(CMISSControlLoopType *ControlLoop,
 
 CMISSError CMISSCoordinateSystemCreateFinishNum(const int CoordinateSystemUserNumber);
 
-CMISSError CMISSCoordinateSystemCreateFinish(CMISSCoordinateSystemType *CoordinateSystem);
+CMISSError CMISSCoordinateSystemCreateFinish(CMISSCoordinateSystemType CoordinateSystem);
 
 CMISSError CMISSCoordinateSystemCreateStartNum(const int CoordinateSystemUserNumber);
 
@@ -2228,7 +2245,7 @@ CMISSError CMISSCoordinateSystemDimensionGet(const CMISSCoordinateSystemType Coo
 CMISSError CMISSCoordinateSystemDimensionSetNum(const int CoordinateSystemUserNumber,
 		const int CoordinateSystemDimension);
 
-CMISSError CMISSCoordinateSystemDimensionSet(CMISSCoordinateSystemType *CoordinateSystem,
+CMISSError CMISSCoordinateSystemDimensionSet(CMISSCoordinateSystemType CoordinateSystem,
 		const int CoordinateSystemDimension);
 
 CMISSError CMISSCoordinateSystemFocusGetNum(const int CoordinateSystemUserNumber,
@@ -2240,19 +2257,19 @@ CMISSError CMISSCoordinateSystemFocusGet(const CMISSCoordinateSystemType Coordin
 CMISSError CMISSCoordinateSystemFocusSetNum(const int CoordinateSystemUserNumber,
 		const double Focus);
 
-CMISSError CMISSCoordinateSystemFocusSet(CMISSCoordinateSystemType *CoordinateSystem,
+CMISSError CMISSCoordinateSystemFocusSet(CMISSCoordinateSystemType CoordinateSystem,
 		const double Focus);
 
 CMISSError CMISSCoordinateSystemRadialInterpolationGetNum(const int CoordinateSystemUserNumber,
 		int *RadialInterpolationType);
 
-CMISSError CMISSCoordinateSystemRadialInterpolationGet(CMISSCoordinateSystemType *CoordinateSystem,
+CMISSError CMISSCoordinateSystemRadialInterpolationGet(CMISSCoordinateSystemType CoordinateSystem,
 		int *RadialInterpolationType);
 
 CMISSError CMISSCoordinateSystemRadialInterpolationSetNum(const int CoordinateSystemUserNumber,
 		const int RadialInterpolationType);
 
-CMISSError CMISSCoordinateSystemRadialInterpolationSet(CMISSCoordinateSystemType *CoordinateSystem,
+CMISSError CMISSCoordinateSystemRadialInterpolationSet(CMISSCoordinateSystemType CoordinateSystem,
 		const int RadialInterpolationType);
 
 CMISSError CMISSCoordinateSystemTypeGetNum(const int CoordinateSystemUserNumber,
@@ -2264,40 +2281,44 @@ CMISSError CMISSCoordinateSystemTypeGet(const CMISSCoordinateSystemType Coordina
 CMISSError CMISSCoordinateSystemTypeSetNum(const int CoordinateSystemUserNumber,
 		const int CoordinateSystemType);
 
-CMISSError CMISSCoordinateSystemTypeSet(CMISSCoordinateSystemType *CoordinateSystem,
+CMISSError CMISSCoordinateSystemTypeSet(const CMISSCoordinateSystemType CoordinateSystem,
 		const int CoordinateSystemType);
 
 CMISSError CMISSCoordinateSystemOriginGetNum(const int CoordinateSystemUserNumber,
-		int *OriginSize[1],
+		const int OriginSize,
 		double *Origin);
 
 CMISSError CMISSCoordinateSystemOriginGet(const CMISSCoordinateSystemType CoordinateSystem,
-		int *OriginSize[1],
+		const int OriginSize,
 		double *Origin);
 
 CMISSError CMISSCoordinateSystemOriginSetNum(const int CoordinateSystemUserNumber,
-		const int OriginSize[1],
-		const double *Origin);
+		const int OriginSize,
+		double *Origin);
 
 CMISSError CMISSCoordinateSystemOriginSet(const CMISSCoordinateSystemType CoordinateSystem,
-		const int OriginSize[1],
+		const int OriginSize,
 		const double *Origin);
 
 CMISSError CMISSCoordinateSystemOrientationGetNum(const int CoordinateSystemUserNumber,
-		int *OrientationSize[1],
+		const int OrientationSize1,
+		const int OrientationSize2,
 		double *Orientation);
 
 CMISSError CMISSCoordinateSystemOrientationGet(const CMISSCoordinateSystemType CoordinateSystem,
-		int *OrientationSize[1],
+		const int OrientationSize1,
+		const int OrientationSize2,
 		double *Orientation);
 
 CMISSError CMISSCoordinateSystemOrientationSetNum(const int CoordinateSystemUserNumber,
-		const int OrientationSize[1],
-		const double *Orientation);
+		const int OrientationSize1,
+		const int OrientationSize2,
+		double *Orientation);
 
-CMISSError CMISSCoordinateSystemOrientationSet(CMISSCoordinateSystemType CoordinateSystem,
-		const int OrientationSize[1],
-		const double *Orientation);
+CMISSError CMISSCoordinateSystemOrientationSet(const CMISSCoordinateSystemType CoordinateSystem,
+		const int OrientationSize1,
+		const int OrientationSize2,
+		double *Orientation);
 
 /*
  * ==================================================================================================================================
@@ -2330,7 +2351,7 @@ CMISSError CMISSEquationsLumpingTypeSetNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber,
 		const int LumpingType);
 
-CMISSError CMISSEquationsLumpingTypeSet(CMISSEquationsType *Equations,
+CMISSError CMISSEquationsLumpingTypeSet(const CMISSEquationsType Equations,
 		const int LumpingType);
 
 CMISSError CMISSEquationsOutputTypeGetNum(const int RegionUserNumber,
@@ -2344,7 +2365,7 @@ CMISSError CMISSEquationsOutputTypeSetNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber,
 		const int OutputType);
 
-CMISSError CMISSEquationsOutputTypeSet(CMISSEquationsType *Equations,
+CMISSError CMISSEquationsOutputTypeSet(const CMISSEquationsType Equations,
 		const int OutputType);
 
 CMISSError CMISSEquationsSparsityTypeGetNum(const int RegionUserNumber,
@@ -2358,7 +2379,7 @@ CMISSError CMISSEquationsSparsityTypeSetNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber,
 		const int SparsityType);
 
-CMISSError CMISSEquationsSparsityTypeSet(CMISSEquationsType *Equations,
+CMISSError CMISSEquationsSparsityTypeSet(const CMISSEquationsType Equations,
 		const int SparsityType);
 
 CMISSError CMISSEquationsTimeDependenceTypeGetNum(const int RegionUserNumber,
@@ -2379,14 +2400,14 @@ CMISSError CMISSEquationsTimeDependenceTypeGet(const CMISSEquationsType Equation
 CMISSError CMISSEquationsSetAnalyticCreateFinishNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber);
 
-CMISSError CMISSEquationsSetAnalyticCreateFinish(CMISSEquationsSetType *EquationsSet);
+CMISSError CMISSEquationsSetAnalyticCreateFinish(const CMISSEquationsSetType EquationsSet);
 
 CMISSError CMISSEquationsSetAnalyticCreateStartNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber,
 		const int AnalyticFunctionType,
 		const int AnalyticFieldUserNumber);
 
-CMISSError CMISSEquationsSetAnalyticCreateStart(CMISSEquationsSetType *EquationsSet,
+CMISSError CMISSEquationsSetAnalyticCreateStart(const CMISSEquationsSetType EquationsSet,
 		const int AnalyticFunctionType,
 		const int AnalyticFieldUserNumber,
 		CMISSFieldType *AnalyticField);
@@ -2399,28 +2420,28 @@ CMISSError CMISSEquationsSetAnalyticDestroy(CMISSEquationsSetType *EquationsSet)
 CMISSError CMISSEquationsSetBoundaryConditionsAnalyticNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber);
 
-CMISSError CMISSEquationsSetBoundaryConditionsAnalytic(CMISSEquationsSetType *EquationsSet);
+CMISSError CMISSEquationsSetBoundaryConditionsAnalytic(const CMISSEquationsSetType EquationsSet);
 
 CMISSError CMISSEquationsSetBoundaryConditionsCreateFinishNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber);
 
-CMISSError CMISSEquationsSetBoundaryConditionsCreateFinish(CMISSEquationsSetType *EquationsSet);
+CMISSError CMISSEquationsSetBoundaryConditionsCreateFinish(const CMISSEquationsSetType EquationsSet);
 
 CMISSError CMISSEquationsSetBoundaryConditionsCreateStartNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber);
 
-CMISSError CMISSEquationsSetBoundaryConditionsCreateStart(CMISSEquationsSetType *EquationsSet,
+CMISSError CMISSEquationsSetBoundaryConditionsCreateStart(const CMISSEquationsSetType EquationsSet,
 		CMISSBoundaryConditionsType *BoundaryConditions);
 
 CMISSError CMISSEquationsSetBoundaryConditionsDestroyNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber);
 
-CMISSError CMISSEquationsSetBoundaryConditionsDestroy(CMISSEquationsSetType *EquationsSet);
+CMISSError CMISSEquationsSetBoundaryConditionsDestroy(const CMISSEquationsSetType EquationsSet);
 
 CMISSError CMISSEquationsSetCreateFinishNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber);
 
-CMISSError CMISSEquationsSetCreateFinish(CMISSEquationsSetType *EquationsSet);
+CMISSError CMISSEquationsSetCreateFinish(const CMISSEquationsSetType EquationsSet);
 
 CMISSError CMISSEquationsSetCreateStartNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber,
@@ -2439,13 +2460,13 @@ CMISSError CMISSEquationsSetDestroy(CMISSEquationsSetType *EquationsSet);
 CMISSError CMISSEquationsSetDependentCreateFinishNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber);
 
-CMISSError CMISSEquationsSetDependentCreateFinish(CMISSEquationsSetType *EquationsSet);
+CMISSError CMISSEquationsSetDependentCreateFinish(const CMISSEquationsSetType EquationsSet);
 
 CMISSError CMISSEquationsSetDependentCreateStartNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber,
 		const int DependentFieldUserNumber);
 
-CMISSError CMISSEquationsSetDependentCreateStart(CMISSEquationsSetType *EquationsSet,
+CMISSError CMISSEquationsSetDependentCreateStart(const CMISSEquationsSetType EquationsSet,
 		const int DependentFieldUserNumber,
 		CMISSFieldType *DependentField);
 
@@ -2457,12 +2478,12 @@ CMISSError CMISSEquationsSetDependentDestroy(CMISSEquationsSetType *EquationsSet
 CMISSError CMISSEquationsSetEquationsCreateFinishNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber);
 
-CMISSError CMISSEquationsSetEquationsCreateFinish(CMISSEquationsSetType *EquationsSet);
+CMISSError CMISSEquationsSetEquationsCreateFinish(const CMISSEquationsSetType EquationsSet);
 
 CMISSError CMISSEquationsSetEquationsCreateStartNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber);
 
-CMISSError CMISSEquationsSetEquationsCreateStart(CMISSEquationsSetType *EquationsSet,
+CMISSError CMISSEquationsSetEquationsCreateStart(const CMISSEquationsSetType EquationsSet,
 		CMISSEquationsType *Equations);
 
 CMISSError CMISSEquationsSetEquationsDestroyNum(const int RegionUserNumber,
@@ -2473,70 +2494,70 @@ CMISSError CMISSEquationsSetEquationsDestroy(CMISSEquationsSetType *EquationsSet
 CMISSError CMISSEquationsSetIndependentCreateFinishNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber);
 
-CMISSError CMISSEquationsSetIndependentCreateFinish(CMISSEquationsSetType *EquationsSet);
+CMISSError CMISSEquationsSetIndependentCreateFinish(const CMISSEquationsSetType EquationsSet);
 
 CMISSError CMISSEquationsSetIndependentCreateStartNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber,
 		const int IndependentFieldUserNumber);
 
-CMISSError CMISSEquationsSetIndependentCreateStart(CMISSEquationsSetType *EquationsSet,
+CMISSError CMISSEquationsSetIndependentCreateStart(const CMISSEquationsSetType EquationsSet,
 		const int IndependentFieldUserNumber,
 		CMISSFieldType *IndependentField);
 
 CMISSError CMISSEquationsSetIndependentDestroyNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber);
 
-CMISSError CMISSEquationsSetIndependentDestroy(CMISSEquationsSetType *EquationsSet);
+CMISSError CMISSEquationsSetIndependentDestroy(const CMISSEquationsSetType EquationsSet);
 
 CMISSError CMISSEquationsSetMaterialsCreateFinishNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber);
 
-CMISSError CMISSEquationsSetMaterialsCreateFinish(CMISSEquationsSetType *EquationsSet);
+CMISSError CMISSEquationsSetMaterialsCreateFinish(const CMISSEquationsSetType EquationsSet);
 
 CMISSError CMISSEquationsSetMaterialsCreateStartNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber,
 		const int MaterialsFieldUserNumber);
 
-CMISSError CMISSEquationsSetMaterialsCreateStart(CMISSEquationsSetType *EquationsSet,
+CMISSError CMISSEquationsSetMaterialsCreateStart(const CMISSEquationsSetType EquationsSet,
 		const int MaterialsFieldUserNumber,
 		CMISSFieldType *MaterialsField);
 
 CMISSError CMISSEquationsSetMaterialsDestroyNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber);
 
-CMISSError CMISSEquationsSetMaterialsDestroy(CMISSEquationsSetType *EquationsSet);
+CMISSError CMISSEquationsSetMaterialsDestroy(const CMISSEquationsSetType EquationsSet);
 
 CMISSError CMISSEquationsSetSolutionMethodGetNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber,
 		int *SolutionMethod);
 
-CMISSError CMISSEquationsSetSolutionMethodGet(CMISSEquationsSetType *EquationsSet,
+CMISSError CMISSEquationsSetSolutionMethodGet(const CMISSEquationsSetType EquationsSet,
 		int *SolutionMethod);
 
 CMISSError CMISSEquationsSetSolutionMethodSetNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber,
 		const int SolutionMethod);
 
-CMISSError CMISSEquationsSetSolutionMethodSet(CMISSEquationsSetType *EquationsSet,
+CMISSError CMISSEquationsSetSolutionMethodSet(const CMISSEquationsSetType EquationsSet,
 		const int SolutionMethod);
 
 CMISSError CMISSEquationsSetSourceCreateFinishNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber);
 
-CMISSError CMISSEquationsSetSourceCreateFinish(CMISSEquationsSetType *EquationsSet);
+CMISSError CMISSEquationsSetSourceCreateFinish(const CMISSEquationsSetType EquationsSet);
 
 CMISSError CMISSEquationsSetSourceCreateStartNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber,
 		const int SourceFieldUserNumber);
 
-CMISSError CMISSEquationsSetSourceCreateStart(CMISSEquationsSetType *EquationsSet,
+CMISSError CMISSEquationsSetSourceCreateStart(const CMISSEquationsSetType EquationsSet,
 		const int SourceFieldUserNumber,
 		CMISSFieldType *SourceField);
 
 CMISSError CMISSEquationsSetSourceDestroyNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber);
 
-CMISSError CMISSEquationsSetSourceDestroy(CMISSEquationsSetType *EquationsSet);
+CMISSError CMISSEquationsSetSourceDestroy(const CMISSEquationsSetType EquationsSet);
 
 CMISSError CMISSEquationsSetSpecificationGetNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber,
@@ -2555,7 +2576,7 @@ CMISSError CMISSEquationsSetSpecificationSetNum(const int RegionUserNumber,
 		const int EquationsSetType,
 		const int EquationsSetSubtype);
 
-CMISSError CMISSEquationsSetSpecificationSet(CMISSEquationsSetType *EquationsSet,
+CMISSError CMISSEquationsSetSpecificationSet(const CMISSEquationsSetType EquationsSet,
 		const int EquationsSetClass,
 		const int EquationsSetType,
 		const int EquationsSetSubtype);
@@ -2618,9 +2639,9 @@ CMISSError CMISSFieldComponentLabelSet(const CMISSFieldType Field,
 
 CMISSError CMISSFieldComponentMeshComponentGetNum(const int RegionUserNumber,
 		const int FieldUserNumber,
-	    const int VariableType,
-	    const int ComponentNumber,
-	    int *MeshComponent);
+	        const int VariableType,
+	        const int ComponentNumber,
+	        int *MeshComponent);
 
 CMISSError CMISSFieldComponentMeshComponentGet(const CMISSFieldType Field,
 		const int VariableType,
@@ -2729,14 +2750,14 @@ CMISSError CMISSFieldDOFOrderTypeSet(const CMISSFieldType Field,
 CMISSError CMISSFieldCreateFinishNum(const int RegionUserNumber,
 		const int FieldUserNumber);
 
-CMISSError CMISSFieldCreateFinish(CMISSFieldType *Field);
+CMISSError CMISSFieldCreateFinish(const CMISSFieldType Field);
 
 CMISSError CMISSFieldCreateStartNum(const int RegionUserNumber,
 		const int FieldUserNumber);
 
 CMISSError CMISSFieldCreateStart(const int FieldUserNumber,
 		const CMISSRegionType Region,
-		const CMISSFieldType Field);
+		CMISSFieldType *Field);
 
 CMISSError CMISSFieldDependentTypeGetNum(const int RegionUserNumber,
 		const int FieldUserNumber,
@@ -3631,17 +3652,17 @@ CMISSError CMISSFieldVariableTypesSet(const CMISSFieldType Field,
  *==================================================================================================================================
  */
 
-CMISSError CMISSFieldIOElementsExportC(CMISSFieldsType *Fields,
+CMISSError CMISSFieldIOElementsExportC(const CMISSFieldsType Fields,
 		const int FileNameSize,
 		const char *FileName,
 		const int MethodSize,
 		const char *Method);
 
-CMISSError CMISSFieldIONodesExportC(CMISSFieldsType *Fields,
+CMISSError CMISSFieldIONodesExportC(const CMISSFieldsType Fields,
 		const int FileNameSize,
 		const char *FileName,
 		const int MethodSize,
-		const char *Method);\
+		const char *Method);
 
 /*
  *==================================================================================================================================
@@ -3651,19 +3672,22 @@ CMISSError CMISSFieldIONodesExportC(CMISSFieldsType *Fields,
  *==================================================================================================================================
  */
 
-CMISSError CMISSGeneratedMeshBasisGetNum(const int GeneratedMeshUserNumber,
+CMISSError CMISSGeneratedMeshBasisGetNum(const int RegionUserNumber,
+                const int GeneratedMeshUserNumber,
 		int *BasisUserNumber);
 
 CMISSError CMISSGeneratedMeshBasisGet(const CMISSGeneratedMeshType GeneratedMesh,
 		CMISSBasisType *Basis);
 
-CMISSError CMISSGeneratedMeshBasisSetNum(const int GeneratedMeshUserNumber,
+CMISSError CMISSGeneratedMeshBasisSetNum(const int RegionUserNumber,
+                const int GeneratedMeshUserNumber,
 		const int BasisUserNumber);
 
 CMISSError CMISSGeneratedMeshBasisSet(const CMISSGeneratedMeshType GeneratedMesh,
 		const CMISSBasisType Basis);
 
-CMISSError CMISSGeneratedMeshCreateFinishNum(const int GeneratedMeshUserNumber,
+CMISSError CMISSGeneratedMeshCreateFinishNum(const int RegionUserNumber,
+                const int GeneratedMeshUserNumber,
 		const int BasisUserNumber);
 
 CMISSError CMISSGeneratedMeshCreateFinish(const CMISSGeneratedMeshType GeneratedMesh,
@@ -3674,68 +3698,77 @@ CMISSError CMISSGeneratedMeshCreateStartNum(const int GeneratedMeshUserNumber,
 		const int RegionUserNumber);
 
 CMISSError CMISSGeneratedMeshCreateStart(const int GeneratedMeshUserNumber,
-		CMISSRegionType *Region,
+		const CMISSRegionType Region,
 		CMISSGeneratedMeshType *GeneratedMesh);
 
-CMISSError CMISSGeneratedMeshDestroyNum(const int GeneratedMeshUserNumber);
+CMISSError CMISSGeneratedMeshDestroyNum(const int RegionUserNumber,
+                const int GeneratedMeshUserNumber);
 
 CMISSError CMISSGeneratedMeshDestroy(CMISSGeneratedMeshType *GeneratedMesh);
 
-CMISSError CMISSGeneratedMeshExtentGetNum(const int GeneratedMeshUserNumber,
-		int *ExtentSize,
-		int *Extent);
+CMISSError CMISSGeneratedMeshExtentGetNum(const int RegionUserNumber,
+                const int GeneratedMeshUserNumber,
+		const int ExtentSize,
+		double *Extent);
 
 CMISSError CMISSGeneratedMeshExtentGet(const CMISSGeneratedMeshType GeneratedMesh,
-		int *ExtentSize,
-		int *Extent);
+		const int ExtentSize,
+		double *Extent);
 
-CMISSError CMISSGeneratedMeshExtentSetNum(const int GeneratedMeshUserNumber,
-		const int ExtentSize[1],
-		const int *Extent);
+CMISSError CMISSGeneratedMeshExtentSetNum(const int RegionUserNumber,
+                const int GeneratedMeshUserNumber,
+		const int ExtentSize,
+		double *Extent);
 
 CMISSError CMISSGeneratedMeshExtentSet(const CMISSGeneratedMeshType GeneratedMesh,
-		const int ExtentSize[1],
-		const int *Extent);
+		const int ExtentSize,
+		double *Extent);
 
-CMISSError CMISSGeneratedMeshNumberOfElementsGetNum(const int GeneratedMeshUserNumber,
-		int *ExtentSize,
-		int *Extent);
+CMISSError CMISSGeneratedMeshNumberOfElementsGetNum(const int RegionUserNumber,
+                const int GeneratedMeshUserNumber,
+		const int NumberOfElementsSize,
+		int *NumberOfElements);
 
 CMISSError CMISSGeneratedMeshNumberOfElementsGet(const CMISSGeneratedMeshType GeneratedMesh,
-		int *ExtentSize,
-		int *Extent);
+		const int NumberOfElementsSize,
+		int *NumberOfElements);
 
-CMISSError CMISSGeneratedMeshNumberOfElementsSetNum(const int GeneratedMeshUserNumber,
-		const int ExtentSize[1],
-		const int *Extent);
+CMISSError CMISSGeneratedMeshNumberOfElementsSetNum(const int RegionUserNumber,
+                const int GeneratedMeshUserNumber,
+		const int NumberOfElementsSize,
+		int *NumberOfElements);
 
 CMISSError CMISSGeneratedMeshNumberOfElementsSet(const CMISSGeneratedMeshType GeneratedMesh,
-		const int ExtentSize[1],
-		const int *Extent);
+		const int NumberOfElementsSize,
+		int *NumberOfElements);
 
-CMISSError CMISSGeneratedMeshOriginGetNum(const int GeneratedMeshUserNumber,
-		int *OriginSize,
+CMISSError CMISSGeneratedMeshOriginGetNum(const int RegionUserNumber,
+                const int GeneratedMeshUserNumber,
+		const int OriginSize,
 		int *Origin);
 
 CMISSError CMISSGeneratedMeshOriginGet(const CMISSGeneratedMeshType GeneratedMesh,
-		int *OriginSize,
+		const int OriginSize,
 		int *Origin);
 
-CMISSError CMISSGeneratedMeshOriginSetNum(const int GeneratedMeshUserNumber,
-		const int OriginSize[1],
-		const int *Origin);
+CMISSError CMISSGeneratedMeshOriginSetNum(const int RegionUserNumber,
+                const int GeneratedMeshUserNumber,
+		const int OriginSize,
+	        int *Origin);
 
 CMISSError CMISSGeneratedMeshOriginSet(const CMISSGeneratedMeshType GeneratedMesh,
-		const int OriginSize[1],
-		const int *Origin);
+		const int OriginSize,
+		int *Origin);
 
-CMISSError CMISSGeneratedMeshTypeGetNum(const int GeneratedMeshUserNumber,
+CMISSError CMISSGeneratedMeshTypeGetNum(const int RegionUserNumber,
+                const int GeneratedMeshUserNumber,
 		int *GeneratedMeshType);
 
 CMISSError CMISSGeneratedMeshTypeGet(const CMISSGeneratedMeshType GeneratedMesh,
 		int *GeneratedMeshType);
 
-CMISSError CMISSGeneratedMeshTypeSetNum(const int GeneratedMeshUserNumber,
+CMISSError CMISSGeneratedMeshTypeSetNum(const int RegionUserNumber,
+                const int GeneratedMeshUserNumber,
 		const int GeneratedMeshType);
 
 CMISSError CMISSGeneratedMeshTypeSet(const CMISSGeneratedMeshType GeneratedMesh,
@@ -3745,7 +3778,7 @@ CMISSError CMISSGeneratedMeshGeometricParametersCalculateNum(const int RegionUse
 		const int FieldUserNumber,
 		const int GeneratedMeshUserNumber);
 
-CMISSError CMISSGeneratedMeshGeometricParametersCalculate(CMISSFieldType *Field,
+CMISSError CMISSGeneratedMeshGeometricParametersCalculate(const CMISSFieldType Field,
 		const CMISSGeneratedMeshType GeneratedMesh);
 
 /*
@@ -3920,7 +3953,7 @@ CMISSError CMISSMeshElementsCreateStartNum(const int RegionUserNumber,
 		const int MeshComponentNumber,
 		const int BasisUserNumber);
 
-CMISSError CMISSMeshElementsCreateStart(CMISSMeshType *Mesh,
+CMISSError CMISSMeshElementsCreateStart(const CMISSMeshType Mesh,
 		const int MeshComponentNumber,
 		const CMISSBasisType Basis,
 		CMISSMeshElementsType *MeshElements);
@@ -4006,7 +4039,7 @@ CMISSError CMISSNodesCreateStartNum(const int RegionUserNumber,
 
 CMISSError CMISSNodesCreateStart(const CMISSRegionType Region,
 		const int NumberOfNodes,
-		const CMISSNodesType Nodes);
+		CMISSNodesType *Nodes);
 
 CMISSError CMISSNodesDestroyNum(const int RegionUserNumber);
 
@@ -4063,7 +4096,7 @@ CMISSError CMISSProblemCreateFinish(const CMISSProblemType Problem);
 CMISSError CMISSProblemCreateStartNum(const int ProblemUserNumber);
 
 CMISSError CMISSProblemCreateStart(const int ProblemUserNumber,
-		const CMISSProblemType Problem);
+		CMISSProblemType *Problem);
 
 CMISSError CMISSProblemDestroyNum(const int ProblemUserNumber);
 

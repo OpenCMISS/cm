@@ -255,7 +255,7 @@ CONTAINS
     INTEGER(INTG) :: DUMMY_ERR,interface_idx
     TYPE(INTERFACE_TYPE), POINTER :: NEW_INTERFACE
     TYPE(INTERFACE_PTR_TYPE), POINTER :: NEW_INTERFACES(:)
-    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR,LOCAL_STRING
 
     NULLIFY(NEW_INTERFACE)
     NULLIFY(NEW_INTERFACES)
@@ -278,7 +278,8 @@ CONTAINS
           CALL INTERFACE_INITIALISE(NEW_INTERFACE,ERR,ERROR,*999)
           NEW_INTERFACE%USER_NUMBER=USER_NUMBER
           NEW_INTERFACE%GLOBAL_NUMBER=PARENT_REGION%INTERFACES%NUMBER_OF_INTERFACES+1
-          NEW_INTERFACE%LABEL="Interface "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))
+          LOCAL_STRING="Interface "//NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR)
+          NEW_INTERFACE%LABEL=CHAR(LOCAL_STRING)
           IF(ERR/=0) GOTO 999
           NEW_INTERFACE%INTERFACES=>PARENT_REGION%INTERFACES
           NEW_INTERFACE%PARENT_REGION=>PARENT_REGION
@@ -1175,161 +1176,6 @@ CONTAINS
     CALL EXITS("INTERFACE_TYPE_SET")
     RETURN 1
   END SUBROUTINE INTERFACE_TYPE_SET  
-
-
-  SUBROUTINE INTERFACE_MAPPING_CREATE_START(INTERFACE,MESH,DOMAIN_MESH1,DOMAIN_MESH2,ERR,ERROR,*)
-    
-    !Argument variables
-    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface to create the mapping on
-    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the interface mesh. Must be associated on entry.
-    TYPE(MESH_TYPE), POINTER :: DOMAIN_MESH1 !<A pointer to a domain mesh. Must be finished on entry.
-    TYPE(MESH_TYPE), POINTER :: DOMAIN_MESH2 !<A pointer to a domain mesh. Must be finished on entry.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    !INTEGER(INTG) ::             I, J !<Dummy variables
-
-    CALL ENTERS("INTERFACE_MAPPING_CREATE_START",ERR,ERROR,*999)
-
-    !!Checking for potential errors on entry.
-    !IF(.NOT.ASSOCIATED(REGION))          CALL FLAG_ERROR("Region is not associated",ERR,ERROR,*999)
-    !IF(.NOT.ASSOCIATED(REGION%COORDINATE_SYSTEM))    CALL FLAG_ERROR("Coordinate system on region is not associated",ERR,ERROR,*999)
-    !IF(.NOT.ASSOCIATED(REGION%INTF))         CALL FLAG_ERROR("Interface region component is not associated",ERR,ERROR,*999)
-    !IF(.NOT.REGION%INTERFACE_REGION)         CALL FLAG_ERROR("Region is not an interface region",ERR,ERROR,*999)
-    !IF(.NOT.ASSOCIATED(MESH))            CALL FLAG_ERROR("Mesh is not associated.",ERR,ERROR,*999)
-    !IF(.NOT.MESH%MESH_FINISHED)            CALL FLAG_ERROR("Interface mesh is not finished.",ERR,ERROR,*999)
-    !IF(ASSOCIATED(MESH%INTF))            CALL FLAG_ERROR("Mesh interface map is already associated.",ERR,ERROR,*999)
-    !IF(.NOT.ASSOCIATED(DOMAIN_MESH1))          CALL FLAG_ERROR("First input domain mesh is not associated.",ERR,ERROR,*999)
-    !IF(.NOT.DOMAIN_MESH1%MESH_FINISHED)         CALL FLAG_ERROR("First input domain mesh is not finished.",ERR,ERROR,*999)
-    !IF(.NOT.ASSOCIATED(DOMAIN_MESH2))          CALL FLAG_ERROR("Second input domain mesh is not associated.",ERR,ERROR,*999)
-    !IF(.NOT.DOMAIN_MESH2%MESH_FINISHED)         CALL FLAG_ERROR("Second input domain mesh is not finished.",ERR,ERROR,*999)
-
-    !!Create the interface component to the mesh.
-    !ALLOCATE(MESH%INTF,STAT=ERR)
-    !IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new interface map.",ERR,ERROR,*999)
-    !!Assign pointer to the interface mesh.
-    !MESH%INTF%MESH=>MESH
-    !MESH%INTF%MAPPING_FINISHED=.FALSE.
-    !!Assign the number of coupled regions to the interface mesh and allocate the domain mapping.
-    !MESH%INTF%N_COUPLED_REGIONS=REGION%INTF%N_COUPLED_REGIONS
-    !ALLOCATE(MESH%INTF%DOMAIN_MAP(MESH%INTF%N_COUPLED_REGIONS))
-    !DO I = 1,MESH%INTF%N_COUPLED_REGIONS
-    !   !Nullify and allocate the domain mapping pointer
-    !   NULLIFY(MESH%INTF%DOMAIN_MAP(I)%PTR)
-    !   ALLOCATE(MESH%INTF%DOMAIN_MAP(I)%PTR,STAT=ERR)
-    !   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new interface domain map.",ERR,ERROR,*999)
-    !   !Nullify the domain mapping domain mesh which refers to the mesh which is to be mapped to the interface.
-    !   MESH%INTF%DOMAIN_MAP(I)%PTR%GEOMETRIC_COMPONENT=0
-    !   MESH%INTF%DOMAIN_MAP(I)%PTR%FIELD_COMPONENT=0
-    !   !Declaring which mesh of region I is paired to the interface.
-    !   NULLIFY(MESH%INTF%DOMAIN_MAP(I)%PTR%DOMAIN_MESH)
-    !   IF(REGION%INTF%COUPLED_REGIONS(I)%PTR%USER_NUMBER==DOMAIN_MESH1%REGION%USER_NUMBER) THEN
-    !     MESH%INTF%DOMAIN_MAP(I)%PTR%DOMAIN_MESH=>DOMAIN_MESH1
-    !   ELSE IF (REGION%INTF%COUPLED_REGIONS(I)%PTR%USER_NUMBER==DOMAIN_MESH2%REGION%USER_NUMBER) THEN
-    !     MESH%INTF%DOMAIN_MAP(I)%PTR%DOMAIN_MESH=>DOMAIN_MESH2
-    !   ELSE
-    !     CALL FLAG_ERROR("Neither input domain mesh is referenced to a region paired to the interface region.",ERR,ERROR,*999)
-    !   END IF
-    !   !Create the interface to domain map which defines for each interface element what domain elements it is connected to.
-    !   IF(MESH%NUMBER_OF_ELEMENTS<=0) CALL FLAG_ERROR("Number of mesh elements must be > 0.",ERR,ERROR,*999)
-    !   ALLOCATE(MESH%INTF%DOMAIN_MAP(I)%PTR%INTERFACE_TO_DOMAIN(MESH%NUMBER_OF_ELEMENTS))
-    !   DO J = 1,MESH%NUMBER_OF_ELEMENTS
-    !      !Allocate the interface to domain pointer and set the number of elements (domain elements) which are mapped to interface elements to zero.
-    !      NULLIFY(MESH%INTF%DOMAIN_MAP(I)%PTR%INTERFACE_TO_DOMAIN(J)%PTR)
-    !      ALLOCATE(MESH%INTF%DOMAIN_MAP(I)%PTR%INTERFACE_TO_DOMAIN(J)%PTR,STAT=ERR)
-    !      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new interface domain, interface-to-domain map.",ERR,ERROR,*999)
-    !      MESH%INTF%DOMAIN_MAP(I)%PTR%INTERFACE_TO_DOMAIN(J)%PTR%NUMBER_OF_ELEM=0
-    !   END DO
-    !END DO
-
-    CALL EXITS("INTERFACE_MAPPING_CREATE_START")
-    RETURN
-999 CALL ERRORS("INTERFACE_MAPPING_CREATE_START",ERR,ERROR)    
-    CALL EXITS("INTERFACE_MAPPING_CREATE_START")
-    RETURN 1
-   
-  END SUBROUTINE INTERFACE_MAPPING_CREATE_START
-
-  !
-  !================================================================================================================================
-  !
-
-  SUBROUTINE INTERFACE_MAPPING_ELEMENT_ADD(MESH,MESH_ELEMENT,DOMAIN_MESH,DOMAIN_MESH_ELEMENTS,ERR,ERROR,*)
-    
-    !Argument variables
-    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the interface mesh. Must be associated on entry.
-    INTEGER(INTG) :: MESH_ELEMENT !<Global element number for the interface element to be mapped to domain element list
-    TYPE(MESH_TYPE), POINTER :: DOMAIN_MESH !<Domain mesh.
-    INTEGER(INTG), INTENT(IN) :: DOMAIN_MESH_ELEMENTS(:) !<Elements in the domain mesh which are to be mapped to the interface element.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    !INTEGER(INTG) :: I !<Dummy variables
-    !INTEGER(INTG) :: REGID !< Region ID variable
-
-    CALL ENTERS("INTERFACE_MAPPING_ELEMENT_ADD",ERR,ERROR,*999)
-    
-    !IF(.NOT.ASSOCIATED(MESH))            CALL FLAG_ERROR("Interface mesh is not associated.",ERR,ERROR,*999)
-    !IF(.NOT.MESH%MESH_FINISHED)            CALL FLAG_ERROR("Interface mesh is not finished.",ERR,ERROR,*999)
-    !IF(MESH%INTF%MAPPING_FINISHED)         CALL FLAG_ERROR("Interface mapping is already finished.",ERR,ERROR,*999)
-    !IF(.NOT.ASSOCIATED(DOMAIN_MESH))          CALL FLAG_ERROR("Input domain mesh is not associated.",ERR,ERROR,*999)
-    !IF(.NOT.DOMAIN_MESH%MESH_FINISHED)         CALL FLAG_ERROR("Input domain mesh is not finished.",ERR,ERROR,*999)
-    !IF((MESH_ELEMENT<1).OR.(MESH_ELEMENT>MESH%NUMBER_OF_ELEMENTS)) THEN
-    !   CALL FLAG_ERROR("Input domain mesh element does not exist.",ERR,ERROR,*999)
-    !END IF
-    !DO I=1,SIZE(DOMAIN_MESH_ELEMENTS,1)
-    !   IF((DOMAIN_MESH_ELEMENTS(I)<1).OR.(DOMAIN_MESH_ELEMENTS(I)>DOMAIN_MESH%NUMBER_OF_ELEMENTS)) THEN
-    !      CALL FLAG_ERROR("Input domain mesh and element list are incompatible.",ERR,ERROR,*999)
-    !   END IF
-    !ENDDO
-    !REGID=0
-    !DO I=1,MESH%INTF%N_COUPLED_REGIONS
-    !   IF(MESH%INTF%DOMAIN_MAP(I)%PTR%DOMAIN_MESH%REGION%USER_NUMBER==DOMAIN_MESH%REGION%USER_NUMBER) REGID=I
-    !ENDDO
-    !IF(REGID==0) CALL FLAG_ERROR("Input domain mesh is not associated with this interface.",ERR,ERROR,*999)
-    !IF(MESH%INTF%DOMAIN_MAP(REGID)%PTR%INTERFACE_TO_DOMAIN(MESH_ELEMENT)%PTR%NUMBER_OF_ELEM>0) THEN
-    !  CALL FLAG_ERROR("Interface domain element is already finished.",ERR,ERROR,*999)
-    !END IF
-    !MESH%INTF%DOMAIN_MAP(REGID)%PTR%INTERFACE_TO_DOMAIN(MESH_ELEMENT)%PTR%NUMBER_OF_ELEM=SIZE(DOMAIN_MESH_ELEMENTS,1)
-    !ALLOCATE(MESH%INTF%DOMAIN_MAP(REGID)%PTR%INTERFACE_TO_DOMAIN(MESH_ELEMENT)%PTR%MAP(SIZE(DOMAIN_MESH_ELEMENTS,1)))
-    !MESH%INTF%DOMAIN_MAP(REGID)%PTR%INTERFACE_TO_DOMAIN(MESH_ELEMENT)%PTR%MAP=DOMAIN_MESH_ELEMENTS
-
-    CALL EXITS("INTERFACE_MAPPING_ELEMENT_ADD")
-    RETURN
-999 CALL ERRORS("INTERFACE_MAPPING_ELEMENT_ADD",ERR,ERROR)    
-    CALL EXITS("INTERFACE_MAPPING_ELEMENT_ADD")
-    RETURN 1
-  END SUBROUTINE INTERFACE_MAPPING_ELEMENT_ADD
-
-  !
-  !================================================================================================================================
-  !
-
-  SUBROUTINE INTERFACE_MAPPING_CREATE_FINISH(MESH,ERR,ERROR,*)
-    
-    !Argument variables
-    TYPE(MESH_TYPE), POINTER ::       MESH !<A pointer to the interface mesh. Must be associated on entry.
-    INTEGER(INTG), INTENT(OUT) ::       ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) ::    ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) ::             I, J !<Dummy variables
-
-    CALL ENTERS("INTERFACE_MAPPING_CREATE_FINISH",ERR,ERROR,*999)
-
-    !Checking for potential errors on entry.
-    !IF(.NOT.ASSOCIATED(MESH))            CALL FLAG_ERROR("Mesh is not associated.",ERR,ERROR,*999)
-    !IF(.NOT.MESH%MESH_FINISHED)            CALL FLAG_ERROR("Interface mesh is not finished.",ERR,ERROR,*999)
-    !IF(.NOT.ASSOCIATED(MESH%INTF))         CALL FLAG_ERROR("Mesh interface map is not associated.",ERR,ERROR,*999)
-    !IF(MESH%INTF%MAPPING_FINISHED)         CALL FLAG_ERROR("Mesh interface map is already finished.",ERR,ERROR,*999)
-    !MESH%INTF%MAPPING_FINISHED=.TRUE.
-
-    CALL EXITS("INTERFACE_MAPPING_CREATE_FINISH")
-    RETURN
-999 CALL ERRORS("INTERFACE_MAPPING_CREATE_FINISH",ERR,ERROR)    
-    CALL EXITS("INTERFACE_MAPPING_CREATE_FINISH")
-    RETURN 1
-   
-  END SUBROUTINE INTERFACE_MAPPING_CREATE_FINISH
 
   !
   !================================================================================================================================

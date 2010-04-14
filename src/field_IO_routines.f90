@@ -2642,6 +2642,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: variable_ptr
     TYPE(DOMAIN_TYPE), POINTER :: componentDomain !The domain mapping to calculate nodal mappings
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: DOMAIN_ELEMENTS ! domain nodes
@@ -2812,7 +2813,9 @@ CONTAINS
 
         IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
           & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
-          ERR = FieldExport_CoordinateVariable( sessionHandle, var_idx, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM%TYPE, &
+          NULLIFY(COORDINATE_SYSTEM)
+          CALL FIELD_COORDINATE_SYSTEM_GET(variable_ptr%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
+          ERR = FieldExport_CoordinateVariable( sessionHandle, var_idx, COORDINATE_SYSTEM%TYPE, &
             & GROUP_VARIABLES(var_idx) )
         ELSE
           ERR = FieldExport_Variable( sessionHandle, var_idx, variable_ptr%FIELD%TYPE, variable_ptr%VARIABLE_TYPE, &
@@ -2842,7 +2845,9 @@ CONTAINS
 !!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
 !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
           INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)
-          ERR = FieldExport_CoordinateComponent( sessionHandle, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM%TYPE, &
+          NULLIFY(COORDINATE_SYSTEM)
+          CALL FIELD_COORDINATE_SYSTEM_GET(variable_ptr%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
+          ERR = FieldExport_CoordinateComponent( sessionHandle, COORDINATE_SYSTEM%TYPE, &
             & component%COMPONENT_NUMBER,isNodal,basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ))
         ELSE
 !!TEMP
@@ -3048,6 +3053,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: sessionHandle
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: component
     TYPE(MESH_ELEMENT_TYPE), POINTER :: element
     TYPE(VARYING_STRING) :: FILE_NAME !the prefix name of file.
@@ -3091,15 +3097,25 @@ CONTAINS
     !NULLIFY(LIST_COMP_SCALE)
     !NULLIFY(tmp_components)
 
-    NUM_DIM=ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(1)%PTR%COMPONENTS(1)%PTR%FIELD_VARIABLE%FIELD%REGION% &
-      & COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
+    NULLIFY(COORDINATE_SYSTEM)
+    CALL FIELD_COORDINATE_SYSTEM_GET(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(1)%PTR%COMPONENTS(1)%PTR% &
+      & FIELD_VARIABLE%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
+    NUM_DIM=COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
 
     ERR = FieldExport_OpenSession( EXPORT_TYPE_FILE, char(FILE_NAME)//C_NULL_CHAR, sessionHandle )
     IF(ERR/=0) THEN
         CALL FLAG_ERROR( "Cannot open file export session", ERR, ERROR,*999 )
     ENDIF
 
-    ERR = FieldExport_Group( sessionHandle, char(ELEMENTAL_INFO_SET%FIELDS%REGION%LABEL)//C_NULL_CHAR )
+    IF(ASSOCIATED(ELEMENTAL_INFO_SET%FIELDS%REGION)) THEN
+      ERR = FieldExport_Group( sessionHandle, CHAR(ELEMENTAL_INFO_SET%FIELDS%REGION%LABEL)//C_NULL_CHAR )
+    ELSE
+      IF(ASSOCIATED(ELEMENTAL_INFO_SET%FIELDS%INTERFACE)) THEN
+        ERR = FieldExport_Group( sessionHandle, CHAR(ELEMENTAL_INFO_SET%FIELDS%INTERFACE%LABEL)//C_NULL_CHAR )
+      ELSE
+        CALL FLAG_ERROR("Fields region or interface is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ENDIF
     IF(ERR/=0) THEN
         CALL FLAG_ERROR( "Cannot write group name to elements file", ERR, ERROR,*999 )
     ENDIF
@@ -3422,6 +3438,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT):: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    LOGICAL :: ININTERFACE,INREGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(FIELD_TYPE), POINTER :: FIELD
     TYPE(DOMAIN_MAPPING_TYPE), POINTER:: DOMAIN_ELEMENTS_MAPPING !nodes in local mapping--it is different as exnode
@@ -3432,27 +3449,58 @@ CONTAINS
     CALL ENTERS("FIELD_IO_ELEMENTAL_INFO_SET_ATTACH_LOCAL_PROCESS",ERR,ERROR,*999)
 
     !validate the input data
-    IF(.NOT.ASSOCIATED(FIELDS%REGION)) THEN
-      CALL FLAG_ERROR("list of Field is not associated with any region",ERR,ERROR,*999)
+    INREGION=.FALSE.
+    ININTERFACE=.FALSE.
+    IF(ASSOCIATED(FIELDS%REGION)) THEN
+      INREGION=.TRUE.
+    ELSE
+      IF(ASSOCIATED(FIELDS%INTERFACE)) THEN
+        ININTERFACE=.TRUE.
+      ELSE
+        CALL FLAG_ERROR("Fields is not associated with a region or interface.",ERR,ERROR,*999)
+      ENDIF
     ENDIF
     
-    !checking whether the list of fields in the same region
-    DO num_field =1, FIELDS%NUMBER_OF_FIELDS
-      IF(.NOT.ASSOCIATED(FIELDS%FIELDS(num_field)%PTR)) THEN
-        LOCAL_ERROR ="No. "//TRIM(NUMBER_TO_VSTRING(num_field,"*",ERR,ERROR))//" field handle in fields list is invalid"
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      ENDIF
-          
-      IF( num_field == 1 ) THEN
-        CYCLE
-      ENDIF
-
-      IF(FIELDS%FIELDS(num_field-1)%PTR%REGION%USER_NUMBER/=FIELDS%FIELDS(num_field)%PTR%REGION%USER_NUMBER) THEN
-        LOCAL_ERROR = "No. "//TRIM(NUMBER_TO_VSTRING(num_field-1,"*",ERR,ERROR))//" and "// &
-          & TRIM(NUMBER_TO_VSTRING(num_field,"*",ERR,ERROR))//" fields are not in the same region"
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      ENDIF
-    ENDDO
+    IF(INREGION) THEN
+      !checking whether the list of fields in the same region
+      DO num_field =1, FIELDS%NUMBER_OF_FIELDS
+        IF(.NOT.ASSOCIATED(FIELDS%FIELDS(num_field)%PTR)) THEN
+          LOCAL_ERROR ="No. "//TRIM(NUMBER_TO_VSTRING(num_field,"*",ERR,ERROR))// &
+            & " field handle in fields list is invalid"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+        
+        IF( num_field == 1 ) THEN
+          CYCLE
+        ENDIF
+        
+        IF(FIELDS%FIELDS(num_field-1)%PTR%REGION%USER_NUMBER/=FIELDS%FIELDS(num_field)%PTR%REGION%USER_NUMBER) THEN
+          LOCAL_ERROR = "No. "//TRIM(NUMBER_TO_VSTRING(num_field-1,"*",ERR,ERROR))//" and "// &
+            & TRIM(NUMBER_TO_VSTRING(num_field,"*",ERR,ERROR))//" fields are not in the same region"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ENDDO
+    ELSE
+      !checking whether the list of fields in the same interface
+      DO num_field =1, FIELDS%NUMBER_OF_FIELDS
+        IF(.NOT.ASSOCIATED(FIELDS%FIELDS(num_field)%PTR)) THEN
+          LOCAL_ERROR ="No. "//TRIM(NUMBER_TO_VSTRING(num_field,"*",ERR,ERROR))// &
+            & " field handle in fields list is invalid"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+        
+        IF( num_field == 1 ) THEN
+          CYCLE
+        ENDIF
+        
+        IF(FIELDS%FIELDS(num_field-1)%PTR%INTERFACE%USER_NUMBER/= &
+          & FIELDS%FIELDS(num_field)%PTR%INTERFACE%USER_NUMBER) THEN
+          LOCAL_ERROR = "No. "//TRIM(NUMBER_TO_VSTRING(num_field-1,"*",ERR,ERROR))//" and "// &
+            & TRIM(NUMBER_TO_VSTRING(num_field,"*",ERR,ERROR))//" fields are not in the same interface."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ENDDO
+    ENDIF
 
     ELEMENTAL_INFO_SET%FIELDS=>FIELDS
 
@@ -3461,7 +3509,8 @@ CONTAINS
     !information set with nodal information of local process
     IF((ELEMENTAL_INFO_SET%NUMBER_OF_ENTRIES/=0).OR.(.NOT.ASSOCIATED(ELEMENTAL_INFO_SET%FIELDS)) &
       & .OR.ALLOCATED(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET)) THEN
-      CALL FLAG_ERROR("nodal information set is not initialized properly, and call start method first",ERR,ERROR,*999)
+      CALL FLAG_ERROR("nodal information set is not initialized properly, and call start method first", &
+        & ERR,ERROR,*999)
     ENDIF
     
     DO num_field=1,ELEMENTAL_INFO_SET%FIELDS%NUMBER_OF_FIELDS
@@ -4011,6 +4060,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(FIELD_TYPE), POINTER :: FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE
     TYPE(VARYING_STRING) :: FIELD_IO_GET_VARIABLE_INFO_LABEL
@@ -4030,7 +4080,9 @@ CONTAINS
         SELECT CASE(VARIABLE%VARIABLE_TYPE)
           CASE(FIELD_U_VARIABLE_TYPE)
             !coordinate system
-            SELECT CASE (FIELD%REGION%COORDINATE_SYSTEM%TYPE)
+            NULLIFY(COORDINATE_SYSTEM)
+            CALL FIELD_COORDINATE_SYSTEM_GET(FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
+            SELECT CASE(COORDINATE_SYSTEM%TYPE)
               CASE(COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
                 FIELD_IO_GET_VARIABLE_INFO_LABEL="coordinates,  coordinate, rectangular cartesian"
               !CASE(COORDINATE_CYCLINDRICAL_POLAR_TYPE)
@@ -4128,6 +4180,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(FIELD_TYPE), POINTER :: FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE
     TYPE(VARYING_STRING) :: FIELD_IO_GET_COMPONENT_INFO_LABEL
@@ -4147,7 +4200,9 @@ CONTAINS
         SELECT CASE(VARIABLE%VARIABLE_TYPE)
           CASE(FIELD_U_VARIABLE_TYPE)
             !coordinate system
-            SELECT CASE (FIELD%REGION%COORDINATE_SYSTEM%TYPE)
+            NULLIFY(COORDINATE_SYSTEM)
+            CALL FIELD_COORDINATE_SYSTEM_GET(FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
+            SELECT CASE(COORDINATE_SYSTEM%TYPE)
               CASE(COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
                 IF(COMPONENT%COMPONENT_NUMBER==1) THEN
                   FIELD_IO_GET_COMPONENT_INFO_LABEL="x"
@@ -4399,6 +4454,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(FIELD_TYPE), POINTER :: field_ptr
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: variable_ptr
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES ! domain nodes
@@ -4518,10 +4574,13 @@ CONTAINS
 
           IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
             & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
+            NULLIFY(COORDINATE_SYSTEM)
+            CALL FIELD_COORDINATE_SYSTEM_GET(variable_ptr%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
             ERR = FieldExport_CoordinateVariable( sessionHandle, global_var_idx, &
-              & variable_ptr%FIELD%REGION%COORDINATE_SYSTEM%TYPE, variable_ptr%NUMBER_OF_COMPONENTS )
+              & COORDINATE_SYSTEM%TYPE, variable_ptr%NUMBER_OF_COMPONENTS )
           ELSE
-            ERR = FieldExport_Variable( sessionHandle, global_var_idx, variable_ptr%FIELD%TYPE, variable_ptr%VARIABLE_TYPE, &
+            ERR = FieldExport_Variable( sessionHandle, global_var_idx, variable_ptr%FIELD%TYPE,  &
+              & variable_ptr%VARIABLE_TYPE, &
               & variable_ptr%NUMBER_OF_COMPONENTS )
           ENDIF
           IF( ERR /= 0 ) THEN
@@ -4544,10 +4603,13 @@ CONTAINS
                GROUP_DERIVATIVES(1:1) = NO_PART_DERIV
                IF( fieldComponent%FIELD_VARIABLE%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
                  & fieldComponent%FIELD_VARIABLE%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
+                 NULLIFY(COORDINATE_SYSTEM)
+                 CALL FIELD_COORDINATE_SYSTEM_GET(variable_ptr%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
                  ERR = FieldExport_CoordinateDerivativeIndices( sessionHandle, fieldComponent%COMPONENT_NUMBER, &
-                   & variable_ptr%FIELD%REGION%COORDINATE_SYSTEM%TYPE, 1, C_LOC(GROUP_DERIVATIVES), value_idx )
+                   & COORDINATE_SYSTEM%TYPE, 1, C_LOC(GROUP_DERIVATIVES), value_idx )
                ELSE
-                 ERR = FieldExport_DerivativeIndices( sessionHandle, fieldComponent%COMPONENT_NUMBER, variable_ptr%FIELD%TYPE, &
+                 ERR = FieldExport_DerivativeIndices( sessionHandle, fieldComponent%COMPONENT_NUMBER, &
+                   & variable_ptr%FIELD%TYPE, &
                    & variable_ptr%VARIABLE_TYPE, 1, C_LOC(GROUP_DERIVATIVES), value_idx )
                ENDIF
                
@@ -4579,10 +4641,13 @@ CONTAINS
              
              IF( component%FIELD_VARIABLE%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
                & component%FIELD_VARIABLE%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
+               NULLIFY(COORDINATE_SYSTEM)
+               CALL FIELD_COORDINATE_SYSTEM_GET(variable_ptr%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
                ERR = FieldExport_CoordinateDerivativeIndices( sessionHandle, component%COMPONENT_NUMBER, &
-                 & variable_ptr%FIELD%REGION%COORDINATE_SYSTEM%TYPE, NUM_OF_NODAL_DEV, C_LOC(GROUP_DERIVATIVES), value_idx )
+                 & COORDINATE_SYSTEM%TYPE, NUM_OF_NODAL_DEV, C_LOC(GROUP_DERIVATIVES), value_idx )
              ELSE
-               ERR = FieldExport_DerivativeIndices( sessionHandle, component%COMPONENT_NUMBER, variable_ptr%FIELD%TYPE, &
+               ERR = FieldExport_DerivativeIndices( sessionHandle, component%COMPONENT_NUMBER, &
+                 & variable_ptr%FIELD%TYPE, &
                  & variable_ptr%VARIABLE_TYPE,NUM_OF_NODAL_DEV, C_LOC(GROUP_DERIVATIVES), value_idx )
              ENDIF
 
@@ -4663,7 +4728,15 @@ CONTAINS
       CALL FLAG_ERROR( "Cannot open file export session", ERR, ERROR,*999 )
     ENDIF
 
-    ERR = FieldExport_Group( sessionHandle, char(NODAL_INFO_SET%FIELDS%REGION%LABEL)//C_NULL_CHAR )
+    IF(ASSOCIATED(NODAL_INFO_SET%FIELDS%REGION)) THEN
+      ERR = FieldExport_Group( sessionHandle, CHAR(NODAL_INFO_SET%FIELDS%REGION%LABEL)//C_NULL_CHAR )
+    ELSE
+      IF(ASSOCIATED(NODAL_INFO_SET%FIELDS%INTERFACE)) THEN
+       ERR = FieldExport_Group( sessionHandle, CHAR(NODAL_INFO_SET%FIELDS%INTERFACE%LABEL)//C_NULL_CHAR )
+     ELSE
+        CALL FLAG_ERROR("Fields region or interface is not associated.",ERR,ERROR,*999)
+      ENDIF      
+    ENDIF
     IF(ERR/=0) THEN
       CALL FLAG_ERROR( "Cannot write group name to nodes file", ERR, ERROR,*999 )
     ENDIF
@@ -5130,6 +5203,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 
     !Local Variables
+    LOGICAL :: ININTERFACE,INREGION
     TYPE(FIELD_TYPE), POINTER :: FIELD
     TYPE(DOMAIN_NODES_TYPE), POINTER:: DOMAIN_NODES !nodes in local domain
     TYPE(FIELD_VARIABLE_TYPE), POINTER:: FIELD_VARIABLE !field variable
@@ -5140,27 +5214,58 @@ CONTAINS
     CALL ENTERS("FIELD_IO_NODAL_INFO_SET_ATTACH_LOCAL_PROCESS",ERR,ERROR,*999)
 
     !validate the input data
-    IF(.NOT.ASSOCIATED(FIELDS%REGION)) THEN
-      CALL FLAG_ERROR("list of Field is not associated with any region",ERR,ERROR,*999)
+    INREGION=.FALSE.
+    ININTERFACE=.FALSE.
+    IF(ASSOCIATED(FIELDS%REGION)) THEN
+      INREGION=.TRUE.
+    ELSE
+      IF(ASSOCIATED(FIELDS%INTERFACE)) THEN
+        ININTERFACE=.TRUE.
+      ELSE
+        CALL FLAG_ERROR("Fields is not associated with a region or interface.",ERR,ERROR,*999)
+      ENDIF
     ENDIF
-    
-    !checking whether the list of fields in the same region
-    DO num_field =1, FIELDS%NUMBER_OF_FIELDS
-      IF(.NOT.ASSOCIATED(FIELDS%FIELDS(num_field)%PTR)) THEN
-        LOCAL_ERROR ="No. "//TRIM(NUMBER_TO_VSTRING(num_field,"*",ERR,ERROR))//" field handle in fields list is invalid"
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      ENDIF
-          
-      IF( num_field == 1 ) THEN
-        CYCLE
-      ENDIF
 
-      IF(FIELDS%FIELDS(num_field-1)%PTR%REGION%USER_NUMBER/=FIELDS%FIELDS(num_field)%PTR%REGION%USER_NUMBER) THEN
-        LOCAL_ERROR = "No. "//TRIM(NUMBER_TO_VSTRING(num_field-1,"*",ERR,ERROR))//" and "// &
-          & TRIM(NUMBER_TO_VSTRING(num_field,"*",ERR,ERROR))//" fields are not in the same region"
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      ENDIF
-    ENDDO
+     IF(INREGION) THEN
+      !checking whether the list of fields in the same region
+      DO num_field =1, FIELDS%NUMBER_OF_FIELDS
+        IF(.NOT.ASSOCIATED(FIELDS%FIELDS(num_field)%PTR)) THEN
+          LOCAL_ERROR ="No. "//TRIM(NUMBER_TO_VSTRING(num_field,"*",ERR,ERROR))// &
+            & " field handle in fields list is invalid"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+        
+        IF( num_field == 1 ) THEN
+          CYCLE
+        ENDIF
+        
+        IF(FIELDS%FIELDS(num_field-1)%PTR%REGION%USER_NUMBER/=FIELDS%FIELDS(num_field)%PTR%REGION%USER_NUMBER) THEN
+          LOCAL_ERROR = "No. "//TRIM(NUMBER_TO_VSTRING(num_field-1,"*",ERR,ERROR))//" and "// &
+            & TRIM(NUMBER_TO_VSTRING(num_field,"*",ERR,ERROR))//" fields are not in the same region"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ENDDO
+    ELSE
+      !checking whether the list of fields in the same interface
+      DO num_field =1, FIELDS%NUMBER_OF_FIELDS
+        IF(.NOT.ASSOCIATED(FIELDS%FIELDS(num_field)%PTR)) THEN
+          LOCAL_ERROR ="No. "//TRIM(NUMBER_TO_VSTRING(num_field,"*",ERR,ERROR))// &
+            & " field handle in fields list is invalid"
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+        
+        IF( num_field == 1 ) THEN
+          CYCLE
+        ENDIF
+        
+        IF(FIELDS%FIELDS(num_field-1)%PTR%INTERFACE%USER_NUMBER/= &
+          & FIELDS%FIELDS(num_field)%PTR%INTERFACE%USER_NUMBER) THEN
+          LOCAL_ERROR = "No. "//TRIM(NUMBER_TO_VSTRING(num_field-1,"*",ERR,ERROR))//" and "// &
+            & TRIM(NUMBER_TO_VSTRING(num_field,"*",ERR,ERROR))//" fields are not in the same interface."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ENDDO
+    ENDIF
 
     !checking whether the list of fields are using the same decomposition
     !IF(.NOT.ASSOCIATED(DECOMPOSITION))

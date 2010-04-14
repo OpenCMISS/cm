@@ -1439,6 +1439,7 @@ $(OBJECT_DIR)/interface_conditions_routines.o	:	$(SOURCE_DIR)/interface_conditio
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/interface_conditions_constants.o \
 	$(OBJECT_DIR)/interface_equations_routines.o \
+	$(OBJECT_DIR)/interface_mapping_routines.o \
 	$(OBJECT_DIR)/interface_matrices_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \

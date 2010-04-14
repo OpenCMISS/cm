@@ -4643,6 +4643,7 @@ CONTAINS
                 IF(ASSOCIATED(INTERFACE_EQUATIONS)) THEN
                   CALL SOLVER_MAPPING_INTERFACE_CONDITION_ADD(SOLVER_MAPPING,INTERFACE_CONDITION,INTERFACE_CONDITION_INDEX, &
                     & ERR,ERROR,*999)
+                ELSE
                   CALL FLAG_ERROR("Interface condition interface equations is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
