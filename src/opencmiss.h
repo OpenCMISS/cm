@@ -480,17 +480,35 @@ static int CMISSEquationsSetConstantSourceDiffusionSubtype = 2;
 static int CMISSEquationsSetLinearSourceDiffusionSubtype = 3;
 static int CMISSEquationsSetQuadraticSourceDiffusionSubtype = 4;
 static int CMISSEquationsSetExponentialSourceDiffusionSubtype = 5;
+static int CMISSEquationsSetMultiCompTransportDiffusionSubtype = 6;
 static int CMISSEquationsSetNoSourceAdvectionDiffusionSubtype = 1;
 static int CMISSEquationsSetConstantSourceAdvectionDiffusionSubtype = 2;
 static int CMISSEquationsSetLinearSourceAdvectionDiffusionSubtype = 3;
 static int CMISSEquationsSetQuadraticSourceAdvectionDiffusionSubtype = 4;
 static int CMISSEquationsSetExponentialSourceAdvectionDiffusionSubtype = 5;
+static int CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = 6;
+static int CMISSEquationsSetConstantSourceStaticAdvecDiffSubtype = 7;
+static int CMISSEquationsSetLinearSourceStaticAdvecDiffSubtype = 8;
+static int CMISSEquationsSetNoSourceAdvectionDiffSUPGSubtype = 9;
+static int CMISSEquationsSetConstantSourceAdvectionDiffSUPGSubtype = 10;
+static int CMISSEquationsSetLinearSourceAdvectionDiffSUPGSubtype = 11;
+static int CMISSEquationsSetQuadSourceAdvectionDiffSUPGSubtype = 12;
+static int CMISSEquationsSetExpSourceAdvectionDiffSUPGSubtype = 13;
+static int CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype = 14;
+static int CMISSEquationsSetConstantSourceStaticAdvecDiffSUPGSubtype = 15;
+static int CMISSEquationsSetLinearSourceStaticAdvecDiffSUPGSubtype = 16;
+static int CMISSEquationsSetMultiCompTransportAdvecDiffSubtype = 17;
+static int CMISSEquationsSetMultiCompTransportAdvecDiffSUPGSubtype = 18;
+
 static int CMISSEquationsSetFirstBidomainSubtype = 1;
 static int CMISSEquationsSetSecondBidomainSubtype = 2;
 static int CMISSEquationsSetStandardGalerkinProjectionSubtype = 1;
 static int CMISSEquationsSetGeneralisedGalerkinProjectionSubtype = 2;
 static int CMISSEquationsSetMatPropertiesGalerkinProjectionSubtype = 3;
 
+static int CMISSEquationsSetStandardElasticityDarcySubtype = 101;
+static int CMISSEquationsSetCoupledSourceDiffusionDiffusionSubtype = 111;
+static int CMISSEquationsSetCoupledSourceDiffusionAdvecDiffusionSubtype = 121;
 /*
  * >@}
  * > \addtogroup OPENCMISS_EquationsSetSolutionMethods OPENCMISS::EquationsSet::SolutionMethods
@@ -855,6 +873,7 @@ static int CMISSProblemFiniteElasticityStokesType = 2;
 static int CMISSProblemFiniteElasticityNavierStokesType = 3;
 static int CMISSProblemDiffusionDiffusionType = 4;
 static int CMISSProblemDiffusionAdvectionDiffusionType = 5;
+static int CMISSProblemMultiCompartmentTransportType = 6;
 /*
  * >@}
  * > \addtogroup OPENCMISS_ProblemSubTypes OPENCMISS::Problem::Subtypes
@@ -896,6 +915,7 @@ static int CMISSProblemMatPropertiesGalerkinProjectionSubtype = 3;
 static int CMISSProblemStandardElasticityDarcySubtype = 101;
 static int CMISSProblemCoupledSourceDiffusionDiffusionSubtype = 111;
 static int CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype = 121;
+static int CMISSProblemStandardMultiCompartmentTransportSubtype = 131;
 /*
  * >@}
  * > \addtogroup OPENCMISS_ProblemControlLoopTypes OPENCMISS::Problem::ControlLoopTypes
