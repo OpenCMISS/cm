@@ -168,7 +168,7 @@ CONTAINS
                       BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
                       IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN                      
 !!TODO: see how slow this is. At the moment we go through number of ranks*number of global rows. We could presort the global rows into a list for each rank. This would take additional memory.
-                        DO rank=0,COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES-1
+                        DO rank=0,DEPENDENT_FIELD%DECOMPOSITION%WORK_GROUP%COMP_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES-1
                           DO global_row=1,EQUATIONS_MAPPING%NUMBER_OF_GLOBAL_ROWS
                             RANK_DOF=.FALSE.
                             local_row=0
@@ -281,8 +281,9 @@ CONTAINS
           ALLOCATE(SOLVER_MAPPING%ROW_DOFS_MAPPING,STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver mapping row dofs mapping.",ERR,ERROR,*999)
 !!TODO: what is the real number of domains for a solver???
-          CALL DOMAIN_MAPPINGS_MAPPING_INITIALISE(SOLVER_MAPPING%ROW_DOFS_MAPPING,COMPUTATIONAL_ENVIRONMENT% &
-            & NUMBER_COMPUTATIONAL_NODES,ERR,ERROR,*999)
+          CALL DOMAIN_MAPPINGS_MAPPING_INITIALISE(SOLVER_MAPPING%ROW_DOFS_MAPPING,SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR%DEPENDENT% &
+            & DEPENDENT_FIELD%DECOMPOSITION%WORK_GROUP,SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR%DEPENDENT% &
+            & DEPENDENT_FIELD%DECOMPOSITION%WORK_GROUP%COMP_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES,ERR,ERROR,*999)
           ROW_DOMAIN_MAPPING=>SOLVER_MAPPING%ROW_DOFS_MAPPING
           ALLOCATE(ROW_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(NUMBER_OF_GLOBAL_SOLVER_ROWS),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate row dofs mapping global to local map.",ERR,ERROR,*999)
@@ -290,7 +291,8 @@ CONTAINS
           !Calculate the row mappings
           NUMBER_OF_GLOBAL_SOLVER_ROWS=0
           !Loop over the ranks to  ensure that the lowest ranks have the lowest numbered solver variables
-          DO rank=0,COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES-1
+          DO rank=0,SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR%DEPENDENT%DEPENDENT_FIELD%DECOMPOSITION%WORK_GROUP%COMP_ENVIRONMENT% &
+            & NUMBER_COMPUTATIONAL_NODES-1
             NUMBER_OF_LOCAL_SOLVER_ROWS=0
             DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
               !Note that pointers have been checked for association above
@@ -538,7 +540,8 @@ CONTAINS
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver col to equations sets map solver col to equation set maps.", &
               & ERR,ERROR,*999)
             !Loop over the ranks
-            DO rank=0,COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES-1
+            DO rank=0,SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR%DEPENDENT%DEPENDENT_FIELD%DECOMPOSITION%WORK_GROUP%COMP_ENVIRONMENT% &
+              & NUMBER_COMPUTATIONAL_NODES-1
               !Loop over the equations sets
               DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                 !The pointers below have been checked for association above.
@@ -700,7 +703,9 @@ CONTAINS
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver col to equations sets map column dofs mapping.",ERR,ERROR,*999)
 !!TODO: what is the real number of domains for a solver???
             CALL DOMAIN_MAPPINGS_MAPPING_INITIALISE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)% &
-              & COLUMN_DOFS_MAPPING,COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES,ERR,ERROR,*999)            
+              & COLUMN_DOFS_MAPPING,SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR%DEPENDENT%DEPENDENT_FIELD%DECOMPOSITION%WORK_GROUP,&
+              & SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR%DEPENDENT%DEPENDENT_FIELD%DECOMPOSITION%WORK_GROUP% &
+              & COMP_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES,ERR,ERROR,*999)            
             COL_DOMAIN_MAPPING=>SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_SETS_MAP(solver_matrix_idx)%COLUMN_DOFS_MAPPING
             ALLOCATE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(NUMBER_OF_GLOBAL_SOLVER_COLS),STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column dofs mapping global to local.",ERR,ERROR,*999)
@@ -713,7 +718,8 @@ CONTAINS
 !!TODO: see how slow this is. At the moment we go through number of ranks*number of globals. We could presort the global nys into a list for each rank. This would take additional memory.
             NUMBER_OF_LOCAL_SOLVER_DOFS=0
             NUMBER_OF_GHOST_SOLVER_DOFS=0
-            DO rank=0,COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES-1
+            DO rank=0,SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR%DEPENDENT%DEPENDENT_FIELD%DECOMPOSITION%WORK_GROUP%COMP_ENVIRONMENT% &
+              & NUMBER_COMPUTATIONAL_NODES-1
               NUMBER_OF_LOCAL_SOLVER_COLS=0
               TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS=0
               DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
