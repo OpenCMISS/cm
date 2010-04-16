@@ -1139,13 +1139,13 @@ CONTAINS
                           !Set up the equations variables -> solver columns mapping
                           !No coupling yet so the mapping is 1-1
                           SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
-                            & solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_type)%COLUMN_NUMBERS(myrank_local_dof)= &
+                            & solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_idx)%COLUMN_NUMBERS(myrank_local_dof)= &
                             & NUMBER_OF_GLOBAL_SOLVER_COLS
                           SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
-                            & solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_type)%COUPLING_COEFFICIENTS( &
+                            & solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_idx)%COUPLING_COEFFICIENTS( &
                             & myrank_local_dof)=1.0_DP
                           SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
-                            & solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_type)%ADDITIVE_CONSTANTS( &
+                            & solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_idx)%ADDITIVE_CONSTANTS( &
                             & myrank_local_dof)=0.0_DP
                           !Set up the equations columns -> solver columns mapping
                           IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
@@ -1276,12 +1276,12 @@ CONTAINS
                           !Set up the equations variables -> solver columns mapping
                           !No coupling yet so the mapping is 1-1
                           SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
-                            & solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_type)%COLUMN_NUMBERS(myrank_local_dof)=0
+                            & solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_idx)%COLUMN_NUMBERS(myrank_local_dof)=0
                           SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
-                            & solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_type)%COUPLING_COEFFICIENTS( &
+                            & solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_idx)%COUPLING_COEFFICIENTS( &
                             & myrank_local_dof)=0.0_DP
                           SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
-                            & solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_type)%ADDITIVE_CONSTANTS( &
+                            & solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_idx)%ADDITIVE_CONSTANTS( &
                             & myrank_local_dof)=0.0_DP
                           IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
                             !Set up the equations columns -> solver columns mapping

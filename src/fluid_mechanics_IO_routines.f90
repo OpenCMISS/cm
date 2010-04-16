@@ -164,6 +164,7 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   INTEGER(INTG), DIMENSION(:,:), ALLOCATABLE::OPENCMISS_ELEM_M,OPENCMISS_ELEM_V,OPENCMISS_ELEM_P
   INTEGER(INTG):: TRI_BASIS, TET_BASIS, QUAD_BASIS, HEX_BASIS
   INTEGER(INTG):: ALLOC_ERROR
+  INTEGER(INTG):: FIELD_VAR_TYPE, var_idx
 
   REAL(DP), DIMENSION(:,:), ALLOCATABLE::ElementNodesScales
   REAL(DP), DIMENSION(:), ALLOCATABLE:: XI_COORDINATES,COORDINATES
@@ -289,6 +290,27 @@ CONTAINS
     END DO
 
     EQUATIONS_SET => REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr
+
+!---tob
+!     FIELD_VAR_TYPE=EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE%VARIABLE_TYPE
+!     ! '1' associated with linear matrix
+
+    var_idx = 1
+    FIELD_VAR_TYPE = FIELD_U_VARIABLE_TYPE
+    SELECT CASE(EQUATIONS_SET%CLASS)
+    CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
+      SELECT CASE(EQUATIONS_SET%TYPE)
+      CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
+        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        CASE(EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE)
+          var_idx = 3
+          FIELD_VAR_TYPE = FIELD_V_VARIABLE_TYPE
+        END SELECT
+      END SELECT
+    END SELECT
+
+
+!---toe
 
 !     NumberOfFields=REGION%fields%number_of_fields
 ! Hack for ALE... to be removed later
@@ -450,8 +472,8 @@ CONTAINS
         END IF
 
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
-          & INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%ptr,ERR,ERROR,*999)
-        CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr,ERR,ERROR,*999)
+          & INTERPOLATION_PARAMETERS(FIELD_VAR_TYPE)%ptr,ERR,ERROR,*999)
+        CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr,ERR,ERROR,*999)
         NodeXValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
           & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
         NodeYValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
@@ -462,14 +484,17 @@ CONTAINS
             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
         END IF
 
-        NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field%variables(1) &
-          & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
-        NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field%variables(1) &
-          & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
+!         NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field%variables(1) &
+        NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+          & variables(var_idx)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
+!         NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field%variables(1) &
+        NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+          & variables(var_idx)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
 
         IF(NumberOfDimensions==3)THEN
           NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
-            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+!             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+            & variables(var_idx)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
         END IF
 
 ! ! !       NodeUValue(K)=INTERPOLATED_POINT%VALUES(1,1)
@@ -477,11 +502,14 @@ CONTAINS
 ! ! !       NodeWValue(K)=INTERPOLATED_POINT%VALUES(3,1)
 
 
-        IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS)THEN
+        IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
+          & .OR.(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS) & 
+              & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) &
+              & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) )THEN
           IF(NumberOfDimensions==3)THEN
-            NodePValue(K)=INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(4,1)
+            NodePValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(4,1)
           ELSE IF(NumberOfDimensions==2)THEN
-            NodePValue(K)=INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(3,1)
+            NodePValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(3,1)
           END IF
         END IF
 
@@ -633,6 +661,25 @@ CONTAINS
 
     EQUATIONS_SET => REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr
 
+!---tob
+!     FIELD_VAR_TYPE=EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE%VARIABLE_TYPE
+!     ! '1' associated with linear matrix
+
+    var_idx = 1
+    FIELD_VAR_TYPE = FIELD_U_VARIABLE_TYPE
+    SELECT CASE(EQUATIONS_SET%CLASS)
+    CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
+      SELECT CASE(EQUATIONS_SET%TYPE)
+      CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
+        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        CASE(EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE)
+          var_idx = 3
+          FIELD_VAR_TYPE = FIELD_V_VARIABLE_TYPE
+        END SELECT
+      END SELECT
+    END SELECT
+!---toe
+
 !     NumberOfFields=REGION%fields%number_of_fields
 ! Hack for ALE... to be removed later
     NumberOfFields=3
@@ -719,8 +766,8 @@ CONTAINS
         COORDINATES=(/1,1,1/)
 
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
-          & INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%ptr,ERR,ERROR,*999)
-        CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr,ERR,ERROR,*999)
+          & INTERPOLATION_PARAMETERS(FIELD_VAR_TYPE)%ptr,ERR,ERROR,*999)
+        CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr,ERR,ERROR,*999)
         NodeXValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
           & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
         NodeYValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
@@ -731,25 +778,31 @@ CONTAINS
             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
         END IF
 
-        NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field%variables(1) &
-          & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
-        NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field%variables(1) &
-          & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
+!         NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field%variables(1) &
+        NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+          & variables(var_idx)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
+!         NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field%variables(1) &
+        NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+          & variables(var_idx)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
 
         IF(NumberOfDimensions==3)THEN
           NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
-            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+!             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+            & variables(var_idx)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
         END IF
 
 ! ! !       NodeUValue(K)=INTERPOLATED_POINT%VALUES(1,1)
 ! ! !       NodeVValue(K)=INTERPOLATED_POINT%VALUES(2,1)
 ! ! !       NodeWValue(K)=INTERPOLATED_POINT%VALUES(3,1)
 
-        IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS)THEN
+        IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) &
+          & .OR.(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS) & 
+              & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) &
+              & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) )THEN
           IF(NumberOfDimensions==3)THEN
-            NodePValue(K)=INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(4,1)
+            NodePValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(4,1)
           ELSE IF(NumberOfDimensions==2)THEN
-            NodePValue(K)=INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(3,1)
+            NodePValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(3,1)
           END IF
         END IF
 
@@ -998,7 +1051,10 @@ CONTAINS
     ENDIF
     CLOSE(80)
   !==================
-    IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS)THEN
+    IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) &
+      & .OR.(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS) & 
+          & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) &
+          & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) )THEN
       FILENAME="./output/"//NAME//".scl1"
       OPEN(UNIT=81, FILE=CHAR(FILENAME),STATUS='unknown')
       WRITE(81,*)'Absolute Pressure' 
@@ -1211,6 +1267,25 @@ CONTAINS
 
     EQUATIONS_SET => REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr
 
+!---tob
+!     FIELD_VAR_TYPE=EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE%VARIABLE_TYPE
+!     ! '1' associated with linear matrix
+
+    var_idx = 1
+    FIELD_VAR_TYPE = FIELD_U_VARIABLE_TYPE
+    SELECT CASE(EQUATIONS_SET%CLASS)
+    CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
+      SELECT CASE(EQUATIONS_SET%TYPE)
+      CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
+        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        CASE(EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE)
+          var_idx = 3
+          FIELD_VAR_TYPE = FIELD_V_VARIABLE_TYPE
+        END SELECT
+      END SELECT
+    END SELECT
+!---toe
+
 !     NumberOfFields=REGION%fields%number_of_fields
 ! Hack for ALE... to be removed later
     NumberOfFields=3
@@ -1285,8 +1360,8 @@ CONTAINS
         COORDINATES=(/1,1,1/)
 
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
-          & INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%ptr,ERR,ERROR,*999)
-        CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr,ERR,ERROR,*999)
+          & INTERPOLATION_PARAMETERS(FIELD_VAR_TYPE)%ptr,ERR,ERROR,*999)
+        CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr,ERR,ERROR,*999)
         NodeXValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
           & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
         NodeYValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
@@ -1297,23 +1372,32 @@ CONTAINS
             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
         END IF
 
-        NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field%variables(1) &
-          & %parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K)
-        NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field%variables(1) &
-          & %parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
+!         NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field%variables(1) &
+        NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field% &
+          & variables(var_idx)%parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K)
+!         NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field%variables(1) &
+        NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field% &
+          & variables(var_idx)%parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
 
         IF(NumberOfDimensions==3)THEN
-          NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field%variables(1) &
-            & %parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+!           NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field%variables(1) &
+          NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field% &
+            & variables(var_idx)%parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
         END IF
+
+        ! Why do NodeUValue, NodeVValue, NodeWValue use 'source_field' while NodePValue uses 'dependent_field' ???
 
 ! ! !       NodeUValue(K)=INTERPOLATED_POINT%VALUES(1,1)
 ! ! !       NodeVValue(K)=INTERPOLATED_POINT%VALUES(2,1)
 ! ! !       NodeWValue(K)=INTERPOLATED_POINT%VALUES(3,1)
 
-        IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS)THEN
+        IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) &
+          & .OR.(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS) & 
+              & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) &
+              & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) )THEN
           NodePValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
-            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
+!             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
+            & variables(var_idx)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
         END IF
       END DO 
     END DO
@@ -1511,7 +1595,10 @@ CONTAINS
         WRITE(14,'("    ", es25.16 )')NodeWValue(I)
       END IF
 
-      IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS)THEN
+      IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) &
+        & .OR.(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS) & 
+            & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) &
+            & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) )THEN
         WRITE(14,'("    ", es25.16 )')NodePValue(I)
       END IF
       WRITE(14,'("    ", es25.16 )')NodeMUValue(I)
@@ -1532,7 +1619,10 @@ CONTAINS
         IF(NumberOfDimensions==3) THEN
           WRITE(14,'("    ", es25.16 )')NodeWValue_analytic(I)
         END IF
-        IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS)THEN
+        IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) &
+          & .OR.(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS) & 
+              & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) &
+              & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) )THEN
           WRITE(14,'("    ", es25.16 )')NodePValue_analytic(I)
         END IF
 
@@ -1541,7 +1631,10 @@ CONTAINS
         IF(NumberOfDimensions==3) THEN
           WRITE(14,'("    ", es25.16 )')NodeWValue_error(I)
         END IF
-        IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS)THEN
+        IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) &
+          & .OR.(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS) & 
+              & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) &
+              & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) )THEN
           WRITE(14,'("    ", es25.16 )')NodePValue_error(I)
         END IF
       END IF
