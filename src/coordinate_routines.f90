@@ -3894,7 +3894,7 @@ CONTAINS
       DO idx2=1,3
         Ra(idx1,idx2)=DXDNUR(idx1,idx2)  
       ENDDO
-    ENDDO   
+    ENDDO
 
     !Initialise rotation matrix Rb
     DO idx1=1,3

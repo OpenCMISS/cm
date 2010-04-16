@@ -759,6 +759,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionCauchy = BOUNDARY_CONDITION_CAUCHY
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionRobin = BOUNDARY_CONDITION_ROBIN
 
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionLoadIncremented = BOUNDARY_CONDITION_INCREMENTED_TYPE
   !>@}
   !>@}
   
@@ -836,7 +837,7 @@ MODULE OPENCMISS
     & CMISSBoundaryConditionFreeWall,CMISSBoundaryConditionOutletWall
 
   PUBLIC CMISSBoundaryConditionNeumann,CMISSBoundaryConditionNeumannPoint,CMISSBoundaryConditionDirichlet
-  PUBLIC CMISSBoundaryConditionCauchy,CMISSBoundaryConditionRobin
+  PUBLIC CMISSBoundaryConditionCauchy,CMISSBoundaryConditionRobin,CMISSBoundaryConditionLoadIncremented
 
   PUBLIC CMISSBoundaryConditionsDestroy
 
@@ -3730,6 +3731,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSProblemControlFixedLoopType = PROBLEM_CONTROL_FIXED_LOOP_TYPE !<Fixed iteration control loop. \see OPENCMISS_ProblemControlLoopTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemControlTimeLoopType = PROBLEM_CONTROL_TIME_LOOP_TYPE !<Time control loop. \see OPENCMISS_ProblemControlLoopTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemControlWhileLoopType = PROBLEM_CONTROL_WHILE_LOOP_TYPE !<While control loop. \see OPENCMISS_ProblemControlLoopTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemControlLoadIncrementLoopType = PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE !<Load increment control loop. \see OPENCMISS_ProblemControlLoopTypes,OPENCMISS
   !>@}
   !>@}
 

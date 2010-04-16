@@ -314,6 +314,7 @@ CONTAINS
         NULLIFY(PROBLEM%CONTROL_LOOP%FIXED_LOOP)
         NULLIFY(PROBLEM%CONTROL_LOOP%TIME_LOOP)
         NULLIFY(PROBLEM%CONTROL_LOOP%WHILE_LOOP)
+        NULLIFY(PROBLEM%CONTROL_LOOP%LOAD_INCREMENT_LOOP)
         PROBLEM%CONTROL_LOOP%NUMBER_OF_SUB_LOOPS=0
         NULLIFY(PROBLEM%CONTROL_LOOP%SOLVERS)
         CALL CONTROL_LOOP_SIMPLE_INITIALISE(PROBLEM%CONTROL_LOOP,ERR,ERROR,*999)
@@ -578,7 +579,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets the maximum number of iterations for a while control loop. \see OPENCMISS_CMISSControlLoopMaximumIterationsSet
+  !>Sets the maximum number of iterations for a while or load increment control loop. \see OPENCMISS_CMISSControlLoopMaximumIterationsSet
   SUBROUTINE CONTROL_LOOP_MAXIMUM_ITERATIONS_SET(CONTROL_LOOP,MAXIMUM_ITERATIONS,ERR,ERROR,*)
 
     !Argument variables
@@ -588,6 +589,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(CONTROL_LOOP_WHILE_TYPE), POINTER :: WHILE_LOOP
+    TYPE(CONTROL_LOOP_LOAD_INCREMENT_TYPE), POINTER :: LOAD_INCREMENT_LOOP
     TYPE(VARYING_STRING) :: LOCAL_ERROR
  
     CALL ENTERS("CONTROL_MAXIMUM_ITERATIONS_SET",ERR,ERROR,*999)
@@ -609,8 +611,21 @@ CONTAINS
           ELSE
             CALL FLAG_ERROR("Control loop while loop is not associated.",ERR,ERROR,*999)
           ENDIF
+        ELSEIF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE) THEN
+          LOAD_INCREMENT_LOOP=>CONTROL_LOOP%LOAD_INCREMENT_LOOP
+          IF(ASSOCIATED(LOAD_INCREMENT_LOOP)) THEN
+            IF(MAXIMUM_ITERATIONS<=0) THEN
+              LOCAL_ERROR="The specified maximum number of iterations of "// &
+                & TRIM(NUMBER_TO_VSTRING(MAXIMUM_ITERATIONS,"*",ERR,ERROR))// &
+                & " is invalid. The maximum number of iterations must be greater than zero."          
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
+            ENDIF
+            LOAD_INCREMENT_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS=MAXIMUM_ITERATIONS
+          ELSE
+            CALL FLAG_ERROR("Control loop load increment loop is not associated.",ERR,ERROR,*999)
+          ENDIF
         ELSE
-          CALL FLAG_ERROR("The specified control loop is not a while control loop.",ERR,ERROR,*999)
+          CALL FLAG_ERROR("The specified control loop is not a while or load increment control loop.",ERR,ERROR,*999)
         ENDIF
       ENDIF          
     ELSE
@@ -1276,6 +1291,8 @@ CONTAINS
             CALL CONTROL_LOOP_TIME_INITIALISE(CONTROL_LOOP,ERR,ERROR,*999)
           CASE(PROBLEM_CONTROL_WHILE_LOOP_TYPE)
             CALL CONTROL_LOOP_WHILE_INITIALISE(CONTROL_LOOP,ERR,ERROR,*999)
+          CASE(PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE)
+            CALL CONTROL_LOOP_LOAD_INCREMENT_INITIALISE(CONTROL_LOOP,ERR,ERROR,*999)
           CASE DEFAULT
             LOCAL_ERROR="The loop type of "//TRIM(NUMBER_TO_VSTRING(LOOP_TYPE,"*",ERR,ERROR))//" is invalid."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -1290,6 +1307,8 @@ CONTAINS
             CALL CONTROL_LOOP_TIME_FINALISE(CONTROL_LOOP%TIME_LOOP,ERR,ERROR,*999)
           CASE(PROBLEM_CONTROL_WHILE_LOOP_TYPE)
             CALL CONTROL_LOOP_WHILE_FINALISE(CONTROL_LOOP%WHILE_LOOP,ERR,ERROR,*999)
+          CASE(PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE)
+            CALL CONTROL_LOOP_LOAD_INCREMENT_FINALISE(CONTROL_LOOP%LOAD_INCREMENT_LOOP,ERR,ERROR,*999)
           CASE DEFAULT
             LOCAL_ERROR="The control loop type of "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%LOOP_TYPE,"*",ERR,ERROR))//" is invalid."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -1378,5 +1397,70 @@ CONTAINS
   !================================================================================================================================
   !
   
+  !>Finalises a load increment loop and deallocates all memory.
+  SUBROUTINE CONTROL_LOOP_LOAD_INCREMENT_FINALISE(LOAD_INCREMENT_LOOP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_LOAD_INCREMENT_TYPE), POINTER :: LOAD_INCREMENT_LOOP !<A pointer to the load increment control loop to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("CONTROL_LOOP_LOAD_INCREMENT_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(LOAD_INCREMENT_LOOP)) THEN
+      DEALLOCATE(LOAD_INCREMENT_LOOP)
+    ENDIF
+       
+    CALL EXITS("CONTROL_LOOP_LOAD_INCREMENT_FINALISE")
+    RETURN
+999 CALL ERRORS("CONTROL_LOOP_LOAD_INCREMENT_FINALISE",ERR,ERROR)
+    CALL EXITS("CONTROL_LOOP_LOAD_INCREMENT_FINALISE")
+    RETURN 1
+  END SUBROUTINE CONTROL_LOOP_LOAD_INCREMENT_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises a load increment loop for a control loop.
+  SUBROUTINE CONTROL_LOOP_LOAD_INCREMENT_INITIALISE(CONTROL_LOOP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to initialise the load increment loop for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+ 
+    CALL ENTERS("CONTROL_LOOP_LOAD_INCREMENT_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(ASSOCIATED(CONTROL_LOOP%LOAD_INCREMENT_LOOP)) THEN
+        CALL FLAG_ERROR("The load increment loop is already associated for this control loop.",ERR,ERROR,*998)
+      ELSE
+        ALLOCATE(CONTROL_LOOP%LOAD_INCREMENT_LOOP,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate load increment loop for the control loop.",ERR,ERROR,*999)
+        CONTROL_LOOP%LOAD_INCREMENT_LOOP%CONTROL_LOOP=>CONTROL_LOOP
+        CONTROL_LOOP%LOAD_INCREMENT_LOOP%ITERATION_NUMBER=0
+        CONTROL_LOOP%LOAD_INCREMENT_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS=1 ! default is full load in one step
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*998)
+    ENDIF
+       
+    CALL EXITS("CONTROL_LOOP_LOAD_INCREMENT_INITIALISE")
+    RETURN
+999 CALL CONTROL_LOOP_LOAD_INCREMENT_FINALISE(CONTROL_LOOP%LOAD_INCREMENT_LOOP,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("CONTROL_LOOP_LOAD_INCREMENT_INITIALISE",ERR,ERROR)
+    CALL EXITS("CONTROL_LOOP_LOAD_INCREMENT_INITIALISE")
+    RETURN 1
+  END SUBROUTINE CONTROL_LOOP_LOAD_INCREMENT_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
 END MODULE CONTROL_LOOP_ROUTINES
 

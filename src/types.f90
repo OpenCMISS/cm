@@ -2279,6 +2279,13 @@ MODULE TYPES
     LOGICAL :: CONTINUE_LOOP
   END TYPE CONTROL_LOOP_WHILE_TYPE
 
+  !>Contains information on a load-increment control loop
+  TYPE CONTROL_LOOP_LOAD_INCREMENT_TYPE
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    INTEGER(INTG) :: ITERATION_NUMBER
+    INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ITERATIONS
+  END TYPE CONTROL_LOOP_LOAD_INCREMENT_TYPE
+
   !>A buffer type to allow for an array of pointers to a CONTROL_LOOP_TYPE \see TYPES::CONTROL_LOOP_TYPE
   TYPE CONTROL_LOOP_PTR_TYPE
     TYPE(CONTROL_LOOP_TYPE), POINTER :: PTR !<The pointer to the control loop
@@ -2295,6 +2302,7 @@ MODULE TYPES
     TYPE(CONTROL_LOOP_FIXED_TYPE), POINTER :: FIXED_LOOP !<A pointer to the fixed loop information
     TYPE(CONTROL_LOOP_TIME_TYPE), POINTER :: TIME_LOOP !<A pointer to the time loop information
     TYPE(CONTROL_LOOP_WHILE_TYPE), POINTER :: WHILE_LOOP !<A pointer to the while loop information
+    TYPE(CONTROL_LOOP_LOAD_INCREMENT_TYPE), POINTER :: LOAD_INCREMENT_LOOP !<A pointer to the load increment loop information
     INTEGER(INTG) :: NUMBER_OF_SUB_LOOPS !<The number of control loops below this loop
     TYPE(CONTROL_LOOP_PTR_TYPE), ALLOCATABLE :: SUB_LOOPS(:) !<A array of pointers to the loops below this loop.
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS !<A pointer to the solvers for this control loop

@@ -94,34 +94,21 @@ MODULE PROBLEM_ROUTINES
   END INTERFACE !PROBLEM_SOLVER_GET
   
   PUBLIC PROBLEMS_INITIALISE,PROBLEMS_FINALISE
-  
   PUBLIC PROBLEM_CREATE_START,PROBLEM_CREATE_FINISH,PROBLEM_DESTROY
-
   PUBLIC PROBLEM_SPECIFICATION_GET,PROBLEM_SPECIFICATION_SET
-
   PUBLIC PROBLEM_CONTROL_LOOP_CREATE_START,PROBLEM_CONTROL_LOOP_CREATE_FINISH
-
   PUBLIC PROBLEM_CONTROL_LOOP_DESTROY
-
   PUBLIC PROBLEM_CONTROL_LOOP_GET
-  
   PUBLIC PROBLEM_SOLVER_EQUATIONS_CREATE_START,PROBLEM_SOLVER_EQUATIONS_CREATE_FINISH
-
   PUBLIC PROBLEM_SOLVER_EQUATIONS_DESTROY
-
   PUBLIC PROBLEM_SOLVER_EQUATIONS_GET
-
   PUBLIC PROBLEM_SOLVER_JACOBIAN_EVALUATE,PROBLEM_SOLVER_RESIDUAL_EVALUATE
-  
   PUBLIC PROBLEM_SOLVER_GET
-   
   PUBLIC PROBLEM_SOLVE
-
   PUBLIC PROBLEM_SOLVERS_CREATE_START,PROBLEM_SOLVERS_CREATE_FINISH
-
   PUBLIC PROBLEM_SOLVERS_DESTROY
-  
   PUBLIC PROBLEM_USER_NUMBER_FIND
+  PUBLIC PROBLEM_SOLVER_LOAD_INCREMENT_APPLY
 
   
 CONTAINS
@@ -145,6 +132,7 @@ CONTAINS
     TYPE(CONTROL_LOOP_SIMPLE_TYPE), POINTER :: SIMPLE_LOOP
     TYPE(CONTROL_LOOP_TIME_TYPE), POINTER :: TIME_LOOP
     TYPE(CONTROL_LOOP_WHILE_TYPE), POINTER :: WHILE_LOOP
+    TYPE(CONTROL_LOOP_LOAD_INCREMENT_TYPE), POINTER :: LOAD_INCREMENT_LOOP
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -164,31 +152,21 @@ CONTAINS
               IF(ASSOCIATED(SOLVERS)) THEN
                 DO solver_idx=1,SOLVERS%NUMBER_OF_SOLVERS
                   SOLVER=>SOLVERS%SOLVERS(solver_idx)%PTR
-!                   CALL PROBLEM_SOLVER_EQUATIONS_PRE_SOLVE(CONTROL_LOOP,SOLVER&
-!                     &%SOLVER_EQUATIONS,ERR,ERROR,*999)
-!chrm 08.10.09
 #ifdef TAUPROF
                   CALL TAU_STATIC_PHASE_START('PRE SOLVE')
 #endif
                   CALL PROBLEM_SOLVER_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
 #ifdef TAUPROF
                   CALL TAU_STATIC_PHASE_STOP('PRE SOLVE')
-                  
                   CALL TAU_STATIC_PHASE_START('SOLVE')
 #endif
                   IF(ASSOCIATED(SOLVER)) THEN
-                    CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER&
-                      &%SOLVER_EQUATIONS,ERR,ERROR,*999)
+                    CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
                   ELSE
-                    CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,&
-                      &*999)
+                    CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
                   ENDIF
-!                   CALL PROBLEM_SOLVER_EQUATIONS_POST_SOLVE(CONTROL_LOOP&
-!                     &,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
-!chrm 08.10.09
 #ifdef TAUPROF
                   CALL TAU_STATIC_PHASE_STOP('SOLVE')
-
                   CALL TAU_STATIC_PHASE_START('POST SOLVE')
 #endif
                   CALL PROBLEM_SOLVER_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
@@ -197,8 +175,7 @@ CONTAINS
 #endif
                 ENDDO !solver_idx
               ELSE
-                CALL FLAG_ERROR("Control loop solvers is not associated.",ERR&
-                  &,ERROR,*999)
+                CALL FLAG_ERROR("Control loop solvers is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
               !If there are sub loops the recursively solve those control
@@ -209,8 +186,7 @@ CONTAINS
               ENDDO !loop_idx
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Control loop simple loop is not associated.",ERR&
-              &,ERROR,*999)
+            CALL FLAG_ERROR("Control loop simple loop is not associated.",ERR,ERROR,*999)
           ENDIF
         CASE(PROBLEM_CONTROL_FIXED_LOOP_TYPE)
           FIXED_LOOP=>CONTROL_LOOP%FIXED_LOOP
@@ -225,38 +201,27 @@ CONTAINS
                   DO solver_idx=1,SOLVERS%NUMBER_OF_SOLVERS
                     SOLVER=>SOLVERS%SOLVERS(solver_idx)%PTR
                     IF(ASSOCIATED(SOLVER)) THEN
-!                       CALL PROBLEM_SOLVER_EQUATIONS_PRE_SOLVE(CONTROL_LOOP&
-!                         &,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
-!chrm 08.10.09
                       CALL PROBLEM_SOLVER_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-                      CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER&
-                        &%SOLVER_EQUATIONS,ERR,ERROR,*999)
-!                       CALL PROBLEM_SOLVER_EQUATIONS_POST_SOLVE(CONTROL_LOOP&
-!                         &,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
-!chrm 08.10.09
+                      CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
                       CALL PROBLEM_SOLVER_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
                     ELSE
-                      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,&
-                        &*999)
+                      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ENDDO !solver_idx
                 ELSE
-                  CALL FLAG_ERROR("Control loop solvers is not associated."&
-                    &,ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Control loop solvers is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
                 !If there are sub loops the recursively solve those control
                 ! loops
                 DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
                   CONTROL_LOOP2=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
-                  CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,&
-                    &*999)
+                  CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,*999)
                 ENDDO !loop_idx
               ENDIF
             ENDDO !iteration_idx
           ELSE
-            CALL FLAG_ERROR("Control loop fixed loop is not associated.",ERR&
-              &,ERROR,*999)
+            CALL FLAG_ERROR("Control loop fixed loop is not associated.",ERR,ERROR,*999)
           ENDIF
         CASE(PROBLEM_CONTROL_TIME_LOOP_TYPE)
           TIME_LOOP=>CONTROL_LOOP%TIME_LOOP
@@ -273,47 +238,36 @@ CONTAINS
                   DO solver_idx=1,SOLVERS%NUMBER_OF_SOLVERS
                     SOLVER=>SOLVERS%SOLVERS(solver_idx)%PTR
                     IF(ASSOCIATED(SOLVER)) THEN
-!                       CALL PROBLEM_SOLVER_EQUATIONS_PRE_SOLVE(CONTROL_LOOP&
-!                         &,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
-!chrm 08.10.09
                       CALL PROBLEM_SOLVER_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-                      CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER&
-                        &%SOLVER_EQUATIONS,ERR,ERROR,*999)
-!                       CALL PROBLEM_SOLVER_EQUATIONS_POST_SOLVE(CONTROL_LOOP&
-!                         &,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
-!chrm 08.10.09
+                      CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
                       CALL PROBLEM_SOLVER_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
                     ELSE
-                      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,&
-                        &*999)
+                      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ENDDO !solver_idx
                 ELSE
-                  CALL FLAG_ERROR("Control loop solvers is not associated."&
-                    &,ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Control loop solvers is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
                 !If there are sub loops the recursively solve those control
                 ! loops
                 DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
                   CONTROL_LOOP2=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
-                  CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,&
-                    &*999)
+                  CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,*999)
                 ENDDO !loop_idx
               ENDIF
               TIME_LOOP%CURRENT_TIME=TIME_LOOP%CURRENT_TIME+TIME_LOOP&
                 &%TIME_INCREMENT
             ENDDO !time loop
           ELSE
-            CALL FLAG_ERROR("Control loop time loop is not associated.",ERR&
-              &,ERROR,*999)
+            CALL FLAG_ERROR("Control loop time loop is not associated.",ERR,ERROR,*999)
           ENDIF
         CASE(PROBLEM_CONTROL_WHILE_LOOP_TYPE)
           WHILE_LOOP=>CONTROL_LOOP%WHILE_LOOP
           IF(ASSOCIATED(WHILE_LOOP)) THEN
             WHILE_LOOP%ITERATION_NUMBER=0
-            DO WHILE(WHILE_LOOP%CONTINUE_LOOP.AND.WHILE_LOOP%ITERATION_NUMBER&
-              &<=WHILE_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS)
+            DO WHILE(WHILE_LOOP%CONTINUE_LOOP.AND.WHILE_LOOP%ITERATION_NUMBER &
+              & <=WHILE_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS)
               WHILE_LOOP%ITERATION_NUMBER=WHILE_LOOP%ITERATION_NUMBER+1
               IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS==0) THEN
                 !If there are no sub loops then solve
@@ -322,38 +276,70 @@ CONTAINS
                   DO solver_idx=1,SOLVERS%NUMBER_OF_SOLVERS
                     SOLVER=>SOLVERS%SOLVERS(solver_idx)%PTR
                     IF(ASSOCIATED(SOLVER)) THEN
-!                       CALL PROBLEM_SOLVER_EQUATIONS_PRE_SOLVE(CONTROL_LOOP&
-!                         &,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
-!chrm 08.10.09
                       CALL PROBLEM_SOLVER_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-                      CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER&
-                        &%SOLVER_EQUATIONS,ERR,ERROR,*999)
-!                       CALL PROBLEM_SOLVER_EQUATIONS_POST_SOLVE(CONTROL_LOOP&
-!                         &,SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
-!chrm 08.10.09
+                      CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
                       CALL PROBLEM_SOLVER_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
                     ELSE
-                      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,&
-                        &*999)
+                      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ENDDO !solver_idx
                 ELSE
-                  CALL FLAG_ERROR("Control loop solvers is not associated."&
-                    &,ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Control loop solvers is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
                 !If there are sub loops the recursively solve those control
                 ! loops
                 DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
                   CONTROL_LOOP2=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
-                  CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,&
-                    &*999)
+                  CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,*999)
                 ENDDO !loop_idx
               ENDIF
             ENDDO !while loop
           ELSE
-            CALL FLAG_ERROR("Control loop while loop is not associated.",ERR&
-              &,ERROR,*999)
+            CALL FLAG_ERROR("Control loop while loop is not associated.",ERR,ERROR,*999)
+          ENDIF
+        CASE(PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE)
+          LOAD_INCREMENT_LOOP=>CONTROL_LOOP%LOAD_INCREMENT_LOOP
+          IF(ASSOCIATED(LOAD_INCREMENT_LOOP)) THEN
+            LOAD_INCREMENT_LOOP%ITERATION_NUMBER=0
+            IF (LOAD_INCREMENT_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS<1) THEN
+              ! automatic stepping
+              CALL FLAG_ERROR("Automatic load incrementing is not implemented yet.",ERR,ERROR,*999)
+            ELSE
+              ! fixed number of steps
+              DO WHILE(LOAD_INCREMENT_LOOP%ITERATION_NUMBER<LOAD_INCREMENT_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS)
+                LOAD_INCREMENT_LOOP%ITERATION_NUMBER=LOAD_INCREMENT_LOOP%ITERATION_NUMBER+1
+                IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS==0) THEN
+                  !If there are no sub loops then solve
+                  SOLVERS=>CONTROL_LOOP%SOLVERS
+                  IF(ASSOCIATED(SOLVERS)) THEN
+                    DO solver_idx=1,SOLVERS%NUMBER_OF_SOLVERS
+                      SOLVER=>SOLVERS%SOLVERS(solver_idx)%PTR
+                      IF(ASSOCIATED(SOLVER)) THEN
+                        !Apply incremented boundary conditions here => 
+                        CALL PROBLEM_SOLVER_LOAD_INCREMENT_APPLY(SOLVER%SOLVER_EQUATIONS,LOAD_INCREMENT_LOOP%ITERATION_NUMBER, &
+                          & LOAD_INCREMENT_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS,ERR,ERROR,*999)
+                        CALL PROBLEM_SOLVER_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                        CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
+                        CALL PROBLEM_SOLVER_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                      ELSE
+                        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ENDDO !solver_idx
+                  ELSE
+                    CALL FLAG_ERROR("Control loop solvers is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  !If there are sub loops the recursively solve those control loops
+                  DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
+                    CONTROL_LOOP2=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
+                    CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,*999)
+                  ENDDO !loop_idx
+                ENDIF
+              ENDDO !while loop
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Control loop while loop is not associated.",ERR,ERROR,*999)
           ENDIF
         CASE DEFAULT
           LOCAL_ERROR="The control loop loop type of "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%LOOP_TYPE,"*",ERR,ERROR))// &
@@ -1288,6 +1274,49 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !> Apply the load increment for each equations_set associated with solver.
+  SUBROUTINE PROBLEM_SOLVER_LOAD_INCREMENT_APPLY(SOLVER_EQUATIONS,ITERATION_NUMBER,MAXIMUM_NUMBER_OF_ITERATIONS,ERR,ERROR,*)
+    
+    !Argument variables
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver equations to solve
+    INTEGER(INTG), INTENT(IN) :: ITERATION_NUMBER !<The current load increment iteration index
+    INTEGER(INTG), INTENT(IN) :: MAXIMUM_NUMBER_OF_ITERATIONS !<Final index for load increment loop
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    INTEGER(INTG) :: equations_set_idx
+
+    CALL ENTERS("PROBLEM_SOLVER_LOAD_INCREMENT_APPLY",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+      SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+      IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+        !Make sure the equations sets are up to date
+        DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+          EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+          CALL EQUATIONS_SET_LOAD_INCREMENT_APPLY(EQUATIONS_SET,ITERATION_NUMBER,MAXIMUM_NUMBER_OF_ITERATIONS,ERR,ERROR,*999)
+        ENDDO !equations_set_idx
+      ELSE
+        CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PROBLEM_SOLVER_LOAD_INCREMENT_APPLY")
+    RETURN
+999 CALL ERRORS("PROBLEM_SOLVER_LOAD_INCREMENT_APPLY",ERR,ERROR)
+    CALL EXITS("PROBLEM_SOLVER_LOAD_INCREMENT_APPLY")
+    RETURN 1
+
+  END SUBROUTINE PROBLEM_SOLVER_LOAD_INCREMENT_APPLY
+
+  !
+  !================================================================================================================================
+  !
+
   !>Executes pre solver routines for a problem.
   SUBROUTINE PROBLEM_SOLVER_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
@@ -1306,10 +1335,9 @@ CONTAINS
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
           SELECT CASE(CONTROL_LOOP%PROBLEM%CLASS)
             CASE(PROBLEM_ELASTICITY_CLASS)
-              ! linear -> do nothing
               IF(CONTROL_LOOP%PROBLEM%TYPE == PROBLEM_FINITE_ELASTICITY_TYPE) THEN
                 CALL FINITE_ELASTICITY_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-              END IF
+              ENDIF
             CASE(PROBLEM_FLUID_MECHANICS_CLASS)
               CALL FLUID_MECHANICS_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE(PROBLEM_ELECTROMAGNETICS_CLASS)
@@ -1474,7 +1502,7 @@ CONTAINS
   !>Solves dynamic linear solver equations.
   SUBROUTINE PROBLEM_SOLVER_EQUATIONS_DYNAMIC_LINEAR_SOLVE(SOLVER_EQUATIONS,ERR,ERROR,*)
 
-   !Argument variables
+    !Argument variables
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver equations to solve
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -1501,6 +1529,7 @@ CONTAINS
               !Make sure the equations sets are up to date
               DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                 EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+                !CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)
                 !Assemble the equations for linear problems
                 CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
               ENDDO !equations_set_idx          
@@ -1840,7 +1869,7 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
     
-    CALL ENTERS("PROBLEM_SOLVER_EQUTIONS_STATIC_NONLINEAR_SOLVE",ERR,ERROR,*999)
+    CALL ENTERS("PROBLEM_SOLVER_EQUATIONS_STATIC_NONLINEAR_SOLVE",ERR,ERROR,*999)
     
     IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
       SOLVER=>SOLVER_EQUATIONS%SOLVER
@@ -1850,7 +1879,7 @@ CONTAINS
           !Apply boundary conditition
           DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
             EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-            !CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)   
+            !CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)
           ENDDO !equations_set_idx          
           !Solve
           CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
@@ -1862,7 +1891,7 @@ CONTAINS
       ENDIF
     ELSE
       CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
-    ENDIF    
+    ENDIF
     
     CALL EXITS("PROBLEM_SOLVER_EQUATIONS_STATIC_NONLINEAR_SOLVE")
     RETURN
