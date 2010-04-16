@@ -7721,7 +7721,7 @@ CONTAINS
     TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    REAL(DP), POINTER :: CHECK_DATA(:),PREVIOUS_RESIDUAL_PARAMETERS(:),CHECK_DATA2(:),CHECK_DATA3(:)
+    REAL(DP), POINTER :: CHECK_DATA(:),PREVIOUS_RESIDUAL_PARAMETERS(:),CHECK_DATA2(:)
 
    
     CALL ENTERS("SOLVER_MATRICES_DYNAMIC_ASSEMBLE",ERR,ERROR,*999)
@@ -8632,7 +8632,7 @@ CONTAINS
     INTEGER(INTG) :: DEPENDENT_VARIABLE_TYPE,equations_column_number,equations_matrix_idx,equations_matrix_number, &
       & equations_row_number,equations_row_number2,equations_set_idx,LINEAR_VARIABLE_TYPE,rhs_boundary_condition, &
       & residual_variable_type,rhs_global_dof,rhs_variable_dof,rhs_variable_type,variable_boundary_condition,solver_matrix_idx, &
-      & solver_row_idx,solver_row_number,variable_dof,variable_global_dof,variable_idx,variable_type,component_idx,&
+      & solver_row_idx,solver_row_number,variable_dof,variable_global_dof,variable_idx,variable_type,&
       & j,dirichlet_idx,dirichlet_row,NUMBER_OF_NEUMANN_ROWS
     REAL(SP) :: SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),USER_ELAPSED,USER_TIME1(1),USER_TIME2(1),INTEGRATED_VALUE
     REAL(DP) :: DEPENDENT_VALUE,LINEAR_VALUE,LINEAR_VALUE_SUM,MATRIX_VALUE,RESIDUAL_VALUE,RHS_VALUE,row_coupling_coefficient, &
