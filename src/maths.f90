@@ -1768,7 +1768,7 @@ CONTAINS
         NORMALISE_SP=A
         CALL FLAG_ERROR("Length of vector to normalise is zero",ERR,ERROR,*999)
     ELSE
-	    NORMALISE_SP=A/LENGTH
+        NORMALISE_SP=A/LENGTH
     ENDIF
 
     CALL EXITS("NORMALISE_SP")
