@@ -90,7 +90,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-
   !>Calculates the analytic solution and sets the boundary conditions for an analytic problem.
   SUBROUTINE POISSON_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*)
 
@@ -100,13 +99,13 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx,deriv_idx,dim_idx,local_ny,node_idx,NUMBER_OF_DIMENSIONS,variable_idx,variable_type,global_ny
-    INTEGER(INTG) :: ID,NUMBER_OF_NEUMANN
-    REAL(DP) :: VALUE,X(3),VALUE_MATERIAL
+    INTEGER(INTG) :: ID,NUMBER_OF_NEUMANN,COUNT_DOF
+    REAL(DP) :: VALUE,X(3)
     REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE
     TYPE(VARYING_STRING) :: LOCAL_ERROR    
     INTEGER(INTG), ALLOCATABLE :: CONDITION(:)
@@ -130,18 +129,28 @@ CONTAINS
             NULLIFY(BOUNDARY_CONDITIONS)
             CALL BOUNDARY_CONDITIONS_CREATE_START(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
 
-            DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
+            !For testing Integrated Neumann Boundary Conditions
+            ALLOCATE(CONDITION(25))
+            ALLOCATE(DOF_NUMBER(25))
+            ALLOCATE(VALUE_BC(25))
+            ID=1
+            NUMBER_OF_NEUMANN=1
+            COUNT_DOF=0
+
+
+            DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES !U and delUdeln
               variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
               FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
               IF(ASSOCIATED(FIELD_VARIABLE)) THEN
                 CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
-                DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS !u,v,w
                   IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
                     DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
                     IF(ASSOCIATED(DOMAIN)) THEN
                       IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
                         DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
                         IF(ASSOCIATED(DOMAIN_NODES)) THEN
+
                           !Loop over the local nodes excluding the ghosts.
                           DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
                             !!TODO \todo We should interpolate the geometric field here and the node position.
@@ -153,7 +162,7 @@ CONTAINS
                             DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
                               SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
                               CASE(EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_1)
-                                !u=ln(4/(x+y+1)^2)
+                                !u=ln(4/(x+y+1^2))
                                 SELECT CASE(variable_type)
                                 CASE(FIELD_U_VARIABLE_TYPE)
                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
@@ -253,9 +262,55 @@ CONTAINS
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                  local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                    & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                  global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
+
                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                   CASE(NO_GLOBAL_DERIV)
-                                    VALUE=10.0_DP
+                                    !VALUE=2*X(1)+6*X(2)+2*X(3)
+                                    !This is for testing Integrated Neumann Boundary Conditions
+                                    SELECT CASE(node_idx)
+                                    CASE(2,3,4,5,6,7,8,9)
+                                      COUNT_DOF = COUNT_DOF+1
+                                      VALUE=-2*X(3)
+                                      VALUE_BC(COUNT_DOF)=VALUE
+                                      DOF_NUMBER(COUNT_DOF)=global_ny
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                    CASE(10,13,16)
+                                      COUNT_DOF = COUNT_DOF+1
+                                      VALUE=-2*X(1)                              
+                                      VALUE_BC(COUNT_DOF)=VALUE
+                                      DOF_NUMBER(COUNT_DOF)=global_ny
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                    CASE(12,15,18)
+                                      COUNT_DOF = COUNT_DOF+1
+                                      VALUE=2*X(1)
+                                      VALUE_BC(COUNT_DOF)=VALUE
+                                      DOF_NUMBER(COUNT_DOF)=global_ny
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                    CASE(19,20,21,22,23,24,25,26,27)
+                                      COUNT_DOF = COUNT_DOF+1
+                                      VALUE=2*X(3)
+                                      VALUE_BC(COUNT_DOF)=VALUE
+                                      DOF_NUMBER(COUNT_DOF)=global_ny
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                    CASE(17)
+                                      COUNT_DOF = COUNT_DOF+1
+                                      VALUE=6*X(2)
+                                      VALUE_BC(COUNT_DOF)=VALUE
+                                      DOF_NUMBER(COUNT_DOF)=global_ny
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                    CASE(11)
+                                      COUNT_DOF = COUNT_DOF+1
+                                      VALUE=-6*X(2)
+                                      VALUE_BC(COUNT_DOF)=VALUE
+                                      DOF_NUMBER(COUNT_DOF)=global_ny
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                    CASE DEFAULT
+                                      VALUE=0 !This is for node 14 and node 1 which is Dirichlet
+                                    END SELECT
+
                                   CASE(GLOBAL_DERIV_S1)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S2)
@@ -282,13 +337,13 @@ CONTAINS
                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                   CASE(NO_GLOBAL_DERIV)
                                     VALUE=SIN(2.0_DP*PI*X(1)/10.0_DP)*SIN(2.0_DP*PI*X(2)/10.0_DP)*SIN(2.0_DP*PI*X(3)/10.0_DP)
-!                                     VALUE=2*X(1)*X(1)+2*X(2)
+                                    !  VALUE=2*X(1)*X(1)+2*X(2)
                                   CASE(GLOBAL_DERIV_S1)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S2)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S1_S2)
-                                    CALL FLAG_ERROR("Not implmented.",ERR,ERROR,*999)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                                       DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
@@ -327,44 +382,34 @@ CONTAINS
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
 
-!!                              global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
+                              global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
 
-!!                              ALLOCATE(CONDITION(4))
-!!                              ALLOCATE(DOF_NUMBER(4))
-!!                              ALLOCATE(VALUE_BC(4))
-
-!!                              ID=1
-!!                              VALUE_BC=1.0_DP
-!!                              CONDITION=BOUNDARY_CONDITION_NEUMANN
-!!                              DOF_NUMBER(1)=1
-!!                              DOF_NUMBER(2)=2
-!!                              DOF_NUMBER(3)=3
-!!                              DOF_NUMBER(4)=4
-!!                              NUMBER_OF_NEUMANN=1
-
-!!                              CALL BOUNDARY_CONDITIONS_BOUNDARY_SET_NUMBER_OF_BOUNDARIES &
-!!                                           & (BOUNDARY_CONDITIONS,FIELD_DELUDELN_VARIABLE_TYPE,NUMBER_OF_NEUMANN,ERR,ERROR,*999)
-
-!!                              CALL BOUNDARY_CONDITIONS_BOUNDARY_ADD_DOF(BOUNDARY_CONDITIONS,&
-!!                                                 & FIELD_DELUDELN_VARIABLE_TYPE,DOF_NUMBER,VALUE_BC,CONDITION,ID,ERR,ERROR,*999)
-
-!!                              DEALLOCATE(CONDITION)
-!!                              DEALLOCATE(DOF_NUMBER)
-!!                              DEALLOCATE(VALUE_BC)
-
-!!                              IF(EQUATIONS_SET%BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(VARIABLE_TYPE)&
-!!                                                             & %PTR%GLOBAL_BOUNDARY_CONDITIONS(global_ny) &
-!!                                                                        & /=BOUNDARY_CONDITION_NEUMANN) THEN
-                                IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
-                                  IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
-                                    !If we are a boundary node then set the analytic value on the boundary
-                                    CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-                                      & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-                                  ENDIF
+                              !If BOUNDARY_CONDITION_FIXED on FIELD_U_VARIABLE_TYPE then Dirichlet
+                              IF(variable_type==FIELD_U_VARIABLE_TYPE.and.node_idx==1) THEN
+                                IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
+                                  !If we are a boundary node then set the analytic value on the boundary
+                                  CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+                                    & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
                                 ENDIF
-!!                              ENDIF
+                              ENDIF
+
+                              !If BOUNDARY_CONDITION_FIXED on FIELD_DELUDELN_VARIABLE_TYPE then Neumann
+                              IF(variable_type==FIELD_DELUDELN_VARIABLE_TYPE.and.node_idx/=1) THEN
+                                IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
+                                  !If we are a boundary node then set the analytic value on the boundary
+!                                  CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+!                                    & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+     !!                             CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+     !!                               & BOUNDARY_CONDITION_NEUMANN,VALUE,ERR,ERROR,*999)
+
+                                 !Do nothing at present
+
+                                ENDIF
+                              ENDIF
+
                             ENDDO !deriv_idx
                           ENDDO !node_idx
+
                         ELSE
                           CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
                         ENDIF
@@ -386,51 +431,21 @@ CONTAINS
                 CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
               ENDIF
             ENDDO !variable_idx
+
+
+            CALL BOUNDARY_CONDITIONS_BOUNDARY_SET_NUMBER_OF_BOUNDARIES &
+                             & (BOUNDARY_CONDITIONS,FIELD_DELUDELN_VARIABLE_TYPE,NUMBER_OF_NEUMANN,ERR,ERROR,*999)
+
+            CALL BOUNDARY_CONDITIONS_BOUNDARY_ADD_DOF&
+                     & (BOUNDARY_CONDITIONS,FIELD_DELUDELN_VARIABLE_TYPE,DOF_NUMBER,VALUE_BC,CONDITION,ID,ERR,ERROR,*999)
+
+            DEALLOCATE(CONDITION)
+            DEALLOCATE(DOF_NUMBER)
+            DEALLOCATE(VALUE_BC)
+
             CALL BOUNDARY_CONDITIONS_CREATE_FINISH(BOUNDARY_CONDITIONS,ERR,ERROR,*999)
             CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
               & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-
-!             MATERIALS_FIELD=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
-!             IF(ASSOCIATED(MATERIALS_FIELD)) THEN
-!               CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-!               NULLIFY(GEOMETRIC_VARIABLE)
-!               CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
-!               CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
-!                 & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999) 
-!               DO variable_idx=1,MATERIALS_FIELD%NUMBER_OF_VARIABLES
-!                 variable_type=MATERIALS_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
-!                 FIELD_VARIABLE=>MATERIALS_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
-!                 IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-!                   DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-! 
-!                     SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
-!                     CASE(TEST_CASE_1)
-!                       VALUE_MATERIAL=10.0_DP
-!                     CASE DEFAULT
-!                       LOCAL_ERROR="The analytic function type of "// &
-!                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
-!                         & " is invalid."
-!                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-!                     END SELECT
-!                     CALL FIELD_PARAMETER_SET_UPDATE_CONSTANT(MATERIALS_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
-!                       & FIELD_VALUES_SET_TYPE,component_idx,VALUE_MATERIAL,ERR,ERROR,*999)
-! 
-!                   ENDDO !component_idx
-!                   CALL FIELD_PARAMETER_SET_UPDATE_START(MATERIALS_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-!                     & ERR,ERROR,*999)
-!                   CALL FIELD_PARAMETER_SET_UPDATE_FINISH(MATERIALS_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-!                     & ERR,ERROR,*999)
-!                 ELSE
-!                   CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
-!                 ENDIF
-!               ENDDO !variable_idx
-!               CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-!                 & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-! 
-! 
-!             ELSE
-!               CALL FLAG_ERROR("Equations set material field is not associated.",ERR,ERROR,*999)
-!             ENDIF
 
           ELSE
             CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
@@ -2180,6 +2195,29 @@ CONTAINS
                       !Create analytic field if required
                       !Set analytic function type
                       EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_1
+                    ELSE
+                      LOCAL_ERROR="The equations set subtype of "// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+                        & " is invalid. The analytic function type of "// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                        & " requires that the equations set subtype be an exponential source Poisson equation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                  CASE(EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_1)
+                    !Check that we have an exponential source
+                    IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_EXPONENTIAL_SOURCE_POISSON_SUBTYPE) THEN
+                      !Check that we are in 3D
+                      IF(NUMBER_OF_DIMENSIONS/=3) THEN
+                        LOCAL_ERROR="The number of geometric dimensions of "// &
+                          & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+                          & " is invalid. The analytic function type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                          & " requires that there be 3 geometric dimensions."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                      !Create analytic field if required
+                      !Set analytic function type
+                      EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_1
                     ELSE
                       LOCAL_ERROR="The equations set subtype of "// &
                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &

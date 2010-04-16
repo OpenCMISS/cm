@@ -186,7 +186,7 @@ MODULE TYPES
 
   !>Contains information on the defined basis functions
   TYPE BASIS_FUNCTIONS_TYPE
-   INTEGER(INTG) :: NUMBER_BASIS_FUNCTIONS !<The number of basis functions definegd
+   INTEGER(INTG) :: NUMBER_BASIS_FUNCTIONS !<The number of basis functions defined
     TYPE(BASIS_PTR_TYPE), POINTER :: BASES(:) !<The array of pointers to the defined basis functions
   END TYPE BASIS_FUNCTIONS_TYPE
   
@@ -1468,9 +1468,11 @@ MODULE TYPES
   !>Contains the arrays and mapping arrays used to calculate the Neumann boundary conditions
   TYPE BOUNDARY_CONDITIONS_NEUMANN_TYPE
     TYPE(BOUNDARY_CONDITIONS_NEUMANN_VALUES_PTR_TYPE), ALLOCATABLE :: NEUMANN_BOUNDARY_IDENTIFIER(:) !<Array of identifiers for user set Neumann boundaries
-    REAL(DP), ALLOCATABLE :: FACE_INTEGRATION_MATRIX(:,:) !<Array for results from face basis calculation for an individual face
+    INTEGER(INTG), ALLOCATABLE :: FACES_ELEMENT_PARAM_2_LOCAL_DOF(:,:) !<The array for local_ny to element_parameter number per face, indexed by face and element_parameter, returns local_ny (dof) number. 
+    REAL(DP), ALLOCATABLE :: FACE_INTEGRATION_MATRIX(:) !<Array for results from face basis calculation for an individual face
     INTEGER(INTG), ALLOCATABLE :: FACE_INTEGRATION_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of FACE_INTEGRATION_MATRIX
-    REAL(DP), ALLOCATABLE :: LINE_INTEGRATION_MATRIX(:,:) !<Array for results from line basis calculation for an individual line
+    INTEGER(INTG), ALLOCATABLE :: LINES_ELEMENT_PARAM_2_LOCAL_DOF(:,:) !<The array for local_ny to element_parameter number per line, indexed by line and element_parameter, returns local_ny (dof) number. 
+    REAL(DP), ALLOCATABLE :: LINE_INTEGRATION_MATRIX(:) !<Array for results from line basis calculation for an individual line
     INTEGER(INTG), ALLOCATABLE :: LINE_INTEGRATION_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of LINE_INTEGRATION_MATRIX
     REAL(DP), ALLOCATABLE :: INTEGRATION_MATRIX(:,:) !<The INTEGRATION_MATRIX - array for conglomeration of FACE_INTEGRATION_MATRIX, the 'A' matrix
     INTEGER(INTG), ALLOCATABLE :: INTEGRATION_MATRIX_MAPPING_X(:) !<Mapping array of domain nodes to X axis of INTEGRATION_MATRIX
