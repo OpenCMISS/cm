@@ -10129,6 +10129,13 @@ CONTAINS
                     LINEAR_SOLVER%SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
                     !Finish the creation of the linear solver
                     CALL SOLVER_LINEAR_CREATE_FINISH(LINEAR_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
+                    !Associate linear solver's KSP to nonlinear solver's SNES
+                    SELECT CASE(LINEAR_SOLVER%LINEAR_SOLVER%LINEAR_SOLVE_TYPE)
+                    CASE(SOLVER_LINEAR_DIRECT_SOLVE_TYPE)
+                      CALL PETSC_SNESSETKSP(linesearch_solver%snes,linear_solver%linear_solver%direct_solver%ksp,ERR,ERROR,*999)
+                    CASE(SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE)
+                      CALL PETSC_SNESSETKSP(linesearch_solver%snes,linear_solver%linear_solver%iterative_solver%ksp,ERR,ERROR,*999)                    
+                    END SELECT
 
                     !Set the nonlinear function
                     RESIDUAL_VECTOR=>SOLVER_MATRICES%RESIDUAL
