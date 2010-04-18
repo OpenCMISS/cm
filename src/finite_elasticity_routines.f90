@@ -229,7 +229,7 @@ CONTAINS
 
     INTEGER(INTG) :: component_idx,component_idx2,parameter_idx,gauss_idx,element_dof_idx,FIELD_VAR_TYPE
 
-    INTEGER(INTG) :: idx
+    INTEGER(INTG) :: idx,dim_idx
     INTEGER(INTG) :: NDOFS,mh,mhs
     INTEGER(INTG) :: DEPENDENT_NUMBER_OF_COMPONENTS
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,NUMBER_OF_XI,HYDROSTATIC_PRESSURE_COMPONENT
@@ -340,6 +340,13 @@ CONTAINS
             !Calculate Sigma=1/Jznu.FTF', the Cauchy stress tensor at the gauss point
             CALL FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT, &
               & MATERIALS_INTERPOLATED_POINT,CAUCHY_TENSOR,Jznu,DZDNU,ERR,ERROR,*999)
+
+            IF (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE) THEN
+              DO dim_idx=1,NUMBER_OF_DIMENSIONS
+                CAUCHY_TENSOR(dim_idx,dim_idx) = CAUCHY_TENSOR(dim_idx,dim_idx) &
+                  & - 0.7_DP * DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV) !Include (1-porosity); 0.7 for now !!!
+              ENDDO
+            ENDIF
 
             !Calculate dPhi/dZ at the gauss point, Phi is the basis function
             CALL FINITE_ELASTICITY_GAUSS_DFDZ(DEPENDENT_INTERPOLATED_POINT,ELEMENT_NUMBER,gauss_idx,NUMBER_OF_DIMENSIONS, &
@@ -2304,8 +2311,8 @@ CONTAINS
               ENDIF
 
               IF(SOLVER%GLOBAL_NUMBER==3) THEN
-                !--- 3.1 Get the Darcy pressure
-                CALL FINITE_ELASTICITY_PRE_SOLVE_GET_DARCY_PRESSURE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+!                 !--- 3.1 Get the Darcy pressure
+!                 CALL FINITE_ELASTICITY_PRE_SOLVE_GET_DARCY_PRESSURE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
                 !--- 3.2 For PGM: Get the displacement field
                 IF(CONTROL_LOOP%PROBLEM%SUBTYPE==PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE) THEN
                   CALL FINITE_ELASTICITY_PRE_SOLVE_GET_SOLID_DISPLACEMENT(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
