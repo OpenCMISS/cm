@@ -759,7 +759,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionCauchy = BOUNDARY_CONDITION_CAUCHY
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionRobin = BOUNDARY_CONDITION_ROBIN
 
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionLoadIncremented = BOUNDARY_CONDITION_INCREMENTED_TYPE
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionFixedIncremented = BOUNDARY_CONDITION_FIXED_INCREMENTED_TYPE
   !>@}
   !>@}
   
@@ -837,7 +837,7 @@ MODULE OPENCMISS
     & CMISSBoundaryConditionFreeWall,CMISSBoundaryConditionOutletWall
 
   PUBLIC CMISSBoundaryConditionNeumann,CMISSBoundaryConditionNeumannPoint,CMISSBoundaryConditionDirichlet
-  PUBLIC CMISSBoundaryConditionCauchy,CMISSBoundaryConditionRobin,CMISSBoundaryConditionLoadIncremented
+  PUBLIC CMISSBoundaryConditionCauchy,CMISSBoundaryConditionRobin,CMISSBoundaryConditionFixedIncremented
 
   PUBLIC CMISSBoundaryConditionsDestroy
 
@@ -2330,6 +2330,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   !> \see OPENCMISS::Field,OPENCMISS
   !>@{
   INTEGER(INTG), PARAMETER :: CMISSFieldValuesSetType = FIELD_VALUES_SET_TYPE !<The parameter set corresponding to the field values (at time T+DT for dynamic problems) \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionsSetType = FIELD_BOUNDARY_CONDITIONS_SET_TYPE !<The parameter set corresponding to the field boundary condition values \see OPENCMISS_FieldParameterSetTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSInitialValuesSetType = FIELD_INITIAL_VALUES_SET_TYPE !<The parameter set corresponding to the field initial values \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldIncrementalValuesSetType = FIELD_INCREMENTAL_VALUES_SET_TYPE !<The parameter set corresponding to the field incremental values \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldAnalyticValuesSetType = FIELD_ANALYTIC_VALUES_SET_TYPE !<The parameter set corresponding to the analytic field values \see OPENCMISS_FieldParameterSetTypes,OPENCMISS

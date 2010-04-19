@@ -701,11 +701,11 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE SNESSetJacobian
 
-    SUBROUTINE SNESSetKsp(snes,ksp,ierr)
+    SUBROUTINE SNESSetKSP(snes,ksp,ierr)
       SNES snes
       KSP ksp
       PetscInt ierr
-    END SUBROUTINE SNESSetKsp
+    END SUBROUTINE SNESSetKSP
 
     SUBROUTINE SNESSetTolerances(snes,abstol,rtol,stol,maxit,maxf,ierr)
       SNES snes

@@ -4975,7 +4975,7 @@ CONTAINS
                     DO dirichlet_idx=1,BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
                       dirichlet_dof_idx=DIRICHLET_BOUNDARY_CONDITIONS%DIRICHLET_DOF_INDICES(dirichlet_idx)
                       IF(BOUNDARY_CONDITIONS_VARIABLE%global_boundary_conditions(dirichlet_dof_idx)== &
-                        & BOUNDARY_CONDITION_INCREMENTED_TYPE) THEN !Only increment if it's a incremented type bc
+                        & BOUNDARY_CONDITION_FIXED_INCREMENTED_TYPE) THEN !Only increment if it's a incremented type bc
                         FULL_LOAD=FULL_LOADS(dirichlet_dof_idx)
                         ! Apply full load if last step, or fixed BC
                         IF(ITERATION_NUMBER==MAXIMUM_NUMBER_OF_ITERATIONS) THEN
