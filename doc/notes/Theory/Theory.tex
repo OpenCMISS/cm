@@ -30,18 +30,18 @@ $\hat{\vect{g}_{i}}$ are the unit vectors given by
 \subsection{Metric Tensors}
 
 Metric tensors are the inner product of base vectors. If $\vect{g}_{i}$ are the
-covarient base vectors then the covarient metric tensor is given by
+covariant base vectors then the covariant metric tensor is given by
 \begin{equation}
   g_{ij}=\dotprod{\vect{g}_{i}}{\vect{g}_{j}}
 \end{equation}
 
-Similarily if $\vect{g}^{i}$ are the contravarient base vectors then the
-contravarient metric tensor is given by 
+Similarily if $\vect{g}^{i}$ are the contravariant base vectors then the
+contravariant metric tensor is given by 
 \begin{equation}
   g^{ij}=\dotprod{\vect{g}^{i}}{\vect{g}^{j}}
 \end{equation}
 
-We can also form a mixed metric tensor from the dot product of a contravarient
+We can also form a mixed metric tensor from the dot product of a contravariant
 and a covariant base vector \ie
 \begin{equation}
   g^{i}_{j}=\dotprod{\vect{g}^{i}}{\vect{g}_{j}}
@@ -55,7 +55,7 @@ The metric tensors generalise (Euclidean) distance \ie
   ds^{2}=g^{ij}dx^{i}dx^{j}
 \end{equation}
 
-Note that multiplying by the covarient metric tensor lowers indices \ie
+Note that multiplying by the covariant metric tensor lowers indices \ie
 \begin{align}
   g_{ij}\vect{A}^{j} &= \vect{A}_{i} \\
   g_{ik}g_{jl}A^{kl} &= A_{ij}
@@ -151,11 +151,11 @@ We can now write
 \end{equation}
 where $\covarderiv{v^{k}}{i}$ is the covariant derivative of $v^{k}$ . 
 
-The covariant derivative of a rank 1 contravarient tensor $v^{k}$ is
+The covariant derivative of a rank 1 contravariant tensor $v^{k}$ is
 \begin{equation}
   \covarderiv{v^{k}}{i} =\delby{v^{k}}{\xi^{i}}+\christoffel{j}{i}{k}v^{j}
 \end{equation}
-and the covariant derivative of a rank 1 covarient tensor $v_{k}$ is
+and the covariant derivative of a rank 1 covariant tensor $v_{k}$ is
 \begin{equation}
   \covarderiv{v_{k}}{i} =\delby{v_{k}}{\xi^{i}}-\christoffel{k}{i}{j}v_{j}
 \end{equation}
@@ -198,7 +198,7 @@ The divergence of a vector using covariant derivatives is
 \begin{equation}
   \text{div } \vect{\phi} = \diverg{\vect{\phi}}=\covarderiv{\phi^{i}}{i}=\frac{1}{\sqrt{\abs{g}}}\pbrac{\sqrt{\abs{g}}\phi^{i}}_{,i}
 \end{equation}
-where $g$ is the determinant of the covariant metrix tensor $g_{ij}$.
+where $g$ is the determinant of the covariant metric tensor $g_{ij}$.
 
 \subsubsection{Curl}
 
@@ -206,7 +206,7 @@ The curl of a vector using covariant derivatives is
 \begin{equation}
   \text{curl } \vect{\phi} = \curl{\vect{\phi}}=\frac{1}{\sqrt{g}}\pbrac{\covarderiv{\phi_{j}}{i}-\covarderiv{\phi_{i}}{j}}\vect{g}_{k}
 \end{equation}
-where $g$ is the determinant of the covariant metrix tensor $g_{ij}$.
+where $g$ is the determinant of the covariant metric tensor $g_{ij}$.
 
 \subsubsection{Laplacian}
 
@@ -214,7 +214,7 @@ The Laplacian of a scalar using covariant derivatives is
 \begin{equation}
   \laplacian{\phi}=\text{div}\pbrac{\text{grad }\phi}=\diverg{\grad\phi}=\mixedderiv{\phi}{i}{i}=\frac{1}{\sqrt{g}}\pbrac{\sqrt{g}g^{ij}\phi_{,j}}_{,i}
 \end{equation}
-where $g$ is the determinant of the covariant metrix tensor $g_{ij}$.
+where $g$ is the determinant of the covariant metric tensor $g_{ij}$.
 
 \subsection{Coordinate Systems}
 
