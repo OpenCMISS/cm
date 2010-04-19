@@ -1738,7 +1738,8 @@ CONTAINS
                     CASE(BOUNDARY_CONDITION_NOT_FIXED)
                       CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                     CASE(BOUNDARY_CONDITION_FIXED)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(USER_GLOBAL_DOF_NUMBER(i))= &
+                                                                                         & BOUNDARY_CONDITION_FIXED
                     CASE(BOUNDARY_CONDITION_FIXED_WALL)
                       CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                     CASE(BOUNDARY_CONDITION_FIXED_INLET)

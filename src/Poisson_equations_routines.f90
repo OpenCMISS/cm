@@ -276,37 +276,37 @@ CONTAINS
                                       VALUE=-2*X(3)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_FIXED
                                     CASE(10,13,16)
                                       COUNT_DOF = COUNT_DOF+1
                                       VALUE=-2*X(1)                              
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_FIXED
                                     CASE(12,15,18)
                                       COUNT_DOF = COUNT_DOF+1
                                       VALUE=2*X(1)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_FIXED
                                     CASE(19,20,21,22,23,24,25,26,27)
                                       COUNT_DOF = COUNT_DOF+1
                                       VALUE=2*X(3)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_FIXED
                                     CASE(17)
                                       COUNT_DOF = COUNT_DOF+1
                                       VALUE=6*X(2)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_FIXED
                                     CASE(11)
                                       COUNT_DOF = COUNT_DOF+1
                                       VALUE=-6*X(2)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_FIXED
                                     CASE DEFAULT
                                       VALUE=0 !This is for node 14 and node 1 which is Dirichlet
                                     END SELECT
