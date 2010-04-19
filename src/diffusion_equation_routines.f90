@@ -675,7 +675,8 @@ CONTAINS
                     & ERR,ERROR,*999)
                   SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
                   CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
-                    DO component_idx=1,NUMBER_OF_DIMENSIONS
+!                    DO component_idx=1,NUMBER_OF_DIMENSIONS
+                      component_idx=1
                       CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,component_idx, &
                         & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                       CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE, & 
@@ -684,7 +685,7 @@ CONTAINS
                         & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                       CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELVDELN_VARIABLE_TYPE, & 
                         & component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-                    ENDDO !component_idx
+!                    ENDDO !component_idx
                   CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
