@@ -8890,6 +8890,12 @@ CONTAINS
                                                 ENDDO !variable_idx
                                               ENDIF
                                             ENDDO !equations_row_number
+
+                                            DEALLOCATE(RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS% &
+                                                    & INTEGRATED_VALUES_VECTOR_MAPPING)
+                                            DEALLOCATE(RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS% &
+                                                    & INTEGRATED_VALUES_VECTOR)
+
                                           ENDIF
                                         ENDIF
 
@@ -9038,32 +9044,7 @@ CONTAINS
                                             ENDDO !variable_idx
                                           ENDIF
 
-                                        CASE(BOUNDARY_CONDITION_NEUMANN) !Needs to be changed to FIXED
-                                          !Add in equations RHS values
-                                          CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_RHS_VECTOR,equations_row_number, &
-                                            & RHS_VALUE,ERR,ERROR,*999)
-                                          !Loop over the solver rows associated with this equations set row
-                                          DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                            & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
-
-                                            solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                              & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
-                                              & solver_row_idx)
-
-                                            row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-                                              & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                                              & COUPLING_COEFFICIENTS(solver_row_idx)
-
-                                            VALUE=RHS_VALUE*row_coupling_coefficient
-
-                                            CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
-                                              & ERR,ERROR,*999)
-                                          ENDDO !solver_row_idx                          
-
-                                          NUMBER_OF_NEUMANN_ROWS=NUMBER_OF_NEUMANN_ROWS+1
-
                                         CASE(BOUNDARY_CONDITION_FIXED)
-
                                           RHS_VALUE=RHS_PARAMETERS(rhs_variable_dof)
                                           IF(ABS(RHS_VALUE)>=ZERO_TOLERANCE) THEN
                                             !Loop over the solver rows associated with this equations set row
@@ -9094,72 +9075,6 @@ CONTAINS
                                         END SELECT
 
                                       ENDDO !equations_row_number
-
-
-                                      !Calculate the Neumann integrated flux boundary conditions
-                                      IF(NUMBER_OF_NEUMANN_ROWS>0) THEN
-
-                                        IF(ASSOCIATED(LINEAR_MAPPING).AND..NOT.ASSOCIATED(NONLINEAR_MAPPING)) THEN
-
-                                          !Perform calculation for all dof in patch
-                                          CALL BOUNDARY_CONDITIONS_INTEGRATED_CALCULATE(BOUNDARY_CONDITIONS, &
-                                            & RHS_VARIABLE_TYPE,ERR,ERROR,*999)
-
-                                          DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
-                                            !Loop over the dependent variables associated with this equations set row
-                                            DO variable_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
-  
-                                              variable_dof=LINEAR_MAPPING%EQUATIONS_ROW_TO_VARIABLE_DOF_MAPS( &
-                                                & equations_row_number,variable_idx)
-
-                                              !Locate calculated value at dof
-                                              INTEGRATED_VALUE=0.0_DP
-                                              DO j=1,RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS &
-                                                                                      & %INTEGRATED_VALUES_VECTOR_SIZE
-
-                                                IF((INTEGRATED_VALUE==0.0_DP).AND. &
-                                                   & (RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS% &
-                                                   & INTEGRATED_VALUES_VECTOR_MAPPING(j)==variable_dof)) THEN
-
-                                                  INTEGRATED_VALUE=RHS_BOUNDARY_CONDITIONS &
-                                                                       & %NEUMANN_BOUNDARY_CONDITIONS%INTEGRATED_VALUES_VECTOR(j)
-                                                ENDIF
-                                              ENDDO !j
-
-                                              IF(ABS(INTEGRATED_VALUE)>=ZERO_TOLERANCE) THEN
-
-                                                !For a given equations_row_number corresponding to the dof, add calculated value to RHS
-
-                                                DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-                                                  & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
-                                                  & equations_row_number)%NUMBER_OF_SOLVER_ROWS
- 
-                                                  solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-                                                    & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
-                                                    & equations_row_number)%SOLVER_ROWS(solver_row_idx)
-
-                                                  row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
-                                                    & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
-                                                    & equations_row_number)%COUPLING_COEFFICIENTS(solver_row_idx)
-
-                                                  !Put into field instead using FIELD_VALUES_UPDATE
-
-                                                  VALUE=INTEGRATED_VALUE*row_coupling_coefficient
-
-                                                  !Note: the below line will add the calculated Neumann value to any existing value
-                                                  CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number, &
-                                                    & VALUE,ERR,ERROR,*999)
-                                                ENDDO !solver_row_idx
-                                              ENDIF
-                                            ENDDO !variable_idx
-                                          ENDDO !equations_row_number
-
-                                          DEALLOCATE(RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS% &
-                                                    & INTEGRATED_VALUES_VECTOR_MAPPING)
-                                          DEALLOCATE(RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS% &
-                                                    & INTEGRATED_VALUES_VECTOR)
-                                        ENDIF
-                                      ENDIF
 
                                     ELSE
                                       CALL FLAG_ERROR("RHS boundary conditions variable is not associated.",ERR,ERROR,*999)
