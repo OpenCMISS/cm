@@ -6,13 +6,18 @@
 
 \subsection{Base vectors}
 
-Now, if we have a vector, $\vect{v}$ we can write
+Now, if we have a contravariant vector, $\vect{v}$ we can write
 \begin{equation}
-\vect{v}=v^{i}\vect{g}_{i}=v_{i}\vect{g}^{i}
+  \vect{v}=v^{i}\vect{g}_{i}
 \end{equation}
-where $v^{i}$ are the contravariant components of the vector, $v_{i}$ are
-the covariant components, $\vect{g}_{i}$ are the covariant base vectors and
-$\vect{g}^{i}$ are the contravariant base vectors. We now note that
+where $v^{i}$ are the components of the contravariant vector, and $\vect{g}_{i}$ are the covariant base vectors.
+
+Similarly, if we have a contravariant vector, $\vect{v}$ we can write
+\begin{equation}
+  \vect{v}=v_{i}\vect{g}^{i}
+\end{equation}
+
+This time  $v_{i}$ are the components of the covariant vector, and $\vect{g}^{i}$ are the contravariant base vectors. We now note that
 \begin{equation}
   \vect{v}=v^{i}\vect{g}_{i}=v^{i}\sqrt{g_{ii}}\hat{\vect{g}_{i}}
 \end{equation}
@@ -114,7 +119,7 @@ The derivatives of a vector $\vect{v}$ are given by
   \begin{split}
     \delby{\vect{v}}{\xi^{i}} &=
     \delby{}{\xi^{i}}\pbrac{v^{k}\vect{g}_{k}} \\
-    &= \delby{v^{k}}{\xi^{i}}+v^{k}\delby{\vect{g}_{k}}{\xi^{i}} \\
+    &= \delby{v^{k}}{\xi^{i}}\vect{g}_{k}+v^{k}\delby{\vect{g}_{k}}{\xi^{i}} \\
     &= v^{k}_{,i}\vect{g}_{k}+v^{k}\vect{g}_{k,i}
   \end{split}
 \end{equation}
