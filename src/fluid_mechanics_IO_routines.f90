@@ -166,6 +166,8 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   INTEGER(INTG):: ALLOC_ERROR
   INTEGER(INTG):: FIELD_VAR_TYPE, var_idx
 
+  LOGICAL :: DN
+
   REAL(DP), DIMENSION(:,:), ALLOCATABLE::ElementNodesScales
   REAL(DP), DIMENSION(:), ALLOCATABLE:: XI_COORDINATES,COORDINATES
 !  REAL(DP):: test
@@ -547,6 +549,18 @@ CONTAINS
       END DO 
     END DO
 
+    IF(DN) THEN
+  ! output for DN only
+      DO K=1,NodesPerMeshComponent(2)
+        IF(NumberOfDimensions==2)THEN
+          NodePValue2(K)=REGION%equations_sets%equations_sets(1)%ptr%dependent%dependent_field%variables(1) &
+            & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(2*NodesPerMeshComponent(1)+K)
+        ELSE IF(NumberOfDimensions==3)THEN
+          NodePValue2(K)=REGION%equations_sets%equations_sets(1)%ptr%dependent%dependent_field%variables(1) &
+            & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(3*NodesPerMeshComponent(1)+K)
+        ENDIF
+      ENDDO
+    ENDIF
 
     IF( NumberOfDimensions==3 )THEN
       !For 3D, the following call works ...
@@ -1647,6 +1661,23 @@ CONTAINS
     IF( DARCY%ANALYTIC ) THEN
       CALL FLUID_MECHANICS_IO_DARCY_EVAL_MAX_ERROR
     END IF
+
+!test output for DN only
+    IF(DN) THEN
+      FILENAME="./output/"//NAME//".davidn"
+      OPEN(UNIT=14, FILE=CHAR(FILENAME),STATUS='unknown')
+      WRITE(14,*) NodesPerMeshComponent(1),NodesPerMeshComponent(1),NodesPerMeshComponent(2)
+      DO I=1,NodesPerMeshComponent(1) 
+        WRITE(14,'(3("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I)
+      ENDDO
+      DO I=1,NodesPerMeshComponent(1) 
+        WRITE(14,'(6("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I),NodeUValue(I),NodeVValue(I),NodeWValue(I)
+      ENDDO
+      DO I=1,NodesPerMeshComponent(2) 
+        WRITE(14,'(6("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I),NodePValue2(I)
+      ENDDO
+      CLOSE(14)
+    ENDIF
 
     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Writing Nodes...",ERR,ERROR,*999)
     RETURN
