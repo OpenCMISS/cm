@@ -3802,7 +3802,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & CMISSProblemMatPropertiesGalerkinProjectionSubtype
 
   PUBLIC CMISSProblemControlSimpleType,CMISSProblemControlFixedLoopType,CMISSProblemControlTimeLoopType, &
-    & CMISSProblemControlWhileLoopType
+    & CMISSProblemControlWhileLoopType,CMISSProblemControlLoadIncrementLoopType 
 
   PUBLIC CMISSProblemStandardElasticityDarcySubtype, CMISSProblemPGMElasticityDarcySubtype, &
    & CMISSProblemCoupledSourceDiffusionDiffusionSubtype, CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype, &
