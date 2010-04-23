@@ -2266,7 +2266,7 @@ CONTAINS
                           & DIFFUSION_DEPENDENT_PREVIOUS_INTERPOLATED_POINT,ERR,ERROR,*999)
                    write(*,*) ADVEC_DIFF_DEPENDENT_CURRENT_INTERPOLATED_POINT%VALUES(1,NO_PART_DERIV)
                    write(*,*) DIFFUSION_DEPENDENT_PREVIOUS_INTERPOLATED_POINT%VALUES(1,NO_PART_DERIV)
-                   C_PARAM=ADVEC_DIFF_DEPENDENT_CURRENT_INTERPOLATED_POINT%VALUES(1,NO_PART_DERIV)+ &
+                   C_PARAM=0.5_DP*ADVEC_DIFF_DEPENDENT_CURRENT_INTERPOLATED_POINT%VALUES(1,NO_PART_DERIV)- &
                           & DIFFUSION_DEPENDENT_PREVIOUS_INTERPOLATED_POINT%VALUES(1,NO_PART_DERIV)
 !                     C_PARAM_1_T= EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1, NO_PART_DERIV)!<This is the value of the solution from the advection-diffusion equation at time T
 !                     C_PARAM_1_TPLUSONE= !<This is the value of the solution from the advection-diffusion equation at time T+deltaT
@@ -2299,7 +2299,7 @@ CONTAINS
                     CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng, &
                           & ADVEC_DIFF_DEPENDENT_PREVIOUS_INTERPOLATED_POINT,ERR,ERROR,*999)
                    write(*,*) ADVEC_DIFF_DEPENDENT_PREVIOUS_INTERPOLATED_POINT%VALUES(1,NO_PART_DERIV)
-                   C_PARAM=ADVEC_DIFF_DEPENDENT_PREVIOUS_INTERPOLATED_POINT%VALUES(1,NO_PART_DERIV)
+                   C_PARAM=0.5_DP*ADVEC_DIFF_DEPENDENT_PREVIOUS_INTERPOLATED_POINT%VALUES(1,NO_PART_DERIV)
 !                     C_PARAM_1_T= EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1, NO_PART_DERIV)!<This is the value of the solution from the advection-diffusion equation at time T
 !                     C_PARAM_1_TPLUSONE= !<This is the value of the solution from the advection-diffusion equation at time T+deltaT
 !                     C_PARAM_2_T= EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR%VALUES(1, NO_PART_DERIV)!<This is the value of the solution from the diffusion equation at time T
