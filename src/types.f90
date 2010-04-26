@@ -225,7 +225,12 @@ MODULE TYPES
     INTEGER(INTG) :: USER_NUMBER !<The user defined number of data point. 
     TYPE(VARYING_STRING) :: LABEL !<A string label for the data point.
     REAL(DP), ALLOCATABLE :: VALUES(:) !Values of the data point specifying the spatial position in the region, has the size of region dimension the data point belongs to.
-    REAL(DP), ALLOCATABLE :: WEIGHTS(:) !Weights of the data point, has the size of region dimension the data point belongs to.
+    REAL(DP), ALLOCATABLE :: WEIGHTS(:) !<Weights of the data point, has the size of region dimension the data point belongs to.
+    INTEGER(INTG) :: PROJECTION_COMPUTATIONAL_NODE_NUMBER !<The corresponding computational node of the mesh the data point projects onto. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
+    REAL(DP) :: PROJECTION_DISTANCE !<The distances between the data point and the projection. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
+    INTEGER(INTG) :: PROJECTION_ELEMENT_NUMBER !<The element of the mesh the data point projects onto. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
+    INTEGER(INTG) :: PROJECTION_EXIT_TAG !<The exit tage of the data projection. \See DATA_PROJECTION_ROUTINES. Assigned only if DATA_POINTS_PROJECTED is .TRUE. 
+    REAL(DP), ALLOCATABLE :: PROJECTION_XI(:) !<The xi coordinate of the projection. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
   END TYPE DATA_POINT_TYPE
 
   !>Contains information on the data points defined on a region. \see OPENCMISS::CMISSDataPointsType
@@ -234,9 +239,32 @@ MODULE TYPES
     LOGICAL :: DATA_POINTS_FINISHED !<Is .TRUE. if the data points have finished being created, .FALSE. if not.
     INTEGER(INTG) :: NUMBER_OF_DATA_POINTS !<The number of data points defined on the region.
     TYPE(DATA_POINT_TYPE), ALLOCATABLE :: DATA_POINTS(:) !<DATA_POINTS(data_points_idx). The data point information for the data_points_idx'th global data point.
-    TYPE(TREE_TYPE), POINTER :: DATA_POINTS_TREE !<The tree for user to global data point mapping
-  END TYPE DATA_POINTS_TYPE  
+    TYPE(TREE_TYPE), POINTER :: DATA_POINTS_TREE !<The tree for user to global data point mapping.
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !<A pointer to the data projection for the data points.
+    LOGICAL :: DATA_POINTS_PROJECTED !<Is .TRUE. if the data points have been projected, .FALSE. if not.
+  END TYPE DATA_POINTS_TYPE
   
+  !
+  !================================================================================================================================
+  !
+  ! Data projection types
+  !
+
+  TYPE DATA_PROJECTION_TYPE
+    LOGICAL :: DATA_PROJECTION_FINISHED !<Is .TRUE. if the data projection has finished being created, .FALSE. if not.
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<The pointer to the data points for this data projection.
+    TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<The pointer to the geometric field for this data projection.
+    INTEGER(INTG) :: COORDINATE_SYSTEM_DIMENSIONS !<The coordinate system dimension of this data projection.
+    REAL(DP) :: MAXIMUM_ITERATION_UPDATE !<The maximum xi update allowed at each newton iteration, analogous to maximum trust region size in the trust region model approach.
+    INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ITERATIONS !<The maximum number of iterations
+    INTEGER(INTG) :: NUMBER_OF_CLOSEST_ELEMENTS !<The number of closest elements to perform full projection on. The algorithm first find the distance of the data point to each elements base on starting xi, full projection is only performed on the first few elements sorted by the distance
+    INTEGER(INTG) :: NUMBER_OF_XI !<The number of xi of the mesh, ie. the mesh dimension
+    INTEGER(INTG) :: PROJECTION_TYPE !<type of projection to perform. \See DATA_PROJECTION_ROUTINES     
+    REAL(DP), ALLOCATABLE :: STARTING_XI(:) !<The starting value of the element xi
+    REAL(DP) :: ABSOLUTE_TOLERANCE !<The absolute tolerance of the iteration update
+    REAL(DP) :: RELATIVE_TOLERANCE !<The relative tolerance of the iteration update
+  END TYPE DATA_PROJECTION_TYPE
+
   !
   !================================================================================================================================
   !

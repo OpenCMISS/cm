@@ -58,6 +58,12 @@ MODULE SORTING
 
   !Interfaces
 
+  INTERFACE BUBBLE_ISORT
+    MODULE PROCEDURE BUBBLE_ISORT_INTG  
+    MODULE PROCEDURE BUBBLE_ISORT_SP
+    MODULE PROCEDURE BUBBLE_ISORT_DP
+  END INTERFACE !BUBBLE_ISORT
+
   INTERFACE BUBBLE_SORT
     MODULE PROCEDURE BUBBLE_SORT_INTG
     MODULE PROCEDURE BUBBLE_SORT_SP
@@ -76,9 +82,183 @@ MODULE SORTING
     MODULE PROCEDURE SHELL_SORT_DP
   END INTERFACE !SHELL_SORT
 
-  PUBLIC BUBBLE_SORT,HEAP_SORT,HEAP_SORT_TWO,SHELL_SORT
+  PUBLIC BUBBLE_ISORT
+  PUBLIC BUBBLE_SORT,HEAP_SORT,SHELL_SORT
 
 CONTAINS
+
+  !
+  !================================================================================================================================
+  !
+  
+  !#### Generic-subroutine: BUBBLE_ISORT
+  !###  Description:
+  !###    Sorts a list into assending order using the bubble sort method, returning sorting index
+  !###  Child-subroutines: BUBBLE_ISORT_INTG,BUBBLE_ISORT_SP,BUBBLE_ISORT_DP
+  
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE BUBBLE_ISORT_INTG(A,IND,ERR,ERROR,*)
+  
+    !#### Subroutine: BUBBLE_ISORT_INTG
+    !###  Description:
+    !###    BUBBLE_ISORT_INTG performs a bubble sort on an integer list, returning sorting index
+    !###  Parent-function: BUBBLE_ISORT
+    
+    !Argument variables
+    INTEGER(INTG), INTENT(INOUT) :: A(:)
+    INTEGER(INTG), INTENT(OUT) :: IND(:)      
+    INTEGER(INTG), INTENT(OUT) :: ERR
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    !Local variables
+    INTEGER(INTG) :: FLAG,i,j,k,VALUE,IVALUE
+    
+    CALL ENTERS("BUBBLE_ISORT_INTG",ERR,ERROR,*999)
+
+    IF(SIZE(IND,1)==SIZE(A,1)) THEN
+      IND(1)=1  
+      IF(SIZE(A,1)>1) THEN
+        FLAG=SIZE(A,1)
+        DO i=1,SIZE(A,1)
+          k=FLAG-1
+          FLAG=0
+          DO j=1,k
+            IF(i==1) IND(j+1)=j+1          
+            IF(A(j)>A(j+1)) THEN
+              VALUE=A(j)
+              A(j)=A(j+1)
+              A(j+1)=VALUE
+              IVALUE=IND(j)
+              IND(j)=IND(j+1)
+              IND(j+1)=IVALUE              
+              FLAG=j
+            ENDIF
+          ENDDO
+          IF(FLAG==0) EXIT
+        ENDDO
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Size of input vectors does not match",ERR,ERROR,*999)
+    ENDIF      
+
+    CALL EXITS("BUBBLE_ISORT_INTG")
+    RETURN
+999 CALL ERRORS("BUBBLE_ISORT_INTG",ERR,ERROR)
+    CALL EXITS("BUBBLE_ISORT_INTG")
+    RETURN 1
+  END SUBROUTINE BUBBLE_ISORT_INTG
+  
+  !
+  !================================================================================================================================
+  !
+  
+  SUBROUTINE BUBBLE_ISORT_SP(A,IND,ERR,ERROR,*)
+  
+    !#### Subroutine: BUBBLE_ISORT_SP
+    !###  Description:
+    !###    BUBBLE_ISORT_SP performs a bubble sort on a single precision list, returning sorting index
+    !###  Parent-function: BUBBLE_ISORT
+    
+    !Argument variables
+    REAL(SP), INTENT(INOUT) :: A(:)
+    INTEGER(INTG), INTENT(OUT) :: IND(:)      
+    INTEGER(INTG), INTENT(OUT) :: ERR
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    !Local variables
+    INTEGER(INTG) :: FLAG,i,j,k,IVALUE
+    REAL(SP) :: VALUE
+    
+    CALL ENTERS("BUBBLE_ISORT_SP",ERR,ERROR,*999)
+
+    IF(SIZE(IND,1)==SIZE(A,1)) THEN
+      IND(1)=1  
+      IF(SIZE(A,1)>1) THEN
+        FLAG=SIZE(A,1)
+        DO i=1,SIZE(A,1)
+          k=FLAG-1
+          FLAG=0
+          DO j=1,k
+            IF(i==1) IND(j+1)=j+1             
+            IF(A(j)>A(j+1)) THEN
+              VALUE=A(j)
+              A(j)=A(j+1)
+              A(j+1)=VALUE
+              IVALUE=IND(j)
+              IND(j)=IND(j+1)
+              IND(j+1)=IVALUE              
+              FLAG=j
+            ENDIF
+          ENDDO
+          IF(FLAG==0) EXIT
+        ENDDO
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Size of input vectors does not match",ERR,ERROR,*999)
+    ENDIF      
+
+    CALL EXITS("BUBBLE_ISORT_SP")
+    RETURN
+999 CALL ERRORS("BUBBLE_ISORT_SP",ERR,ERROR)
+    CALL EXITS("BUBBLE_ISORT_SP")
+    RETURN 1
+  END SUBROUTINE BUBBLE_ISORT_SP
+  
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE BUBBLE_ISORT_DP(A,IND,ERR,ERROR,*)
+  
+    !#### Subroutine: BUBBLE_ISORT_DP
+    !###  Description:
+    !###    BUBBLE_ISORT_DP performs a bubble sort on a double precision list, returning sorting index
+    !###  Parent-function: BUBBLE_ISORT
+    
+    !Argument variables
+    REAL(DP), INTENT(INOUT) :: A(:)
+    INTEGER(INTG), INTENT(OUT) :: IND(:)    
+    INTEGER(INTG), INTENT(OUT) :: ERR
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    !Local variables
+    INTEGER(INTG) :: FLAG,i,j,k,IVALUE
+    REAL(DP) :: VALUE
+    
+    CALL ENTERS("BUBBLE_ISORT_DP",ERR,ERROR,*999)
+    
+    IF(SIZE(IND,1)==SIZE(A,1)) THEN
+      IND(1)=1
+      IF(SIZE(A,1)>1) THEN
+        FLAG=SIZE(A,1)
+        DO i=1,SIZE(A,1)
+          k=FLAG-1
+          FLAG=0
+          DO j=1,k
+            IF(i==1) IND(j+1)=j+1          
+            IF(A(j)>A(j+1)) THEN
+              VALUE=A(j)
+              A(j)=A(j+1)
+              A(j+1)=VALUE
+              IVALUE=IND(j)
+              IND(j)=IND(j+1)
+              IND(j+1)=IVALUE
+              FLAG=j
+            ENDIF
+          ENDDO
+          IF(FLAG==0) EXIT
+        ENDDO
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Size of input vectors does not match",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("BUBBLE_ISORT_DP")
+    RETURN
+999 CALL ERRORS("BUBBLE_ISORT_DP",ERR,ERROR)
+    CALL EXITS("BUBBLE_ISORT_DP")
+    RETURN 1
+  END SUBROUTINE BUBBLE_ISORT_DP
 
   !
   !================================================================================================================================

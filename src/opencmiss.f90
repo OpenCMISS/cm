@@ -60,6 +60,7 @@ MODULE OPENCMISS
   USE CONTROL_LOOP_ROUTINES
   USE COORDINATE_ROUTINES
   USE DATA_POINT_ROUTINES
+  USE DATA_PROJECTION_ROUTINES
   USE EQUATIONS_ROUTINES
   USE EQUATIONS_SET_CONSTANTS
   USE EQUATIONS_SET_ROUTINES
@@ -126,7 +127,13 @@ MODULE OPENCMISS
   TYPE CMISSDataPointsType
     PRIVATE
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
-  END TYPE CMISSDataPointsType  
+  END TYPE CMISSDataPointsType
+
+  !>Contains information about a data projection.
+  TYPE CMISSDataProjectionType
+    PRIVATE
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+  END TYPE CMISSDataProjectionType
 
   !>Contains information on the mesh decomposition.
   TYPE CMISSDecompositionType
@@ -278,6 +285,10 @@ MODULE OPENCMISS
   PUBLIC CMISSControlLoopType,CMISSControlLoopTypeFinalise,CMISSControlLoopTypeInitialise
 
   PUBLIC CMISSCoordinateSystemType,CMISSCoordinateSystemTypeFinalise,CMISSCoordinateSystemTypeInitialise
+  
+  PUBLIC CMISSDataPointsType,CMISSDataPointsTypeFinalise,CMISSDataPointsTypeInitialise
+  
+  PUBLIC CMISSDataProjectionType,CMISSDataProjectionTypeFinalise,CMISSDataProjectionTypeInitialise
 
   PUBLIC CMISSDecompositionType,CMISSDecompositionTypeFinalise,CMISSDecompositionTypeInitialise
 
@@ -1522,6 +1533,50 @@ MODULE OPENCMISS
   PUBLIC CMISSDataPointsUserNumberGet,CMISSDataPointsUserNumberSet
 
   PUBLIC CMISSDataPointsWeightsGet,CMISSDataPointsWeightsSet
+
+!!==================================================================================================================================
+!!
+!! DATA_PROJECTION_ROUTINES
+!!
+!!==================================================================================================================================
+
+  !Module parameters
+
+  !Module types
+
+  !Module variables
+
+  !Interfaces
+  
+  !>Finishes the creation of a new data projection. \see OPENCMISS::CMISSDataProjectionCreateStart
+  INTERFACE CMISSDataProjectionCreateFinish
+    MODULE PROCEDURE CMISSDataProjectionCreateFinishNumber
+    MODULE PROCEDURE CMISSDataProjectionCreateFinishObj
+  END INTERFACE !CMISSDataProjectionCreateFinish
+  
+  !>Starts the creation of a new data projection. \see OPENCMISS::CMISSDataProjectionCreateFinish
+  INTERFACE CMISSDataProjectionCreateStart
+    MODULE PROCEDURE CMISSDataProjectionCreateStartNumber
+    MODULE PROCEDURE CMISSDataProjectionCreateStartObj
+  END INTERFACE !CMISSDataProjectionCreateStart
+  
+  !>Destroy a data projection.
+  INTERFACE CMISSDataProjectionDestroy
+    MODULE PROCEDURE CMISSDataProjectionDestroyNumber
+    MODULE PROCEDURE CMISSDataProjectionDestroyObj
+  END INTERFACE !CMISSDataProjectionDestroy
+  
+  !>Starts the evluation of data projection.
+  INTERFACE CMISSDataProjectionEvaluate
+    MODULE PROCEDURE CMISSDataProjectionEvaluateNumber
+    MODULE PROCEDURE CMISSDataProjectionEvaluateObj
+  END INTERFACE !CMISSDataProjectionEvaluate  
+  
+  PUBLIC CMISSDataProjectionCreateFinish,CMISSDataProjectionCreateStart
+
+  PUBLIC CMISSDataProjectionDestroy
+  
+  PUBLIC CMISSDataProjectionEvaluate 
 
 !!==================================================================================================================================
 !!
@@ -5107,6 +5162,57 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSDataPointsTypeInitialise
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalises a CMISSDataProjectionType object.
+  SUBROUTINE CMISSDataProjectionTypeFinalise(CMISSDataProjection,Err)
+  
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(OUT) :: CMISSDataProjection !<The CMISSDataProjectionType object to finalise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    
+    CALL ENTERS("CMISSDataProjectionTypeFinalise",Err,ERROR,*999)
+    
+    IF(ASSOCIATED(CMISSDataProjection%DATA_PROJECTION))  &
+      & CALL DATA_PROJECTION_DESTROY(CMISSDataProjection%DATA_PROJECTION,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDataProjectionTypeFinalise")
+    RETURN
+999 CALL ERRORS("CMISSDataProjectionTypeFinalise",Err,ERROR)
+    CALL EXITS("CMISSDataProjectionTypeFinalise")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataProjectionTypeFinalise
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises a CMISSDataProjectionType object.
+  SUBROUTINE CMISSDataProjectionTypeInitialise(CMISSDataProjection,Err)
+  
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(OUT) :: CMISSDataProjection !<The CMISSDataProjectionType object to initialise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjectionTypeInitialise",Err,ERROR,*999)
+    
+    NULLIFY(CMISSDataProjection%DATA_PROJECTION)
+
+    CALL EXITS("CMISSDataProjectionTypeInitialise")
+    RETURN
+999 CALL ERRORS("CMISSDataProjectionTypeInitialise",Err,ERROR)
+    CALL EXITS("CMISSDataProjectionTypeInitialise")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataProjectionTypeInitialise
 
   !
   !================================================================================================================================
@@ -14312,7 +14418,7 @@ CONTAINS
     !Argument variables
     TYPE(CMISSRegionType), INTENT(IN) :: Region !<The region to start the creation of data points on.
     INTEGER(INTG), INTENT(IN) :: NumberOfDataPoints !<The number of data points to create.
-    TYPE(CMISSDataPointsType), INTENT(IN) :: DataPoints !<On return, the created data points.
+    TYPE(CMISSDataPointsType), INTENT(INOUT) :: DataPoints !<On return, the created data points.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -15060,7 +15166,295 @@ CONTAINS
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSDataPointsWeightsSetObj 
+  END SUBROUTINE CMISSDataPointsWeightsSetObj
+  
+!!==================================================================================================================================
+!!
+!! DATA_PROJECTION_ROUTINES
+!!
+!!==================================================================================================================================
+  
+   !>Finishes the creation of a new data projection identified by a user number.
+  SUBROUTINE CMISSDataProjectionCreateFinishNumber(RegionUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the data points which associates to the data projection to finish the creation of.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code     
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataProjectionCreateFinishNumber",ERR,ERROR,*999)
+    
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,Err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,ERROR,*999)
+      CALL DATA_PROJECTION_CREATE_FINISH(DATA_PROJECTION,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataProjectionCreateFinishNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjectionCreateFinishNumber",Err,ERROR)
+    CALL EXITS("CMISSDataProjectionCreateFinishNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataProjectionCreateFinishNumber
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Finishes the creation of a new data projection identified by an object.
+  SUBROUTINE CMISSDataProjectionCreateFinishObj(DataProjection,Err)
+  
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(INOUT) :: DataProjection !<The data projection to finish the creation of
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code     
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjectionCreateFinishObj",Err,ERROR,*999)
+
+    CALL DATA_PROJECTION_CREATE_FINISH(DataProjection%DATA_PROJECTION,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDataProjectionCreateFinishObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjectionCreateFinishObj",Err,ERROR)
+    CALL EXITS("CMISSDataProjectionCreateFinishObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataProjectionCreateFinishObj
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !>Starts the creation of a new data projection for a data projection identified by a user number.
+  SUBROUTINE CMISSDataProjectionCreateStartNumber(DataPointRegionUserNumber,FieldUserNumber, &
+    & FieldRegionUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: DataPointRegionUserNumber 
+    INTEGER(INTG), INTENT(IN) :: FieldUserNumber
+    INTEGER(INTG), INTENT(IN) :: FieldRegionUserNumber  
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD
+    TYPE(REGION_TYPE), POINTER :: DATA_POINTS_REGION
+    TYPE(REGION_TYPE), POINTER :: GEOMETRIC_FIELD_REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR    
+
+    CALL ENTERS("CMISSDataProjectionCreateStartNumber",Err,ERROR,*999)
+
+    NULLIFY(DATA_PROJECTION)
+    NULLIFY(DATA_POINTS) 
+    NULLIFY(GEOMETRIC_FIELD)   
+    NULLIFY(DATA_POINTS_REGION)
+    NULLIFY(GEOMETRIC_FIELD_REGION)
+    CALL REGION_USER_NUMBER_FIND(DataPointRegionUserNumber,DATA_POINTS_REGION,Err,ERROR,*999)
+    CALL REGION_USER_NUMBER_FIND(FieldRegionUserNumber,GEOMETRIC_FIELD_REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(DATA_POINTS_REGION)) THEN
+      IF(ASSOCIATED(GEOMETRIC_FIELD_REGION)) THEN
+        CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,GEOMETRIC_FIELD_REGION,GEOMETRIC_FIELD,ERR,ERROR,*999)
+        IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
+          CALL REGION_DATA_POINTS_GET(DATA_POINTS_REGION,DATA_POINTS,Err,ERROR,*999)
+          CALL DATA_PROJECTION_CREATE_START(DATA_POINTS,GEOMETRIC_FIELD,DATA_PROJECTION,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
+            & " does not exist."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldRegionUserNumber,"*",Err,ERROR))// &
+          & " does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(DataPointRegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDataProjectionCreateStartNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjectionCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSDataProjectionCreateStartNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataProjectionCreateStartNumber
+
+  !
+  !================================================================================================================================
+  !  
+ 
+  !>Starts the creation of a new data projection for a data projection identified by an object.
+  SUBROUTINE CMISSDataProjectionCreateStartObj(DataPoints,GeometricField,DataProjection,Err)
+  
+    !Argument variables
+    TYPE(CMISSDataPointsType), INTENT(IN) :: DataPoints    
+    TYPE(CMISSFieldType), INTENT(IN) :: GeometricField
+    TYPE(CMISSDataProjectionType), INTENT(INOUT) :: DataProjection !<On exit, the newly created data projection.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjectionCreateStartObj",Err,ERROR,*999)
+
+    CALL DATA_PROJECTION_CREATE_START(DataPoints%DATA_POINTS,GeometricField%FIELD,DataProjection%DATA_PROJECTION,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDataProjectionCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjectionCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSDataProjectionCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataProjectionCreateStartObj
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !>Destroys a data projection identified by its data projection user number.
+  SUBROUTINE CMISSDataProjectionDestroyNumber(RegionUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the data projection to destroy.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataProjectionDestroyNumber",ERR,ERROR,*999)
+    
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,Err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,ERROR,*999)
+      CALL DATA_PROJECTION_DESTROY(DATA_PROJECTION,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+      
+    CALL EXITS("CMISSDataProjectionDestroyNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjectionDestroyNumber",Err,ERROR)
+    CALL EXITS("CMISSDataProjectionDestroyNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataProjectionDestroyNumber
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !>Destroys a data projection identified by an object.
+  SUBROUTINE CMISSDataProjectionDestroyObj(DataProjection,Err)
+  
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(INOUT) :: DataProjection !<The data projection to destroy.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjectionDestroyObj",Err,ERROR,*999)
+    
+    CALL DATA_PROJECTION_DESTROY(DataProjection%DATA_PROJECTION,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDataProjectionDestroyObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjectionDestroyObj",Err,ERROR)
+    CALL EXITS("CMISSDataProjectionDestroyObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataProjectionDestroyObj
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !>Evaluate a data projection identified by its data projection user number.
+  SUBROUTINE CMISSDataProjectionEvaluateNumber(RegionUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the data projection to evaluate.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables   
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataProjectionEvaluateNumber",ERR,ERROR,*999)
+    
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    NULLIFY(DATA_PROJECTION)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,Err,ERROR,*999)
+      CALL DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,ERROR,*999)
+      CALL DATA_PROJECTION_EVALUATE(DATA_PROJECTION,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+      
+    CALL EXITS("CMISSDataProjectionEvaluateNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataProjectionEvaluateNumber",Err,ERROR)
+    CALL EXITS("CMISSDataProjectionEvaluateNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataProjectionEvaluateNumber
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !>Evaluate a data projection identified by an object.
+  SUBROUTINE CMISSDataProjectionEvaluateObj(DataProjection,Err)
+  
+    !Argument variables
+    TYPE(CMISSDataProjectionType), INTENT(INOUT) :: DataProjection !<The data projection to evaluate.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSDataProjectionEvaluateObj",Err,ERROR,*999)
+    
+    CALL DATA_PROJECTION_EVALUATE(DataProjection%DATA_PROJECTION,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDataProjectionEvaluateObj")
+    RETURN
+999 CALL ERRORS("CMISSDataProjectionEvaluateObj",Err,ERROR)
+    CALL EXITS("CMISSDataProjectionEvaluateObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataProjectionEvaluateObj
 
 !!==================================================================================================================================
 !!
@@ -20132,6 +20526,7 @@ CONTAINS
     NULLIFY(REGION)
     NULLIFY(FIELD)
     NULLIFY(DECOMPOSITION)
+    NULLIFY(MESH)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
