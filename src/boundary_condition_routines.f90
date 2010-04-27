@@ -1816,31 +1816,35 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<Pointer to Topology
     TYPE(DOMAIN_FACES_TYPE), POINTER :: DOMAIN_FACES
+    TYPE(DOMAIN_LINES_TYPE), POINTER :: DOMAIN_LINES
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
     TYPE(BOUNDARY_CONDITIONS_NEUMANN_TYPE), POINTER :: BOUNDARY_CONDITIONS_NEUMANN
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(DOMAIN_FACE_TYPE), POINTER :: DOMAIN_FACE
+    TYPE(DOMAIN_LINE_TYPE), POINTER :: DOMAIN_LINE
     TYPE(DOMAIN_NODE_TYPE), POINTER :: DOMAIN_NODE
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code 
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG), POINTER :: TEMP_SET_NODES(:),TEMP_FACES(:),TEMP_DOFS(:) !Temporary lists of faces, nodes and dofs on domain of interest
+    INTEGER(INTG), POINTER :: TEMP_SET_NODES(:),TEMP_FACES(:),TEMP_LINES(:),TEMP_DOFS(:) !Temporary lists of faces, line, nodes and dofs on domain of interest
     TYPE(BOUNDARY_CONDITIONS_NEUMANN_VALUES_TYPE), POINTER :: NEUMANN_VALUES
-    INTEGER(INTG) :: TEMP_NUMBER_OF_SET_NODES,TEMP_NUMBER_OF_FACES,NUMBER_OF_SET_DOF
-    INTEGER(INTG) :: local_ny,component_idx,nd,nn,nf,nf1,M,N,i,j,ms,ns,derivative
-    INTEGER(INTG) :: id,NUMBER_DOFS_IN_FACE,TOTAL_NUMBER_OF_FACE_DOF,global_ny
-    INTEGER(INTG) :: MAX_NUMBER_DOFS_IN_FACE,FACE_NUMBER,NODE_NUMBER,x_pos,NODE
-    INTEGER(INTG) :: face_local_node_index,face_local_deriv_index
+    INTEGER(INTG) :: TEMP_NUMBER_OF_SET_NODES,TEMP_NUMBER_OF_FACES,TEMP_NUMBER_OF_LINES
+    INTEGER(INTG) :: NUMBER_OF_SET_DOF,local_ny,component_idx,nd,nn,nf,nl,nf1,nl1,M,N,i,j,ms,ns
+    INTEGER(INTG) :: derivative,id,NUMBER_DOFS_IN_FACE,NUMBER_DOFS_IN_LINE,TOTAL_NUMBER_OF_FACE_DOF
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_LINE_DOF,global_ny,MAX_NUMBER_DOFS_IN_FACE,MAX_NUMBER_DOFS_IN_LINE
+    INTEGER(INTG) :: FACE_NUMBER,LINE_NUMBER,NODE_NUMBER,x_pos,NODE,face_local_node_index,line_local_node_index
+    INTEGER(INTG) :: face_local_deriv_index,line_local_deriv_index
     LOGICAL :: DOF_LOCATED
-    TYPE(LIST_TYPE), POINTER :: TEMP_SET_NODES_LIST,TEMP_FACES_LIST,TEMP_DOFS_LIST
+    TYPE(LIST_TYPE), POINTER :: TEMP_SET_NODES_LIST,TEMP_FACES_LIST,TEMP_LINES_LIST,TEMP_DOFS_LIST
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("BOUNDARY_CONDITIONS_INTEGRATED_CALCULATE",ERR,ERROR,*999)
 
     NULLIFY(TEMP_SET_NODES)
     NULLIFY(TEMP_FACES)
+    NULLIFY(TEMP_LINES)
     NULLIFY(TEMP_DOFS)
 
     IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
@@ -1867,16 +1871,17 @@ CONTAINS
                       !Iterate over components u,v,w,p
                       DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
                         TOPOLOGY=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY
-                        IF(ASSOCIATED(TOPOLOGY)) THEN
-                          DOMAIN_FACES=>TOPOLOGY%FACES
-                          IF(ASSOCIATED(DOMAIN_FACES)) THEN
-                            DOMAIN_NODES=>TOPOLOGY%NODES
-                            IF(ASSOCIATED(DOMAIN_NODES)) THEN
-                              SELECT CASE(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE)
-                              CASE(FIELD_NODE_BASED_INTERPOLATION)                      
-                                IF(DEPENDENT_FIELD%DECOMPOSITION% &
-                                  & DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)% &
-                                  & PTR%NUMBER_OF_DIMENSIONS==3) THEN
+                        IF(ASSOCIATED(TOPOLOGY)) THEN                        
+                          DOMAIN_NODES=>TOPOLOGY%NODES
+                          IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                            SELECT CASE(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE)
+                            CASE(FIELD_NODE_BASED_INTERPOLATION)                      
+                              IF(DEPENDENT_FIELD%DECOMPOSITION% &
+                                & DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)% &
+                                & PTR%NUMBER_OF_DIMENSIONS==3) THEN
+
+                                DOMAIN_FACES=>TOPOLOGY%FACES
+                                IF(ASSOCIATED(DOMAIN_FACES)) THEN
 
                                   TEMP_NUMBER_OF_SET_NODES=0 !Counts the number of nodes that correspond to the set dofs
                                   TEMP_NUMBER_OF_FACES=0 !Counts the number of unique faces of interest
@@ -1887,7 +1892,6 @@ CONTAINS
                                   !Calculate number of rows in SET_DOF
                                   NUMBER_OF_SET_DOF=SIZE(NEUMANN_VALUES%SET_DOF,1) 
                                   !This includes all set dof for all components and derivatives
-
 
                                   !The following two lists are for calculating the size of the INTEGRATION_MATRIX
                                   !Create listing of nodes on which DOF have been set
@@ -1910,7 +1914,6 @@ CONTAINS
                                   CALL LIST_REMOVE_DUPLICATES(TEMP_SET_NODES_LIST,ERR,ERROR,*999)
                                   CALL LIST_DETACH_AND_DESTROY(TEMP_SET_NODES_LIST, &
                                                   & TEMP_NUMBER_OF_SET_NODES,TEMP_SET_NODES,ERR,ERROR,*999)
-
 
                                   !Create list of surrounding faces
                                   NULLIFY(TEMP_FACES_LIST)
@@ -1941,8 +1944,6 @@ CONTAINS
 
                                   CALL LIST_REMOVE_DUPLICATES(TEMP_FACES_LIST,ERR,ERROR,*999)
                                   CALL LIST_DETACH_AND_DESTROY(TEMP_FACES_LIST,TEMP_NUMBER_OF_FACES,TEMP_FACES,ERR,ERROR,*999)
-
-
 
                                   !Use a list to collect all the dof, sort and substitute into INTEGRATION_MATRIX_MAPPING array 
                                   NULLIFY(TEMP_DOFS_LIST)
@@ -1976,6 +1977,7 @@ CONTAINS
                                                                    & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(DERIVATIVE,NODE)
                                             x_pos = DOMAIN_FACE%BASIS%ELEMENT_PARAMETER_INDEX(face_local_deriv_index, &
                                                                                             & face_local_node_index)
+
                                             CALL LIST_ITEM_ADD(TEMP_DOFS_LIST,local_ny,ERR,ERROR,*999)
 
                                             !The mapping of local_ny to element parameter number (ms or ns) is stored in a series of vectors
@@ -2071,9 +2073,12 @@ CONTAINS
 
                                             FACE_NUMBER = DOMAIN_NODE%NODE_FACES(face_local_node_index)
 
+                                            !Calculate the ns corresponding to the dof
                                             DO ms=1,DOMAIN_FACE%BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                                               local_ny=BOUNDARY_CONDITIONS_NEUMANN%FACES_ELEMENT_PARAM_2_LOCAL_DOF(FACE_NUMBER,ms)
-                                              IF(local_ny==NEUMANN_VALUES%SET_DOF(nd)) ns = ms
+                                              IF(local_ny==NEUMANN_VALUES%SET_DOF(nd)) THEN
+                                                ns = ms
+                                              ENDIF
                                             ENDDO !ms
 
                                             !Calculate basis for face
@@ -2093,10 +2098,12 @@ CONTAINS
                                                   BOUNDARY_CONDITIONS_NEUMANN%INTEGRATION_MATRIX(j,nd)= &
                                                     & BOUNDARY_CONDITIONS_NEUMANN%INTEGRATION_MATRIX(j,nd) + & 
                                                     & BOUNDARY_CONDITIONS_NEUMANN%FACE_INTEGRATION_MATRIX(ms)
+
                                                   DOF_LOCATED=.TRUE.
                                                 ENDIF
                                               ENDDO !j
                                             ENDDO !ms
+
                                           ENDIF
                                         ENDDO !nf1
                                       ENDDO !face_local_node_index
@@ -2111,9 +2118,10 @@ CONTAINS
                                         & BOUNDARY_CONDITIONS_NEUMANN%INTEGRATION_MATRIX(j,i) * &
                                         & BOUNDARY_CONDITIONS_NEUMANN%POINT_VALUES_VECTOR(i)
                                     ENDDO !i
+!!Check here that global_ny is the best thing to do here
                                     global_ny=BOUNDARY_CONDITIONS_NEUMANN%INTEGRATED_VALUES_VECTOR_MAPPING(j)
                                     !Ensure the set dof are set as BOUNDARY_CONDITION_NEUMANN
-                                    BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_ny)=BOUNDARY_CONDITION_FIXED
+                                    BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_ny)=BOUNDARY_CONDITION_NEUMANN
                                   ENDDO !j
 
                                   BOUNDARY_CONDITIONS_NEUMANN%INTEGRATED_VALUES_VECTOR_SIZE=TOTAL_NUMBER_OF_FACE_DOF
@@ -2129,30 +2137,296 @@ CONTAINS
                                   DEALLOCATE(BOUNDARY_CONDITIONS_NEUMANN%POINT_VALUES_VECTOR_MAPPING)
                                   DEALLOCATE(TEMP_SET_NODES)
                                   DEALLOCATE(TEMP_FACES)
+
                                 ELSE
-                                  CALL FLAG_ERROR("Invalid number of dimensions for Neumann boundary conditions.",ERR,ERROR,*999)
+                                  CALL FLAG_ERROR("Topology faces is not associated",ERR,ERROR,*999)
                                 ENDIF
 
-                              CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
-                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                              CASE(FIELD_CONSTANT_INTERPOLATION)
-                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                              CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
-                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                              CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
-                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                              CASE DEFAULT
-                                LOCAL_ERROR="The interpolation type of "// &
-                                  & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(component_idx)&
-                                  & %INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for component number "// &
-                                  & TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
-                                  & " of dependent variable number "// &
-                                  & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%VARIABLE_NUMBER,"*",ERR,ERROR))//"."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)          
-                              END SELECT                 
-                            ELSE
-                              CALL FLAG_ERROR("Topology faces is not associated",ERR,ERROR,*999)
-                            ENDIF
+                              ELSEIF(DEPENDENT_FIELD%DECOMPOSITION% &
+                                & DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)% &
+                                & PTR%NUMBER_OF_DIMENSIONS==2) THEN
+
+                                DOMAIN_LINES=>TOPOLOGY%LINES
+                                IF(ASSOCIATED(DOMAIN_LINES)) THEN
+
+                                  TEMP_NUMBER_OF_SET_NODES=0 !Counts the number of nodes that correspond to the set dofs
+                                  TEMP_NUMBER_OF_LINES=0 !Counts the number of unique lines of interest
+                                  TOTAL_NUMBER_OF_LINE_DOF=0 !Counts the number of unique dof in lines of interest
+
+                                  NEUMANN_VALUES=>BOUNDARY_CONDITIONS_NEUMANN%NEUMANN_BOUNDARY_IDENTIFIER(ID)%PTR
+
+                                  !Calculate number of rows in SET_DOF
+                                  NUMBER_OF_SET_DOF=SIZE(NEUMANN_VALUES%SET_DOF,1) 
+                                  !This includes all set dof for all components and derivatives
+
+                                  !The following two lists are for calculating the size of the INTEGRATION_MATRIX
+                                  !Create listing of nodes on which DOF have been set
+                                  NULLIFY(TEMP_SET_NODES_LIST)
+                                  CALL LIST_CREATE_START(TEMP_SET_NODES_LIST,ERR,ERROR,*999)
+                                  CALL LIST_DATA_TYPE_SET(TEMP_SET_NODES_LIST,LIST_INTG_TYPE,ERR,ERROR,*999)
+                                  CALL LIST_INITIAL_SIZE_SET(TEMP_SET_NODES_LIST,NUMBER_OF_SET_DOF,ERR,ERROR,*999)
+                                  CALL LIST_CREATE_FINISH(TEMP_SET_NODES_LIST,ERR,ERROR,*999)
+
+                                  DO nd=1,NUMBER_OF_SET_DOF
+                                    !Check if dof in current component (uvwp)
+                                    IF(FIELD_VARIABLE%DOF_TO_PARAM_MAP% &
+                                      & NODE_DOF2PARAM_MAP(3,NEUMANN_VALUES%SET_DOF(nd))==component_idx) THEN
+                                      !Convert dof to node
+                                      CALL LIST_ITEM_ADD(TEMP_SET_NODES_LIST,FIELD_VARIABLE%DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP &
+                                        & (2,NEUMANN_VALUES%SET_DOF(nd)),ERR,ERROR,*999)
+                                    ENDIF
+                                  ENDDO !nd
+
+                                  CALL LIST_REMOVE_DUPLICATES(TEMP_SET_NODES_LIST,ERR,ERROR,*999)
+                                  CALL LIST_DETACH_AND_DESTROY(TEMP_SET_NODES_LIST, &
+                                                  & TEMP_NUMBER_OF_SET_NODES,TEMP_SET_NODES,ERR,ERROR,*999)
+
+                                  !Create list of surrounding lines
+                                  NULLIFY(TEMP_LINES_LIST)
+                                  CALL LIST_CREATE_START(TEMP_LINES_LIST,ERR,ERROR,*999)
+                                  CALL LIST_DATA_TYPE_SET(TEMP_LINES_LIST,LIST_INTG_TYPE,ERR,ERROR,*999)
+                                  CALL LIST_INITIAL_SIZE_SET(TEMP_LINES_LIST,DOMAIN_LINES%NUMBER_OF_LINES,ERR,ERROR,*999)
+                                  CALL LIST_CREATE_FINISH(TEMP_LINES_LIST,ERR,ERROR,*999)
+
+                                  MAX_NUMBER_DOFS_IN_LINE=0
+                                  !Find the lines this node is a part of, by looping over set nodes that correspond to set dof
+                                  DO nn=1,TEMP_NUMBER_OF_SET_NODES
+                                    DOMAIN_NODE=>DOMAIN_NODES%NODES(TEMP_SET_NODES(nn))
+                                    DO line_local_node_index=1,DOMAIN_NODE%NUMBER_OF_NODE_LINES
+
+                                      DO nl1=1,DOMAIN_LINES%NUMBER_OF_LINES
+                                        DOMAIN_LINE=>DOMAIN_LINES%LINES(nl1)
+                                        IF(DOMAIN_LINE%NUMBER==DOMAIN_NODE%NODE_LINES(line_local_node_index)) THEN
+                                          IF(DOMAIN_LINE%BOUNDARY_LINE) THEN
+                                            CALL LIST_ITEM_ADD(TEMP_LINES_LIST,DOMAIN_NODE% &
+                                                                        & NODE_LINES(line_local_node_index),ERR,ERROR,*999)
+                                            MAX_NUMBER_DOFS_IN_LINE=MAX(MAX_NUMBER_DOFS_IN_LINE,DOMAIN_LINE% & 
+                                                                                    & BASIS%NUMBER_OF_ELEMENT_PARAMETERS)
+                                          ENDIF
+                                        ENDIF
+                                      ENDDO !nl1
+                                    ENDDO !line_local_node_index
+                                  ENDDO !nn
+
+                                  CALL LIST_REMOVE_DUPLICATES(TEMP_LINES_LIST,ERR,ERROR,*999)
+                                  CALL LIST_DETACH_AND_DESTROY(TEMP_LINES_LIST,TEMP_NUMBER_OF_LINES,TEMP_LINES,ERR,ERROR,*999)
+
+                                  !Use a list to collect all the dof, sort and substitute into INTEGRATION_MATRIX_MAPPING array 
+                                  NULLIFY(TEMP_DOFS_LIST)
+                                  CALL LIST_CREATE_START(TEMP_DOFS_LIST,ERR,ERROR,*999)
+                                  CALL LIST_DATA_TYPE_SET(TEMP_DOFS_LIST,LIST_INTG_TYPE,ERR,ERROR,*999)
+                                  CALL LIST_INITIAL_SIZE_SET(TEMP_DOFS_LIST,TEMP_NUMBER_OF_LINES* &
+                                                                                      & MAX_NUMBER_DOFS_IN_LINE,ERR,ERROR,*999)
+                                  CALL LIST_CREATE_FINISH(TEMP_DOFS_LIST,ERR,ERROR,*999)
+
+
+                                  ALLOCATE(BOUNDARY_CONDITIONS_NEUMANN%LINES_ELEMENT_PARAM_2_LOCAL_DOF &
+                                                              & (DOMAIN_LINES%NUMBER_OF_LINES,MAX_NUMBER_DOFS_IN_LINE))
+
+                                  BOUNDARY_CONDITIONS_NEUMANN%LINES_ELEMENT_PARAM_2_LOCAL_DOF = 0
+
+                                  !Find the lines this node is a part of, by looping over set nodes that correspond to set dof (global dofs)
+                                  DO nl=1,TEMP_NUMBER_OF_LINES
+                                    DO nl1=1,DOMAIN_LINES%NUMBER_OF_LINES
+                                      DOMAIN_LINE=>DOMAIN_LINES%LINES(nl1)
+                                      IF(DOMAIN_LINE%NUMBER==TEMP_LINES(nl).AND.DOMAIN_LINE%BOUNDARY_LINE) THEN
+                                       
+                                        DO line_local_node_index=1,DOMAIN_LINE%BASIS%NUMBER_OF_NODES !nnl
+
+                                          NODE=DOMAIN_LINE%NODES_IN_LINE(line_local_node_index)
+                                          DO line_local_deriv_index=1,DOMAIN_LINE%BASIS% &
+                                                                      & NUMBER_OF_DERIVATIVES(line_local_node_index) !nnd
+
+                                            DERIVATIVE=DOMAIN_LINE%DERIVATIVES_IN_LINE(line_local_deriv_index, &
+                                                                                     & line_local_node_index)
+                                            local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)% &
+                                                                   & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(DERIVATIVE,NODE)
+                                            x_pos = DOMAIN_LINE%BASIS%ELEMENT_PARAMETER_INDEX(line_local_deriv_index, &
+                                                                                            & line_local_node_index)
+
+                                            CALL LIST_ITEM_ADD(TEMP_DOFS_LIST,local_ny,ERR,ERROR,*999)
+
+                                            !The mapping of local_ny to element parameter number (ms or ns) is stored in a series of vectors
+                                            !that represent the mapping for each line. LINES_ELEMENT_PARAM_2_LOCAL_DOF is indexed by line number
+                                            !and element parameter number; corresponding local dof number is stored.
+
+                                            BOUNDARY_CONDITIONS_NEUMANN% &
+                                                          & LINES_ELEMENT_PARAM_2_LOCAL_DOF(DOMAIN_LINE%NUMBER,x_pos) = local_ny
+                                          ENDDO !line_local_deriv_index
+                                        ENDDO !line_local_node_index
+                                      ENDIF
+                                    ENDDO !nl1
+                                  ENDDO !nl
+
+                                  CALL LIST_REMOVE_DUPLICATES(TEMP_DOFS_LIST,ERR,ERROR,*999)
+                                  CALL LIST_DETACH_AND_DESTROY(TEMP_DOFS_LIST,TOTAL_NUMBER_OF_LINE_DOF,TEMP_DOFS,ERR,ERROR,*999)
+
+                                  !Number of DOF involved in boundary condition calculation
+                                  M = TOTAL_NUMBER_OF_LINE_DOF
+                                  !Number of DOF where boundary conditions have been fixed by user 
+                                  N = NUMBER_OF_SET_DOF
+
+                                  !Integration_matrix = 'A' matrix
+                                  !Point_values_vector = 'x' vector
+                                  !Integrated_values_vector = 'B' vector
+
+                                  !Set size of matrix and vectors
+                                  ALLOCATE(BOUNDARY_CONDITIONS_NEUMANN%LINE_INTEGRATION_MATRIX(MAX_NUMBER_DOFS_IN_LINE),STAT=ERR)
+                                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Neumann line integration matrix array."&
+                                                                                                             & ,ERR,ERROR,*999)
+                                  ALLOCATE(BOUNDARY_CONDITIONS_NEUMANN%LINE_INTEGRATION_MATRIX_MAPPING(MAX_NUMBER_DOFS_IN_LINE &
+                                                                                                                & ),STAT=ERR)
+                                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Neumann line integration matrix mapping array."&
+                                                                                                             & ,ERR,ERROR,*999)
+                                  ALLOCATE(BOUNDARY_CONDITIONS_NEUMANN%INTEGRATION_MATRIX(M,N),STAT=ERR)
+                                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Neumann integration matrix array." &
+                                                                                                            & ,ERR,ERROR,*999)
+                                  ALLOCATE(BOUNDARY_CONDITIONS_NEUMANN%INTEGRATION_MATRIX_MAPPING_X(N),STAT=ERR)
+                                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Neumann integration matrix mapping X array."&
+                                                                                                             & ,ERR,ERROR,*999)
+                                  ALLOCATE(BOUNDARY_CONDITIONS_NEUMANN%INTEGRATION_MATRIX_MAPPING_Y(M),STAT=ERR)
+                                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Neumann integration matrix mapping Y array."&
+                                                                                                             & ,ERR,ERROR,*999)
+                                  ALLOCATE(BOUNDARY_CONDITIONS_NEUMANN%POINT_VALUES_VECTOR(N),STAT=ERR)
+                                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Neumann point values vector.",ERR,ERROR,*999)
+                                  ALLOCATE(BOUNDARY_CONDITIONS_NEUMANN%POINT_VALUES_VECTOR_MAPPING(N),STAT=ERR)
+                                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Neumann point values vector mapping."&
+                                                                                                             & ,ERR,ERROR,*999)
+                                  ALLOCATE(BOUNDARY_CONDITIONS_NEUMANN%INTEGRATED_VALUES_VECTOR(M),STAT=ERR)
+                                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Neumann integrated values vector." &
+                                                                                                             & ,ERR,ERROR,*999)
+                                  ALLOCATE(BOUNDARY_CONDITIONS_NEUMANN%INTEGRATED_VALUES_VECTOR_MAPPING(M),STAT=ERR)
+                                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Neumann integrated values vector mapping."&
+                                                                                                             & ,ERR,ERROR,*999)
+
+                                  BOUNDARY_CONDITIONS_NEUMANN%INTEGRATION_MATRIX=0.0_DP
+                                  BOUNDARY_CONDITIONS_NEUMANN%INTEGRATION_MATRIX_MAPPING_X=0
+                                  BOUNDARY_CONDITIONS_NEUMANN%INTEGRATION_MATRIX_MAPPING_Y=0
+                                  BOUNDARY_CONDITIONS_NEUMANN%POINT_VALUES_VECTOR=0.0_DP
+                                  BOUNDARY_CONDITIONS_NEUMANN%POINT_VALUES_VECTOR_MAPPING=0
+                                  BOUNDARY_CONDITIONS_NEUMANN%INTEGRATED_VALUES_VECTOR=0.0_DP
+                                  BOUNDARY_CONDITIONS_NEUMANN%INTEGRATED_VALUES_VECTOR_MAPPING=0
+
+                                  !Calculate the mapping of INTEGRATION_MATRIX, POINT_VALUES_VECTOR and INTEGRATED_VALUES_VECTOR
+                                  BOUNDARY_CONDITIONS_NEUMANN%INTEGRATION_MATRIX_MAPPING_X = NEUMANN_VALUES%SET_DOF
+                                  BOUNDARY_CONDITIONS_NEUMANN%POINT_VALUES_VECTOR_MAPPING = NEUMANN_VALUES%SET_DOF
+                                  BOUNDARY_CONDITIONS_NEUMANN%INTEGRATION_MATRIX_MAPPING_Y=TEMP_DOFS(1:TOTAL_NUMBER_OF_LINE_DOF)
+                                  BOUNDARY_CONDITIONS_NEUMANN%INTEGRATED_VALUES_VECTOR_MAPPING= &
+                                                                                         & TEMP_DOFS(1:TOTAL_NUMBER_OF_LINE_DOF)
+                                  BOUNDARY_CONDITIONS_NEUMANN%POINT_VALUES_VECTOR = NEUMANN_VALUES%SET_DOF_VALUES
+
+
+                                  !Iterate over set dofs
+                                  DO nd=1,NUMBER_OF_SET_DOF
+                                    !Check if dof in current component (uvwp)
+                                    IF(FIELD_VARIABLE%DOF_TO_PARAM_MAP% &
+                                      & NODE_DOF2PARAM_MAP(3,NEUMANN_VALUES%SET_DOF(nd))==component_idx) THEN
+
+                                      !Convert dof to node number
+                                      NODE_NUMBER=FIELD_VARIABLE%DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP(2,NEUMANN_VALUES%SET_DOF(nd))
+                                      DOMAIN_NODE=>DOMAIN_NODES%NODES(NODE_NUMBER)
+
+                                      !Iterate over the lines on which that node is a part of
+                                      DO line_local_node_index=1,DOMAIN_NODE%NUMBER_OF_NODE_LINES
+
+                                        DO nl1=1,DOMAIN_LINES%NUMBER_OF_LINES
+                                          DOMAIN_LINE=>DOMAIN_LINES%LINES(nl1)
+                                          ns = 0
+
+                                          !Locate line and ensure line is a boundary line
+                                          IF(DOMAIN_LINE%NUMBER==DOMAIN_NODE%NODE_LINES(line_local_node_index) &
+                                            & .AND.(DOMAIN_LINE%BOUNDARY_LINE)) THEN
+
+                                            LINE_NUMBER = DOMAIN_NODE%NODE_LINES(line_local_node_index)
+
+                                            !Calculate the ns corresponding to the dof
+                                            DO ms=1,DOMAIN_LINE%BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                                              local_ny=BOUNDARY_CONDITIONS_NEUMANN%LINES_ELEMENT_PARAM_2_LOCAL_DOF(LINE_NUMBER,ms)
+                                              IF(local_ny==NEUMANN_VALUES%SET_DOF(nd)) THEN
+                                                ns = ms
+                                              ENDIF
+                                            ENDDO !ms
+
+
+                                            !Calculate basis for line
+                                            CALL BOUNDARY_CONDITIONS_LINE_BASIS_CALCULATE(BOUNDARY_CONDITIONS,VARIABLE_TYPE, &
+                                              & component_idx,LINE_NUMBER,NUMBER_DOFS_IN_LINE,ns,ERR,ERROR,*999)
+
+                                            !Iterate over the number of dofs in the line
+                                            DO ms=1,NUMBER_DOFS_IN_LINE 
+                                              DOF_LOCATED=.FALSE.
+
+                                              !Locate in INTEGRATION_MATRIX and add into, one column for each SET_DOF
+                                              DO j=1,TOTAL_NUMBER_OF_LINE_DOF
+                                                IF((DOF_LOCATED.NEQV..TRUE.).AND. &
+                                                  &(BOUNDARY_CONDITIONS_NEUMANN%INTEGRATION_MATRIX_MAPPING_Y(j) == &
+                                                  & BOUNDARY_CONDITIONS_NEUMANN%LINE_INTEGRATION_MATRIX_MAPPING(ms))) THEN
+
+                                                  BOUNDARY_CONDITIONS_NEUMANN%INTEGRATION_MATRIX(j,nd)= &
+                                                    & BOUNDARY_CONDITIONS_NEUMANN%INTEGRATION_MATRIX(j,nd) + & 
+                                                    & BOUNDARY_CONDITIONS_NEUMANN%LINE_INTEGRATION_MATRIX(ms)
+
+                                                  DOF_LOCATED=.TRUE.
+                                                ENDIF
+                                              ENDDO !j
+                                            ENDDO !ms
+
+                                          ENDIF
+                                        ENDDO !nl1
+                                      ENDDO !line_local_node_index
+                                    ENDIF
+                                  ENDDO !nd
+
+                                  !Perform Ax=B calculation
+                                  DO j=1,TOTAL_NUMBER_OF_LINE_DOF
+                                    DO i=1,NUMBER_OF_SET_DOF
+                                      BOUNDARY_CONDITIONS_NEUMANN%INTEGRATED_VALUES_VECTOR(j) = &
+                                        & BOUNDARY_CONDITIONS_NEUMANN%INTEGRATED_VALUES_VECTOR(j) + &
+                                        & BOUNDARY_CONDITIONS_NEUMANN%INTEGRATION_MATRIX(j,i) * &
+                                        & BOUNDARY_CONDITIONS_NEUMANN%POINT_VALUES_VECTOR(i)
+                                    ENDDO !i
+!!Check here that global_ny is the best thing to do here
+                                    global_ny=BOUNDARY_CONDITIONS_NEUMANN%INTEGRATED_VALUES_VECTOR_MAPPING(j)
+                                    !Ensure the set dof are set as BOUNDARY_CONDITION_NEUMANN
+                                    BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_ny)=BOUNDARY_CONDITION_NEUMANN
+                                  ENDDO !j
+
+                                  BOUNDARY_CONDITIONS_NEUMANN%INTEGRATED_VALUES_VECTOR_SIZE=TOTAL_NUMBER_OF_LINE_DOF
+
+                                  DEALLOCATE(BOUNDARY_CONDITIONS_VARIABLE%NEUMANN_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_IDENTIFIER)
+                                  DEALLOCATE(BOUNDARY_CONDITIONS_NEUMANN%LINES_ELEMENT_PARAM_2_LOCAL_DOF)
+                                  DEALLOCATE(BOUNDARY_CONDITIONS_NEUMANN%LINE_INTEGRATION_MATRIX)
+                                  DEALLOCATE(BOUNDARY_CONDITIONS_NEUMANN%LINE_INTEGRATION_MATRIX_MAPPING)
+                                  DEALLOCATE(BOUNDARY_CONDITIONS_NEUMANN%INTEGRATION_MATRIX)
+                                  DEALLOCATE(BOUNDARY_CONDITIONS_NEUMANN%INTEGRATION_MATRIX_MAPPING_X)
+                                  DEALLOCATE(BOUNDARY_CONDITIONS_NEUMANN%INTEGRATION_MATRIX_MAPPING_Y)
+                                  DEALLOCATE(BOUNDARY_CONDITIONS_NEUMANN%POINT_VALUES_VECTOR)
+                                  DEALLOCATE(BOUNDARY_CONDITIONS_NEUMANN%POINT_VALUES_VECTOR_MAPPING)
+                                  DEALLOCATE(TEMP_SET_NODES)
+                                  DEALLOCATE(TEMP_LINES)
+                                ELSE
+                                  CALL FLAG_ERROR("Topology lines is not associated",ERR,ERROR,*999)
+                                ENDIF
+                              ELSE
+                                CALL FLAG_ERROR("Invalid number of dimensions for Neumann boundary conditions.",ERR,ERROR,*999)
+                              ENDIF
+                            CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CASE(FIELD_CONSTANT_INTERPOLATION)
+                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CASE DEFAULT
+                              LOCAL_ERROR="The interpolation type of "// &
+                                & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(component_idx)&
+                                & %INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for component number "// &
+                                & TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
+                                & " of dependent variable number "// &
+                                & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%VARIABLE_NUMBER,"*",ERR,ERROR))//"."
+                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)          
+                            END SELECT                 
                           ELSE
                             CALL FLAG_ERROR("Topology nodes is not associated",ERR,ERROR,*999)
                           ENDIF
@@ -2284,13 +2558,12 @@ CONTAINS
                           DO ms=1,DOMAIN_FACE%BASIS%NUMBER_OF_ELEMENT_PARAMETERS
 
                             PHIMS=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-
                             BOUNDARY_CONDITIONS_NEUMANN%FACE_INTEGRATION_MATRIX(ms) = &
                               & BOUNDARY_CONDITIONS_NEUMANN%FACE_INTEGRATION_MATRIX(ms) + PHIMS*PHINS*RWG
 
                             local_ny = BOUNDARY_CONDITIONS_NEUMANN%FACES_ELEMENT_PARAM_2_LOCAL_DOF(FACE_NUMBER,ms)
                             BOUNDARY_CONDITIONS_NEUMANN%FACE_INTEGRATION_MATRIX_MAPPING(ms) = local_ny
- 
+
                           ENDDO !ms
                         ENDDO !ng
  
@@ -2444,7 +2717,7 @@ CONTAINS
 
                             local_ny = BOUNDARY_CONDITIONS_NEUMANN%LINES_ELEMENT_PARAM_2_LOCAL_DOF(LINE_NUMBER,ms)
                             BOUNDARY_CONDITIONS_NEUMANN%LINE_INTEGRATION_MATRIX_MAPPING(ms) = local_ny
- 
+
                           ENDDO !ms
                         ENDDO !ng
 

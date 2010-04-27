@@ -130,15 +130,12 @@ CONTAINS
             CALL BOUNDARY_CONDITIONS_CREATE_START(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
 
             !For testing Integrated Neumann Boundary Conditions
-            ALLOCATE(CONDITION(25))
-            ALLOCATE(DOF_NUMBER(25))
-            ALLOCATE(VALUE_BC(25))
-            ID=1
-            NUMBER_OF_NEUMANN=1
+            ALLOCATE(CONDITION(36)) !For 20x20 linear (only two sides Neumann)
+            ALLOCATE(DOF_NUMBER(36)) !For 20x20 linear (only two sides Neumann)
+            ALLOCATE(VALUE_BC(36)) !For 20x20 linear (only two sides Neumann)
             COUNT_DOF=0
 
-
-            DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES !U and delUdeln
+            DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES !U and deludeln
               variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
               FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
               IF(ASSOCIATED(FIELD_VARIABLE)) THEN
@@ -248,7 +245,8 @@ CONTAINS
                                 CASE(FIELD_U_VARIABLE_TYPE)
                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                   CASE(NO_GLOBAL_DERIV)
-                                    VALUE=X(1)**2+3*X(2)**2+X(3)**2
+                                    !VALUE=X(1)**2+3*X(2)**2+X(3)**2  3D version - also needs a source of 10
+                                    VALUE=X(1)**2+3*X(2)**2     !2D version - needs a source of 8
                                   CASE(GLOBAL_DERIV_S1)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S2)
@@ -270,46 +268,25 @@ CONTAINS
                                   CASE(NO_GLOBAL_DERIV)
                                     !VALUE=2*X(1)+6*X(2)+2*X(3)
                                     !This is for testing Integrated Neumann Boundary Conditions
+
+                                    !---------------This is for 20x20 linear with two sides Dirichlet
                                     SELECT CASE(node_idx)
-                                    CASE(2,3,4,5,6,7,8,9)
+                                    CASE(21,41,61,81,101,121,141,161,181,201,221,241,261,281,301,321,341,361)
                                       COUNT_DOF = COUNT_DOF+1
-                                      VALUE=-2*X(3)
+                                      VALUE=-2*X(1)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_FIXED
-                                    CASE(10,13,16)
-                                      COUNT_DOF = COUNT_DOF+1
-                                      VALUE=-2*X(1)                              
-                                      VALUE_BC(COUNT_DOF)=VALUE
-                                      DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_FIXED
-                                    CASE(12,15,18)
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                    CASE(40,60,80,100,120,140,160,180,200,220,240,260,280,300,320,340,360,380)
                                       COUNT_DOF = COUNT_DOF+1
                                       VALUE=2*X(1)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_FIXED
-                                    CASE(19,20,21,22,23,24,25,26,27)
-                                      COUNT_DOF = COUNT_DOF+1
-                                      VALUE=2*X(3)
-                                      VALUE_BC(COUNT_DOF)=VALUE
-                                      DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_FIXED
-                                    CASE(17)
-                                      COUNT_DOF = COUNT_DOF+1
-                                      VALUE=6*X(2)
-                                      VALUE_BC(COUNT_DOF)=VALUE
-                                      DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_FIXED
-                                    CASE(11)
-                                      COUNT_DOF = COUNT_DOF+1
-                                      VALUE=-6*X(2)
-                                      VALUE_BC(COUNT_DOF)=VALUE
-                                      DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_FIXED
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
                                     CASE DEFAULT
-                                      VALUE=0 !This is for node 14 and node 1 which is Dirichlet
+                                      VALUE=0
                                     END SELECT
+                                    !---------------
 
                                   CASE(GLOBAL_DERIV_S1)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
@@ -385,31 +362,27 @@ CONTAINS
                               global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
 
                               !If BOUNDARY_CONDITION_FIXED on FIELD_U_VARIABLE_TYPE then Dirichlet
-                              IF(variable_type==FIELD_U_VARIABLE_TYPE.and.node_idx==1) THEN
-                                IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
-                                  !If we are a boundary node then set the analytic value on the boundary
+                              SELECT CASE(node_idx)
+                              CASE(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,&
+                                & 381,382,383,384,385,386,387,388,389,390,391,392,393,394,395,396,397,398,399,400)
+                                IF(variable_type==FIELD_U_VARIABLE_TYPE.AND.DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN !For Dirichlet
                                   CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
                                     & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
                                 ENDIF
-                              ENDIF
+                              CASE DEFAULT
+                              END SELECT
 
-                              !If BOUNDARY_CONDITION_FIXED on FIELD_DELUDELN_VARIABLE_TYPE then Neumann
                               IF(variable_type==FIELD_DELUDELN_VARIABLE_TYPE.and.node_idx/=1) THEN
                                 IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
                                   !If we are a boundary node then set the analytic value on the boundary
-!                                  CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-!                                    & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-     !!                             CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-     !!                               & BOUNDARY_CONDITION_NEUMANN,VALUE,ERR,ERROR,*999)
-
-                                 !Do nothing at present
-
+                                  !CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+                                  !  & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                  !Do nothing at present
                                 ENDIF
                               ENDIF
 
                             ENDDO !deriv_idx
                           ENDDO !node_idx
-
                         ELSE
                           CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
                         ENDIF
@@ -430,14 +403,19 @@ CONTAINS
               ELSE
                 CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
               ENDIF
+
+              !If FIELD_DELUDELN_VARIABLE_TYPE and TEST_CASE_1 then Neumann
+              IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==TEST_CASE_1 &
+                & .AND.variable_type==FIELD_DELUDELN_VARIABLE_TYPE) THEN
+                ID=1
+                NUMBER_OF_NEUMANN=1
+                CALL BOUNDARY_CONDITIONS_BOUNDARY_SET_NUMBER_OF_BOUNDARIES &
+                  & (BOUNDARY_CONDITIONS,FIELD_DELUDELN_VARIABLE_TYPE,NUMBER_OF_NEUMANN,ERR,ERROR,*999)
+                CALL BOUNDARY_CONDITIONS_BOUNDARY_ADD_DOF &
+                  & (BOUNDARY_CONDITIONS,FIELD_DELUDELN_VARIABLE_TYPE,DOF_NUMBER,VALUE_BC,CONDITION,ID,ERR,ERROR,*999)
+              ENDIF
+
             ENDDO !variable_idx
-
-
-            CALL BOUNDARY_CONDITIONS_BOUNDARY_SET_NUMBER_OF_BOUNDARIES &
-                             & (BOUNDARY_CONDITIONS,FIELD_DELUDELN_VARIABLE_TYPE,NUMBER_OF_NEUMANN,ERR,ERROR,*999)
-
-            CALL BOUNDARY_CONDITIONS_BOUNDARY_ADD_DOF&
-                     & (BOUNDARY_CONDITIONS,FIELD_DELUDELN_VARIABLE_TYPE,DOF_NUMBER,VALUE_BC,CONDITION,ID,ERR,ERROR,*999)
 
             DEALLOCATE(CONDITION)
             DEALLOCATE(DOF_NUMBER)
@@ -1714,13 +1692,13 @@ CONTAINS
                   CASE(TEST_CASE_1)
                     !Check that we have an constant source
                     IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_CONSTANT_SOURCE_POISSON_SUBTYPE) THEN
-                      !Check that we are in 3D
-                      IF(NUMBER_OF_DIMENSIONS/=3) THEN
+                      !Check that we are in 3D or 2D
+                      IF(NUMBER_OF_DIMENSIONS>3) THEN
                         LOCAL_ERROR="The number of geometric dimensions of "// &
                           & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
                           & " is invalid. The analytic function type of "// &
                           & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
-                          & " requires that there be 3 geometric dimensions."
+                          & " requires that there be at least 3 geometric dimensions."
                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                       !Create analytic field if required
@@ -2516,7 +2494,19 @@ CONTAINS
                     ENDDO !ns
                   ENDDO !nh
                 ENDIF
-                IF(RHS_VECTOR%UPDATE_VECTOR) RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=0.0_DP
+                IF(RHS_VECTOR%UPDATE_VECTOR) THEN
+! xxx
+                  SUM=0.0_DP
+                  !Additional terms for analytic solution
+                  IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+                    !SUM=-8.0_DP !For 2D TEST_CASE_1
+                    SUM=0.0_DP
+                  ENDIF
+                  RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)+ & !This needs to changed to the source vector
+                     & SUM*QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)*RWG
+                ENDIF
+! xxx
+
               ENDDO !ms
             ENDDO !mh
           ENDDO !ng
