@@ -342,7 +342,8 @@ CONTAINS
             IF (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE) THEN
               DO dim_idx=1,NUMBER_OF_DIMENSIONS
                 CAUCHY_TENSOR(dim_idx,dim_idx) = CAUCHY_TENSOR(dim_idx,dim_idx) &
-                  & - 0.7_DP * DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV) !Include (1-porosity); 0.7 for now !!!
+                  & - 0.7_DP * DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV) 
+                  !Include (1-porosity) here via shared material field !!! (hardcoded 0.7 for now)
               ENDDO
             ENDIF
 
@@ -953,6 +954,10 @@ CONTAINS
           END SELECT
         CASE(EQUATIONS_SET_SETUP_GEOMETRY_TYPE)
           !\todo Check dimension of geometric field
+          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE) THEN
+            CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, FIELD_U_VARIABLE_TYPE, &
+               & FIELD_MESH_DISPLACEMENT_SET_TYPE, ERR, ERROR, *999)
+          END IF
         CASE(EQUATIONS_SET_SETUP_DEPENDENT_TYPE)
           SELECT CASE(EQUATIONS_SET%SUBTYPE)
           !-----------------------------------------------------------------------
@@ -2098,7 +2103,7 @@ CONTAINS
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
             CASE(PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE,PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE)
-              IF(SOLVER%GLOBAL_NUMBER==3) THEN
+              IF(SOLVER%GLOBAL_NUMBER==1) THEN
                 CALL FINITE_ELASTICITY_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
               END IF
             CASE(PROBLEM_NO_SUBTYPE)
@@ -2168,12 +2173,12 @@ CONTAINS
                       METHOD="FORTRAN"
                       EXPORT_FIELD=.TRUE.
                       IF(EXPORT_FIELD) THEN          
-                        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
-                        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now exporting fields... ",ERR,ERROR,*999)
+!                         CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+                        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity export fields ... ",ERR,ERROR,*999)
                         CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER, &
                           & "STATICSOLIDSOLUTION",ERR,ERROR,*999)
                         CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"STATICSOLUTION",ERR,ERROR,*999)
-                        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+!                         CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
                       ENDIF
                     ENDDO
                   ENDIF 
@@ -2207,11 +2212,11 @@ CONTAINS
                         EXPORT_FIELD=.TRUE.
                         IF(EXPORT_FIELD) THEN          
                           IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now exporting fields...",ERR,ERROR,*999)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity export fields ...",ERR,ERROR,*999)
                             CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
                               & ERR,ERROR,*999)
                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"All fields exported...",ERR,ERROR,*999)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity all fields exported ...",ERR,ERROR,*999)
                           ENDIF
                         ENDIF 
                       ENDIF 
@@ -2282,7 +2287,7 @@ CONTAINS
                    & FIELD_VALUES_SET_TYPE,2,CONTROL_LOOP%TIME_LOOP%CURRENT_TIME,ERR,ERROR,*999)
 
             CASE(PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE,PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite elasticity pre solve ... ",ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity pre-solve ... ",ERR,ERROR,*999)
 
               !--- Set 'SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.'
               SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
@@ -2309,10 +2314,12 @@ CONTAINS
                 CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
               ENDIF
 
-              IF(SOLVER%GLOBAL_NUMBER==3) THEN
-!                 !--- 3.1 Get the Darcy pressure
-!                 CALL FINITE_ELASTICITY_PRE_SOLVE_GET_DARCY_PRESSURE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-                !--- 3.2 For PGM: Get the displacement field
+              IF(SOLVER%GLOBAL_NUMBER==1) THEN
+                !--- 3.0 For Standard Elasticity Darcy: Update the boundary conditions of the solid
+                IF(CONTROL_LOOP%PROBLEM%SUBTYPE==PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE) THEN
+                  CALL FINITE_ELASTICITY_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                END IF
+                !--- For PGM: Get the displacement field
                 IF(CONTROL_LOOP%PROBLEM%SUBTYPE==PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE) THEN
                   CALL FINITE_ELASTICITY_PRE_SOLVE_GET_SOLID_DISPLACEMENT(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
                 END IF
@@ -2340,141 +2347,6 @@ CONTAINS
   END SUBROUTINE FINITE_ELASTICITY_PRE_SOLVE
       
   !   
-  !================================================================================================================================
-  !
-
-  !>Copy Darcy pressure into independent field of finite elasticity
-  SUBROUTINE FINITE_ELASTICITY_PRE_SOLVE_GET_DARCY_PRESSURE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solvers
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-
-    !Local Variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER_FINITE_ELASTICITY, SOLVER_DARCY  !<A pointer to the solvers
-    TYPE(FIELD_TYPE), POINTER :: INDEPENDENT_FIELD_FINITE_ELASTICITY, DEPENDENT_FIELD_DARCY
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS_FINITE_ELASTICITY, SOLVER_EQUATIONS_DARCY  !<A pointer to the solver equations
-    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING_FINITE_ELASTICITY, SOLVER_MAPPING_DARCY !<A pointer to the solver mapping
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET_FINITE_ELASTICITY, EQUATIONS_SET_DARCY !<A pointer to the equations set
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    REAL(DP), POINTER :: DUMMY_VALUES2(:)
-
-    INTEGER(INTG) :: NUMBER_OF_COMPONENTS_INDEPENDENT_FIELD_FINITE_ELASTICITY,NUMBER_OF_COMPONENTS_DEPENDENT_FIELD_DARCY
-    INTEGER(INTG) :: NDOFS_TO_PRINT
-
-
-    CALL ENTERS("FINITE_ELASTICITY_PRE_SOLVE_GET_DARCY_PRESSURE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(CONTROL_LOOP)) THEN
-
-      NULLIFY(SOLVER_FINITE_ELASTICITY)
-      NULLIFY(SOLVER_DARCY)
-
-      IF(ASSOCIATED(SOLVER)) THEN
-        IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
-            CASE(PROBLEM_NO_SUBTYPE,PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE)
-              ! do nothing ???
-            CASE(PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE,PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE)
-              IF(SOLVER%GLOBAL_NUMBER==3) THEN
-                !--- Get the independent field of the finite elasticity equations
-                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Copying Darcy pressure into independent field of finite elasticity ... ", &
-                  & ERR,ERROR,*999)
-                CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,3,SOLVER_FINITE_ELASTICITY,ERR,ERROR,*999)
-                SOLVER_EQUATIONS_FINITE_ELASTICITY=>SOLVER_FINITE_ELASTICITY%SOLVER_EQUATIONS
-                IF(ASSOCIATED(SOLVER_EQUATIONS_FINITE_ELASTICITY)) THEN
-                  SOLVER_MAPPING_FINITE_ELASTICITY=>SOLVER_EQUATIONS_FINITE_ELASTICITY%SOLVER_MAPPING
-                  IF(ASSOCIATED(SOLVER_MAPPING_FINITE_ELASTICITY)) THEN
-                    EQUATIONS_SET_FINITE_ELASTICITY=>SOLVER_MAPPING_FINITE_ELASTICITY%EQUATIONS_SETS(1)%PTR
-                    IF(ASSOCIATED(EQUATIONS_SET_FINITE_ELASTICITY)) THEN
-                      INDEPENDENT_FIELD_FINITE_ELASTICITY=>EQUATIONS_SET_FINITE_ELASTICITY%INDEPENDENT%INDEPENDENT_FIELD
-                      IF(ASSOCIATED(INDEPENDENT_FIELD_FINITE_ELASTICITY)) THEN
-                        CALL FIELD_NUMBER_OF_COMPONENTS_GET(INDEPENDENT_FIELD_FINITE_ELASTICITY, &
-                          & FIELD_U_VARIABLE_TYPE,NUMBER_OF_COMPONENTS_INDEPENDENT_FIELD_FINITE_ELASTICITY,ERR,ERROR,*999)
-                      ELSE
-                        CALL FLAG_ERROR("INDEPENDENT_FIELD_FINITE_ELASTICITY is not associated.",ERR,ERROR,*999)
-                      END IF
-                    ELSE
-                      CALL FLAG_ERROR("Finite elasticity equations set is not associated.",ERR,ERROR,*999)
-                    END IF
-                  ELSE
-                    CALL FLAG_ERROR("Finite elasticity solver mapping is not associated.",ERR,ERROR,*999)
-                  END IF
-                ELSE
-                  CALL FLAG_ERROR("Finite elasticity solver equations are not associated.",ERR,ERROR,*999)
-                END IF
-
-                !--- Get the dependent field for the Darcy equations
-                CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,2,SOLVER_DARCY,ERR,ERROR,*999)
-                SOLVER_EQUATIONS_DARCY=>SOLVER_DARCY%SOLVER_EQUATIONS
-                IF(ASSOCIATED(SOLVER_EQUATIONS_DARCY)) THEN
-                  SOLVER_MAPPING_DARCY=>SOLVER_EQUATIONS_DARCY%SOLVER_MAPPING
-                  IF(ASSOCIATED(SOLVER_MAPPING_DARCY)) THEN
-                    EQUATIONS_SET_DARCY=>SOLVER_MAPPING_DARCY%EQUATIONS_SETS(1)%PTR
-                    IF(ASSOCIATED(EQUATIONS_SET_DARCY)) THEN
-                      DEPENDENT_FIELD_DARCY=>EQUATIONS_SET_DARCY%DEPENDENT%DEPENDENT_FIELD
-                      IF(ASSOCIATED(DEPENDENT_FIELD_DARCY)) THEN
-                        CALL FIELD_NUMBER_OF_COMPONENTS_GET(DEPENDENT_FIELD_DARCY, & 
-                          & FIELD_U_VARIABLE_TYPE,NUMBER_OF_COMPONENTS_DEPENDENT_FIELD_DARCY,ERR,ERROR,*999)
-                      ELSE
-                        CALL FLAG_ERROR("DEPENDENT_FIELD_DARCY is not associated.",ERR,ERROR,*999)
-                      END IF
-                    ELSE
-                      CALL FLAG_ERROR("Darcy equations set is not associated.",ERR,ERROR,*999)
-                    END IF
-                  ELSE
-                    CALL FLAG_ERROR("Darcy solver mapping is not associated.",ERR,ERROR,*999)
-                  END IF
-                ELSE
-                  CALL FLAG_ERROR("Darcy solver equations are not associated.",ERR,ERROR,*999)
-                END IF
-
-                !--- Copy the result from Darcy's dependent field (pressure) to finite-elasticity's independent field
-                CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(DEPENDENT_FIELD_DARCY, & 
-                  & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,4,INDEPENDENT_FIELD_FINITE_ELASTICITY, & 
-                  & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,ERR,ERROR,*999)
-
-                IF(DIAGNOSTICS3) THEN
-                  NULLIFY( DUMMY_VALUES2 )
-                  CALL FIELD_PARAMETER_SET_DATA_GET(INDEPENDENT_FIELD_FINITE_ELASTICITY,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,DUMMY_VALUES2,ERR,ERROR,*999)
-                  NDOFS_TO_PRINT = SIZE(DUMMY_VALUES2,1)
-                  CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT,NDOFS_TO_PRINT,DUMMY_VALUES2, &
-                    & '(" INDEPENDENT_FIELD_FINITE_ELASTICITY,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE = ",4(X,E13.6))',&
-                    & '4(4(X,E13.6))',ERR,ERROR,*999)
-                  CALL FIELD_PARAMETER_SET_DATA_RESTORE(INDEPENDENT_FIELD_FINITE_ELASTICITY,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,DUMMY_VALUES2,ERR,ERROR,*999)
-                ENDIF
-
-              ELSE  
-                ! do nothing ???
-              END IF
-            CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-                & " is not valid for a finite elasticity problem class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          END SELECT
-        ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("FINITE_ELASTICITY_PRE_SOLVE_GET_DARCY_PRESSURE")
-    RETURN
-999 CALL ERRORS("FINITE_ELASTICITY_PRE_SOLVE_GET_DARCY_PRESSURE",ERR,ERROR)
-    CALL EXITS("FINITE_ELASTICITY_PRE_SOLVE_GET_DARCY_PRESSURE")
-    RETURN 1
-  END SUBROUTINE FINITE_ELASTICITY_PRE_SOLVE_GET_DARCY_PRESSURE
-
-  !
   !================================================================================================================================
   !
 
@@ -2523,8 +2395,8 @@ CONTAINS
               ! do nothing ???
             CASE(PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE)
               !--- Motion: read in from a file
-              IF(SOLVER%GLOBAL_NUMBER==3) THEN
-                CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,3,SOLVER_FINITE_ELASTICITY,ERR,ERROR,*999)
+              IF(SOLVER%GLOBAL_NUMBER==1) THEN
+                CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,1,SOLVER_FINITE_ELASTICITY,ERR,ERROR,*999)
                 SOLVER_EQUATIONS_FINITE_ELASTICITY=>SOLVER_FINITE_ELASTICITY%SOLVER_EQUATIONS
                 IF(ASSOCIATED(SOLVER_EQUATIONS_FINITE_ELASTICITY)) THEN
                   SOLVER_MAPPING_FINITE_ELASTICITY=>SOLVER_EQUATIONS_FINITE_ELASTICITY%SOLVER_MAPPING
@@ -2535,12 +2407,14 @@ CONTAINS
                     ELSE
                       CALL FLAG_ERROR("Finite elasticity equations set is not associated.",ERR,ERROR,*999)
                     END IF
-                    CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Motion read in from a file ... ",ERR,ERROR,*999)
+                    CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity motion read from a file ... ",ERR,ERROR,*999)
 
                     CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET_FINITE_ELASTICITY%GEOMETRY%GEOMETRIC_FIELD, & 
                       & FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
 
                     !Copy input to Finite elasticity's dependent field
+                    !\todo: Still need to take into account that we are reading in displacement,
+                    !       while dependent field is the absolute position of the structure
                     INPUT_TYPE=42
                     INPUT_OPTION=2
                     CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET_FINITE_ELASTICITY%DEPENDENT%DEPENDENT_FIELD, &
@@ -2591,6 +2465,209 @@ CONTAINS
 
   !
   !================================================================================================================================
+  !
 
+  !>Update boundary conditions for finite elasticity pre solve
+  SUBROUTINE FINITE_ELASTICITY_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD, GEOMETRIC_FIELD
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
+
+    REAL(DP) :: CURRENT_TIME,TIME_INCREMENT,ALPHA
+    REAL(DP), POINTER :: GEOMETRIC_FIELD_VALUES(:) 
+    REAL(DP), POINTER :: MESH_POSITION_VALUES(:) 
+    REAL(DP), POINTER :: DUMMY_VALUES1(:)
+
+    INTEGER(INTG) :: BOUNDARY_CONDITION_CHECK_VARIABLE
+    INTEGER(INTG) :: dof_number,TOTAL_NUMBER_OF_DOFS
+    INTEGER(INTG) :: NDOFS_TO_PRINT
+
+!     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
+!     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+
+
+    CALL ENTERS("FINITE_ELASTICITY_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+      IF(ASSOCIATED(SOLVER)) THEN
+        IF(SOLVER%GLOBAL_NUMBER==1) THEN
+          IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+            SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+              CASE(PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE)
+                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                  IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                    EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
+                    IF(ASSOCIATED(EQUATIONS)) THEN
+                      EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+                      IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+                          CASE(EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity update BCs ... ",ERR,ERROR,*999)
+                            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                            GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+                            IF(ASSOCIATED(DEPENDENT_FIELD).AND.ASSOCIATED(GEOMETRIC_FIELD)) THEN
+                              BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
+                              IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+                                EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
+                                IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
+                                  BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS% & 
+                                    & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
+                                  IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+                                    IF(DIAGNOSTICS1) THEN
+                                      NULLIFY( DUMMY_VALUES1 )
+                                      CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                        & FIELD_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
+                                      NDOFS_TO_PRINT = SIZE(DUMMY_VALUES1,1)
+                                      CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT, &
+                                        & NDOFS_TO_PRINT,DUMMY_VALUES1, &
+                                        & '(" DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE (bef) = ",4(X,E13.6))', &
+                                        & '4(4(X,E13.6))',ERR,ERROR,*999)
+                                      CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                        & FIELD_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
+                                    ENDIF
+
+                                    ! requires solid dependent field and geometry to be interpolated identically !!!
+                                    ! assumes that DOFs for dependent and geometric field are stored in the same order
+                                    ! How does this routine take into account the BC value ???
+                                    ALPHA = 0.10_DP * sin( 2.0_DP * PI * CURRENT_TIME / 4.0_DP )
+                                    CALL FIELD_PARAMETER_SETS_COPY(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                      & FIELD_VALUES_SET_TYPE,FIELD_MESH_DISPLACEMENT_SET_TYPE,ALPHA,ERR,ERROR,*999)
+
+                                    NULLIFY(GEOMETRIC_FIELD_VALUES)
+                                    CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                      & FIELD_VALUES_SET_TYPE,GEOMETRIC_FIELD_VALUES,ERR,ERROR,*999)
+
+                                    TOTAL_NUMBER_OF_DOFS = DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR% &
+                                      & TOTAL_NUMBER_OF_DOFS
+                                    DO dof_number=1,TOTAL_NUMBER_OF_DOFS
+                                      BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
+                                        & GLOBAL_BOUNDARY_CONDITIONS(dof_number)
+                                      IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
+                                        !--- To obtain absolute positions, add nodal coordinates on top of mesh displacement
+                                        CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(GEOMETRIC_FIELD, & 
+                                          & FIELD_U_VARIABLE_TYPE,FIELD_MESH_DISPLACEMENT_SET_TYPE,dof_number, & 
+                                          & GEOMETRIC_FIELD_VALUES(dof_number),ERR,ERROR,*999)
+                                      ELSE
+                                        ! do nothing ???
+                                      END IF
+                                    END DO
+
+                                    NULLIFY(MESH_POSITION_VALUES)
+                                    CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                      & FIELD_MESH_DISPLACEMENT_SET_TYPE,MESH_POSITION_VALUES,ERR,ERROR,*999)
+
+                                    DO dof_number=1,TOTAL_NUMBER_OF_DOFS
+                                      BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
+                                        & GLOBAL_BOUNDARY_CONDITIONS(dof_number)
+                                      IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
+                                        !--- Update the dependent field with the new absolute position
+                                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
+                                          & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,dof_number, & 
+                                          & MESH_POSITION_VALUES(dof_number),ERR,ERROR,*999)
+                                      ELSE
+                                        ! do nothing ???
+                                      END IF
+                                    END DO
+                                    CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
+                                      & FIELD_U_VARIABLE_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                    CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
+                                      & FIELD_U_VARIABLE_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+
+                                    IF(DIAGNOSTICS1) THEN
+                                      NULLIFY( DUMMY_VALUES1 )
+                                      CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                        & FIELD_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
+                                      NDOFS_TO_PRINT = SIZE(DUMMY_VALUES1,1)
+                                      CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT, &
+                                        & NDOFS_TO_PRINT,DUMMY_VALUES1, &
+                                        & '(" DEPENDENT_FIELD,FIELD_U_VAR_TYPE,FIELD_VALUES_SET_TYPE (after) = ",4(X,E13.6))', &
+                                        & '4(4(X,E13.6))',ERR,ERROR,*999)
+                                      CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                        & FIELD_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
+                                    ENDIF
+                                  ELSE
+                                    CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                                  END IF
+
+                                  CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                                    & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                  CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                                    & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                ELSE
+                                  CALL FLAG_ERROR("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
+                                ENDIF
+                              ELSE
+                                CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
+                              END IF
+                            ELSE
+                              CALL FLAG_ERROR("Dependent field and/or geometric field is/are not associated.",ERR,ERROR,*999)
+                            END IF
+                          CASE DEFAULT
+                            ! do nothing ???
+!                             LOCAL_ERROR="Equations set subtype " &
+!                               & //TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+!                               & " is not valid for a standard elasticity Darcy problem subtype."
+!                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        END SELECT
+                      ELSE
+                        CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                      END IF
+                    ELSE
+                      CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                    END IF                
+                  ELSE
+                    CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+                END IF  
+              CASE DEFAULT
+                ! do nothing ???
+!                 LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+!                   & " is not valid for this problem class."
+!               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+          ELSE
+            CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          ! do nothing ???
+!           CALL FLAG_ERROR("PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS may only be carried out for SOLVER%GLOBAL_NUMBER = 1", &
+!             & ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("FINITE_ELASTICITY_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS")
+    RETURN
+999 CALL ERRORS("FINITE_ELASTICITY_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS",ERR,ERROR)
+    CALL EXITS("FINITE_ELASTICITY_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS")
+    RETURN 1
+  END SUBROUTINE FINITE_ELASTICITY_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS
+
+  !
+  !================================================================================================================================
+  !
 
 END MODULE FINITE_ELASTICITY_ROUTINES
