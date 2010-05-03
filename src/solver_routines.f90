@@ -8697,7 +8697,7 @@ CONTAINS
       & equations_row_number,equations_row_number2,equations_set_idx,LINEAR_VARIABLE_TYPE,rhs_boundary_condition, &
       & residual_variable_type,rhs_global_dof,rhs_variable_dof,rhs_variable_type,variable_boundary_condition,solver_matrix_idx, &
       & solver_row_idx,solver_row_number,variable_dof,variable_global_dof,variable_idx,variable_type,&
-      & j,dirichlet_idx,dirichlet_row,NUMBER_OF_NEUMANN_ROWS
+      & j,dirichlet_idx,dirichlet_row,NUMBER_OF_NEUMANN_ROWS,rhs_dof
     REAL(SP) :: SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),USER_ELAPSED,USER_TIME1(1),USER_TIME2(1)
     REAL(DP) :: DEPENDENT_VALUE,LINEAR_VALUE,LINEAR_VALUE_SUM,MATRIX_VALUE,RESIDUAL_VALUE,RHS_VALUE,row_coupling_coefficient, &
       & SOURCE_VALUE,VALUE,INTEGRATED_VALUE
@@ -8902,7 +8902,7 @@ CONTAINS
 
 
 !-----------------------------------------------------------------------------------------------------------------------
-!Routine to assemble integrated flux values - section below to be moved to a stand-alone routine
+!Routine to assemble integrated flux values - section below to be moved to BOUNDARY_CONDITIONS_INTEGRATED_CALCULATE
 
                                       !Count the number of Neumann conditions set
                                       NUMBER_OF_NEUMANN_ROWS=0
@@ -8917,50 +8917,31 @@ CONTAINS
 
                                       !Calculate the Neumann integrated flux boundary conditions
                                       IF(NUMBER_OF_NEUMANN_ROWS>0) THEN
-                                        IF(ASSOCIATED(LINEAR_MAPPING).AND..NOT.ASSOCIATED(NONLINEAR_MAPPING)) THEN
 
-                                          CALL BOUNDARY_CONDITIONS_INTEGRATED_CALCULATE(BOUNDARY_CONDITIONS, &
-                                            & RHS_VARIABLE_TYPE,ERR,ERROR,*999)
+                                        CALL BOUNDARY_CONDITIONS_INTEGRATED_CALCULATE(BOUNDARY_CONDITIONS, &
+                                          & RHS_VARIABLE_TYPE,ERR,ERROR,*999)
 
-                                          !Loop over the rows in the equations set
-                                          DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
-                                            IF(ASSOCIATED(LINEAR_MAPPING).AND..NOT.ASSOCIATED(NONLINEAR_MAPPING)) THEN
+                                        !Locate calculated value at dof
+                                        INTEGRATED_VALUE=0.0_DP
+                                        DO j=1,RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS &
+                                          & %INTEGRATED_VALUES_VECTOR_SIZE
 
-                                              !Loop over the dependent variables associated with this equations set row
-                                              DO variable_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
+                                          INTEGRATED_VALUE=RHS_BOUNDARY_CONDITIONS &
+                                            & %NEUMANN_BOUNDARY_CONDITIONS%INTEGRATED_VALUES_VECTOR(j)
+                                          rhs_dof=RHS_BOUNDARY_CONDITIONS &
+                                            & %NEUMANN_BOUNDARY_CONDITIONS%INTEGRATED_VALUES_VECTOR_MAPPING(j)
 
-                                                variable_dof=LINEAR_MAPPING%EQUATIONS_ROW_TO_VARIABLE_DOF_MAPS( &
-                                                  & equations_row_number,variable_idx)
+                                          !Note: check whether MAPPING dofs are local or global
 
-                                                !Locate calculated value at dof
-                                                INTEGRATED_VALUE=0.0_DP
-                                                DO j=1,RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS &
-                                                  & %INTEGRATED_VALUES_VECTOR_SIZE
+                                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, &
+                                            & rhs_variable_type,FIELD_VALUES_SET_TYPE, &
+                                            & rhs_dof,INTEGRATED_VALUE,ERR,ERROR,*999)
+                                        ENDDO !j
 
-                                                  IF((INTEGRATED_VALUE==0.0_DP).AND. &
-                                                    & (RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS% &
-                                                    & INTEGRATED_VALUES_VECTOR_MAPPING(j)==variable_dof)) THEN
-
-                                                    INTEGRATED_VALUE=RHS_BOUNDARY_CONDITIONS &
-                                                      & %NEUMANN_BOUNDARY_CONDITIONS%INTEGRATED_VALUES_VECTOR(j)
-
-                                                    !Note: check whether MAPPING dofs are local or global
-
-                                                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, &
-                                                      & rhs_variable_type,FIELD_VALUES_SET_TYPE, &
-                                                      & variable_dof,INTEGRATED_VALUE,ERR,ERROR,*999)
-
-                                                  ENDIF
-                                                ENDDO !j
-                                              ENDDO !variable_idx
-                                            ENDIF
-                                          ENDDO !equations_row_number
-
-                                          DEALLOCATE(RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS% &
-                                                  & INTEGRATED_VALUES_VECTOR_MAPPING)
-                                          DEALLOCATE(RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS% &
-                                                  & INTEGRATED_VALUES_VECTOR)
-                                        ENDIF
+                                        DEALLOCATE(RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS% &
+                                          & INTEGRATED_VALUES_VECTOR_MAPPING)
+                                        DEALLOCATE(RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS% &
+                                          & INTEGRATED_VALUES_VECTOR)
                                       ENDIF
 
 !-------------------------------------------------------------------------------------------------------------------------
