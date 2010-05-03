@@ -130,9 +130,9 @@ CONTAINS
             CALL BOUNDARY_CONDITIONS_CREATE_START(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
 
             !For testing Integrated Neumann Boundary Conditions
-            ALLOCATE(CONDITION(36)) !For 20x20 linear (only two sides Neumann)
-            ALLOCATE(DOF_NUMBER(36)) !For 20x20 linear (only two sides Neumann)
-            ALLOCATE(VALUE_BC(36)) !For 20x20 linear (only two sides Neumann)
+            ALLOCATE(CONDITION(12)) !For 2x2 quad
+            ALLOCATE(DOF_NUMBER(12)) !For 2x2 quad
+            ALLOCATE(VALUE_BC(12)) !For 2x2 quad
             COUNT_DOF=0
 
             DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES !U and deludeln
@@ -269,17 +269,29 @@ CONTAINS
                                     !VALUE=2*X(1)+6*X(2)+2*X(3)
                                     !This is for testing Integrated Neumann Boundary Conditions
 
-                                    !---------------This is for 20x20 linear with two sides Dirichlet
+                                    !---------------This is for 2x2 quad
                                     SELECT CASE(node_idx)
-                                    CASE(21,41,61,81,101,121,141,161,181,201,221,241,261,281,301,321,341,361)
+                                    CASE(2,3,4)
+                                      COUNT_DOF = COUNT_DOF+1
+                                      VALUE=-6*X(2)
+                                      VALUE_BC(COUNT_DOF)=VALUE
+                                      DOF_NUMBER(COUNT_DOF)=global_ny
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                    CASE(6,11,16)
                                       COUNT_DOF = COUNT_DOF+1
                                       VALUE=-2*X(1)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
                                       CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
-                                    CASE(40,60,80,100,120,140,160,180,200,220,240,260,280,300,320,340,360,380)
+                                    CASE(10,15,20)
                                       COUNT_DOF = COUNT_DOF+1
                                       VALUE=2*X(1)
+                                      VALUE_BC(COUNT_DOF)=VALUE
+                                      DOF_NUMBER(COUNT_DOF)=global_ny
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                    CASE(22,23,24)
+                                      COUNT_DOF = COUNT_DOF+1
+                                      VALUE=6*X(2)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
                                       CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
@@ -361,16 +373,12 @@ CONTAINS
 
                               global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
 
-                              !If BOUNDARY_CONDITION_FIXED on FIELD_U_VARIABLE_TYPE then Dirichlet
-                              SELECT CASE(node_idx)
-                              CASE(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,&
-                                & 381,382,383,384,385,386,387,388,389,390,391,392,393,394,395,396,397,398,399,400)
+                              IF(node_idx==1.OR.node_idx==5.OR.node_idx==21.OR.node_idx==25) THEN  !For 2x2 Quad
                                 IF(variable_type==FIELD_U_VARIABLE_TYPE.AND.DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN !For Dirichlet
                                   CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
                                     & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
                                 ENDIF
-                              CASE DEFAULT
-                              END SELECT
+                              ENDIF       
 
                               IF(variable_type==FIELD_DELUDELN_VARIABLE_TYPE.and.node_idx/=1) THEN
                                 IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
