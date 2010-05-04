@@ -9193,7 +9193,8 @@ CONTAINS
                   DO parameter_set_idx=1,SIZE(FIELD_FROM_SET_TYPE,1)
                     IF(FIELD_FROM_SET_TYPE(parameter_set_idx)>0.AND. &
                       & FIELD_FROM_SET_TYPE(parameter_set_idx)<FIELD_NUMBER_OF_SET_TYPES) THEN
-                      FIELD_FROM_PARAMETER_SET=>FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_TO_SET_TYPE)%PTR
+                      FIELD_FROM_PARAMETER_SET=>FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_FROM_SET_TYPE( &
+                      & parameter_set_idx))%PTR
                       IF(ASSOCIATED(FIELD_TO_PARAMETER_SET)) THEN
                         FIELD_FROM_PARAMETER_SETS(parameter_set_idx)%PTR=>FIELD_FROM_PARAMETER_SET
                         NULLIFY(FIELD_FROM_PARAMETERS(parameter_set_idx)%PTR)
