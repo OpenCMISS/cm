@@ -382,6 +382,8 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVER_DYNAMIC_ALE_SET
 
+  PUBLIC SOLVER_DYNAMIC_UPDATE_BC_SET
+
   PUBLIC SOLVER_DYNAMIC_TIMES_SET
 
   PUBLIC SOLVER_EQUATIONS_CREATE_FINISH,SOLVER_EQUATIONS_CREATE_START
@@ -2457,10 +2459,10 @@ CONTAINS
                                 IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
                                   & FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE( &
                                   & DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
+                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_INCREMENTAL_VALUES_SET_TYPE)% & 
+                                  & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                  & FIELD_INCREMENTAL_VALUES_SET_TYPE,ERR,ERROR,*999)
                                 IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
-                                  IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_INCREMENTAL_VALUES_SET_TYPE)% & 
-                                    & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                    & FIELD_INCREMENTAL_VALUES_SET_TYPE,ERR,ERROR,*999)
                                   IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS% & 
                                     & SET_TYPE(FIELD_PREDICTED_DISPLACEMENT_SET_TYPE)% & 
                                     & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
@@ -2600,6 +2602,9 @@ CONTAINS
                               ELSE
                                 CALL FLAG_ERROR("Equations equations matrices is not associated.",ERR,ERROR,*999)
                               ENDIF
+                              !Store initial field in FIELD_PREVIOUS_VALUES_SET_TYPE before applying BC to FIELD_VALUES_SET_TYPE
+                              CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                                & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
                             ELSE
                               CALL FLAG_ERROR("Dynamic mapping dynamic variable is not associated.",ERR,ERROR,*999)
                             ENDIF                            
@@ -2953,12 +2958,10 @@ CONTAINS
 !         CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Dynamic solver - theta = ",DYNAMIC_SOLVER%THETA(1), &
 !          & ERR,ERROR,*999)
         DYNAMIC_SOLVER%EXPLICIT=.FALSE.
-
-
-        DYNAMIC_SOLVER%ALE=.TRUE.
+        DYNAMIC_SOLVER%ALE=.TRUE. !this should be .FALSE. eventually and set by the user
+        DYNAMIC_SOLVER%UPDATE_BC=.TRUE.  !this should be .FALSE. eventually and set by the user
         DYNAMIC_SOLVER%CURRENT_TIME=0.0_DP
         DYNAMIC_SOLVER%TIME_INCREMENT=0.01_DP
-
         !Allocate memory for dynamic linear and dynamic nonlinear solvers
         ALLOCATE(DYNAMIC_SOLVER%LINEAR_SOLVER,STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver linear solver.",ERR,ERROR,*999)
@@ -3272,7 +3275,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: DYNAMIC_VARIABLE_TYPE,equations_set_idx,residual_variable_dof,equations_row_number
     REAL(DP) :: DELTA_T,FIRST_MEAN_PREDICTION_FACTOR, SECOND_MEAN_PREDICTION_FACTOR,THIRD_MEAN_PREDICTION_FACTOR
-    REAL(DP) :: FIRST_PREDICTION_FACTOR, SECOND_PREDICTION_FACTOR,THIRD_PREDICTION_FACTOR,RESIDUAL_VALUE
+    REAL(DP) :: FIRST_PREDICTION_FACTOR, SECOND_PREDICTION_FACTOR,THIRD_PREDICTION_FACTOR,RESIDUAL_VALUE,ALPHA_FACTOR
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RESIDUAL_VECTOR
     TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
@@ -3337,16 +3340,20 @@ CONTAINS
                           DYNAMIC_VARIABLE_TYPE=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
                           SELECT CASE(DYNAMIC_SOLVER%DEGREE)
                           CASE(SOLVER_DYNAMIC_FIRST_DEGREE)
-                            CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                              & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+!Commented out as FIELD_PREVIOUS_VALUES_SET_TYPE must not contain time-dependent boundary conditions
+!FIELD_PREVIOUS_VALUES_SET_TYPE is now stored at the end of each time-step instead
+!                             CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+!                               & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
                           CASE(SOLVER_DYNAMIC_SECOND_DEGREE)
-                            CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                              & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+                            CALL FLAG_ERROR("Not checked yet.",ERR,ERROR,*999)
+!                             CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+!                               & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
                             CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VELOCITY_VALUES_SET_TYPE, &
                               & FIELD_PREVIOUS_VELOCITY_SET_TYPE,1.0_DP,ERR,ERROR,*999)
                           CASE(SOLVER_DYNAMIC_THIRD_DEGREE)
-                            CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                              & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+                            CALL FLAG_ERROR("Not checked yet.",ERR,ERROR,*999)
+!                             CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+!                               & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
                             CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VELOCITY_VALUES_SET_TYPE, &
                               & FIELD_PREVIOUS_VELOCITY_SET_TYPE,1.0_DP,ERR,ERROR,*999)
                             CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
@@ -3443,6 +3450,14 @@ CONTAINS
                                   CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                     & FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,1.0_DP, & 
                                     & ERR,ERROR,*999)
+                                  ALPHA_FACTOR=1.0_DP/DELTA_T
+                                  !Generate update on alpha in FIELD_INCREMENTAL_VALUES_SET_TYPE by subtracting
+                                  !FIELD_PREVIOUS_VALUES_SET_TYPE (without BC) from FIELD_VALUES_SET_TYPE (with new BC)
+                                  CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                    & FIELD_VALUES_SET_TYPE,FIELD_INCREMENTAL_VALUES_SET_TYPE,ALPHA_FACTOR,ERR,ERROR,*999)
+                                  CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                    & -ALPHA_FACTOR,FIELD_PREVIOUS_VALUES_SET_TYPE, &
+                                    & FIELD_INCREMENTAL_VALUES_SET_TYPE,ERR,ERROR,*999)
                                   IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
                                     !Copy the previous values to to the predicted values
                                     CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
@@ -4029,6 +4044,51 @@ CONTAINS
     CALL EXITS("SOLVER_DYNAMIC_ALE_SET")
     RETURN 1
   END SUBROUTINE SOLVER_DYNAMIC_ALE_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the bc flag for a dynamic solver.
+  SUBROUTINE SOLVER_DYNAMIC_UPDATE_BC_SET(SOLVER,UPDATE_BC,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the dynamic solver to set the theta value for
+    LOGICAL :: UPDATE_BC!<The UPDATE_BC flag for a dynamic solver
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+!     INTEGER(INTG) :: degree_idx
+    TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
+!     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("SOLVER_DYNAMIC_UPDATE_BC_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVER_FINISHED) THEN
+        CALL FLAG_ERROR("The solver has already been finished.",ERR,ERROR,*999)
+      ELSE
+        IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+          DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
+          IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
+            DYNAMIC_SOLVER%UPDATE_BC=UPDATE_BC
+          ELSE
+            CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_DYNAMIC_UPDATE_BC_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_DYNAMIC_UPDATE_BC_SET",ERR,ERROR)
+    CALL EXITS("SOLVER_DYNAMIC_UPDATE_BC_SET")
+    RETURN 1
+  END SUBROUTINE SOLVER_DYNAMIC_UPDATE_BC_SET
 
   !
   !================================================================================================================================
@@ -7681,19 +7741,22 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: DYNAMIC_VARIABLE_TYPE,equations_matrix_idx,equations_row_number,equations_set_idx,LINEAR_VARIABLE_TYPE, &
       & rhs_boundary_condition,rhs_global_dof,rhs_variable_dof,rhs_variable_type,solver_row_idx,solver_row_number, &
-      & solver_matrix_idx, residual_variable_type,residual_variable_dof
+      & solver_matrix_idx, residual_variable_type,residual_variable_dof,variable_boundary_condition,variable_type, &
+      & variable_idx,variable_global_dof,variable_dof,equations_row_number2,equations_matrix_number,DEPENDENT_VARIABLE_TYPE, &
+      & equations_column_number,dirichlet_row,dirichlet_idx
     REAL(SP) :: SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),USER_ELAPSED,USER_TIME1(1),USER_TIME2(1)
     REAL(DP) :: DAMPING_MATRIX_COEFFICIENT,DELTA_T,DYNAMIC_VALUE,FIRST_UPDATE_FACTOR,RESIDUAL_VALUE, &
       & LINEAR_VALUE,LINEAR_VALUE_SUM,MASS_MATRIX_COEFFICIENT,RHS_VALUE,row_coupling_coefficient,PREVIOUS_RESIDUAL_VALUE, &
-      & SECOND_UPDATE_FACTOR,SOURCE_VALUE,STIFFNESS_MATRIX_COEFFICIENT,VALUE,JACOBIAN_MATRIX_COEFFICIENT
-    REAL(DP), POINTER :: RHS_PARAMETERS(:)
+      & SECOND_UPDATE_FACTOR,SOURCE_VALUE,STIFFNESS_MATRIX_COEFFICIENT,VALUE,JACOBIAN_MATRIX_COEFFICIENT,UPDATE_VALUE, &
+      & MATRIX_VALUE
+    REAL(DP), POINTER :: RHS_PARAMETERS(:), BOUNDARY_CONDITION_VECTOR(:)
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
-    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: RHS_BOUNDARY_CONDITIONS
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: RHS_BOUNDARY_CONDITIONS,DEPENDENT_BOUNDARY_CONDITIONS
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: PREVIOUS_SOLVER_DISTRIBUTED_MATRIX,SOLVER_DISTRIBUTED_MATRIX
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: DEPENDENT_VECTOR,DYNAMIC_TEMP_VECTOR,EQUATIONS_RHS_VECTOR,DISTRIBUTED_SOURCE_VECTOR, &
       & LINEAR_TEMP_VECTOR,PREDICTED_MEAN_ACCELERATION_VECTOR,PREDICTED_MEAN_DISPLACEMENT_VECTOR,PREDICTED_MEAN_VELOCITY_VECTOR, &
       & SOLVER_RHS_VECTOR, SOLVER_RESIDUAL_VECTOR,RESIDUAL_VECTOR,INCREMENTAL_VECTOR
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RESIDUAL_DOMAIN_MAPPING,RHS_DOMAIN_MAPPING
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RESIDUAL_DOMAIN_MAPPING,RHS_DOMAIN_MAPPING,VARIABLE_DOMAIN_MAPPING
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
@@ -7708,20 +7771,27 @@ CONTAINS
     TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
     TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: RHS_VECTOR
     TYPE(EQUATIONS_MATRICES_SOURCE_TYPE), POINTER :: SOURCE_VECTOR
-    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: DAMPING_MATRIX,LINEAR_MATRIX,MASS_MATRIX,STIFFNESS_MATRIX
+    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: DAMPING_MATRIX,LINEAR_MATRIX,MASS_MATRIX,STIFFNESS_MATRIX,EQUATIONS_MATRIX
     TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN_MATRIX
     TYPE(JACOBIAN_TO_SOLVER_MAP_TYPE), POINTER :: JACOBIAN_TO_SOLVER_MAP
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: DYNAMIC_VARIABLE,LINEAR_VARIABLE,RHS_VARIABLE,RESIDUAL_VARIABLE
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
     TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE), POINTER :: SPARSITY_INDICES
 
     REAL(DP), POINTER :: CHECK_DATA(:),PREVIOUS_RESIDUAL_PARAMETERS(:),CHECK_DATA2(:)
-
+    !STABILITY_TEST under investigation
+    LOGICAL :: STABILITY_TEST
+    !.FALSE. guarantees weighting as described in OpenCMISS notes
+    !.TRUE. weights mean predicted field rather than the whole NL contribution
+    !-> to be removed later
+    STABILITY_TEST=.FALSE.
    
     CALL ENTERS("SOLVER_MATRICES_DYNAMIC_ASSEMBLE",ERR,ERROR,*999)
 
@@ -8217,21 +8287,23 @@ CONTAINS
                                                 & SOURCE_VALUE,ERR,ERROR,*999)
                                               DYNAMIC_VALUE=DYNAMIC_VALUE+SOURCE_VALUE
                                             ENDIF
-
                                             !Get the nonlinear vector contribute to the RHS values if nonlinear solve
-                                            IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN 
-                                              NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
-                                                IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
-                                                 NULLIFY(PREVIOUS_RESIDUAL_PARAMETERS)
-                                                 CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                                   & FIELD_PREVIOUS_RESIDUAL_SET_TYPE,PREVIOUS_RESIDUAL_PARAMETERS,ERR,ERROR,*999)
-                                                 residual_variable_dof=NONLINEAR_MAPPING% & 
-                                                   & EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP(equations_row_number)
-                                                  PREVIOUS_RESIDUAL_VALUE=-1.0_DP*PREVIOUS_RESIDUAL_PARAMETERS & 
-                                                    & (residual_variable_dof)
-                                                  DYNAMIC_VALUE=DYNAMIC_VALUE+PREVIOUS_RESIDUAL_VALUE*(1.0_DP-DYNAMIC_SOLVER% & 
-                                                    & THETA(1))
-                                                ENDIF
+                                            IF(.NOT.STABILITY_TEST) THEN 
+                                              IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN 
+                                                NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
+                                                  IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
+                                                   NULLIFY(PREVIOUS_RESIDUAL_PARAMETERS)
+                                                   CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                                     & FIELD_PREVIOUS_RESIDUAL_SET_TYPE,PREVIOUS_RESIDUAL_PARAMETERS,ERR,ERROR, &
+                                                     & *999)  
+                                                   residual_variable_dof=NONLINEAR_MAPPING% & 
+                                                     & EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP(equations_row_number)
+                                                    PREVIOUS_RESIDUAL_VALUE=-1.0_DP*PREVIOUS_RESIDUAL_PARAMETERS & 
+                                                      & (residual_variable_dof)
+                                                    DYNAMIC_VALUE=DYNAMIC_VALUE+PREVIOUS_RESIDUAL_VALUE*(1.0_DP-DYNAMIC_SOLVER% & 
+                                                      & THETA(1))
+                                                  ENDIF
+                                              END IF
                                             END IF
                                             !Loop over the solver rows associated with this equations set row
                                             DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
@@ -8243,16 +8315,12 @@ CONTAINS
                                                 & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
                                                 & COUPLING_COEFFICIENTS(solver_row_idx)
                                                VALUE=DYNAMIC_VALUE*row_coupling_coefficient
-
-! ! TODO CHECK sebk: WORKAROUND sebk 01/10/2009 SMOOTHING FROM INITIAL FIELD
-                                              IF(DYNAMIC_SOLVER%CURRENT_TIME==DYNAMIC_SOLVER%TIME_INCREMENT) THEN
-                                                  VALUE=VALUE*DYNAMIC_SOLVER%THETA(1)
-                                              END IF  
-
-                                              CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
+                                               CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
                                                 & ERR,ERROR,*999)
                                             ENDDO !solver_row_idx
                                           ENDDO !equations_row_number
+                                         CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                            FIELD_INCREMENTAL_VALUES_SET_TYPE,BOUNDARY_CONDITION_VECTOR,ERR,ERROR,*999)
 
                                           DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
                                             !Get the dynamic contribution to the the RHS values
@@ -8282,6 +8350,128 @@ CONTAINS
                                               !Note: the Dirichlet boundary conditions are implicitly included by doing a matrix
                                               !vector product above with the dynamic stiffness matrix and the mean predicited
                                               !displacement vector
+                                              !
+                                              !This is only true for nonlinear cases and linear cases with fixed values at the boundaries
+                                              !
+                                              !For changing linear boundary conditions the following needs to be added 
+                                              !             
+                                              IF(DYNAMIC_SOLVER%UPDATE_BC)THEN
+                                                !Set Dirichlet boundary conditions
+                                                IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+                                                !for linear case only |
+!                                                 IF(ASSOCIATED(LINEAR_MAPPING).AND..NOT.ASSOCIATED(NONLINEAR_MAPPING)) THEN
+                                                  !Loop over the dependent variables associated with this equations set row
+!                                                   DO variable_idx=1,DYNAMIC_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
+                                                    variable_idx=1
+!                                                     variable_type=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPES(variable_idx)
+                                                    variable_type=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
+                                                    DEPENDENT_VARIABLE=>DYNAMIC_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS( &
+                                                      & variable_type)%VARIABLE
+                                                    DEPENDENT_VARIABLE_TYPE=DEPENDENT_VARIABLE%VARIABLE_TYPE
+                                                    VARIABLE_DOMAIN_MAPPING=>DEPENDENT_VARIABLE%DOMAIN_MAPPING
+                                                    DEPENDENT_BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS% &
+                                                      & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(DEPENDENT_VARIABLE_TYPE)%PTR
+                                                    variable_dof=DYNAMIC_MAPPING%EQUATIONS_ROW_TO_VARIABLE_DOF_MAPS( &
+                                                      & equations_row_number)
+                                                    variable_global_dof=VARIABLE_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(variable_dof)
+                                                    variable_boundary_condition=DEPENDENT_BOUNDARY_CONDITIONS% &
+                                                      & GLOBAL_BOUNDARY_CONDITIONS(variable_global_dof)
+
+                                                    IF(variable_boundary_condition==BOUNDARY_CONDITION_FIXED.OR. & 
+                                                      & variable_boundary_condition==BOUNDARY_CONDITION_FIXED_INLET.OR. &
+                                                      & variable_boundary_condition==BOUNDARY_CONDITION_FIXED_OUTLET.OR. &  
+                                                      & variable_boundary_condition==BOUNDARY_CONDITION_FIXED_WALL.OR. & 
+                                                      & variable_boundary_condition==BOUNDARY_CONDITION_MOVED_WALL) THEN
+
+                                                      UPDATE_VALUE=BOUNDARY_CONDITION_VECTOR(variable_dof)
+
+                                                      IF(ABS(UPDATE_VALUE)>=ZERO_TOLERANCE) THEN
+                                                        DO equations_matrix_idx=1,DYNAMIC_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS( &
+                                                          & variable_type)%NUMBER_OF_EQUATIONS_MATRICES
+                                                          equations_matrix_number=DYNAMIC_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS( &
+                                                            & variable_type)%EQUATIONS_MATRIX_NUMBERS(equations_matrix_idx)
+                                                          IF(equations_matrix_number==DYNAMIC_MAPPING%STIFFNESS_MATRIX_NUMBER) & 
+                                                            & THEN 
+                                                             UPDATE_VALUE=UPDATE_VALUE*STIFFNESS_MATRIX_COEFFICIENT
+                                                          ENDIF
+                                                          IF(equations_matrix_number==DYNAMIC_MAPPING%DAMPING_MATRIX_NUMBER) &
+                                                            & THEN 
+                                                             UPDATE_VALUE=UPDATE_VALUE*DAMPING_MATRIX_COEFFICIENT
+                                                          ENDIF
+                                                          IF(equations_matrix_number==DYNAMIC_MAPPING%MASS_MATRIX_NUMBER) &
+                                                            & THEN 
+                                                             UPDATE_VALUE=UPDATE_VALUE*MASS_MATRIX_COEFFICIENT
+                                                          ENDIF
+                                                          EQUATIONS_MATRIX=>DYNAMIC_MATRICES% &
+                                                            & MATRICES(equations_matrix_number)%PTR
+                                                          equations_column_number=DYNAMIC_MAPPING% &
+                                                            & VAR_TO_EQUATIONS_MATRICES_MAPS(variable_type)% &
+                                                            & DOF_TO_COLUMNS_MAPS(equations_matrix_idx)% &
+                                                            & COLUMN_DOF(variable_dof)
+                                                          IF(ASSOCIATED(DEPENDENT_BOUNDARY_CONDITIONS% &
+                                                            & DIRICHLET_BOUNDARY_CONDITIONS)) THEN
+                                                            IF(DEPENDENT_BOUNDARY_CONDITIONS% &
+                                                              & NUMBER_OF_DIRICHLET_CONDITIONS>0) THEN
+                                                              DO dirichlet_idx=1,DEPENDENT_BOUNDARY_CONDITIONS% &
+                                                                & NUMBER_OF_DIRICHLET_CONDITIONS
+                                                                IF(DEPENDENT_BOUNDARY_CONDITIONS% &
+                                                                  & DIRICHLET_BOUNDARY_CONDITIONS% &
+                                                                  & DIRICHLET_DOF_INDICES(dirichlet_idx)== &
+                                                                  & equations_column_number) EXIT
+                                                              ENDDO
+                                                              SPARSITY_INDICES=>DEPENDENT_BOUNDARY_CONDITIONS% &
+                                                                & DIRICHLET_BOUNDARY_CONDITIONS%DYNAMIC_SPARSITY_INDICES( &
+                                                                & equations_matrix_idx)%PTR
+                                                              IF(ASSOCIATED(SPARSITY_INDICES)) THEN
+                                                                DO equations_row_number2=SPARSITY_INDICES% &                               
+                                                                  & SPARSE_COLUMN_INDICES(dirichlet_idx), &
+                                                                  & SPARSITY_INDICES%SPARSE_COLUMN_INDICES( &
+                                                                  & dirichlet_idx+1)-1
+                                                                  dirichlet_row=SPARSITY_INDICES%SPARSE_ROW_INDICES( &
+                                                                    & equations_row_number2)
+                                                                  CALL DISTRIBUTED_MATRIX_VALUES_GET(EQUATIONS_MATRIX% &
+                                                                    & MATRIX,dirichlet_row,equations_column_number, &
+                                                                    & MATRIX_VALUE,ERR,ERROR,*999)
+                                                                  IF(ABS(MATRIX_VALUE)>=ZERO_TOLERANCE) THEN
+                                                                    DO solver_row_idx=1,SOLVER_MAPPING% &
+                                                                      & EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% & 
+                                                                      & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
+                                                                      & dirichlet_row)%NUMBER_OF_SOLVER_ROWS
+                                                                      solver_row_number=SOLVER_MAPPING% &
+                                                                        & EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                                        & equations_set_idx)% &
+                                                                        & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
+                                                                        & dirichlet_row)%SOLVER_ROWS(solver_row_idx)
+                                                                      row_coupling_coefficient=SOLVER_MAPPING% &
+                                                                        & EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                                        & equations_set_idx)% &
+                                                                        & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
+                                                                        & dirichlet_row)%COUPLING_COEFFICIENTS( &
+                                                                        & solver_row_idx)
+                                                                      VALUE=-1.0_DP*MATRIX_VALUE*UPDATE_VALUE* &
+                                                                        & row_coupling_coefficient
+                                                                      CALL DISTRIBUTED_VECTOR_VALUES_ADD( &
+                                                                        & SOLVER_RHS_VECTOR, &
+                                                                        & solver_row_number,VALUE,ERR,ERROR,*999)
+                                                                    ENDDO !solver_row_idx
+                                                                  ENDIF
+                                                                ENDDO !equations_row_number2
+                                                              ELSE
+                                                                CALL FLAG_ERROR("Sparsity indices are not associated.", &
+                                                                  & ERR,ERROR,*999)
+                                                              ENDIF
+                                                            ENDIF
+                                                          ELSE
+                                                            CALL FLAG_ERROR("Dirichlet boundary conditions is &
+                                                              & not associated.",ERR,ERROR,*999)
+                                                          ENDIF
+                                                        ENDDO !matrix_idx
+                                                      ENDIF
+                                                    ENDIF
+!                                                   ENDDO !variable_idx
+                                                ENDIF
+                                              ENDIF
+
                                             CASE(BOUNDARY_CONDITION_FIXED)
                                               !Set Neumann boundary conditions
                                               !Loop over the solver rows associated with this equations set row
@@ -8502,7 +8692,11 @@ CONTAINS
                                           !Get the equations residual contribution
                                           CALL DISTRIBUTED_VECTOR_VALUES_GET(RESIDUAL_VECTOR,equations_row_number, &
                                             & RESIDUAL_VALUE,ERR,ERROR,*999)
-                                          RESIDUAL_VALUE=RESIDUAL_VALUE*DYNAMIC_SOLVER%THETA(1)
+                                          IF(STABILITY_TEST) THEN
+                                            RESIDUAL_VALUE=RESIDUAL_VALUE
+                                          ELSE
+                                            RESIDUAL_VALUE=RESIDUAL_VALUE*DYNAMIC_SOLVER%THETA(1)
+                                          ENDIF
                                           !Get the linear matrices contribution to the RHS values if there are any
                                           IF(ASSOCIATED(LINEAR_MAPPING)) THEN
                                             LINEAR_VALUE_SUM=0.0_DP
@@ -9029,6 +9223,7 @@ CONTAINS
                                                 & variable_boundary_condition==BOUNDARY_CONDITION_FIXED_OUTLET.OR. &  
                                                 & variable_boundary_condition==BOUNDARY_CONDITION_FIXED_WALL.OR. & 
                                                 & variable_boundary_condition==BOUNDARY_CONDITION_MOVED_WALL) THEN
+
 
                                                 DEPENDENT_VALUE=DEPENDENT_PARAMETERS(variable_idx)%PTR(variable_dof)
 
@@ -12748,6 +12943,7 @@ CONTAINS
                               !Set the dependent field dof
                               IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
                                 NULLIFY(PREVIOUS_DATA)
+                                !Use FIELD_PREVIOUS_VALUES_SET_TYPE to calculate updated dynamic solution
                                 CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
                                   & FIELD_PREVIOUS_VALUES_SET_TYPE,PREVIOUS_DATA,ERR,ERROR,*999)
                                 PREVIOUS_VALUE=PREVIOUS_DATA(variable_dof)
@@ -12807,6 +13003,9 @@ CONTAINS
                       ENDDO !solver_dof_idx
                       !Restore the solver dof data
                       CALL DISTRIBUTED_VECTOR_DATA_RESTORE(SOLVER_VECTOR,SOLVER_DATA,ERR,ERROR,*999)
+                      !Now store FIELD_PREVIOUS_VALUES_SET_TYPE so that state before changing BC is available
+                      CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                        & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
                       !Start the transfer of the field dofs
                       DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                         EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
@@ -13006,6 +13205,12 @@ CONTAINS
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
 
+    !STABILITY_TEST under investigation
+    LOGICAL :: STABILITY_TEST
+    !.FALSE. guarantees weighting as described in OpenCMISS notes
+    !.TRUE. weights mean predicted field rather than the whole NL contribution
+    !-> to be removed later
+    STABILITY_TEST=.FALSE.
 
     NULLIFY(SOLVER_DATA)
     
@@ -13094,6 +13299,9 @@ CONTAINS
                                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,VARIABLE_TYPE, &
                                      & FIELD_INCREMENTAL_VALUES_SET_TYPE,variable_dof,VALUE,ERR,ERROR,*999)
                                    !Calculate modified input values for residual and Jacobian calculation
+                                   IF(STABILITY_TEST) THEN
+                                     VALUE=VALUE*DYNAMIC_SOLVER%THETA(1)
+                                   ENDIF
                                    VALUE=(VALUE*DYNAMIC_ALPHA_FACTOR)+MEAN_DATA(variable_dof)
                                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,VARIABLE_TYPE, &
                                      & FIELD_VALUES_SET_TYPE,variable_dof,VALUE,ERR,ERROR,*999)
