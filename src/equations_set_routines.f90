@@ -3516,7 +3516,25 @@ CONTAINS
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE(EQUATIONS_QUASISTATIC)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+              CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+                CALL EQUATIONS_SET_JACOBIAN_EVALUATE_STATIC_FEM(EQUATIONS_SET,ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The equations set solution method  of "// &
+                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
+                  & " is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
             CASE(EQUATIONS_FIRST_ORDER_DYNAMIC,EQUATIONS_SECOND_ORDER_DYNAMIC)
 ! sebk 15/09/09
               SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
