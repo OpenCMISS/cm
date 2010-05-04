@@ -1925,7 +1925,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonThreeDim1 = EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_1 !<u=ln(6/(x+y+z+1^2)) \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonThreeDim2 = EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonThreeDim3 = EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSTestCase1 = TEST_CASE_1 !<Test case setup for testing of Neumann boundary conditions
+  INTEGER(INTG), PARAMETER :: CMISSTestCaseNeumann = TEST_CASE_NEUMANN !<Test case setup for testing of Neumann boundary conditions
+  INTEGER(INTG), PARAMETER :: CMISSTestCaseDirichlet = TEST_CASE_DIRICHLET !<Test case setup for testing of Neumann boundary conditions
   !>@}
   !> \addtogroup OPENCMISS_DiffusionAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Diffusion
   !> \brief The analytic function types for a diffusion equation.
@@ -2068,7 +2069,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSEquationsSetPoissonTwoDim1,CMISSEquationsSetPoissonTwoDim2,CMISSEquationsSetPoissonTwoDim3
   PUBLIC CMISSEquationsSetPoissonThreeDim1,CMISSEquationsSetPoissonThreeDim2,CMISSEquationsSetPoissonThreeDim3
-  PUBLIC CMISSTestCase1
+  PUBLIC CMISSTestCaseNeumann,CMISSTestCaseDirichlet
 
   PUBLIC CMISSEquationsSetStokesTwoDim1,CMISSEquationsSetStokesTwoDim2,CMISSEquationsSetStokesTwoDim3
   PUBLIC CMISSEquationsSetStokesTwoDim4,CMISSEquationsSetStokesTwoDim5

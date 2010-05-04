@@ -302,7 +302,8 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_1=4 !<u=ln(6/(x+y+z+1^2))
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_2=5 !<u=tbd
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3=6 !<u=tbd, Pressure Poisson Equation (PPE)
-  INTEGER(INTG), PARAMETER :: TEST_CASE_1=7 !<Test case setup to test Neumann Boundary Conditions with Poisson example
+  INTEGER(INTG), PARAMETER :: TEST_CASE_NEUMANN=7 !<Test case setup to test Neumann Boundary Conditions with Poisson example
+  INTEGER(INTG), PARAMETER :: TEST_CASE_DIRICHLET=8 !<Test case setup to test Neumann Boundary Conditions with Poisson example
   !>@}
   !> \addtogroup EQUATIONS_SET_CONSTANTS_DiffusionAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:DiffusionAnalyticFunctionTypes
   !> \brief The analytic function types for a diffusion equation
