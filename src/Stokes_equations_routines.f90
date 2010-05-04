@@ -2539,29 +2539,6 @@ CONTAINS
                                 & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,equations_row_number, & 
                                 & BOUNDARY_VALUES(equations_row_number),ERR,ERROR,*999)
                             END IF
-
-!TEMP INLET/OUTLET SWAP
-                            IF(CURRENT_TIME>0.54_DP.AND.CURRENT_TIME<0.56_DP) THEN
-!                             IF(CURRENT_TIME>0.49_DP.AND.CURRENT_TIME<0.51_DP) THEN
-!                             IF(CURRENT_TIME>0.04_DP.AND.CURRENT_TIME<0.06_DP) THEN
-                              IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_WALL) THEN
-! ! !                                 CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Change fixed wall to free wall... ", & 
-! ! !                                   & ERR,ERROR,*999)
-                                BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(equations_row_number)= &
-                                  & BOUNDARY_CONDITION_FREE_WALL
-                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-                                  & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,equations_row_number, & 
-                                  & 0.0_DP,ERR,ERROR,*999)
-                              ELSE IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FREE_WALL) THEN
-! ! !                                 CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Change free wall to fixed wall... ", & 
-! ! !                                   & ERR,ERROR,*999)
-                                BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(equations_row_number)= &
-                                  & BOUNDARY_CONDITION_FIXED_WALL
-                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-                                  & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,equations_row_number, & 
-                                  & 0.0_DP,ERR,ERROR,*999)
-                              ENDIF
-                            ENDIF
                           END DO
                         ELSE
                           CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
@@ -2687,30 +2664,7 @@ CONTAINS
                                 & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,equations_row_number, & 
                                 & BOUNDARY_VALUES(equations_row_number),ERR,ERROR,*999)
                             END IF
-!TEMP INLET/OUTLET SWAP
-!                             IF(CURRENT_TIME>0.49_DP.AND.CURRENT_TIME<0.51_DP) THEN
-!                             IF(CURRENT_TIME>0.04_DP.AND.CURRENT_TIME<0.06_DP) THEN
-                            IF(CURRENT_TIME>0.54_DP.AND.CURRENT_TIME<0.56_DP) THEN
-                              IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_WALL) THEN
-                                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Change fixed wall to free wall... ", & 
-                                  & ERR,ERROR,*999)
-                                BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(equations_row_number)= &
-                                  & BOUNDARY_CONDITION_FREE_WALL
-                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-                                  & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,equations_row_number, & 
-                                  & 0.0_DP,ERR,ERROR,*999)
-                              ELSE IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FREE_WALL) THEN
-                                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Change free wall to fixed wall... ", & 
-                                  & ERR,ERROR,*999)
-                                BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(equations_row_number)= &
-                                  & BOUNDARY_CONDITION_FIXED_WALL
-                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-                                  & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,equations_row_number, & 
-                                  & 0.0_DP,ERR,ERROR,*999)
-                              ENDIF
-                            ENDIF
                           END DO
-
                           CALL FIELD_PARAMETER_SET_DATA_RESTORE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
                             & FIELD_U_VARIABLE_TYPE,FIELD_MESH_VELOCITY_SET_TYPE,MESH_VELOCITY_VALUES,ERR,ERROR,*999)
                           CALL FIELD_PARAMETER_SET_DATA_RESTORE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
@@ -2823,7 +2777,7 @@ CONTAINS
 
                     !Copy input to Stokes' independent field
                     INPUT_TYPE=42
-                    INPUT_OPTION=2
+                    INPUT_OPTION=1
                     CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET_ALE_STOKES%INDEPENDENT%INDEPENDENT_FIELD, &
                       & FIELD_U_VARIABLE_TYPE,FIELD_MESH_DISPLACEMENT_SET_TYPE,MESH_DISPLACEMENT_VALUES,ERR,ERROR,*999)
                     CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,MESH_DISPLACEMENT_VALUES, & 
@@ -3119,7 +3073,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
-    INTEGER(INTG) :: EQUATIONS_SET_IDX,CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER
+    INTEGER(INTG) :: EQUATIONS_SET_IDX,CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER,NUMBER_OF_DIMENSIONS
 
     LOGICAL :: EXPORT_FIELD
     TYPE(VARYING_STRING) :: METHOD!,FILE
@@ -3190,16 +3144,23 @@ CONTAINS
                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields... ",ERR,ERROR,*999)
                             CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
                               & ERR,ERROR,*999)
+                            CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                              & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                            EXPORT_FIELD=.FALSE.
+                            IF(NUMBER_OF_DIMENSIONS==3) THEN
+                              IF(EXPORT_FIELD) THEN  
 !test encas output
 !test encas output
 !test encas output
 !test encas output
 !test encas output
 !test encas output
-                            CALL FLUID_MECHANICS_IO_WRITE_ENCAS(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
-                              & ERR,ERROR,*999)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+                                CALL FLUID_MECHANICS_IO_WRITE_ENCAS(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
+                                  & ERR,ERROR,*999)
+                              ENDIF
+                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+                            ENDIF
                           ENDIF
                         ENDIF 
                         IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
@@ -3672,7 +3633,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
 
 
     MU_PARAM=1.0_DP !!!!!
-    RHO_PARAM=1000.0_DP !!!!!
+    RHO_PARAM=1.0_DP !!!!!
     L=10.0_DP
 
     INTERNAL_TIME=CURRENT_TIME

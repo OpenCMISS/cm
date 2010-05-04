@@ -549,6 +549,8 @@ CONTAINS
       END DO 
     END DO
 
+    DN=.TRUE.
+
     IF(DN) THEN
   ! output for DN only
       DO K=1,NodesPerMeshComponent(2)
@@ -2580,9 +2582,9 @@ CONTAINS
         IF(OPTION==0) THEN
           !do nothing (default)    
         ELSE IF(OPTION==1) THEN
-          TIME_STEP_SIZE=0.05_DP*1000.0_DP
+          TIME_STEP_SIZE=0.01_DP
           TIME_TOLERANCE=0.00001_DP
-          NUMBER_OF_TIME_STEPS=20
+          NUMBER_OF_TIME_STEPS=50
           ENDI=SIZE(BOUNDARY_VALUES)
           DO J=1,NUMBER_OF_TIME_STEPS
             TIME_STEP=J
@@ -2596,8 +2598,8 @@ CONTAINS
               DO I=1,ENDI
                 READ(J,*) BOUNDARY_VALUES(I)
               ENDDO
-              BOUNDARY_VALUES=BOUNDARY_VALUES*1000.0_DP
-              WRITE(*,*)'1! BOUNDARY_VALUES=BOUNDARY_VALUES*1000.0_DP'
+              BOUNDARY_VALUES=BOUNDARY_VALUES
+              WRITE(*,*)'1! BOUNDARY_VALUES=BOUNDARY_VALUES'
               CLOSE(J)
             ENDIF
           ENDDO
@@ -2617,6 +2619,36 @@ CONTAINS
           BOUNDARY_VALUES(ENDI+1:ENDI+ENDI)=-1.0_DP
           !W,Z COMPONENT
           BOUNDARY_VALUES(ENDI+ENDI+1:ENDI+ENDI+ENDI)=-1.0_DP
+        ELSEIF(OPTION==4) THEN
+          ENDI=SIZE(BOUNDARY_VALUES)/NUMBER_OF_DIMENSIONS
+          !U,X COMPONENT
+          BOUNDARY_VALUES(1:ENDI)=0.0_DP                                       
+          !V,Y COMPONENT
+          BOUNDARY_VALUES(ENDI+1:ENDI+ENDI)=0.0_DP
+          !W,Z COMPONENT
+          BOUNDARY_VALUES(ENDI+ENDI+1:ENDI+ENDI+ENDI)=-0.1_DP*COS(2.0_DP*PI*1.0_DP/40.0_DP*TIME)
+        ELSEIF(OPTION==69) THEN
+          ENDI=SIZE(BOUNDARY_VALUES)/NUMBER_OF_DIMENSIONS
+          !U,X COMPONENT
+          BOUNDARY_VALUES(1:ENDI)=0.0_DP                                       
+          !V,Y COMPONENT
+          BOUNDARY_VALUES(ENDI+1:ENDI+ENDI)=0.0_DP
+          !W,Z COMPONENT
+          BOUNDARY_VALUES(ENDI+ENDI+1:ENDI+ENDI+ENDI)=-100.0_DP*TIME
+        ELSE
+          STOP 'Error during boundary input'
+        ENDIF
+      END IF
+    ELSE IF(SOLVER_TYPE==2) THEN !NONLINEAR
+      IF(BOUNDARY_CONDITION==2)THEN !FIXED INLET
+        IF(OPTION==69) THEN
+          ENDI=SIZE(BOUNDARY_VALUES)/NUMBER_OF_DIMENSIONS
+          !U,X COMPONENT
+          BOUNDARY_VALUES(1:ENDI)=0.0_DP                                       
+          !V,Y COMPONENT
+          BOUNDARY_VALUES(ENDI+1:ENDI+ENDI)=0.0_DP
+          !W,Z COMPONENT
+          BOUNDARY_VALUES(ENDI+ENDI+1:ENDI+ENDI+ENDI)=1000.0_DP*TIME
         ELSE
           STOP 'Error during boundary input'
         ENDIF
@@ -2648,7 +2680,7 @@ CONTAINS
     REAL(DP) :: LENGTH_SCALE
 
     INTEGER(INTG):: ENDI,NUMBER_OF_TIME_STEPS,J, TIME_STEP
-    CHARACTER(34) :: INPUT_FILE
+    CHARACTER(35) :: INPUT_FILE
     CHARACTER(29) :: UVEL_FILE
 
     I=SOLVER_TYPE
@@ -2696,16 +2728,18 @@ CONTAINS
         IF(INPUT_OPTION==0) THEN
           !do nothing (default)    
         ELSE IF(INPUT_OPTION==1) THEN
-          TIME_STEP_SIZE=0.05_DP*1000.0_DP
-          NUMBER_OF_TIME_STEPS=22
+          TIME_STEP_SIZE=0.001_DP
+          NUMBER_OF_TIME_STEPS=500
           TIME_TOLERANCE=0.00001_DP
           ENDI=SIZE(INPUT_VALUES)
           DO J=1,NUMBER_OF_TIME_STEPS
             TIME_STEP=J
             IF((TIME/TIME_STEP_SIZE<TIME_STEP+TIME_TOLERANCE).AND.(TIME/TIME_STEP_SIZE>TIME_STEP-TIME_TOLERANCE)) THEN
               IF(J<10) THEN
-                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_0",I0,".dat")') J
+                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_00",I0,".dat")') J
               ELSE IF(J<100) THEN
+                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_0",I0,".dat")') J
+              ELSE IF(J<1000) THEN
                 WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_",I0,".dat")') J
               ENDIF
               OPEN(UNIT=J, FILE=INPUT_FILE,STATUS='unknown') 
@@ -2713,8 +2747,8 @@ CONTAINS
                 READ(J,*) INPUT_VALUES(I)
               ENDDO
 ! ! TESTETSTEST
-              INPUT_VALUES=INPUT_VALUES*1000.0_DP
-              WRITE(*,*)'1! INPUT_VALUES=INPUT_VALUES*1000.0_DP'
+              INPUT_VALUES=INPUT_VALUES
+              WRITE(*,*)'1! INPUT_VALUES=INPUT_VALUES'
               CLOSE(J)
             ENDIF
           ENDDO
