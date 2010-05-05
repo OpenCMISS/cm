@@ -1840,7 +1840,7 @@ CONTAINS
                         DECOMPOSITION_LINE=>DECOMPOSITION_LINES%LINES(nl)
                         DOMAIN_LINE=>DOMAIN_LINES%LINES(nl)
                         BASIS=>DOMAIN_LINE%BASIS
-                        IF(DECOMPOSITION_LINE%NUMBER_OF_SURROUNDING_ELEMENTS>1) THEN
+                        IF(DECOMPOSITION_LINE%NUMBER_OF_SURROUNDING_ELEMENTS==1) THEN
                           DECOMPOSITION_LINE%BOUNDARY_LINE=.TRUE.
                           DOMAIN_LINE%BOUNDARY_LINE=.TRUE.
                         ENDIF
