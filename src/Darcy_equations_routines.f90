@@ -1126,7 +1126,6 @@ CONTAINS
     INTEGER(INTG) MESH_COMPONENT_1, MESH_COMPONENT_2
     INTEGER(INTG) NDOFS
     REAL(DP) :: RWG,SUM,PGMSI(3),PGNSI(3),PGM,PGN
-    LOGICAL :: UPDATE_STIFFNESS_MATRIX, UPDATE_DAMPING_MATRIX,UPDATE_RHS_VECTOR
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,GEOMETRIC_BASIS
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS_1, DEPENDENT_BASIS_2
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
@@ -1171,7 +1170,7 @@ CONTAINS
     DARCY%TESTCASE = 0  ! 5
     DARCY%ANALYTIC = .FALSE.
 
-    RHO_PARAM = 1.0_DP  !Pass this through material parameters ! ???
+    RHO_PARAM = 1.0_DP  !\todo Pass this through material parameters ! ???
 
 
     CALL ENTERS("DARCY_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
@@ -1204,7 +1203,6 @@ CONTAINS
 
             STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
 
-!---tob
           CASE(EQUATIONS_SET_TRANSIENT_DARCY_SUBTYPE)
             DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
             STIFFNESS_MATRIX=>DYNAMIC_MATRICES%MATRICES(1)%PTR
@@ -1216,12 +1214,7 @@ CONTAINS
 
             STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
             DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
-
-            IF(ASSOCIATED(STIFFNESS_MATRIX)) UPDATE_STIFFNESS_MATRIX=STIFFNESS_MATRIX%UPDATE_MATRIX
-            IF(ASSOCIATED(DAMPING_MATRIX)) UPDATE_DAMPING_MATRIX=DAMPING_MATRIX%UPDATE_MATRIX
-            IF(ASSOCIATED(RHS_VECTOR)) UPDATE_RHS_VECTOR=RHS_VECTOR%UPDATE_VECTOR
           END SELECT
-!---toe
 
 
           GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
@@ -1549,27 +1542,24 @@ CONTAINS
 
                       ENDIF
 
-!---tob
-!                 !===================================================================================================================
-!                 !DAMPING_MATRIX
+                !===================================================================================================================
+                !DAMPING_MATRIX
 ! 
-                          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_DARCY_SUBTYPE) THEN
-!                             IF(UPDATE_DAMPING_MATRIX) THEN
-                              IF(mh==nh.AND.mh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
-                                PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                                PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
-                                !
-                                SUM=0.0_DP 
-                                !Calculate SUM 
-                                SUM=PGM*PGN*RHO_PARAM
-                                !Calculate MATRIX
-!                                 MT_MATRIX(mhs,nhs)=MT_MATRIX(mhs,nhs)+SUM*RWG
-                                DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
-                                  & SUM * RWG
-                              END IF
-!                             END IF
+                      IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_DARCY_SUBTYPE) THEN
+                        IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
+                          IF(mh==nh.AND.mh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
+                            PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                            PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+                            !
+                            SUM=0.0_DP 
+                            !Calculate SUM 
+                            SUM=PGM*PGN*RHO_PARAM
+                            !Calculate MATRIX
+                            DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
+                              & SUM * RWG
                           END IF
-!---toe
+                        END IF
+                      END IF
 
                     ENDDO !ns
                   ENDDO !nh
@@ -1799,6 +1789,7 @@ CONTAINS
           
           !Scale factor adjustment
           !Change to: DEPENDENT_BASIS_1,2
+          !\todo: Still to incorporate the damping_matrix part
           IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
             CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
               & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
@@ -2460,6 +2451,7 @@ CONTAINS
             & ERR,ERROR,*999)
         ENDIF
       ENDIF
+
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
           !--- Set 'SOLVER_NUMBER' depending on CONTROL_LOOP%PROBLEM%SUBTYPE
@@ -2475,6 +2467,32 @@ CONTAINS
               SOLVER_NUMBER_DARCY=3
           END SELECT
 
+          !--- Set explicitly 'SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.'
+          SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+          IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+            SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+            IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+              SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
+              IF(ASSOCIATED(SOLVER_MATRICES)) THEN
+                DO solver_matrix_idx=1,SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES
+                  SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(solver_matrix_idx)%PTR
+                  IF(ASSOCIATED(SOLVER_MATRIX)) THEN
+                    SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.
+                  ELSE
+                    CALL FLAG_ERROR("Solver Matrix is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ENDDO
+              ELSE
+                CALL FLAG_ERROR("Solver Matrices is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+          ENDIF
+
+          !--- pre_solve calls for various actions
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
             CASE(PROBLEM_STANDARD_DARCY_SUBTYPE)
               ! do nothing ???
@@ -2488,31 +2506,6 @@ CONTAINS
             CASE(PROBLEM_ALE_DARCY_SUBTYPE,PROBLEM_PGM_DARCY_SUBTYPE,PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE, &
               & PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE)
               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy pre-solve ... ",ERR,ERROR,*999)
-
-              !--- Set 'SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.'
-              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-                IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-                  SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
-                  IF(ASSOCIATED(SOLVER_MATRICES)) THEN
-                    DO solver_matrix_idx=1,SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES
-                      SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(solver_matrix_idx)%PTR
-                      IF(ASSOCIATED(SOLVER_MATRIX)) THEN
-                        SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.
-                      ELSE
-                        CALL FLAG_ERROR("Solver Matrix is not associated.",ERR,ERROR,*999)
-                      ENDIF
-                    ENDDO
-                  ELSE
-                    CALL FLAG_ERROR("Solver Matrices is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
-              ENDIF
 
               !--- Store reference data
               IF(CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER==1.AND.SOLVER%GLOBAL_NUMBER==SOLVER_NUMBER_MAT_PROPERTIES) THEN
