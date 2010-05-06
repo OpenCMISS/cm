@@ -9183,7 +9183,7 @@ CONTAINS
                                               & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
                                               & COUPLING_COEFFICIENTS(solver_row_idx)
 
-                                            VALUE=-1.0_DP*SOURCE_VALUE*row_coupling_coefficient
+                                            VALUE=1.0_DP*SOURCE_VALUE*row_coupling_coefficient
 
                                             !Calculates the contribution from each row of the equations matrix and adds to solver matrix
                                             CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
